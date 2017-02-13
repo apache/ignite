@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -89,19 +90,21 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
 
             Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
 
+            IgniteInClosure<String> c = new CI1<String>() {
+                @Override public void apply(String s) {
+                    info("Server node1: " + s);
+
+                    if (s.contains(NODE_START_MSG))
+                        srvsReadyLatch.countDown();
+                }
+            };
+
             try {
                 node1 = GridJavaProcess.exec(
                     CacheConfigurationP2PTestServer.class.getName(),
                     null,
                     log,
-                    new CI1<String>() {
-                        @Override public void apply(String s) {
-                            info("Server node1: " + s);
-
-                            if (s.contains(NODE_START_MSG))
-                                srvsReadyLatch.countDown();
-                        }
-                    },
+                    c, c,
                     null,
                     null,
                     jvmArgs,
@@ -110,17 +113,19 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     null
                 );
 
+                IgniteInClosure<String> c2 = new CI1<String>() {
+                    @Override public void apply(String s) {
+                        info("Server node2: " + s);
+
+                        if (s.contains(NODE_START_MSG))
+                            srvsReadyLatch.countDown();
+                    }
+                };
+
                 node2 = GridJavaProcess.exec(
                     CacheConfigurationP2PTestServer.class.getName(), null,
                     log,
-                    new CI1<String>() {
-                        @Override public void apply(String s) {
-                            info("Server node2: " + s);
-
-                            if (s.contains(NODE_START_MSG))
-                                srvsReadyLatch.countDown();
-                        }
-                    },
+                    c2, c2,
                     null,
                     null,
                     jvmArgs,
@@ -133,17 +138,19 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
 
                 String cp = U.getIgniteHome() + "/modules/extdata/p2p/target/classes/";
 
+                IgniteInClosure<String> cLatch = new CI1<String>() {
+                    @Override public void apply(String s) {
+                        info("Client node: " + s);
+
+                        if (s.contains(NODE_START_MSG))
+                            clientReadyLatch.countDown();
+                    }
+                };
+
                 clientNode = GridJavaProcess.exec(
                     CLIENT_CLS_NAME, null,
                     log,
-                    new CI1<String>() {
-                        @Override public void apply(String s) {
-                            info("Client node: " + s);
-
-                            if (s.contains(NODE_START_MSG))
-                                clientReadyLatch.countDown();
-                        }
-                    },
+                    cLatch, cLatch,
                     null,
                     null,
                     jvmArgs,

@@ -75,7 +75,7 @@ public class IgniteNodeProxy2 {
         IgniteNodeProxy2 prevVal = gridProxies.putIfAbsent(name, this);
 
         if (prevVal != null) {
-            prevVal.stop(); //remoteCompute().run(new StopGridTask(cfg.getGridName(), true));
+            prevVal.stop();
 
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getGridName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
@@ -85,10 +85,9 @@ public class IgniteNodeProxy2 {
     }
 
     /**
-     *
-     * @param lclClient
-     * @param cn
-     * @return
+     * @param lclClient Local client Ignite instance.
+     * @param cn The cluster node.
+     * @return The number of nodes as seen from the specified node.
      */
     private static int topologySizeFromNodeViewpoint(Ignite lclClient, ClusterNode cn) {
         UUID id = cn.id();
@@ -109,22 +108,22 @@ public class IgniteNodeProxy2 {
     }
 
     /**
-     * @param requiredTopologySize The desired topology size.
+     * @param requiredTopSize The desired topology size.
      * @return {@code true} if all nodes see exactly the required topology size.
      */
-    public static boolean ensureTopology(int requiredTopologySize, IgniteConfiguration cfg) {
+    public static boolean ensureTopology(int requiredTopSize, IgniteConfiguration cfg) {
         Ignition.setClientMode(true);
 
         try (Ignite tmpClientIgnite = Ignition.start(cfg)) {
             // First, check it from the client node viewpoint:
-            if (requiredTopologySize != tmpClientIgnite.cluster().nodes().size() + 1)
+            if (requiredTopSize != tmpClientIgnite.cluster().nodes().size() + 1)
                 return false;
 
             // Second, check topology from each node viewpoint:
             for (ClusterNode cn : tmpClientIgnite.cluster().nodes()) {
                 int s = topologySizeFromNodeViewpoint(tmpClientIgnite, cn);
 
-                if (requiredTopologySize != s + 1)
+                if (requiredTopSize != s + 1)
                     return false;
             }
         }
@@ -144,6 +143,10 @@ public class IgniteNodeProxy2 {
         catch (Exception e) {
             throw new IgniteException(e);
         }
+
+        boolean rm = gridProxies.remove(name(), this);
+
+        assert rm;
     }
 
     /**
@@ -246,10 +249,14 @@ public class IgniteNodeProxy2 {
             IgniteNodeRunner.class.getCanonicalName(),
             cfgFileName, // Params.
             this.log,
-            // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
                 @Override public void apply(String s) {
-                    IgniteNodeProxy2.this.log.info(logPrefix() + s);
+                    IgniteNodeProxy2.this.log.info(logPrefix() + " Out: " + s);
+                }
+            },
+            new IgniteInClosure<String>() {
+                @Override public void apply(String s) {
+                    IgniteNodeProxy2.this.log.info(logPrefix() + " Err: " + s);
                 }
             },
             null,

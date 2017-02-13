@@ -4,10 +4,10 @@ import org.apache.hadoop.examples.BaileyBorweinPlouffe;
 import org.apache.hadoop.util.Tool;
 
 /**
- *
+ * Distributed Bbp Pi digits example.
  */
 public class HadoopDistBbpExampleTest extends HadoopGenericExampleTest {
-
+    /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final BaileyBorweinPlouffe impl = new BaileyBorweinPlouffe();
 
@@ -29,6 +29,7 @@ public class HadoopDistBbpExampleTest extends HadoopGenericExampleTest {
         }
     };
 
+    /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {
         return ex;
     }

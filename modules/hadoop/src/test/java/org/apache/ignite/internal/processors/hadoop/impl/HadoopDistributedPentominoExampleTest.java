@@ -4,10 +4,10 @@ import org.apache.hadoop.examples.dancing.DistributedPentomino;
 import org.apache.hadoop.util.Tool;
 
 /**
- *
+ * Pertomino example in form of test.
  */
 public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleTest {
-
+    /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final DistributedPentomino impl = new DistributedPentomino();
 
@@ -29,6 +29,7 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
         }
     };
 
+    /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {
         return ex;
     }

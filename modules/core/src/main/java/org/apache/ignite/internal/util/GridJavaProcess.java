@@ -94,7 +94,7 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, null, null, null, null);
+        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, null, null, null, null);
     }
 
     /**
@@ -113,7 +113,7 @@ public final class GridJavaProcess {
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable Collection<String> jvmArgs, @Nullable String cp, @Nullable File dir) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, jvmArgs, cp, dir, null);
+        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, jvmArgs, cp, dir, null);
     }
 
     /**
@@ -122,7 +122,8 @@ public final class GridJavaProcess {
      * @param clsName Class with main() method to be run.
      * @param params main() method parameters.
      * @param log Log to use.
-     * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
+     * @param printOutC Optional closure to be called each time wrapped process prints line to system.out.
+     * @param printErrC Optional closure to be called each time wrapped process prints line to system.err.
      * @param procKilledC Optional closure to be called when process termination is detected.
      * @param javaHome Java home location. The process will be started under given JVM.
      * @param jvmArgs JVM arguments to use.
@@ -131,7 +132,9 @@ public final class GridJavaProcess {
      * @throws Exception If any problem occurred.
      */
     public static GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
-        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
+        @Nullable IgniteInClosure<String> printOutC,
+        @Nullable IgniteInClosure<String> printErrC,
+        @Nullable GridAbsClosure procKilledC,
         @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp,
         @Nullable File dir, @Nullable Map<String, String> env) throws Exception {
         GridJavaProcess gjProc = new GridJavaProcess();
@@ -186,8 +189,8 @@ public final class GridJavaProcess {
 
         Process proc = builder.start();
 
-        gjProc.osGrabber = gjProc.new ProcessStreamGrabber(proc.getInputStream(), printC);
-        gjProc.esGrabber = gjProc.new ProcessStreamGrabber(proc.getErrorStream(), printC);
+        gjProc.osGrabber = gjProc.new ProcessStreamGrabber(proc.getInputStream(), printOutC);
+        gjProc.esGrabber = gjProc.new ProcessStreamGrabber(proc.getErrorStream(), printErrC);
 
         gjProc.osGrabber.start();
         gjProc.esGrabber.start();

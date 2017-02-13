@@ -18,14 +18,29 @@ import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
  */
 public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     /**
-     *
+     * Class representing the sample execution parameters.
      */
     static class FrameworkParameters {
+        /** */
         int maps;
+
+        /** */
         int reduces = 1;
+
+        /** */
         String workDir;
+
+        /** */
         String user;
 
+        /**
+         * The constructor.
+         *
+         * @param numMaps The number of maps.
+         * @param numReduces The number of reduces.
+         * @param workDirBase The work directory base.
+         * @param user The user name this example is run on behalf of.
+         */
         public FrameworkParameters(int numMaps, int numReduces, String workDirBase, String user) {
             this.maps = numMaps;
             this.reduces = numReduces;
@@ -33,28 +48,46 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
             this.user = user;
         }
 
+        /**
+         * @return The number of maps.
+         */
         public int numMaps() {
             return maps;
         }
 
+        /**
+         * @param exampleName The example name.
+         * @return gets the work directory path.
+         */
         public String getWorkDir(String exampleName) {
             return workDir + "/" + user + "/" + exampleName;
         }
 
+        /**
+         * @return The user name.
+         */
         public String user() {
             return user;
         }
     }
 
+    /**
+     * Abstract class representing an example.
+     */
     static abstract class GenericHadoopExample  {
+        /** Gets the example name. */
         abstract String name();
 
+        /** Performs pre-execution preparation. */
         void prepare(Configuration conf, FrameworkParameters fp) throws Exception {}
 
+        /** Gets the String parameters to be passed to the Tool upon execution. */
         abstract String[] parameters(FrameworkParameters fp);
 
+        /** Gets the tool to execute. */
         abstract Tool tool();
 
+        /** Checks example calculation validity. */
         abstract void verify(String[] parameters);
     }
 

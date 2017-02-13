@@ -4,10 +4,10 @@ import org.apache.hadoop.examples.pi.DistBbp;
 import org.apache.hadoop.util.Tool;
 
 /**
- *
+ * Bbp Pi digits example.
  */
 public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
-
+    /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final Tool impl = new DistBbp();
 
@@ -39,6 +39,7 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
         }
     };
 
+    /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {
         return ex;
     }

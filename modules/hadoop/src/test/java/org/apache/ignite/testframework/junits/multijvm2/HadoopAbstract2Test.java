@@ -19,8 +19,6 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected final void beforeTestsStarted() throws Exception {
-        //HadoopFileSystemsUtils.clearFileSystemCache();
-
         // Add surefire classpath to regular classpath.
         initCp = System.getProperty("java.class.path");
 
@@ -35,8 +33,9 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     }
 
     /**
+     * Starts the Ignite nodes.
      *
-     * @throws Exception
+     * @throws Exception On error.
      */
     protected void startNodes() throws Exception {
         for (int idx = 0; idx<gridCount(); idx++) {
@@ -54,15 +53,16 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     }
 
     /**
+     * Process start parameters for indexed and named node.
      *
-     * @return
+     * @return The parameters.
      */
     protected NodeProcessParameters getParameters(int idx, String nodeName) {
         return NodeProcessParameters.DFLT;
     }
 
     /**
-     * Forcibly kills all nodes ran
+     * Forcibly kills all nodes.
      */
     protected final void killAllNodes() {
         try {
@@ -78,6 +78,7 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
 
     /**
      * Performs additional initialization in the beginning of test class execution.
+     *
      * @throws Exception If failed.
      */
     protected void beforeTestsStarted0() throws Exception {
@@ -88,35 +89,19 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        killAllNodes();
+
         // Restore classpath.
         System.setProperty("java.class.path", initCp);
-
-        initCp = null;
-
-        killAllNodes();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets configuration for named and indexed node.
+     */
     protected IgniteConfiguration getConfiguration(int idx, String gridName) throws Exception {
         IgniteConfiguration cfg = getConfiguration(gridName);
 
         cfg.setHadoopConfiguration(hadoopConfiguration(idx, gridName));
-
-//        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-//
-//        commSpi.setSharedMemoryPort(-1);
-//
-//        cfg.setCommunicationSpi(commSpi);
-
-//        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-//
-//        discoSpi.setIpFinder(IP_FINDER);
-
-//        if (igfsEnabled()) {
-//            cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
-//
-//            cfg.setFileSystemConfiguration(igfsConfiguration());
-//        }
 
         if (idx == 0 /*Enable REST only for the 1st node. */) {
             ConnectorConfiguration clnCfg = new ConnectorConfiguration();
@@ -151,87 +136,10 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
         return cfg;
     }
 
-//    /**
-//     * @return IGFS configuration.
-//     */
-//    public FileSystemConfiguration igfsConfiguration() throws Exception {
-//        FileSystemConfiguration cfg = new FileSystemConfiguration();
-//
-//        cfg.setName(igfsName);
-//        cfg.setBlockSize(igfsBlockSize);
-//        cfg.setDataCacheName(igfsDataCacheName);
-//        cfg.setMetaCacheName(igfsMetaCacheName);
-//        cfg.setFragmentizerEnabled(false);
-//
-//        return cfg;
-//    }
-
-//    /**
-//     * @return IGFS meta cache configuration.
-//     */
-//    public CacheConfiguration metaCacheConfiguration() {
-//        CacheConfiguration cfg = new CacheConfiguration();
-//
-//        cfg.setName(igfsMetaCacheName);
-//        cfg.setCacheMode(REPLICATED);
-//        cfg.setAtomicityMode(TRANSACTIONAL);
-//        cfg.setWriteSynchronizationMode(FULL_SYNC);
-//
-//        return cfg;
-//    }
-
-//    /**
-//     * @return IGFS data cache configuration.
-//     */
-//    protected CacheConfiguration dataCacheConfiguration() {
-//        CacheConfiguration cfg = new CacheConfiguration();
-//
-//        cfg.setName(igfsDataCacheName);
-//        cfg.setCacheMode(PARTITIONED);
-//        cfg.setAtomicityMode(TRANSACTIONAL);
-//        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(igfsBlockGroupSize));
-//        cfg.setWriteSynchronizationMode(FULL_SYNC);
-//
-//        return cfg;
-//    }
-
-//    /**
-//     * @return {@code True} if IGFS is enabled on Hadoop nodes.
-//     */
-//    protected boolean igfsEnabled() {
-//        return false;
-//    }
-
-//    /**
-//     * @return {@code True} if REST is enabled on Hadoop nodes.
-//     */
-//    protected boolean restEnabled() {
-//        return false;
-//    }
-
     /**
      * @return Number of nodes to start.
      */
     protected int gridCount() {
         return 3;
     }
-
-//    /**
-//     * @param cfg Config.
-//     */
-//    protected void setupFileSystems(Configuration cfg) {
-//        cfg.set("fs.defaultFS", igfsScheme());
-//        cfg.set("fs.igfs.impl", org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem.class.getName());
-//        cfg.set("fs.AbstractFileSystem.igfs.impl", IgniteHadoopFileSystem.
-//            class.getName());
-//
-//        //HadoopFileSystemsUtils.setupFileSystems(cfg);
-//    }
-
-//    /**
-//     * @return IGFS scheme for test.
-//     */
-//    protected String igfsScheme() {
-//        return "igfs://@/";
-//    }
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -99,17 +100,18 @@ public class CacheNoValueClassOnServerNodeTest extends GridCommonAbstractTest {
             try {
                 String cp = U.getIgniteHome() + "/modules/extdata/p2p/target/classes/";
 
+                IgniteInClosure<String> c =  new CI1<String>() {
+                    @Override public void apply(String s) {
+                        info("Client node: " + s);
+
+                        if (s.contains(NODE_START_MSG))
+                            clientReadyLatch.countDown();
+                    }
+                };
+
                 clientNode = GridJavaProcess.exec(
                     CLIENT_CLS_NAME, null,
-                    log,
-                    new CI1<String>() {
-                        @Override public void apply(String s) {
-                            info("Client node: " + s);
-
-                            if (s.contains(NODE_START_MSG))
-                                clientReadyLatch.countDown();
-                        }
-                    },
+                    log, c, c,
                     null,
                     null,
                     jvmArgs,

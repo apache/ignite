@@ -18,7 +18,7 @@ import org.apache.ignite.IgniteException;
  *
  */
 public class HadoopWordMeanExampleTest extends HadoopGenericExampleTest {
-
+    /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final WordMean impl = new WordMean();
 
@@ -85,6 +85,7 @@ public class HadoopWordMeanExampleTest extends HadoopGenericExampleTest {
         }
     };
 
+    /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {
         return ex;
     }
