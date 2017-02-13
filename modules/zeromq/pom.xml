@@ -30,7 +30,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-twitter</artifactId>
+    <artifactId>ignite-zeromq</artifactId>
     <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
