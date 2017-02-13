@@ -23,68 +23,55 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public class VectorDelegateStorage implements VectorStorage {
-    /** */
-    private VectorStorage sto;
+public class MatrixDelegateStorage implements MatrixStorage {
+    private MatrixStorage sto;
 
-    /** */
-    private int off;
+    private int rowOff;
+    private int colOff;
 
-    /** */
-    private int len;
+    private int rows;
+    private int cols;
 
     /**
      *
      */
-    public VectorDelegateStorage() {
+    public MatrixDelegateStorage() {
         // No-op.
     }
 
     /**
      *
-     * @param sto Vector storage to delegate to.
-     * @param off
-     * @param len
+     * @param sto
+     * @param rowOff
+     * @param colOff
+     * @param rows
+     * @param cols
      */
-    public VectorDelegateStorage(VectorStorage sto, int off, int len) {
+    public MatrixDelegateStorage(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
         this.sto = sto;
-        this.off = off;
-        this.len = len;
+
+        this.rowOff = rowOff;
+        this.colOff = colOff;
     }
 
     @Override
-    public int size() {
-        return len;
+    public double get(int x, int y) {
+        return sto.get(rowOff + x, colOff + y);
     }
 
     @Override
-    public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
+    public void set(int x, int y, double v) {
+        sto.set(rowOff + x, colOff + y, v);
     }
 
     @Override
-    public boolean isDense() {
-        return sto.isDense();
+    public int columnSize() {
+        return cols;
     }
 
     @Override
-    public double getLookupCost() {
-        return sto.getLookupCost();
-    }
-
-    @Override
-    public boolean isAddConstantTime() {
-        return sto.isAddConstantTime();
-    }
-
-    @Override
-    public double get(int i) {
-        return sto.get(off + i);
-    }
-
-    @Override
-    public void set(int i, double v) {
-        sto.set(off + i, v);
+    public int rowSize() {
+        return rows;
     }
 
     @Override
@@ -93,30 +80,29 @@ public class VectorDelegateStorage implements VectorStorage {
     }
 
     @Override
-    public double[] data() {
+    public double[][] data() {
         return sto.data();
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
-        out.writeInt(off);
-        out.writeInt(len);
+
+        out.writeInt(rowOff);
+        out.writeInt(colOff);
+
+        out.writeInt(rows);
+        out.writeInt(cols);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sto = (VectorStorage)in.readObject();
-        off = in.readInt();
-        len = in.readInt();
-    }
+        sto = (MatrixStorage)in.readObject();
 
-    @Override public boolean equals(Object obj) {
-        return this == obj ||
-            ((obj != null)
-                && obj.getClass() == getClass()
-                && (sto.equals(((VectorDelegateStorage)obj).sto))
-                && len == ((VectorDelegateStorage)obj).len
-                && off == ((VectorDelegateStorage)obj).off);
+        rowOff = in.readInt();
+        colOff = in.readInt();
+
+        rows = in.readInt();
+        cols = in.readInt();
     }
 }
