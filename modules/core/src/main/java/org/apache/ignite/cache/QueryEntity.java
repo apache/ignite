@@ -201,24 +201,6 @@ public class QueryEntity implements Serializable {
         }
     }
 
-
-    /**
-     * Gets table name for this query entity.
-     *
-     * @return table name
-     */
-    public String getTableName() {
-        return tableName;
-    }
-
-    /**
-     * Sets table name for this query entity.
-     * @param tableName table name
-     */
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
     /**
      * Gets table name for this query entity.
      *
