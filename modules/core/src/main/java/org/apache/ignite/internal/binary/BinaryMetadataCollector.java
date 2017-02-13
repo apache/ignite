@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -144,6 +145,11 @@ class BinaryMetadataCollector implements BinaryWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
+        add(fieldName, BinaryWriteMode.TIME);
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
         add(fieldName, BinaryWriteMode.ENUM);
     }
@@ -221,6 +227,11 @@ class BinaryMetadataCollector implements BinaryWriter {
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
         add(fieldName, BinaryWriteMode.TIMESTAMP_ARR);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
+        add(fieldName, BinaryWriteMode.TIME_ARR);
     }
 
     /** {@inheritDoc} */

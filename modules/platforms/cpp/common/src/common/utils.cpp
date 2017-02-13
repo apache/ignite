@@ -66,11 +66,12 @@ namespace ignite
                 return dest;
             }
 
-            return NULL;
+            return 0;
         }
 
         void ReleaseChars(char* val)
         {
+            // Its OK to delete null-pointer.
             delete[] val;
         }
 
