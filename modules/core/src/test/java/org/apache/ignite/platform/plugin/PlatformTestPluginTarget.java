@@ -18,11 +18,13 @@
 package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,6 +41,15 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
      */
     PlatformTestPluginTarget(PlatformContext platformCtx, String name) {
         super(platformCtx);
+
+        if (name == null) {
+            // Initialize from configuration.
+            PlatformTestPluginConfiguration cfg = configuration(platformCtx.kernalContext().config());
+
+            assert cfg != null;
+
+            name = cfg.pluginProperty();
+        }
 
         this.name = name;
     }
@@ -86,5 +97,24 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return new PlatformTestPluginTarget(platformCtx, name);
+    }
+
+    /**
+     * Gets the plugin config.
+     *
+     * @param igniteCfg Ignite config.
+     *
+     * @return Plugin config.
+     */
+    private PlatformTestPluginConfiguration configuration(IgniteConfiguration igniteCfg) {
+        if (igniteCfg.getPluginConfigurations() != null) {
+            for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+                if (pluginCfg instanceof PlatformTestPluginConfiguration) {
+                    return (PlatformTestPluginConfiguration) pluginCfg;
+                }
+            }
+        }
+
+        return null;
     }
 }

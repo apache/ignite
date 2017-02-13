@@ -15,37 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.plugin;
+package org.apache.ignite.plugin.platform;
 
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Test plugin extension.
+ * Platform configuration handler:
+ * updates plugin configuration using data sent from platform code.
  */
-public class PlatformTestPluginExtension implements PlatformPluginExtension {
-    /** */
-    private final IgniteEx ignite;
-
+public interface PlatformPluginConfiguration {
     /**
-     * Ctor.
+     * Updates IgniteConfiguration according to data in a stream.
      *
-     * @param ignite Ignite.
+     * @param cfg Configuration to update.
+     * @param reader Reader.
      */
-    PlatformTestPluginExtension(IgniteEx ignite) {
-        assert ignite != null;
-
-        this.ignite = ignite;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int id() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createTarget() {
-        return new PlatformTestPluginTarget(ignite.context().platform().context(), null);
-    }
+    void applyConfiguration(@NotNull IgniteConfiguration cfg, @NotNull BinaryRawReader reader);
 }
