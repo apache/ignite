@@ -172,7 +172,7 @@ public class DenseLocalOnHeapVectorTest {
     }
 
     /** */ @Test
-    public void crossTest() { // TODO write test
+    public void crossTest() { // TODO write tests for this and other Vector methods involving Matrix
 
     }
 
