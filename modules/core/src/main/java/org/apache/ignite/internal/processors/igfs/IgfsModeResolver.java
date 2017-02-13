@@ -39,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class IgfsModeResolver implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Maximum size of map with cached path modes. */
     private static final int MAX_PATH_CACHE = 1000;
 
