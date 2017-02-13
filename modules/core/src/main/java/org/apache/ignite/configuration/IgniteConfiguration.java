@@ -2355,22 +2355,26 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets SQL query parallelism level.
-     *
+     * Gets SQL query parallelism level - the number of segments that segmented indices will be split to.
+     * So, SQL queries can be run in parallel manner, one thread per segment.
+     * See also {@link CacheConfiguration#isIndexSegmentationEnabled()}
+
      * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
      *
-     * @return Threads that SQL query can be split to.
+     * @return Number of segments that segmented indices consist of.
      */
     public int getSqlQueryParallelismLevel() {
         return sqlQryParallelismLvl;
     }
 
     /**
-     * Sets SQL query parallelism level.
-     *
+     * Sets SQL query parallelism level - the number of segments that segmented indices will be split to.
+     * So, SQL queries can be run in parallel manner, one thread per segment.
+     * See also {@link CacheConfiguration#isIndexSegmentationEnabled()}
+     * *
      * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
      *
-     * @param sqlQryParallelismLvl  Threads that SQL query can be split to.
+     * @param sqlQryParallelismLvl  Number of segments that segmented indices consist of.
      */
     public IgniteConfiguration setSqlQueryParallelismLevel(int sqlQryParallelismLvl) {
         this.sqlQryParallelismLvl = sqlQryParallelismLvl;

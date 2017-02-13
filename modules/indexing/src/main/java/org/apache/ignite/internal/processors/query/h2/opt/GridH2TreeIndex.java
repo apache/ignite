@@ -17,20 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.IndexType;
 import org.h2.result.SearchRow;
@@ -40,7 +33,7 @@ import org.h2.table.IndexColumn;
  * Snapshotable tree index.
  */
 @SuppressWarnings("ComparatorNotSerializable")
-public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
+public class GridH2TreeIndex extends GridH2IndexBase {
     /** */
     private final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree;
 
@@ -143,11 +136,6 @@ public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
     }
 
     /** {@inheritDoc} */
-    protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        return treeForRead(0);
-    }
-
-    /** {@inheritDoc} */
     protected final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead(int segment) {
         assert segment == 0;
 
@@ -213,44 +201,4 @@ public class GridH2TreeIndex extends GridH2AbstractTreeIndex {
 
         super.destroy();
     }
-
-    /**
-     * @param qctx Query context.
-     * @param cctx Cache context.
-     * @return Collection of nodes for broadcasting.
-     */
-    private List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?, ?> cctx) {
-        Map<UUID, int[]> partMap = qctx.partitionsMap();
-
-        List<ClusterNode> nodes;
-
-        if (partMap == null)
-            nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
-        else {
-            nodes = new ArrayList<>(partMap.size());
-
-            GridKernalContext ctx = kernalContext();
-
-            for (UUID nodeId : partMap.keySet()) {
-                ClusterNode node = ctx.discovery().node(nodeId);
-
-                if (node == null)
-                    throw new GridH2RetryException("Failed to find node.");
-
-                nodes.add(node);
-            }
-        }
-
-        if (F.isEmpty(nodes))
-            throw new GridH2RetryException("Failed to collect affinity nodes.");
-
-        List<SegmentKey> res = new ArrayList<>(nodes.size());
-
-        for (ClusterNode node : nodes) {
-            res.add(new SegmentKey(node, 0));
-        }
-
-        return res;
-    }
-
 }

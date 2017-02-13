@@ -119,6 +119,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean isSnapshotEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override protected Object doTakeSnapshot() {
         return null; // TODO We do not support snapshots, but probably this is possible.
     }
@@ -339,5 +344,9 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
+    }
+
+    @Override public GridH2Row findOne(GridSearchRowPointer row) {
+        throw DbException.throwInternalError();
     }
 }

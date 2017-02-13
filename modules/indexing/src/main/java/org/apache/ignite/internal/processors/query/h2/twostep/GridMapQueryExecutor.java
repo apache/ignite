@@ -86,6 +86,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
@@ -431,7 +433,7 @@ public class GridMapQueryExecutor {
             req.partitions(),
             null,
             req.pageSize(),
-            DistributedJoinMode.OFF,
+            OFF,
             req.timeout());
     }
 
@@ -450,7 +452,7 @@ public class GridMapQueryExecutor {
         if (mainCctx == null)
             throw new CacheException("Failed to find cache.");
 
-        final DistributedJoinMode joinMode = DistributedJoinMode.distributedJoinMode(
+        final DistributedJoinMode joinMode = distributedJoinMode(
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
@@ -581,7 +583,7 @@ public class GridMapQueryExecutor {
             Connection conn = h2.connectionForSpace(mainCctx.name());
 
             // Here we enforce join order to have the same behavior on all the nodes.
-            h2.setupConnection(conn, distributedJoinMode != DistributedJoinMode.OFF, true);
+            h2.setupConnection(conn, distributedJoinMode != OFF, true);
 
             GridH2QueryContext.set(qctx);
 
@@ -643,7 +645,7 @@ public class GridMapQueryExecutor {
             finally {
                 GridH2QueryContext.clearThreadLocal();
 
-                if (distributedJoinMode == DistributedJoinMode.OFF)
+                if (distributedJoinMode == OFF)
                     qctx.clearContext(false);
 
                 if (!F.isEmpty(snapshotedTbls)) {

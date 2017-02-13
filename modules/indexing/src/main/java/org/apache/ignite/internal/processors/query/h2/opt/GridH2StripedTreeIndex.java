@@ -35,7 +35,7 @@ import org.h2.table.IndexColumn;
 /**
  * Stripped snapshotable tree index
  */
-public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
+public class GridH2StripedTreeIndex extends GridH2IndexBase {
     /** */
     private final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>[] segments;
 
@@ -146,20 +146,13 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
     @Override protected Object doTakeSnapshot() {
         assert snapshotEnabled;
 
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = segmentTree();
+        int seg = threadLocalSegment();
+
+        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> tree = segments[seg];
 
         return tree instanceof SnapTreeMap ?
             ((SnapTreeMap)tree).clone() :
             ((GridOffHeapSnapTreeMap)tree).clone();
-    }
-
-    /** {@inheritDoc} */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> treeForRead() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        int segment = qctx != null ? qctx.segment() : 0;
-
-        return treeForRead(segment);
     }
 
     /**
@@ -184,18 +177,9 @@ public class GridH2StripedTreeIndex extends GridH2AbstractTreeIndex {
 
     /** {@inheritDoc} */
     public GridH2Row findOne(GridSearchRowPointer row) {
-        return segmentTree().get(row);
-    }
+        int seg = threadLocalSegment();
 
-    /** */
-    protected ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> segmentTree() {
-        GridH2QueryContext ctx = GridH2QueryContext.get();
-
-        assert ctx != null;
-
-        int seg = ctx.segment();
-
-        return segments[seg];
+        return segments[seg].get(row);
     }
 
     /** {@inheritDoc} */
