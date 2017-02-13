@@ -360,6 +360,15 @@ namespace ignite
                     const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
 
+                /**
+                 * Executes LocalLoadCache on all cache nodes.
+                 *
+                 * @param predicate Optional predicate (may be null). If provided,
+                 *      will be used to filter values loaded from storage before
+                 *      they are put into cache.
+                 */
+                void LoadCache(void* predicate);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
 

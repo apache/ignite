@@ -325,6 +325,11 @@ namespace ignite
                 return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
             }
 
+            void CacheImpl::LoadCache(void* predicate)
+            {
+                //TODO: implement me.
+            }
+
             struct DummyQry { void Write(BinaryRawWriter&) const { }};
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,

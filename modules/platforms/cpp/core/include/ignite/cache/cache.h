@@ -1456,6 +1456,18 @@ namespace ignite
                 return impl.IsValid();
             }
 
+            /**
+             * Executes LocalLoadCache on all cache nodes.
+             *
+             * @param predicate Optional predicate (may be null). If provided,
+             *      will be used to filter values loaded from storage before
+             *      they are put into cache.
+             */
+            void LoadCache(void* predicate)
+            {
+                impl.Get()->LoadCache(predicate);
+            }
+
         private:
             /** Implementation delegate. */
             common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;

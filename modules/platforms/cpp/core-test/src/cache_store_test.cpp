@@ -121,8 +121,7 @@ BOOST_AUTO_TEST_CASE(LoadCacheNoPredicate)
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK(!cache.Size() == 100);
-
+    BOOST_CHECK_EQUAL(cache.Size(), 100);
 
     Person person42 = cache.Get(42);
 
