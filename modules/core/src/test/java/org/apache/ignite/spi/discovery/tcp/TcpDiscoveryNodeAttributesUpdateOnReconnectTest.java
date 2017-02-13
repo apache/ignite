@@ -72,7 +72,14 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        TestReconnectPluginProvider.enabled = false;
+
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        TestReconnectPluginProvider.enabled = true;
     }
 
     /**
