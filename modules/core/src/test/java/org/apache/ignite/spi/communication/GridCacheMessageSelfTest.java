@@ -302,11 +302,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         private Message msg;
 
         /**
-         * @param mes Message.
+         * @param msg Message.
+         * @param body Message body.
          */
-        public void init(Message mes, String body) {
-            this.msg = mes;
-
+        public void init(Message msg, String body) {
+            this.msg = msg;
             this.body = body;
         }
 

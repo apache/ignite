@@ -868,7 +868,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
     /**
      * Registers factory for custom message. Used for test purposes.
-     *  @param type Message type.
+     *
+     * @param type Message type.
      * @param c Message producer.
      */
     public static void registerCustom(short type, IgniteOutClosure<Message> c) {
