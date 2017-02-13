@@ -92,6 +92,11 @@ public abstract class AbstractMatrix implements Matrix {
         return null; // TODO
     }
 
+    @Override
+    public MatrixStorage getStorage() {
+        return sto;
+    }
+
     /**
      * Check row index bounds.
      *

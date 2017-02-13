@@ -203,6 +203,11 @@ public interface Matrix extends MetaAttributes, Externalizable {
     double getX(int row, int col);
 
     /**
+     * Gets matrix storage model.
+     */
+    MatrixStorage getStorage();
+
+    /**
      * Clones this matrix.
      *
      * NOTE: new matrix will have the same flavor as the this matrix but a different ID.
