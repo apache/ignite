@@ -70,7 +70,8 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqPairSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, 1, ZeroMqTypeSocket.PAIR, ADDR, null);) {
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(
+                dataStreamer, 1, ZeroMqTypeSocket.PAIR, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PAIR, null);
             }
         }
@@ -81,7 +82,8 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqSubSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, 1, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(
+                dataStreamer, 1, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
                 executeStreamer(streamer, ZMQ.PUB, TOPIC);
             }
         }
@@ -92,7 +94,8 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqPullSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, 1, ZeroMqTypeSocket.PULL, ADDR, null);) {
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(
+                dataStreamer, 1, ZeroMqTypeSocket.PULL, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PUSH, null);
             }
         }
@@ -173,8 +176,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
                     socket.sendMore(topic);
                 socket.send(String.valueOf(i).getBytes());
             }
-
-            Thread.sleep(2000);
         }
     }
 
