@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.*;
 import java.io.*;
+import org.apache.ignite.math.impls.VectorView;
 
 /**
  * TODO: add description.
@@ -109,5 +110,14 @@ public class VectorDelegateStorage implements VectorStorage {
         sto = (VectorStorage)in.readObject();
         off = in.readInt();
         len = in.readInt();
+    }
+
+    @Override public boolean equals(Object obj) {
+        return this == obj ||
+            ((obj != null)
+                && obj.getClass() == getClass()
+                && (sto.equals(((VectorDelegateStorage)obj).sto))
+                && len == ((VectorDelegateStorage)obj).len
+                && off == ((VectorDelegateStorage)obj).off);
     }
 }

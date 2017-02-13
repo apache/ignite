@@ -35,6 +35,13 @@ public class VectorView extends AbstractVector {
     private int len;
 
     /**
+     * Constructor for {@link Externalizable} interface.
+     */
+    public VectorView(){
+
+    }
+
+    /**
      *
      * @param parent
      * @param off
@@ -48,32 +55,53 @@ public class VectorView extends AbstractVector {
         this.len = len;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Vector copy() {
         return new VectorView(parent, off, len);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Vector like(int crd) {
         return parent.like(crd);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
+
         out.writeInt(off);
+
         out.writeInt(len);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         parent = (Vector)in.readObject();
+
         off = in.readInt();
+
         len = in.readInt();
+
+        setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return this == o ||
+            ((o!=null)
+                && o.getClass() == getClass()
+                && (getStorage().equals(((VectorView)o).getStorage()))
+                && len == ((VectorView)o).len
+                && off == ((VectorView)o).off);
     }
 }
