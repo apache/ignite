@@ -48,12 +48,6 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(long pageAddr, int pageSize) {
-        checkItemSize(pageAddr);
-        return super.getMaxCount(pageAddr, pageSize);
-    }
-
-    /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
@@ -67,9 +61,9 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert fastIdx != null;
 
-        int itemSize = checkItemSize(pageAddr);
+        int itemSize = itemSize(pageAddr);
 
-        assert itemSize == pageCtx.itemSize();
+        assert itemSize == pageCtx.payloadSize() + 8;
 
         int fieldOff = 0;
 
@@ -84,11 +78,16 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
+        int dstItemSize = itemSize(dstPageAddr);
+        int srcItemSize = srcIo.itemSize(srcPageAddr);
 
-        assert srcIo.itemSize(srcPageAddr) == itemSize(dstPageAddr);
+        assert srcPageAddr == dstItemSize || dstItemSize == 0;
+
+        if (dstItemSize == 0)
+            writeMetaHeader(dstPageAddr, srcItemSize);
 
         int srcOff = srcIo.offset(srcPageAddr, srcIdx);
-        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, itemSize(srcPageAddr));
+        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, srcItemSize);
 
         int dstOff = offset(dstPageAddr, dstIdx);
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
@@ -122,19 +121,17 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
         PageUtils.putInt(pageAddr, META_HEADER_OFFSET, size);
     }
 
+
     /** {@inheritDoc} */
     @Override public int itemSize(long pageAddr) {
-        return PageUtils.getInt(pageAddr, META_HEADER_OFFSET);
-    }
-
-    /** */
-    private int checkItemSize(long pageAddr) {
-        int itemSize = itemSize(pageAddr);
+        int itemSize = PageUtils.getInt(pageAddr, META_HEADER_OFFSET);
 
         if (itemSize != 0)
             return itemSize;
         H2TreeIndex.H2TreeIndexPageContext pageCtx = H2TreeIndex.getCurrentPageContext();
-        writeMetaHeader(pageAddr, pageCtx.itemSize());
-        return pageCtx.itemSize();
+        assert pageCtx != null;
+
+        writeMetaHeader(pageAddr, pageCtx.payloadSize() + 8);
+        return pageCtx.payloadSize() + 8;
     }
 }

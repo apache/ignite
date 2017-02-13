@@ -53,4 +53,11 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
 
         return itemsOffset() + idx * itemSize(pageAddr);
     }
+
+    /** {@inheritDoc} */
+    @Override public int offset(long pageAddr, int idx, int itemSize) {
+        assert idx >= 0 : idx;
+
+        return itemsOffset() + idx * itemSize;
+    }
 }

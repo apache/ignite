@@ -126,12 +126,26 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @return Offset from byte buffer begin in bytes.
      */
     private int shiftOffset(long pageAddr, int idx, int shift) {
-        return shift + (8 + itemSize(pageAddr)) * idx;
+        return shiftOffset0(idx, shift, itemSize(pageAddr));
+    }
+
+    /**
+     * @param idx Index of element.
+     * @param shift It can be either link itself or left or right page ID.
+     * @return Offset from byte buffer begin in bytes.
+     */
+    private int shiftOffset0(int idx, int shift, int itemSize) {
+        return shift + (8 + itemSize) * idx;
     }
 
     /** {@inheritDoc} */
     @Override public final int offset(long pageAddr, int idx) {
         return shiftOffset(pageAddr, idx, linkShift());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int offset(long pageAddr, int idx, int itemSize) {
+        return shiftOffset0(idx, linkShift(), itemSize);
     }
 
     // Methods for B+Tree logic.

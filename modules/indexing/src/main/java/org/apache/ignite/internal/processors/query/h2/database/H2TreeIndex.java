@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -52,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * H2 Index over {@link BPlusTree}.
  */
 public class H2TreeIndex extends GridH2IndexBase {
-    /** Tree collection for use in IO's */
+    /** PageContext for use in IO's */
     private static final ThreadLocal<H2TreeIndexPageContext> currentPageContext = new ThreadLocal<>();
 
     /** */
@@ -99,9 +100,11 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             RootPage page = cctx.offheap().rootPageForIndex(name);
 
-            final List<FastIndexHelper> fastIdxs = getAvailableFastColumns(cols);
+            final H2TreeIndexPageContext ctx0 = getPageCtx(cols);
 
-            if (pk || fastIdxs == null || fastIdxs.isEmpty()) {
+            if (pk || ctx0.empty()) {
+                pageCtx = null;
+
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                     tbl.rowFactory(), page.pageId().pageId(), page.isAllocated()) {
@@ -110,26 +113,23 @@ public class H2TreeIndex extends GridH2IndexBase {
                         return compareRows(getRow(io, pageAddr, idx), row);
                     }
                 };
-                pageCtx = null;
             }
             else {
-                int size = 0;
-
-                for (int i = 0; i < fastIdxs.size(); i++)
-                    size += fastIdxs.get(i).size();
+                pageCtx = ctx0;
 
                 tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                     dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
-                    tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), fastIdxs,
+                    tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(),
                     H2ExtrasInnerIO.VERSIONS, H2ExtrasLeafIO.VERSIONS) {
                     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
                         throws IgniteCheckedException {
-                        int off = io.offset(pageAddr, idx);
+
+                        int off = io.offset(pageAddr, idx, pageCtx.payloadSize() + 8);
 
                         int fieldOff = 0;
 
-                        for (int i = 0; i < fastIdxs.size(); i++) {
-                            FastIndexHelper fastIdx = fastIdxs.get(i);
+                        for (int i = 0; i < pageCtx.fastIdxs().size(); i++) {
+                            FastIndexHelper fastIdx = pageCtx.fastIdxs().get(i);
 
                             Value v1 = fastIdx.get(pageAddr, off + fieldOff);
                             fieldOff += fastIdx.size();
@@ -151,7 +151,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         SearchRow rowData = getRow(io, pageAddr, idx);
 
-                        for (int i = fastIdxs.size(), len = indexColumns.length; i < len; i++) {
+                        for (int i = pageCtx.fastIdxs().size(), len = indexColumns.length; i < len; i++) {
                             int idx0 = columnIds[i];
 
                             Value v1 = rowData.getValue(idx0);
@@ -174,7 +174,6 @@ public class H2TreeIndex extends GridH2IndexBase {
                         return 0;
                     }
                 };
-                pageCtx = new H2TreeIndexPageContext(fastIdxs, size);
             }
         }
         else {
@@ -190,11 +189,11 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @param cols Columns array.
      * @return List of {@link FastIndexHelper} objects.
      */
-    private List<FastIndexHelper> getAvailableFastColumns(IndexColumn[] cols) {
+    private H2TreeIndexPageContext getPageCtx(IndexColumn[] cols) {
         int maxSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, MAX_ITEM_SIZE);
 
         if (maxSize == 0)
-            return null;
+            return new H2TreeIndexPageContext(null, 0);
 
         List<FastIndexHelper> res = new ArrayList<>();
 
@@ -210,15 +209,14 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             FastIndexHelper idx = new FastIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
 
-            payloadSize += idx.size();
-
-            if (payloadSize > maxPayloadSize)
+            if (payloadSize + idx.size() > maxPayloadSize)
                 break;
 
+            payloadSize += idx.size();
             res.add(idx);
         }
 
-        return res;
+        return new H2TreeIndexPageContext(res, payloadSize);
     }
 
     /**
@@ -315,20 +313,28 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
+            currentPageContext.set(pageCtx);
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            currentPageContext.remove();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removex(SearchRow row) {
         try {
+            currentPageContext.set(pageCtx);
             tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
+        }
+        finally {
+            currentPageContext.remove();
         }
     }
 
@@ -427,13 +433,13 @@ public class H2TreeIndex extends GridH2IndexBase {
         /** */
         private final List<FastIndexHelper> fastIdxs;
         /** */
-        private final int itemSize;
+        private final int payloadSize;
 
         /** */
         public H2TreeIndexPageContext(
-            List<FastIndexHelper> fastIdxs, int itemSize) {
+            List<FastIndexHelper> fastIdxs, int payloadSize) {
             this.fastIdxs = fastIdxs;
-            this.itemSize = itemSize;
+            this.payloadSize = payloadSize;
         }
 
         /** */
@@ -442,8 +448,13 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         /** */
-        public int itemSize() {
-            return itemSize;
+        public int payloadSize() {
+            return payloadSize;
+        }
+
+        /** */
+        public boolean empty() {
+            return F.isEmpty(fastIdxs);
         }
     }
 }
