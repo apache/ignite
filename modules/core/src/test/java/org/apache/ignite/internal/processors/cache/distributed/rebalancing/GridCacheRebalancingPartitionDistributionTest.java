@@ -53,7 +53,7 @@ public class GridCacheRebalancingPartitionDistributionTest extends GridRollingRe
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(true /* machine-safe */, 271))
-                .setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.CLOCK)
+                .setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY)
                 .setRebalanceMode(CacheRebalanceMode.SYNC)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
     }

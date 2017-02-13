@@ -284,12 +284,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cfg.getAtomicityMode() == ATOMIC) {
             if (cfg.getAtomicWriteOrderMode() == null) {
-                cfg.setAtomicWriteOrderMode(cfg.getWriteSynchronizationMode() == FULL_SYNC ?
-                    CacheAtomicWriteOrderMode.CLOCK :
-                    CacheAtomicWriteOrderMode.PRIMARY);
-            }
-            else if (cfg.getWriteSynchronizationMode() != FULL_SYNC &&
-                cfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK) {
                 cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
 
                 U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +

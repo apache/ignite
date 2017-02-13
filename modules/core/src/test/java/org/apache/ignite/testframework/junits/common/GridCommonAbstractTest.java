@@ -1120,11 +1120,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
         CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
-
-        if (ccfg.getCacheMode() != LOCAL &&
-            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
-            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(50);
     }
 
     /**
