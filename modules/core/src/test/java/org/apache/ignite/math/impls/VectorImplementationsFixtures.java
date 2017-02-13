@@ -10,6 +10,8 @@ import static org.junit.Assert.assertNotNull;
 
 /** */
 class VectorImplementationsFixtures {
+    // todo consider reusing this for DenseLocalOnHeapVectorIterableTest (also expanding it to offheap testing)
+
     /** */
     static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
         new Supplier<Iterable<Vector>>() {
