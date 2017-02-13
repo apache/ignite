@@ -22,7 +22,6 @@ import org.apache.ignite.math.impls.DenseLocalOffHeapVectorTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorConstructorTest;
 import org.apache.ignite.math.impls.DenseLocalOnHeapVectorIterableTest;
 import org.apache.ignite.math.impls.VectorImplementationsTest;
-import org.apache.ignite.math.impls.DenseLocalOnHeapVectorTest;
 import org.apache.ignite.math.impls.VectorViewTest;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
 import org.apache.ignite.math.impls.storage.VectorOffheapStorageTest;
