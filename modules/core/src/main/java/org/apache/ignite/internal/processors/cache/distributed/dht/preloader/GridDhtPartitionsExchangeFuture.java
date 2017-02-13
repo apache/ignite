@@ -814,11 +814,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 StartFullSnapshotAckDiscoveryMessage backupMsg = (StartFullSnapshotAckDiscoveryMessage)customMessage;
 
                 if (!cctx.localNode().isClient() && !cctx.localNode().isDaemon()) {
-                    ClusterNode node = cctx.discovery().node(backupMsg.initiatorNodeId());
-
-                    assert node != null;
-
-                    IgniteInternalFuture fut = cctx.database().startLocalSnapshotCreation(backupMsg, node, backupMsg.message());
+                    IgniteInternalFuture fut = cctx.database().startLocalSnapshotCreation(backupMsg);
 
                     if (fut != null)
                         fut.get();
@@ -1312,6 +1308,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
+        msgs.clear();
         changeGlobalStateExceptions.clear();
         crd = null;
         partReleaseFut = null;

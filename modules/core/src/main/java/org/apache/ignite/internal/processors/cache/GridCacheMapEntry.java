@@ -3575,12 +3575,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().update(
-            key,
-            val,
-            ver,
-            expireTime,
-            localPartition(),
+        cctx.offheap().update(key, val, ver, expireTime,  localPartition(),
             oldRow);
     }
 

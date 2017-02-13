@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -58,6 +59,9 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     /** Last full snapshot id for cache. */
     private Map<Integer, Long> lastFullSnapshotIdForCache;
 
+    /** Last snapshot id for cache. */
+    private Map<Integer, Long> lastSnapshotIdForCache;
+
     /**
      * @param globalSnapshotId Snapshot ID.
      * @param err Error.
@@ -67,6 +71,7 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
         long globalSnapshotId,
         boolean fullSnapshot,
         Map<Integer, Long> lastFullSnapshotIdForCache,
+        Map<Integer, Long> lastSnapshotIdForCache,
         Collection<String> cacheNames,
         Exception err,
         UUID initiatorNodeId,
@@ -75,10 +80,19 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
         this.globalSnapshotId = globalSnapshotId;
         this.fullSnapshot = fullSnapshot;
         this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
+        this.lastSnapshotIdForCache = lastSnapshotIdForCache;
         this.err = err;
         this.cacheNames = cacheNames;
         this.initiatorNodeId = initiatorNodeId;
         this.msg = msg;
+
+        for (String cacheName : cacheNames) {
+            int i = CU.cacheId(cacheName);
+
+            if (lastFullSnapshotIdForCache.get(i) == null || lastSnapshotIdForCache.get(i) == null) {
+                throw new AssertionError();
+            }
+        }
     }
 
     /**
@@ -140,6 +154,13 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
      */
     @Nullable public Long lastFullSnapshotId(int cacheId) {
         return lastFullSnapshotIdForCache.get(cacheId);
+    }
+
+    /**
+     * @param cacheId Cache id.
+     */
+    @Nullable public Long lastSnapshotId(int cacheId) {
+        return lastSnapshotIdForCache.get(cacheId);
     }
 
     /** {@inheritDoc} */
