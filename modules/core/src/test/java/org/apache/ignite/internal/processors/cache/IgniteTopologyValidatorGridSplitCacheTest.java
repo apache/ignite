@@ -183,6 +183,14 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         resolveSplit();
 
         tryPut(0, 2);
+
+        clearAll();
+
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        tryPut(0, 1, 2);
     }
 
     /** */
@@ -250,16 +258,14 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         @Override public boolean validate(Collection<ClusterNode> nodes) {
             if (!F.view(nodes, new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    return node.attribute(DC_NODE_ATTR) == null;
+                    return !node.isClient() && node.attribute(DC_NODE_ATTR) == null;
                 }
             }).isEmpty())
                 return false;
 
             IgniteKernal kernal = (IgniteKernal)ignite.cache(cacheName).unwrap(Ignite.class);
 
-            GridCacheAdapter<Object, Object> cache = kernal.context().cache().internalCache(cacheName);
-
-            GridDhtCacheAdapter<Object, Object> dht = cache.context().dht();
+            GridDhtCacheAdapter<Object, Object> dht = kernal.context().cache().internalCache(cacheName).context().dht();
 
             long cacheTopVer = dht.topology().topologyVersionFuture().topologyVersion().topologyVersion();
 
