@@ -1297,8 +1297,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return {@code True} if fast-map.
      */
     public boolean isFastMap(CacheEntryPredicate[] filters, GridCacheOperation op) {
-        return F.isEmpty(filters) && op != TRANSFORM && ctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
-            !(ctx.writeThrough() && ctx.config().getInterceptor() != null);
+        return false;
     }
 
     /**
