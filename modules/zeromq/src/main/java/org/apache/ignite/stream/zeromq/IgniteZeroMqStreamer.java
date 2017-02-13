@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
+import org.jetbrains.annotations.NotNull;
 import org.zeromq.ZMQ;
 
 /**
@@ -37,9 +38,6 @@ import org.zeromq.ZMQ;
 public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> implements AutoCloseable {
     /** Logger. */
     protected IgniteLogger log;
-
-    /**  */
-    private ZeroMqSettings zeroMqSettings;
 
     /** Threads count used to transform zeromq message. */
     private int threadsCount = 1;
@@ -56,11 +54,32 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /**  */
     private ZMQ.Socket socket;
 
+    /** */
+    private int ioThreads;
+
+    /** */
+    private int socketType;
+
+    /** */
+    private String addr;
+
+    /** */
+    private byte[] topic;
+
     /**
-     *
+     * @param ioThreads Threads on context.
+     * @param socketType Socket type.
+     * @param addr Address to connect zmq.
      */
-    public IgniteZeroMqStreamer(ZeroMqSettings zeroMqSettings) {
-        this.zeroMqSettings = zeroMqSettings;
+    public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
+        this.ioThreads = ioThreads;
+        this.addr = addr;
+        this.topic = topic;
+
+        if (ZeroMqTypeSocket.check(socketType))
+            this.socketType = socketType.getType();
+        else
+            throw new IgniteException("This socket type not implementation this version ZeroMQ streamer.");
     }
 
     /**
@@ -76,6 +95,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * Start ZeroMQ streamer.
      */
     public void start() {
+        log = getIgnite().log();
+
         if (isStart) {
             log.info("Attempted to start an already started ZeroMQ streamer");
             return;
@@ -83,14 +104,12 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
 
         isStart = true;
 
-        log = getIgnite().log();
+        ctx = ZMQ.context(ioThreads);
+        socket = ctx.socket(socketType);
+        socket.connect(addr);
 
-        ctx = ZMQ.context(zeroMqSettings.getIoThreads());
-        socket = ctx.socket(zeroMqSettings.getType());
-        socket.connect(zeroMqSettings.getAddr());
-
-        if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
-            socket.subscribe(zeroMqSettings.getTopic());
+        if (ZeroMqTypeSocket.SUB.getType() == socketType)
+            socket.subscribe(topic);
 
         zeroMqExSrv = Executors.newFixedThreadPool(threadsCount);
 
@@ -99,7 +118,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
                 @Override
                 public Boolean call() {
                     while (true) {
-                        if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
+                        if (ZeroMqTypeSocket.SUB.getType() == socketType)
                             socket.recv();
                         addMessage(socket.recv());
                     }

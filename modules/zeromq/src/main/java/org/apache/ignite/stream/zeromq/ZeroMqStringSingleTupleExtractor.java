@@ -30,9 +30,6 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
  * Default implementation single tuple extractor for ZeroMQ streamer.
  */
 public class ZeroMqStringSingleTupleExtractor implements StreamSingleTupleExtractor<byte[], Integer, String> {
-    /** Logger. */
-    protected IgniteLogger log;
-
     /** Counter. */
     private AtomicInteger count = new AtomicInteger();
 
@@ -45,8 +42,6 @@ public class ZeroMqStringSingleTupleExtractor implements StreamSingleTupleExtrac
             return new IgniteBiTuple<>(count.getAndIncrement(), new String(msg, Charset.forName("UTF-8")));
         }
         catch (IgniteException e) {
-            U.error(log, e);
-
             return null;
         }
     }
