@@ -337,35 +337,33 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         BinaryIdentityResolver identity = ctx.identity(typeId);
 
-        if (identity != null) {
-            if (out.hasArray()) {
-                // Heap.
-                byte[] data = out.array();
+        if (out.hasArray()) {
+            // Heap.
+            byte[] data = out.array();
 
-                BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
+            BinaryObjectImpl obj = new BinaryObjectImpl(ctx, data, start);
 
-                short flags = BinaryPrimitives.readShort(data, start + GridBinaryMarshaller.FLAGS_POS);
+            short flags = BinaryPrimitives.readShort(data, start + GridBinaryMarshaller.FLAGS_POS);
 
-                BinaryPrimitives.writeShort(data, start + GridBinaryMarshaller.FLAGS_POS,
-                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+            BinaryPrimitives.writeShort(data, start + GridBinaryMarshaller.FLAGS_POS,
+                (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
 
-                BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
-            }
-            else {
-                // Offheap.
-                long ptr = out.rawOffheapPointer();
+            BinaryPrimitives.writeInt(data, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
+        }
+        else {
+            // Offheap.
+            long ptr = out.rawOffheapPointer();
 
-                assert ptr != 0;
+            assert ptr != 0;
 
-                BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
+            BinaryObjectOffheapImpl obj = new BinaryObjectOffheapImpl(ctx, ptr, start, out.capacity());
 
-                short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+            short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-                BinaryPrimitives.writeShort(ptr, start + GridBinaryMarshaller.FLAGS_POS,
-                    (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
+            BinaryPrimitives.writeShort(ptr, start + GridBinaryMarshaller.FLAGS_POS,
+                (short) (flags & ~BinaryUtils.FLAG_EMPTY_HASH_CODE));
 
-                BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
-            }
+            BinaryPrimitives.writeInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS, identity.hashCode(obj));
         }
     }
 

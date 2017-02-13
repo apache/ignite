@@ -1229,6 +1229,7 @@ public class BinaryContext {
      */
     public BinaryIdentityResolver identity(int typeId) {
         BinaryIdentityResolver rslvr = identities.get(typeId);
+
         return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
     }
 

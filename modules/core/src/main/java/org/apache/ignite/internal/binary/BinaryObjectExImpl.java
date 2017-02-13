@@ -160,9 +160,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
 
         BinaryIdentityResolver identity = context().identity(typeId());
 
-        if (identity == null)
-            identity = BinaryArrayIdentityResolver.instance();
-
         return identity.equals(this, (BinaryObject)other);
     }
 
