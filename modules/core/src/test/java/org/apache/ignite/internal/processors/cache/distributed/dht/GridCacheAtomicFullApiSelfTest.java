@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFullApiSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
@@ -41,7 +41,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
      * @return Write order mode for atomic cache.
      */
     protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 
     /** {@inheritDoc} */

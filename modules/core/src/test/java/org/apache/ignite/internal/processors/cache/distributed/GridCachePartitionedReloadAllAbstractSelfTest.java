@@ -42,7 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -125,7 +125,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      * @return Write order mode for atomic cache.
      */
     protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 
     /**

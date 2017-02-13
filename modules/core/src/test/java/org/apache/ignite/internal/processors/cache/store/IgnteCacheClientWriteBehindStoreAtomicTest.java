@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.store;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
@@ -34,6 +34,6 @@ public class IgnteCacheClientWriteBehindStoreAtomicTest extends IgnteCacheClient
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 }

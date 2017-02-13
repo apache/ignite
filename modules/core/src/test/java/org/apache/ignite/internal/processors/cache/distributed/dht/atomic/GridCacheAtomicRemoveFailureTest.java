@@ -23,7 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractRemoveFailureTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -43,7 +43,7 @@ public class GridCacheAtomicRemoveFailureTest extends GridCacheAbstractRemoveFai
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 
     /** {@inheritDoc} */

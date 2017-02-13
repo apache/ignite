@@ -33,7 +33,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -101,7 +101,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @return Atomic write order mode.
      */
     protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 
     /**

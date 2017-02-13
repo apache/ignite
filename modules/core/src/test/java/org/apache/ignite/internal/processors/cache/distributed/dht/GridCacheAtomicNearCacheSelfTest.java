@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -116,27 +115,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoBackupsClockWriteOrder() throws Exception {
-        startGrids(0, CLOCK);
-
-        checkNearCache();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testWithBackupsPrimaryWriteOrder() throws Exception {
         startGrids(2, CacheAtomicWriteOrderMode.PRIMARY);
-
-        checkNearCache();
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testWithBackupsClockWriteOrder() throws Exception {
-        startGrids(2, CLOCK);
 
         checkNearCache();
     }

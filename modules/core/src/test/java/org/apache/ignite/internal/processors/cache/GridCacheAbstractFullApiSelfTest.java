@@ -105,7 +105,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -324,7 +323,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
         if (atomicityMode() == ATOMIC &&
             cacheMode() != LOCAL &&
-            cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode() == CLOCK)
+            false)
             return;
 
         final Set<String> keys = Collections.singleton("myKey");

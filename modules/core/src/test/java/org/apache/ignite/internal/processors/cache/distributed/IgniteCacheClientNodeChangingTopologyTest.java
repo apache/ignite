@@ -91,7 +91,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -150,13 +149,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutAllClockMode() throws Exception {
-        atomicPut(CLOCK, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicPutAllPrimaryMode() throws Exception {
         atomicPut(PRIMARY, true, null);
     }
@@ -164,22 +156,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutAllNearEnabledClockMode() throws Exception {
-        atomicPut(CLOCK, true, new NearCacheConfiguration());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicPutAllNearEnabledPrimaryMode() throws Exception {
         atomicPut(PRIMARY, true, new NearCacheConfiguration());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicPutClockMode() throws Exception {
-        atomicPut(CLOCK, false, null);
     }
 
     /**
@@ -315,13 +293,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicNoRemapClockMode() throws Exception {
-        atomicNoRemap(CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicNoRemapPrimaryMode() throws Exception {
         atomicNoRemap(PRIMARY);
     }
@@ -411,13 +382,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         cache.putAll(map);
 
         checkData(map, null, cache, 5);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicGetAndPutClockMode() throws Exception {
-        atomicGetAndPut(CLOCK);
     }
 
     /**
@@ -1696,15 +1660,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         fail("https://issues.apache.org/jira/browse/IGNITE-1685");
 
         multinode(PRIMARY, TestType.PUT_ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicClockPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
-        multinode(CLOCK, TestType.PUT_ALL);
     }
 
     /**

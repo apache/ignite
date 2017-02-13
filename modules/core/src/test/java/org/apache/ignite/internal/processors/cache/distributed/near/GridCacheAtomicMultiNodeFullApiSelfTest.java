@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -34,7 +34,7 @@ public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitione
      * @return Write order mode for atomic cache.
      */
     protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 
     /** {@inheritDoc} */

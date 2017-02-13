@@ -59,7 +59,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -144,48 +143,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      */
     protected boolean testClientNode() {
         return false;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSync() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapTiered() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockPrimarySync() throws Exception {
-        checkRestarts(CLOCK, PRIMARY_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullAsync() throws Exception {
-        checkRestarts(CLOCK, FULL_ASYNC, TestMemoryMode.HEAP);
     }
 
     /**

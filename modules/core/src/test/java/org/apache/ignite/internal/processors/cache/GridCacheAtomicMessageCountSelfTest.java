@@ -40,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -94,22 +93,8 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedClock() throws Exception {
-        checkMessages(false, CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPartitionedPrimary() throws Exception {
         checkMessages(false, PRIMARY);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientClock() throws Exception {
-        checkMessages(true, CLOCK);
     }
 
     /**
@@ -155,18 +140,10 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
                 Affinity<Object> affinity = ignite(0).affinity(null);
 
-                if (writeOrderMode == CLOCK) {
-                    if (affinity.isPrimary(locNode, i) || affinity.isBackup(locNode, i))
-                        expNearCnt++;
-                    else
-                        expNearCnt += 2;
-                }
-                else {
-                    if (affinity.isPrimary(locNode, i))
-                        expDhtCnt++;
-                    else
-                        expNearSingleCnt++;
-                }
+                if (affinity.isPrimary(locNode, i))
+                    expDhtCnt++;
+                else
+                    expNearSingleCnt++;
 
                 jcache(0).put(i, i);
             }
@@ -175,23 +152,13 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             assertEquals(expNearSingleCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
             assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
 
-            if (writeOrderMode == CLOCK) {
-                for (int i = 1; i < 4; i++) {
-                    commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
+            for (int i = 1; i < 4; i++) {
+                commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
-                }
+                assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+                assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
             }
-            else {
-                for (int i = 1; i < 4; i++) {
-                    commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
-                }
-            }
         }
         finally {
             stopAllGrids();

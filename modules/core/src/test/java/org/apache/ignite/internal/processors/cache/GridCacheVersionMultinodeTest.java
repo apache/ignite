@@ -32,7 +32,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -112,30 +111,6 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
      */
     public void testVersionTxNearEnabled() throws Exception {
         atomicityMode = TRANSACTIONAL;
-
-        near = true;
-
-        checkVersion();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testVersionAtomicClock() throws Exception {
-        atomicityMode = ATOMIC;
-
-        atomicWriteOrder = CLOCK;
-
-        checkVersion();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testVersionAtomicClockNearEnabled() throws Exception {
-        atomicityMode = ATOMIC;
-
-        atomicWriteOrder = CLOCK;
 
         near = true;
 
