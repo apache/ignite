@@ -19,51 +19,17 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
+import static org.apache.ignite.internal.binary.BinaryUtils.FIELD_ID_LEN;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAX_OFFSET_1;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAX_OFFSET_2;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_1;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_2;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_4;
+
 /**
  * Binary writer schema holder.
  */
 public class BinaryWriterSchemaHolder {
-    /** Maximum offset which fits in 1 byte. */
-    public static final int MAX_OFFSET_1 = 1 << 8;
-
-    /** Maximum offset which fits in 2 bytes. */
-    public static final int MAX_OFFSET_2 = 1 << 16;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code true} and
-     * end-of-the-data offset is less than {@link BinaryWriterSchemaHolder#MAX_OFFSET_1}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_1 = 1;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code true} and
-     * end-of-the-data offset is between {@link BinaryWriterSchemaHolder#MAX_OFFSET_1} and {@link BinaryWriterSchemaHolder#MAX_OFFSET_2}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_2 = 2;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code true} and
-     * end-of-the-data offset is larger than {@link BinaryWriterSchemaHolder#MAX_OFFSET_2}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_3 = 4;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code false} and
-     * end-of-the-data offset is less than {@link BinaryWriterSchemaHolder#MAX_OFFSET_1}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_4 = 5;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code false} and
-     * end-of-the-data offset is between {@link BinaryWriterSchemaHolder#MAX_OFFSET_1} and {@link BinaryWriterSchemaHolder#MAX_OFFSET_2}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_5 = 6;
-
-    /**
-     * Required for each field size inside the footer in case {@link BinaryContext#isCompactFooter()} is {@code false} and
-     * end-of-the-data offset is larger than {@link BinaryWriterSchemaHolder#MAX_OFFSET_2}
-     * */
-    public static final int FOOTER_PER_FIELD_SIZE_6 = 8;
 
     /** Grow step. */
     private static final int GROW_STEP = 64;
@@ -124,54 +90,54 @@ public class BinaryWriterSchemaHolder {
 
         if (compactFooter) {
             if (lastOffset < MAX_OFFSET_1) {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_1);
+                out.unsafeEnsure(fieldCnt);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteByte((byte)data[curIdx]);
 
-                res = BinaryUtils.OFFSET_1;
+                res = OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_2);
+                out.unsafeEnsure(fieldCnt * OFFSET_2);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteShort((short) data[curIdx]);
 
-                res = BinaryUtils.OFFSET_2;
+                res = OFFSET_2;
             }
             else {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_3);
+                out.unsafeEnsure(fieldCnt * OFFSET_4);
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
                     out.unsafeWriteInt(data[curIdx]);
 
-                res = BinaryUtils.OFFSET_4;
+                res = OFFSET_4;
             }
         }
         else {
             if (lastOffset < MAX_OFFSET_1) {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_4);
+                out.unsafeEnsure(fieldCnt * (OFFSET_1 + FIELD_ID_LEN));
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteByte((byte) data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_1;
+                res = OFFSET_1;
             }
             else if (lastOffset < MAX_OFFSET_2) {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_5);
+                out.unsafeEnsure(fieldCnt * (OFFSET_2 + FIELD_ID_LEN));
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteShort((short) data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_2;
+                res = OFFSET_2;
             }
             else {
-                out.unsafeEnsure(fieldCnt * FOOTER_PER_FIELD_SIZE_6);
+                out.unsafeEnsure(fieldCnt * (OFFSET_4 + FIELD_ID_LEN));
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
                     out.unsafeWriteInt(data[curIdx++]);
                 }
 
-                res = BinaryUtils.OFFSET_4;
+                res = OFFSET_4;
             }
         }
 

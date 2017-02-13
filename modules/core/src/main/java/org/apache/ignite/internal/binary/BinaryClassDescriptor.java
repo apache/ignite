@@ -50,8 +50,15 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.*;
-import static org.apache.ignite.internal.binary.BinaryWriterSchemaHolder.*;
+import static org.apache.ignite.internal.binary.BinaryUtils.FIELD_ID_LEN;
+import static org.apache.ignite.internal.binary.BinaryUtils.FIELD_TYPE_LEN;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAX_OFFSET_1;
+import static org.apache.ignite.internal.binary.BinaryUtils.MAX_OFFSET_2;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_1;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_2;
+import static org.apache.ignite.internal.binary.BinaryUtils.OFFSET_4;
+import static org.apache.ignite.internal.binary.BinaryUtils.UNDEFINED_SIZE;
+
 
 /**
  * Binary class descriptor.
@@ -275,7 +282,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
-                fixedSize = -1;
+                fixedSize = UNDEFINED_SIZE;
 
                 break;
 
@@ -285,7 +292,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = cls.getInterfaces();
-                fixedSize = -1;
+                fixedSize = UNDEFINED_SIZE;
 
                 break;
 
@@ -295,7 +302,7 @@ public class BinaryClassDescriptor {
                 stableFieldsMeta = null;
                 stableSchema = null;
                 intfs = null;
-                fixedSize = -1;
+                fixedSize = UNDEFINED_SIZE;
 
                 break;
 
@@ -353,25 +360,25 @@ public class BinaryClassDescriptor {
                                 switch (mode) {
                                     case P_BYTE:
                                     case P_BOOLEAN:
-                                        fSize += P_1_BYTE_SIZE;
+                                        fSize += FIELD_TYPE_LEN + 1;
 
                                         break;
 
                                     case P_SHORT:
                                     case P_CHAR:
-                                        fSize += P_2_BYTE_SIZE;
+                                        fSize += FIELD_TYPE_LEN + 2;
 
                                         break;
 
                                     case P_INT:
                                     case P_FLOAT:
-                                        fSize += P_4_BYTE_SIZE;
+                                        fSize += FIELD_TYPE_LEN + 4;
 
                                         break;
 
                                     case P_LONG:
                                     case P_DOUBLE:
-                                        fSize += P_8_BYTE_SIZE;
+                                        fSize += FIELD_TYPE_LEN + 8;
 
                                         break;
 
@@ -402,12 +409,16 @@ public class BinaryClassDescriptor {
 
                     int size = GridBinaryMarshaller.DFLT_HDR_LEN + fSize;
 
+                    // field footer consists of an optional field ID (integer),
+                    // which isn't presented if compact footer is used, and
+                    // the field offset, which can be 1, 2 or 4 bytes length,
+                    // depending on the whole serialized object size
                     if(size < MAX_OFFSET_1)
-                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_1 : fields.length * FOOTER_PER_FIELD_SIZE_4;
+                        size += ctx.isCompactFooter() ? fields.length * OFFSET_1: fields.length * (FIELD_ID_LEN + OFFSET_1);
                     else if(size < MAX_OFFSET_2)
-                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_2 : fields.length * FOOTER_PER_FIELD_SIZE_5;
+                        size += ctx.isCompactFooter() ? fields.length * OFFSET_2 : fields.length * (FIELD_ID_LEN + OFFSET_2);
                     else
-                        size += ctx.isCompactFooter() ? fields.length * FOOTER_PER_FIELD_SIZE_3 : fields.length * FOOTER_PER_FIELD_SIZE_6;
+                        size += ctx.isCompactFooter() ? fields.length * OFFSET_4 : fields.length * (FIELD_ID_LEN + OFFSET_4);
 
                     this.fixedSize =  size;
                 }

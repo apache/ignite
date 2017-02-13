@@ -112,17 +112,20 @@ public class BinaryUtils {
     /** Flag: no hash code has been set. */
     public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
 
-    /** Size of 1 {@code byte} field within an array with serialized object. */
-    public static final int P_1_BYTE_SIZE = 2;
+    /** We use this value as predicted fixed object size in case we cannot pre-calculate it. */
+    public static final int UNDEFINED_SIZE = -1;
 
-    /** Size of 2 {@code byte} field within an array with serialized object. */
-    public static final int P_2_BYTE_SIZE = 3;
+    /**
+     * Field type length in bytes.
+     * @see org.apache.ignite.internal.binary.GridBinaryMarshaller
+     */
+    public static final int FIELD_TYPE_LEN = 1;
 
-    /** Size of 4 {@code byte} field within an array with serialized object. */
-    public static final int P_4_BYTE_SIZE = 5;
+    /** Maximum offset which fits in 1 byte. */
+    public static final int MAX_OFFSET_1 = 1 << 8;
 
-    /** Size of 8 {@code byte} field within an array with serialized object. */
-    public static final int P_8_BYTE_SIZE = 9;
+    /** Maximum offset which fits in 2 bytes. */
+    public static final int MAX_OFFSET_2 = 1 << 16;
 
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
