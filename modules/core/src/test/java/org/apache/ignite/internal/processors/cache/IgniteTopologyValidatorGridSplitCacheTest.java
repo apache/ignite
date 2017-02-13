@@ -55,13 +55,13 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     private static final String DC_NODE_ATTR = "dc";
 
     /** */
-    private static final String RESOLVED_MARKER_NODE_ATTR = "split.resolved";
+    private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
     private static final int GRID_CNT = 4;
 
     /** */
-    private static final int CACHES_CNT = 1;
+    private static final int CACHES_CNT = 10;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
@@ -84,7 +84,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             if (idx == RESOLVER_GRID_IDX) {
                 cfg.setClientMode(true);
 
-                cfg.setUserAttributes(F.asMap(RESOLVED_MARKER_NODE_ATTR, "true"));
+                cfg.setUserAttributes(F.asMap(ACTIVATOR_NODE_ATTR, "true"));
             }
             else {
                 CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT];
@@ -252,7 +252,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
         private IgniteLogger log;
 
         /** */
-        private transient volatile long markerTopVerId;
+        private transient volatile long activatorTopVer;
 
         /** {@inheritDoc} */
         @Override public boolean validate(Collection<ClusterNode> nodes) {
@@ -270,7 +270,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
             long cacheTopVer = dht.topology().topologyVersionFuture().topologyVersion().topologyVersion();
 
             if (hasSplit(nodes)) {
-                boolean resolved = markerTopVerId != 0 && cacheTopVer == markerTopVerId;
+                boolean resolved = activatorTopVer != 0 && cacheTopVer >= activatorTopVer;
 
                 if (!resolved)
                     log.info("Grid segmentation is detected, switching to inoperative state.");
@@ -278,7 +278,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                 return resolved;
             }
             else
-                markerTopVerId = 0;
+                activatorTopVer = 0;
 
             return true;
         }
@@ -314,7 +314,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
                     ClusterNode node = discoEvt.eventNode();
 
                     if (isMarkerNode(node))
-                        markerTopVerId = discoEvt.topologyVersion();
+                        activatorTopVer = discoEvt.topologyVersion();
 
                     return true;
                 }
@@ -325,7 +325,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
          * @param node Node.
          */
         private boolean isMarkerNode(ClusterNode node) {
-            return node.isClient() && node.attribute(RESOLVED_MARKER_NODE_ATTR) != null;
+            return node.isClient() && node.attribute(ACTIVATOR_NODE_ATTR) != null;
         }
 
         @Override public void stop() throws IgniteException {
