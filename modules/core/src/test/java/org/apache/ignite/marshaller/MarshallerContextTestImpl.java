@@ -91,6 +91,7 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(typeId);
+
         return (clsName == null) ? super.getClassName(platformId, typeId) : clsName;
     }
 }

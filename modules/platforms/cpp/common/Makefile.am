@@ -44,6 +44,7 @@ libignite_common_la_LDFLAGS = \
 libignite_common_la_SOURCES = \
     os/linux/src/common/concurrent_os.cpp \
     os/linux/src/common/platform_utils.cpp \
+    os/linux/src/common/dynamic_load_os.cpp \
     src/common/big_integer.cpp \
     src/common/concurrent.cpp \
     src/common/decimal.cpp \

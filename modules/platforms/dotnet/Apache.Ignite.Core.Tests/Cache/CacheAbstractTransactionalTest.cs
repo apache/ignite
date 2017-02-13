@@ -569,7 +569,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeSingleCache()
         {
             var cache = Cache();
@@ -607,7 +606,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// with multiple participating caches.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeMultiCache()
         {
             var cache1 = Cache();
@@ -648,7 +646,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// when Ignite tx is started manually.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeWithManualIgniteTx()
         {
             var cache = Cache();
@@ -674,7 +671,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction with <see cref="TransactionScopeOption.Suppress"/> option.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestSuppressedTransactionScope()
         {
             var cache = Cache();
@@ -694,7 +690,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> with nested scopes.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestNestedTransactionScope()
         {
             var cache = Cache();
@@ -737,7 +732,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Test that ambient <see cref="TransactionScope"/> options propagate to Ignite transaction.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeOptions()
         {
             var cache = Cache();
@@ -773,10 +767,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests all transactional operations with <see cref="TransactionScope"/>.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-3430")]
         public void TestTransactionScopeAllOperations()
         {
-            for (var i = 0; i < 100; i++)
+            for (var i = 0; i < 10; i++)
             {
                 CheckTxOp((cache, key) => cache.Put(key, -5));
                 CheckTxOp((cache, key) => cache.PutAsync(key, -5).Wait());
@@ -792,7 +785,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckTxOp((cache, key) =>
                 {
                     cache.Remove(key);
-                    cache.PutIfAbsentAsync(key, -10);
+                    cache.PutIfAbsentAsync(key, -10).Wait();
                 });
 
                 CheckTxOp((cache, key) => cache.GetAndPut(key, -9));
@@ -810,28 +803,28 @@ namespace Apache.Ignite.Core.Tests.Cache
                 });
 
                 CheckTxOp((cache, key) => cache.GetAndRemove(key));
-                CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key));
+                CheckTxOp((cache, key) => cache.GetAndRemoveAsync(key).Wait());
 
                 CheckTxOp((cache, key) => cache.GetAndReplace(key, -11));
-                CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11));
+                CheckTxOp((cache, key) => cache.GetAndReplaceAsync(key, -11).Wait());
 
                 CheckTxOp((cache, key) => cache.Invoke(key, new AddProcessor(), 1));
-                CheckTxOp((cache, key) => cache.InvokeAsync(key, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAsync(key, new AddProcessor(), 1).Wait());
 
                 CheckTxOp((cache, key) => cache.InvokeAll(new[] {key}, new AddProcessor(), 1));
-                CheckTxOp((cache, key) => cache.InvokeAllAsync(new[] {key}, new AddProcessor(), 1));
+                CheckTxOp((cache, key) => cache.InvokeAllAsync(new[] {key}, new AddProcessor(), 1).Wait());
 
                 CheckTxOp((cache, key) => cache.Remove(key));
-                CheckTxOp((cache, key) => cache.RemoveAsync(key));
+                CheckTxOp((cache, key) => cache.RemoveAsync(key).Wait());
 
                 CheckTxOp((cache, key) => cache.RemoveAll(new[] {key}));
                 CheckTxOp((cache, key) => cache.RemoveAllAsync(new[] {key}).Wait());
 
                 CheckTxOp((cache, key) => cache.Replace(key, 100));
-                CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, 100).Wait());
 
                 CheckTxOp((cache, key) => cache.Replace(key, cache[key], 100));
-                CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100));
+                CheckTxOp((cache, key) => cache.ReplaceAsync(key, cache[key], 100).Wait());
             }
         }
 
@@ -840,50 +833,62 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private void CheckTxOp(Action<ICache<int, int>, int> act)
         {
-            var cache = Cache();
-
-            cache[1] = 1;
-            cache[2] = 2;
-
-            // Rollback.
-            using (new TransactionScope())
+            var isolationLevels = new[]
             {
-                act(cache, 1);
+                IsolationLevel.Serializable, IsolationLevel.RepeatableRead, IsolationLevel.ReadCommitted,
+                IsolationLevel.ReadUncommitted, IsolationLevel.Snapshot, IsolationLevel.Chaos
+            };
 
-                Assert.IsNotNull(cache.Ignite.GetTransactions().Tx, "Transaction has not started.");
-            }
-
-            Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
-
-            using (new TransactionScope())
+            foreach (var isolationLevel in isolationLevels)
             {
-                act(cache, 1);
-                act(cache, 2);
+                var txOpts = new TransactionOptions {IsolationLevel = isolationLevel};
+                const TransactionScopeOption scope = TransactionScopeOption.Required;
+
+                var cache = Cache();
+
+                cache[1] = 1;
+                cache[2] = 2;
+
+                // Rollback.
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+
+                    Assert.IsNotNull(cache.Ignite.GetTransactions().Tx, "Transaction has not started.");
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                using (new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                }
+
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                // Commit.
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.AreEqual(2, cache[2]);
+
+                using (var ts = new TransactionScope(scope, txOpts))
+                {
+                    act(cache, 1);
+                    act(cache, 2);
+                    ts.Complete();
+                }
+
+                Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
+                Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
             }
-
-            Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
-
-            // Commit.
-            using (var ts = new TransactionScope())
-            {
-                act(cache, 1);
-                ts.Complete();
-            }
-
-            Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
-            Assert.AreEqual(2, cache[2]);
-
-            using (var ts = new TransactionScope())
-            {
-                act(cache, 1);
-                act(cache, 2);
-                ts.Complete();
-            }
-
-            Assert.IsTrue(!cache.ContainsKey(1) || cache[1] != 1);
-            Assert.IsTrue(!cache.ContainsKey(2) || cache[2] != 2);
         }
 
         [Serializable]

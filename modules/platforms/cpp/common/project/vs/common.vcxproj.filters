@@ -64,6 +64,9 @@
     <ClInclude Include="..\..\include\ignite\reference.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\common\platform_utils.h">
       <Filter>Code\common</Filter>
     </ClInclude>
@@ -94,6 +97,9 @@
       <Filter>Code\common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\bits.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\common\dynamic_load_os.cpp">
       <Filter>Code\common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\os\win\src\common\platform_utils.cpp">

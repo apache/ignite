@@ -443,13 +443,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var marsh = grid.Marshaller;
 
-            var key = marsh.Unmarshal<object>(inOutStream);
-            var val = marsh.Unmarshal<object>(inOutStream);
             var isLocal = inOutStream.ReadBool();
 
             var holder = isLocal
                 ? _handleRegistry.Get<CacheEntryProcessorHolder>(inOutStream.ReadLong(), true)
                 : marsh.Unmarshal<CacheEntryProcessorHolder>(inOutStream);
+
+            var key = marsh.Unmarshal<object>(inOutStream);
+            var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
         }

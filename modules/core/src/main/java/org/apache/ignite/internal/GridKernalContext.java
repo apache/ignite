@@ -573,6 +573,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     @Nullable public ExecutorService getIndexingExecutorService();
 
     /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
+
+    /**
      * Gets exception registry.
      *
      * @return Exception registry.

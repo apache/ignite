@@ -169,6 +169,9 @@ public class IgniteConfiguration {
     @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default size of query thread pool. */
+    public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
     /** Default keep alive time for system thread pool. */
     @Deprecated
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -265,6 +268,9 @@ public class IgniteConfiguration {
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
+
+    /** Query pool size. */
+    private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -549,6 +555,7 @@ public class IgniteConfiguration {
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
+        qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -869,6 +876,17 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Size of thread pool that is in charge of processing query messages.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_QUERY_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size to be used in grid for query messages.
+     */
+    public int getQueryThreadPoolSize() {
+        return qryPoolSize;
+    }
+
+    /**
      * Sets thread pool size to use within grid.
      *
      * @param poolSize Thread pool size to use within grid.
@@ -970,6 +988,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setUtilityCachePoolSize(int poolSize) {
         utilityCachePoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets query thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getQueryThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setQueryThreadPoolSize(int poolSize) {
+        qryPoolSize = poolSize;
 
         return this;
     }
