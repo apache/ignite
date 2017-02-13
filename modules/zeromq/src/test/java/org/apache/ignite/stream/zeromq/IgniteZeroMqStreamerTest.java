@@ -71,9 +71,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PAIR, ADDR, null);
 
-            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
-
-            executeStreamer(streamer, ZMQ.PAIR, null);
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);) {
+                executeStreamer(streamer, ZMQ.PAIR, null);
+            }
         }
     }
 
@@ -82,12 +82,11 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     public void testZeroMqSubSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
-
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.SUB, ADDR, TOPIC);
 
-            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
-
-            executeStreamer(streamer, ZMQ.PUB, TOPIC);
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);) {
+                executeStreamer(streamer, ZMQ.PUB, TOPIC);
+            }
         }
     }
 
@@ -98,9 +97,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             ZeroMqSettings zeroMqSettings = new ZeroMqSettings(1, ZeroMqTypeSocket.PULL, ADDR, null);
 
-            IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);
-
-            executeStreamer(streamer, ZMQ.PUSH, null);
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(dataStreamer, zeroMqSettings);) {
+                executeStreamer(streamer, ZMQ.PUSH, null);
+            }
         }
     }
 
@@ -118,15 +117,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         streamer.start();
 
-        try {
-            streamer.start();
-
-            fail("Successful start of already started ZeroMq streamer");
-        }
-        catch (IgniteException ex) {
-            // No-op.
-        }
-
         startZeroMqClient(clientSocket, topic);
 
         CountDownLatch latch = listener.getLatch();
@@ -134,17 +124,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         latch.await();
 
         unsubscribeToPutEvents(listener);
-
-        streamer.stop();
-
-        try {
-            streamer.stop();
-
-            fail("Successful stop of already stopped ZeroMq streamer");
-        }
-        catch (IgniteException ex) {
-            // No-op.
-        }
 
         // Checking cache content after streaming finished.
         IgniteCache<Integer, String> cache = grid().cache(null);
@@ -190,7 +169,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
             socket.bind(ADDR);
 
-            if (ZMQ.PUB == clientSocket || ZMQ.PAIR == clientSocket)
+            if (ZMQ.PUB == clientSocket)
                 Thread.sleep(500);
 
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
@@ -198,6 +177,8 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
                     socket.sendMore(topic);
                 socket.send(String.valueOf(i).getBytes());
             }
+
+            Thread.sleep(2000);
         }
     }
 

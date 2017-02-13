@@ -34,7 +34,7 @@ import org.zeromq.ZMQ;
 /**
  * This streamer uses https://github.com/zeromq/jeromq/.
  */
-public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
+public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> implements AutoCloseable {
     /** Logger. */
     protected IgniteLogger log;
 
@@ -85,8 +85,10 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
      * Start ZeroMQ streamer.
      */
     public void start() {
-        if (isStart)
-            throw new IgniteException("Attempted to start an already started ZeroMQ streamer");
+        if (isStart) {
+            log.info("Attempted to start an already started ZeroMQ streamer");
+            return;
+        }
 
         isStart = true;
 
@@ -106,9 +108,6 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
                 @Override
                 public Boolean call() {
                     while (true) {
-
-                        System.out.println(Thread.currentThread());
-
                         if (ZeroMqTypeSocket.SUB.getType() == zeroMqSettings.getType())
                             socket.recv();
                         addMessage(socket.recv());
@@ -123,10 +122,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> {
     /**
      * Stop ZeroMQ streamer.
      */
-    public void stop() {
-        if (!isStart)
-            throw new IgniteException("Attempted to stop an already stopped ZeroMQ streamer");
-
+    @Override public void close() throws Exception {
         socket.close();
         ctx.close();
 
