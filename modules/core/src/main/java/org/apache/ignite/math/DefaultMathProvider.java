@@ -35,6 +35,9 @@ public class DefaultMathProvider implements MathProvider {
 
     @Override
     public Optional<Matrix> matrix(String flavor, Map<String, Object> args, ClusterGroup grp) {
+        assert flavor != null;
+        assert args != null;
+
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
@@ -53,6 +56,9 @@ public class DefaultMathProvider implements MathProvider {
 
     @Override
     public Optional<Vector> vector(String flavor, Map<String, Object> args, ClusterGroup grp) {
+        assert flavor != null;
+        assert args != null;
+
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
@@ -63,6 +69,14 @@ public class DefaultMathProvider implements MathProvider {
                     );
 
                 return Optional.of(new DenseLocalOnHeapVector(args));
+
+            case "dense.local.offheap":
+                if (grp != null)
+                    throw new UnsupportedOperationException(
+                        String.format("Vector flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
+                    );
+
+                return Optional.of(new DenseLocalOffHeapVector(args));
 
             default:
                 return Optional.empty();

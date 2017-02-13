@@ -30,11 +30,13 @@ import java.util.*;
  * List of matrix flavors supported by default:
  * <ul>
  * <li>{@code "dense.local.onheap"}</li>
+* <li>{@code "dense.local.offheap"}</li>
  * </ul>
  *
  * List of vector flavors supported by default:
  * <ul>
  * <li>{@code "dense.local.onheap"}</li>
+ * <li>{@code "dense.local.offheap"}</li>
  * </ul>
  */
 public interface IgniteMath extends IgniteAsyncSupport {
@@ -42,7 +44,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new local matrix with given {@code flavor}.
      *
      * @param flavor Matrix flavor.
-     * @param args Optional initialization parameters for the new matrix.
+     * @param args Initialization parameters for the new matrix.
      * @return Newly created matrix.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
      * @throws UnsupportedOperationException Thrown when provider is found but matrix cannot be created
@@ -54,7 +56,7 @@ public interface IgniteMath extends IgniteAsyncSupport {
      * Creates new distributed matrix with given {@code flavor}.
      * 
      * @param flavor Matrix flavor.
-     * @param args Optional initialization parameters for the new matrix.
+     * @param args Initialization parameters for the new matrix.
      * @param grp Cluster group to be used.
      * @return Newly created matrix.
      * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.

@@ -32,9 +32,6 @@ import java.util.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapVector extends AbstractVector {
-    /** */
-    private final int DFLT_SIZE = 100;
-
     /**
      * @param size Vector cardinality.
      */
@@ -44,29 +41,29 @@ public class DenseLocalOnHeapVector extends AbstractVector {
 
     /**
      * @param arr
-     * @param shallowCp
+     * @param cp
      */
-    private VectorStorage mkStorage(double[] arr, boolean shallowCp) {
-        return new VectorArrayStorage(shallowCp ? arr : arr.clone());
+    private VectorStorage mkStorage(double[] arr, boolean cp) {
+        return new VectorArrayStorage(!cp ? arr : arr.clone());
     }
 
     /**
      * @param args
      */
     public DenseLocalOnHeapVector(Map<String, Object> args) {
-        if (args == null)
-            setStorage(mkStorage(DFLT_SIZE));
-        else if (args.containsKey("size"))
+        assert args != null;
+
+        if (args.containsKey("size"))
             setStorage(mkStorage((int) args.get("size")));
-        else if (args.containsKey("arr") && args.containsKey("shallowCopy"))
-            setStorage(mkStorage((double[])args.get("arr"), (boolean)args.get("shallowCopy")));
+        else if (args.containsKey("arr") && args.containsKey("copy"))
+            setStorage(mkStorage((double[])args.get("arr"), (boolean)args.get("copy")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /** */
     public DenseLocalOnHeapVector() {
-        setStorage(mkStorage(DFLT_SIZE));
+        // No-op.
     }
 
     /**
@@ -109,7 +106,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     /** {@inheritDoc} */
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return new DenseLocalOnHeapMatrix(rows, cols);
     }
 
     /** {@inheritDoc */

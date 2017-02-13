@@ -32,16 +32,11 @@ import java.util.*;
  * to keep the entire data set.
  */
 public class DenseLocalOnHeapMatrix extends AbstractMatrix {
-    /** */
-    private final int DFLT_ROWS_SIZE = 100;
-    /** */
-    private final int DFLT_COLS_SIZE = 100;
-
     /**
      *
      */
     public DenseLocalOnHeapMatrix() {
-        setStorage(new MatrixArrayStorage(DFLT_ROWS_SIZE, DFLT_COLS_SIZE));
+        // No-op.
     }
 
    /**
@@ -76,12 +71,12 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
      * @param args
      */
     public DenseLocalOnHeapMatrix(Map<String, Object> args) {
-        if (args == null)
-            setStorage(new MatrixArrayStorage(DFLT_ROWS_SIZE, DFLT_COLS_SIZE));
-        else if (args.containsKey("rows") && args.containsKey("cols"))
+        assert args != null;
+
+        if (args.containsKey("rows") && args.containsKey("cols"))
             setStorage(new MatrixArrayStorage((int)args.get("rows"), (int)args.get("cols")));
-        else if (args.containsKey("mtx"))
-            setStorage(new MatrixArrayStorage((double[][])args.get("mtx")));
+        else if (args.containsKey("arr"))
+            setStorage(new MatrixArrayStorage((double[][])args.get("arr")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }

@@ -17,26 +17,24 @@
 
 package org.apache.ignite.math.impls.storage;
 
-import java.util.stream.IntStream;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.stream.*;
 
 /**
  * TODO: add description.
  */
 public class VectorOffheapStorage implements VectorStorage {
-
-    private int len;
-    /** */
+    private int size;
     private long ptr;
 
     public VectorOffheapStorage(){
-
+        // No-op.
     }
 
     public VectorOffheapStorage(int size){
-        len = size;
+        this.size = size;
 
         ptr = GridUnsafe.allocateMemory(pointerOffset(size));
     }
@@ -44,7 +42,7 @@ public class VectorOffheapStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override
     public int size() {
-        return len;
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -100,7 +98,7 @@ public class VectorOffheapStorage implements VectorStorage {
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(ptr);
 
-        out.writeInt(len);
+        out.writeInt(size);
     }
 
     /** {@inheritDoc} */
@@ -108,7 +106,7 @@ public class VectorOffheapStorage implements VectorStorage {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ptr = in.readLong();
 
-        len = in.readInt();
+        size = in.readInt();
     }
 
     /** {@inheritDoc} */
@@ -120,12 +118,15 @@ public class VectorOffheapStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override
     public boolean equals(Object obj) {
-        return obj != null && getClass().equals(obj.getClass()) && (len == ((VectorOffheapStorage)obj).len) && (len == 0 || isMemoryEquals((VectorOffheapStorage)obj));
+        return obj != null &&
+            getClass().equals(obj.getClass()) &&
+            (size == ((VectorOffheapStorage)obj).size) &&
+            (size == 0 || isMemoryEquals((VectorOffheapStorage)obj));
     }
 
     /** */
     private boolean isMemoryEquals(VectorOffheapStorage otherStorage){
-        return !IntStream.range(0, len).parallel().anyMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
+        return IntStream.range(0, size).parallel().noneMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
     }
 
     /**
