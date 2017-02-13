@@ -2713,7 +2713,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(
                 UUID.randomUUID(), cacheName, ctx.localNodeId());
 
-            DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
             req.deploymentId(desc.deploymentId());
             req.stop(true);
