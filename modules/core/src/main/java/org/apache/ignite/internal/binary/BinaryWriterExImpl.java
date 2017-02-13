@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -486,6 +487,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param time Time.
+     */
+    public void doWriteTime(@Nullable Time time) {
+        if (time== null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 8);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIME);
+            out.unsafeWriteLong(time.getTime());
+        }
+    }
+
+    /**
      * Write object.
      *
      * @param obj Object.
@@ -700,6 +714,22 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                  doWriteTimestamp(ts);
          }
      }
+
+    /**
+     * @param val Array of time.
+     */
+    void doWriteTimeArray(@Nullable Time[] val) {
+        if (val == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(GridBinaryMarshaller.TIME_ARR);
+            out.unsafeWriteInt(val.length);
+
+            for (Time time : val)
+                doWriteTime(time);
+        }
+    }
 
     /**
      * @param val Array of objects.
@@ -1126,6 +1156,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param val Value.
+     */
+    void writeTimeField(@Nullable Time val) {
+        doWriteTime(val);
+    }
+
+    /**
      * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
@@ -1222,6 +1259,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     void writeTimestampArrayField(@Nullable Timestamp[] val) {
         doWriteTimestampArray(val);
+    }
+
+    /**
+     * @param val Value.
+     */
+    void writeTimeArrayField(@Nullable Time[] val) {
+        doWriteTimeArray(val);
     }
 
     /**
@@ -1414,6 +1458,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /** {@inheritDoc} */
+    @Override public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeTimeField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTime(@Nullable Time val) throws BinaryObjectException {
+        doWriteTime(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws BinaryObjectException {
         writeFieldId(fieldName);
         writeObjectField(obj);
@@ -1580,6 +1635,17 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(@Nullable Timestamp[] val) throws BinaryObjectException {
         doWriteTimestampArray(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
+        writeFieldId(fieldName);
+        writeTimeArrayField(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeTimeArray(@Nullable Time[] val) throws BinaryObjectException {
+        doWriteTimeArray(val);
     }
 
      /** {@inheritDoc} */
