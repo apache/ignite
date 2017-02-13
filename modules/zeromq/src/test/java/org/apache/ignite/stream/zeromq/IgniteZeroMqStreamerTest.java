@@ -111,8 +111,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      */
     private void executeStreamer(IgniteZeroMqStreamer streamer, int clientSocket,
         byte[] topic) throws InterruptedException {
-        // Checking streaming.
+        streamer.setSingleTupleExtractor(new ZeroMqStringSingleTupleExtractor());
 
+        // Checking streaming.
         CacheListener listener = subscribeToPutEvents();
 
         streamer.start();

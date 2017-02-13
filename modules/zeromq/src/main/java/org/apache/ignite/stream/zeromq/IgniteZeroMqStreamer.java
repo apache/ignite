@@ -56,20 +56,11 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /**  */
     private ZMQ.Socket socket;
 
-    /** Counter. */
-    private AtomicInteger count = new AtomicInteger();
-
     /**
      *
      */
     public IgniteZeroMqStreamer(ZeroMqSettings zeroMqSettings) {
         this.zeroMqSettings = zeroMqSettings;
-
-        count.set(0);
-
-        StreamSingleTupleExtractor singleTupleExtractor = new DefaultSingleTupleExtractorImpl();
-
-        setSingleTupleExtractor(singleTupleExtractor);
     }
 
     /**
@@ -130,22 +121,4 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
 
         isStart = false;
     }
-
-    /**
-     * Default implementation single tuple extractor for ZeroMQ streamer.
-     */
-    class DefaultSingleTupleExtractorImpl implements StreamSingleTupleExtractor<byte[], Integer, String> {
-        @Override public Map.Entry<Integer, String> extract(byte[] msg) {
-            try {
-                return new IgniteBiTuple<>(count.getAndIncrement(), new String(msg, Charset.forName("UTF-8")));
-            }
-            catch (IgniteException e) {
-                U.error(log, e);
-
-                return null;
-            }
-        }
-    }
-
-
 }
