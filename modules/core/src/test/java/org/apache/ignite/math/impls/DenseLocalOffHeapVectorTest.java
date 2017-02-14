@@ -20,16 +20,15 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.Vector;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.sun.tools.internal.ws.processor.generator.GeneratorConstants.IS;
 import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link DenseLocalOffHeapVector}.
  */
 public class DenseLocalOffHeapVectorTest {
-
     /** */
     private DenseLocalOffHeapVector offHeapVector;
 
@@ -48,12 +47,12 @@ public class DenseLocalOffHeapVectorTest {
     /** */
     @Test
     public void copy() throws Exception {
-        Vector copy = offHeapVector.copy();
+        Vector cp = offHeapVector.copy();
 
         try {
-            assertTrue(MathTestConstants.VALUE_NOT_EQUALS, offHeapVector.equals(copy));
+            assertTrue(MathTestConstants.VALUE_NOT_EQUALS, offHeapVector.equals(cp));
         } finally {
-            copy.destroy();
+            cp.destroy();
         }
     }
 
@@ -77,6 +76,7 @@ public class DenseLocalOffHeapVectorTest {
 
     /** */
     @Test
+    @Ignore("not yet implemented test case for likeMatrix method")
     public void likeMatrix() throws Exception {
         // TODO impl
     }

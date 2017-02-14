@@ -12,8 +12,6 @@ import static org.junit.Assert.*;
 
 /** */
 public class VectorAttributesTest {
-    // todo add attributes tests for offheap vector
-
     /** */ @Test
     public void defaultConstructorTest() {
         DenseLocalOnHeapVector v = new DenseLocalOnHeapVector();
@@ -192,8 +190,6 @@ public class VectorAttributesTest {
 
         assertTrue("1 size default copy.",
             pred.test(new DenseLocalOnHeapVector(new double[1])));
-
-        // todo test below
 
         assertTrue("Size from args, off heap vector.",
             pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));

@@ -29,6 +29,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.math.Vector;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
@@ -38,12 +39,11 @@ import static org.junit.Assert.*;
  * Unit tests for {@link VectorView}.
  */
 public class VectorViewTest {
-
     /** */
     public static final int OFFSET = 10;
 
     /** */
-    public static final int VIEW_LENGHT = 80;
+    public static final int VIEW_LENGTH = 80;
 
     /** */
     private static final String EXTERNALIZE_TEST_FILE_NAME = "externalizeTest";
@@ -57,6 +57,7 @@ public class VectorViewTest {
     /** */
     double[] parentData;
 
+    /** */
     @Before
     public void setup(){
         parentVector = new DenseLocalOnHeapVector(MathTestConstants.STORAGE_SIZE);
@@ -65,7 +66,7 @@ public class VectorViewTest {
 
         parentData = parentVector.getStorage().data().clone();
 
-        testVector = new VectorView(parentVector, OFFSET, VIEW_LENGHT);
+        testVector = new VectorView(parentVector, OFFSET, VIEW_LENGTH);
     }
 
     /** */
@@ -77,13 +78,14 @@ public class VectorViewTest {
     /** */
     @Test
     public void copy() throws Exception {
-        Vector copy = testVector.copy();
+        Vector cp = testVector.copy();
 
-        assertTrue(VALUE_NOT_EQUALS, copy.equals(testVector));
+        assertTrue(VALUE_NOT_EQUALS, cp.equals(testVector));
     }
 
     /** */
     @Test
+    @Ignore("not yet implemented test case for like() method")
     public void like() throws Exception {
         // TODO
     }
@@ -100,19 +102,19 @@ public class VectorViewTest {
         File f = new File(EXTERNALIZE_TEST_FILE_NAME);
 
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(f));
+            ObjectOutputStream objOutputStream = new ObjectOutputStream(new FileOutputStream(f));
 
-            objectOutputStream.writeObject(testVector);
+            objOutputStream.writeObject(testVector);
 
-            objectOutputStream.close();
+            objOutputStream.close();
 
-            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(f));
+            ObjectInputStream objInputStream = new ObjectInputStream(new FileInputStream(f));
 
-            VectorView readedVector = (VectorView) objectInputStream.readObject();
+            VectorView readVector = (VectorView) objInputStream.readObject();
 
-            objectInputStream.close();
+            objInputStream.close();
 
-            assertTrue(VALUE_NOT_EQUALS, testVector.equals(readedVector));
+            assertTrue(VALUE_NOT_EQUALS, testVector.equals(readVector));
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         }

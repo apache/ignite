@@ -291,16 +291,7 @@ public class VectorImplementationsTest {
 
     /** */
     private void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
-        for (Supplier<Iterable<Vector>> fixtureSupplier : VectorImplementationsFixtures.suppliers) {
-            final Iterable<Vector> fixture = fixtureSupplier.get();
-
-            for (Vector v : fixture) {
-                if (paramsConsumer != null)
-                    paramsConsumer.accept(v.size());
-
-                consumer.accept(v, fixture.toString());
-            }
-        }
+        new VectorImplementationsFixtures().consumeSampleVectors(paramsConsumer, consumer);
     }
 
     /** */

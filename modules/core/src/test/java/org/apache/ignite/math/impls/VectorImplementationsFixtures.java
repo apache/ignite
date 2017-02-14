@@ -3,6 +3,8 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.Vector;
 
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
@@ -10,10 +12,8 @@ import static org.junit.Assert.assertNotNull;
 
 /** */
 class VectorImplementationsFixtures {
-    // todo consider reusing this for DenseLocalOnHeapVectorIterableTest (also expanding it to offheap testing)
-
     /** */
-    static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
+    private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
         new Supplier<Iterable<Vector>>() {
             /** @{inheritDoc} */
             @Override public Iterable<Vector> get() {
@@ -27,6 +27,20 @@ class VectorImplementationsFixtures {
             }
         }
     );
+
+    /** */
+    void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
+        for (Supplier<Iterable<Vector>> fixtureSupplier : VectorImplementationsFixtures.suppliers) {
+            final Iterable<Vector> fixture = fixtureSupplier.get();
+
+            for (Vector v : fixture) {
+                if (paramsConsumer != null)
+                    paramsConsumer.accept(v.size());
+
+                consumer.accept(v, fixture.toString());
+            }
+        }
+    }
 
     /** */
     void selfTest() {

@@ -22,28 +22,16 @@ import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
 
 /** */
-public class DenseLocalOnHeapVectorIterableTest {
+public class VectorIterableTest {
     /** */ @Test
     public void allTest() {
-        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
-
-        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
-
         consumeSampleVectors(
-            (expSizeParam, shallowCopyParam) -> {
-                expSize.set(expSizeParam);
-
-                shallowCp.set(shallowCopyParam);
-            }, (v) -> {
-                final String desc = "size " + expSize.get() + ", shallow copy " + shallowCp.get();
-
+            (v, desc) -> {
                 int expIdx = 0;
 
                 for (Vector.Element e : v.all()) {
@@ -63,22 +51,13 @@ public class DenseLocalOnHeapVectorIterableTest {
 
     /** */ @Test
     public void allTestBound() {
-        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
-
-        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
-
         consumeSampleVectors(
-            (expSizeParam, shallowCopyParam) -> {
-                expSize.set(expSizeParam);
-
-                shallowCp.set(shallowCopyParam);
-            },
-            v -> iteratorTestBound(v.all().iterator(), expSize.get(), shallowCp.get())
+            (v, desc) -> iteratorTestBound(v.all().iterator(), desc)
         );
     }
 
     /** */
-    private void iteratorTestBound(Iterator<Vector.Element> it, int expSize, boolean shallowCp) {
+    private void iteratorTestBound(Iterator<Vector.Element> it, String desc) {
         while (it.hasNext())
             assertNotNull(it.next());
 
@@ -90,7 +69,7 @@ public class DenseLocalOnHeapVectorIterableTest {
             expECaught = true;
         }
 
-        assertTrue("Expected exception missed for size " + expSize + ", shallow copy " + shallowCp,
+        assertTrue("Expected exception missed for " + desc,
             expECaught);
     }
 
@@ -114,7 +93,7 @@ public class DenseLocalOnHeapVectorIterableTest {
                 && isZero(nonZeroesOddData[0])
                 && !isZero(nonZeroesOddData[1]));
 
-        final DenseLocalOnHeapVector nonZeroesEvenVec = new DenseLocalOnHeapVector(nonZeroesEvenData),
+        final Vector nonZeroesEvenVec = new DenseLocalOnHeapVector(nonZeroesEvenData),
             nonZeroesOddVec = new DenseLocalOnHeapVector(nonZeroesOddData);
 
         assertTrue("Vectors failed to initialize.",
@@ -175,49 +154,38 @@ public class DenseLocalOnHeapVectorIterableTest {
     /** */ @Test
     public void nonZeroesTest() {
         consumeSampleVectors(
-            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+            (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
                 -> {
-                final int size = vec.size();
-
-                int numZeroesActual = size;
+                int numZeroesActual = vec.size();
 
                 for (Vector.Element e : vec.nonZeroes()) {
                     numZeroesActual--;
 
-                    assertTrue("Unexpected zero at index " + e.index(), !isZero(e.get()));
+                    assertTrue("Unexpected zero at " + desc + ", index " + e.index(), !isZero(e.get()));
                 }
 
-                assertEquals("Unexpected num zeroes at size " + size, (int)numZeroes, numZeroesActual);
+                assertEquals("Unexpected num zeroes at " + desc, (int)numZeroes, numZeroesActual);
             }));
     }
 
     /** */ @Test
     public void nonZeroesTestBound() {
-        final AtomicReference<Integer> expSize = new AtomicReference<>(0);
-
-        final AtomicReference<Boolean> shallowCp = new AtomicReference<>(false);
-
         consumeSampleVectors(
-            (expSizeParam, shallowCopyParam) -> {
-                expSize.set(expSizeParam);
-
-                shallowCp.set(shallowCopyParam);
-            },
-            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
-                -> iteratorTestBound(vec.nonZeroes().iterator(), expSize.get(), shallowCp.get())));
+            (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                -> iteratorTestBound(vec.nonZeroes().iterator(), desc)));
     }
 
     /** */ @Test
     public void nonZeroElementsTest() {
         consumeSampleVectors(
-            v -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
-                -> assertEquals("Unexpected num zeroes at size " + vec.size(),
+            (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                -> assertEquals("Unexpected num zeroes at " + desc,
                 (int)numZeroes, vec.size() - vec.nonZeroElements())));
     }
 
     /** */
-    private void consumeSampleVectorsWithZeroes(DenseLocalOnHeapVector sample,
-        BiConsumer<DenseLocalOnHeapVector, Integer> consumer) {
+    private void consumeSampleVectorsWithZeroes(Vector sample,
+        BiConsumer<Vector, Integer> consumer) {
         fillWithNonZeroes(sample);
 
         consumer.accept(sample, 0);
@@ -257,7 +225,7 @@ public class DenseLocalOnHeapVectorIterableTest {
     }
 
     /** */
-    private void fillWithNonZeroes(DenseLocalOnHeapVector sample) {
+    private void fillWithNonZeroes(Vector sample) {
         int idx = 0;
 
         for (Vector.Element e : sample.all())
@@ -267,23 +235,8 @@ public class DenseLocalOnHeapVectorIterableTest {
     }
 
     /** */
-    private void consumeSampleVectors(Consumer<DenseLocalOnHeapVector> consumer) {
-        consumeSampleVectors(null, consumer);
-    }
-
-    /** */
-    private void consumeSampleVectors(BiConsumer<Integer, Boolean> paramsConsumer,
-        Consumer<DenseLocalOnHeapVector> consumer) {
-        for (int size : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            for (int delta : new int[] {-1, 0, 1})
-                for (boolean shallowCopy : new boolean[] {false, true}) {
-                    final int expSize = size + delta;
-
-                    if (paramsConsumer != null)
-                        paramsConsumer.accept(expSize, shallowCopy);
-
-                    consumer.accept(new DenseLocalOnHeapVector(new double[expSize], shallowCopy));
-                }
+    private void consumeSampleVectors(BiConsumer<Vector, String> consumer) {
+        new VectorImplementationsFixtures().consumeSampleVectors(null, consumer);
     }
 
     /** */
