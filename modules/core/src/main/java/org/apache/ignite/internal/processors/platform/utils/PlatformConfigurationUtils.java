@@ -506,7 +506,7 @@ public class PlatformConfigurationUtils {
 
         QueryIndexType indexType = QueryIndexType.values()[in.readByte()];
 
-        QueryIndex res = new QueryIndex(indexName, indexType);
+        QueryIndex res = new QueryIndex(indexType, indexName);
 
         int cnt = in.readInt();
 

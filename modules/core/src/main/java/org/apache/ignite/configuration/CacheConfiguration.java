@@ -2222,9 +2222,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryIndex(idxEntry.getKey(), QueryIndexType.FULLTEXT);
+                txtIdx = new QueryIndex(QueryIndexType.FULLTEXT, idxEntry.getKey());
 
-                txtIdx.setField(idx.fields(), true);
+                txtIdx.setFieldNames(idx.fields(), true);
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -2232,8 +2232,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryIndex sortedIdx = new QueryIndex(idxEntry.getKey(),
-                    idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                QueryIndex sortedIdx = new QueryIndex(
+                    idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL,
+                    idxEntry.getKey());
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 

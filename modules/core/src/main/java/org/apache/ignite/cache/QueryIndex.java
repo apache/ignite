@@ -32,6 +32,9 @@ public class QueryIndex implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final QueryIndexType DEFAULT_INDEX_TYPE = QueryIndexType.SORTED;
+
     /** Index name. */
     private String name;
 
@@ -39,17 +42,70 @@ public class QueryIndex implements Serializable {
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
-    private final QueryIndexType type;
+    private QueryIndexType type = DEFAULT_INDEX_TYPE;
 
     /**
-     * Creates index.
+     * Creates an empty index. Should be populated via setters.
      *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
+     */
+    @Deprecated
+    public QueryIndex() {
+        // Empty constructor.
+    }
+
+    /**
+     * Creates single-field sorted ascending index.
+     *
+     * @param field Field name.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
+     */
+    @Deprecated
+    public QueryIndex(String field) {
+        this(field, QueryIndexType.SORTED, true);
+    }
+
+    /**
+     * Creates single-field sorted index.
+     *
+     * @param field Field name.
+     * @param asc Ascending flag.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
+     */
+    @Deprecated
+    public QueryIndex(String field, boolean asc) {
+        this(field, QueryIndexType.SORTED, asc);
+    }
+
+    /**
+     * Creates single-field sorted index.
+     *
+     * @param field Field name.
+     * @param asc Ascending flag.
      * @param name Index name.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
+     */
+    @Deprecated
+    public QueryIndex(String field, boolean asc, String name) {
+        this(field, QueryIndexType.SORTED, asc);
+
+        this.name = name;
+    }
+
+    /**
+     * Creates index for one field.
+     * If index is sorted, then ascending sorting is used by default.
+     * To specify sort order, use the next method.
+     * This constructor should also have a corresponding setter method.
+     *
+     * @param field Field name.
      * @param type Index type.
      */
-    public QueryIndex(String name, QueryIndexType type) {
-        this.name = name;
-        this.type = type;
+    public QueryIndex(String field, QueryIndexType type) {
+        this(Arrays.asList(field), type);
     }
 
     /**
@@ -66,6 +122,32 @@ public class QueryIndex implements Serializable {
         this.type = type;
     }
 
+    /**
+     * Creates index for one field. The last boolean parameter is ignored for non-sorted indexes.
+     *
+     * @param field Field name.
+     * @param type Index type.
+     * @param asc Ascending flag.
+     * @param name Index name.
+     */
+    public QueryIndex(String field, QueryIndexType type, boolean asc, String name) {
+        fields = new LinkedHashMap<>();
+        fields.put(field, asc);
+
+        this.type = type;
+        this.name = name;
+    }
+
+    /**
+     * Creates index.
+     *
+     * @param type Index type.
+     * @param name Index name.
+     */
+    public QueryIndex(QueryIndexType type, String name) {
+        this.name = name;
+        this.type = type;
+    }
     /**
      * Creates index for a collection of fields. If index is sorted, fields will be sorted in
      * ascending order.
@@ -151,7 +233,7 @@ public class QueryIndex implements Serializable {
      * @param asc Ascending flag.
      * @return {@code this} for chaining.
      */
-    public QueryIndex setField(Collection<String> fields, boolean asc) {
+    public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
@@ -215,5 +297,15 @@ public class QueryIndex implements Serializable {
      */
     public QueryIndexType getIndexType() {
         return type;
+    }
+
+    /**
+     * Sets index type.
+     *
+     * @param type Index type.
+     */
+    @Deprecated
+    public void setIndexType(QueryIndexType type) {
+        this.type = type;
     }
 }

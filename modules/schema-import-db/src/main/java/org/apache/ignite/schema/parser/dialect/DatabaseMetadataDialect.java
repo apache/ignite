@@ -91,7 +91,7 @@ public abstract class DatabaseMetadataDialect {
      * @return New initialized {@code QueryIndex} instance.
      */
     protected QueryIndex index(String idxName) {
-        QueryIndex idx = new QueryIndex(idxName, QueryIndexType.SORTED);
+        QueryIndex idx = new QueryIndex(QueryIndexType.SORTED, idxName);
 
         idx.setFields(new LinkedHashMap<String, Boolean>());
 
