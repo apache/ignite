@@ -651,12 +651,12 @@ public abstract class AbstractMatrix implements Matrix {
             return true; // Dense.
 
         while (n < MAX_SAMPLES) {
-            // Determine upper bound we may need for n to likely relinquish the uncertainty. Here, we use
-            // confidence interval formula but solved for n.
+            // Determine upper bound we may need for 'n' to likely relinquish the uncertainty.
+            // Here, we use confidence interval formula but solved for 'n'.
             double ivX = Math.max(Math.abs(threshold - mean), 1e-11);
 
             double stdErr = ivX / Z80;
-            double nX = Math.min(Math.max((int)Math.ceil(pq / (stdErr * stdErr)), n),MAX_SAMPLES) - n;
+            double nX = Math.min(Math.max((int)Math.ceil(pq / (stdErr * stdErr)), n), MAX_SAMPLES) - n;
 
             double meanNext = 0.0;
 
