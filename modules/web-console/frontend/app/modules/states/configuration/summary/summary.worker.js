@@ -17,8 +17,6 @@
 
 import JSZip from 'jszip';
 
-import IgniteVersion from 'app/modules/configuration/Version.service';
-
 import MavenGenerator from 'app/modules/configuration/generator/Maven.service';
 import DockerGenerator from 'app/modules/configuration/generator/Docker.service';
 import ReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
@@ -27,8 +25,6 @@ import ConfigurationGenerator from 'app/modules/configuration/generator/Configur
 
 import JavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
 import SpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
-
-const Version = new IgniteVersion();
 
 const maven = new MavenGenerator();
 const docker = new DockerGenerator();
@@ -100,7 +96,7 @@ onmessage = function(e) {
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-    zip.file('pom.xml', maven.generate(cluster, Version.productVersion().ignite).asString());
+    zip.file('pom.xml', maven.generate(cluster));
 
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());
