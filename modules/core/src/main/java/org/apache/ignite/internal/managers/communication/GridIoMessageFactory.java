@@ -630,6 +630,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 78:
+                msg = new MissingMappingRequestMessage();
+
+                break;
+
+            case 79:
+                msg = new MissingMappingResponseMessage();
+
+                break;
+
             case 82:
                 msg = new JobStealingRequest();
 
@@ -817,16 +827,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 119:
                 msg = new BinaryEnumObjectImpl();
-
-                break;
-
-            case 120:
-                msg = new MissingMappingRequestMessage();
-
-                break;
-
-            case 121:
-                msg = new MissingMappingResponseMessage();
 
                 break;
 

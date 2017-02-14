@@ -774,6 +774,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             msg.warning(warning);
 
+            msg.force(true);
+
             msgWorker.addMessage(msg);
         }
     }
@@ -4558,8 +4560,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else {
                     boolean contains;
 
+                    UUID creatorId = msg.creatorNodeId();
+
+                    assert creatorId != null : msg;
+
                     synchronized (mux) {
-                        contains = failedNodes.containsKey(sndNode);
+                        contains = failedNodes.containsKey(sndNode) || ring.node(creatorId) == null;
                     }
 
                     if (contains) {
@@ -4571,25 +4577,29 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            UUID nodeId = msg.failedNodeId();
+            UUID failedNodeId = msg.failedNodeId();
             long order = msg.order();
 
-            TcpDiscoveryNode node = ring.node(nodeId);
+            TcpDiscoveryNode failedNode = ring.node(failedNodeId);
 
-            if (node != null && node.internalOrder() != order) {
+            if (failedNode != null && failedNode.internalOrder() != order) {
                 if (log.isDebugEnabled())
                     log.debug("Ignoring node failed message since node internal order does not match " +
-                        "[msg=" + msg + ", node=" + node + ']');
+                        "[msg=" + msg + ", node=" + failedNode + ']');
 
                 return;
             }
 
-            if (node != null) {
-                assert !node.isLocal() || !msg.verified() : msg;
+            if (failedNode != null) {
+                assert !failedNode.isLocal() || !msg.verified() : msg;
 
-                synchronized (mux) {
-                    if (!failedNodes.containsKey(node))
-                        failedNodes.put(node, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+                boolean skipUpdateFailedNodes = msg.force() && !msg.verified();
+
+                if (!skipUpdateFailedNodes) {
+                    synchronized (mux) {
+                        if (!failedNodes.containsKey(failedNode))
+                            failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+                    }
                 }
             }
             else {
@@ -4616,11 +4626,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified()) {
-                node = ring.removeNode(nodeId);
+                failedNode = ring.removeNode(failedNodeId);
 
-                interruptPing(node);
+                interruptPing(failedNode);
 
-                assert node != null;
+                assert failedNode != null;
 
                 long topVer;
 
@@ -4646,16 +4656,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    failedNodes.remove(node);
+                    failedNodes.remove(failedNode);
 
-                    leavingNodes.remove(node);
+                    leavingNodes.remove(failedNode);
 
-                    failedNodesMsgSent.remove(node.id());
+                    failedNodesMsgSent.remove(failedNode.id());
 
-                    ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
+                    if (!msg.force()) { // ClientMessageWorker will stop after sending force fail message.
+                        ClientMessageWorker worker = clientMsgWorkers.remove(failedNode.id());
 
-                    if (worker != null)
-                        worker.interrupt();
+                        if (worker != null)
+                            worker.interrupt();
+                    }
                 }
 
                 if (msg.warning() != null && !msg.creatorNodeId().equals(getLocalNodeId())) {
@@ -4667,10 +4679,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    joiningNodes.remove(node.id());
+                    joiningNodes.remove(failedNode.id());
                 }
 
-                notifyDiscovery(EVT_NODE_FAILED, topVer, node);
+                notifyDiscovery(EVT_NODE_FAILED, topVer, failedNode);
 
                 spi.stats.onNodeFailed();
             }
@@ -4884,7 +4896,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryHeartbeatMessage.MetricsSet metricsSet = e.getValue();
 
-                        Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics() ?
+                        Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
                             msg.cacheMetrics().get(nodeId) : Collections.<Integer, CacheMetrics>emptyMap();
 
                         updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tstamp);
@@ -6265,7 +6277,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.failureDetectionTimeout() : spi.getSocketTimeout());
                 }
 
-                success = true;
+                boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
+                    ((TcpDiscoveryNodeFailedMessage)msg).failedNodeId().equals(clientNodeId);
+
+                assert !clientFailed || msg.force() : msg;
+
+                success = !clientFailed;
             }
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())

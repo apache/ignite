@@ -48,6 +48,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         company: String,
         country: String,
         lastLogin: Date,
+        lastActivity: Date,
         admin: Boolean,
         token: String,
         resetPasswordToken: String
@@ -59,22 +60,26 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         usernameLowerCase: true
     });
 
+    const transform = (doc, ret) => {
+        return {
+            _id: ret._id,
+            email: ret.email,
+            firstName: ret.firstName,
+            lastName: ret.lastName,
+            company: ret.company,
+            country: ret.country,
+            admin: ret.admin,
+            token: ret.token,
+            lastLogin: ret.lastLogin,
+            lastActivity: ret.lastActivity
+        };
+    };
+
     // Configure transformation to JSON.
-    AccountSchema.set('toJSON', {
-        transform: (doc, ret) => {
-            return {
-                _id: ret._id,
-                email: ret.email,
-                firstName: ret.firstName,
-                lastName: ret.lastName,
-                company: ret.company,
-                country: ret.country,
-                admin: ret.admin,
-                token: ret.token,
-                lastLogin: ret.lastLogin
-            };
-        }
-    });
+    AccountSchema.set('toJSON', { transform });
+
+    // Configure transformation to JSON.
+    AccountSchema.set('toObject', { transform });
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
@@ -901,6 +906,20 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         // TODO IGNITE-843 Send error to admin
         res.status(err.code || 500).send(err.message);
     };
+
+    // Define Activities schema.
+    const ActivitiesSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        group: String,
+        action: String,
+        amount: { type: Number, default: 1 }
+    });
+
+    ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });
+
+    // Define Activities model.
+    result.Activities = mongoose.model('Activities', ActivitiesSchema);
 
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {
