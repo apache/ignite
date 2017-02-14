@@ -41,8 +41,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.console.agent.handlers.DatabaseHandler;
-import org.apache.ignite.console.agent.handlers.RestHandler;
+import org.apache.ignite.console.agent.handlers.DatabaseListener;
+import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
@@ -278,141 +278,138 @@ public class AgentLauncher {
             cfg.tokens(Arrays.asList(tokens.trim().split(",")));
         }
 
-        final RestHandler restHnd = new RestHandler(cfg);
+        URI uri = URI.create(cfg.serverUri());
+
+        // Create proxy authenticator using passed properties.
+        switch (uri.getScheme()) {
+            case "http":
+            case "https":
+                final String username = System.getProperty(uri.getScheme() + ".proxyUsername");
+                final char[] pwd = System.getProperty(uri.getScheme() +  ".proxyPassword", "").toCharArray();
+
+                Authenticator.setDefault(new Authenticator() {
+                    @Override protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(username, pwd);
+                    }
+                });
+
+                break;
+
+            default:
+                // No-op.
+        }
+
+        IO.Options opts = new IO.Options();
+
+        opts.path = "/agents";
+
+        // Workaround for use self-signed certificate
+        if (Boolean.getBoolean("trust.all")) {
+            SSLContext ctx = SSLContext.getInstance("TLS");
+
+            // Create an SSLContext that uses our TrustManager
+            ctx.init(null, getTrustManagers(), null);
+
+            opts.sslContext = ctx;
+        }
+
+        final Socket client = IO.socket(uri, opts);
+
+        final RestListener restHnd = new RestListener(cfg);
+
+        final DatabaseListener dbHnd = new DatabaseListener(cfg);
 
         try {
-            restHnd.start();
+            Emitter.Listener onConnecting = new Emitter.Listener() {
+                @Override public void call(Object... args) {
+                    log.info("Connecting to: " + cfg.serverUri());
+                }
+            };
 
-            URI uri = URI.create(cfg.serverUri());
+            Emitter.Listener onConnect = new Emitter.Listener() {
+                @Override public void call(Object... args) {
+                    log.info("Connection established.");
 
-            // Create proxy authenticator using passed properties.
-            switch (uri.getScheme()) {
-                case "http":
-                case "https":
-                    final String username = System.getProperty(uri.getScheme() + ".proxyUsername");
-                    final char[] pwd = System.getProperty(uri.getScheme() +  ".proxyPassword", "").toCharArray();
+                    JSONObject authMsg = new JSONObject();
 
-                    Authenticator.setDefault(new Authenticator() {
-                        @Override protected PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication(username, pwd);
+                    try {
+                        authMsg.put("tokens", cfg.tokens());
+
+                        String clsName = AgentLauncher.class.getSimpleName() + ".class";
+
+                        String clsPath = AgentLauncher.class.getResource(clsName).toString();
+
+                        if (clsPath.startsWith("jar")) {
+                            String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
+                                "/META-INF/MANIFEST.MF";
+
+                            Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+
+                            Attributes attr = manifest.getMainAttributes();
+
+                            authMsg.put("ver", attr.getValue("Implementation-Version"));
+                            authMsg.put("bt", attr.getValue("Build-Time"));
                         }
-                    });
 
-                    break;
+                        client.emit("agent:auth", authMsg, new Ack() {
+                            @Override public void call(Object... args) {
+                                // Authentication failed if response contains args.
+                                if (args != null && args.length > 0) {
+                                    onDisconnect.call(args);
 
-                default:
-                    // No-op.
-            }
-
-            IO.Options opts = new IO.Options();
-
-            opts.path = "/agents";
-
-            // Workaround for use self-signed certificate
-            if (Boolean.getBoolean("trust.all")) {
-                SSLContext ctx = SSLContext.getInstance("TLS");
-
-                // Create an SSLContext that uses our TrustManager
-                ctx.init(null, getTrustManagers(), null);
-
-                opts.sslContext = ctx;
-            }
-
-            final Socket client = IO.socket(uri, opts);
-
-            try {
-                Emitter.Listener onConnecting = new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        log.info("Connecting to: " + cfg.serverUri());
-                    }
-                };
-
-                Emitter.Listener onConnect = new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        log.info("Connection established.");
-
-                        JSONObject authMsg = new JSONObject();
-
-                        try {
-                            authMsg.put("tokens", cfg.tokens());
-
-                            String clsName = AgentLauncher.class.getSimpleName() + ".class";
-
-                            String clsPath = AgentLauncher.class.getResource(clsName).toString();
-
-                            if (clsPath.startsWith("jar")) {
-                                String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
-                                    "/META-INF/MANIFEST.MF";
-
-                                Manifest manifest = new Manifest(new URL(manifestPath).openStream());
-
-                                Attributes attr = manifest.getMainAttributes();
-
-                                authMsg.put("ver", attr.getValue("Implementation-Version"));
-                                authMsg.put("bt", attr.getValue("Build-Time"));
-                            }
-
-                            client.emit("agent:auth", authMsg, new Ack() {
-                                @Override public void call(Object... args) {
-                                    // Authentication failed if response contains args.
-                                    if (args != null && args.length > 0) {
-                                        onDisconnect.call(args);
-
-                                        System.exit(1);
-                                    }
-
-                                    log.info("Authentication success.");
+                                    System.exit(1);
                                 }
-                            });
-                        }
-                        catch (JSONException | IOException e) {
-                            log.error("Failed to construct authentication message", e);
 
-                            client.close();
-                        }
+                                log.info("Authentication success.");
+                            }
+                        });
                     }
-                };
+                    catch (JSONException | IOException e) {
+                        log.error("Failed to construct authentication message", e);
 
-                DatabaseHandler dbHnd = new DatabaseHandler(cfg);
+                        client.close();
+                    }
+                }
+            };
 
-                final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
 
-                client
-                    .on(EVENT_CONNECTING, onConnecting)
-                    .on(EVENT_CONNECT, onConnect)
-                    .on(EVENT_CONNECT_ERROR, onError)
-                    .on(EVENT_RECONNECTING, onConnecting)
-                    .on(EVENT_NODE_REST, restHnd)
-                    .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
-                    .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
-                    .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
-                    .on(EVENT_ERROR, onError)
-                    .on(EVENT_DISCONNECT, onDisconnect)
-                    .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
-                        @Override public void call(Object... args) {
-                            log.warn(args[0]);
-                        }
-                    })
-                    .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
-                        @Override public void call(Object... args) {
-                            onDisconnect.call(args);
+            client
+                .on(EVENT_CONNECTING, onConnecting)
+                .on(EVENT_CONNECT, onConnect)
+                .on(EVENT_CONNECT_ERROR, onError)
+                .on(EVENT_RECONNECTING, onConnecting)
+                .on(EVENT_NODE_REST, restHnd)
+                .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
+                .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
+                .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
+                .on(EVENT_ERROR, onError)
+                .on(EVENT_DISCONNECT, onDisconnect)
+                .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
+                    @Override public void call(Object... args) {
+                        log.warn(args[0]);
+                    }
+                })
+                .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
+                    @Override public void call(Object... args) {
+                        onDisconnect.call(args);
 
-                            client.off();
+                        client.off();
 
-                            latch.countDown();
-                        }
-                    });
+                        latch.countDown();
+                    }
+                });
 
-                client.connect();
+            client.connect();
 
-                latch.await();
-            }
-            finally {
-                client.close();
-            }
+            latch.await();
         }
         finally {
+            client.close();
+
             restHnd.stop();
+
+            dbHnd.stop();
         }
     }
 }
