@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.deco;
 
 /**
  * TODO: add description.
  */
-public class DiagonalMatrix {
+public class SingularValueDecomposition {
 }

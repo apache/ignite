@@ -30,6 +30,12 @@ import java.util.function.*;
  * TODO: add description.
  */
 public abstract class AbstractMatrix implements Matrix {
+    // Stochastic sparsity analysis.
+    private final double Z95 = 1.959964;
+    private final double Z80 = 1.281552;
+    private final int MAX_SAMPLES = 500;
+    private final int MIN_SAMPLES = 15;
+
     // Matrix storage implementation.
     private MatrixStorage sto;
 
@@ -616,6 +622,61 @@ public abstract class AbstractMatrix implements Matrix {
                 mtx.setX(y, x, getX(x, y));
 
         return mtx;
+    }
+
+    @Override
+    public boolean density(double threshold) {
+        assert threshold >= 0.0 && threshold <= 1.0;
+
+        int n = MIN_SAMPLES;
+        int rows = rowSize();
+        int cols = columnSize();
+
+        double mean = 0.0;
+        double pq = threshold * (1 - threshold);
+
+        Random rnd = new Random();
+
+        for (int i = 0; i < MIN_SAMPLES; i++)
+            if (getX(rnd.nextInt(rows), rnd.nextInt(cols)) != 0.0)
+                mean++;
+
+        mean /= MIN_SAMPLES;
+        
+        double iv = Z80 * Math.sqrt(pq / n);
+
+        if (mean < threshold - iv)
+            return false; // Sparse.
+        else if (mean > threshold + iv)
+            return true; // Dense.
+
+        while (n < MAX_SAMPLES) {
+            // Determine upper bound we may need for n to likely relinquish the uncertainty. Here, we use
+            // confidence interval formula but solved for n.
+            double ivX = Math.max(Math.abs(threshold - mean), 1e-11);
+
+            double stdErr = ivX / Z80;
+            double nX = Math.min(Math.max((int)Math.ceil(pq / (stdErr * stdErr)), n),MAX_SAMPLES) - n;
+
+            double meanNext = 0.0;
+
+            for (int i = 0; i < nX; i++)
+                if (getX(rnd.nextInt(rows), rnd.nextInt(cols)) != 0.0) meanNext++;
+
+            mean = (n * mean + meanNext) / (n + nX);
+            
+            n += nX;
+
+            // Are we good now?
+            iv = Z80 * Math.sqrt(pq / n);
+
+            if (mean < threshold - iv)
+                return false; // Sparse.
+            else if (mean > threshold + iv)
+                return true; // Dense.
+        }
+
+        return mean > threshold; // Dense if mean > threshold.
     }
 
     @Override

@@ -153,6 +153,15 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsKinds 
     <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal);
 
     /**
+     * Calculates the density of the matrix based on supplied criteria.
+     * Returns {@code true} if this matrix is denser than threshold with at least 80% confidence.
+     *
+     * @param threshold the threshold value [0, 1] of non-zero elements above
+     *      which the matrix is considered dense.
+     */
+    boolean density(double threshold);
+
+    /**
      * Gets number of columns in this matrix.
      *
      * @return The number of columns in this matrix.

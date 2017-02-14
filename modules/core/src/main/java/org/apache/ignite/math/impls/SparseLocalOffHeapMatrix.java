@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.impls;
 
 /**
  * TODO: add description.
  */
-public class CholeskyDecomposition {
+public class SparseLocalOffHeapMatrix {
 }
