@@ -168,6 +168,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -307,6 +308,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName restExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName stripedExecSvcMBean;
 
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
@@ -1011,6 +1016,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 restExecSvc,
                 utilityCachePool,
                 marshCachePool);
+            registerStripedExecutorMBean(stripedExecSvc);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1598,7 +1604,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** @throws IgniteCheckedException If registration failed. */
+    /**
+     * @param execSvc
+     * @param sysExecSvc
+     * @param p2pExecSvc
+     * @param mgmtExecSvc
+     * @param restExecSvc
+     * @throws IgniteCheckedException If failed.
+     */
     private void registerExecutorMBeans(
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
@@ -1648,8 +1661,34 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return res;
         }
         catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name + ", exec=" + exec + ']',
-                e);
+            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name +
+                ", exec=" + exec + ']', e);
+        }
+    }
+
+    /**
+     * @param stripedExecSvc Executor service.
+     * @throws IgniteCheckedException If registration failed.
+     */
+    private void registerStripedExecutorMBean(StripedExecutor stripedExecSvc) throws IgniteCheckedException {
+        if (stripedExecSvc != null) {
+            String name = "StripedExecutor";
+
+            try {
+                stripedExecSvcMBean = U.registerMBean(
+                    cfg.getMBeanServer(),
+                    cfg.getGridName(),
+                    "Thread Pools",
+                    name,
+                    new StripedExecutorMXBeanAdapter(stripedExecSvc),
+                    StripedExecutorMXBean.class);
+
+                if (log.isDebugEnabled())
+                    log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
+            } catch (JMException e) {
+                throw new IgniteCheckedException("Failed to register executor service MBean [name="
+                    + name + ", exec=" + stripedExecSvc + ']', e);
+            }
         }
     }
 
@@ -2116,7 +2155,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(locNodeMBean) &
                     unregisterMBean(utilityExecSvcMBean) &
                     unregisterMBean(marshallerExecSvcMBean) &
-                    unregisterMBean(restExecSvcMBean)
+                    unregisterMBean(restExecSvcMBean) &
+                    unregisterMBean(stripedExecSvcMBean)
             ))
                 errOnStop = false;
 
