@@ -19,18 +19,12 @@ package org.apache.ignite.plugin.platform;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
  * Platform configuration handler:
  * updates plugin configuration using data sent from platform code.
  */
-public interface PlatformPluginConfiguration {
-    /**
-     * Updates IgniteConfiguration according to data in a stream.
-     *
-     * @param cfg Configuration to update.
-     * @param reader Reader.
-     */
-    void applyConfiguration(@NotNull IgniteConfiguration cfg, @NotNull BinaryRawReader reader);
+public interface PlatformPluginConfiguration extends IgniteBiInClosure<IgniteConfiguration, BinaryRawReader> {
+    // No-op.
 }

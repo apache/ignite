@@ -43,7 +43,7 @@ public class PlatformTestPluginConfigurationFactory implements PlatformPluginCon
     }
 
     /** {@inheritDoc} */
-    @Override public void applyConfiguration(@NotNull IgniteConfiguration cfg, @NotNull BinaryRawReader reader) {
+    @Override public void apply(@NotNull IgniteConfiguration cfg, @NotNull BinaryRawReader reader) {
         ArrayList<PluginConfiguration> cfgs = new ArrayList<>();
 
         if (cfg.getPluginConfigurations() != null) {
