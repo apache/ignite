@@ -180,6 +180,7 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -810,6 +811,12 @@ public abstract class IgniteUtils {
                 ClusterTopologyCheckedException checked = (ClusterTopologyCheckedException)e;
                 topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
                 return topEx;
+            }
+        });
+
+        m.put(ClusterTopologyLocalException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                throw new AssertionError("Should never happen if IGNITE-1948 done well");
             }
         });
 
