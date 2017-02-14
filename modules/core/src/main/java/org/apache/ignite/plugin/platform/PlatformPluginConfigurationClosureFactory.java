@@ -18,9 +18,9 @@
 package org.apache.ignite.plugin.platform;
 
 /**
- * Factory for @{@link PlatformPluginConfiguration} with a unique id.
+ * Factory for @{@link PlatformPluginConfigurationClosure} with a unique id.
  */
-public interface PlatformPluginConfigurationFactory {
+public interface PlatformPluginConfigurationClosureFactory {
     /**
      * Gets the factory id.
      *
@@ -33,5 +33,5 @@ public interface PlatformPluginConfigurationFactory {
      *
      * @return Configuration instance.
      */
-    PlatformPluginConfiguration create();
+    PlatformPluginConfigurationClosure create();
 }

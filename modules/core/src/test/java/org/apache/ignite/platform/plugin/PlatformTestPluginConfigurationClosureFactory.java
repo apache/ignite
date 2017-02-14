@@ -20,8 +20,8 @@ package org.apache.ignite.platform.plugin;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.plugin.PluginConfiguration;
-import org.apache.ignite.plugin.platform.PlatformPluginConfiguration;
-import org.apache.ignite.plugin.platform.PlatformPluginConfigurationFactory;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -30,15 +30,15 @@ import java.util.Collections;
 /**
  * Test config factory.
  */
-public class PlatformTestPluginConfigurationFactory implements PlatformPluginConfigurationFactory,
-        PlatformPluginConfiguration {
+public class PlatformTestPluginConfigurationClosureFactory implements PlatformPluginConfigurationClosureFactory,
+        PlatformPluginConfigurationClosure {
     /** {@inheritDoc} */
     @Override public int id() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformPluginConfiguration create() {
+    @Override public PlatformPluginConfigurationClosure create() {
         return this;
     }
 

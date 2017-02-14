@@ -25,6 +25,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
  * Platform configuration handler:
  * updates plugin configuration using data sent from platform code.
  */
-public interface PlatformPluginConfiguration extends IgniteBiInClosure<IgniteConfiguration, BinaryRawReader> {
+public interface PlatformPluginConfigurationClosure extends IgniteBiInClosure<IgniteConfiguration, BinaryRawReader> {
     // No-op.
 }

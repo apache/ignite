@@ -56,8 +56,8 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.plugin.platform.PlatformPluginConfiguration;
-import org.apache.ignite.plugin.platform.PlatformPluginConfigurationFactory;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -1290,24 +1290,24 @@ public class PlatformConfigurationUtils {
         for (int i = 0; i < cnt; i++) {
             int plugCfgFactoryId = in.readInt();
 
-            PlatformPluginConfiguration plugCfg = pluginConfiguration(plugCfgFactoryId);
+            PlatformPluginConfigurationClosure plugCfg = pluginConfiguration(plugCfgFactoryId);
 
-            plugCfg.applyConfiguration(cfg, in);
+            plugCfg.apply(cfg, in);
         }
     }
 
     /**
-     * Create PlatformPluginConfiguration for the given factory ID.
+     * Create PlatformPluginConfigurationClosure for the given factory ID.
      *
      * @param factoryId Factory ID.
-     * @return PlatformPluginConfiguration.
+     * @return PlatformPluginConfigurationClosure.
      */
-    private static PlatformPluginConfiguration pluginConfiguration(final int factoryId) {
-        PlatformPluginConfigurationFactory factory = AccessController.doPrivileged(
-                new PrivilegedAction<PlatformPluginConfigurationFactory>() {
-                    @Override public PlatformPluginConfigurationFactory run() {
-                        for (PlatformPluginConfigurationFactory factory :
-                                ServiceLoader.load(PlatformPluginConfigurationFactory.class)) {
+    private static PlatformPluginConfigurationClosure pluginConfiguration(final int factoryId) {
+        PlatformPluginConfigurationClosureFactory factory = AccessController.doPrivileged(
+                new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
+                    @Override public PlatformPluginConfigurationClosureFactory run() {
+                        for (PlatformPluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
                             if (factory.id() == factoryId)
                                 return factory;
                         }
@@ -1317,7 +1317,7 @@ public class PlatformConfigurationUtils {
                 });
 
         if (factory == null) {
-            throw new IgniteException("PlatformPluginConfigurationFactory is not found " +
+            throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
                     "(did you put into the classpath?): " + factoryId);
         }
 
