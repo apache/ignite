@@ -18,8 +18,13 @@
 package org.apache.ignite.math.impls.storage;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
@@ -32,6 +37,9 @@ public class MatrixOffHeapStorageTest {
     /** */
     private MatrixOffHeapStorage matrixOffHeapStorage;
 
+    /** */
+    private static final String EXTERNALIZE_TEST_FILE_NAME = "externalizeTest";
+
     @Before
     public void setUp() throws Exception {
         matrixOffHeapStorage = new MatrixOffHeapStorage(STORAGE_SIZE, STORAGE_SIZE);
@@ -40,6 +48,12 @@ public class MatrixOffHeapStorageTest {
     @After
     public void tearDown() throws Exception {
         matrixOffHeapStorage.destroy();
+    }
+
+    /** */
+    @AfterClass
+    public static void cleanup() throws IOException {
+        Files.deleteIfExists(Paths.get(EXTERNALIZE_TEST_FILE_NAME));
     }
 
     @Test
@@ -58,7 +72,6 @@ public class MatrixOffHeapStorageTest {
         }
     }
 
-
     @Test
     public void columnSize() throws Exception {
         assertEquals(VALUE_NOT_EQUALS, matrixOffHeapStorage.columnSize(), STORAGE_SIZE);
@@ -75,13 +88,51 @@ public class MatrixOffHeapStorageTest {
     }
 
     @Test
+    public void isSequentialAccess() throws Exception {
+        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isSequentialAccess());
+    }
+
+    @Test
+    public void isDense() throws Exception {
+        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isDense());
+    }
+
+    @Test
+    public void getLookupCost() throws Exception {
+        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.getLookupCost() == 0d);
+    }
+
+    @Test
+    public void isAddConstantTime() throws Exception {
+        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isAddConstantTime());
+    }
+
+    @Test
     public void data() throws Exception {
         assertNull(UNEXPECTED_VALUE, matrixOffHeapStorage.data());
     }
 
     @Test
     public void writeReadExternal() throws Exception {
-        // TODO
+        File f = new File(EXTERNALIZE_TEST_FILE_NAME);
+
+        try {
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(f));
+
+            objectOutputStream.writeObject(matrixOffHeapStorage);
+
+            objectOutputStream.close();
+
+            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(f));
+
+            MatrixOffHeapStorage mohsRestored = (MatrixOffHeapStorage) objectInputStream.readObject();
+
+            objectInputStream.close();
+
+            assertTrue(VALUE_NOT_EQUALS, matrixOffHeapStorage.equals(mohsRestored));
+        } catch (ClassNotFoundException | IOException e) {
+            fail(e.getMessage());
+        }
     }
 
 }
