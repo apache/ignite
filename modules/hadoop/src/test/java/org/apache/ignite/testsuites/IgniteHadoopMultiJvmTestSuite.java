@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedPentom
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSecondarySortExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordCountExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordDeviationExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordMeanExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordMedianExampleTest;
@@ -56,6 +57,7 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondarySortExampleTest.class.getName())));
 
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWordCountExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMeanExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordDeviationExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMedianExampleTest.class.getName())));
