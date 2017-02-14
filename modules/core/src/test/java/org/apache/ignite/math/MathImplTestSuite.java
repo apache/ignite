@@ -30,6 +30,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     AbstractVectorTest.class,
     DenseLocalOnHeapVectorConstructorTest.class,
+    DenseLocalOffHeapVectorConstructorTest.class,
     DenseLocalOnHeapVectorIterableTest.class,
     VectorImplementationsTest.class,
     VectorAttributesTest.class,

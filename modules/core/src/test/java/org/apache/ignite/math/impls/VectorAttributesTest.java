@@ -1,5 +1,7 @@
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.StorageOpsKinds;
+import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -62,13 +64,62 @@ public class VectorAttributesTest {
     }
 
     /** */ @Test
+    public void nullOffHeapTest() {
+        DenseLocalOffHeapVector v = new DenseLocalOffHeapVector((double[])null);
+
+        boolean expECaught = false;
+
+        try {
+            assertTrue(v.isDense());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Default constructor expect exception at this predicate.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.isSequentialAccess());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Default constructor expect exception at this predicate.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.getLookupCost() == 0);
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Default constructor expect exception at this predicate.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.isAddConstantTime());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Default constructor expect exception at this predicate.", expECaught);
+
+        assertNull(v.clusterGroup());
+
+        assertNotNull(v.guid());
+    }
+
+    /** */ @Test
     public void isDenseTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isDense);
+        alwaysTrueAttributeTest(StorageOpsKinds::isDense);
     }
 
     /** */ @Test
     public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isSequentialAccess);
+        alwaysTrueAttributeTest(StorageOpsKinds::isSequentialAccess);
     }
 
     /** */ @Test
@@ -78,7 +129,7 @@ public class VectorAttributesTest {
 
     /** */ @Test
     public void isAddConstantTimeTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isAddConstantTime);
+        alwaysTrueAttributeTest(StorageOpsKinds::isAddConstantTime);
     }
 
     /** */ @Test
@@ -92,7 +143,7 @@ public class VectorAttributesTest {
     }
 
     /** */
-    private void alwaysTrueAttributeTest(Predicate<DenseLocalOnHeapVector> pred) {
+    private void alwaysTrueAttributeTest(Predicate<Vector> pred) {
         boolean expECaught = false;
 
         try {
@@ -139,7 +190,31 @@ public class VectorAttributesTest {
         assertTrue("0 size default copy.",
             pred.test(new DenseLocalOnHeapVector(new double[0])));
 
-        assertTrue("1 size default copy",
+        assertTrue("1 size default copy.",
             pred.test(new DenseLocalOnHeapVector(new double[1])));
+
+        // todo test below
+
+        assertTrue("Size from args, off heap vector.",
+            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
+
+        assertTrue("Size from array in args, off heap vector.",
+            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("copy", false);
+            }})));
+
+        assertTrue("Size from array in args, shallow copy, off heap vector.",
+            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
+                put("arr", test);
+                put("copy", true);
+            }})));
+
+        assertTrue("0 size, off heap vector.",
+            pred.test(new DenseLocalOffHeapVector(new double[0])));
+
+        assertTrue("1 size, off heap vector.",
+            pred.test(new DenseLocalOffHeapVector(new double[1])));
+
     }
 }

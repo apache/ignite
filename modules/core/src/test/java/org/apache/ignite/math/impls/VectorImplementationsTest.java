@@ -147,6 +147,60 @@ public class VectorImplementationsTest {
             Vector::sum);
     }
 
+    /** */
+    @Test
+    public void getLengthSquaredTest() {
+        toDoubleTest(ref -> new Norm(ref, 2).sumPowers(), Vector::getLengthSquared);
+    }
+
+    /** */
+    @Test
+    public void getDistanceSquared() {
+        consumeSampleVectors((v, desc) -> {
+            final int size = v.size();
+
+            new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
+
+            final Vector vOnHeap = new DenseLocalOnHeapVector(size);
+
+            final Vector vOffHeap = new DenseLocalOffHeapVector(size);
+
+            for (Vector.Element e : v.all()) {
+                final int idx = size - 1 - e.index();
+
+                final double val = e.get();
+
+                vOnHeap.set(idx, val);
+
+                vOffHeap.set(idx, val);
+            }
+
+            for (int idx = 0; idx < size; idx++) {
+                final double exp = v.get(idx);
+
+                final int idxMirror = size - 1 - idx;
+
+                assertTrue("On heap vector difference at " + desc + ", idx " + idx,
+                    exp - vOnHeap.get(idxMirror) == 0);
+
+                assertTrue("Off heap vector difference at " + desc + ", idx " + idx,
+                    exp - vOffHeap.get(idxMirror) == 0);
+            }
+
+            final double exp = v.minus(vOnHeap).getLengthSquared();
+
+            final Metric metric = new Metric(exp, v.getDistanceSquared(vOnHeap));
+
+            assertTrue("On heap vector not close enough at " + desc + ", " + metric,
+                metric.closeEnough());
+
+            final Metric metric1 = new Metric(exp, v.getDistanceSquared(vOffHeap));
+
+            assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
+                metric1.closeEnough());
+        });
+    }
+
     /** */ @Test
     public void crossTest() { // TODO write tests for this and other Vector methods involving Matrix
 
@@ -167,7 +221,7 @@ public class VectorImplementationsTest {
 
             final Metric metric = new Metric(exp, obtained);
 
-            assertTrue("Not close enough at size " + size + ", " + metric,
+            assertTrue("Not close enough at " + desc + ", " + metric,
                 metric.closeEnough());
         });
     }
@@ -272,12 +326,23 @@ public class VectorImplementationsTest {
             if (pow.equals(Double.POSITIVE_INFINITY))
                 return maxAbs();
 
+            return Math.pow(sumPowers(), 1 / pow);
+        }
+
+        /** */
+        double sumPowers() {
+            if (pow.equals(0.0))
+                return countNonZeroes();
+
+            if (pow.equals(Double.POSITIVE_INFINITY))
+                return maxAbs();
+
             double norm = 0;
 
             for (double val : arr)
                 norm += Math.pow(val, pow);
 
-            return Math.pow(norm, 1 / pow);
+            return norm;
         }
 
         /** */

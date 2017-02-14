@@ -626,18 +626,6 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void getLengthSquared() { // TODO write test
-
-    }
-
-    /** */
-    @Test
-    public void getDistanceSquared() { // TODO write test
-
-    }
-
-    /** */
-    @Test
     public void dotSelf() {
         assertEquals(VALUE_NOT_EQUALS, testVector.dotSelf(), 0d, NIL_DELTA);
 

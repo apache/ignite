@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public class DenseLocalOnHeapVectorConstructorTest {
-    // todo add similar tests for offheap vector, then rename this class
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
