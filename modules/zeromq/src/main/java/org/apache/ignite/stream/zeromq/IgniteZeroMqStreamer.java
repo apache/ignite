@@ -67,8 +67,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * @param addr Address to connect zmq.
      */
     public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
-        A.ensure(ioThreads > 0, "Param ioThreads.");
-        A.ensure(!"".equals(addr), "Param addr.");
+        A.ensure(ioThreads > 0, "Param ioThreads has been more than 0.");
+        A.ensure(!"".equals(addr), "Param addr has been not empty.");
 
         this.ioThreads = ioThreads;
         this.addr = addr;
@@ -86,7 +86,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * @param threadsCount Threads count.
      */
     private void setThreadsCount(int threadsCount) {
-        assert threadsCount > 0;
+        A.ensure(threadsCount > 0, "Param threadsCount has been more than 0.");
 
         this.threadsCount = threadsCount;
     }
