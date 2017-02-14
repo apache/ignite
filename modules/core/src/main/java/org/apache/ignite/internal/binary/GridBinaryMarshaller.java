@@ -240,7 +240,7 @@ public class GridBinaryMarshaller {
         boolean isFixedSize = desc.isFixedSize();
 
         try (BinaryWriterExImpl writer = isFixedSize ?
-            new BinaryWriterExImpl(ctx, desc.fixedSize()) : new BinaryWriterExImpl(ctx)) {
+            new BinaryWriterExImpl(ctx, desc, desc.fixedSize()) : new BinaryWriterExImpl(ctx)) {
             writer.marshal(obj);
 
             return writer.array(!isFixedSize);

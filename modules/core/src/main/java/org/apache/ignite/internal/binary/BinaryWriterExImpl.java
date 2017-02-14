@@ -55,6 +55,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** */
     private final BinaryContext ctx;
 
+    /** */
+    private final BinaryClassDescriptor desc;
+
     /** Output stream. */
     private final BinaryOutputStream out;
 
@@ -86,23 +89,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param ctx Context.
      */
     public BinaryWriterExImpl(BinaryContext ctx) {
-        this(ctx, BinaryThreadLocalContext.get());
+        this(ctx, new BinaryHeapOutputStream(INIT_CAP, BinaryThreadLocalContext.get().chunk()),
+                BinaryThreadLocalContext.get().schemaHolder(), null, null);
     }
 
     /**
      * @param ctx Context.
+     * @param desc Class descriptor
      * @param size Predefined size.
      */
-    public BinaryWriterExImpl(BinaryContext ctx, int size) {
-        this(ctx, new BinaryHeapOutputStream(size, true), BinaryThreadLocalContext.get().schemaHolder(), null);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param tlsCtx TLS context.
-     */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
-        this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryClassDescriptor desc, int size) {
+        this(ctx, new BinaryHeapOutputStream(size, true),
+                BinaryThreadLocalContext.get().schemaHolder(), desc, null);
     }
 
     /**
@@ -112,7 +110,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles) {
+        this(ctx, out, schema, null, handles);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @param desc Class descriptor
+     * @param handles Handles.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
+                              BinaryClassDescriptor desc, BinaryWriterHandles handles) {
         this.ctx = ctx;
+        this.desc = desc;
         this.out = out;
         this.schema = schema;
         this.handles = handles;
@@ -169,7 +179,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
         Class<?> cls = obj.getClass();
 
-        BinaryClassDescriptor desc = ctx.descriptorForClass(cls, false);
+        BinaryClassDescriptor desc = this.desc == null ? ctx.descriptorForClass(cls, false) : this.desc;
 
         if (desc == null)
             throw new BinaryObjectException("Object is not binary: [class=" + cls + ']');
