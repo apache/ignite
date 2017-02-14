@@ -49,6 +49,26 @@ public class MatrixNullStorage implements MatrixStorage {
     }
 
     @Override
+    public boolean isSequentialAccess() {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
+    public boolean isDense() {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
+    public double getLookupCost() {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
+    }
+
+    @Override
     public boolean isArrayBased() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }

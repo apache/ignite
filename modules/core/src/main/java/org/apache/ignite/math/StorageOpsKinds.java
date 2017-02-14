@@ -17,44 +17,43 @@
 
 package org.apache.ignite.math;
 
-import java.io.*;
-
 /**
- * TODO: add description.
+ * Storage and operation cost characteristics.
  */
-public interface MatrixStorage extends Externalizable, StorageOpsKinds {
+public interface StorageOpsKinds {
     /**
-     *
-     * @param x
-     * @param y
-     * @return
-     */
-    public double get(int x, int y);
-
-    /**
-     *
-     * @param x
-     * @param y
-     * @param v
-     */
-    public void set(int x, int y, double v);
-
-    /**
+     * Checks if this implementation should be considered to be iterable in index order in an efficient way.
      *
      * @return
      */
-    public int columnSize();
+    public boolean isSequentialAccess();
 
     /**
-     * 
+     * Checks if this implementation should be considered dense so that it explicitly
+     * represents every value.
+     *
      * @return
      */
-    public int rowSize();
+    public boolean isDense();
 
     /**
-     * Gets underlying array if {@link #isArrayBased()} returns {@code true}.
+     * Gets an estimate of the cost *in number of ops* it takes to lookup a random element in this vector.
      *
-     * @see #isArrayBased()
+     * @return
      */
-    public double[][] data();
+    public double getLookupCost();
+
+    /**
+     * Checks if adding a non-zero element to this vector is done in a constant time.
+     *
+     * @return
+     */
+    public boolean isAddConstantTime();
+
+    /**
+     * Checks if implementation is based on Java arrays.
+     *
+     * @return
+     */
+    public boolean isArrayBased();
 }

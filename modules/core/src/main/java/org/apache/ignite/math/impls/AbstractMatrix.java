@@ -121,6 +121,31 @@ public abstract class AbstractMatrix implements Matrix {
         return sto;
     }
 
+    @Override
+    public boolean isSequentialAccess() {
+        return sto.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isDense() {
+        return sto.isDense();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return sto.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return sto.isAddConstantTime();
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return sto.isArrayBased();
+    }
+
     /**
      * Check row index bounds.
      *

@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface VectorStorage extends Externalizable {
+public interface VectorStorage extends Externalizable, StorageOpsKinds {
     /**
      *
      * @return
@@ -37,43 +37,11 @@ public interface VectorStorage extends Externalizable {
     public double get(int i);
 
     /**
-     *
-     * @return
-     */
-    public boolean isSequentialAccess();
-
-    /**
-     *
-     * @return
-     */
-    public boolean isDense();
-
-    /**
-     *
-     * @return
-     */
-    public double getLookupCost();
-
-    /**
-     * 
-     * @return
-     */
-    public boolean isAddConstantTime();
-
-    /**
      * 
      * @param i
      * @param v
      */
     public void set(int i, double v);
-
-    /**
-     * Tests whether or not the implementation is based on local on-heap array. Can be used
-     * for performance optimizations.
-     *
-     * @see #data()
-     */
-    public boolean isArrayBased();
 
     /**
      * Gets underlying array if {@link #isArrayBased()} returns {@code true}.

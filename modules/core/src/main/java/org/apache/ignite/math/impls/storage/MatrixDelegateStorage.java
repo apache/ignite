@@ -80,6 +80,26 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     @Override
+    public boolean isSequentialAccess() {
+        return sto.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isDense() {
+        return sto.isDense();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return sto.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return sto.isAddConstantTime();
+    }
+
+    @Override
     public double[][] data() {
         return sto.data();
     }
