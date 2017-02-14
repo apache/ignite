@@ -52,7 +52,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  * cluster is required to be containerized as well. Applications and Ignite nodes running outside of Kubernetes will
  * not be able to reach the containerized counterparts.
  * <p>
- * The implementation is based on a dedicated Kubernetes service that has to be created and should be deployed prior
+ * The implementation is based on a distinct Kubernetes service that has to be created and should be deployed prior
  * Ignite nodes startup. The service will maintain a list of all endpoints (internal IP addresses) of all containerized
  * Ignite pods running so far. The name of the service must be equal to {@link #setServiceName(String)} which is
  * `ignite` by default.
@@ -137,7 +137,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
         Collection<InetSocketAddress> addrs = new ArrayList<>();
 
         try {
-            System.out.println("Getting Apache Ignite endpoints from: " + url);
+            log.debug("Getting Apache Ignite endpoints from: " + url);
 
             HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
 
@@ -159,7 +159,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
                             for (Address address : subset.addresses) {
                                 addrs.add(new InetSocketAddress(address.ip, 0));
 
-                                System.out.println("Added an address to the list: " + address.ip);
+                                log.debug("Added an address to the list: " + address.ip);
                             }
                         }
                     }
