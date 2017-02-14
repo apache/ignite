@@ -17,18 +17,13 @@
 
 package org.apache.ignite.stream.zeromq;
 
-import java.nio.charset.Charset;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
-import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.jetbrains.annotations.NotNull;
 import org.zeromq.ZMQ;
 
@@ -72,6 +67,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * @param addr Address to connect zmq.
      */
     public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
+        A.ensure(ioThreads > 0, "Param ioThreads.");
+        A.ensure(!"".equals(addr), "Param addr.");
+
         this.ioThreads = ioThreads;
         this.addr = addr;
         this.topic = topic;
@@ -88,6 +86,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * @param threadsCount Threads count.
      */
     private void setThreadsCount(int threadsCount) {
+        assert threadsCount > 0;
+
         this.threadsCount = threadsCount;
     }
 
@@ -95,6 +95,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * Start ZeroMQ streamer.
      */
     public void start() {
+        A.ensure(getSingleTupleExtractor() != null || getMultipleTupleExtractor() != null, "ZeroMq extractor.");
+
         log = getIgnite().log();
 
         if (isStart) {
