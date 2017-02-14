@@ -37,7 +37,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Vector extends MetaAttributes, Externalizable {
+public interface Vector extends MetaAttributes, Externalizable, StorageOpsKinds {
     /**
      * Holder for vector's element.
      */
@@ -70,23 +70,6 @@ public interface Vector extends MetaAttributes, Externalizable {
      * @return This vector's cardinality.
      */
     int size();
-
-    /**
-     * Checks if this implementation should be considered dense so that it explicitly
-     * represents every value.
-     *
-     * @return Density flag.
-     */
-    boolean isDense();
-
-    /**
-     * Checks if this implementation should be considered to be iterable in index order in an efficient way.
-     * This implies that methods like {@link #all()} and {@link #nonZeroes()} return elements
-     * in ascending order by index.
-     *
-     * @return Sequential access flag.
-     */
-    boolean isSequentialAccess();
 
     /**
      * Creates new copy of this vector.
@@ -481,20 +464,6 @@ public interface Vector extends MetaAttributes, Externalizable {
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     double getDistanceSquared(Vector vec);
-
-    /**
-     * Gets an estimate of the cost *in number of ops* it takes to lookup a random element in this vector.
-     *
-     * @return Lookup cost in number of ops.
-     */
-    double getLookupCost();
-
-    /**
-     * Checks if adding a non-zero element to this vector is done in a constant time.
-     *
-     * @return Add constant time flag.
-     */
-    boolean isAddConstantTime();
 
     /**
      * Gets optional cluster group this vector is stored on. In case of local JVM storage it may

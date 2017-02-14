@@ -84,12 +84,66 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public Matrix swapRows(int row1, int row2) {
-        return null; // TODO
+        checkRowIndex(row1);
+        checkRowIndex(row2);
+
+        int cols = columnSize();
+
+        for (int y = 0; y < cols; y++) {
+            double v = getX(row1, y);
+            
+            setX(row1, y, getX(row2, y));
+            setX(row2, y, v);
+        }
+
+        return this;
     }
 
     @Override
     public Matrix swapColumns(int col1, int col2) {
-        return null; // TODO
+        checkColumnIndex(col1);
+        checkColumnIndex(col2);
+
+        int rows = rowSize();
+
+        for (int x = 0; x < rows; x++) {
+            double v = getX(x, col1);
+
+            setX(x, col1, getX(x, col2));
+            setX(x, col2, v);
+        }
+
+        return this;
+    }
+
+    @Override
+    public MatrixStorage getStorage() {
+        return sto;
+    }
+
+    @Override
+    public boolean isSequentialAccess() {
+        return sto.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isDense() {
+        return sto.isDense();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return sto.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return sto.isAddConstantTime();
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return sto.isArrayBased();
     }
 
     /**
@@ -566,22 +620,22 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public Matrix viewPart(int[] offset, int[] size) {
-        return null; // TODO
+        return new MatrixView(this, offset[0], offset[1], size[0], size[1]);
     }
 
     @Override
     public Vector viewRow(int row) {
-        return null; // TODO
+        return new MatrixVectorView(this, row, 0, 1, 0);
     }
 
     @Override
     public Vector viewColumn(int col) {
-        return null; // TODO
+        return new MatrixVectorView(this, 0, col, 0, 1);
     }
 
     @Override
     public Vector viewDiagonal() {
-        return null; // TODO
+        return new MatrixVectorView(this, 0, 0, 1, 1);
     }
 
     @Override

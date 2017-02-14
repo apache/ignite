@@ -15,48 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.impls;
 
-import java.io.*;
+import org.apache.ignite.math.*;
 
 /**
  * TODO: add description.
  */
-public interface VectorStorage extends Externalizable, StorageOpsKinds {
-    /**
-     *
-     * @return
-     */
-    public int size();
-
-    /**
-     *
-     * @param i
-     * @return
-     */
-    public double get(int i);
+public abstract class AbstractVectorStorage implements VectorStorage {
+    private StorageOpsKinds ops;
 
     /**
      * 
-     * @param i
-     * @param v
      */
-    public void set(int i, double v);
-
-    /**
-     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
-     * Returns {@code null} if in other cases.
-     *
-     * @see StorageOpsKinds#isArrayBased()
-     */
-    public default double[] data() {
-        return null;
+    public AbstractVectorStorage() {
+        // No-op.
     }
 
     /**
-     * Destroys storage if managed outside of JVM. It's a no-op in all other cases.
+     *
+     * @param ops Delegating instance.
      */
-    public default void destroy() {
-        // No-op.
+    public AbstractVectorStorage(StorageOpsKinds ops) {
+        assert ops != null;
+
+        this.ops = ops;
+    }
+
+    @Override
+    public boolean isSequentialAccess() {
+        return ops.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isDense() {
+        return ops.isDense();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return ops.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return ops.isAddConstantTime();
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return ops.isArrayBased();
     }
 }

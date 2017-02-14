@@ -37,7 +37,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Matrix extends MetaAttributes, Externalizable {
+public interface Matrix extends MetaAttributes, Externalizable, StorageOpsKinds {
     /**
      * Swaps two rows in this matrix.
      *
@@ -201,6 +201,11 @@ public interface Matrix extends MetaAttributes, Externalizable {
      * @return Matrix value.
      */
     double getX(int row, int col);
+
+    /**
+     * Gets matrix storage model.
+     */
+    MatrixStorage getStorage();
 
     /**
      * Clones this matrix.

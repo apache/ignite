@@ -24,84 +24,76 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public class VectorView extends AbstractVector {
-    // Parent.
-    private Vector parent;
+public class MatrixView extends AbstractMatrix {
+    private Matrix parent;
 
-    // View offset.
-    private int off;
+    private int rowOff;
+    private int colOff;
 
-    // View length.
-    private int len;
+    private int rows;
+    private int cols;
 
     /**
      * Constructor for {@link Externalizable} interface.
      */
-    public VectorView(){
+    public MatrixView(){
         // No-op.
     }
 
     /**
-     *
+     * 
      * @param parent
-     * @param off
-     * @param len
+     * @param rowOff
+     * @param colOff
+     * @param rows
+     * @param cols
      */
-    public VectorView(Vector parent, int off, int len) {
-        super(new VectorDelegateStorage(parent.getStorage(), off, len));
+    public MatrixView(Matrix parent, int rowOff, int colOff, int rows, int cols) {
+        super(new MatrixDelegateStorage(parent.getStorage(), rowOff, colOff, rows, cols));
 
         this.parent = parent;
-        this.off = off;
-        this.len = len;
+
+        this.rowOff = rowOff;
+        this.colOff = colOff;
+
+        this.rows = rows;
+        this.cols = cols;
     }
 
-    /** {@inheritDoc} */
     @Override
-    public Vector copy() {
-        return new VectorView(parent, off, len);
+    public Matrix copy() {
+        return new MatrixView(parent, rowOff, colOff, rows, cols);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public Vector like(int crd) {
-        return parent.like(crd);
+    public Matrix like(int rows, int cols) {
+        return parent.like(rows, cols);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public Matrix likeMatrix(int rows, int cols) {
-        return parent.likeMatrix(rows, cols);
+    public Vector likeVector(int crd) {
+        return parent.likeVector(crd);
     }
 
-    /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
 
-        out.writeInt(off);
+        out.writeInt(rowOff);
+        out.writeInt(colOff);
 
-        out.writeInt(len);
+        out.writeInt(rows);
+        out.writeInt(cols);
     }
 
-    /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        parent = (Vector)in.readObject();
+        parent = (Matrix)in.readObject();
 
-        off = in.readInt();
+        rowOff = in.readInt();
+        colOff = in.readInt();
 
-        len = in.readInt();
-
-        setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o ||
-            ((o!=null)
-                && o.getClass() == getClass()
-                && (getStorage().equals(((VectorView)o).getStorage()))
-                && len == ((VectorView)o).len
-                && off == ((VectorView)o).off);
+        rows = in.readInt();
+        cols = in.readInt();
     }
 }

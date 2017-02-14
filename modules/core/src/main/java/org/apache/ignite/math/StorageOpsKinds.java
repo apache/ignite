@@ -17,46 +17,43 @@
 
 package org.apache.ignite.math;
 
-import java.io.*;
-
 /**
- * TODO: add description.
+ * Storage and operation cost characteristics.
  */
-public interface VectorStorage extends Externalizable, StorageOpsKinds {
+public interface StorageOpsKinds {
     /**
+     * Checks if this implementation should be considered to be iterable in index order in an efficient way.
      *
      * @return
      */
-    public int size();
+    public boolean isSequentialAccess();
 
     /**
+     * Checks if this implementation should be considered dense so that it explicitly
+     * represents every value.
      *
-     * @param i
      * @return
      */
-    public double get(int i);
+    public boolean isDense();
 
     /**
-     * 
-     * @param i
-     * @param v
-     */
-    public void set(int i, double v);
-
-    /**
-     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
-     * Returns {@code null} if in other cases.
+     * Gets an estimate of the cost *in number of ops* it takes to lookup a random element in this vector.
      *
-     * @see StorageOpsKinds#isArrayBased()
+     * @return
      */
-    public default double[] data() {
-        return null;
-    }
+    public double getLookupCost();
 
     /**
-     * Destroys storage if managed outside of JVM. It's a no-op in all other cases.
+     * Checks if adding a non-zero element to this vector is done in a constant time.
+     *
+     * @return
      */
-    public default void destroy() {
-        // No-op.
-    }
+    public boolean isAddConstantTime();
+
+    /**
+     * Checks if implementation is based on Java arrays.
+     *
+     * @return
+     */
+    public boolean isArrayBased();
 }

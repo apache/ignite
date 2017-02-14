@@ -67,17 +67,17 @@ public class DelegatingVector implements Vector {
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return dlg.likeMatrix(rows, cols);
     }
 
     @Override
     public Matrix toMatrix() {
-        return null; // TODO
+        return dlg.toMatrix();
     }
 
     @Override
     public Matrix toMatrixPlusOne(double zeroVal) {
-        return null; // TODO
+        return dlg.toMatrixPlusOne(zeroVal);
     }
 
     @Override
@@ -93,6 +93,11 @@ public class DelegatingVector implements Vector {
     @Override
     public boolean isSequentialAccess() {
         return dlg.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return dlg.isArrayBased();
     }
 
     @Override

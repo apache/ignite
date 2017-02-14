@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface MatrixStorage extends Externalizable {
+public interface MatrixStorage extends Externalizable, StorageOpsKinds {
     /**
      *
      * @param x
@@ -52,17 +52,9 @@ public interface MatrixStorage extends Externalizable {
     public int rowSize();
 
     /**
-     * Tests whether or not the implementation is based on local on-heap array. Can be used
-     * for performance optimizations.
+     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
      *
-     * @see #data()
-     */
-    public boolean isArrayBased();
-
-    /**
-     * Gets underlying array if {@link #isArrayBased()} returns {@code true}.
-     *
-     * @see #isArrayBased()
+     * @see StorageOpsKinds#isArrayBased()
      */
     public double[][] data();
 

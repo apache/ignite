@@ -112,6 +112,11 @@ public abstract class AbstractVector implements Vector {
         return storageGet(idx);
     }
 
+    @Override
+    public boolean isArrayBased() {
+        return sto.isArrayBased();
+    }
+
     /** {@inheritDoc */
     @Override public Vector map(DoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {

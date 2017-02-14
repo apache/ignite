@@ -56,6 +56,26 @@ public class MatrixOffHeapStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override
+    public boolean isSequentialAccess() {
+        return false; // TODO
+    }
+
+    @Override
+    public boolean isDense() {
+        return false; // TODO
+    }
+
+    @Override
+    public double getLookupCost() {
+        return 0; // TODO
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return false; // TODO
+    }
+
+    @Override
     public int rowSize() {
         return rows;
     }

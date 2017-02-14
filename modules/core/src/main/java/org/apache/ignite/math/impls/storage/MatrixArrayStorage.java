@@ -72,6 +72,26 @@ public class MatrixArrayStorage implements MatrixStorage {
     }
 
     @Override
+    public boolean isSequentialAccess() {
+        return true;
+    }
+
+    @Override
+    public boolean isDense() {
+        return true;
+    }
+
+    @Override
+    public double getLookupCost() {
+        return 0;
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return true;
+    }
+
+    @Override
     public void set(int x, int y, double v) {
         data[x][y] = v;
     }
