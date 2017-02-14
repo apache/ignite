@@ -314,11 +314,14 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
      * @throws Exception In case of error.
      */
     public void testScanQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
+        //There is no way to arrange for ScanQuery to fail during execution
+        //since partitions are checked in constructor/setter now
 
-        ScanQuery<Integer, String> qry = new ScanQuery<>(Integer.MAX_VALUE);
+        //IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
-        checkQueryFailedMetrics(cache, qry);
+        //ScanQuery<Integer, String> qry = new ScanQuery<>(Integer.MAX_VALUE);
+
+        //checkQueryFailedMetrics(cache, qry);
     }
 
     /**

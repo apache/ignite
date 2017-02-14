@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,13 +43,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -82,7 +81,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private volatile boolean clientMode;
 
     /** Expected first node ID. */
-    private static UUID expNodeId;
+    private static Set<UUID >expNodeIds;
 
     /** Communication SPI factory. */
     private CommunicationSpiFactory commSpiFactory;
@@ -136,12 +135,16 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            int part = anyLocalPartition(cache.context());
+            Set<Integer> pSet = randomNodePartitions(cache.context(), ignite.cluster().localNode(), 3);
+
+            log().info("Partitions: " + pSet);
+
+            int[] parts = U.toIntArray(pSet);
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
-                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
 
-            doTestScanQuery(qry, part);
+            doTestScanQuery(qry, parts);
         }
         finally {
             stopAllGrids();
@@ -153,7 +156,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
-    public void testScanRemote() throws Exception {
+    public void testScanRemoteCollocated() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
         commSpiFactory = new TestRemoteCommunicationSpiFactory();
@@ -163,16 +166,57 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
 
-            IgniteBiTuple<Integer, UUID> tup = remotePartition(cache.context());
+            ClusterNode node = F.rand(ignite.cluster().forRemotes().nodes());
 
-            int part = tup.get1();
+            Set<Integer> pSet = randomNodePartitions(cache.context(), node, 3);
 
-            expNodeId = tup.get2();
+            expNodeIds = Collections.singleton(node.id());
+
+            int[] parts = U.toIntArray(pSet);
 
             QueryCursor<Cache.Entry<Integer, Integer>> qry =
-                cache.query(new ScanQuery<Integer, Integer>().setPartition(part));
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
 
-            doTestScanQuery(qry, part);
+            doTestScanQuery(qry, parts);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan should perform on the remote node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanRemotePartitioned() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestRemoteCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+            Set<Integer> pSet = new HashSet<>();
+
+            expNodeIds = new HashSet<>();
+
+            for (ClusterNode node : nodes) {
+                pSet.addAll(randomNodePartitions(cache.context(), node, 1));
+
+                expNodeIds.add(node.id());
+            }
+
+            int[] parts = U.toIntArray(pSet); // All partitions are on different nodes.
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartitions(parts));
+
+            doTestScanQuery(qry, parts);
         }
         finally {
             stopAllGrids();
@@ -376,17 +420,35 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /**
      * @param qry Query.
-     * @param part Partition.
+     * @param parts Partitions.
      */
-    protected void doTestScanQuery(QueryCursor<Cache.Entry<Integer, Integer>> qry, int part) {
+    protected void doTestScanQuery(QueryCursor<Cache.Entry<Integer, Integer>> qry, int... parts) {
         Collection<Cache.Entry<Integer, Integer>> qryEntries = qry.getAll();
 
-        Map<Integer, Integer> map = entries.get(part);
+        int totalCnt = 0;
 
-        for (Cache.Entry<Integer, Integer> e : qryEntries)
-            assertEquals(map.get(e.getKey()), e.getValue());
+        for (int part : parts) {
+            Map<Integer, Integer> map = entries.get(part);
 
-        assertEquals("Invalid number of entries for partition: " + part, map.size(), qryEntries.size());
+            Set<Map.Entry<Integer, Integer>> set = map.entrySet();
+
+            int cnt = 0;
+
+            for (Map.Entry<Integer, Integer> entry : set)
+                for (Cache.Entry<Integer, Integer> e : qryEntries) {
+                    if (entry.getKey().equals(e.getKey())) {
+                        assertEquals(entry.getValue(), e.getValue());
+
+                        cnt++;
+                    }
+                }
+
+            totalCnt += cnt;
+
+            assertEquals("Invalid number of entries for partition: " + part, map.size(), cnt);
+        }
+
+        assertEquals("Invalid total number of entries", totalCnt, qryEntries.size());
     }
 
     /**
@@ -420,19 +482,22 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * @param cctx Cctx.
-     * @return Remote partition.
+     * @param cctx Cache context.
+     * @param node Cluster node owning the partitions.
+     * @param cnt Count.
+     * @return Partition set.
      */
-    private IgniteBiTuple<Integer, UUID> remotePartition(final GridCacheContext cctx) {
-        ClusterNode node = F.first(cctx.kernalContext().grid().cluster().forRemotes().nodes());
-
+    private static Set<Integer> randomNodePartitions(final GridCacheContext cctx, ClusterNode node, int cnt) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
-        AffinityTopologyVersion topVer = affMgr.affinityTopologyVersion();
+        Set<Integer> parts = affMgr.primaryPartitions(node.id(), affMgr.affinityTopologyVersion());
 
-        Set<Integer> parts = affMgr.primaryPartitions(node.id(), topVer);
+        Set<Integer> rnd = new HashSet<>(cnt);
 
-        return new IgniteBiTuple<>(F.first(parts), node.id());
+        while(rnd.size() != cnt)
+            rnd.add(F.rand(parts));
+
+        return rnd;
     }
 
     /**
@@ -498,7 +563,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                     Object origMsg = ((GridIoMessage)msg).message();
 
                     if (origMsg instanceof GridCacheQueryRequest)
-                        assertEquals(expNodeId, node.id());
+                        assertTrue(expNodeIds.contains(node.id()));
 
                     super.sendMessage(node, msg, ackC);
                 }

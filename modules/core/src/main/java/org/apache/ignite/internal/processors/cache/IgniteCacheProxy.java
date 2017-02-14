@@ -489,7 +489,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartitions(), isKeepBinary);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -728,6 +728,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                 final SqlQuery p = (SqlQuery)qry;
 
+                if (ctx.isReplicated() && qry.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported for replicated caches.");
+
+                if (p.isDistributedJoins() && qry.getPartitions() != null)
+                    throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
+
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
                         @Override public Iterator<Cache.Entry<K, V>> iterator() {
@@ -745,6 +751,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                         "not on replicated.");
 
                 SqlFieldsQuery p = (SqlFieldsQuery)qry;
+
+                if (ctx.isReplicated() && qry.getPartitions() != null)
+                    throw new CacheException("Partitions are not supported for replicated caches.");
+
+                if (p.isDistributedJoins() && qry.getPartitions() != null)
+                    throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
                     return (QueryCursor<R>)ctx.kernalContext().query().queryLocalFields(ctx, p);

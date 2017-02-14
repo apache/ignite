@@ -18,8 +18,12 @@
 package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for all Ignite cache queries.
@@ -40,6 +44,9 @@ public abstract class Query<R> implements Serializable {
 
     /** Local flag. */
     private boolean loc;
+
+    /** Partitions for query */
+    private int[] parts;
 
     /**
      * Empty constructor.
@@ -89,6 +96,40 @@ public abstract class Query<R> implements Serializable {
      */
     public Query<R> setLocal(boolean loc) {
         this.loc = loc;
+
+        return this;
+    }
+
+    /**
+     * Gets partitions for query, in ascending order.
+     */
+    @Nullable public int[] getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets partitions for a query.
+     * The query will be executed only on nodes which are primary for specified partitions.
+     *
+     * @param parts Partitions.
+     * @return {@code this} for chaining.
+     */
+    public Query<R> setPartitions(@Nullable int... parts) {
+        this.parts = parts;
+
+        if (this.parts != null) {
+            A.notEmpty(parts, "Partitions");
+
+            // Validate partitions.
+            for (int i = 0; i < parts.length; i++) {
+                if (i < parts.length - 1)
+                    A.ensure(parts[i] != parts[i + 1], "Partition duplicates are not allowed");
+
+                A.ensure(0 <= parts[i] && parts[i] < CacheConfiguration.MAX_PARTITIONS_COUNT, "Illegal partition");
+            }
+
+            Arrays.sort(this.parts);
+        }
 
         return this;
     }

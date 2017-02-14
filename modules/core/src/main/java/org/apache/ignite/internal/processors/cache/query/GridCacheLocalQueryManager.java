@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -81,7 +84,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
+    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Map<ClusterNode, Set<Integer>> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new IgniteException("Distributed queries are not available for local cache " +
@@ -90,7 +93,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
     /** {@inheritDoc} */
     @Override public GridCloseableIterator scanQueryDistributed(GridCacheQueryAdapter qry,
-        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        Map<ClusterNode, Set<Integer>> nodes) throws IgniteCheckedException {
         assert cctx.isLocal() : cctx.name();
 
         throw new IgniteException("Distributed scan query are not available for local cache " +
@@ -125,7 +128,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
-        Collection<ClusterNode> nodes) {
+        Map<ClusterNode, Set<Integer>> nodes) {
         assert cctx.config().getCacheMode() == LOCAL;
 
         throw new IgniteException("Distributed queries are not available for local cache " +

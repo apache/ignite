@@ -35,23 +35,20 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private IgniteBiPredicate<K, V> filter;
 
-    /** */
-    private Integer part;
-
     /**
      * Create scan query returning all entries.
      */
     public ScanQuery() {
-        this(null, null);
+        this((int[])null, null);
     }
 
     /**
      * Creates partition scan query returning all entries for given partition.
      *
-     * @param part Partition.
+     * @param parts Partitions.
      */
-    public ScanQuery(int part) {
-        this(part, null);
+    public ScanQuery(int... parts) {
+        this(parts == null || parts.length == 0 ? null : parts[0], null);
     }
 
     /**
@@ -60,7 +57,7 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
     public ScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
-        this(null, filter);
+        this((int[])null, filter);
     }
 
     /**
@@ -70,7 +67,18 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
     public ScanQuery(@Nullable Integer part, @Nullable IgniteBiPredicate<K, V> filter) {
-        setPartition(part);
+        setPartitions(part == null ? null : new int[] {part});
+        setFilter(filter);
+    }
+
+    /**
+     * Create scan query with filter.
+     *
+     * @param parts Partitions.
+     * @param filter Filter. If {@code null} then all entries will be returned.
+     */
+    public ScanQuery(@Nullable int[] parts, @Nullable IgniteBiPredicate<K, V> filter) {
+        setPartitions(parts);
         setFilter(filter);
     }
 
@@ -101,9 +109,15 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param part Partition number over which this query should iterate.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setPartitions(int... parts)} instead.}
      */
+    @Deprecated
     public ScanQuery<K, V> setPartition(@Nullable Integer part) {
-        this.part = part;
+        if (part == null)
+            setPartitions(null);
+        else
+            setPartitions(part);
 
         return this;
     }
@@ -113,9 +127,12 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * set. In this case query will iterate over all partitions in the cache.
      *
      * @return Partition number or {@code null}.
+     *
+     * @deprecated Use {@link #getPartitions()} instead.}
      */
+    @Deprecated
     @Nullable public Integer getPartition() {
-        return part;
+        return getPartitions() == null ? null : getPartitions()[0];
     }
 
     /** {@inheritDoc} */

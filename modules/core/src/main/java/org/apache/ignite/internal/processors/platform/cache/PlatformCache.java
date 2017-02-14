@@ -1245,7 +1245,10 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
 
-        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins);
+        int[] parts = reader.readIntArray();
+
+        return new SqlQuery(typ, sql).setPageSize(pageSize).setArgs(args).setLocal(loc).setDistributedJoins(distrJoins)
+            .setPartitions(parts);
     }
 
     /**
@@ -1261,8 +1264,10 @@ public class PlatformCache extends PlatformAbstractTarget {
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
 
+        int[] parts = reader.readIntArray();
+
         return new SqlFieldsQuery(sql).setPageSize(pageSize).setArgs(args).setLocal(loc)
-            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder);
+            .setDistributedJoins(distrJoins).setEnforceJoinOrder(enforceJoinOrder).setPartitions(parts);
     }
 
     /**
@@ -1290,7 +1295,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         ScanQuery qry = new ScanQuery().setPageSize(pageSize);
 
-        qry.setPartition(part);
+        qry.setPartitions(part);
 
         Object pred = reader.readObjectDetached();
 

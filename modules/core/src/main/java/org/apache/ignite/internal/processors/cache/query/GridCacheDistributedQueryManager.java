@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -41,13 +44,15 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -272,7 +277,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 false,
                 null,
                 req.keyValueFilter(),
-                req.partition() == -1 ? null : req.partition(),
+                req.partitions(),
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
@@ -516,7 +521,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes) {
+    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Map<ClusterNode, Set<Integer>> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -525,7 +530,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedQueryFuture<K, V, ?> fut =
-            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes);
+            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes.keySet());
 
         try {
             qry.query().validate();
@@ -541,7 +546,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
-                qry.query().partition(),
+                null,
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -552,6 +557,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                null,
                 // Force deployment anyway if scan query is used.
                 cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
@@ -567,7 +573,15 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             });
 
-            sendRequest(fut, req, nodes);
+            sendRequest(fut, req, nodes.keySet(), F.first(nodes.values()) == null ? null : new IgniteBiClosure<ClusterNode, GridCacheQueryRequest, GridCacheQueryRequest>() {
+                @Override public GridCacheQueryRequest apply(ClusterNode node, GridCacheQueryRequest req) {
+                    GridCacheQueryRequest cpy = new GridCacheQueryRequest(req);
+
+                    cpy.partitions(U.toIntArray(nodes.get(node)));
+
+                    return cpy;
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
@@ -579,25 +593,27 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "serial"})
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
-        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        final Map<ClusterNode, Set<Integer>> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN: qry;
 
         GridCloseableIterator locIter0 = null;
 
-        for (ClusterNode node : nodes) {
-            if (node.isLocal()) {
-                locIter0 = scanQueryLocal(qry, false);
+        Iterator<Map.Entry<ClusterNode, Set<Integer>>> it = nodes.entrySet().iterator();
 
-                Collection<ClusterNode> rmtNodes = new ArrayList<>(nodes.size() - 1);
+        while(it.hasNext()) {
+            final Map.Entry<ClusterNode, Set<Integer>> e = it.next();
 
-                for (ClusterNode n : nodes) {
-                    // Equals by reference can be used here.
-                    if (n != node)
-                        rmtNodes.add(n);
-                }
+            if (e.getKey().isLocal()) {
+                IgniteClosure<GridCacheQueryAdapter, GridCacheQueryAdapter> clo = new IgniteClosure<GridCacheQueryAdapter, GridCacheQueryAdapter>() {
+                    @Override public GridCacheQueryAdapter apply(GridCacheQueryAdapter adp) {
+                        Set<Integer> parts = nodes.get(e.getKey());
 
-                nodes = rmtNodes;
+                        return parts == null ? adp : new GridCacheQueryAdapter(adp, U.toIntArray(parts));
+                    }
+                };
+
+                locIter0 = scanQueryLocal(clo.apply(qry), false);
 
                 break;
             }
@@ -607,7 +623,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, qry.<K, V>transform(), null);
 
-        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, nodes);
+        final Map<ClusterNode, Set<Integer>> remoteNodes = F.view(nodes, new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return !node.isLocal();
+            }});
+
+        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, remoteNodes);
 
         return new GridCloseableIteratorAdapter() {
             /** */
@@ -672,7 +693,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 // Force deployment anyway if scan query is used.
                 cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
 
-            sendRequest(fut, req, nodes);
+            sendRequest(fut, req, nodes, null);
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
@@ -703,7 +724,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
-        Collection<ClusterNode> nodes) {
+        final Map<ClusterNode, Set<Integer>> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -712,7 +733,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedFieldsQueryFuture fut =
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes);
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes.keySet());
 
         try {
             qry.query().validate();
@@ -737,6 +758,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
+                null,
                 cctx.deploymentEnabled());
 
             addQueryFuture(req.id(), fut);
@@ -746,12 +768,19 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.io().addOrderedHandler(topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+                @Override
+                public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });
 
-            sendRequest(fut, req, nodes);
+            sendRequest(fut, req, nodes.keySet(), F.first(nodes.values()) == null ? null : new IgniteBiClosure<ClusterNode, GridCacheQueryRequest, GridCacheQueryRequest>() {
+                @Override public GridCacheQueryRequest apply(ClusterNode clusterNode, GridCacheQueryRequest req) {
+                    req.partitions(U.toIntArray(nodes.get(clusterNode)));
+
+                    return req;
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
@@ -766,14 +795,15 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param fut Distributed future.
      * @param req Request.
      * @param nodes Nodes.
+     * @param alterQryClo
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
     private void sendRequest(
-        final GridCacheDistributedQueryFuture<?, ?, ?> fut,
-        final GridCacheQueryRequest req,
-        Collection<ClusterNode> nodes
-    ) throws IgniteCheckedException {
+            final GridCacheDistributedQueryFuture<?, ?, ?> fut,
+            final GridCacheQueryRequest req,
+            Collection<ClusterNode> nodes,
+            final IgniteBiClosure<ClusterNode, GridCacheQueryRequest, GridCacheQueryRequest> alterQryClo) throws IgniteCheckedException {
         assert fut != null;
         assert req != null;
         assert nodes != null;
@@ -799,21 +829,18 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
         if (!F.isEmpty(rmtNodes)) {
-            cctx.io().safeSend(rmtNodes, req, cctx.ioPolicy(), new P1<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-                    fut.onNodeLeft(node.id());
-
-                    return !fut.isDone();
-                }
-            });
+            for (ClusterNode rmtNode : rmtNodes)
+                cctx.io().send(rmtNode, alterQryClo == null ? req : alterQryClo.apply(rmtNode, req), GridIoPolicy.SYSTEM_POOL);
         }
 
         if (locNode != null) {
+            final ClusterNode finalLocNode = locNode;
+
             cctx.closures().callLocalSafe(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     req.beforeLocalExecution(cctx);
 
-                    processQueryRequest(locNodeId, req);
+                    processQueryRequest(locNodeId, alterQryClo == null ? req : alterQryClo.apply(finalLocNode, req));
 
                     return null;
                 }
