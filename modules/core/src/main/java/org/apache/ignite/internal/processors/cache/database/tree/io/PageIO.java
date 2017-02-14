@@ -78,11 +78,14 @@ public abstract class PageIO {
     /** */
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
-    /** */
-    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs;
+    /** Maximum payload size. */
+    public static final short MAX_PAYLOAD_SIZE = 2048;
 
     /** */
-    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs;
+    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+
+    /** */
+    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -155,9 +158,6 @@ public abstract class PageIO {
     /** */
     public static final short T_PAGE_UPDATE_TRACKING = 15;
 
-    /** Maximum payload size. */
-    public static final short MAX_PAYLOAD_SIZE = 2048;
-
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
     public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
@@ -182,9 +182,6 @@ public abstract class PageIO {
 
         this.type = type;
         this.ver = ver;
-
-        h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
-        h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
     }
 
     /**
@@ -330,19 +327,19 @@ public abstract class PageIO {
     }
 
     /**
-     * @param type Type.
-     * @return IOVersions for given type.
+     * @param idx Index.
+     * @return IOVersions for given idx.
      */
-    public static IOVersions<? extends BPlusInnerIO<?>> getInnerVersions(short type) {
-        return h2ExtraInnerIOs.get(type);
+    public static IOVersions<? extends BPlusInnerIO<?>> getInnerVersions(int idx) {
+        return h2ExtraInnerIOs.get(idx);
     }
 
     /**
-     * @param type Type.
-     * @return IOVersions for given type.
+     * @param idx Index.
+     * @return IOVersions for given idx.
      */
-    public static IOVersions<? extends BPlusLeafIO<?>> getLeafVersions(short type) {
-        return h2ExtraLeafIOs.get(type);
+    public static IOVersions<? extends BPlusLeafIO<?>> getLeafVersions(int idx) {
+        return h2ExtraLeafIOs.get(idx);
     }
 
     /**

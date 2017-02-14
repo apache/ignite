@@ -228,7 +228,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public static IOVersions<H2ExtrasInnerIO> getInnerVersions(short payload) {
         assert payload > 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
-        return (IOVersions<H2ExtrasInnerIO>)PageIO.getInnerVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1));
+        return (IOVersions<H2ExtrasInnerIO>)PageIO.getInnerVersions(payload - 1);
     }
 
     /**
@@ -237,7 +237,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public static IOVersions<H2ExtrasLeafIO> getLeafVersions(short payload) {
         assert payload > 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
-        return (IOVersions<H2ExtrasLeafIO>)PageIO.getLeafVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1));
+        return (IOVersions<H2ExtrasLeafIO>)PageIO.getLeafVersions(payload - 1);
     }
     
     /** Default DB options. */
