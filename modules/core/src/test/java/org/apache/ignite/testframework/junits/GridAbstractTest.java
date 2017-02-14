@@ -79,6 +79,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -462,7 +463,17 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Test kernal context.
      */
     protected GridTestKernalContext newContext() throws IgniteCheckedException {
-        return new GridTestKernalContext(log());
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setClientMode(false);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                //No-op
+            }
+        });
+
+        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
+        return ctx;
     }
 
     /**
@@ -806,11 +817,29 @@ public abstract class GridAbstractTest extends TestCase {
      * Starts new grid at another JVM with given name.
      *
      * @param gridName Grid name.
+     * @param cfg Ignite configuration.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
     protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
+        return startRemoteGrid(gridName, cfg, ctx, grid(0), true);
+    }
+
+    /**
+     * Starts new grid at another JVM with given name.
+     *
+     * @param gridName Grid name.
+     * @param cfg Ignite configuration.
+     * @param ctx Spring context.
+     * @param locNode Local node.
+     * @param resetDiscovery Reset DiscoverySpi.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx,
+        IgniteEx locNode, boolean resetDiscovery)
         throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
@@ -818,7 +847,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(gridName));
 
-        return new IgniteProcessProxy(cfg, log, grid(0));
+        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
     }
 
     /**
@@ -826,6 +855,7 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param cfg Configuration.
      * @return Optimized configuration (by modifying passed in one).
+     * @throws IgniteCheckedException On error.
      */
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
