@@ -351,32 +351,21 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 else {
                     if (err != null &&
                         X.hasCause(err, CachePartialUpdateCheckedException.class) &&
-                        X.hasCause(err, ClusterTopologyCheckedException.class) &&
-                        storeFuture() &&
-                        --remapCnt > 0) {
-                        ClusterTopologyCheckedException topErr =
-                            X.cause(err, ClusterTopologyCheckedException.class);
+                        X.hasCause(err, ClusterTopologyCheckedException.class) && storeFuture() && --remapCnt > 0) {
 
-                        //if (!(topErr instanceof ClusterTopologyServerNotFoundLocalException)) {
-                            CachePartialUpdateCheckedException cause =
-                                X.cause(err, CachePartialUpdateCheckedException.class);
+                        CachePartialUpdateCheckedException cause =
+                            X.cause(err, CachePartialUpdateCheckedException.class);
 
-                            assert cause != null && cause.topologyVersion() != null : err;
+                        assert cause != null && cause.topologyVersion() != null : err;
 
-                            remapTopVer =
-                                new AffinityTopologyVersion(cause.topologyVersion().topologyVersion() + 1);
+                        remapTopVer = new AffinityTopologyVersion(cause.topologyVersion().topologyVersion() + 1);
+                        err = null;
+                        Collection<Object> failedKeys = cause.failedKeys();
+                        remapKeys = new ArrayList<>(failedKeys.size());
 
-                            err = null;
-
-                            Collection<Object> failedKeys = cause.failedKeys();
-
-                            remapKeys = new ArrayList<>(failedKeys.size());
-
-                            for (Object key : failedKeys)
-                                remapKeys.add(cctx.toCacheKeyObject(key));
-
-                            updVer = null;
-                        //}
+                        for (Object key : failedKeys)
+                            remapKeys.add(cctx.toCacheKeyObject(key));
+                        updVer = null;
                     }
                 }
 

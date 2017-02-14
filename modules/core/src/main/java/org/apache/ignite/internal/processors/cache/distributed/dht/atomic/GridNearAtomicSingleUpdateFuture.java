@@ -267,21 +267,17 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     X.hasCause(err, ClusterTopologyCheckedException.class) &&
                     storeFuture() &&
                     --remapCnt > 0) {
-                    ClusterTopologyCheckedException topErr =
-                        X.cause(err, ClusterTopologyCheckedException.class);
 
-                    //if (!(topErr instanceof ClusterTopologyServerNotFoundLocalException)) {
-                        CachePartialUpdateCheckedException cause =
-                            X.cause(err, CachePartialUpdateCheckedException.class);
+                    CachePartialUpdateCheckedException cause =
+                        X.cause(err, CachePartialUpdateCheckedException.class);
 
-                        assert cause != null && cause.topologyVersion() != null : err;
+                    assert cause != null && cause.topologyVersion() != null : err;
 
-                        remapTopVer =
-                            new AffinityTopologyVersion(cause.topologyVersion().topologyVersion() + 1);
+                    remapTopVer =
+                        new AffinityTopologyVersion(cause.topologyVersion().topologyVersion() + 1);
 
-                        err = null;
-                        updVer = null;
-                    //}
+                    err = null;
+                    updVer = null;
                 }
             }
 
