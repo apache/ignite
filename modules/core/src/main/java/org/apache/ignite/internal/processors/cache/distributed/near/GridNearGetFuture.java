@@ -30,7 +30,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
@@ -254,7 +255,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (affNodes.isEmpty()) {
             assert !cctx.affinityNode();
 
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all partition " +
+            onDone(new ClusterTopologyServerNotFoundLocalException("Failed to map keys for near-only cache (all partition " +
                 "nodes left the grid)."));
 
             return;
@@ -496,7 +497,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     if (keys != null && keys.containsKey(key)) {
                         if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
-                            onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                            onDone(new ClusterTopologyLocalException("Failed to remap key to a new node after " +
                                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) " +
                                 "[key=" + key + ", node=" + U.toShortString(affNode) + ", mappings=" + mapped + ']'));
 

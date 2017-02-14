@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -50,9 +51,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
 public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolean> implements GridCacheFuture<Boolean> {
-    /** */         
+    /** */
     private static final long serialVersionUID = 0L;
-    
+
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -607,7 +608,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                     cctx.tm().commitIfPrepared(tx, failedNodeIds0);
                 }
 
-                onDone(new ClusterTopologyCheckedException("Transaction node left grid (will ignore)."));
+                onDone(new ClusterTopologyLocalException("Transaction node left grid (will ignore)."));
             }
             else
                 onDone(true);

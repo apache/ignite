@@ -78,7 +78,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
@@ -4258,7 +4258,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1) {
                         ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                        if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                        //if (!(topErr instanceof ClusterTopologyServerNotFoundLocalException)) {
                             AffinityTopologyVersion topVer = tx.topologyVersion();
 
                             assert topVer != null && topVer.topologyVersion() > 0 : tx;
@@ -4266,7 +4266,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             ctx.affinity().affinityReadyFuture(topVer.topologyVersion() + 1).get();
 
                             continue;
-                        }
+                        //}
                     }
 
                     throw e;
@@ -4975,7 +4975,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
                             ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                            if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                            //if (!(topErr instanceof ClusterTopologyServerNotFoundLocalException)) {
                                 IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
 
                                 assert tx != null;
@@ -5004,7 +5004,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 });
 
                                 return;
-                            }
+                            //}
                         }
 
                         onDone(e);

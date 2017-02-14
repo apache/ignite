@@ -64,6 +64,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -2798,7 +2799,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (getSpiContext().node(node.id()) == null) {
                         U.closeQuiet(ch);
 
-                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                        throw new ClusterTopologyLocalException("Failed to send message " +
                             "(node left topology): " + node);
                     }
 

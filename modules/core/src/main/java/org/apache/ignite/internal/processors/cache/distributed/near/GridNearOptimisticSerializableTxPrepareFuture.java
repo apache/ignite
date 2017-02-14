@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -155,9 +156,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                 if (f.node().id().equals(nodeId)) {
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
-                        nodeId);
-
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        nodeId, cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
                     f.onNodeLeft(e);
 
@@ -496,11 +495,15 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 cctx.io().send(n, req, tx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException e) {
-                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
-
                 fut.onNodeLeft(e);
 
                 return e;
+            } catch (ClusterTopologyLocalException e) {
+                ClusterTopologyCheckedException ex = e.toChecked(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                fut.onNodeLeft(ex);
+
+                return ex;
             }
             catch (IgniteCheckedException e) {
                 fut.onResult(e);
@@ -856,9 +859,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                         }
                                         else {
                                             ClusterTopologyCheckedException err0 = new ClusterTopologyCheckedException(
-                                                "Cluster topology changed while client transaction is preparing.");
-
-                                            err0.retryReadyFuture(affFut);
+                                                "Cluster topology changed while client transaction is preparing.", affFut);
 
                                             ERR_UPD.compareAndSet(parent, null, err0);
 

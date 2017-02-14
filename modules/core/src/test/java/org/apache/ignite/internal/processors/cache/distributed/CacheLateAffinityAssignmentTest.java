@@ -54,7 +54,7 @@ import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2092,7 +2092,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     }
                 }
                 catch (Exception e) {
-                    assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyServerNotFoundException.class));
+                    assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyServerNotFoundLocalException.class));
 
                     Affinity<Object> aff = node.affinity(cacheName);
 

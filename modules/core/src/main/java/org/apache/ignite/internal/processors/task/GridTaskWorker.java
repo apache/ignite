@@ -62,8 +62,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -541,7 +542,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             processDelayedResponses();
         }
-        catch (ClusterGroupEmptyCheckedException e) {
+        catch (ClusterGroupEmptyLocalException e) {
             U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
             finishTask(null, e);
@@ -666,7 +667,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         int size = subgrid.size();
 
         if (size == 0)
-            throw new ClusterGroupEmptyCheckedException("Topology projection is empty.");
+            throw new ClusterGroupEmptyLocalException("Topology projection is empty.");
 
         List<ClusterNode> shuffledNodes = new ArrayList<>(size);
 
@@ -1209,7 +1210,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (log.isDebugEnabled())
                 log.debug(msg);
 
-            Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
+            Throwable e = new ClusterTopologyLocalException(msg, jobRes.getException());
 
             finishTask(null, e);
 

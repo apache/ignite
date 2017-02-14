@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -913,7 +914,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             catch (IgniteCheckedException e) {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                    throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
+                    throw new ClusterTopologyLocalException("Node left grid while sending message to: " + node.id(), e);
 
                 if (cnt == retryCnt || cctx.kernalContext().isStopping())
                     throw e;
@@ -1053,7 +1054,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [nodeId=" + nodeId +
+            throw new ClusterTopologyLocalException("Failed to send message because node left grid [nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 
         send(n, msg, plc);
@@ -1088,7 +1089,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
             catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
+                    throw new ClusterTopologyLocalException("Node left grid while sending ordered message to: " + node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;
@@ -1133,7 +1134,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
         catch (IgniteCheckedException e) {
             if (!cctx.discovery().alive(node.id()))
-                throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
+                throw new ClusterTopologyLocalException("Node left grid while sending message to: " + node.id(), e);
             else
                 throw e;
         }

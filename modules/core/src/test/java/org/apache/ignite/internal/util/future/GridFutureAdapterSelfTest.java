@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -287,14 +287,14 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         fut = new GridFutureAdapter<>();
         chain = exec != null ? fut.chain(passThrough, exec) : fut.chain(passThrough);
 
-        fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
+        fut.onDone(new ClusterGroupEmptyLocalException("test exception"));
 
         try {
             chain.get();
 
             fail("Expects failed with exception.");
         }
-        catch (ClusterGroupEmptyCheckedException e) {
+        catch (ClusterGroupEmptyLocalException e) {
             info("Expected exception: " + e.getMessage());
         }
 

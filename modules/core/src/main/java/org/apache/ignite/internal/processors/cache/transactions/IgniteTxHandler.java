@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1328,8 +1329,8 @@ public class IgniteTxHandler {
                     }
                 }
                 else {
-                    ClusterTopologyCheckedException cause =
-                        new ClusterTopologyCheckedException("Primary node left grid.");
+                    ClusterTopologyLocalException cause =
+                        new ClusterTopologyLocalException("Primary node left grid.");
 
                     res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(transaction has been rolled back on backup node): " + req.version(), cause));

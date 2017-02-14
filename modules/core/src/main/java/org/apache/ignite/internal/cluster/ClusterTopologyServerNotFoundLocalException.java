@@ -19,14 +19,14 @@ package org.apache.ignite.internal.cluster;
 /**
  * Internal exception that is used to indicate that all server nodes have left the grid.
  */
-public class ClusterTopologyServerNotFoundException extends ClusterTopologyCheckedException {
+public class ClusterTopologyServerNotFoundLocalException extends ClusterTopologyLocalException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param msg Error message.
      */
-    public ClusterTopologyServerNotFoundException(String msg) {
+    public ClusterTopologyServerNotFoundLocalException(String msg) {
         super(msg);
     }
 
@@ -34,7 +34,7 @@ public class ClusterTopologyServerNotFoundException extends ClusterTopologyCheck
      * @param msg Error message.
      * @param cause Exception cause.
      */
-    public ClusterTopologyServerNotFoundException(String msg, Throwable cause) {
+    public ClusterTopologyServerNotFoundLocalException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

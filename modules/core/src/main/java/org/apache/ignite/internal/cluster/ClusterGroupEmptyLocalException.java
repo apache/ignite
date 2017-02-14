@@ -17,51 +17,50 @@
 
 package org.apache.ignite.internal.cluster;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
+ * This exception defines illegal call on empty projection. Thrown by projection when operation
+ * that requires at least one node is called on empty projection.
  */
-public class ClusterTopologyCheckedException extends IgniteCheckedException {
+public class ClusterGroupEmptyLocalException extends ClusterTopologyLocalException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Next topology version to wait. */
-    private final transient IgniteInternalFuture<?> readyFut;
-
     /**
-     * Creates new topology exception with given error message.
-     *
-     * @param msg Error message.
-     * @param readyFut Retry ready future.
+     * Creates new exception with default error message.
      */
-    public ClusterTopologyCheckedException(String msg, @NotNull IgniteInternalFuture<?> readyFut) {
-        super(msg);
-        this.readyFut = readyFut;
+    public ClusterGroupEmptyLocalException() {
+        super("Cluster group is empty.");
     }
 
     /**
-     * Creates new topology exception with given error message and optional
-     * nested exception.
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public ClusterGroupEmptyLocalException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates a new exception with given error message and optional nested cause exception.
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
-     * @param readyFut Retry ready future.
      */
-    public ClusterTopologyCheckedException(String msg, @Nullable Throwable cause,
-        @NotNull IgniteInternalFuture<?> readyFut) {
-
+    public ClusterGroupEmptyLocalException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
-        this.readyFut = readyFut;
     }
 
     /**
+     *
      * @return Retry ready future.
      */
-    public IgniteInternalFuture<?> retryReadyFuture() {
-        return readyFut;
+    @Override
+    public ClusterGroupEmptyCheckedException toChecked(@NotNull IgniteInternalFuture<?> readyFut){
+        return new ClusterGroupEmptyCheckedException(this.getMessage(), this.getCause(), readyFut);
     }
 }

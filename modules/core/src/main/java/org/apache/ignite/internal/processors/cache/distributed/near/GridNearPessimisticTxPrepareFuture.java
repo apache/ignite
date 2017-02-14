@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -79,9 +80,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             if (f.node().id().equals(nodeId)) {
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
-                    nodeId);
-
-                e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    nodeId, cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
                 f.onNodeLeft(e);
 
@@ -290,10 +289,13 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
+                    //e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
 
                     fut.onNodeLeft(e);
+                } catch (ClusterTopologyLocalException e) {
+                    fut.onNodeLeft(e.toChecked(cctx.nextAffinityReadyFuture(topVer)));
                 }
+
                 catch (IgniteCheckedException e) {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +

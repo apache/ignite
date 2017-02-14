@@ -29,7 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -142,9 +142,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     cctx.deploymentEnabled());
 
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
-                    "before response is received: " + nodeId);
-
-                e.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
+                    "before response is received: " + nodeId, cctx.shared().nextAffinityReadyFuture(req.topologyVersion()));
 
                 res.addFailedKeys(req.keys(), e);
             }
@@ -272,7 +270,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     ClusterTopologyCheckedException topErr =
                         X.cause(err, ClusterTopologyCheckedException.class);
 
-                    if (!(topErr instanceof ClusterTopologyServerNotFoundException)) {
+                    //if (!(topErr instanceof ClusterTopologyServerNotFoundLocalException)) {
                         CachePartialUpdateCheckedException cause =
                             X.cause(err, CachePartialUpdateCheckedException.class);
 
@@ -283,7 +281,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                         err = null;
                         updVer = null;
-                    }
+                    //}
                 }
             }
 
@@ -327,9 +325,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
                 ClusterTopologyCheckedException cause = new ClusterTopologyCheckedException(
-                    "Failed to update keys, topology changed while execute atomic update inside transaction.");
-
-                cause.retryReadyFuture(cctx.affinity().affinityReadyFuture(remapTopVer));
+                    "Failed to update keys, topology changed while execute atomic update inside transaction.",
+                    cctx.affinity().affinityReadyFuture(remapTopVer));
 
                 e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
 
@@ -441,7 +438,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+            onDone(new ClusterTopologyServerNotFoundLocalException("Failed to map keys for cache (all partition nodes " +
                 "left the grid)."));
 
             return;
@@ -546,7 +543,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         ClusterNode primary = cctx.affinity().primaryByKey(cacheKey, topVer);
 
         if (primary == null)
-            throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+            throw new ClusterTopologyServerNotFoundLocalException("Failed to map keys for cache (all partition nodes " +
                 "left the grid).");
 
         GridNearAtomicAbstractUpdateRequest req;

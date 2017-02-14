@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -191,7 +192,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         SyncMessageAckFuture fut0 = syncMsgFuts.remove(e.getKey());
 
                         if (fut0 != null) {
-                            ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
+                            ClusterTopologyLocalException err = new ClusterTopologyLocalException(
                                 "Node left grid while sending message to: " + nodeId);
 
                             fut0.onDone(err);
@@ -1290,7 +1291,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (node != null)
             sendWithRetries(node, msg, orderedTopic, ackC);
         else
-            throw new ClusterTopologyCheckedException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
+            throw new ClusterTopologyLocalException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
     }
 
     /**
@@ -1354,7 +1355,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
                 catch (IgniteCheckedException e) {
                     if (!ctx.discovery().alive(node.id()))
-                        throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
+                        throw new ClusterTopologyLocalException("Node left grid while sending message to: " + node.id(), e);
 
                     if (cnt == retryCnt)
                         throw e;

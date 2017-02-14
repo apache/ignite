@@ -26,7 +26,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -141,7 +141,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
-                return new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
+                return new ClusterTopologyServerNotFoundLocalException("Failed to map keys for cache (all " +
                     "partition nodes left the grid): " + cacheCtx.name());
             }
         }

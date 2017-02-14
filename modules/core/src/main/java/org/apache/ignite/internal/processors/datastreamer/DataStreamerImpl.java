@@ -59,8 +59,8 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -946,7 +946,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                     buf0.onNodeLeft();
 
                                     if (f != null)
-                                        f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
+                                        f.onDone(new ClusterTopologyLocalException("Failed to wait for request completion " +
                                             "(node has left): " + nodeId));
                                 }
                             }, ctx.discovery().topologyVersion(), false);
@@ -990,7 +990,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         if (F.isEmpty(res))
-            throw new ClusterTopologyServerNotFoundException("Failed to find server node for cache (all affinity " +
+            throw new ClusterTopologyServerNotFoundLocalException("Failed to find server node for cache (all affinity " +
                 "nodes have left the grid or cache was stopped): " + cacheName);
 
         return res;
@@ -1711,7 +1711,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
                             fut0.onDone(e);
                         else
-                            fut0.onDone(new ClusterTopologyCheckedException("Failed to send request (node has left): "
+                            fut0.onDone(new ClusterTopologyLocalException("Failed to send request (node has left): "
                                 + node.id()));
                     }
                     catch (IgniteClientDisconnectedCheckedException e0) {
@@ -1731,7 +1731,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (log.isDebugEnabled())
                 log.debug("Forcibly completing futures (node has left): " + node.id());
 
-            Exception e = new ClusterTopologyCheckedException("Failed to wait for request completion " +
+            Exception e = new ClusterTopologyLocalException("Failed to wait for request completion " +
                 "(node has left): " + node.id());
 
             for (GridFutureAdapter<Object> f : reqs.values())

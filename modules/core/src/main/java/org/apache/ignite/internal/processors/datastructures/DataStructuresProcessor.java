@@ -58,7 +58,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -1800,14 +1801,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 if (i == GridCacheAdapter.MAX_RETRIES - 1)
                     throw e;
 
+                assert !X.hasCause(e, ClusterTopologyLocalException.class);
+
                 ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                if (topErr == null || (topErr instanceof ClusterTopologyServerNotFoundException))
+                if (topErr == null /*|| (topErr instanceof ClusterTopologyServerNotFoundLocalException)*/)
                     throw e;
 
                 IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
 
-                if (fut != null)
+                //if (fut != null)
                     fut.get();
             }
         }
