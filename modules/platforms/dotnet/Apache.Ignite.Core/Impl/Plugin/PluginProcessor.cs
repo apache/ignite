@@ -122,11 +122,22 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// <summary>
         /// Gets the exception factory.
         /// </summary>
-        public ExceptionFactory GetExceptionFactory(string className)
+        public ExceptionFactory GetExceptionMapping(string className)
         {
             ExceptionFactory res;
 
             return _exceptionMappings.TryGetValue(className, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Registers the exception mapping.
+        /// </summary>
+        public void RegisterExceptionMapping(string className, ExceptionFactory factory)
+        {
+            Debug.Assert(className != null);
+            Debug.Assert(factory != null);
+
+            _exceptionMappings[className] = factory;
         }
 
         /// <summary>
@@ -153,30 +164,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     _pluginProviders.Add(provider);
                     _pluginProvidersByName[provider.Name] = provider;
 
-                    AddExceptionMappings(provider);
-
                     provider.Start(this);
                 }
             }
             else
             {
                 log.Info("  ^-- None");
-            }
-        }
-
-        /// <summary>
-        /// Adds the exception mappings.
-        /// </summary>
-        private void AddExceptionMappings(IPluginProviderProxy provider)
-        {
-            var map = provider.GetExceptionMappings();
-
-            if (map != null)
-            {
-                foreach (var pair in map)
-                {
-                    _exceptionMappings[pair.Key] = pair.Value;
-                }
             }
         }
 

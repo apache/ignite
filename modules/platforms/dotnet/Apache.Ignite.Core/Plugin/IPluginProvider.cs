@@ -17,9 +17,6 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Common;
-
     /// <summary>
     /// Pluggable Ignite component. Should have parameterless constructor.
     /// <para />
@@ -68,14 +65,5 @@ namespace Apache.Ignite.Core.Plugin
         /// </summary>
         /// <param name="cancel">if set to <c>true</c>, all ongoing operations should be canceled.</param>
         void OnIgniteStop(bool cancel);
-
-        /// <summary>
-        /// Gets exception mappings.
-        /// <para />
-        /// Exception mapping is a pair of Java exception class name and a factory delegate that creates
-        /// plugin-specific .NET exception.
-        /// </summary>
-        /// <returns>Exception mappings, or null when not applicable.</returns>
-        IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings();
     }
 }

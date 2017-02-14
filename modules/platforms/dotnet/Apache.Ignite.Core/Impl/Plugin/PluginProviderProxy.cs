@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
 
     /// <summary>
@@ -83,12 +81,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
             _pluginProvider.OnIgniteStop(cancel);
         }
         
-        /** <inheritdoc /> */
-        public IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings()
-        {
-            return _pluginProvider.GetExceptionMappings();
-        }
-
         /** <inheritdoc /> */
         public object Provider
         {
