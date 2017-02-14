@@ -124,10 +124,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         int fieldOff = 0;
 
+                        int lastIndexUsed = 0;
+
                         for (int i = 0; i < inlineIdxs.size(); i++) {
                             InlineIndexHelper fastIdx = inlineIdxs.get(i);
 
-                            Value v2 = row.getValue(fastIdx.columnIdx());
+                            Value v2 = row.getValue(fastIdx.columnIndex());
 
                             if (v2 == null) {
                                 // Can't compare further.
@@ -136,11 +138,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                             T2<Value, Short> t2 = fastIdx.get(pageAddr, off + fieldOff, inlineSize - fieldOff);
 
-                            Value v1 = t2.getKey();
                             if (t2 == null)
                                 break;
 
-                            int c = compareValues(v1, v2, fastIdx.sortType());
+                            int c = compareValues(t2.getKey(), v2, fastIdx.sortType());
+
+                            lastIndexUsed++;
 
                             if (c != 0)
                                 return c;
@@ -153,7 +156,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         SearchRow rowData = getRow(io, pageAddr, idx);
 
-                        for (int i = inlineIdxs.size(), len = indexColumns.length; i < len; i++) {
+                        for (int i = lastIndexUsed, len = indexColumns.length; i < len; i++) {
                             int idx0 = columnIds[i];
 
                             Value v2 = row.getValue(idx0);
@@ -244,7 +247,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /**
      * @return InlineIndexHelper list.
      */
-    public List<InlineIndexHelper> inlineIdxs() {
+    public List<InlineIndexHelper> inlineIndexes() {
         return inlineIdxs;
     }
 

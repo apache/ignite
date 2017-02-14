@@ -77,7 +77,7 @@ public class InlineIndexHelper {
     /**
      * @return Column index.
      */
-    public int columnIdx() {
+    public int columnIndex() {
         return colIdx;
     }
 

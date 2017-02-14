@@ -218,14 +218,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     static {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
-
-        for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++)
-            PageIO.registerH2ExtraInner(
-                (short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1),
-                H2ExtrasInnerIO.getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload),
-                (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1),
-                H2ExtrasLeafIO.getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload)
-            );
+        H2ExtrasInnerIO.register();
+        H2ExtrasLeafIO.register();
     }
 
     /**

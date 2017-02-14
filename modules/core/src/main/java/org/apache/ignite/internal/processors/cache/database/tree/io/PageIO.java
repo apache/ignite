@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -79,10 +79,10 @@ public abstract class PageIO {
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
 
     /** */
-    private static Map<Short, IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new HashMap<>();
+    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs;
 
     /** */
-    private static Map<Short, IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new HashMap<>();
+    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs;
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -156,13 +156,15 @@ public abstract class PageIO {
     public static final short T_PAGE_UPDATE_TRACKING = 15;
 
     /** Maximum payload size. */
-    public static final short MAX_PAYLOAD_SIZE = 1024;
+    public static final short MAX_PAYLOAD_SIZE = 2048;
 
     /** Index for payload == 1. */
-    public static final short T_H2_EX_REF_LEAF_START = 16;
+    public static final short T_H2_EX_REF_LEAF_START = 10000;
+    public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
-    public static final short T_H2_EX_REF_INNER_START = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE;
+    public static final short T_H2_EX_REF_INNER_START = 20000;
+    public static final short T_H2_EX_REF_INNER_END = 20000 + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     private final int ver;
@@ -180,6 +182,9 @@ public abstract class PageIO {
 
         this.type = type;
         this.ver = ver;
+
+        h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+        h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
     }
 
     /**
@@ -309,13 +314,19 @@ public abstract class PageIO {
     /**
      * Registers extra inner IO versions.
      */
-    public static void registerH2ExtraInner(short type1,
-        IOVersions<? extends BPlusInnerIO<?>> innerExtIOs,
-        short type2,
+    public static void registerH2ExtraInner(
+        IOVersions<? extends BPlusInnerIO<?>> innerExtIOs
+    ) {
+        h2ExtraInnerIOs.add(innerExtIOs);
+    }
+
+    /**
+     * Registers extra inner IO versions.
+     */
+    public static void registerH2ExtraLeaf(
         IOVersions<? extends BPlusLeafIO<?>> leafExtIOs
     ) {
-        h2ExtraInnerIOs.put(type1, innerExtIOs);
-        h2ExtraLeafIOs.put(type2, leafExtIOs);
+        h2ExtraLeafIOs.add(leafExtIOs);
     }
 
     /**
@@ -448,11 +459,11 @@ public abstract class PageIO {
     @SuppressWarnings("unchecked")
     public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
 
-        if (type >= T_H2_EX_REF_LEAF_START && type < T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE)
-            return (Q)h2ExtraLeafIOs.get((short)type).forVersion(ver);
+        if (type >= T_H2_EX_REF_LEAF_START && type <= T_H2_EX_REF_LEAF_END)
+            return (Q)h2ExtraLeafIOs.get(type - T_H2_EX_REF_LEAF_START).forVersion(ver);
 
-        if (type >= T_H2_EX_REF_INNER_START && type < T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE)
-            return (Q)h2ExtraInnerIOs.get((short)type).forVersion(ver);
+        if (type >= T_H2_EX_REF_INNER_START && type <= T_H2_EX_REF_INNER_END)
+            return (Q)h2ExtraInnerIOs.get(type - T_H2_EX_REF_INNER_START).forVersion(ver);
 
         switch (type) {
             case T_H2_REF_INNER:

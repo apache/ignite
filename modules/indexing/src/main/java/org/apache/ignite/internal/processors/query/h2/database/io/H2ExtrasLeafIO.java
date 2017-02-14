@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
@@ -39,7 +40,16 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     private final int payloadSize;
 
     /** */
-    public static IOVersions<H2ExtrasLeafIO> getVersions(short type, short payload) {
+    public static void register() {
+        for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++)
+            PageIO.registerH2ExtraLeaf(
+                (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1),
+                getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload)
+            );
+    }
+
+    /** */
+    private static IOVersions<H2ExtrasLeafIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasLeafIO(type, 1, payload));
     }
 
@@ -61,7 +71,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         H2TreeIndex currentIdx = H2TreeIndex.getCurrentIndex();
         assert currentIdx != null;
-        List<InlineIndexHelper> inlineIdxs = currentIdx.inlineIdxs();
+        List<InlineIndexHelper> inlineIdxs = currentIdx.inlineIndexes();
 
         assert inlineIdxs != null;
 
@@ -69,7 +79,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         for (int i = 0; i < inlineIdxs.size(); i++) {
             InlineIndexHelper idx = inlineIdxs.get(i);
-            int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIdx()), payloadSize - fieldOff);
+            int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIndex()), payloadSize - fieldOff);
             if (size == 0)
                 break;
             fieldOff += size;
