@@ -1051,11 +1051,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             if (err != null) {
                 if (err instanceof IgniteCheckedException) {
-                    ClusterTopologyLocalException cause =
-                        ((IgniteCheckedException)err).getCause(ClusterTopologyLocalException.class);
-                    assert cause == null;
-                    /*if (cause != null)
-                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));*/
+                    assert ((IgniteCheckedException)err).hasCause(ClusterTopologyLocalException.class) :
+                        "Should never happen if IGNITE-1948 done well";
                 }
 
                 onDone(err);

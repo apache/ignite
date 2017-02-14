@@ -355,7 +355,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeftWithClusterTopologyException();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
@@ -459,7 +459,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeftWithClusterTopologyException();
                 else {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
@@ -529,7 +529,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeftWithClusterTopologyException();
                     else {
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
@@ -633,7 +633,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param e Node failure.
          */
-        void onNodeLeft(ClusterTopologyCheckedException e) {
+        void onNodeLeftWithClusterTopologyException() {
             onNodeLeft();
         }
 

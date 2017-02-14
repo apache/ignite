@@ -289,8 +289,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
-                    //e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
-
                     fut.onNodeLeft(e);
                 } catch (ClusterTopologyLocalException e) {
                     fut.onNodeLeft(e.toChecked(cctx.nextAffinityReadyFuture(topVer)));
