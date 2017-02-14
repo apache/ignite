@@ -52,9 +52,9 @@ public interface MatrixStorage extends Externalizable, StorageOpsKinds {
     public int rowSize();
 
     /**
-     * Gets underlying array if {@link #isArrayBased()} returns {@code true}.
+     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
      *
-     * @see #isArrayBased()
+     * @see StorageOpsKinds#isArrayBased()
      */
     public double[][] data();
 }

@@ -44,10 +44,10 @@ public interface VectorStorage extends Externalizable, StorageOpsKinds {
     public void set(int i, double v);
 
     /**
-     * Gets underlying array if {@link #isArrayBased()} returns {@code true}.
+     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
      * Returns {@code null} if in other cases.
      *
-     * @see #isArrayBased()
+     * @see StorageOpsKinds#isArrayBased()
      */
     public default double[] data() {
         return null;
