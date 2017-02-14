@@ -43,12 +43,6 @@ public class DataStreamerCacheUpdaters {
     /** */
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
-    /** */
-    private static final StreamReceiver REPLACE = new Replace();
-
-    /** */
-    private static final StreamReceiver REMOVE = new Remove();
-
     /**
      * Updates cache using independent {@link IgniteCache#put(Object, Object)}and
      * {@link IgniteCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
@@ -58,25 +52,6 @@ public class DataStreamerCacheUpdaters {
      */
     public static <K, V> StreamReceiver<K, V> individual() {
         return INDIVIDUAL;
-    }
-
-    /**
-     * Updates cache using independent {@link IgniteCache#replace(Object, Object)} operations.
-     * Thus it is safe from deadlocks but performance is not the best.
-     *
-     * @return Fast SQL UPDATE updater.
-     */
-    public static <K, V> StreamReceiver<K, V> replace() {
-        return REPLACE;
-    }
-
-    /**
-     * Removes from the cache all keys going through it.
-     *
-     * @return Fast SQL DELETE updater.
-     */
-    public static <K, V> StreamReceiver<K, V> remove() {
-        return REMOVE;
     }
 
     /**

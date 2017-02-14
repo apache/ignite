@@ -445,18 +445,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long autoFlushFreq, int nodeBufSize, int nodeParOps) {
         Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
 
-        UpdateMode mode;
-
-        if (prep instanceof Merge)
-            mode = UpdateMode.MERGE;
-        else if (prep instanceof Insert)
-            mode = UpdateMode.INSERT;
-        else if (prep instanceof Update)
-            mode = UpdateMode.UPDATE;
-        else if (prep instanceof Delete)
-            mode = UpdateMode.DELETE;
-        else
-            throw new IgniteSQLException("Only DML operations are supported in streaming mode",
+        if (!(prep instanceof Insert))
+            throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
@@ -467,20 +457,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (nodeParOps > 0)
             streamer.perNodeParallelOperations(nodeParOps);
-
-        switch (mode) {
-            case MERGE:
-                streamer.allowOverwrite(true);
-                break;
-            case UPDATE:
-                streamer.receiver(DataStreamerCacheUpdaters.replace());
-                break;
-            case INSERT:
-                // No-op as INSERT semantic is maintained by default - present keys are not affected.
-                break;
-            case DELETE:
-                streamer.receiver(DataStreamerCacheUpdaters.remove());
-        }
 
         return streamer;
     }
