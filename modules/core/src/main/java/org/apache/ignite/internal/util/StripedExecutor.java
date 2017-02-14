@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -265,6 +266,51 @@ public class StripedExecutor implements ExecutorService {
             cnt += stripe.completedCnt;
 
         return cnt;
+    }
+
+    /**
+     * @return Completed tasks per stripe count.
+     */
+    public long[] stripesCompletedTasks() {
+        long[] result = new long[stripes()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = stripes[i].completedCnt;
+        }
+        return result;
+    }
+
+    /**
+     * @return Number of active tasks per stripe.
+     */
+    public boolean[] stripesActiveStatuses() {
+        boolean[] result = new boolean[stripes()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = stripes[i].active;
+        }
+        return result;
+    }
+
+    /**
+     * @return Number of active tasks.
+     */
+    public int activeStripesCount() {
+        int result = 0;
+        for (boolean status : stripesActiveStatuses()) {
+            if (status)
+                result++;
+        }
+        return result;
+    }
+
+    /**
+     * @return Size of queue per stripe.
+     */
+    public int[] stripesQueueSizes() {
+        int[] result = new int[stripes()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = stripes[i].queueSize();
+        }
+        return result;
     }
 
     /**
