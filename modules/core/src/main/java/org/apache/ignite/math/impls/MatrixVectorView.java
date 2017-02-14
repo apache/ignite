@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.impls.storage.*;
+import java.io.*;
 
 /**
  * Row or column vector view off the matrix.
@@ -63,16 +64,34 @@ public class MatrixVectorView extends AbstractVector {
 
     @Override
     public Vector copy() {
-        return null; // TODO
+        return new MatrixVectorView(parent, row, col, rowStride, colStride);
     }
 
     @Override
     public Vector like(int crd) {
-        return null; // TODO
+        return parent.likeVector(crd);
     }
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return parent.like(rows, cols);
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(parent);
+        out.writeInt(row);
+        out.writeInt(col);
+        out.writeInt(rowStride);
+        out.writeInt(colStride);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        parent = (Matrix)in.readObject();
+        row = in.readInt();
+        col = in.readInt();
+        rowStride = in.readInt();
+        colStride = in.readInt();
     }
 }

@@ -625,17 +625,17 @@ public abstract class AbstractMatrix implements Matrix {
 
     @Override
     public Vector viewRow(int row) {
-        return null; // TODO
+        return new MatrixVectorView(this, row, 0, 1, 0);
     }
 
     @Override
     public Vector viewColumn(int col) {
-        return null; // TODO
+        return new MatrixVectorView(this, 0, col, 0, 1);
     }
 
     @Override
     public Vector viewDiagonal() {
-        return null; // TODO
+        return new MatrixVectorView(this, 0, 0, 1, 1);
     }
 
     @Override

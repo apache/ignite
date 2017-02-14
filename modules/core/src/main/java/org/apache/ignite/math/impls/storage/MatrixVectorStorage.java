@@ -18,12 +18,13 @@
 package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 
 /**
  * TODO: add description.
  */
-public class MatrixVectorStorage implements VectorStorage {
+public class MatrixVectorStorage extends AbstractVectorStorage {
     private Matrix parent;
 
     private int row, col;
@@ -47,6 +48,8 @@ public class MatrixVectorStorage implements VectorStorage {
      * @param colStride
      */
     public MatrixVectorStorage(Matrix parent, int row, int col, int rowStride, int colStride) {
+        super(parent);
+
         if (row < 0 || row >= parent.rowSize())
             throw new IndexException(row);
         if (col < 0 || col >= parent.columnSize())
@@ -91,42 +94,27 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     @Override
-    public boolean isSequentialAccess() {
-        return parent.isSequentialAccess();
-    }
-
-    @Override
-    public boolean isDense() {
-        return parent.isDense();
-    }
-
-    @Override
-    public double getLookupCost() {
-        return parent.getLookupCost();
-    }
-
-    @Override
-    public boolean isAddConstantTime() {
-        return parent.isAddConstantTime();
-    }
-
-    @Override
     public void set(int i, double v) {
         parent.set(row + i * rowStride, col + i * colStride, v);
     }
 
     @Override
-    public boolean isArrayBased() {
-        return parent.isArrayBased();
-    }
-
-    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeObject(parent);
+        out.writeInt(row);
+        out.writeInt(col);
+        out.writeInt(rowStride);
+        out.writeInt(colStride);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        parent = (Matrix)in.readObject();
+        row = in.readInt();
+        col = in.readInt();
+        rowStride = in.readInt();
+        colStride = in.readInt();
+
+        size = getSize();
     }
 }

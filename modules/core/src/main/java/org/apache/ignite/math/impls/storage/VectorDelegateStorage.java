@@ -18,12 +18,13 @@
 package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 
 /**
  * TODO: add description.
  */
-public class VectorDelegateStorage implements VectorStorage {
+public class VectorDelegateStorage extends AbstractVectorStorage {
     /** */
     private VectorStorage sto;
 
@@ -47,6 +48,8 @@ public class VectorDelegateStorage implements VectorStorage {
      * @param len
      */
     public VectorDelegateStorage(VectorStorage sto, int off, int len) {
+        super(sto);
+
         this.sto = sto;
         this.off = off;
         this.len = len;
@@ -58,26 +61,6 @@ public class VectorDelegateStorage implements VectorStorage {
     }
 
     @Override
-    public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    @Override
-    public boolean isDense() {
-        return sto.isDense();
-    }
-
-    @Override
-    public double getLookupCost() {
-        return sto.getLookupCost();
-    }
-
-    @Override
-    public boolean isAddConstantTime() {
-        return sto.isAddConstantTime();
-    }
-
-    @Override
     public double get(int i) {
         return sto.get(off + i);
     }
@@ -85,11 +68,6 @@ public class VectorDelegateStorage implements VectorStorage {
     @Override
     public void set(int i, double v) {
         sto.set(off + i, v);
-    }
-
-    @Override
-    public boolean isArrayBased() {
-        return sto.isArrayBased();
     }
 
     @Override
