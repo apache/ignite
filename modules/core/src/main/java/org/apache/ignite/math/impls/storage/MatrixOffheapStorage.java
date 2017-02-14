@@ -17,50 +17,80 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
  * TODO: add description.
  */
-public class MatrixOffheapStorage implements MatrixStorage {
-    @Override
-    public double get(int x, int y) {
-        return 0; // TODO
+public class MatrixOffHeapStorage implements MatrixStorage {
+    private int rows;
+    private int cols;
+    private long ptr;
+
+    public MatrixOffHeapStorage(int rows, int cols){
+        this.rows = rows;
+
+        this.cols = cols;
+
+        ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public double get(int x, int y) {
+        return GridUnsafe.getDouble(pointerOffset(x, y));
+    }
+
+    /** {@inheritDoc} */
     @Override
     public void set(int x, int y, double v) {
-        // TODO
+        GridUnsafe.putDouble(pointerOffset(x, y), v);
     }
 
     @Override
     public int columnSize() {
-        return 0; // TODO
+        return cols;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int rowSize() {
-        return 0; // TODO
+        return rows;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isArrayBased() {
-        return false; // TODO
+        return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double[][] data() {
-        return new double[0][]; // TODO
+        return null;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         // TODO
     }
 
+    /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void destroy() {
+        GridUnsafe.freeMemory(ptr);
+    }
+
+    private long pointerOffset(int x, int y){
+        return ptr + x * cols + y;
     }
 }

@@ -401,4 +401,11 @@ public interface Matrix extends MetaAttributes, Externalizable {
      * @return Optional cluster group for this matrix to be stored on.
      */
     Optional<ClusterGroup> clusterGroup();
+
+    /**
+     * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.
+     */
+    default void destroy(){
+        // No-op.
+    }
 }
