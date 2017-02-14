@@ -48,10 +48,7 @@ namespace Apache.Ignite.Core.Impl
         private const string ClsCachePartialUpdateErr = "org.apache.ignite.internal.processors.platform.cache.PlatformCachePartialUpdateException";
 
         /** Map with predefined exceptions. */
-        private static readonly IDictionary<string, ExceptionFactoryDelegate> Exs = new Dictionary<string, ExceptionFactoryDelegate>();
-
-        /** Exception factory delegate. */
-        private delegate Exception ExceptionFactoryDelegate(IIgnite ignite, string msg, Exception innerEx);
+        private static readonly IDictionary<string, ExceptionFactory> Exs = new Dictionary<string, ExceptionFactory>();
 
         /** Inner class regex. */
         private static readonly Regex InnerClassRegex = new Regex(@"class ([^\s]+): (.*)", RegexOptions.Compiled);
@@ -120,20 +117,20 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Error data reader.</param>
         /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace,
+        public static Exception GetException(Ignite ignite, string clsName, string msg, string stackTrace,
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as inner only if there is no InnerException.
             if (innerException == null)
                 innerException = new JavaException(clsName, msg, stackTrace);
 
-            ExceptionFactoryDelegate ctor;
+            ExceptionFactory ctor;
 
             if (Exs.TryGetValue(clsName, out ctor))
             {
                 var match = InnerClassRegex.Match(msg ?? string.Empty);
 
-                ExceptionFactoryDelegate innerCtor;
+                ExceptionFactory innerCtor;
 
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                     return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, innerException));
@@ -152,6 +149,15 @@ namespace Apache.Ignite.Core.Impl
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
 
+            // Predefined mapping not found - check plugins.
+            ctor = ignite.PluginProcessor.GetExceptionFactory(clsName);
+
+            if (ctor != null)
+            {
+                return ctor(ignite, msg, innerException);
+            }
+
+            // Return default exception.
             return new IgniteException(string.Format("Java exception occurred [class={0}, message={1}]", clsName, msg),
                 innerException);
         }
@@ -165,7 +171,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace,
+        private static Exception ProcessCachePartialUpdateException(Ignite ignite, string msg, string stackTrace,
             BinaryReader reader)
         {
             if (reader == null)

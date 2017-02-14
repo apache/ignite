@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -127,6 +129,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
 
             Assert.AreEqual(0, cache.GetSize());
+        }
+
+        /// <summary>
+        /// Gets exception mappings.
+        /// <para />
+        /// Exception mapping is a pair of Java exception class name and a factory delegate that creates
+        /// plugin-specific .NET exception.
+        /// </summary>
+        /// <returns>
+        /// Exception mappings, or null when not applicable.
+        /// </returns>
+        public IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings()
+        {
+            yield return new KeyValuePair<string, ExceptionFactory>(
+                "org.apache.ignite.platform.plugin.PlatformTestPluginException", 
+                (ignite, message, inner) => new TestIgnitePluginException(message, inner));
         }
     }
 }

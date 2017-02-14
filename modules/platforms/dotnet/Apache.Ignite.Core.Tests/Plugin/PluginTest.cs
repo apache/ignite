@@ -113,6 +113,17 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Returns a copy with same name.
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
+
+            // Throws custom mapped exception.
+            var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
+            Assert.AreEqual("Baz", ex.Message);
+
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Baz", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", javaEx.JavaClassName);
+            Assert.IsTrue(javaEx.Message.Contains(
+                "at org.apache.ignite.platform.plugin.PlatformTestPluginTarget.processInLongOutLong"));
         }
 
         /// <summary>
@@ -182,6 +193,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public void Stop(bool cancel) { /* No-op. */ }
             public void OnIgniteStart() { /* No-op. */ }
             public void OnIgniteStop(bool cancel) { /* No-op. */ }
+            public IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings() { return null; }
         }
 
         [PluginProviderType(typeof(ExceptionPluginProvider))]
@@ -195,6 +207,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public string Name { get { return "errPlugin"; } }
             public string Copyright { get { return null; } }
             public T GetPlugin<T>() where T : class { return default(T); }
+            public IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings() { return null; }
 
             public void Stop(bool cancel)
             {
@@ -229,6 +242,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
             public string Name { get { return "normalPlugin"; } }
             public string Copyright { get { return null; } }
             public T GetPlugin<T>() where T : class { return default(T); }
+            public IEnumerable<KeyValuePair<string, ExceptionFactory>> GetExceptionMappings() { return null; }
 
             public void Stop(bool cancel)
             {

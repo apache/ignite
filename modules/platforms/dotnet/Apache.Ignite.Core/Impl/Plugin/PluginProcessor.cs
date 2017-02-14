@@ -37,6 +37,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
 
+        /** Plugin exception mappings. */
+        private readonly Dictionary<string, ExceptionFactory> _exceptionMappings
+            = new Dictionary<string, ExceptionFactory>();
+
         /** */
         private readonly Ignite _ignite;
 
@@ -116,6 +120,16 @@ namespace Apache.Ignite.Core.Impl.Plugin
         }
 
         /// <summary>
+        /// Gets the exception factory.
+        /// </summary>
+        public ExceptionFactory GetExceptionFactory(string className)
+        {
+            ExceptionFactory res;
+
+            return _exceptionMappings.TryGetValue(className, out res) ? res : null;
+        }
+
+        /// <summary>
         /// Loads the plugins.
         /// </summary>
         private void LoadPlugins()
@@ -139,12 +153,30 @@ namespace Apache.Ignite.Core.Impl.Plugin
                     _pluginProviders.Add(provider);
                     _pluginProvidersByName[provider.Name] = provider;
 
+                    AddExceptionMappings(provider);
+
                     provider.Start(this);
                 }
             }
             else
             {
                 log.Info("  ^-- None");
+            }
+        }
+
+        /// <summary>
+        /// Adds the exception mappings.
+        /// </summary>
+        private void AddExceptionMappings(IPluginProviderProxy provider)
+        {
+            var map = provider.GetExceptionMappings();
+
+            if (map != null)
+            {
+                foreach (var pair in map)
+                {
+                    _exceptionMappings[pair.Key] = pair.Value;
+                }
             }
         }
 

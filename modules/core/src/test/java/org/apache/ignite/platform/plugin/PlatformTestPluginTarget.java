@@ -45,6 +45,9 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        if (type == -1)
+            throw new PlatformTestPluginException("Baz");
+
         return val + 1;
     }
 
