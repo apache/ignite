@@ -15,4 +15,7 @@
  * limitations under the License.
  */
 
-export default ['hasPojo', [() => ({caches} = []) => _.find(caches, (cache) => cache.domains && cache.domains.length)]];
+// Filter that return 'true' if caches has at least one domain with 'generatePojo' flag.
+export default ['hasPojo', [() => ({caches} = []) =>
+    _.find(caches, (cache) => cache.domains && cache.domains.length &&
+        cache.domains.find((domain) => domain.generatePojo))]];

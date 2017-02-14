@@ -21,7 +21,6 @@ import angular from 'angular';
 import './field/field.scss';
 import './field/feedback.scss';
 import './field/input/text.scss';
-import './field/input/select.scss';
 
 // Panel.
 import igniteFormPanel from './panel/panel.directive';
@@ -56,6 +55,8 @@ import igniteFormControlFeedback from './field/form-control-feedback.directive';
 import igniteFormFieldUp from './field/up.directive';
 import igniteFormFieldDown from './field/down.directive';
 
+import IgniteFormGUID from './services/FormGUID.service.js';
+
 angular
 .module('ignite-console.Form', [
 
@@ -88,9 +89,6 @@ angular
 .directive(...igniteFormControlFeedback)
 .directive(...igniteFormFieldUp)
 .directive(...igniteFormFieldDown)
-// Generator of globally unique identifier.
-.factory('IgniteFormGUID', [() => {
-    let guid = 0;
 
-    return () => `form-field-${guid++}`;
-}]);
+// Generator of globally unique identifier.
+.service('IgniteFormGUID', IgniteFormGUID);

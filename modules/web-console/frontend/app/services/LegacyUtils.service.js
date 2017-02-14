@@ -122,45 +122,6 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
         'VARCHAR'
     ];
 
-    const ALL_JDBC_TYPES = [
-        {dbName: 'BIT', dbType: -7, javaType: 'Boolean', primitiveType: 'boolean'},
-        {dbName: 'TINYINT', dbType: -6, javaType: 'Byte', primitiveType: 'byte'},
-        {dbName: 'SMALLINT', dbType: 5, javaType: 'Short', primitiveType: 'short'},
-        {dbName: 'INTEGER', dbType: 4, javaType: 'Integer', primitiveType: 'int'},
-        {dbName: 'BIGINT', dbType: -5, javaType: 'Long', primitiveType: 'long'},
-        {dbName: 'FLOAT', dbType: 6, javaType: 'Float', primitiveType: 'float'},
-        {dbName: 'REAL', dbType: 7, javaType: 'Double', primitiveType: 'double'},
-        {dbName: 'DOUBLE', dbType: 8, javaType: 'Double', primitiveType: 'double'},
-        {dbName: 'NUMERIC', dbType: 2, javaType: 'BigDecimal'},
-        {dbName: 'DECIMAL', dbType: 3, javaType: 'BigDecimal'},
-        {dbName: 'CHAR', dbType: 1, javaType: 'String'},
-        {dbName: 'VARCHAR', dbType: 12, javaType: 'String'},
-        {dbName: 'LONGVARCHAR', dbType: -1, javaType: 'String'},
-        {dbName: 'DATE', dbType: 91, javaType: 'Date'},
-        {dbName: 'TIME', dbType: 92, javaType: 'Time'},
-        {dbName: 'TIMESTAMP', dbType: 93, javaType: 'Timestamp'},
-        {dbName: 'BINARY', dbType: -2, javaType: 'Object'},
-        {dbName: 'VARBINARY', dbType: -3, javaType: 'Object'},
-        {dbName: 'LONGVARBINARY', dbType: -4, javaType: 'Object'},
-        {dbName: 'NULL', dbType: 0, javaType: 'Object'},
-        {dbName: 'OTHER', dbType: 1111, javaType: 'Object'},
-        {dbName: 'JAVA_OBJECT', dbType: 2000, javaType: 'Object'},
-        {dbName: 'DISTINCT', dbType: 2001, javaType: 'Object'},
-        {dbName: 'STRUCT', dbType: 2002, javaType: 'Object'},
-        {dbName: 'ARRAY', dbType: 2003, javaType: 'Object'},
-        {dbName: 'BLOB', dbType: 2004, javaType: 'Object'},
-        {dbName: 'CLOB', dbType: 2005, javaType: 'String'},
-        {dbName: 'REF', dbType: 2006, javaType: 'Object'},
-        {dbName: 'DATALINK', dbType: 70, javaType: 'Object'},
-        {dbName: 'BOOLEAN', dbType: 16, javaType: 'Boolean', primitiveType: 'boolean'},
-        {dbName: 'ROWID', dbType: -8, javaType: 'Object'},
-        {dbName: 'NCHAR', dbType: -15, javaType: 'String'},
-        {dbName: 'NVARCHAR', dbType: -9, javaType: 'String'},
-        {dbName: 'LONGNVARCHAR', dbType: -16, javaType: 'String'},
-        {dbName: 'NCLOB', dbType: 2011, javaType: 'String'},
-        {dbName: 'SQLXML', dbType: 2009, javaType: 'Object'}
-    ];
-
     /*eslint-disable */
     const JAVA_KEYWORDS = [
         'abstract',
@@ -221,41 +182,17 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
 
     const VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 
-    function isValidJavaIdentifier(msg, ident, elemId, panels, panelId) {
+    function isValidJavaIdentifier(msg, ident, elemId, panels, panelId, stopEdit) {
         if (isEmptyString(ident))
-            return ErrorPopover.show(elemId, msg + ' is invalid!', panels, panelId);
+            return !stopEdit && ErrorPopover.show(elemId, msg + ' is invalid!', panels, panelId);
 
         if (_.includes(JAVA_KEYWORDS, ident))
-            return ErrorPopover.show(elemId, msg + ' could not contains reserved java keyword: "' + ident + '"!', panels, panelId);
+            return !stopEdit && ErrorPopover.show(elemId, msg + ' could not contains reserved java keyword: "' + ident + '"!', panels, panelId);
 
         if (!VALID_JAVA_IDENTIFIER.test(ident))
-            return ErrorPopover.show(elemId, msg + ' contains invalid identifier: "' + ident + '"!', panels, panelId);
+            return !stopEdit && ErrorPopover.show(elemId, msg + ' contains invalid identifier: "' + ident + '"!', panels, panelId);
 
         return true;
-    }
-
-    function getModel(obj, field) {
-        let path = field.path;
-
-        if (!isDefined(path) || !isDefined(obj))
-            return obj;
-
-        path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-        path = path.replace(/^\./, '');           // strip a leading dot
-
-        const segs = path.split('.');
-        let root = obj;
-
-        while (segs.length > 0) {
-            const pathStep = segs.shift();
-
-            if (typeof root[pathStep] === 'undefined')
-                root[pathStep] = {};
-
-            root = root[pathStep];
-        }
-
-        return root;
     }
 
     /**
@@ -265,18 +202,26 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
      * @returns {*} Datasource object or null if not set.
      */
     function extractDataSource(object) {
+        let datasource = null;
+
         // Extract from cluster object
         if (_.get(object, 'discovery.kind') === 'Jdbc') {
-            const datasource = object.discovery.Jdbc;
+            datasource = object.discovery.Jdbc;
+
+            if (datasource.dataSourceBean && datasource.dialect)
+                return datasource;
+        } // Extract from JDBC checkpoint configuration.
+        else if (_.get(object, 'kind') === 'JDBC') {
+            datasource = object.JDBC;
 
             if (datasource.dataSourceBean && datasource.dialect)
                 return datasource;
         } // Extract from cache object
         else if (_.get(object, 'cacheStoreFactory.kind')) {
-            const storeFactory = object.cacheStoreFactory[object.cacheStoreFactory.kind];
+            datasource = object.cacheStoreFactory[object.cacheStoreFactory.kind];
 
-            if (storeFactory.dialect || (storeFactory.connectVia === 'DataSource'))
-                return storeFactory;
+            if (datasource.dialect || (datasource.connectVia === 'DataSource'))
+                return datasource;
         }
 
         return null;
@@ -307,10 +252,13 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
      * Compare datasources of caches or clusters.
      *
      * @param firstObj First cache or cluster.
+     * @param firstType Type of first object to compare.
      * @param secondObj Second cache or cluster.
+     * @param secondType Type of first object to compare.
+     * @param index Index of invalid object when check is failed.
      * @returns {*} Check result object.
      */
-    function compareDataSources(firstObj, secondObj) {
+    function compareDataSources(firstObj, firstType, secondObj, secondType, index) {
         const firstDs = extractDataSource(firstObj);
         const secondDs = extractDataSource(secondObj);
 
@@ -319,7 +267,7 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             const secondDB = secondDs.dialect;
 
             if (firstDs.dataSourceBean === secondDs.dataSourceBean && firstDB !== secondDB)
-                return {checked: false, firstObj, firstDB, secondObj, secondDB};
+                return {checked: false, firstObj, firstDs, firstType, secondObj, secondDs, secondType, index};
         }
 
         return DS_CHECK_SUCCESS;
@@ -342,7 +290,6 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
     }
 
     return {
-        getModel,
         mkOptions(options) {
             return _.map(options, (option) => {
                 return {value: option, label: isDefined(option) ? option : 'Not set'};
@@ -361,33 +308,28 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
         },
         isEmptyString,
         SUPPORTED_JDBC_TYPES,
-        findJdbcType(jdbcType) {
-            const res = _.find(ALL_JDBC_TYPES, (item) => item.dbType === jdbcType);
-
-            return res ? res : {dbName: 'Unknown', javaType: 'Unknown'};
-        },
         javaBuiltInClasses,
         javaBuiltInTypes,
         isJavaBuiltInClass,
         isValidJavaIdentifier,
-        isValidJavaClass(msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId) {
+        isValidJavaClass(msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId, stopEdit = false) {
             if (isEmptyString(ident))
-                return ErrorPopover.show(elemId, msg + ' could not be empty!', panels, panelId);
+                return !stopEdit && ErrorPopover.show(elemId, msg + ' could not be empty!', panels, panelId);
 
             const parts = ident.split('.');
 
             const len = parts.length;
 
             if (!allowBuiltInClass && isJavaBuiltInClass(ident))
-                return ErrorPopover.show(elemId, msg + ' should not be the Java build-in class!', panels, panelId);
+                return !stopEdit && ErrorPopover.show(elemId, msg + ' should not be the Java build-in class!', panels, panelId);
 
             if (len < 2 && !isJavaBuiltInClass(ident) && !packageOnly)
-                return ErrorPopover.show(elemId, msg + ' does not have package specified!', panels, panelId);
+                return !stopEdit && ErrorPopover.show(elemId, msg + ' does not have package specified!', panels, panelId);
 
             for (let i = 0; i < parts.length; i++) {
                 const part = parts[i];
 
-                if (!isValidJavaIdentifier(msg, part, elemId, panels, panelId))
+                if (!isValidJavaIdentifier(msg, part, elemId, panels, panelId, stopEdit))
                     return false;
             }
 
@@ -438,14 +380,25 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
             let res = DS_CHECK_SUCCESS;
 
             _.find(caches, (curCache, curIx) => {
-                res = compareDataSources(curCache, cluster);
+                // Check datasources of cluster JDBC ip finder and cache store factory datasource.
+                res = compareDataSources(curCache, 'cache', cluster, 'cluster');
 
                 if (!res.checked)
                     return true;
 
+                _.find(cluster.checkpointSpi, (spi, spiIx) => {
+                    res = compareDataSources(curCache, 'cache', spi, 'checkpoint', spiIx);
+
+                    return !res.checked;
+                });
+
+                if (!res.checked)
+                    return true;
+
+                // Check datasource of current saved cache and datasource of other cache in cluster.
                 if (isDefined(checkCacheExt)) {
                     if (checkCacheExt._id !== curCache._id) {
-                        res = compareDataSources(checkCacheExt, curCache);
+                        res = compareDataSources(checkCacheExt, 'cache', curCache, 'cache');
 
                         return !res.checked;
                     }
@@ -453,9 +406,10 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
                     return false;
                 }
 
+                // Check datasources of specified list of caches.
                 return _.find(caches, (checkCache, checkIx) => {
                     if (checkIx < curIx) {
-                        res = compareDataSources(checkCache, curCache);
+                        res = compareDataSources(checkCache, 'cache', curCache, 'cache');
 
                         return !res.checked;
                     }
@@ -463,6 +417,26 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
                     return false;
                 });
             });
+
+            if (res.checked) {
+                _.find(cluster.checkpointSpi, (curSpi, curIx) => {
+                    // Check datasources of cluster JDBC ip finder and cache store factory datasource.
+                    res = compareDataSources(cluster, 'cluster', curSpi, 'checkpoint', curIx);
+
+                    if (!res.checked)
+                        return true;
+
+                    _.find(cluster.checkpointSpi, (spi, spiIx) => {
+                        if (spiIx < curIx) {
+                            res = compareDataSources(curSpi, 'checkpoint', spi, 'checkpoint', curIx);
+
+                            return !res.checked;
+                        }
+
+                        return false;
+                    });
+                });
+            }
 
             return res;
         },
@@ -513,14 +487,8 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
                     writeThrough: dflt || cache.writeThrough
                 };
             }
-        },
-        autoClusterSwapSpiConfiguration(cluster, caches) {
-            const swapConfigured = cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind;
 
-            if (!swapConfigured && _.find(caches, (cache) => cache.swapEnabled))
-                return {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}};
-
-            return null;
+            return {};
         },
         randomString(len) {
             const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -542,7 +510,10 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
                 const firstErrorKey = errKeys[0];
 
                 const firstError = errors[firstErrorKey][0];
-                const actualError = firstError.$error[firstErrorKey][0];
+
+                const err = firstError.$error[firstErrorKey];
+
+                const actualError = _.isArray(err) ? err[0] : firstError;
 
                 const errNameFull = actualError.$name;
                 const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
@@ -551,12 +522,17 @@ export default ['IgniteLegacyUtils', ['IgniteErrorPopover', (ErrorPopover) => {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
-                    catch (ignored) {
+                    catch (ignored1) {
                         try {
                             return form[firstError.$name].$errorMessages[errName][firstErrorKey];
                         }
-                        catch (ignited) {
-                            return false;
+                        catch (ignored2) {
+                            try {
+                                return form.$errorMessages[errName][firstErrorKey];
+                            }
+                            catch (ignored3) {
+                                return false;
+                            }
                         }
                     }
                 };

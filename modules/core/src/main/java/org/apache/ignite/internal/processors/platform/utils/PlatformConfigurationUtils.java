@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.binary.BinaryFieldIdentityResolver;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -42,6 +46,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -51,9 +56,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpiMBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -62,12 +72,20 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
+    /** */
+    private static final byte SWAP_TYP_NONE = 0;
+
+    /** */
+    private static final byte SWAP_TYP_FILE = 1;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -155,6 +173,7 @@ public class PlatformConfigurationUtils {
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
+        ccfg.setStatisticsEnabled(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -177,8 +196,43 @@ public class PlatformConfigurationUtils {
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
+        ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
 
         return ccfg;
+    }
+
+    /**
+     * Reads the expiry policy factory.
+     *
+     * @param in Reader.
+     * @return Expiry policy factory.
+     */
+    private static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
+        if (!in.readBoolean())
+            return null;
+
+        return new PlatformExpiryPolicyFactory(in.readLong(), in.readLong(), in.readLong());
+    }
+
+    /**
+     * Writes the policy factory.
+     *
+     * @param out Writer.
+     */
+    private static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
+        if (!(factory instanceof PlatformExpiryPolicyFactory)) {
+            out.writeBoolean(false);
+
+            return;
+        }
+
+        out.writeBoolean(true);
+
+        PlatformExpiryPolicyFactory f = (PlatformExpiryPolicyFactory)factory;
+
+        out.writeLong(f.getCreate());
+        out.writeLong(f.getUpdate());
+        out.writeLong(f.getAccess());
     }
 
     /**
@@ -202,7 +256,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Eviction policy.
      */
-    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
+    private static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -277,7 +331,7 @@ public class PlatformConfigurationUtils {
      * @param cfg NearCacheConfiguration.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+    private static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
@@ -372,7 +426,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+    private static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -380,14 +434,25 @@ public class PlatformConfigurationUtils {
 
         // Fields
         int cnt = in.readInt();
+        Set<String> keyFields = new HashSet<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
 
-            for (int i = 0; i < cnt; i++)
-                fields.put(in.readString(), in.readString());
+            for (int i = 0; i < cnt; i++) {
+                String fieldName = in.readString();
+                String fieldType = in.readString();
+
+                fields.put(fieldName, fieldType);
+
+                if (in.readBoolean())
+                    keyFields.add(fieldName);
+            }
 
             res.setFields(fields);
+
+            if (!keyFields.isEmpty())
+                res.setKeyFields(keyFields);
         }
 
         // Aliases
@@ -423,7 +488,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Query index.
      */
-    public static QueryIndex readQueryIndex(BinaryRawReader in) {
+    private static QueryIndex readQueryIndex(BinaryRawReader in) {
         QueryIndex res = new QueryIndex();
 
         res.setName(in.readString());
@@ -462,6 +527,7 @@ public class PlatformConfigurationUtils {
         String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
         if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
         if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setFailureDetectionTimeout(in.readLong());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -490,11 +556,29 @@ public class PlatformConfigurationUtils {
             cfg.setCommunicationSpi(comm);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean()) {  // binary config is present
             if (cfg.getBinaryConfiguration() == null)
                 cfg.setBinaryConfiguration(new BinaryConfiguration());
 
-            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+            if (in.readBoolean())  // compact footer is set
+                cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+
+            int typeCnt = in.readInt();
+
+            if (typeCnt > 0) {
+                Collection<BinaryTypeConfiguration> types = new ArrayList<>(typeCnt);
+
+                for (int i = 0; i < typeCnt; i++) {
+                    BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
+
+                    type.setEnum(in.readBoolean());
+                    type.setIdentityResolver(readBinaryIdentityResolver(in));
+
+                    types.add(type);
+                }
+
+                cfg.getBinaryConfiguration().setTypeConfigurations(types);
+            }
         }
 
         int attrCnt = in.readInt();
@@ -529,6 +613,27 @@ public class PlatformConfigurationUtils {
 
             cfg.setTransactionConfiguration(tx);
         }
+
+        byte swapType = in.readByte();
+
+        switch (swapType) {
+            case SWAP_TYP_FILE: {
+                FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
+
+                swap.setBaseDirectory(in.readString());
+                swap.setMaximumSparsity(in.readFloat());
+                swap.setMaxWriteQueueSize(in.readInt());
+                swap.setReadStripesNumber(in.readInt());
+                swap.setWriteBufferSize(in.readInt());
+
+                cfg.setSwapSpaceSpi(swap);
+
+                break;
+            }
+
+            default:
+                assert swapType == SWAP_TYP_NONE;
+        }
     }
 
     /**
@@ -537,7 +642,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         int len = in.readInt();
 
         if (len == 0)
@@ -569,7 +674,7 @@ public class PlatformConfigurationUtils {
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
      */
-    public static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
+    private static void readDiscoveryConfiguration(BinaryRawReader in, IgniteConfiguration cfg) {
         boolean hasConfig = in.readBoolean();
 
         if (!hasConfig)
@@ -693,6 +798,7 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());
+        writer.writeBoolean(ccfg.isStatisticsEnabled());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -722,6 +828,7 @@ public class PlatformConfigurationUtils {
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
+        writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
     }
 
     /**
@@ -740,11 +847,14 @@ public class PlatformConfigurationUtils {
         LinkedHashMap<String, String> fields = queryEntity.getFields();
 
         if (fields != null) {
+            Set<String> keyFields = queryEntity.getKeyFields();
+
             writer.writeInt(fields.size());
 
             for (Map.Entry<String, String> field : fields.entrySet()) {
                 writer.writeString(field.getKey());
                 writer.writeString(field.getValue());
+                writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
             }
         }
         else
@@ -826,6 +936,7 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeLong(cfg.getFailureDetectionTimeout());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -868,10 +979,28 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
-        w.writeBoolean(bc != null);
 
-        if (bc != null)
+        if (bc != null) {
+            w.writeBoolean(true);  // binary config exists
+            w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
+
+            Collection<BinaryTypeConfiguration> types = bc.getTypeConfigurations();
+
+            if (types != null) {
+                w.writeInt(types.size());
+
+                for (BinaryTypeConfiguration type : types) {
+                    w.writeString(type.getTypeName());
+                    w.writeBoolean(type.isEnum());
+                    writeBinaryIdentityResolver(w, type.getIdentityResolver());
+                }
+            }
+            else
+                w.writeInt(0);
+        }
+        else
+            w.writeBoolean(false);
 
         Map<String, ?> attrs = cfg.getUserAttributes();
 
@@ -911,6 +1040,23 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
+
+        SwapSpaceSpi swap = cfg.getSwapSpaceSpi();
+
+        if (swap instanceof FileSwapSpaceSpiMBean) {
+            w.writeByte(SWAP_TYP_FILE);
+
+            FileSwapSpaceSpiMBean fileSwap = (FileSwapSpaceSpiMBean)swap;
+
+            w.writeString(fileSwap.getBaseDirectory());
+            w.writeFloat(fileSwap.getMaximumSparsity());
+            w.writeInt(fileSwap.getMaxWriteQueueSize());
+            w.writeInt(fileSwap.getReadStripesNumber());
+            w.writeInt(fileSwap.getWriteBufferSize());
+        }
+        else {
+            w.writeByte(SWAP_TYP_NONE);
+        }
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1024,6 +1170,66 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
+    }
+
+    /**
+     * Reads resolver
+     *
+     * @param r Reader.
+     * @return Resolver.
+     */
+    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
+        int type = r.readByte();
+
+        switch (type) {
+            case 0:
+                return null;
+
+            case 1:
+                return new BinaryArrayIdentityResolver();
+
+            case 2:
+                int cnt = r.readInt();
+
+                String[] fields = new String[cnt];
+
+                for (int i = 0; i < cnt; i++)
+                    fields[i] = r.readString();
+
+                return new BinaryFieldIdentityResolver().setFieldNames(fields);
+
+            default:
+                assert false;
+                return null;
+        }
+    }
+
+    /**
+     * Writes the resolver.
+     *
+     * @param w Writer.
+     * @param resolver Resolver.
+     */
+    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
+        if (resolver instanceof BinaryArrayIdentityResolver)
+            w.writeByte((byte)1);
+        else if (resolver instanceof BinaryFieldIdentityResolver) {
+            w.writeByte((byte)2);
+
+            String[] fields = ((BinaryFieldIdentityResolver)resolver).getFieldNames();
+
+            if (fields != null) {
+                w.writeInt(fields.length);
+
+                for (String field : fields)
+                    w.writeString(field);
+            }
+            else
+                w.writeInt(0);
+        }
+        else {
+            w.writeByte((byte)0);
+        }
     }
 
     /**

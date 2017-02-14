@@ -203,6 +203,7 @@
             <includes>
                 <include>rest/**</include>
                 <include>memcached/**</include>
+                <include>redis/**</include>
                 <include>schema-import/src/**</include>
                 <include>schema-import/bin/**</include>
                 <include>schema-import/README.txt</include>

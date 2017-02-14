@@ -21,5 +21,6 @@ SUBDIRS = \
     putget-example \
     odbc-example \
     query-example \
+	continuous-query-example \
     include
 

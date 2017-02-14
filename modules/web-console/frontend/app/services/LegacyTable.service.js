@@ -19,7 +19,27 @@
 export default ['IgniteLegacyTable',
     ['IgniteLegacyUtils', 'IgniteFocus', 'IgniteErrorPopover', (LegacyUtils, Focus, ErrorPopover) => {
         function _model(item, field) {
-            return LegacyUtils.getModel(item, field);
+            let path = field.path;
+
+            if (_.isNil(path) || _.isNil(item))
+                return item;
+
+            path = path.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+            path = path.replace(/^\./, '');           // strip a leading dot
+
+            const segs = path.split('.');
+            let root = item;
+
+            while (segs.length > 0) {
+                const pathStep = segs.shift();
+
+                if (typeof root[pathStep] === 'undefined')
+                    root[pathStep] = {};
+
+                root = root[pathStep];
+            }
+
+            return root;
         }
 
         const table = {name: 'none', editIndex: -1};
@@ -190,7 +210,7 @@ export default ['IgniteLegacyTable',
                     }
                 }
 
-                return valid;
+                return valid || stopEdit;
             },
             tablePairSaveVisible(field, index) {
                 const pairValue = _tablePairValue(field, index);

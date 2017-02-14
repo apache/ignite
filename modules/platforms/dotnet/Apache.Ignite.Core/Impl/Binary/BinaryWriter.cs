@@ -1195,9 +1195,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Write object fields.
                     desc.Serializer.WriteBinary(obj, this);
+                    var dataEnd = _stream.Position;
 
                     // Write schema
-                    var schemaOffset = _stream.Position - pos;
+                    var schemaOffset = dataEnd - pos;
 
                     int schemaId;
                     
@@ -1230,8 +1231,12 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     var len = _stream.Position - pos;
 
-                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, flags);
+                    var hashCode = desc.EqualityComparer != null
+                        ? desc.EqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
+                            dataEnd - pos - BinaryObjectHeader.Size, _schema, schemaIdx, _marsh, desc)
+                        : obj.GetHashCode();
+
+                    var header = new BinaryObjectHeader(desc.TypeId, hashCode, len, schemaId, schemaOffset, flags);
 
                     BinaryObjectHeader.Write(header, _stream, pos);
 
@@ -1259,8 +1264,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Are we dealing with a well-known type?
                 var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                if (handler == null) // We did our best, object cannot be marshalled.
+                    throw BinaryUtils.GetUnsupportedTypeException(type, obj);
                 
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
@@ -1316,7 +1321,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteLongField(*(long*)&val0);
             }
             else
-                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
+                throw BinaryUtils.GetUnsupportedTypeException(type, val);
         }
 
         /// <summary>

@@ -179,10 +179,7 @@ namespace ignite
                  *
                  * @param port Server port.
                  */
-                void SetTcpPort(uint16_t port)
-                {
-                    arguments[Key::port] = common::LexicalCast<std::string>(port);
-                }
+                void SetTcpPort(uint16_t port);
 
                 /**
                  * Get DSN.
@@ -229,10 +226,7 @@ namespace ignite
                  *
                  * @param server Server host.
                  */
-                void SetHost(const std::string& server)
-                {
-                    arguments[Key::server] = server;
-                }
+                void SetHost(const std::string& server);
 
                 /**
                  * Get cache.
@@ -269,10 +263,7 @@ namespace ignite
                  *
                  * @param address Address.
                  */
-                void SetAddress(const std::string& address)
-                {
-                    arguments[Key::address] = address;
-                }
+                void SetAddress(const std::string& address);
 
                 /**
                  * Check distributed joins flag.

@@ -21,6 +21,7 @@
 @import "~roboto-font/css/fonts.css";
 @import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
+@import "./form-field";
 
 hr {
     margin: 20px 0;
@@ -79,6 +80,11 @@ hr {
 
 .table.table-vertical-middle tbody > tr > td {
   vertical-align: middle;
+}
+
+.table .ui-grid-settings {
+    float: left;
+    padding-right: 10px;
 }
 
 ul.navbar-nav, .sidebar-nav {
@@ -221,7 +227,7 @@ ul.navbar-nav, .sidebar-nav {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        
+
         &:hover,
         &:focus {
             text-decoration: none;
@@ -356,6 +362,13 @@ h1, h2, h3, h4, h5, h6 {
 // Close icon
 .modal-header .close {
     margin-right: -2px;
+}
+
+// Modal icon
+.modal-header h4 > i.fa {
+    cursor: default;
+    float: left;
+    line-height: $modal-title-line-height;
 }
 
 .modal .modal-dialog {
@@ -528,6 +541,12 @@ i.btn {
         margin-left: 0;
     }
 
+    button.btn[disabled="disabled"] {
+        i {
+            cursor: not-allowed;
+        }
+    }
+
     > .btn + .dropdown-toggle {
         margin-right: 0;
         padding: 3px 6px;
@@ -582,6 +601,10 @@ button.form-control {
 .theme-line .notebook-header {
     border-color: $gray-lighter;
 
+    button:last-child {
+        margin-right: 0;
+    }
+
     h1 {
         padding: 0;
         margin: 0;
@@ -592,7 +615,7 @@ button.form-control {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-top: 5px;
+            height: 24px;
         }
 
         .btn-group {
@@ -618,11 +641,11 @@ button.form-control {
 }
 
 .theme-line .paragraphs {
-    .panel-group .panel + .panel {
+    .panel-group .panel-paragraph + .panel-paragraph {
         margin-top: 30px;
     }
 
-    .btn-group {
+    .btn-group:last-of-type {
         margin-right: 0;
     }
 
@@ -660,10 +683,67 @@ button.form-control {
         line-height: 55px;
     }
 
-    .sql-controls {
+    .panel-collapse {
         border-top: 1px solid $ignite-border-color;
+    }
+
+    .sql-controls {
+        position: relative;
+        top: -1px;
+        border-top: 1px solid #ddd;
 
         padding: 10px 10px;
+
+        input[type="checkbox"] {
+            line-height: 20px;
+            margin-right: 5px;
+        }
+
+        label {
+            line-height: 28px;
+            vertical-align: middle;
+        }
+
+        .btn {
+            line-height: 20px;
+        }
+
+        .ignite-form-field {
+            margin-right: 10px;
+
+            .ignite-form-field__label {
+                float: left;
+                width: auto;
+                margin-right: 5px;
+                line-height: 28px;
+            }
+
+            .ignite-form-field__label + div {
+                display: block;
+                float: none;
+                width: auto;
+            }
+        }
+
+        .tipLabel .btn {
+            float: right;
+        }
+
+        .pull-right {
+            margin-left: 10px;
+
+            .ignite-form-field {
+                margin-right: -24px;
+
+                label {
+                    margin-left: 5px;
+                }
+            }
+        }
+
+        .col-sm-3 + .tipLabel {
+            margin-left: 0;
+        }
     }
 
     .sql-result {
@@ -685,6 +765,16 @@ button.form-control {
 
         .total {
             padding: 10px 10px;
+
+            input[type="checkbox"] {
+                line-height: 20px;
+                margin-right: 5px;
+            }
+
+            label {
+                line-height: 20px !important;
+                vertical-align: middle;
+            }
         }
 
         .table {
@@ -1204,6 +1294,17 @@ button.form-control {
     .clickable { cursor: pointer; }
 }
 
+
+.theme-line .summary {
+    .actions-note {
+        i {
+            margin-right: 5px;
+        }
+
+        margin: 15px 0;
+    }
+}
+
 .theme-line .popover.summary-project-structure {
     @extend .popover.settings;
 
@@ -1317,15 +1418,6 @@ label {
     margin: 0 5px;
 }
 
-.fieldButton {
-    float: right;
-    margin-left: 5px;
-    margin-right: 0;
-}
-
-.fa {
-    cursor: pointer;
-}
 
 .fa-cursor-default {
     cursor: default !important;
@@ -1343,10 +1435,6 @@ label {
 .fa-chevron-circle-right {
     color: $brand-primary;
     margin-right: 5px;
-}
-
-.fa-question-circle {
-    cursor: default;
 }
 
 label.required:after {
@@ -1638,13 +1726,18 @@ th[st-sort] {
     z-index: 900;
 
     a {
+        color: $input-color-placeholder;
         background-color: white;
         margin-left: 5px;
         font-size: 0.9em;
     }
 
-    .inactive {
-        color: $input-color-placeholder;
+    a + a {
+        margin-left: 10px
+    }
+
+    a.active {
+        color: $brand-primary;
     }
 }
 
@@ -1662,6 +1755,7 @@ th[st-sort] {
 }
 
 .chart-settings-link {
+    margin-top: -2px;
     padding-left: 10px;
     line-height: $input-height;
 
@@ -1960,6 +2054,10 @@ treecontrol.tree-classic {
         margin-right: 0
     }
 
+    .ui-grid-cell-actions {
+        line-height: 28px;
+    }
+
     .no-rows {
         .center-container {
             background: white;
@@ -2167,5 +2265,102 @@ html,body,.splash-screen {
         height: 325px;
         margin: 0;
         padding: 0;
+    }
+}
+
+// Fix for incorrect tooltip placement after fast show|hide.
+.tooltip.ng-leave {
+    transition: none !important; /* Disable transitions. */
+    animation: none 0s !important; /* Disable keyframe animations. */
+}
+
+// Fix for incorrect dropdown placement.
+.select.dropdown-menu.ng-leave {
+    transition: none !important; /* Disable transitions. */
+    animation: none 0s !important; /* Disable keyframe animations. */
+}
+.disable-animations {
+    // Use this for transitions
+    &.ng-enter,
+    &.ng-leave,
+    &.ng-animate {
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
+    // Use this for keyframe animations
+    &.ng-animate {
+        -webkit-animation: none 0s;
+        animation: none 0s;
+    }
+}
+
+.admin-page {
+    .panel-heading {
+        border-bottom: 0;
+        padding-bottom: 0;
+
+        cursor: default;
+
+        i {
+            margin-top: 2px;
+            margin-right: 10px;
+        }
+
+        label {
+            cursor: default;
+            line-height: 28px;
+        }
+
+        sub {
+            bottom: 0;
+        }
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-filter-select {
+        width: calc(100% - 10px);
+    }
+
+    .ui-grid-cell-contents > i {
+        line-height: $line-height-base;
+    }
+
+    .ui-grid-row:nth-child(odd):hover .ui-grid-cell {
+        background: $ignite-row-hover;
+    }
+    
+    .ui-grid-row:nth-child(even):hover .ui-grid-cell {
+        background: $ignite-row-hover;
+    }
+}
+
+.datepicker.dropdown-menu {
+    width: 250px;
+    height: 270px;
+
+    button {
+        outline: none;
+        border: 0;
+    }
+
+    tbody {
+        height: 180px;
+    }
+
+    tbody button {
+        padding: 6px;
+    }
+
+    &.datepicker-mode-1, &.datepicker-mode-2 {
+        tbody button {
+            height: 65px;
+        }
     }
 }

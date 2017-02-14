@@ -158,8 +158,8 @@ public class VisorTaskUtils {
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */
-    public static String escapeName(@Nullable String name) {
-        return name == null ? DFLT_EMPTY_NAME : name;
+    public static String escapeName(@Nullable Object name) {
+        return name == null ? DFLT_EMPTY_NAME : name.toString();
     }
 
     /**
@@ -170,15 +170,6 @@ public class VisorTaskUtils {
         assert name != null;
 
         return DFLT_EMPTY_NAME.equals(name) ? null : name;
-    }
-
-    /**
-     * @param a First name.
-     * @param b Second name.
-     * @return {@code true} if both names equals.
-     */
-    public static boolean safeEquals(@Nullable String a, @Nullable String b) {
-        return (a != null && b != null) ? a.equals(b) : (a == null && b == null);
     }
 
     /**
@@ -279,6 +270,19 @@ public class VisorTaskUtils {
     /**
      * Compact class names.
      *
+     * @param cls Class object for compact.
+     * @return Compacted string.
+     */
+    @Nullable public static String compactClass(Class cls) {
+        if (cls == null)
+            return null;
+
+        return U.compact(cls.getName());
+    }
+
+    /**
+     * Compact class names.
+     *
      * @param obj Object for compact.
      * @return Compacted string.
      */
@@ -286,7 +290,7 @@ public class VisorTaskUtils {
         if (obj == null)
             return null;
 
-        return U.compact(obj.getClass().getName());
+        return compactClass(obj.getClass());
     }
 
     /**
@@ -637,12 +641,10 @@ public class VisorTaskUtils {
             else {
                 int toRead = Math.min(blockSz, (int)(fSz - pos));
 
-                byte[] buf = new byte[toRead];
-
                 raf = new RandomAccessFile(file, "r");
-
                 raf.seek(pos);
 
+                byte[] buf = new byte[toRead];
                 int cntRead = raf.read(buf, 0, toRead);
 
                 if (cntRead != toRead)
@@ -887,8 +889,6 @@ public class VisorTaskUtils {
         try {
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
-                    StringBuilder envs = new StringBuilder();
-
                     Map<String, String> macEnv = new HashMap<>(System.getenv());
 
                     if (envVars != null) {
@@ -904,6 +904,8 @@ public class VisorTaskUtils {
                             else
                                 macEnv.put(ent.getKey(), ent.getValue());
                     }
+
+                    StringBuilder envs = new StringBuilder();
 
                     for (Map.Entry<String, String> entry : macEnv.entrySet()) {
                         String val = entry.getValue();
@@ -1024,13 +1026,12 @@ public class VisorTaskUtils {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
 
         try (ZipOutputStream zos = new ZipOutputStream(bos)) {
-            ZipEntry entry = new ZipEntry("");
-
             try {
+                ZipEntry entry = new ZipEntry("");
+
                 entry.setSize(input.length);
 
                 zos.putNextEntry(entry);
-
                 zos.write(input);
             }
             finally {

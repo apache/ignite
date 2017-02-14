@@ -177,6 +177,9 @@ public class HadoopExternalCommunication {
     /** Grid name. */
     private String gridName;
 
+    /** Work directory. */
+    private String workDir;
+
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
 
@@ -254,6 +257,7 @@ public class HadoopExternalCommunication {
      * @param log Logger.
      * @param execSvc Executor service for message notification.
      * @param gridName Grid name.
+     * @param workDir Work directory.
      */
     public HadoopExternalCommunication(
         UUID parentNodeId,
@@ -261,7 +265,8 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName
+        String gridName,
+        String workDir
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
 
@@ -269,6 +274,7 @@ public class HadoopExternalCommunication {
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
         this.gridName = gridName;
+        this.workDir = workDir;
     }
 
     /**
@@ -633,6 +639,7 @@ public class HadoopExternalCommunication {
                         .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
                         .gridName(gridName)
+                        .serverName("hadoop")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -685,7 +692,7 @@ public class HadoopExternalCommunication {
             try {
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
                     log.getLogger(IpcSharedMemoryServerEndpoint.class),
-                    locProcDesc.processId(), gridName);
+                    locProcDesc.processId(), gridName, workDir);
 
                 srv.setPort(port);
 
@@ -850,7 +857,7 @@ public class HadoopExternalCommunication {
             catch (IgniteCheckedException e) {
                 if (e.hasCause(IpcOutOfSystemResourcesException.class))
                     // Has cause or is itself the IpcOutOfSystemResourcesException.
-                    LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
+                    LT.warn(log, OUT_OF_RESOURCES_TCP_MSG);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to establish shared memory connection with local hadoop process: " +
                         desc);
@@ -1053,7 +1060,7 @@ public class HadoopExternalCommunication {
                         ", err=" + e + ']');
 
                 if (X.hasCause(e, SocketTimeoutException.class))
-                    LT.warn(log, null, "Connect timed out (consider increasing 'connTimeout' " +
+                    LT.warn(log, "Connect timed out (consider increasing 'connTimeout' " +
                         "configuration property) [addr=" + addr + ", port=" + port + ']');
 
                 if (errs == null)
@@ -1078,7 +1085,7 @@ public class HadoopExternalCommunication {
             assert errs != null;
 
             if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, null, "Failed to connect to a remote Hadoop process (is process still running?). " +
+                LT.warn(log, "Failed to connect to a remote Hadoop process (is process still running?). " +
                     "Make sure operating system firewall is disabled on local and remote host) " +
                     "[addrs=" + addr + ", port=" + port + ']');
 
@@ -1299,11 +1306,11 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
-            return proceedSessionWrite(ses, msg);
+            return proceedSessionWrite(ses, msg, fut);
         }
 
         /** {@inheritDoc} */

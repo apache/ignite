@@ -34,14 +34,16 @@ module.exports = {
 module.exports.factory = (_, mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
+     *
      * @param {RemoveResult} result - The results of remove operation.
      */
     const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
 
     /**
-     * Update existing cluster
-     * @param {Object} cluster - The cluster for updating
-     * @returns {Promise.<mongo.ObjectId>} that resolves cluster id
+     * Update existing cluster.
+     *
+     * @param {Object} cluster - The cluster for updating.
+     * @returns {Promise.<mongo.ObjectId>} that resolves cluster id.
      */
     const update = (cluster) => {
         const clusterId = cluster._id;
@@ -60,6 +62,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
     /**
      * Create new cluster.
+     *
      * @param {Object} cluster - The cluster for creation.
      * @returns {Promise.<mongo.ObjectId>} that resolves cluster id.
      */
@@ -78,6 +81,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
     /**
      * Remove all caches by space ids.
+     *
      * @param {Number[]} spaceIds - The space ids for cache deletion.
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
@@ -90,7 +94,8 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
     class ClustersService {
         /**
          * Create or update cluster.
-         * @param {Object} cluster - The cluster
+         *
+         * @param {Object} cluster - The cluster.
          * @returns {Promise.<mongo.ObjectId>} that resolves cluster id of merge operation.
          */
         static merge(cluster) {
@@ -102,8 +107,9 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
         /**
          * Get clusters and linked objects by space.
-         * @param {mongo.ObjectId|String} spaceIds - The spaces id that own cluster.
-         * @returns {Promise.<[mongo.Cache[], mongo.Cluster[], mongo.DomainModel[], mongo.Space[]]>} - contains requested caches and array of linked objects: clusters, domains, spaces.
+         *
+         * @param {mongo.ObjectId|String} spaceIds The spaces ids that own clusters.
+         * @returns {Promise.<Array<mongo.Cluster>>} Requested clusters.
          */
         static listBySpaces(spaceIds) {
             return mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec();
@@ -111,6 +117,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
         /**
          * Remove cluster.
+         *
          * @param {mongo.ObjectId|String} clusterId - The cluster id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */

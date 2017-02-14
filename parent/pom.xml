@@ -53,7 +53,7 @@
         <aspectj.bundle.version>1.7.2_1</aspectj.bundle.version>
         <aspectj.version>1.7.2</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
-        <aws.sdk.version>1.10.29</aws.sdk.version>
+        <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
         <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.8.3</commons.beanutils.version>
@@ -65,7 +65,7 @@
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
-        <flume.ng.version>1.6.0</flume.ng.version>
+        <flume.ng.version>1.7.0</flume.ng.version>
         <guava.retrying.version>2.0.0</guava.retrying.version>
         <guava.version>18.0</guava.version>
         <guava14.version>14.0.1</guava14.version>
@@ -462,7 +462,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2017 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -811,7 +811,7 @@
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
-                                        <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
@@ -892,13 +892,15 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <!--web console-->
-                                        <exclude>**/src/main/js/.babelrc</exclude>
-                                        <exclude>**/src/main/js/.eslintrc</exclude>
-                                        <exclude>**/src/main/js/build/**</exclude>
-                                        <exclude>**/src/main/js/node_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules/**</exclude>
-                                        <exclude>**/src/main/js/ignite_modules_temp/**</exclude>
-                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/.babelrc</exclude>
+                                        <exclude>**/.eslintrc</exclude>
+                                        <exclude>**/.dockerignore</exclude>
+                                        <exclude>**/backend/config/settings.json.sample</exclude>
+                                        <exclude>**/backend/node_modules/**</exclude>
+                                        <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/ignite_modules/**</exclude>
+                                        <exclude>**/frontend/ignite_modules_temp/**</exclude>
+                                        <exclude>**/frontend/node_modules/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

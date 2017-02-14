@@ -15,6 +15,16 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
+const nonNil = _.negate(_.isNil);
+const nonEmpty = _.negate(_.isEmpty);
+
+_.mixin({
+    nonNil,
+    nonEmpty
+});
+
 import alertTemplateUrl from '../views/templates/alert.jade';
 
 const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', 'mgcrea.ngStrap']);
@@ -46,7 +56,7 @@ igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
 igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
     angular.extend($tooltipProvider.defaults, {
         container: 'body',
-        delay: 150,
+        delay: {show: 150, hide: 150},
         placement: 'right',
         html: 'true',
         trigger: 'click hover'
@@ -82,5 +92,14 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
     angular.extend($dropdownProvider.defaults, {
         templateUrl: 'templates/dropdown.html'
+    });
+}]);
+
+// AngularStrap dropdowns () configuration.
+igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
+    angular.extend($datepickerProvider.defaults, {
+        autoclose: true,
+        iconLeft: 'icon-datepicker-left',
+        iconRight: 'icon-datepicker-right'
     });
 }]);

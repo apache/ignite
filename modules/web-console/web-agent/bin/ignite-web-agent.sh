@@ -81,7 +81,13 @@ cd $DIR
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
 if [ -z "$JVM_OPTS" ] ; then
-    JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+    else
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+    fi
 fi
+
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
 
 "$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"

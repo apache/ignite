@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
@@ -90,7 +89,7 @@ public class BinaryMarshaller extends AbstractNodeNameAwareMarshaller {
         try {
             out.write(arr);
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
         }
     }

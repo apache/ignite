@@ -195,6 +195,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return _offset; }
         }
 
+        /// <summary>
+        /// Gets the header.
+        /// </summary>
+        public BinaryObjectHeader Header
+        {
+            get { return _header; }
+        }
+
         public bool TryGetFieldPosition(string fieldName, out int pos)
         {
             var desc = _marsh.GetDescriptor(true, _header.TypeId);
@@ -244,6 +252,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (_data == that._data && _offset == that._offset)
                     return true;
 
+                if (TypeId != that.TypeId)
+                    return false;
+
+                var desc = _marsh.GetDescriptor(true, TypeId);
+
+                if (desc != null && desc.EqualityComparer != null)
+                    return desc.EqualityComparer.Equals(this, that);
+
                 // 1. Check headers
                 if (_header == that._header)
                 {
@@ -266,8 +282,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                         object fieldVal = GetField<object>(field.Value, null);
                         object thatFieldVal = that.GetField<object>(that._fields[field.Key], null);
 
-                        if (!Equals(fieldVal, thatFieldVal))
+                        var arr = fieldVal as Array;
+                        var thatArr = thatFieldVal as Array;
+
+                        if (arr != null && thatArr != null && arr.Length == thatArr.Length)
+                        {
+                            for (var i = 0; i < arr.Length; i++)
+                            {
+                                if (!Equals(arr.GetValue(i), thatArr.GetValue(i)))
+                                    return false;
+                            }
+                        }
+                        else if (!Equals(fieldVal, thatFieldVal))
+                        {
                             return false;
+                        }
                     }
 
                     // 4. Check if objects have the same raw data.

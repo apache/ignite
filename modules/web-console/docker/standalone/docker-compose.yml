@@ -18,10 +18,7 @@
 webconsole:
   image: ignite/web-console-standalone
   ports:
-    - 3080:80
-    - 3000:3000
-    - 3001:3001
-    - 27017:27017
+    - 80:80
   restart: always
   environment:
     # Port for serving frontend API
@@ -30,8 +27,6 @@ webconsole:
     - server_sessionSecret="CHANGE ME"
     # URL for mongodb connection
     - mongodb_url=mongodb://127.0.0.1/console
-    # Port for web-agent.
-    - agentServer_port=3001
     # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
     - mail_service=""
     - mail_sign=""

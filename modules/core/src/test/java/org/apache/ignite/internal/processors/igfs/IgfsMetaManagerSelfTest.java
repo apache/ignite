@@ -158,7 +158,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         for (IgniteBiTuple<IgniteUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
             IgniteUuid fileId = tup.get1();
-            String fileName = tup.get2();
 
             for (Map<String, String> props : Arrays.asList(null, Collections.<String, String>emptyMap()))
                 expectsUpdatePropertiesFail(fileId, props, AssertionError.class, "Expects not-empty file's properties");
@@ -266,7 +265,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Validate 'file ID' operations.
-        assertEquals(ROOT_ID, mgr.fileId(new IgfsPath("/")));
+        assertEquals(ROOT_ID, mgr.fileId(IgfsPath.ROOT));
         assertEquals(a.id(), mgr.fileId(new IgfsPath("/a")));
         assertEquals(b.id(), mgr.fileId(new IgfsPath("/a/b")));
         assertEquals(f1.id(), mgr.fileId(new IgfsPath("/f1")));
@@ -285,7 +284,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertNull(mgr.fileId(a.id(), "f5"));
         assertNull(mgr.fileId(b.id(), "f6"));
 
-        assertEquals(Arrays.asList(ROOT_ID), mgr.fileIds(new IgfsPath("/")));
+        assertEquals(Arrays.asList(ROOT_ID), mgr.fileIds(IgfsPath.ROOT));
         assertEquals(Arrays.asList(ROOT_ID, a.id()), mgr.fileIds(new IgfsPath("/a")));
         assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id()), mgr.fileIds(new IgfsPath("/a/b")));
         assertEquals(Arrays.asList(ROOT_ID, f1.id()), mgr.fileIds(new IgfsPath("/f1")));

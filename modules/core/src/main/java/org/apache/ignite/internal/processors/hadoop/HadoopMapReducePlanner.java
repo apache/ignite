@@ -33,6 +33,7 @@ public interface HadoopMapReducePlanner {
      * @param top Topology.
      * @param oldPlan Old plan in case of partial failure.
      * @return Map reduce plan.
+     * @throws IgniteCheckedException If an error occurs.
      */
     public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException;

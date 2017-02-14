@@ -74,12 +74,10 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -110,6 +108,41 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
  * Cache utility methods.
  */
 public class GridCacheUtils {
+    /** Cheat cache ID for debugging and benchmarking purposes. */
+    public static final int cheatCacheId;
+
+    /*
+     *
+     */
+    static {
+        String cheatCache = System.getProperty("CHEAT_CACHE");
+
+        if (cheatCache != null) {
+            cheatCacheId = cheatCache.hashCode();
+
+            if (cheatCacheId == 0)
+                throw new RuntimeException();
+
+            System.out.println(">>> Cheat cache ID [id=" + cheatCacheId + ", name=" + cheatCache + ']');
+        }
+        else
+            cheatCacheId = 0;
+    }
+
+    /**
+     * Quickly checks if passed in cache ID is a "cheat cache ID" set by -DCHEAT_CACHE=user_cache_name
+     * and resolved in static block above.
+     *
+     * FOR DEBUGGING AND TESTING PURPOSES!
+     *
+     * @param id Cache ID to check.
+     * @return {@code True} if this is cheat cache ID.
+     */
+    @Deprecated
+    public static boolean cheatCache(int id) {
+        return cheatCacheId != 0 && id == cheatCacheId;
+    }
+
     /**  Hadoop syste cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
@@ -121,6 +154,9 @@ public class GridCacheUtils {
 
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+
+    /** */
+    public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
 
     /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
@@ -410,23 +446,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets public cache name substituting null name by {@code 'default'}.
-     *
-     * @return Public cache name substituting null name by {@code 'default'}.
-     */
-    public static String namexx(@Nullable String name) {
-        return name == null ? "default" : name;
-    }
-
-    /**
-     * @return Partition to state transformer.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static IgniteClosure<GridDhtLocalPartition, GridDhtPartitionState> part2state() {
-        return PART2STATE;
-    }
-
-    /**
      * Gets all nodes on which cache with the same name is started.
      *
      * @param ctx Cache context.
@@ -459,18 +478,6 @@ public class GridCacheUtils {
      */
     public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().remoteCacheNodes(topVer);
-    }
-
-    /**
-     * Gets alive remote nodes with at least one cache configured.
-     *
-     * @param ctx Cache context.
-     * @param topOrder Maximum allowed node order.
-     * @return Affinity nodes.
-     */
-    public static Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final GridCacheSharedContext ctx,
-        AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveRemoteServerNodesWithCaches(topOrder);
     }
 
     /**
@@ -516,23 +523,6 @@ public class GridCacheUtils {
             return false;
 
         return cfg.getNearConfiguration() != null;
-    }
-
-    /**
-     * Gets oldest alive server node with at least one cache configured for specified topology version.
-     *
-     * @param ctx Context.
-     * @param topVer Maximum allowed topology version.
-     * @return Oldest alive cache server node.
-     */
-    @Nullable public static ClusterNode oldestAliveCacheServerNode(GridCacheSharedContext ctx,
-        AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> nodes = ctx.discovery().aliveServerNodesWithCaches(topVer);
-
-        if (nodes.isEmpty())
-            return null;
-
-        return oldest(nodes);
     }
 
     /**
@@ -641,44 +631,6 @@ public class GridCacheUtils {
     @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<IgniteTxEntry> writes() {
         return WRITE_FILTER;
-    }
-
-    /**
-     * Gets type filter for projections.
-     *
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @param <K> Key type.
-     * @param <V> Value type.
-     * @return Type filter.
-     */
-    public static <K, V> IgniteBiPredicate<K, V> typeFilter(final Class<?> keyType, final Class<?> valType) {
-        return new P2<K, V>() {
-            @Override public boolean apply(K k, V v) {
-                return keyType.isAssignableFrom(k.getClass()) && valType.isAssignableFrom(v.getClass());
-            }
-
-            @Override public String toString() {
-                return "Type filter [keyType=" + keyType + ", valType=" + valType + ']';
-            }
-        };
-    }
-
-    /**
-     * @param keyType Key type.
-     * @param valType Value type.
-     * @return Type filter.
-     */
-    public static CacheEntryPredicate typeFilter0(final Class<?> keyType, final Class<?> valType) {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                Object val = CU.value(peekVisibleValue(e), e.context(), false);
-
-                return val == null ||
-                    valType.isAssignableFrom(val.getClass()) &&
-                    keyType.isAssignableFrom(e.key().value(e.context().cacheObjectContext(), false).getClass());
-            }
-        });
     }
 
     /**
@@ -895,7 +847,7 @@ public class GridCacheUtils {
             }
         }
 
-        return ctx.marshaller().marshal(obj);
+        return U.marshal(ctx, obj);
     }
 
     /**
@@ -960,9 +912,13 @@ public class GridCacheUtils {
         if (tx == null)
             return "null";
 
-        return tx.getClass().getSimpleName() + "[id=" + tx.xid() + ", concurrency=" + tx.concurrency() +
-            ", isolation=" + tx.isolation() + ", state=" + tx.state() + ", invalidate=" + tx.isInvalidate() +
-            ", rollbackOnly=" + tx.isRollbackOnly() + ", nodeId=" + tx.nodeId() +
+        return tx.getClass().getSimpleName() + "[id=" + tx.xid() +
+            ", concurrency=" + tx.concurrency() +
+            ", isolation=" + tx.isolation() +
+            ", state=" + tx.state() +
+            ", invalidate=" + tx.isInvalidate() +
+            ", rollbackOnly=" + tx.isRollbackOnly() +
+            ", nodeId=" + tx.nodeId() +
             ", duration=" + (U.currentTimeMillis() - tx.startTime()) + ']';
     }
 
@@ -995,26 +951,6 @@ public class GridCacheUtils {
 
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
             unwindEvicts(cacheCtx);
-    }
-
-    /**
-     * Gets primary node on which given key is cached.
-     *
-     * @param ctx Cache.
-     * @param key Key to find primary node for.
-     * @return Primary node for the key.
-     */
-    @SuppressWarnings( {"unchecked"})
-    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
-        assert ctx != null;
-        assert key != null;
-
-        CacheConfiguration cfg = ctx.cache().configuration();
-
-        if (cfg.getCacheMode() != PARTITIONED)
-            return ctx.localNode();
-
-        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -1170,6 +1106,7 @@ public class GridCacheUtils {
 
     /**
      * Validates that cache key object has overridden equals and hashCode methods.
+     * Will also check that a BinaryObject has a hash code set.
      *
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
@@ -1181,6 +1118,10 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
+
+        if (U.isHashCodeEmpty(key))
+            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
+                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

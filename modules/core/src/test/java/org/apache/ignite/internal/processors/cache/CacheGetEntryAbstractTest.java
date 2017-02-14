@@ -283,8 +283,9 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
 
                         tx.commit();
                     }
-                    catch (TransactionOptimisticException e) {
-                        fail("Should not throw optimistic exception in only read TX. Tx isolation: " + txIsolation);
+                    catch (TransactionOptimisticException ignored) {
+                        assertTrue("Should not throw optimistic exception in only read TX. Tx isolation: "
+                            + txIsolation, false);
                     }
                 }
             }

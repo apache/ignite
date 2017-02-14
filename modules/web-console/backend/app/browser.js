@@ -98,9 +98,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return first page to browser.
-                socket.on('node:query', (nid, cacheName, query, local, pageSize, cb) => {
+                socket.on('node:query', (nid, cacheName, query, distributedJoins, local, pageSize, cb) => {
                     agentMgr.findAgent(accountId())
-                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, local, pageSize))
+                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
@@ -114,13 +114,13 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return full result to browser.
-                socket.on('node:query:getAll', (nid, cacheName, query, local, cb) => {
+                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, local, cb) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
                     agentMgr.findAgent(accountId())
                         .then((agent) => {
-                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, local, pageSize)
+                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize)
                                 .then(({result}) => {
                                     if (result.key)
                                         return Promise.reject(result.key);
@@ -133,10 +133,10 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                     return acc;
 
                                 return agent.queryFetch(demo, acc.responseNodeId, acc.queryId, pageSize)
-                                    .then((res) => {
-                                        acc.rows = acc.rows.concat(res.rows);
+                                    .then(({result}) => {
+                                        acc.rows = acc.rows.concat(result.rows);
 
-                                        acc.hasMore = res.hasMore;
+                                        acc.hasMore = result.hasMore;
 
                                         return fetchResult(acc);
                                     });
@@ -146,6 +146,32 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                 .then(fetchResult);
                         })
                         .then((res) => cb(null, res))
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect cache query metrics and return result to browser.
+                socket.on('node:query:metrics', (nids, since, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryDetailMetrics(demo, nids, since))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect cache query metrics and return result to browser.
+                socket.on('node:query:reset:metrics', (nids, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryResetDetailMetrics(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
@@ -377,10 +403,75 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
-                // GC node and return result to browser.
+                // Thread dump for node.
                 socket.on('node:thread:dump', (nid, cb) => {
                     agentMgr.findAgent(accountId())
                         .then((agent) => agent.threadDump(demo, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect cache partitions.
+                socket.on('node:cache:partitions', (nids, cacheName, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.partitions(demo, nids, cacheName))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Stops given node IDs
+                socket.on('node:stop', (nids, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.stopNodes(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Restarts given node IDs.
+                socket.on('node:restart', (nids, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.restartNodes(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect service information from grid.
+                socket.on('service:collect', (nid, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.services(demo, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect service information from grid.
+                socket.on('service:cancel', (nid, name, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.serviceCancel(demo, nid, name))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

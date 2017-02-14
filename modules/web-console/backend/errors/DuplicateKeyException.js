@@ -17,7 +17,7 @@
 
 'use strict';
 
-import AppErrorException from './AppErrorException';
+const AppErrorException = require('./AppErrorException');
 
 class DuplicateKeyException extends AppErrorException {
     constructor(message) {

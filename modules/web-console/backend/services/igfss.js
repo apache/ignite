@@ -34,12 +34,14 @@ module.exports = {
 module.exports.factory = (_, mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
+     *
      * @param {RemoveResult} result - The results of remove operation.
      */
     const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
 
     /**
-     * Update existing IGFS
+     * Update existing IGFS.
+     *
      * @param {Object} igfs - The IGFS for updating
      * @returns {Promise.<mongo.ObjectId>} that resolves IGFS id
      */
@@ -58,6 +60,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
     /**
      * Create new IGFS.
+     *
      * @param {Object} igfs - The IGFS for creation.
      * @returns {Promise.<mongo.ObjectId>} that resolves IGFS id.
      */
@@ -75,6 +78,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
     /**
      * Remove all IGFSs by space ids.
+     *
      * @param {Number[]} spaceIds - The space ids for IGFS deletion.
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
@@ -86,6 +90,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
     class IgfssService {
         /**
          * Create or update IGFS.
+         *
          * @param {Object} igfs - The IGFS
          * @returns {Promise.<mongo.ObjectId>} that resolves IGFS id of merge operation.
          */
@@ -98,8 +103,9 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
         /**
          * Get IGFS by spaces.
+         *
          * @param {mongo.ObjectId|String} spacesIds - The spaces ids that own IGFSs.
-         * @returns {Promise.<mongo.IGFS[]>} - contains requested IGFSs.
+         * @returns {Promise.<Array<mongo.IGFS>>} - contains requested IGFSs.
          */
         static listBySpaces(spacesIds) {
             return mongo.Igfs.find({space: {$in: spacesIds}}).sort('name').lean().exec();
@@ -107,6 +113,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
         /**
          * Remove IGFS.
+         *
          * @param {mongo.ObjectId|String} igfsId - The IGFS id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
@@ -121,6 +128,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
 
         /**
          * Remove all IGFSes by user.
+         *
          * @param {mongo.ObjectId|String} userId - The user id that own IGFS.
          * @param {Boolean} demo - The flag indicates that need lookup in demo space.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.

@@ -58,7 +58,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
-        ipFinder.setAddressRequestAttempts(10);
+        ipFinder.setAddressRequestAttempts(5);
 
         spi.setIpFinder(ipFinder);
 

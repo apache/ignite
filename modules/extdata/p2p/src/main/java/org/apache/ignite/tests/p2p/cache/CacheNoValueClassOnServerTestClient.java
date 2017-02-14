@@ -22,7 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -54,8 +53,6 @@ public class CacheNoValueClassOnServerTestClient {
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-
-        U.setWorkDirectory(null, U.getIgniteHome());
 
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println("Test external node started");

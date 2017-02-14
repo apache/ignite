@@ -1,10 +1,12 @@
 [
   {
+    "_id" : "000000000000000000000001",
+    "space": "000000000000000000000001",
     "ipcEndpointEnabled": true,
     "fragmentizerEnabled": true,
     "name": "igfs",
     "dataCacheName": "igfs-data",
     "metaCacheName": "igfs-meta",
-    "clusters": []
+    "clusters": ["000000000000000000000001"]
   }
 ]

@@ -19,13 +19,13 @@ namespace Apache.Ignite.Examples.Datagrid
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Datagrid;
 
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
@@ -75,6 +75,9 @@ namespace Apache.Ignite.Examples.Datagrid
                 PopulateCache(employeeCacheColocated);
                 PopulateCache(organizationCache);
 
+                // Run scan query example.
+                ScanQueryExample(employeeCache);
+
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);
 
@@ -102,6 +105,23 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Queries employees that have provided ZIP code in address.
         /// </summary>
         /// <param name="cache">Cache.</param>
+        private static void ScanQueryExample(ICache<int, Employee> cache)
+        {
+            const int zip = 94109;
+
+            var qry = cache.Query(new ScanQuery<int, Employee>(new ScanQueryFilter(zip)));
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Employees with zipcode {0} (scan):", zip);
+
+            foreach (var entry in qry)
+                Console.WriteLine(">>>    " + entry.Value);
+        }
+
+        /// <summary>
+        /// Queries employees that have provided ZIP code in address.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
         private static void SqlQueryExample(ICache<int, Employee> cache)
         {
             const int zip = 94109;
@@ -109,7 +129,7 @@ namespace Apache.Ignite.Examples.Datagrid
             var qry = cache.Query(new SqlQuery(typeof(Employee), "zip = ?", zip));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employees with zipcode " + zip + ":");
+            Console.WriteLine(">>> Employees with zipcode {0} (SQL):", zip);
 
             foreach (var entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);

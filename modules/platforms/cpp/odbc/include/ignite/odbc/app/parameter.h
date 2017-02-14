@@ -81,7 +81,7 @@ namespace ignite
                  * Write request using provided writer.
                  * @param writer Writer.
                  */
-                void Write(ignite::impl::binary::BinaryWriterImpl& writer) const;
+                void Write(impl::binary::BinaryWriterImpl& writer) const;
 
                 /**
                  * Get data buffer.
@@ -89,6 +89,25 @@ namespace ignite
                  * @return underlying ApplicationDataBuffer instance.
                  */
                 ApplicationDataBuffer& GetBuffer();
+
+                /**
+                 * Reset stored at-execution data.
+                 */
+                void ResetStoredData();
+
+                /**
+                 * Check if all the at-execution data has been stored.
+                 * @return
+                 */
+                bool IsDataReady() const;
+
+                /**
+                 * Put at-execution data.
+                 *
+                 * @param data Data buffer pointer.
+                 * @param len Data length.
+                 */
+                void PutData(void* data, SqlLen len);
 
             private:
                 /** Underlying data buffer. */
@@ -102,6 +121,12 @@ namespace ignite
 
                 /** IPD decimal digits. */
                 int16_t decDigits;
+
+                /** User provided null data at execution. */
+                bool nullData;
+
+                /** Stored at-execution data. */
+                std::vector<int8_t> storedData;
             };
 
             /** Parameter binging map type alias. */

@@ -40,7 +40,6 @@ namespace ignite
                 /** Info type. */
                 typedef unsigned short InfoType;
 
-#ifdef ODBC_DEBUG
                 /**
                  * Convert type to string containing its name.
                  * Debug function.
@@ -48,7 +47,6 @@ namespace ignite
                  * @return Null-terminated string containing types name.
                  */
                 static const char* InfoTypeToString(InfoType type);
-#endif
 
                 /**
                  * Constructor.

@@ -78,6 +78,20 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
             old.destruct();
     }
 
+    /**
+     * Destructs offheap map for given space name.
+     *
+     * @param spaceName Space name.
+     * */
+    public void destruct(@Nullable String spaceName) {
+        spaceName = maskNull(spaceName);
+
+        GridOffHeapPartitionedMap map = offheap.remove(spaceName);
+
+        if (map != null)
+            map.destruct();
+    }
+
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
@@ -108,7 +122,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     private byte[] keyBytes(KeyCacheObject key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
-        return keyBytes != null ? keyBytes : marsh.marshal(key);
+        return keyBytes != null ? keyBytes : U.marshal(marsh, key);
     }
 
     /**
@@ -212,7 +226,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         if (valBytes == null)
             return null;
 
-        return marsh.unmarshal(valBytes, U.resolveClassLoader(ldr, ctx.config()));
+        return U.unmarshal(marsh, valBytes, U.resolveClassLoader(ldr, ctx.config()));
     }
 
     /**

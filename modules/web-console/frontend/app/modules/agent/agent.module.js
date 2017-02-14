@@ -277,12 +277,13 @@ class IgniteAgentMonitor {
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
      * @param {String} [query] Query if null then scan query.
+     * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSize
      * @returns {Promise}
      */
-    query(nid, cacheName, query, local, pageSize) {
-        return this._rest('node:query', nid, maskNull(cacheName), maskNull(query), local, pageSize)
+    query(nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
+        return this._rest('node:query', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, local, pageSize)
             .then(({result}) => {
                 if (_.isEmpty(result.key))
                     return result.value;
@@ -295,11 +296,12 @@ class IgniteAgentMonitor {
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
      * @param {String} [query] Query if null then scan query.
+     * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
      * @param {Boolean} local Flag whether to execute query locally.
      * @returns {Promise}
      */
-    queryGetAll(nid, cacheName, query, local) {
-        return this._rest('node:query:getAll', nid, maskNull(cacheName), maskNull(query), local);
+    queryGetAll(nid, cacheName, query, nonCollocatedJoins, local) {
+        return this._rest('node:query:getAll', nid, maskNull(cacheName), maskNull(query), nonCollocatedJoins, local);
     }
 
     /**

@@ -28,6 +28,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +37,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ExceptionsTest
     {
+        /** */
+        private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
+
         /// <summary>
         /// Before test.
         /// </summary>
@@ -65,12 +70,47 @@ namespace Apache.Ignite.Core.Tests
 
             var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
+            Assert.IsNotNull(e.InnerException);
+
             Assert.IsTrue(e.InnerException.Message.StartsWith(
                 "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
+            // Check all exceptions mapping.
+            var comp = grid.GetCompute();
+
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<IgniteException>(comp, "IgniteException");
+            CheckException<BinaryObjectException>(comp, "BinaryObjectException");
+            CheckException<ClusterTopologyException>(comp, "ClusterTopologyException");
+            CheckException<ComputeExecutionRejectedException>(comp, "ComputeExecutionRejectedException");
+            CheckException<ComputeJobFailoverException>(comp, "ComputeJobFailoverException");
+            CheckException<ComputeTaskCancelledException>(comp, "ComputeTaskCancelledException");
+            CheckException<ComputeTaskTimeoutException>(comp, "ComputeTaskTimeoutException");
+            CheckException<ComputeUserUndeclaredException>(comp, "ComputeUserUndeclaredException");
+            CheckException<TransactionOptimisticException>(comp, "TransactionOptimisticException");
+            CheckException<TransactionTimeoutException>(comp, "TransactionTimeoutException");
+            CheckException<TransactionRollbackException>(comp, "TransactionRollbackException");
+            CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
+            CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
+            CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
+
+            // Check stopped grid.
             grid.Dispose();
 
             Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+        }
+
+        /// <summary>
+        /// Checks the exception.
+        /// </summary>
+        private static void CheckException<T>(ICompute comp, string name) where T : Exception
+        {
+            var ex = Assert.Throws<T>(() => comp.ExecuteJavaTask<string>(ExceptionTask, name));
+
+            var javaEx = ex.InnerException as JavaException;
+
+            Assert.IsNotNull(javaEx);
+            Assert.IsTrue(javaEx.Message.Contains("at " + ExceptionTask));
         }
 
         /// <summary>
@@ -163,6 +203,7 @@ namespace Apache.Ignite.Core.Tests
 
                 ex = (Exception) msgCauseCtor.Invoke(new object[] {"myMessage", new Exception("innerEx")});
                 Assert.AreEqual("myMessage", ex.Message);
+                Assert.IsNotNull(ex.InnerException);
                 Assert.AreEqual("innerEx", ex.InnerException.Message);
             }
         }

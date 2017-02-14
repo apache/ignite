@@ -56,7 +56,7 @@ mixin lbl(txt)
                             label {{user.token || 'No security token. Regenerate please.'}}
                             i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
                             i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                            i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                            i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
                     .details-row
                         .advanced-options
                             i.fa(

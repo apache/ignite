@@ -28,7 +28,7 @@ mixin ignite-form-field-dropdown(label, model, name, disabled, required, multipl
             data-ng-disabled=disabled && '#{disabled}' || '!#{options}.length'
 
             bs-select
-            bs-options='item.value as item.label for item in #{options}' 
+            bs-options='item.value as item.label for item in #{options}'
 
             data-multiple=multiple ? '1' : false
             data-container='body > .wrapper'
@@ -38,10 +38,11 @@ mixin ignite-form-field-dropdown(label, model, name, disabled, required, multipl
             data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
-    div
-        +ignite-form-field-label(label, name, required)
-        .col-xs-8.col-sm-8.col-md-8
-            i.tipField.fa.fa-question-circle(bs-tooltip data-title=tip)
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            if tip
+                i.tipField.icon-help(bs-tooltip='' data-title=tip)
 
             if block
                 block

@@ -70,6 +70,9 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
     @GridToStringInclude
     private int[] parts;
 
+    /** */
+    private int timeout;
+
     /**
      * Default constructor.
      */
@@ -85,6 +88,7 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
      * @param topVer Topology version.
      * @param extraSpaces All space names participating in query other than {@code space}.
      * @param parts Optional partitions for unstable topology.
+     * @param timeout Timeout in millis.
      */
     public GridQueryRequest(
         long reqId,
@@ -93,7 +97,8 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
         Collection<GridCacheSqlQuery> qrys,
         AffinityTopologyVersion topVer,
         List<String> extraSpaces,
-        int[] parts) {
+        int[] parts,
+        int timeout) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
@@ -102,6 +107,7 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
         this.topVer = topVer;
         this.extraSpaces = extraSpaces;
         this.parts = parts;
+        this.timeout = timeout;
     }
 
     /**
@@ -164,6 +170,13 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public String space() {
         return space;
+    }
+
+    /**
+     * @return Timeout.
+     */
+    public int timeout() {
+        return this.timeout;
     }
 
     /**
@@ -255,6 +268,12 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
 
                 writer.incrementState();
 
+            case 7:
+                if (!writer.writeInt("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -324,6 +343,14 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
 
                 reader.incrementState();
 
+            case 7:
+                timeout = reader.readInt("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryRequest.class);
@@ -336,6 +363,6 @@ public class GridQueryRequest implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 }

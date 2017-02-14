@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,8 +49,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -105,6 +105,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -308,6 +309,39 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /**
+     * Checks that any invoke returns result.
+     *
+     * @throws Exception if something goes bad.
+     *
+     * TODO https://issues.apache.org/jira/browse/IGNITE-4380.
+     */
+    public void _testInvokeAllMultithreaded() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
+        final int threadCnt = 4;
+        final int cnt = 5000;
+
+        // Concurrent invoke can not be used for ATOMIC cache in CLOCK mode.
+        if (atomicityMode() == ATOMIC &&
+            cacheMode() != LOCAL &&
+            cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode() == CLOCK)
+            return;
+
+        final Set<String> keys = Collections.singleton("myKey");
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < cnt; i++) {
+                    final Map<String, EntryProcessorResult<String>> res = cache.invokeAll(keys, INCR_PROCESSOR);
+
+                    assertEquals(1, res.size());
+                }
+            }
+        }, threadCnt, "testInvokeAllMultithreaded");
+
+        assertEquals(cnt * threadCnt, (int)cache.get("myKey"));
     }
 
     /**
@@ -3477,9 +3511,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
 
+        final Affinity<String> aff = ignite(0).affinity(null);
+
         boolean wait = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return cache.localPeek(key) == null;
+                for (int i = 0; i < gridCount(); i++) {
+                    if (peek(jcache(i), key) != null)
+                        return false;
+                }
+
+                return true;
             }
         }, ttl + 1000);
 
@@ -3497,8 +3538,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(cache.localSize() == 0);
 
         load(cache, key, true);
-
-        Affinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimary(grid(i).cluster().localNode(), key))
@@ -4059,7 +4098,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Peek will actually remove entry from cache.
         assertNull(cache.localPeek(key));
 
-        assert cache.localSize() == 0;
+        assertEquals(0, cache.localSize());
 
         // Clear readers, if any.
         cache.remove(key);
@@ -5836,7 +5875,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : keys) {
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx())) {
                     GridCacheEntryEx e =
                         ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -5872,7 +5911,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
@@ -6115,7 +6154,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : keys)
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(null).localSize(ALL));

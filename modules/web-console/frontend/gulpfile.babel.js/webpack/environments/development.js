@@ -20,6 +20,9 @@ import webpack from 'webpack';
 
 import {destDir, rootDir, srcDir} from '../../paths';
 
+const backendPort = 3000;
+const devServerPort = 9000;
+
 export default () => {
     const plugins = [
         new webpack.HotModuleReplacementPlugin()
@@ -27,8 +30,10 @@ export default () => {
 
     return {
         entry: {
-            webpack: 'webpack-dev-server/client?http://localhost:9000/',
             app: [path.join(srcDir, 'app.js'), 'webpack/hot/only-dev-server']
+        },
+        output: {
+            publicPath: `http://localhost:${devServerPort}/`
         },
         context: rootDir,
         debug: true,
@@ -37,19 +42,22 @@ export default () => {
         devServer: {
             compress: true,
             historyApiFallback: true,
-            publicPath: '/',
             contentBase: destDir,
-            info: true,
             hot: true,
             inline: true,
             proxy: {
                 '/socket.io': {
-                    target: 'http://localhost:3000',
+                    target: `http://localhost:${backendPort}`,
+                    changeOrigin: true,
+                    ws: true
+                },
+                '/agents': {
+                    target: `http://localhost:${backendPort}`,
                     changeOrigin: true,
                     ws: true
                 },
                 '/api/v1/*': {
-                    target: 'http://localhost:3000',
+                    target: `http://localhost:${backendPort}`,
                     changeOrigin: true,
                     pathRewrite: {
                         '^/api/v1': ''
@@ -60,10 +68,12 @@ export default () => {
                 aggregateTimeout: 1000,
                 poll: 2000
             },
-            stats: {colors: true},
-            port: 9000
+            stats: {
+                colors: true,
+                chunks: false
+            },
+            port: devServerPort
         },
-        stats: {colors: true},
         plugins
     };
 };

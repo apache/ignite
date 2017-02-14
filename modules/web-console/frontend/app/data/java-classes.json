@@ -15,5 +15,7 @@
   {"short": "String", "full": "java.lang.String"},
   {"short": "Time", "full": "java.sql.Time"},
   {"short": "Timestamp", "full": "java.sql.Timestamp"},
-  {"short": "UUID", "full": "java.util.UUID"}
+  {"short": "UUID", "full": "java.util.UUID"},
+  {"short": "Serializable", "full": "java.io.Serializable"},
+  {"short": "Class", "full": "java.lang.Class"}
 ]

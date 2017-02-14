@@ -1246,6 +1246,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * @param sock Socket.
+     * @return Buffered stream wrapping socket stream.
+     * @throws IOException If failed.
+     */
+    final BufferedOutputStream socketStream(Socket sock) throws IOException {
+        int bufSize = sock.getSendBufferSize();
+
+        return bufSize > 0 ? new BufferedOutputStream(sock.getOutputStream(), bufSize) :
+            new BufferedOutputStream(sock.getOutputStream());
+    }
+
+    /**
      * Connects to remote address sending {@code U.IGNITE_HEADER} when connection is established.
      *
      * @param sock Socket bound to a local host address.
@@ -1351,7 +1363,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
-        writeToSocket(sock, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()), msg, timeout);
+        writeToSocket(sock, socketStream(sock), msg, timeout);
     }
 
     /**
@@ -1380,7 +1392,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            marshaller().marshal(msg, out);
+            U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1464,14 +1476,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marshaller().unmarshal(in == null ? sock.getInputStream() : in,
+            T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
-                LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
+                LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
 
             throw e;
@@ -1511,7 +1523,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             return res;
         }
         catch (SocketTimeoutException e) {
-            LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
+            LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout. " +
                 "Current timeout: " + timeout + '.');
@@ -1575,7 +1587,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                     res.add(resolved);
             }
             catch (UnknownHostException ignored) {
-                LT.warn(log, null, "Failed to resolve address from IP finder (host is unknown): " + addr);
+                LT.warn(log, "Failed to resolve address from IP finder (host is unknown): " + addr);
 
                 // Add address in any case.
                 res.add(addr);
@@ -1682,7 +1694,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marshaller().marshal(entry.getValue());
+                byte[] bytes = U.marshal(marshaller(), entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1713,7 +1725,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Serializable compData = marshaller().unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = U.unmarshal(marshaller(), entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
@@ -2045,7 +2057,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 // Close socket - timeout occurred.
                 U.closeQuiet(sock);
 
-                LT.warn(log, null, "Socket write has timed out (consider increasing " +
+                LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
                     "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
                     "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :

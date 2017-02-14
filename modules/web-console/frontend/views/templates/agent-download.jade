@@ -18,8 +18,10 @@
     .modal-dialog
         .modal-content
             #errors-container.modal-header.header
-                h4.modal-title(ng-if='!hasAgents') Connection to Ignite Web Agent is not established
-                h4.modal-title(ng-if='hasAgents') Connection to Ignite Node is not established
+                h4.modal-title
+                    i.fa.fa-download
+                    span(ng-if='!hasAgents') Connection to Ignite Web Agent is not established
+                    span(ng-if='hasAgents') Connection to Ignite Node is not established
             .agent-download(ng-if='!hasAgents')
                 p Please download and run #[a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent] in order to {{::agentGoal}}
                 p For run:
@@ -34,12 +36,12 @@
                 .details-row(ng-show='agentLoad.showToken')
                     label.labelField Security token: {{user.token}}
                     i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                    i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                    i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
             .agent-download(ng-if='hasAgents')
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
                 ul
-                    li Ignite Grid is up and running
+                    li Ignite Grid is up and Ignite REST server started (copy "ignite-rest-http" folder from libs/optional/ to libs/)
                     li In agent settings check URI for connect to Ignite REST server
                     li Check agent logs for errors
                     li Refer to #[b README.txt] in agent folder for more information

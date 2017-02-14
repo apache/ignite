@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -94,9 +94,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
 
-    /** Transaction. */
-    private IgniteTxLocalEx tx;
-
     /** Retries because ownership changed. */
     private Collection<Integer> retries;
 
@@ -118,7 +115,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param reader Reader.
      * @param keys Keys.
      * @param readThrough Read through flag.
-     * @param tx Transaction.
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -131,7 +127,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         UUID reader,
         Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
-        @Nullable IgniteTxLocalEx tx,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -148,7 +143,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.msgId = msgId;
         this.keys = keys;
         this.readThrough = readThrough;
-        this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -157,7 +151,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         futId = IgniteUuid.randomUuid();
 
-        ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+        ver = cctx.versions().next();
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtGetFuture.class);
@@ -275,7 +269,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         // Optimization to avoid going through compound future,
         // if getAsync() has been completed and no other futures added to this
         // compound future.
-        if (fut.isDone() && futuresCount() == 0) {
+        if (fut.isDone() && !hasFutures()) {
             if (fut.error() != null)
                 onDone(fut.error());
             else
@@ -338,6 +332,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
+        ReaderArguments readerArgs = null;
+
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             for (Map.Entry<KeyCacheObject, Boolean> k : keys.entrySet()) {
                 while (true) {
@@ -349,12 +345,19 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
                         boolean addReader = (!e.deleted() && k.getValue() && !skipVals);
 
-                        if (addReader)
+                        if (addReader) {
                             e.unswap(false);
+
+                            // Entry will be removed on touch() if no data in cache,
+                            // but they could be loaded from store,
+                            // we have to add reader again later.
+                            if (readerArgs == null)
+                                readerArgs = new ReaderArguments(reader, msgId, topVer);
+                        }
 
                         // Register reader. If there are active transactions for this entry,
                         // then will wait for their completion before proceeding.
-                        // TODO: GG-4003:
+                        // TODO: IGNITE-3498:
                         // TODO: What if any transaction we wait for actually removes this entry?
                         // TODO: In this case seems like we will be stuck with untracked near entry.
                         // TODO: To fix, check that reader is contained in the list of readers once
@@ -390,28 +393,19 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
 
         if (txFut == null || txFut.isDone()) {
-            if (tx == null) {
-                fut = cache().getDhtAllAsync(
-                    keys.keySet(),
-                    readThrough,
-                    subjId,
-                    taskName,
-                    expiryPlc,
-                    skipVals,
-                    /*can remap*/true);
-            }
-            else {
-                fut = tx.getAllAsync(cctx,
-                    null,
-                    keys.keySet(),
-                    /*deserialize binary*/false,
-                    skipVals,
-                    /*keep cache objects*/true,
-                    /*skip store*/!readThrough,
-                    false);
-            }
+            fut = cache().getDhtAllAsync(
+                keys.keySet(),
+                readerArgs,
+                readThrough,
+                subjId,
+                taskName,
+                expiryPlc,
+                skipVals,
+                /*can remap*/true);
         }
         else {
+            final ReaderArguments args = readerArgs;
+
             // If we are here, then there were active transactions for some entries
             // when we were adding the reader. In that case we must wait for those
             // transactions to complete.
@@ -422,26 +416,15 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e != null)
                             throw new GridClosureException(e);
 
-                        if (tx == null) {
-                            return cache().getDhtAllAsync(
-                                keys.keySet(),
-                                readThrough,
-                                subjId,
-                                taskName,
-                                expiryPlc,
-                                skipVals,
-                                /*can remap*/true);
-                        }
-                        else {
-                            return tx.getAllAsync(cctx,
-                                null,
-                                keys.keySet(),
-                                /*deserialize binary*/false,
-                                skipVals,
-                                /*keep cache objects*/true,
-                                /*skip store*/!readThrough,
-                                false);
-                        }
+                        return cache().getDhtAllAsync(
+                            keys.keySet(),
+                            args,
+                            readThrough,
+                            subjId,
+                            taskName,
+                            expiryPlc,
+                            skipVals,
+                            /*can remap*/true);
                     }
                 }
             );

@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IDictionary<int, BinaryBuilderField> _cache;
 
         /** Hash code. */
-        private int _hashCode;
+        private int? _hashCode;
         
         /** Current context. */
         private Context _ctx;
@@ -87,15 +87,21 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryObject obj, IBinaryTypeDescriptor desc)
         {
             Debug.Assert(binary != null);
-            Debug.Assert(obj != null);
             Debug.Assert(desc != null);
 
             _binary = binary;
             _parent = parent ?? this;
-            _obj = obj;
             _desc = desc;
 
-            _hashCode = obj.GetHashCode();
+            if (obj != null)
+            {
+                _obj = obj;
+                _hashCode = obj.GetHashCode();
+            }
+            else
+            {
+                _obj = BinaryFromDescriptor(desc);
+            }
         }
 
         /** <inheritDoc /> */
@@ -508,7 +514,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryHeapStream inStream,
             BinaryHeapStream outStream,
             IBinaryTypeDescriptor desc,
-            int hashCode, 
+            int? hashCode, 
             IDictionary<string, BinaryBuilderField> vals)
         {
             // Set correct builder to writer frame.
@@ -578,7 +584,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="vals">Values to be replaced.</param>
         /// <returns>Mutated object.</returns>
         private void Mutate0(Context ctx, BinaryHeapStream inStream, IBinaryStream outStream,
-            bool changeHash, int hash, IDictionary<int, BinaryBuilderField> vals)
+            bool changeHash, int? hash, IDictionary<int, BinaryBuilderField> vals)
         {
             int inStartPos = inStream.Position;
             int outStartPos = outStream.Position;
@@ -730,7 +736,25 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outLen = outStream.Position - outStartPos;
 
-                            var outHash = changeHash ? hash : inHeader.HashCode;
+                            var outHash = inHeader.HashCode;
+
+                            if (changeHash)
+                            {
+                                if (hash != null)
+                                {
+                                    outHash = hash.Value;
+                                }
+                                else
+                                {
+                                    // Get from identity resolver.
+                                    outHash = _desc.EqualityComparer != null
+                                        ? _desc.EqualityComparer.GetHashCode(outStream,
+                                            outStartPos + BinaryObjectHeader.Size,
+                                            schemaPos - outStartPos - BinaryObjectHeader.Size,
+                                            outSchema, outSchemaId, _binary.Marshaller, _desc)
+                                        : 0;
+                                }
+                            }
 
                             var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
                                 outSchemaId, outSchemaOff, flags);
@@ -1024,6 +1048,30 @@ namespace Apache.Ignite.Core.Impl.Binary
             outStream.WriteInt(len);
 
             TransferBytes(inStream, outStream, elemSize * len);
+        }
+
+        /// <summary>
+        /// Create empty binary object from descriptor.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <returns>Empty binary object.</returns>
+        private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
+        {
+            const int len = BinaryObjectHeader.Size;
+
+            var flags = desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None;
+
+            if (_binary.Marshaller.CompactFooter && desc.UserType)
+                flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+            var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len, flags);
+
+            using (var stream = new BinaryHeapStream(len))
+            {
+                BinaryObjectHeader.Write(hdr, stream, 0);
+
+                return new BinaryObject(_binary.Marshaller, stream.InternalArray, 0, hdr);
+            }
         }
 
         /// <summary>

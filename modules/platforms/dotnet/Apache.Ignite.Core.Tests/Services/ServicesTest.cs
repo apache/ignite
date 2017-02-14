@@ -321,6 +321,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Specified cast is not valid.", ex.InnerException.Message);
         }
 
@@ -436,7 +437,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
-            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackUtils.serviceInit(Native Method)"));
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsTrue(ex.InnerException.Message.Contains("PlatformCallbackGateway.serviceInit"), 
+                ex.InnerException.Message);
 
             var svc0 = Services.GetService<TestIgniteServiceSerializable>(SvcName);
 
@@ -805,41 +808,50 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public void Init(IServiceContext context)
             {
-                if (ThrowInit) 
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowInit)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Initialized = true;
+                    Assert.IsFalse(context.IsCancelled);
+                    Initialized = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Execute(IServiceContext context)
             {
-                if (ThrowExecute)
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowExecute)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsFalse(context.IsCancelled);
-                Assert.IsTrue(Initialized);
-                Assert.IsFalse(Cancelled);
+                    Assert.IsFalse(context.IsCancelled);
+                    Assert.IsTrue(Initialized);
+                    Assert.IsFalse(Cancelled);
 
-                Executed = true;
+                    Executed = true;
+                }
             }
 
             /** <inheritdoc /> */
             public void Cancel(IServiceContext context)
             {
-                if (ThrowCancel)
-                    throw new Exception("Expected exception");
+                lock (this)
+                {
+                    if (ThrowCancel)
+                        throw new Exception("Expected exception");
 
-                CheckContext(context);
+                    CheckContext(context);
 
-                Assert.IsTrue(context.IsCancelled);
+                    Assert.IsTrue(context.IsCancelled);
 
-                Cancelled = true;
+                    Cancelled = true;
+                }
             }
 
             /// <summary>

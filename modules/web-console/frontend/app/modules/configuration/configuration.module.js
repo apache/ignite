@@ -17,13 +17,28 @@
 
 import angular from 'angular';
 
-import igniteEventGroups from './EventGroups.provider';
-import igniteSidebar from './Sidebar.provider';
 
-import GeneratorXml from './generator/Xml.service';
-import GeneratorJava from './generator/Java.service';
-import GeneratorDocker from './generator/Docker.service';
-import GeneratorPom from './generator/Pom.service';
+import igniteSidebar from './Sidebar.provider';
+import IgniteVersion from './Version.service';
+
+import IgniteClusterDefaults from './generator/defaults/Cluster.service';
+import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
+import IgniteCacheDefaults from './generator/defaults/Cache.service';
+import IgniteCachePlatformDefaults from './generator/defaults/Cache.platform.service';
+import IgniteIGFSDefaults from './generator/defaults/IGFS.service';
+import IgniteEventGroups from './generator/defaults/Event-groups.service';
+
+import IgniteConfigurationGenerator from './generator/ConfigurationGenerator';
+import IgnitePlatformGenerator from './generator/PlatformGenerator';
+
+import IgniteSpringTransformer from './generator/SpringTransformer.service';
+import IgniteJavaTransformer from './generator/JavaTransformer.service';
+import SharpTransformer from './generator/SharpTransformer.service';
+import IgniteDockerGenerator from './generator/Docker.service';
+import IgniteMavenGenerator from './generator/Maven.service';
+import IgniteGeneratorProperties from './generator/Properties.service';
+import IgniteReadmeGenerator from './generator/Readme.service';
+import IgniteCustomGenerator from './generator/Custom.service';
 
 import igniteSidebarDirective from './sidebar.directive';
 
@@ -32,10 +47,22 @@ angular
 .module('ignite-console.configuration', [
 
 ])
-.provider(...igniteEventGroups)
 .provider(...igniteSidebar)
 .directive(...igniteSidebarDirective)
-.service(...GeneratorXml)
-.service(...GeneratorJava)
-.service(...GeneratorDocker)
-.service(...GeneratorPom);
+.service('IgniteConfigurationGenerator', IgniteConfigurationGenerator)
+.service('IgnitePlatformGenerator', IgnitePlatformGenerator)
+.service('SpringTransformer', IgniteSpringTransformer)
+.service('JavaTransformer', IgniteJavaTransformer)
+.service('IgniteSharpTransformer', SharpTransformer)
+.service('IgniteVersion', IgniteVersion)
+.service('IgniteEventGroups', IgniteEventGroups)
+.service('IgniteClusterDefaults', IgniteClusterDefaults)
+.service('IgniteClusterPlatformDefaults', IgniteClusterPlatformDefaults)
+.service('IgniteCacheDefaults', IgniteCacheDefaults)
+.service('IgniteCachePlatformDefaults', IgniteCachePlatformDefaults)
+.service('IgniteIGFSDefaults', IgniteIGFSDefaults)
+.service('IgnitePropertiesGenerator', IgniteGeneratorProperties)
+.service('IgniteReadmeGenerator', IgniteReadmeGenerator)
+.service('IgniteDockerGenerator', IgniteDockerGenerator)
+.service('IgniteMavenGenerator', IgniteMavenGenerator)
+.service('IgniteCustomGenerator', IgniteCustomGenerator);

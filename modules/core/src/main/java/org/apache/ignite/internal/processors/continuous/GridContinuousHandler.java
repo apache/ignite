@@ -57,14 +57,6 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public RegisterStatus register(UUID nodeId, UUID routineId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
-     * Callback called after listener is registered and acknowledgement is sent.
-     *
-     * @param routineId Routine ID.
-     * @param ctx Kernal context.
-     */
-    public void onListenerRegistered(UUID routineId, GridKernalContext ctx);
-
-    /**
      * Unregisters listener.
      *
      * @param routineId Routine ID.
@@ -105,6 +97,11 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
      * @return New batch.
      */
     public GridContinuousBatch createBatch();
+
+    /**
+     * Client node disconnected callback.
+     */
+    public void onClientDisconnected();
 
     /**
      * Called when ack for a batch is received from client.

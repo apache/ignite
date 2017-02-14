@@ -14,11 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../../../../../../app/helpers/jade/mixins.jade
+include /app/helpers/jade/mixins.jade
 
 -var model = 'backupItem.collision.Custom'
 -var required = 'backupItem.collision.kind === "Custom"'
 
 div
     .details-row
-        +java-class('Class:', model + '.class', '"collisionCustom"', 'true', required, 'CollisionSpi implementation class')
+        +java-class('Class:', model + '.class', '"collisionCustom"', 'true', required, 'CollisionSpi implementation class', required)

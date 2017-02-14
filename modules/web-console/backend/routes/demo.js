@@ -19,10 +19,10 @@
 
 // Fire me up!
 
-import clusters from './demo/clusters.json';
-import caches from './demo/caches.json';
-import domains from './demo/domains.json';
-import igfss from './demo/igfss.json';
+const clusters = require('./demo/clusters.json');
+const caches = require('./demo/caches.json');
+const domains = require('./demo/domains.json');
+const igfss = require('./demo/igfss.json');
 
 module.exports = {
     implements: 'routes/demo',
@@ -39,20 +39,17 @@ module.exports.factory = (_, express, settings, mongo, spacesService, errors) =>
         router.post('/reset', (req, res) => {
             spacesService.spaces(req.user._id, true)
                 .then((spaces) => {
-                    if (spaces.length) {
-                        const spaceIds = spaces.map((space) => space._id);
+                    const spaceIds = _.map(spaces, '_id');
 
-                        return Promise.all([
-                            mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Igfs.remove({space: {$in: spaceIds}}).exec()
-                        ]).then(() => spaces[0]);
-                    }
+                    return spacesService.cleanUp(spaceIds)
+                        .then(() => mongo.Space.remove({_id: {$in: _.tail(spaceIds)}}).exec())
+                        .then(() => _.head(spaces));
                 })
                 .catch((err) => {
                     if (err instanceof errors.MissingResourceException)
                         return spacesService.createDemoSpace(req.user._id);
+
+                    throw err;
                 })
                 .then((space) => {
                     return Promise.all(_.map(clusters, (cluster) => {

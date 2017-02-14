@@ -46,6 +46,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testsuites.IgniteIgnore;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -88,6 +89,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-3663")
     public void testSessionRenewalDuringLogin() throws Exception {
         testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }
@@ -156,7 +158,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 assertNotNull(sesId);
             }
 
-            Ignite ignite2 = Ignition.start(srvCfg2);
+            Ignition.start(srvCfg2);
 
             stopGrid(ignite.name());
 
@@ -303,7 +305,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     private void testSessionRenewalDuringLogin(String cfg) throws Exception {
         Server srv = null;
-        String sesId = null;
+        String sesId;
         try {
             srv = startServerWithLoginService(TEST_JETTY_PORT, cfg, null, new SessionLoginServlet());
 
@@ -1070,7 +1072,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     req.getSession().invalidate();
                     res.getWriter().println("invalidated");
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     res.getWriter().println("failed");
                 }
 

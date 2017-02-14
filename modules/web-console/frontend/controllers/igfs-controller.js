@@ -17,7 +17,7 @@
 
 // Controller for IGFS screen.
 export default ['igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'igniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils',
     function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable, Resource, ErrorPopover, FormUtils) {
         UnsavedChangesGuard.install($scope);
 
@@ -231,7 +231,7 @@ export default ['igfsController', [
                 else
                     $scope.backupItem = emptyIgfs;
 
-                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
+                $scope.backupItem = _.merge({}, blank, $scope.backupItem);
 
                 if ($scope.ui.inputForm) {
                     $scope.ui.inputForm.$error = {};
@@ -296,15 +296,15 @@ export default ['igfsController', [
         // Save IGFS in database.
         function save(item) {
             $http.post('/api/v1/configuration/igfs/save', item)
-                .success(function(_id) {
+                .then(({data}) => {
+                    const _id = data;
+
                     $scope.ui.inputForm.$setPristine();
 
-                    const idx = _.findIndex($scope.igfss, function(igfs) {
-                        return igfs._id === _id;
-                    });
+                    const idx = _.findIndex($scope.igfss, {_id});
 
                     if (idx >= 0)
-                        angular.merge($scope.igfss[idx], item);
+                        _.assign($scope.igfss[idx], item);
                     else {
                         item._id = _id;
                         $scope.igfss.push(item);
@@ -312,9 +312,9 @@ export default ['igfsController', [
 
                     $scope.selectItem(item);
 
-                    Messages.showInfo('IGFS "' + item.name + '" saved.');
+                    Messages.showInfo(`IGFS "${item.name}" saved.`);
                 })
-                .error(Messages.showError);
+                .catch(Messages.showError);
         }
 
         // Save IGFS.
@@ -359,7 +359,7 @@ export default ['igfsController', [
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/igfs/remove', {_id})
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('IGFS has been removed: ' + selectedItem.name);
 
                             const igfss = $scope.igfss;
@@ -379,7 +379,7 @@ export default ['igfsController', [
                                     $scope.backupItem = emptyIgfs;
                             }
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -390,7 +390,7 @@ export default ['igfsController', [
             Confirm.confirm('Are you sure you want to remove all IGFS?')
                 .then(function() {
                     $http.post('/api/v1/configuration/igfs/remove/all')
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('All IGFS have been removed');
 
                             $scope.igfss = [];
@@ -398,7 +398,7 @@ export default ['igfsController', [
                             $scope.ui.inputForm.$error = {};
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 

@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'require(mongoose)']
+    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'mongoose']
 };
 
 module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose) {
@@ -48,6 +48,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         company: String,
         country: String,
         lastLogin: Date,
+        lastActivity: Date,
         admin: Boolean,
         token: String,
         resetPasswordToken: String
@@ -59,22 +60,26 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         usernameLowerCase: true
     });
 
+    const transform = (doc, ret) => {
+        return {
+            _id: ret._id,
+            email: ret.email,
+            firstName: ret.firstName,
+            lastName: ret.lastName,
+            company: ret.company,
+            country: ret.country,
+            admin: ret.admin,
+            token: ret.token,
+            lastLogin: ret.lastLogin,
+            lastActivity: ret.lastActivity
+        };
+    };
+
     // Configure transformation to JSON.
-    AccountSchema.set('toJSON', {
-        transform: (doc, ret) => {
-            return {
-                _id: ret._id,
-                email: ret.email,
-                firstName: ret.firstName,
-                lastName: ret.lastName,
-                company: ret.company,
-                country: ret.country,
-                admin: ret.admin,
-                token: ret.token,
-                lastLogin: ret.lastLogin
-            };
-        }
-    });
+    AccountSchema.set('toJSON', { transform });
+
+    // Configure transformation to JSON.
+    AccountSchema.set('toObject', { transform });
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
@@ -123,7 +128,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']},
             fields: [{name: String, direction: Boolean}]
         }],
-        demo: Boolean
+        generatePojo: Boolean
     });
 
     DomainModelSchema.index({valueType: 1, space: 1}, {unique: true});
@@ -140,6 +145,25 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
 
+        affinity: {
+            kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
+            Rendezvous: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Fair: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Custom: {
+                className: String
+            }
+        },
+
+        affinityMapper: String,
+
         nodeFilter: {
             kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
             Exclude: {
@@ -147,9 +171,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             },
             IGFS: {
                 igfs: {type: ObjectId, ref: 'Igfs'}
-            },
-            OnNodes: {
-                nodeIds: [String]
             },
             Custom: {
                 className: String
@@ -199,7 +220,14 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 dialect: {
                     type: String,
                     enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
-                }
+                },
+                batchSize: Number,
+                maximumPoolSize: Number,
+                maximumWriteAttempts: Number,
+                parallelLoadCacheMinimumThreshold: Number,
+                hasher: String,
+                transformer: String,
+                sqlEscapeAll: Boolean
             },
             CacheJdbcBlobStoreFactory: {
                 connectVia: {type: String, enum: ['URL', 'DataSource']},
@@ -218,7 +246,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 deleteQuery: String
             },
             CacheHibernateBlobStoreFactory: {
-                hibernateProperties: [String]
+                hibernateProperties: [{name: String, value: String}]
             }
         },
         storeKeepBinary: Boolean,
@@ -243,13 +271,14 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
+        queryDetailMetricsSize: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
         copyOnRead: Boolean,
         maxConcurrentAsyncOperations: Number,
-        nearCacheEnabled: Boolean,
         nearConfiguration: {
+            enabled: Boolean,
             nearStartSize: Number,
             nearEvictionPolicy: {
                 kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -270,7 +299,28 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 }
             }
         },
-        demo: Boolean
+        clientNearConfiguration: {
+            enabled: Boolean,
+            nearStartSize: Number,
+            nearEvictionPolicy: {
+                kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
+                LRU: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                },
+                FIFO: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                },
+                SORTED: {
+                    batchSize: Number,
+                    maxMemorySize: Number,
+                    maxSize: Number
+                }
+            }
+        }
     });
 
     CacheSchema.index({name: 1, space: 1}, {unique: true});
@@ -370,7 +420,50 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 addresses: [String]
             },
             S3: {
-                bucketName: String
+                bucketName: String,
+                clientConfiguration: {
+                    protocol: {type: String, enum: ['HTTP', 'HTTPS']},
+                    maxConnections: Number,
+                    userAgent: String,
+                    localAddress: String,
+                    proxyHost: String,
+                    proxyPort: Number,
+                    proxyUsername: String,
+                    proxyDomain: String,
+                    proxyWorkstation: String,
+                    retryPolicy: {
+                        kind: {type: String, enum: ['Default', 'DefaultMaxRetries', 'DynamoDB', 'DynamoDBMaxRetries', 'Custom', 'CustomClass']},
+                        DefaultMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        DynamoDBMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        Custom: {
+                            retryCondition: String,
+                            backoffStrategy: String,
+                            maxErrorRetry: Number,
+                            honorMaxErrorRetryInClientConfig: Boolean
+                        },
+                        CustomClass: {
+                            className: String
+                        }
+                    },
+                    maxErrorRetry: Number,
+                    socketTimeout: Number,
+                    connectionTimeout: Number,
+                    requestTimeout: Number,
+                    useReaper: Boolean,
+                    useGzip: Boolean,
+                    signerOverride: String,
+                    preemptiveBasicProxyAuth: Boolean,
+                    connectionTTL: Number,
+                    connectionMaxIdleMillis: Number,
+                    useTcpKeepAlive: Boolean,
+                    dnsResolver: String,
+                    responseMetadataCacheSize: Number,
+                    secureRandom: String
+                }
             },
             Cloud: {
                 credential: String,
@@ -463,6 +556,17 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         igfsThreadPoolSize: Number,
         igfss: [{type: ObjectId, ref: 'Igfs'}],
         includeEventTypes: [String],
+        eventStorage: {
+            kind: {type: String, enum: ['Memory', 'Custom']},
+            Memory: {
+                expireAgeMs: Number,
+                expireCount: Number,
+                filter: String
+            },
+            Custom: {
+                className: String
+            }
+        },
         managementThreadPoolSize: Number,
         marshaller: {
             kind: {type: String, enum: ['OptimizedMarshaller', 'JdkMarshaller']},
@@ -564,6 +668,11 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             trustManagers: [String]
         },
         rebalanceThreadPoolSize: Number,
+        odbc: {
+            odbcEnabled: Boolean,
+            endpointAddress: String,
+            maxOpenCursors: Number
+        },
         attributes: [{name: String, value: String}],
         collision: {
             kind: {type: String, enum: ['Noop', 'PriorityQueue', 'FifoQueue', 'JobStealing', 'Custom']},
@@ -623,7 +732,140 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         cacheKeyConfiguration: [{
             typeName: String,
             affinityKeyFieldName: String
-        }]
+        }],
+        checkpointSpi: [{
+            kind: {type: String, enum: ['FS', 'Cache', 'S3', 'JDBC', 'Custom']},
+            FS: {
+                directoryPaths: [String],
+                checkpointListener: String
+            },
+            Cache: {
+                cache: {type: ObjectId, ref: 'Cache'},
+                checkpointListener: String
+            },
+            S3: {
+                awsCredentials: {
+                    kind: {type: String, enum: ['Basic', 'Properties', 'Anonymous', 'BasicSession', 'Custom']},
+                    Properties: {
+                        path: String
+                    },
+                    Custom: {
+                        className: String
+                    }
+                },
+                bucketNameSuffix: String,
+                clientConfiguration: {
+                    protocol: {type: String, enum: ['HTTP', 'HTTPS']},
+                    maxConnections: Number,
+                    userAgent: String,
+                    localAddress: String,
+                    proxyHost: String,
+                    proxyPort: Number,
+                    proxyUsername: String,
+                    proxyDomain: String,
+                    proxyWorkstation: String,
+                    retryPolicy: {
+                        kind: {type: String, enum: ['Default', 'DefaultMaxRetries', 'DynamoDB', 'DynamoDBMaxRetries', 'Custom']},
+                        DefaultMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        DynamoDBMaxRetries: {
+                            maxErrorRetry: Number
+                        },
+                        Custom: {
+                            retryCondition: String,
+                            backoffStrategy: String,
+                            maxErrorRetry: Number,
+                            honorMaxErrorRetryInClientConfig: Boolean
+                        }
+                    },
+                    maxErrorRetry: Number,
+                    socketTimeout: Number,
+                    connectionTimeout: Number,
+                    requestTimeout: Number,
+                    useReaper: Boolean,
+                    useGzip: Boolean,
+                    signerOverride: String,
+                    preemptiveBasicProxyAuth: Boolean,
+                    connectionTTL: Number,
+                    connectionMaxIdleMillis: Number,
+                    useTcpKeepAlive: Boolean,
+                    dnsResolver: String,
+                    responseMetadataCacheSize: Number,
+                    secureRandom: String
+                },
+                checkpointListener: String
+            },
+            JDBC: {
+                dataSourceBean: String,
+                dialect: {
+                    type: String,
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                },
+                user: String,
+                checkpointTableName: String,
+                keyFieldName: String,
+                keyFieldType: String,
+                valueFieldName: String,
+                valueFieldType: String,
+                expireDateFieldName: String,
+                expireDateFieldType: String,
+                numberOfRetries: Number,
+                checkpointListener: String
+            },
+            Custom: {
+                className: String
+            }
+        }],
+        loadBalancingSpi: [{
+            kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
+            RoundRobin: {
+                perTask: Boolean
+            },
+            Adaptive: {
+                loadProbe: {
+                    kind: {type: String, enum: ['Job', 'CPU', 'ProcessingTime', 'Custom']},
+                    Job: {
+                        useAverage: Boolean
+                    },
+                    CPU: {
+                        useAverage: Boolean,
+                        useProcessors: Boolean,
+                        processorCoefficient: Number
+                    },
+                    ProcessingTime: {
+                        useAverage: Boolean
+                    },
+                    Custom: {
+                        className: String
+                    }
+                }
+            },
+            WeightedRandom: {
+                nodeWeight: Number,
+                useWeights: Boolean
+            },
+            Custom: {
+                className: String
+            }
+        }],
+        deploymentSpi: {
+            kind: {type: String, enum: ['URI', 'Local', 'Custom']},
+            URI: {
+                uriList: [String],
+                temporaryDirectoryPath: String,
+                scanners: [String],
+                listener: String,
+                checkMd5: Boolean,
+                encodeUri: Boolean
+            },
+            Local: {
+                listener: String
+            },
+            Custom: {
+                className: String
+            }
+        }
     });
 
     ClusterSchema.index({name: 1, space: 1}, {unique: true});
@@ -643,13 +885,15 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             result: {type: String, enum: ['none', 'table', 'bar', 'pie', 'line', 'area']},
             pageSize: Number,
             timeLineSpan: String,
+            maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
-            }
+            },
+            qryType: String
         }]
     });
 
@@ -662,6 +906,20 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         // TODO IGNITE-843 Send error to admin
         res.status(err.code || 500).send(err.message);
     };
+
+    // Define Activities schema.
+    const ActivitiesSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        group: String,
+        action: String,
+        amount: { type: Number, default: 1 }
+    });
+
+    ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });
+
+    // Define Activities model.
+    result.Activities = mongoose.model('Activities', ActivitiesSchema);
 
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {

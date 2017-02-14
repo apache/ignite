@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-FROM node:4
+FROM node:6
 
 RUN mkdir -p /opt/web-console-frontend
 
@@ -23,7 +23,7 @@ WORKDIR /opt/web-console-frontend
 
 COPY src .
 
-RUN npm update -g npm && npm install --no-optional
+RUN npm install --no-optional
 
 VOLUME /opt/web-console-frontend/build
 

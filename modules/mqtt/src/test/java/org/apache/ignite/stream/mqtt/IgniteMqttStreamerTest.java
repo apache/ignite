@@ -158,7 +158,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         try {
             streamer.stop();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // ignore if already stopped
         }
 
@@ -483,7 +483,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         try {
             streamer.start();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             return;
         }
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.net.URI;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -49,16 +48,6 @@ public interface IgfsEx extends IgniteFileSystem {
      */
     public IgfsPaths proxyPaths();
 
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path) throws IgniteException;
-
-    /** {@inheritDoc} */
-    @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) throws IgniteException;
-
     /**
      * Gets global space counters.
      *
@@ -83,13 +72,6 @@ public interface IgfsEx extends IgniteFileSystem {
      * flag is not set.
      */
     @Nullable public Boolean globalSampling();
-
-    /**
-     * Get local metrics.
-     *
-     * @return Local metrics.
-     */
-    public IgfsLocalMetrics localMetrics();
 
     /**
      * Gets group block size, i.e. block size multiplied by group size in affinity mapper.

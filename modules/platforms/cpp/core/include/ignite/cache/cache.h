@@ -37,6 +37,8 @@
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
 #include "ignite/cache/query/query_sql_fields.h"
+#include "ignite/cache/query/continuous/continuous_query_handle.h"
+#include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/operations.h"
 
@@ -115,7 +117,7 @@ namespace ignite
              */
             bool IsEmpty(IgniteError& err)
             {
-                return impl.Get()->IsEmpty(&err);
+                return Size(err) == 0;
             }
 
             /**
@@ -1054,7 +1056,6 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param err Error.
              */
             void RemoveAll()
             {
@@ -1109,7 +1110,7 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes)
@@ -1128,13 +1129,13 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->LocalSize(peekModes, &err);
+                return impl.Get()->Size(peekModes, true, &err);
             }
 
             /**
@@ -1170,7 +1171,7 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes)
@@ -1190,13 +1191,13 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param Peek modes.
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->Size(peekModes, &err);
+                return impl.Get()->Size(peekModes, false, &err);
             }
 
             /**
@@ -1340,6 +1341,106 @@ namespace ignite
             }
 
             /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, initialQry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
              * Check if the instance is valid.
              *
              * Invalid instance can be returned if some of the previous
@@ -1357,7 +1458,7 @@ namespace ignite
 
         private:
             /** Implementation delegate. */
-            ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
+            common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
         };
     }
 }

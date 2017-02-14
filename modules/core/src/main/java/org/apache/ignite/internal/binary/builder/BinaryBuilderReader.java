@@ -33,6 +33,7 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -755,6 +756,16 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
+            }
+
+            case GridBinaryMarshaller.OPTM_MARSH: {
+                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos);
+
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+
+                pos = bin.position();
+
+                return obj;
             }
 
             default:

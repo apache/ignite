@@ -34,7 +34,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     private static final long DFLT_FLUSH_FREQ = 10000L;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private final transient IgniteLogger log;
 
     /** Automatic flush frequency. */
     private long autoFlushFrequency = DFLT_FLUSH_FREQ;

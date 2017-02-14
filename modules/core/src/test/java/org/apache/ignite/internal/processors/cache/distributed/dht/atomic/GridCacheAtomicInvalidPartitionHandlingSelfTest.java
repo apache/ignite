@@ -392,7 +392,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                             entry.unswap();
                         }
-                        catch (GridDhtInvalidPartitionException e) {
+                        catch (GridDhtInvalidPartitionException ignored) {
                             // Skip key.
                         }
                     }
@@ -478,7 +478,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Object origMsg = msg.message();
 
             return delay &&
-                ((origMsg instanceof GridNearAtomicUpdateRequest) || (origMsg instanceof GridDhtAtomicUpdateRequest));
+                ((origMsg instanceof GridNearAtomicAbstractUpdateRequest) || (origMsg instanceof GridDhtAtomicAbstractUpdateRequest));
         }
     }
 }

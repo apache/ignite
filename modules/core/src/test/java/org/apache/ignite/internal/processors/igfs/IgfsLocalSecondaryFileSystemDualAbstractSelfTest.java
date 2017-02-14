@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
@@ -60,13 +61,20 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     /** */
     private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
 
+    /** */
+    private final String TEST_GROUP = System.getProperty("IGFS_LOCAL_FS_TEST_GROUP", "igfs_grp_0");
+
+    /** */
+    private final Boolean PROPERTIES_SUPPORT =
+        IgniteSystemProperties.getBoolean("IGFS_LOCAL_FS_PROPERTIES_SUPPORT", false);
+
 
     /**
      * Constructor.
      *
      * @param mode IGFS mode.
      */
-    public IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
+    protected IgfsLocalSecondaryFileSystemDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
     }
 
@@ -81,7 +89,6 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
         else
             cleanDirectory(extDir);
     }
-
 
     /**
      * Creates secondary filesystems.
@@ -104,13 +111,13 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean permissionsSupported() {
-        return false;
+    @Override protected boolean propertiesSupported() {
+        return !U.isWindows() && PROPERTIES_SUPPORT;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean propertiesSupported() {
-        return false;
+    @Override protected boolean permissionsSupported() {
+        return !U.isWindows();
     }
 
     /** {@inheritDoc} */
@@ -169,6 +176,16 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
 
         checkFileContent(igfs, new IgfsPath("/file"), chunk);
     }
+
+    /**
+     * Test update when parent is the root and the path being updated is missing locally.
+     *
+     * @throws Exception If failed.
+     */
+    public void testUpdateParentRootPathMissing() throws Exception {
+        doUpdateParentRootPathMissing(properties(TEST_GROUP, "0555"));
+    }
+
 
     /**
      *

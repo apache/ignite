@@ -49,7 +49,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Not closed cursors will be removed after {@link #RMV_DELAY} milliseconds.
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
+ *
+ * Deprecated due to introduction of DML features - see {@link JdbcQueryTaskV2}.
  */
+@Deprecated
 class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -178,7 +181,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             List<Object> row0 = new ArrayList<>(row.size());
 
             for (Object val : row)
-                row0.add(JdbcUtils.sqlType(val) ? val : val.toString());
+                row0.add(val == null || JdbcUtils.isSqlType(val.getClass()) ? val : val.toString());
 
             rows.add(row0);
 

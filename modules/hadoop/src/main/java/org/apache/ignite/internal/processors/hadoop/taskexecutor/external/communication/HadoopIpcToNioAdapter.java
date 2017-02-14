@@ -190,7 +190,7 @@ public class HadoopIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) {
             assert ses == HadoopIpcToNioAdapter.this.ses : "ses=" + ses +
                 ", this.ses=" + HadoopIpcToNioAdapter.this.ses;
 

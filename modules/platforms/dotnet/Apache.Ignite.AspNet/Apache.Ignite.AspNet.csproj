@@ -28,16 +28,20 @@
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>Apache.Ignite.AspNet.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>Apache.Ignite.AspNet.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Release\Apache.Ignite.AspNet.XML</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -47,7 +51,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IgniteOutputCacheProvider.cs" />
+    <Compile Include="IgniteSessionStateStoreProvider.cs" />
     <Compile Include="IgniteWebUtils.cs" />
+    <Compile Include="Impl\ConfigUtil.cs" />
+    <Compile Include="Impl\ExpiryCacheHolder.cs" />
+    <Compile Include="Impl\IgniteSessionStateStoreData.cs" />
+    <Compile Include="Impl\IgniteSessionStateItemCollection.cs" />
+    <Compile Include="Impl\SessionStateLockResult.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

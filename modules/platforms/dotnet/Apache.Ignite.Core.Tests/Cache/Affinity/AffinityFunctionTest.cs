@@ -100,8 +100,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void FixtureTearDown()
         {
             // Check that affinity handles are present
-            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 1, 0);
-            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 1, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 3, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 3, 0);
 
             // Destroy all caches
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
@@ -162,6 +162,34 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var firstTop = _ignite.GetCluster().GetTopology(1);
             var parts = Enumerable.Range(0, PartitionCount).ToArray();
             CollectionAssert.AreEqual(parts.Select(x => firstTop), parts.Select(x => ctx.GetPreviousAssignment(x)));
+        }
+
+        /// <summary>
+        /// Tests the dynamic cache with predefined functions.
+        /// </summary>
+        [Test]
+        public void TestDynamicCachePredefined()
+        {
+            var caches = new[]
+            {
+                new CacheConfiguration("rendezvousPredefined")
+                {
+                    AffinityFunction = new RendezvousAffinityFunction {Partitions = 1234}
+                },
+                new CacheConfiguration("fairPredefined")
+                {
+                    AffinityFunction = new FairAffinityFunction {Partitions = 1234}
+                },
+            }.Select(_ignite.CreateCache<int, int>);
+
+            foreach (var cache in caches)
+            {
+                Assert.AreEqual(1234, cache.GetConfiguration().AffinityFunction.Partitions);
+
+                cache[1] = 2;
+
+                Assert.AreEqual(2, cache[1]);
+            }
         }
 
         /// <summary>
@@ -231,6 +259,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             });
 
             var ex = Assert.Throws<CacheException>(() => cache.Put(1, 2));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("User error", ex.InnerException.Message);
         }
 
