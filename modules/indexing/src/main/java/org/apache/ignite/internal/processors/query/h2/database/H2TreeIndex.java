@@ -128,14 +128,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         for (int i = 0; i < inlineIdxs.size(); i++) {
                             InlineIndexHelper fastIdx = inlineIdxs.get(i);
 
-                            Value v2 = row.getValue(fastIdx.columnIndex());
-
-                            if (v2 == null) {
-                                // Can't compare further.
-                                return 0;
-                            }
-
                             Value v1 = fastIdx.get(pageAddr, off + fieldOff, inlineSize - fieldOff);
+                            Value v2 = row.getValue(fastIdx.columnIndex());
 
                             int c = compareValues(v1, v2, fastIdx.sortType());
 
@@ -144,10 +138,11 @@ public class H2TreeIndex extends GridH2IndexBase {
                             if (c != 0)
                                 return c;
 
-                            if (fastIdx.size() > 0)
-                                fieldOff += fastIdx.size();
-                            else
-                                fieldOff += fastIdx.readSize(pageAddr, off + fieldOff);
+                            if (fastIdx.type() == Value.STRING && v1.getType() != Value.NULL && v1.getString().length() <= v2.getString().length()) {
+
+                            }
+
+                            fieldOff += fastIdx.fullSize(pageAddr, off + fieldOff);
 
                             if (fieldOff > inlineSize)
                                 break;

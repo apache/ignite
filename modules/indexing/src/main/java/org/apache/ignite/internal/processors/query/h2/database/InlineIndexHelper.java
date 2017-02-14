@@ -28,6 +28,7 @@ import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
+import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 
 /**
@@ -116,12 +117,25 @@ public class InlineIndexHelper {
     /**
      * @param pageAddr Page address.
      * @param off Offset.
-     * @return Size for variable-length field.
+     * @return Full size in page.
      */
-    public short readSize(long pageAddr, int off) {
+    public int fullSize(long pageAddr, int off) {
+        int type = PageUtils.getByte(pageAddr, off);
+
+        if (type == Value.NULL)
+            return 1;
+
         switch (type) {
+            case Value.BOOLEAN:
+            case Value.BYTE:
+            case Value.INT:
+            case Value.SHORT:
+            case Value.LONG:
+                return size() + 1;
+
             case Value.STRING:
-                return PageUtils.getShort(pageAddr, off);
+                return PageUtils.getShort(pageAddr, off + 1) + 3;
+
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
@@ -133,28 +147,33 @@ public class InlineIndexHelper {
      * @return Value.
      */
     public Value get(long pageAddr, int off, int maxSize) {
-        if (size() > 0 && size() > maxSize)
+        if (size() > 0 && size() + 1 >= maxSize)
             return null;
+
+        int type = PageUtils.getByte(pageAddr, off);
+
+        if (type == Value.NULL)
+            return ValueNull.INSTANCE;
 
         switch (type) {
             case Value.BOOLEAN:
-                return ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0);
+                return ValueBoolean.get(PageUtils.getByte(pageAddr, off + 1) != 0);
 
             case Value.BYTE:
-                return ValueByte.get(PageUtils.getByte(pageAddr, off));
+                return ValueByte.get(PageUtils.getByte(pageAddr, off + 1));
 
             case Value.SHORT:
-                return ValueInt.get(PageUtils.getShort(pageAddr, off));
+                return ValueInt.get(PageUtils.getShort(pageAddr, off + 1));
 
             case Value.INT:
-                return ValueInt.get(PageUtils.getInt(pageAddr, off));
+                return ValueInt.get(PageUtils.getInt(pageAddr, off + 1));
 
             case Value.LONG:
-                return ValueLong.get(PageUtils.getLong(pageAddr, off));
+                return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
 
             case Value.STRING:
-                short size = readSize(pageAddr, off);
-                return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 2, size), CHARSET));
+                short size = PageUtils.getShort(pageAddr, off + 1);
+                return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -168,39 +187,55 @@ public class InlineIndexHelper {
      * @return NUmber of bytes saved.
      */
     public int put(long pageAddr, int off, Value val, int maxSize) {
-        if (size() > 0 && size() >= maxSize)
+        if (size() > 0 && size() + 1 >= maxSize)
             return 0;
+
+        if (val.getType() == Value.NULL) {
+            PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
+            return 1;
+        }
+
+        if (val.getType() != type())
+            throw new UnsupportedOperationException("value type doesn't match");
 
         switch (type) {
             case Value.BOOLEAN:
-                PageUtils.putByte(pageAddr, off, (byte)(val.getBoolean() ? 1 : 0));
-                return size();
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off + 1, (byte)(val.getBoolean() ? 1 : 0));
+                return size() + 1;
 
             case Value.BYTE:
-                PageUtils.putByte(pageAddr, off, val.getByte());
-                return size();
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off + 1, val.getByte());
+                return size() + 1;
 
             case Value.SHORT:
-                PageUtils.putShort(pageAddr, off, val.getShort());
-                return size();
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putShort(pageAddr, off + 1, val.getShort());
+                return size() + 1;
 
             case Value.INT:
-                PageUtils.putInt(pageAddr, off, val.getInt());
-                return size();
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putInt(pageAddr, off + 1, val.getInt());
+                return size() + 1;
 
             case Value.LONG:
-                PageUtils.putLong(pageAddr, off, val.getLong());
-                return size();
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putLong(pageAddr, off + 1, val.getLong());
+                return size() + 1;
 
             case Value.STRING:
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+
                 byte[] s;
-                if (val.getString().getBytes().length + 2 <= maxSize)
+                if (val.getString().getBytes(CHARSET).length + 2 <= maxSize)
                     s = val.getString().getBytes(CHARSET);
                 else
                     s = toBytes(val.getString(), maxSize - 2);
-                PageUtils.putShort(pageAddr, off, (short)s.length);
-                PageUtils.putBytes(pageAddr, off + 2, s);
-                return s.length + 2;
+
+                PageUtils.putShort(pageAddr, off + 1, (short)s.length);
+                PageUtils.putBytes(pageAddr, off + 3, s);
+                return s.length + 3;
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
