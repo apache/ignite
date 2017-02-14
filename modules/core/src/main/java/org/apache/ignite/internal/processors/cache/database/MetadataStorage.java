@@ -356,18 +356,18 @@ public class MetadataStorage implements MetaStore {
         @Override public void store(final long dstPageAddr, final int dstIdx, final BPlusIO<IndexItem> srcIo,
             final long srcPageAddr,
             final int srcIdx) throws IgniteCheckedException {
-            storeRow(dstPageAddr, offset(dstPageAddr, dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
+            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
         }
 
         /** {@inheritDoc} */
         @Override public IndexItem getLookupRow(final BPlusTree<IndexItem, ?> tree, final long pageAddr,
             final int idx) throws IgniteCheckedException {
-            return readRow(pageAddr, offset(pageAddr, idx));
+            return readRow(pageAddr, offset(idx));
         }
 
         /** {@inheritDoc} */
         @Override public int getOffset(long pageAddr, final int idx) {
-            return offset(pageAddr, idx);
+            return offset(idx);
         }
     }
 
@@ -399,19 +399,19 @@ public class MetadataStorage implements MetaStore {
             final BPlusIO<IndexItem> srcIo,
             final long srcPageAddr,
             final int srcIdx) throws IgniteCheckedException {
-            storeRow(dstPageAddr, offset(dstPageAddr, dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
+            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
         }
 
         /** {@inheritDoc} */
         @Override public IndexItem getLookupRow(final BPlusTree<IndexItem, ?> tree,
             final long pageAddr,
             final int idx) throws IgniteCheckedException {
-            return readRow(pageAddr, offset(pageAddr, idx));
+            return readRow(pageAddr, offset(idx));
         }
 
         /** {@inheritDoc} */
         @Override public int getOffset(long pageAddr, final int idx) {
-            return offset(pageAddr, idx);
+            return offset(idx);
         }
     }
 }

@@ -83,7 +83,7 @@ public class FastIndexHelper {
     /**
      * @return Value size.
      */
-    public int size() {
+    public short size() {
         switch (type) {
             case Value.BOOLEAN:
             case Value.BYTE:

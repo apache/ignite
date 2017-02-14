@@ -34,17 +34,23 @@ import org.h2.result.SearchRow;
  * Leaf page for H2 row references.
  */
 public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
+
+    /** Payload size. */
+    private final int payloadSize;
+
     /** */
-    public static final IOVersions<H2ExtrasLeafIO> VERSIONS = new IOVersions<>(
-        new H2ExtrasLeafIO(T_H2_EX_REF_LEAF, 1)
-    );
+    public static IOVersions<H2ExtrasLeafIO> getVersions(short type, short payload) {
+        return new IOVersions<>(new H2ExtrasLeafIO(type, 1, payload));
+    }
 
     /**
      * @param type Page type.
      * @param ver Page format version.
+     * @param payloadSize Payload size.
      */
-    private H2ExtrasLeafIO(short type, int ver) {
-        super(type, ver, 8);
+    private H2ExtrasLeafIO(short type, int ver, int payloadSize) {
+        super(type, ver, 8 + payloadSize);
+        this.payloadSize = payloadSize;
     }
 
     /** {@inheritDoc} */
@@ -53,17 +59,11 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
-
-        assert currentIndex != null;
-
-        List<FastIndexHelper> fastIdx = currentIndex.fastIdxs();
+        H2TreeIndex currentIdx = H2TreeIndex.getCurrentIndex();
+        assert currentIdx != null;
+        List<FastIndexHelper> fastIdx = currentIdx.fastIdxs();
 
         assert fastIdx != null;
-
-        int itemSize = itemSize(pageAddr);
-
-        assert itemSize == currentIndex.itemSize();
 
         int fieldOff = 0;
 
@@ -73,24 +73,22 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             fieldOff += idx.size();
         }
 
-        PageUtils.putLong(pageAddr, off + itemSize - 8, row0.link);
+        PageUtils.putLong(pageAddr, off + payloadSize, row0.link);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<SearchRow> srcIo, long srcPageAddr, int srcIdx) {
-        int dstItemSize = itemSize(dstPageAddr);
-        int srcItemSize = srcIo.itemSize(srcPageAddr);
+        int srcOff = srcIo.offset(srcIdx);
 
-        assert srcPageAddr == dstItemSize || dstItemSize == 0;
+        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, payloadSize);
+        long link = PageUtils.getLong(srcPageAddr, srcOff + payloadSize);
 
-        if (dstItemSize == 0)
-            writeMetaHeader(dstPageAddr, (short)srcItemSize);
+        assert link != 0;
 
-        int srcOff = srcIo.offset(srcPageAddr, srcIdx);
-        byte[] payload = PageUtils.getBytes(srcPageAddr, srcOff, srcItemSize);
+        int dstOff = offset(dstIdx);
 
-        int dstOff = offset(dstPageAddr, dstIdx);
         PageUtils.putBytes(dstPageAddr, dstOff, payload);
+        PageUtils.putLong(dstPageAddr, dstOff + payloadSize, link);
     }
 
     /** {@inheritDoc} */
@@ -107,30 +105,6 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
      * @return Link to row.
      */
     private long getLink(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(pageAddr, idx) + itemSize(pageAddr) - 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int metaHeaderSize() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeMetaHeader(long pageAddr, Object obj) {
-        short size = obj == null ? 0 : (short)obj;
-        PageUtils.putShort(pageAddr, META_HEADER_OFFSET, size);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int itemSize(long pageAddr) {
-        int itemSize = PageUtils.getShort(pageAddr, META_HEADER_OFFSET);
-
-        if (itemSize != 0)
-            return itemSize;
-        H2TreeIndex currentIndex = H2TreeIndex.getCurrentIndex();
-        assert currentIndex != null;
-
-        writeMetaHeader(pageAddr, (short)currentIndex.itemSize());
-        return currentIndex.itemSize();
+        return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
     }
 }

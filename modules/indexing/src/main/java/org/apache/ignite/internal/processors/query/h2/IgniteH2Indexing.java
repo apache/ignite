@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -211,16 +212,40 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+
     /**
      * Register IO for indexes.
      */
     static {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
 
-        PageIO.registerH2ExtraInner(H2ExtrasInnerIO.VERSIONS);
-        PageIO.registerH2ExtraLeaf(H2ExtrasLeafIO.VERSIONS);
+        for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++)
+            PageIO.registerH2ExtraInner(
+                (short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1),
+                H2ExtrasInnerIO.getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload),
+                (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1),
+                H2ExtrasLeafIO.getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload)
+            );
     }
 
+    /**
+     * @param payload Payload size.
+     * @return IOVersions for given payload.
+     */
+    public static IOVersions<H2ExtrasInnerIO> getInnerVersions(short payload) {
+        assert payload > 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
+        return (IOVersions<H2ExtrasInnerIO>)PageIO.getInnerVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1));
+    }
+
+    /**
+     * @param payload Payload size.
+     * @return IOVersions for given payload.
+     */
+    public static IOVersions<H2ExtrasLeafIO> getLeafVersions(short payload) {
+        assert payload > 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
+        return (IOVersions<H2ExtrasLeafIO>)PageIO.getLeafVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1));
+    }
+    
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +

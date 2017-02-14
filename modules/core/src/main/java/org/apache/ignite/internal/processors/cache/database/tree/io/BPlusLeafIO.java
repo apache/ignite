@@ -35,7 +35,7 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
 
     /** {@inheritDoc} */
     @Override public int getMaxCount(long pageAddr, int pageSize) {
-        return (pageSize - itemsOffset()) / itemSize(pageAddr);
+        return (pageSize - ITEMS_OFF) / itemSize();
     }
 
     /** {@inheritDoc} */
@@ -43,14 +43,14 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
         boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || srcPageAddr != dstPageAddr;
 
-        PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcPageAddr, srcIdx), offset(srcPageAddr, dstIdx),
-            cnt * itemSize(srcPageAddr));
+        PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx),
+            cnt * itemSize());
     }
 
     /** {@inheritDoc} */
-    @Override public final int offset(long pageAddr, int idx) {
+    @Override public final int offset(int idx) {
         assert idx >= 0: idx;
 
-        return itemsOffset() + idx * itemSize(pageAddr);
+        return ITEMS_OFF + idx * itemSize();
     }
 }
