@@ -28,6 +28,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -158,6 +159,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);
         PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        PLAIN_CLASS_TO_FLAG.put(Time.class, GridBinaryMarshaller.TIME);
 
         PLAIN_CLASS_TO_FLAG.put(byte[].class, GridBinaryMarshaller.BYTE_ARR);
         PLAIN_CLASS_TO_FLAG.put(short[].class, GridBinaryMarshaller.SHORT_ARR);
@@ -172,6 +174,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
         PLAIN_CLASS_TO_FLAG.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
         PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
 
         for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
             FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
@@ -187,8 +190,8 @@ public class BinaryUtils {
 
         for (byte b : new byte[] {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP,
-            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
+            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
+            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
             GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
             GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
 
@@ -207,6 +210,7 @@ public class BinaryUtils {
         BINARY_CLS.add(UUID.class);
         BINARY_CLS.add(Date.class);
         BINARY_CLS.add(Timestamp.class);
+        BINARY_CLS.add(Time.class);
         BINARY_CLS.add(BigDecimal.class);
         BINARY_CLS.add(byte[].class);
         BINARY_CLS.add(short[].class);
@@ -220,6 +224,7 @@ public class BinaryUtils {
         BINARY_CLS.add(UUID[].class);
         BINARY_CLS.add(Date[].class);
         BINARY_CLS.add(Timestamp[].class);
+        BINARY_CLS.add(Time[].class);
         BINARY_CLS.add(BigDecimal[].class);
 
         FIELD_TYPE_NAMES = new String[104];
@@ -237,6 +242,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING] = "String";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE] = "Date";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME] = "Time";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_OBJ] = "Object";
@@ -256,6 +262,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING_ARR] = "String[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE_ARR] = "Date[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME_ARR] = "Time[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
 
@@ -445,6 +452,11 @@ public class BinaryUtils {
 
                 break;
 
+            case GridBinaryMarshaller.TIME:
+                writer.doWriteTime((Time)val);
+
+                break;
+
             case GridBinaryMarshaller.BYTE_ARR:
                 writer.doWriteByteArray((byte[])val);
 
@@ -510,6 +522,11 @@ public class BinaryUtils {
 
                 break;
 
+            case GridBinaryMarshaller.TIME_ARR:
+                writer.doWriteTimeArray((Time[])val);
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
@@ -560,7 +577,8 @@ public class BinaryUtils {
      * @return {@code true} if content of serialized array value cannot contain references to other object.
      */
     public static boolean isPlainArrayType(int type) {
-        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR) || type == GridBinaryMarshaller.TIMESTAMP_ARR;
+        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
+            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR;
     }
 
     /**
@@ -577,7 +595,8 @@ public class BinaryUtils {
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
-            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ? GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
+            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
+                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
@@ -695,7 +714,7 @@ public class BinaryUtils {
         return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
             cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
             cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
-            cls == BigDecimal[].class;
+            cls == BigDecimal[].class || cls == Time[].class;
     }
 
     /**
@@ -1000,7 +1019,7 @@ public class BinaryUtils {
     public static BinaryWriteMode mode(Class<?> cls) {
         assert cls != null;
 
-        /** Primitives. */
+        // Primitives.
         if (cls == byte.class)
             return BinaryWriteMode.P_BYTE;
         else if (cls == boolean.class)
@@ -1018,7 +1037,7 @@ public class BinaryUtils {
         else if (cls == double.class)
             return BinaryWriteMode.P_DOUBLE;
 
-        /** Boxed primitives. */
+        // Boxed primitives.
         else if (cls == Byte.class)
             return BinaryWriteMode.BYTE;
         else if (cls == Boolean.class)
@@ -1036,7 +1055,7 @@ public class BinaryUtils {
         else if (cls == Double.class)
             return BinaryWriteMode.DOUBLE;
 
-        /** The rest types. */
+        // The rest types.
         else if (cls == BigDecimal.class)
             return BinaryWriteMode.DECIMAL;
         else if (cls == String.class)
@@ -1047,6 +1066,8 @@ public class BinaryUtils {
             return BinaryWriteMode.DATE;
         else if (cls == Timestamp.class)
             return BinaryWriteMode.TIMESTAMP;
+        else if (cls == Time.class)
+            return BinaryWriteMode.TIME;
         else if (cls == byte[].class)
             return BinaryWriteMode.BYTE_ARR;
         else if (cls == short[].class)
@@ -1073,6 +1094,8 @@ public class BinaryUtils {
             return BinaryWriteMode.DATE_ARR;
         else if (cls == Timestamp[].class)
             return BinaryWriteMode.TIMESTAMP_ARR;
+        else if (cls == Time[].class)
+            return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
@@ -1270,6 +1293,15 @@ public class BinaryUtils {
 
     /**
      * @return Value.
+     */
+    public static Time doReadTime(BinaryInputStream in) {
+        long time = in.readLong();
+
+        return new Time(time);
+    }
+
+    /**
+     * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     public static BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
@@ -1387,6 +1419,31 @@ public class BinaryUtils {
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
                 arr[i] = doReadTimestamp(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        Time[] arr = new Time[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == GridBinaryMarshaller.NULL)
+                arr[i] = null;
+            else {
+                if (flag != GridBinaryMarshaller.TIME)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadTime(in);
             }
         }
 
@@ -1759,6 +1816,9 @@ public class BinaryUtils {
             case GridBinaryMarshaller.TIMESTAMP:
                 return doReadTimestamp(in);
 
+            case GridBinaryMarshaller.TIME:
+                return doReadTime(in);
+
             case GridBinaryMarshaller.BYTE_ARR:
                 return doReadByteArray(in);
 
@@ -1797,6 +1857,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
                 return doReadTimestampArray(in);
+
+            case GridBinaryMarshaller.TIME_ARR:
+                return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
                 return doReadObjectArray(in, ctx, ldr, handles, false);
