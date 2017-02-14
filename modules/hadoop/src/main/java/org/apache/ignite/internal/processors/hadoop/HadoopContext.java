@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;

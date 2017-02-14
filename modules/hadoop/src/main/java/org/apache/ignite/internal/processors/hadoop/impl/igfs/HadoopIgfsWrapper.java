@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -81,8 +82,10 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      *
      * @param authority Authority (connection string).
      * @param logDir Log directory for server.
+     * @param user User name.
      * @param conf Configuration.
      * @param log Current logger.
+     * @throws IOException On error.
      */
     public HadoopIgfsWrapper(String authority, String logDir, Configuration conf, Log log, String user)
         throws IOException {
@@ -349,6 +352,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * Get delegate creating it if needed.
      *
      * @return Delegate.
+     * @throws HadoopIgfsCommunicationException On error.
      */
     private Delegate delegate() throws HadoopIgfsCommunicationException {
         // These fields will contain possible exceptions from shmem and TCP endpoints.
@@ -365,7 +369,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         boolean skipInProc = parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false);
 
         if (!skipInProc) {
-            IgfsEx igfs = getIgfsEx(endpoint.grid(), endpoint.igfs());
+            IgfsEx igfs = getIgfsEx(endpoint.igfs());
 
             if (igfs != null) {
                 HadoopIgfsEx hadoop = null;
@@ -393,7 +397,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.grid(), endpoint.igfs(), log, userName);
+                hadoop = new HadoopIgfsOutProc(endpoint.port(), endpoint.igfs(), log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
@@ -415,7 +419,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.igfs(),
                     log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -437,7 +441,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             HadoopIgfsEx hadoop = null;
 
             try {
-                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.igfs(),
                     log, userName);
 
                 curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
@@ -532,20 +536,21 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     /**
      * Helper method to find Igfs of the given name in the given Ignite instance.
      *
-     * @param gridName The name of the grid to check.
      * @param igfsName The name of Igfs.
      * @return The file system instance, or null if not found.
      */
-    private static IgfsEx getIgfsEx(@Nullable String gridName, @Nullable String igfsName) {
-        if (Ignition.state(gridName) == STARTED) {
-            try {
-                for (IgniteFileSystem fs : Ignition.ignite(gridName).fileSystems()) {
-                    if (F.eq(fs.name(), igfsName))
-                        return (IgfsEx)fs;
+    private static IgfsEx getIgfsEx(@Nullable String igfsName) {
+        for (Ignite ignite : Ignition.allGrids()) {
+            if (Ignition.state(ignite.name()) == STARTED) {
+                try {
+                    for (IgniteFileSystem fs : ignite.fileSystems()) {
+                        if (F.eq(fs.name(), igfsName))
+                            return (IgfsEx)fs;
+                    }
                 }
-            }
-            catch (IgniteIllegalStateException ignore) {
-                // May happen if the grid state has changed:
+                catch (IgniteIllegalStateException ignore) {
+                    // May happen if the grid state has changed:
+                }
             }
         }
 
