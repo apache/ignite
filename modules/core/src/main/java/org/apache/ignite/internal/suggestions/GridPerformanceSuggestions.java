@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.suggestions;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,6 +33,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGES
  * Grid performance suggestions.
  */
 public class GridPerformanceSuggestions {
+    /** Link to article about Ignite performance tuning */
+    private static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
+
     /** */
     private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
@@ -40,6 +44,14 @@ public class GridPerformanceSuggestions {
 
     /** */
     private final Collection<String> suppressed = !disabled ? new HashSet<String>() : null;
+
+    /**
+     * @param suggestions Suggestions to add.
+     */
+    public synchronized void addAll(List<String> suggestions) {
+        for (String suggestion : suggestions)
+            add(suggestion);
+    }
 
     /**
      * @param sug Suggestion to add.
@@ -79,10 +91,11 @@ public class GridPerformanceSuggestions {
                 if (!suppressed.contains(s))
                     U.quietAndInfo(log, "  ^-- " + s);
 
-            U.quietAndInfo(log, "");
-
             perfs.clear();
         }
+
+        U.quietAndInfo(log, "Refer to this page for more performance suggestions: " + SUGGESTIONS_LINK);
+        U.quietAndInfo(log, "");
     }
 
     /** {@inheritDoc} */

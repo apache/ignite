@@ -18,12 +18,13 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 
 /**
  * Task is used in {@link MarshallerContextImpl#onMappingAccepted(MarshallerMappingItem)}
  * to offload storing mapping data into file system from discovery thread.
  */
-class MappingStoreTask implements Runnable {
+class MappingStoreTask implements GridPlainRunnable {
     /** Store to put item to. */
     private final MarshallerMappingFileStore fileStore;
 

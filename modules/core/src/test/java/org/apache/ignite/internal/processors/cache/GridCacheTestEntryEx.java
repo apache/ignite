@@ -417,7 +417,27 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Nullable @Override public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+    @Override public void clearReserveForLoad(GridCacheVersion ver) {
+        assert false;
+    }
+
+    /** @inheritDoc */
+    @Override public EntryGetResult innerGetAndReserveForLoad(
+        boolean readSwap,
+        boolean updateMetrics,
+        boolean evt,
+        UUID subjId,
+        String taskName,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary,
+        @Nullable ReaderArguments args) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert false;
+
+        return null;
+    }
+
+    /** @inheritDoc */
+    @Nullable @Override public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -428,7 +448,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) {
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
@@ -664,10 +685,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersion versionedValue(CacheObject val,
+    @Override public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
-        IgniteCacheExpiryPolicy loadExpiryPlc) {
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
