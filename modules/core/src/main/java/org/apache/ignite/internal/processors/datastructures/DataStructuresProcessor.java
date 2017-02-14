@@ -1801,17 +1801,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 if (i == GridCacheAdapter.MAX_RETRIES - 1)
                     throw e;
 
-                assert !X.hasCause(e, ClusterTopologyLocalException.class);
+                assert !X.hasCause(e, ClusterTopologyLocalException.class):
+                    "Should never happen if IGNITE-1948 done well";
 
                 ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
 
-                if (topErr == null /*|| (topErr instanceof ClusterTopologyServerNotFoundLocalException)*/)
+                if (topErr == null)
                     throw e;
 
                 IgniteInternalFuture<?> fut = topErr.retryReadyFuture();
-
-                //if (fut != null)
-                    fut.get();
+                fut.get();
             }
         }
 

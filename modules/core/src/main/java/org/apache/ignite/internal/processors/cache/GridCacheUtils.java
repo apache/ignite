@@ -1625,25 +1625,12 @@ public class GridCacheUtils {
                         if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
 
-                        assert !X.hasCause(e, ClusterTopologyLocalException.class);
+                        assert !X.hasCause(e, ClusterTopologyLocalException.class): "Should never happen if IGNITE-1948 done well";
 
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                            ClusterTopologyLocalException localException = e.getCause(ClusterTopologyLocalException.class);
-                            if (localException!=null && (localException instanceof ClusterTopologyLocalException ||
-                                localException instanceof ClusterTopologyServerNotFoundLocalException))
-                                throw e;
-                            else if (localException!=null)
-                                assert false: "Ops, i did it again";
-
                             ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                            // IGNITE-1948: remove this check when the issue is fixed
-                            //if (topErr.retryReadyFuture() != null)
-                                topErr.retryReadyFuture().get();
-                            //else
-                            //    U.sleep(1);
-                        }
-                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            topErr.retryReadyFuture().get();
+                        } else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
                             CachePartialUpdateCheckedException.class))
                             U.sleep(1);
                         else

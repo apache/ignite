@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -816,8 +817,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
                     retryFut = ex.retryReadyFuture();
                 }
-                else
+                else {
+                    assert !e.hasCause(ClusterTopologyLocalException.class):
+                        "Should never happen if IGNITE-1948 done well";
                     throw CU.convertToCacheException(e);
+                }
 
                 if (F.isEmpty(nodes)) {
                     if (--unreservedNodesRetryCnt > 0) {

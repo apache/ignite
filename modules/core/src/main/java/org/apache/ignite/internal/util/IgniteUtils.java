@@ -807,12 +807,8 @@ public abstract class IgniteUtils {
         m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
                 ClusterTopologyException topEx = new ClusterTopologyException(e.getMessage(), e);
-
                 ClusterTopologyCheckedException checked = (ClusterTopologyCheckedException)e;
-
-                //if (checked.retryReadyFuture() != null)
-                    topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
-
+                topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
                 return topEx;
             }
         });
