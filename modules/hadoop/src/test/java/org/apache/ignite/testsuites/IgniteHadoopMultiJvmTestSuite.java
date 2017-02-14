@@ -20,10 +20,15 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopBbpExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopDBCountPageViewExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistBbpExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedPentominoExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopSecondarySortExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordDeviationExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordMeanExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordMedianExampleTest;
 
 /**
  * Test suite for Hadoop Map Reduce engine.
@@ -44,8 +49,16 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopBbpExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistBbpExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedPentominoExampleTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMeanExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopQuasiMonteCarloTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopJoinTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDBCountPageViewExampleTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopSecondarySortExampleTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMeanExampleTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWordDeviationExampleTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMedianExampleTest.class.getName())));
 
         return suite;
     }

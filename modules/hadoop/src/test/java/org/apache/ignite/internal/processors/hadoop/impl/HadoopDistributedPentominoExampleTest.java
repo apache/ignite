@@ -11,10 +11,6 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final DistributedPentomino impl = new DistributedPentomino();
 
-        @Override String name() {
-            return "DistributedPentomino";
-        }
-
         @Override String[] parameters(FrameworkParameters fp) {
             // pentomino <output> [-depth #] [-height #] [-width #]
             return new String[] { fp.getWorkDir(name()) + "/out", "-depth", "3", "-height", "4", "-width", "5" };

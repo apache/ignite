@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.net.URI;
+import java.util.Arrays;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -9,7 +10,7 @@ import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.multijvm2.HadoopAbstract2Test;
 import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
 
@@ -56,6 +57,13 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         }
 
         /**
+         * @return The number of reduces.
+         */
+        public int reduces() {
+            return reduces;
+        }
+
+        /**
          * @param exampleName The example name.
          * @return gets the work directory path.
          */
@@ -74,12 +82,16 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     /**
      * Abstract class representing an example.
      */
-    static abstract class GenericHadoopExample  {
+    static abstract class GenericHadoopExample {
         /** Gets the example name. */
-        abstract String name();
+        final String name() {
+            return tool().getClass().getSimpleName();
+        }
 
         /** Performs pre-execution preparation. */
-        void prepare(Configuration conf, FrameworkParameters fp) throws Exception {}
+        void prepare(JobConf conf, FrameworkParameters fp) throws Exception {
+            // noop
+        }
 
         /** Gets the String parameters to be passed to the Tool upon execution. */
         abstract String[] parameters(FrameworkParameters fp);
@@ -88,7 +100,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         abstract Tool tool();
 
         /** Checks example calculation validity. */
-        abstract void verify(String[] parameters);
+        abstract void verify(String[] parameters) throws Exception;
     }
 
     /**
@@ -111,8 +123,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @return The number of maps.
      */
     protected int numMaps() {
-        // TODO: multiplier of 4 and higher (8, 16) causes failure.
-        return gridCount() * 2;
+        return gridCount();
     }
 
     /**
@@ -127,8 +138,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     @Override protected void afterTest() throws Exception {
         IgniteNodeProxy2.stopAll();
 
-        // Delete files used:
-        getFileSystem().delete(new Path(getFsBase()), true);
+        // TODO: Delete files used:
+        //getFileSystem().delete(new Path(getFsBase()), true);
     }
 
     /**
@@ -148,21 +159,21 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         System.out.println(ex.name() + ": ===============================================================");
 
-        final Configuration conf = new JobConf();
+        final JobConf conf = new JobConf();
 
         conf.set("fs.defaultFS", getFsBase());
 
         log().info("Desired number of maps: " + numMaps());
 
-        // Ignite specific job properties:
-        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
-        conf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
-
-        if (gzip)
-            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
+//        // Ignite specific job properties:
+//        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
+//        conf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
+//
+//        if (gzip)
+//            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
 
         // Set the Ignite framework and the address:
-        conf.set(MRConfig.FRAMEWORK_NAME, "ignite");
+        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite"); // "local" );
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
 
         // Start real calculation:
@@ -171,6 +182,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         ex.prepare(conf, fp);
 
         String[] args = ex.parameters(fp);
+
+        X.println("#### Running job with parameters: " + Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 

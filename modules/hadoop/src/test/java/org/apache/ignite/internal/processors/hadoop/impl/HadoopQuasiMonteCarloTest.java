@@ -71,10 +71,6 @@ public class HadoopQuasiMonteCarloTest extends HadoopGenericExampleTest {
             }
         };
 
-        @Override String name() {
-            return "QuasiMonteCarlo";
-        }
-
         @Override String[] parameters(FrameworkParameters fp) {
             // "Usage: "+getClass().getName()+" <nMaps> <nSamples>");
             return new String[] {

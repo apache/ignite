@@ -7,13 +7,15 @@ import org.apache.hadoop.util.Tool;
  * Bbp Pi digits example.
  */
 public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
+    /** {@inheritDoc} */
+    protected int numMaps() {
+        // TODO: multiplier of 4 and higher (8, 16) causes failure.
+        return gridCount() * 2;
+    }
+
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final Tool impl = new DistBbp();
-
-        @Override String name() {
-            return "bbp";
-        }
 
         @Override String[] parameters(FrameworkParameters fp) {
 //            Usage: java org.apache.hadoop.examples.pi.DistBbp <b> <nThreads> <nJobs> <type> <nPart> <remoteDir> <localDir>
