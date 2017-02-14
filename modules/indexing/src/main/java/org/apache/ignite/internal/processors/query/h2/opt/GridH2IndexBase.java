@@ -188,12 +188,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
      * @return Index segment ID for current query context.
      */
     protected int threadLocalSegment() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if(qctx == null)
-            throw new IllegalStateException("GridH2QueryContext is not initialized.");
-
-        return qctx.segment();
+       return 0;
     }
 
     /**

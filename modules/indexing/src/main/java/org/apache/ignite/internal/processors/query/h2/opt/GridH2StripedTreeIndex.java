@@ -171,6 +171,16 @@ public class GridH2StripedTreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    protected int threadLocalSegment() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if(qctx == null)
+            throw new IllegalStateException("GridH2QueryContext is not initialized.");
+
+        return qctx.segment();
+    }
+
+    /** {@inheritDoc} */
     protected boolean isSnapshotEnabled() {
         return snapshotEnabled;
     }
