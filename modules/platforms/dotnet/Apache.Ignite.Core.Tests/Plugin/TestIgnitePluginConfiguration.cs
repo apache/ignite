@@ -32,7 +32,7 @@
         public string PluginProperty { get; set; }
 
         /** <inheritdoc /> */
-        public int? PluginConfigurationFactoryId
+        public int? PluginConfigurationClosureFactoryId
         {
             get { return 0; }
             // ReSharper disable once ValueParameterNotUsed

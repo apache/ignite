@@ -348,9 +348,9 @@
 
                 foreach (var cfg in PluginConfigurations)
                 {
-                    if (cfg.PluginConfigurationFactoryId != null)
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
                     {
-                        writer.WriteInt(cfg.PluginConfigurationFactoryId.Value);
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
 
                         cfg.WriteBinary(writer);
 

@@ -1219,7 +1219,7 @@
                                     </xs:attribute>
                                     <xs:attribute name="pluginConfigurationFactoryId" type="xs:int">
                                         <xs:annotation>
-                                            <xs:documentation>Id to locate PlatformPluginConfigurationFactory on Java side.</xs:documentation>
+                                            <xs:documentation>Id to locate PlatformPluginConfigurationClosureFactory on Java side.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                 </xs:complexType>

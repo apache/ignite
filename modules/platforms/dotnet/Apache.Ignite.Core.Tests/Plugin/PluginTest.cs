@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class NoAttributeConfig : IPluginConfiguration
         {
-            public int? PluginConfigurationFactoryId
+            public int? PluginConfigurationClosureFactoryId
             {
                 get { return null; }
             }
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(EmptyNamePluginProvider))]
         private class EmptyNameConfig : IPluginConfiguration
         {
-            public int? PluginConfigurationFactoryId
+            public int? PluginConfigurationClosureFactoryId
             {
                 get { return null; }
             }
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(ExceptionPluginProvider))]
         private class ExceptionConfig : IPluginConfiguration
         {
-            public int? PluginConfigurationFactoryId
+            public int? PluginConfigurationClosureFactoryId
             {
                 get { return null; }
             }
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(NormalPluginProvider))]
         private class NormalConfig : IPluginConfiguration
         {
-            public int? PluginConfigurationFactoryId
+            public int? PluginConfigurationClosureFactoryId
             {
                 get { return null; }
             }

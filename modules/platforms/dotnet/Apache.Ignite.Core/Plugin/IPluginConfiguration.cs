@@ -45,14 +45,14 @@ namespace Apache.Ignite.Core.Plugin
     public interface IPluginConfiguration
     {
         /// <summary>
-        /// Gets the id to locate PlatformPluginConfigurationFactory on Java side
+        /// Gets the id to locate PlatformPluginConfigurationClosureFactory on Java side
         /// and read the data written by <see cref="WriteBinary"/> method.
         /// </summary>
-        int? PluginConfigurationFactoryId { get; }
+        int? PluginConfigurationClosureFactoryId { get; }
 
         /// <summary>
         /// Writes this instance to a raw writer.
-        /// This method will be called when <see cref="PluginConfigurationFactoryId"/> is not null to propagate
+        /// This method will be called when <see cref="PluginConfigurationClosureFactoryId"/> is not null to propagate
         /// configuration to the Java side.
         /// </summary>
         /// <param name="writer">The writer.</param>
