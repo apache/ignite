@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
@@ -99,7 +98,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             inlineIdxs = getAvailableInlineColumns(cols);
 
             // todo: from config
-            final short inlineSize = 8;
+            final short inlineSize = 16;
 
             if (pk || inlineSize == 0 || F.isEmpty(inlineIdxs)) {
 
@@ -124,7 +123,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         int fieldOff = 0;
 
-                        int lastIndexUsed = 0;
+                        int lastIdxUsed = 0;
 
                         for (int i = 0; i < inlineIdxs.size(); i++) {
                             InlineIndexHelper fastIdx = inlineIdxs.get(i);
@@ -136,19 +135,19 @@ public class H2TreeIndex extends GridH2IndexBase {
                                 return 0;
                             }
 
-                            T2<Value, Short> t2 = fastIdx.get(pageAddr, off + fieldOff, inlineSize - fieldOff);
+                            Value v1 = fastIdx.get(pageAddr, off + fieldOff, inlineSize - fieldOff);
 
-                            if (t2 == null)
-                                break;
+                            int c = compareValues(v1, v2, fastIdx.sortType());
 
-                            int c = compareValues(t2.getKey(), v2, fastIdx.sortType());
-
-                            lastIndexUsed++;
+                            lastIdxUsed++;
 
                             if (c != 0)
                                 return c;
 
-                            fieldOff += t2.getValue();
+                            if (fastIdx.size() > 0)
+                                fieldOff += fastIdx.size();
+                            else
+                                fieldOff += fastIdx.readSize(pageAddr, off + fieldOff);
 
                             if (fieldOff > inlineSize)
                                 break;
@@ -156,7 +155,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                         SearchRow rowData = getRow(io, pageAddr, idx);
 
-                        for (int i = lastIndexUsed, len = indexColumns.length; i < len; i++) {
+                        for (int i = lastIdxUsed, len = indexColumns.length; i < len; i++) {
                             int idx0 = columnIds[i];
 
                             Value v2 = row.getValue(idx0);

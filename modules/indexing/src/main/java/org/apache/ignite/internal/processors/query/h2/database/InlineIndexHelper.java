@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
@@ -117,33 +116,45 @@ public class InlineIndexHelper {
     /**
      * @param pageAddr Page address.
      * @param off Offset.
+     * @return Size for variable-length field.
+     */
+    public short readSize(long pageAddr, int off) {
+        switch (type) {
+            case Value.STRING:
+                return PageUtils.getShort(pageAddr, off);
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
      * @return Value.
      */
-    public T2<Value, Short> get(long pageAddr, int off, int maxSize) {
+    public Value get(long pageAddr, int off, int maxSize) {
         if (size() > 0 && size() > maxSize)
             return null;
 
         switch (type) {
             case Value.BOOLEAN:
-                return new T2<Value, Short>(ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0), size());
+                return ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0);
 
             case Value.BYTE:
-                return new T2<Value, Short>(ValueByte.get(PageUtils.getByte(pageAddr, off)), size());
+                return ValueByte.get(PageUtils.getByte(pageAddr, off));
 
             case Value.SHORT:
-                return new T2<Value, Short>(ValueInt.get(PageUtils.getShort(pageAddr, off)), size());
+                return ValueInt.get(PageUtils.getShort(pageAddr, off));
 
             case Value.INT:
-                return new T2<Value, Short>(ValueInt.get(PageUtils.getInt(pageAddr, off)), size());
+                return ValueInt.get(PageUtils.getInt(pageAddr, off));
 
             case Value.LONG:
-                return new T2<Value, Short>(ValueLong.get(PageUtils.getLong(pageAddr, off)), size());
+                return ValueLong.get(PageUtils.getLong(pageAddr, off));
 
             case Value.STRING:
-                short size = PageUtils.getShort(pageAddr, off);
-                return new T2<>(
-                    ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 2, size), CHARSET)),
-                    (short)(size + 2));
+                short size = readSize(pageAddr, off);
+                return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 2, size), CHARSET));
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
