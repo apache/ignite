@@ -18,7 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 

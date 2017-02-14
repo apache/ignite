@@ -192,6 +192,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_events;
                 jmethodID m_PlatformProcessor_services;
                 jmethodID m_PlatformProcessor_extensions;
+                jmethodID m_PlatformProcessor_extension;
                 jmethodID m_PlatformProcessor_atomicLong;
                 jmethodID m_PlatformProcessor_getIgniteConfiguration;
                 jmethodID m_PlatformProcessor_getCacheNames;
@@ -209,8 +210,6 @@ namespace ignite
                 jmethodID m_PlatformTarget_outObject;
                 jmethodID m_PlatformTarget_inStreamOutStream;
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
-                jmethodID m_PlatformTarget_listenFuture;
-                jmethodID m_PlatformTarget_listenFutureForOperation;
 
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
@@ -369,6 +368,7 @@ namespace ignite
                 jobject ProcessorEvents(jobject obj, jobject prj);
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
+                jobject ProcessorExtension(jobject obj, int id);
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
@@ -385,8 +385,6 @@ namespace ignite
                 jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
-                void TargetListenFuture(jobject obj, long long futId, int typ);
-                void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);

@@ -113,6 +113,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: affinity key. */
         public const int EchoTypeAffinityKey = 19;
 
+        /** Type: enum from cache. */
+        private const int EchoTypeEnumFromCache = 20;
+
+        /** Type: enum array from cache. */
+        private const int EchoTypeEnumArrayFromCache = 21;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -948,6 +954,24 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Tests the echo task returning enum.
         /// </summary>
         [Test]
+        public void TestEchoTaskEnumFromCache()
+        {
+            var cache = _grid1.GetCache<int, PlatformComputeEnum>(null);
+
+            foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
+            {
+                cache[EchoTypeEnumFromCache] = val;
+
+                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumFromCache);
+
+                Assert.AreEqual(val, res);
+            }
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
         public void TestEchoTaskEnumArray()
         {
             var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
@@ -958,6 +982,30 @@ namespace Apache.Ignite.Core.Tests.Compute
                 PlatformComputeEnum.Baz,
                 PlatformComputeEnum.Foo
             }, res);
+        }
+
+        /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskEnumArrayFromCache()
+        {
+            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(null);
+
+            foreach (var val in new[]
+            {
+                new[] {PlatformComputeEnum.Bar, PlatformComputeEnum.Baz, PlatformComputeEnum.Foo },
+                new[] {PlatformComputeEnum.Foo, PlatformComputeEnum.Baz},
+                new[] {PlatformComputeEnum.Bar}
+            })
+            {
+                cache[EchoTypeEnumArrayFromCache] = val;
+
+                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(
+                    EchoTask, EchoTypeEnumArrayFromCache);
+
+                Assert.AreEqual(val, res);
+            }
         }
 
         /// <summary>

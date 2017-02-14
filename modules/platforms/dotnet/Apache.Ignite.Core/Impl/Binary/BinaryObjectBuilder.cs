@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     break;
 
                 case BinaryUtils.TypeEnum:
-                    TransferBytes(inStream, outStream, 4); // Integer ordinal.
+                    TransferBytes(inStream, outStream, 8); // int typeId, int value.
 
                     break;
 
