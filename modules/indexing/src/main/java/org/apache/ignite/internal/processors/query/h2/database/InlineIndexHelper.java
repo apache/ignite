@@ -17,27 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
+import org.h2.value.ValueString;
 
 /**
  * Helper class for in-page indexes.
  */
-public class FastIndexHelper {
+public class InlineIndexHelper {
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
+
     /** */
-    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(Value.BOOLEAN,
+    public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
+        Value.BOOLEAN,
         Value.BYTE,
         Value.SHORT,
         Value.INT,
-        Value.LONG);
+        Value.LONG,
+        Value.STRING
+    );
 
     /** */
     private final int type;
@@ -53,7 +61,7 @@ public class FastIndexHelper {
      * @param colIdx Index column index.
      * @param sortType Column sort type (see {@link IndexColumn#sortType}).
      */
-    public FastIndexHelper(int type, int colIdx, int sortType) {
+    public InlineIndexHelper(int type, int colIdx, int sortType) {
         this.type = type;
         this.colIdx = colIdx;
         this.sortType = sortType;
@@ -98,6 +106,9 @@ public class FastIndexHelper {
             case Value.LONG:
                 return 8;
 
+            case Value.STRING:
+                return -1;
+
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
@@ -108,49 +119,31 @@ public class FastIndexHelper {
      * @param off Offset.
      * @return Value.
      */
-    public Value get(long pageAddr, int off) {
+    public T2<Value, Short> get(long pageAddr, int off, int maxSize) {
+        if (size() > 0 && size() > maxSize)
+            return null;
+
         switch (type) {
             case Value.BOOLEAN:
-                return ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0);
+                return new T2<Value, Short>(ValueBoolean.get(PageUtils.getByte(pageAddr, off) != 0), size());
 
             case Value.BYTE:
-                return ValueByte.get(PageUtils.getByte(pageAddr, off));
+                return new T2<Value, Short>(ValueByte.get(PageUtils.getByte(pageAddr, off)), size());
 
             case Value.SHORT:
-                return ValueInt.get(PageUtils.getShort(pageAddr, off));
+                return new T2<Value, Short>(ValueInt.get(PageUtils.getShort(pageAddr, off)), size());
 
             case Value.INT:
-                return ValueInt.get(PageUtils.getInt(pageAddr, off));
+                return new T2<Value, Short>(ValueInt.get(PageUtils.getInt(pageAddr, off)), size());
 
             case Value.LONG:
-                return ValueLong.get(PageUtils.getLong(pageAddr, off));
+                return new T2<Value, Short>(ValueLong.get(PageUtils.getLong(pageAddr, off)), size());
 
-            default:
-                throw new UnsupportedOperationException("no get operation for fast index type " + type);
-        }
-    }
-
-    /**
-     * @param buf Page buffer.
-     * @param off Offset.
-     * @return Value.
-     */
-    public Value get(ByteBuffer buf, int off) {
-        switch (type) {
-            case Value.BOOLEAN:
-                return ValueBoolean.get(buf.get(off) != 0);
-
-            case Value.BYTE:
-                return ValueByte.get(buf.get(off));
-
-            case Value.SHORT:
-                return ValueInt.get(buf.getShort(off));
-
-            case Value.INT:
-                return ValueInt.get(buf.getInt(off));
-
-            case Value.LONG:
-                return ValueLong.get(buf.getLong(off));
+            case Value.STRING:
+                short size = PageUtils.getShort(pageAddr, off);
+                return new T2<>(
+                    ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 2, size), CHARSET)),
+                    (short)(size + 2));
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -161,28 +154,42 @@ public class FastIndexHelper {
      * @param pageAddr Page address.
      * @param off Offset.
      * @param val Value.
+     * @return NUmber of bytes saved.
      */
-    public void put(long pageAddr, int off, Value val) {
+    public int put(long pageAddr, int off, Value val, int maxSize) {
+        if (size() > 0 && size() >= maxSize)
+            return 0;
+
         switch (type) {
             case Value.BOOLEAN:
                 PageUtils.putByte(pageAddr, off, (byte)(val.getBoolean() ? 1 : 0));
-                break;
+                return size();
 
             case Value.BYTE:
                 PageUtils.putByte(pageAddr, off, val.getByte());
-                break;
+                return size();
 
             case Value.SHORT:
                 PageUtils.putShort(pageAddr, off, val.getShort());
-                break;
+                return size();
 
             case Value.INT:
                 PageUtils.putInt(pageAddr, off, val.getInt());
-                break;
+                return size();
 
             case Value.LONG:
                 PageUtils.putLong(pageAddr, off, val.getLong());
-                break;
+                return size();
+
+            case Value.STRING:
+                byte[] s;
+                if (val.getString().getBytes().length + 2 <= maxSize)
+                    s = val.getString().getBytes(CHARSET);
+                else
+                    s = toBytes(val.getString(), maxSize - 2);
+                PageUtils.putShort(pageAddr, off, (short)s.length);
+                PageUtils.putBytes(pageAddr, off + 2, s);
+                return s.length + 2;
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -190,34 +197,24 @@ public class FastIndexHelper {
     }
 
     /**
-     * @param buf Page buffer.
-     * @param off Offset.
-     * @param val Value.
+     * Convert String to byte[] with size limit, according to UTF-8 encoding.
+     * @param s String.
+     * @param limit Size limit.
+     * @return byte[].
      */
-    public void put(ByteBuffer buf, int off, Value val) {
-        switch (type) {
-            case Value.BOOLEAN:
-                buf.put(off, (byte)(val.getBoolean() ? 1 : 0));
-                break;
+    public static byte[] toBytes(String s, int limit) {
+        byte[] bytes = s.getBytes(CHARSET);
+        if (bytes.length <= limit)
+            return bytes;
 
-            case Value.BYTE:
-                buf.put(off, val.getByte());
-                break;
-
-            case Value.SHORT:
-                buf.putShort(off, val.getShort());
-                break;
-
-            case Value.INT:
-                buf.putInt(off, val.getInt());
-                break;
-
-            case Value.LONG:
-                buf.putLong(off, val.getLong());
-                break;
-
-            default:
-                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        for (int i = bytes.length - 1; i > 0; i--) {
+            if ((bytes[i] & 0xc0) != 0x80 && i <= limit) {
+                byte[] res = new byte[i];
+                System.arraycopy(bytes, 0, res, 0, i);
+                return res;
+            }
         }
+
+        return null;
     }
 }

@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.query.h2.database.FastIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
 
@@ -60,19 +60,21 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         H2TreeIndex currentIdx = H2TreeIndex.getCurrentIndex();
         assert currentIdx != null;
-        List<FastIndexHelper> fastIdx = currentIdx.fastIdxs();
+        List<InlineIndexHelper> inlineIdx = currentIdx.inlineIdxs();
 
-        assert fastIdx != null;
+        assert inlineIdx != null;
 
         int fieldOff = 0;
 
-        for (int i = 0; i < fastIdx.size(); i++) {
-            FastIndexHelper idx = fastIdx.get(i);
-            idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIdx()));
-            fieldOff += idx.size();
+        for (int i = 0; i < inlineIdx.size(); i++) {
+            InlineIndexHelper idx = inlineIdx.get(i);
+            int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIdx()), payloadSize - fieldOff);
+            if (size == 0)
+                break;
+            fieldOff += size;
         }
 
-        PageUtils.putLong(pageAddr, off + itemSize - 8, row0.link);
+        PageUtils.putLong(pageAddr, off + payloadSize, row0.link);
     }
 
     /** {@inheritDoc} */
