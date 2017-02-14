@@ -103,11 +103,10 @@ struct CacheTestSuiteFixture {
      */
     ~CacheTestSuiteFixture()
     {
-        Ignition::Stop(grid0.GetName(), true);
-        Ignition::Stop(grid1.GetName(), true);
-
         grid0 = Ignite();
         grid1 = Ignite();
+
+        Ignition::StopAll(true);
     }
 };
 
