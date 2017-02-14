@@ -279,15 +279,15 @@ class GridDhtPartitionSupplier {
 
                         if (sctx == null || sctx.entryIt == null) {
                             iter = cctx.offheap().rebalanceIterator(part, d.topologyVersion(),
-                                d.isClean(part) ? null : d.partitionCounter(part));
+                                d.isHistorical(part) ? d.partitionCounter(part) : null);
 
                             if (!iter.historical()) {
-                                assert !cctx.shared().database().persistenceEnabled() || d.isClean(part);
+                                assert !cctx.shared().database().persistenceEnabled() || !d.isHistorical(part);
 
                                 s.clean(part);
                             }
                             else {
-                                assert cctx.shared().database().persistenceEnabled() && !d.isClean(part);
+                                assert cctx.shared().database().persistenceEnabled() && d.isHistorical(part);
                             }
                         }
                         else

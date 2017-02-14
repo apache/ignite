@@ -326,7 +326,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             cctx.cacheId()));
                     }
 
-                    msg.addPartition(p, false);
+                    msg.addPartition(p, true);
                 }
                 else {
                     if (cctx.shared().database().persistenceEnabled()) {
@@ -379,7 +379,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                 cctx.cacheId()));
                         }
 
-                        msg.addPartition(p, true);
+                        msg.addPartition(p, false);
                     }
                 }
             }

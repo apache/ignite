@@ -646,7 +646,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
-        assert cctx.kernalContext().state().active();
+//        assert cctx.kernalContext().state().active();
 
         long reservations = state.get();
 
