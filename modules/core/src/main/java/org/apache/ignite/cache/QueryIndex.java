@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
@@ -31,6 +32,9 @@ public class QueryIndex implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final QueryIndexType DEFAULT_INDEX_TYPE = QueryIndexType.SORTED;
+
     /** Index name. */
     private String name;
 
@@ -38,11 +42,14 @@ public class QueryIndex implements Serializable {
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
-    private QueryIndexType type;
+    private QueryIndexType type = DEFAULT_INDEX_TYPE;
 
     /**
      * Creates an empty index. Should be populated via setters.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
+    @Deprecated
     public QueryIndex() {
         // Empty constructor.
     }
@@ -51,7 +58,10 @@ public class QueryIndex implements Serializable {
      * Creates single-field sorted ascending index.
      *
      * @param field Field name.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
+    @Deprecated
     public QueryIndex(String field) {
         this(field, QueryIndexType.SORTED, true);
     }
@@ -61,7 +71,10 @@ public class QueryIndex implements Serializable {
      *
      * @param field Field name.
      * @param asc Ascending flag.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
+    @Deprecated
     public QueryIndex(String field, boolean asc) {
         this(field, QueryIndexType.SORTED, asc);
     }
@@ -72,7 +85,10 @@ public class QueryIndex implements Serializable {
      * @param field Field name.
      * @param asc Ascending flag.
      * @param name Index name.
+     *
+     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
+    @Deprecated
     public QueryIndex(String field, boolean asc, String name) {
         this(field, QueryIndexType.SORTED, asc);
 
@@ -123,6 +139,16 @@ public class QueryIndex implements Serializable {
     }
 
     /**
+     * Creates index.
+     *
+     * @param type Index type.
+     * @param name Index name.
+     */
+    public QueryIndex(QueryIndexType type, String name) {
+        this.name = name;
+        this.type = type;
+    }
+    /**
      * Creates index for a collection of fields. If index is sorted, fields will be sorted in
      * ascending order.
      *
@@ -163,9 +189,12 @@ public class QueryIndex implements Serializable {
      * Sets index name.
      *
      * @param name Index name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public QueryIndex setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -181,9 +210,12 @@ public class QueryIndex implements Serializable {
      * Sets fields included in the index.
      *
      * @param fields Collection of index fields.
+     * @return {@code this} for chaining.
      */
-    public void setFields(LinkedHashMap<String, Boolean> fields) {
+    public QueryIndex setFields(LinkedHashMap<String, Boolean> fields) {
         this.fields = fields;
+
+        return this;
     }
 
     /**
@@ -199,12 +231,63 @@ public class QueryIndex implements Serializable {
      *
      * @param fields Collection of fields.
      * @param asc Ascending flag.
+     * @return {@code this} for chaining.
      */
-    public void setFieldNames(Collection<String> fields, boolean asc) {
+    public QueryIndex setFieldNames(Collection<String> fields, boolean asc) {
         this.fields = new LinkedHashMap<>();
 
         for (String field : fields)
             this.fields.put(field, asc);
+
+        return this;
+    }
+
+    /**
+     * Add fields to the index.
+     *
+     * @param field Field name.
+     * @param asc Ascending flag.
+     * @return {@code this} for chaining.
+     */
+    public QueryIndex addField(String field, boolean asc) {
+        if (fields == null)
+            this.fields = new LinkedHashMap<>();
+
+        this.fields.put(field, asc);
+
+        return this;
+    }
+
+    /**
+     * Add fields to the index.
+     *
+     * @param fields Collection of index fields.
+     * @return {@code this} for chaining.
+     */
+    public QueryIndex addFields(LinkedHashMap<String, Boolean> fields) {
+        if (fields == null)
+            this.fields = new LinkedHashMap<>(fields);
+        else
+            this.fields.putAll(fields);
+
+        return this;
+    }
+
+    /**
+     * Add fields to the index.
+     *
+     * @param fields Collection of index fields.
+     * @param asc Ascending flag.
+     * @return {@code this} for chaining.
+     */
+    public QueryIndex addFields(Collection<String> fields, boolean asc) {
+        if (fields == null)
+            this.fields = new LinkedHashMap<>(fields.size());
+
+        for (String field : fields)
+            this.fields.put(field, asc);
+
+        return this;
     }
 
     /**
@@ -221,6 +304,7 @@ public class QueryIndex implements Serializable {
      *
      * @param type Index type.
      */
+    @Deprecated
     public void setIndexType(QueryIndexType type) {
         this.type = type;
     }

@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2223,12 +2222,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryIndex();
-
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+                txtIdx = new QueryIndex(QueryIndexType.FULLTEXT, idxEntry.getKey());
 
                 txtIdx.setFieldNames(idx.fields(), true);
-                txtIdx.setName(idxEntry.getKey());
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -2236,9 +2232,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryIndex sortedIdx = new QueryIndex();
-
-                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                QueryIndex sortedIdx = new QueryIndex(
+                    idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL,
+                    idxEntry.getKey());
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 
@@ -2247,19 +2243,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 sortedIdx.setFields(fields);
 
-                sortedIdx.setName(idxEntry.getKey());
-
                 idxs.add(sortedIdx);
             }
         }
 
         if (desc.valueTextIndex()) {
             if (txtIdx == null) {
-                txtIdx = new QueryIndex();
+                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>(1);
 
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+                fields.put(_VAL, true);
 
-                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
+                txtIdx = new QueryIndex(fields, QueryIndexType.FULLTEXT);
             }
             else
                 txtIdx.getFields().put(_VAL, true);
@@ -2358,9 +2352,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
                 }
             }
 
@@ -2380,9 +2378,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
                 }
             }
         }

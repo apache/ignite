@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -201,5 +203,25 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
 
         assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
+    }
+
+    /**
+     *
+     */
+    public void testNestedFieldsHandling() {
+        IgniteCache<Integer, IgniteCacheUpdateSqlQuerySelfTest.AllTypes> p = ignite(0).cache("I2AT");
+
+        p.query(new SqlFieldsQuery("insert into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) " +
+            "values (1, ?, ?, ?, 'sss')") .setArgs(new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L),
+            new ArrayList<>(Arrays.asList(3L, 2L, 1L)), new IgniteCacheUpdateSqlQuerySelfTest.AllTypes(1L)));
+
+        IgniteCacheUpdateSqlQuerySelfTest.AllTypes res = p.get(1);
+
+        IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType resInner = new IgniteCacheUpdateSqlQuerySelfTest.AllTypes.InnerType(50L);
+
+        resInner.innerStrCol = "sss";
+        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+
+        assertEquals(resInner, res.innerTypeCol);
     }
 }

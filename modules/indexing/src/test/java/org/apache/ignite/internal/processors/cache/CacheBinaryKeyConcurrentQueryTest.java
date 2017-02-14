@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -239,7 +240,8 @@ public class CacheBinaryKeyConcurrentQueryTest extends GridCommonAbstractTest {
         qryEntity.addQueryField("id", Integer.class.getName(), null);
         qryEntity.addQueryField("val", Integer.class.getName(), null);
 
-        qryEntity.setIndexes(F.asList(new QueryIndex("id"), new QueryIndex("val")));
+        qryEntity.setIndexes(F.asList(new QueryIndex("id", QueryIndexType.SORTED, true),
+            new QueryIndex("val", QueryIndexType.SORTED, true)));
 
         ccfg.setQueryEntities(F.asList(qryEntity));
 

@@ -531,7 +531,7 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         qryEntity.setValueType(OPERATION);
         qryEntity.setKeyType(strCls);
         qryEntity.setFields(qryFields);
-        qryEntity.setIndexes(Arrays.asList(new QueryIndex(ID, true), new QueryIndex(DEPOSIT_ID, true)));
+        qryEntity.setIndexes(Arrays.asList(new QueryIndex(ID, QueryIndexType.SORTED, true), new QueryIndex(DEPOSIT_ID,QueryIndexType.SORTED, true)));
 
         depositHistCfg.setQueryEntities(Collections.singleton(qryEntity));
 
@@ -562,7 +562,7 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         qryEntity.setValueType(DEPOSIT);
         qryEntity.setKeyType(strCls);
         qryEntity.setFields(qryFields);
-        qryEntity.setIndexes(Collections.singleton(new QueryIndex(ID, false)));
+        qryEntity.setIndexes(Collections.singleton(new QueryIndex(ID, QueryIndexType.SORTED, false)));
 
         depositCfg.setQueryEntities(Collections.singleton(qryEntity));
         return depositCfg;
@@ -594,7 +594,7 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         grpIdx.put(SECONDNAME, false);
 
         qryEntity.setIndexes(Arrays.asList(
-            new QueryIndex(ID, true),
+            new QueryIndex(ID, QueryIndexType.SORTED, true),
             new QueryIndex(grpIdx, QueryIndexType.FULLTEXT)
         ));
 

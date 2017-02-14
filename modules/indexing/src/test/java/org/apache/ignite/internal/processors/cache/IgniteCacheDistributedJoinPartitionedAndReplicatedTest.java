@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -120,7 +121,8 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
             entity.addQueryField("name", String.class.getName(), null);
 
             if (idx)
-                entity.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("name")));
+                entity.setIndexes(F.asList(new QueryIndex("orgId", QueryIndexType.SORTED, true),
+                    new QueryIndex("name", QueryIndexType.SORTED, true)));
 
             ccfg.setQueryEntities(F.asList(entity));
 
@@ -136,7 +138,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
             entity.addQueryField("name", String.class.getName(), null);
 
             if (idx)
-                entity.setIndexes(F.asList(new QueryIndex("name")));
+                entity.setIndexes(F.asList(new QueryIndex("name", QueryIndexType.SORTED, true)));
 
             ccfg.setQueryEntities(F.asList(entity));
 
@@ -154,9 +156,9 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
             entity.addQueryField("name", String.class.getName(), null);
 
             if (idx) {
-                entity.setIndexes(F.asList(new QueryIndex("orgId"),
-                    new QueryIndex("personId"),
-                    new QueryIndex("name")));
+                entity.setIndexes(F.asList(new QueryIndex("orgId", QueryIndexType.SORTED, true),
+                    new QueryIndex("personId", QueryIndexType.SORTED, true),
+                    new QueryIndex("name", QueryIndexType.SORTED, true)));
             }
 
             ccfg.setQueryEntities(F.asList(entity));

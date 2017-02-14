@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 
@@ -38,12 +37,7 @@ public enum CacheType {
     /**
      * Internal replicated cache, should use separate thread pool.
      */
-    UTILITY(false, UTILITY_CACHE_POOL),
-
-    /**
-     * Internal marshaller cache, should use separate thread pool.
-     */
-    MARSHALLER(false, MARSH_CACHE_POOL);
+    UTILITY(false, UTILITY_CACHE_POOL);
 
     /** */
     private final boolean userCache;

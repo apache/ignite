@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Interop;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Impl
     /// Base class for interop targets.
     /// </summary>
     [SuppressMessage("ReSharper", "LocalVariableHidesMember")]
-    internal abstract class PlatformTarget
+    internal class PlatformTarget : IPlatformTarget
     {
         /** */
         protected const int False = 0;
@@ -76,7 +77,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        protected PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
+        public PlatformTarget(IUnmanagedTarget target, Marshaller marsh)
         {
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
@@ -910,6 +911,71 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return fut;
+        }
+
+        #endregion
+
+        #region IPlatformTarget
+
+        /** <inheritdoc /> */
+        public long InLongOutLong(int type, long val)
+        {
+            return DoOutInOp(type, val);
+        }
+
+        /** <inheritdoc /> */
+        public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return DoOutOp(type, writer => writeAction(writer));
+        }
+
+        /** <inheritdoc /> */
+        public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, 
+            Func<IBinaryRawReader, T> readAction)
+        {
+            return DoOutInOp(type, writeAction, stream => readAction(Marshaller.StartUnmarshal(stream)));
+        }
+
+        /** <inheritdoc /> */
+        public IPlatformTarget InStreamOutObject(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            return GetPlatformTarget(DoOutOpObject(type, writeAction));
+        }
+
+        /** <inheritdoc /> */
+        public unsafe T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, Action<IBinaryRawWriter> writeAction,
+            Func<IBinaryRawReader, IPlatformTarget, T> readAction)
+        {
+            return DoOutInOp(type, writeAction, (stream, obj) => readAction(Marshaller.StartUnmarshal(stream),
+                GetPlatformTarget(obj)), GetTargetPtr(arg));
+        }
+
+        /** <inheritdoc /> */
+        public T OutStream<T>(int type, Func<IBinaryRawReader, T> readAction)
+        {
+            return DoInOp(type, stream => readAction(Marshaller.StartUnmarshal(stream)));
+        }
+
+        /** <inheritdoc /> */
+        public IPlatformTarget OutObject(int type)
+        {
+            return GetPlatformTarget(DoOutOpObject(type));
+        }
+
+        /// <summary>
+        /// Gets the platform target.
+        /// </summary>
+        private IPlatformTarget GetPlatformTarget(IUnmanagedTarget target)
+        {
+            return target == null ? null : new PlatformTarget(target, Marshaller);
+        }
+
+        /// <summary>
+        /// Gets the target pointer.
+        /// </summary>
+        private static unsafe void* GetTargetPtr(IPlatformTarget target)
+        {
+            return target == null ? null : ((PlatformTarget) target).Target.Target;
         }
 
         #endregion

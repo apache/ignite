@@ -147,10 +147,10 @@ public class CacheClientBinaryQueryExample {
         employeeEntity.setFields(fields);
 
         employeeEntity.setIndexes(Arrays.asList(
-            new QueryIndex("name"),
-            new QueryIndex("salary"),
-            new QueryIndex("zip"),
-            new QueryIndex("organizationId"),
+            new QueryIndex("name", QueryIndexType.SORTED),
+            new QueryIndex("salary", QueryIndexType.SORTED),
+            new QueryIndex("zip", QueryIndexType.SORTED),
+            new QueryIndex("organizationId", QueryIndexType.SORTED),
             new QueryIndex("street", QueryIndexType.FULLTEXT)
         ));
 
@@ -176,7 +176,7 @@ public class CacheClientBinaryQueryExample {
         organizationEntity.setFields(fields);
 
         organizationEntity.setIndexes(Arrays.asList(
-            new QueryIndex("name")
+            new QueryIndex("name", QueryIndexType.SORTED)
         ));
 
         return organizationEntity;

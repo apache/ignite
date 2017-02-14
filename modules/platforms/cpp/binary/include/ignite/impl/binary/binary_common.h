@@ -62,6 +62,12 @@ namespace ignite
             /** Full header length. */
             const int32_t IGNITE_DFLT_HDR_LEN = 24;
 
+            /** Binary header length. */
+            const int32_t IGNITE_BINARY_HDR_LEN = 5;
+
+            /** Common header length. */
+            const int32_t IGNITE_COMMON_HDR_LEN = 1;
+
             /** Type: object. */
             const int8_t IGNITE_TYPE_OBJECT = IGNITE_HDR_FULL;
 

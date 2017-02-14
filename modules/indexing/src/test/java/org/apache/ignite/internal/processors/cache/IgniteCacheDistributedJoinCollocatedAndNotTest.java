@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -99,7 +100,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
             entity.setKeyType(Integer.class.getName());
             entity.setValueType(Organization.class.getName());
             entity.addQueryField("name", String.class.getName(), null);
-            entity.setIndexes(F.asList(new QueryIndex("name")));
+            entity.setIndexes(F.asList(new QueryIndex("name", QueryIndexType.SORTED, true)));
 
             ccfg.setQueryEntities(F.asList(entity));
 
@@ -114,7 +115,8 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
             entity.setValueType(Account.class.getName());
             entity.addQueryField("personId", Integer.class.getName(), null);
             entity.addQueryField("name", String.class.getName(), null);
-            entity.setIndexes(F.asList(new QueryIndex("personId"), new QueryIndex("name")));
+            entity.setIndexes(F.asList(new QueryIndex("personId", QueryIndexType.SORTED, true),
+                new QueryIndex("name", QueryIndexType.SORTED, true)));
 
             ccfg.setQueryEntities(F.asList(entity));
 
