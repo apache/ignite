@@ -978,7 +978,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Integer part = qry.partition();
 
         if (cctx.isLocal()) {
-            entryIter = cctx.local().iterator();
+            entryIter = cctx.local().allEntries().iterator();
         }
         else if (part == null) {
             GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -3461,7 +3461,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param locNode Local node.
          * @param heapOnly Heap only.
          */
-        private PeekValueExpiryAwareIterator(
+        PeekValueExpiryAwareIterator(
             Iterator<? extends GridCacheEntryEx> entryIter,
             ExpiryPolicy plc,
             AffinityTopologyVersion topVer,
