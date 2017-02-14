@@ -363,11 +363,9 @@ namespace ignite
                 /**
                  * Executes LocalLoadCache on all cache nodes.
                  *
-                 * @param predicate Optional predicate (may be null). If provided,
-                 *      will be used to filter values loaded from storage before
-                 *      they are put into cache.
+                 * @param err Error.
                  */
-                void LoadCache(void* predicate);
+                void LoadCache(IgniteError& err);
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)

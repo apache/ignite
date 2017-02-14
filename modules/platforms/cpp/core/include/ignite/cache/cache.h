@@ -30,17 +30,17 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/cache/query/continuous/continuous_query_handle.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/cache/cache_peek_mode.h>
+#include <ignite/cache/query/query_cursor.h>
+#include <ignite/cache/query/query_fields_cursor.h>
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/operations.h>
 
 namespace ignite
 {
@@ -57,6 +57,9 @@ namespace ignite
          * of this class instance will only create another reference to the same
          * underlying object. Underlying object released automatically once all
          * the instances are destructed.
+         *
+         * @tparam K Cache key type.
+         * @tparam V Cache value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -1458,14 +1461,14 @@ namespace ignite
 
             /**
              * Executes LocalLoadCache on all cache nodes.
-             *
-             * @param predicate Optional predicate (may be null). If provided,
-             *      will be used to filter values loaded from storage before
-             *      they are put into cache.
              */
-            void LoadCache(void* predicate)
+            void LoadCache()
             {
-                impl.Get()->LoadCache(predicate);
+                IgniteError err;
+
+                impl.Get()->LoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
         private:

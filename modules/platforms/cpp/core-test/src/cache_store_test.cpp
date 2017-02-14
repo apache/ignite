@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(LoadCacheNoPredicate)
 {
     cache::Cache<int32_t, Person> cache = GetCache();
 
-    cache.LoadCache(0);
+    cache.LoadCache();
 
     BOOST_CHECK(!cache.IsEmpty());
 
