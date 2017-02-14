@@ -145,6 +145,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
 
+    /** TTL for create operation. */
+    private final long createTtl;
+
     /** TTL for read operation. */
     private final long accessTtl;
 
@@ -164,6 +167,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore Skip store flag.
@@ -175,6 +179,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         boolean read,
         boolean retval,
         long timeout,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -189,6 +194,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
@@ -928,6 +934,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         inTx() && tx.syncMode() == FULL_SYNC,
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
+                                        read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
                                         skipStore,
                                         keepBinary,
@@ -1104,7 +1111,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /**
      * Locks given keys directly through dht cache.
-     *  @param keys Collection of keys.
+     * @param keys Collection of keys.
      * @param topVer Topology version to lock on.
      */
     private void lockLocally(
@@ -1123,6 +1130,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             read,
             retval,
             timeout,
+            createTtl,
             accessTtl,
             filter,
             skipStore,
