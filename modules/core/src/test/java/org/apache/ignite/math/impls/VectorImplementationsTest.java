@@ -45,16 +45,6 @@ public class VectorImplementationsTest {
     }
 
     /** */ @Test
-    public void isDenseTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isDense);
-    }
-
-    /** */ @Test
-    public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isSequentialAccess);
-    }
-
-    /** */ @Test
     public void getElementTest() {
         consumeSampleVectors((v, desc) -> new ElementsChecker(v, desc).assertCloseEnough(v));
     }
@@ -162,26 +152,6 @@ public class VectorImplementationsTest {
 
     }
 
-    /** */ @Test
-    public void getLookupCostTest() {
-        alwaysTrueAttributeTest(v -> v.getLookupCost() == 0);
-    }
-
-    /** */ @Test
-    public void isAddConstantTimeTest() {
-        alwaysTrueAttributeTest(DenseLocalOnHeapVector::isAddConstantTime);
-    }
-
-    /** */ @Test
-    public void clusterGroupTest() {
-        alwaysTrueAttributeTest(v -> v.clusterGroup() == null);
-    }
-
-    /** */ @Test
-    public void guidTest() {
-        alwaysTrueAttributeTest(v -> v.guid() != null);
-    }
-
     /** */
     private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
         consumeSampleVectors((v, desc) -> {
@@ -258,53 +228,6 @@ public class VectorImplementationsTest {
 
                 checker.assertCloseEnough(vecOperation.apply(v, val), ref);
             });
-    }
-
-    /** */
-    private void alwaysTrueAttributeTest(Predicate<DenseLocalOnHeapVector> pred) {
-        assertTrue("Default size for null args.",
-            pred.test(new DenseLocalOnHeapVector((Map<String, Object>)null)));
-
-        assertTrue("Size from args.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
-
-        final double[] test = new double[99];
-
-        assertTrue("Size from array in args.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("shallowCopy", false);
-            }})));
-
-        assertTrue("Size from array in args, shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("shallowCopy", true);
-            }})));
-
-        assertTrue("Default constructor.",
-            pred.test(new DenseLocalOnHeapVector()));
-
-        assertTrue("Null array shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(null, true)));
-
-        assertTrue("0 size shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[0], true)));
-
-        assertTrue("0 size.",
-            pred.test(new DenseLocalOnHeapVector(new double[0], false)));
-
-        assertTrue("1 size shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[1], true)));
-
-        assertTrue("1 size.",
-            pred.test(new DenseLocalOnHeapVector(new double[1], false)));
-
-        assertTrue("0 size default copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[0])));
-
-        assertTrue("1 size default copy",
-            pred.test(new DenseLocalOnHeapVector(new double[1])));
     }
 
     /** */

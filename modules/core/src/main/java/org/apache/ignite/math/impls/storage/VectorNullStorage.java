@@ -31,71 +31,68 @@ public final class VectorNullStorage implements VectorStorage {
     /** Unsupported operation. */
     private static final String UNSUPPORTED_OPERATION = "Unsupported vector operation.";
 
-    /** {@inheritDoc} */ @Override
-    public int size() {
+    /** {@inheritDoc} */
+    @Override public int size() {
         return 0;
     }
 
+    /** */
     public VectorNullStorage() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
-    
+
     /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public double get(int i) {
+    /** {@inheritDoc} */
+    @Override public double get(int i) {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public void set(int i, double v) {
+    /** {@inheritDoc} */
+    @Override public void set(int i, double v) {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public double[] data() {
+    /** {@inheritDoc} */
+    @Override public double[] data() {
         throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
-    /** {@inheritDoc} */ @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op.
     }
 
-    /** {@inheritDoc} */ @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
     }
 
-    /** {@inheritDoc} */ @Override
-    public boolean equals(Object obj) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
         return this.getClass() == obj.getClass();
     }
 }

@@ -44,7 +44,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param cp
      */
     private VectorStorage mkStorage(double[] arr, boolean cp) {
-        return new VectorArrayStorage(!cp ? arr : arr.clone());
+        return new VectorArrayStorage(!cp ? arr : (arr == null ? null : arr.clone()));
     }
 
     /**
@@ -104,8 +104,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return new DenseLocalOnHeapMatrix(rows, cols);
     }
 
