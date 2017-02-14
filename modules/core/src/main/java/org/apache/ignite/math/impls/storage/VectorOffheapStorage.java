@@ -36,7 +36,7 @@ public class VectorOffheapStorage implements VectorStorage {
     public VectorOffheapStorage(int size){
         this.size = size;
 
-        ptr = GridUnsafe.allocateMemory(pointerOffset(size));
+        ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class VectorOffheapStorage implements VectorStorage {
     }
 
     /**
-     * Pointer offset for specific index
+     * Pointer offset for specific index.
      *
      * @param i Offset index.
      */
