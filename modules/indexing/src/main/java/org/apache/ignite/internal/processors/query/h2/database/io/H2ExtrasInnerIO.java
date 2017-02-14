@@ -41,10 +41,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     /** */
     public static void register() {
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++)
-            PageIO.registerH2ExtraInner(
-                (short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1),
-                getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload)
-            );
+            PageIO.registerH2ExtraInner(getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload));
     }
 
     /** */

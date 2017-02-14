@@ -42,10 +42,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
     /** */
     public static void register() {
         for (short payload = 1; payload <= PageIO.MAX_PAYLOAD_SIZE; payload++)
-            PageIO.registerH2ExtraLeaf(
-                (short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1),
-                getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload)
-            );
+            PageIO.registerH2ExtraLeaf(getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload));
     }
 
     /** */
