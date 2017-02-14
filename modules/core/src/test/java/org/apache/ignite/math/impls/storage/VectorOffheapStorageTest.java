@@ -127,7 +127,7 @@ public class VectorOffheapStorageTest {
 
             objectInputStream.close();
 
-            assertEquals(VALUE_NOT_EQUALS, offheapVector, vectorOffheapStorage);
+            assertTrue(VALUE_NOT_EQUALS, offheapVector.equals(vectorOffheapStorage));
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         }
