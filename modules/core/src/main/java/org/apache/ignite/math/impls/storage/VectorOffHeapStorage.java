@@ -97,7 +97,6 @@ public class VectorOffHeapStorage implements VectorStorage {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(ptr);
-
         out.writeInt(size);
     }
 
@@ -105,7 +104,6 @@ public class VectorOffHeapStorage implements VectorStorage {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ptr = in.readLong();
-
         size = in.readInt();
     }
 

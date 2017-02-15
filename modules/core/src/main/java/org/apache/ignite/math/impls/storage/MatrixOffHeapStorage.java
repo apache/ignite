@@ -17,10 +17,9 @@
 
 package org.apache.ignite.math.impls.storage;
 
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.math.*;
 import java.io.*;
-import java.util.stream.IntStream;
 
 /**
  * TODO: add description.
@@ -49,11 +48,9 @@ public class MatrixOffHeapStorage implements MatrixStorage {
         this.rows = data.length;
         this.cols = data[0].length;
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
                 set(i,j,data[i][j]);
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -119,9 +116,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(ptr);
-
         out.writeInt(rows);
-
         out.writeInt(cols);
     }
 
@@ -129,9 +124,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ptr = in.readLong();
-
         rows = in.readInt();
-
         cols = in.readInt();
     }
 
