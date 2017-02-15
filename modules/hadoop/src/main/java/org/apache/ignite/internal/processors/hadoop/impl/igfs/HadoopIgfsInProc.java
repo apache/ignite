@@ -60,13 +60,13 @@ import static org.apache.ignite.IgniteState.STARTED;
  */
 public class HadoopIgfsInProc implements HadoopIgfsEx {
     /** Ignite client reference counters (node name, reference count). */
-    private static final Map<String, Integer> refCnts = new HashMap<>();
+    private static final Map<String, Integer> REF_CTRS = new HashMap<>();
 
     /** Reference count monitor. */
-    private static final Object refCntsMon = new Object();
+    private static final Object REF_CTR_MUX = new Object();
 
     /** Target IGFS. */
-    protected final IgfsEx igfs;
+    private final IgfsEx igfs;
 
     /** Buffer size. */
     private final int bufSize;
@@ -98,7 +98,6 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
         user = IgfsUtils.fixUserName(userName);
     }
 
-
     /**
      * Creates instance of the HadoopIgfsInProcWithIgniteRefsCount by IGFS name.
      *
@@ -108,7 +107,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not fount in the current VM.
      */
     public static HadoopIgfsInProc create(String igfsName, Log log, String userName) {
-        synchronized (refCntsMon) {
+        synchronized (REF_CTR_MUX) {
             for (Ignite ignite : Ignition.allGrids()) {
                 HadoopIgfsInProc delegate = findIgfsAndCreate(ignite, igfsName, log, userName);
 
@@ -142,7 +141,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
         String nodeName = cfg.getGridName();
 
-        synchronized (refCntsMon) {
+        synchronized (REF_CTR_MUX) {
             T2<Ignite, Boolean> startRes = IgnitionEx.getOrStart(cfg);
 
             boolean newNodeStarted = startRes.get2();
@@ -151,16 +150,16 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
 
             if (newNodeStarted) {
-                assert !refCnts.containsKey(nodeName) : "The ignite instance already exists in the ref count map";
+                assert !REF_CTRS.containsKey(nodeName) : "The ignite instance already exists in the ref count map";
 
-                refCnts.put(nodeName, 0);
+                REF_CTRS.put(nodeName, 0);
             }
 
             HadoopIgfsInProc hadoop = findIgfsAndCreate(startRes.get1(), igfsName, log, userName);
 
             if (hadoop == null) {
                 if (newNodeStarted) {
-                    refCnts.remove(nodeName);
+                    REF_CTRS.remove(nodeName);
 
                     Ignition.stop(nodeName, true);
                 }
@@ -190,10 +189,10 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
             try {
                 for (IgniteFileSystem fs : ignite.fileSystems()) {
                     if (F.eq(fs.name(), igfsName)) {
-                        Integer cnt = refCnts.get(ignite.name());
+                        Integer cnt = REF_CTRS.get(ignite.name());
 
                         if (cnt != null)
-                            refCnts.put(ignite.name(), cnt + 1);
+                            REF_CTRS.put(ignite.name(), cnt + 1);
 
                         return new HadoopIgfsInProc((IgfsEx)fs, log, userName);
                     }
@@ -241,16 +240,16 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
         String gridName = igfs.context().kernalContext().grid().name();
 
-        synchronized (refCntsMon) {
-            Integer cnt = refCnts.get(gridName);
+        synchronized (REF_CTR_MUX) {
+            Integer cnt = REF_CTRS.get(gridName);
 
             if (cnt != null) {
                 // The node was created by this HadoopIgfsWrapper.
                 // The node must be stopped when there are not opened filesystems that are used one.
                 if (cnt > 1)
-                    refCnts.put(gridName, cnt - 1);
+                    REF_CTRS.put(gridName, cnt - 1);
                 else {
-                    refCnts.remove(gridName);
+                    REF_CTRS.remove(gridName);
 
                     G.stop(gridName, false);
                 }
