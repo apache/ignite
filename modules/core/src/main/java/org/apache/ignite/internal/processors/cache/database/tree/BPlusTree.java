@@ -38,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
@@ -668,8 +669,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             io.initRoot(pageAddr, rootId, pageSize());
 
-            if (needWalDeltaRecord(meta))
-                wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+            if (needWalDeltaRecord(meta)) {
+                int inlineSize = io.getInlineSize(pageAddr);
+                if (inlineSize > 0)
+                    wal.log(new MetaPageInitRootInlineRecord(cacheId, meta.id(), rootId, inlineSize));
+                else
+                    wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+            }
 
             assert io.getRootLevel(pageAddr) == 0;
             assert io.getFirstPageId(pageAddr, 0) == rootId;
