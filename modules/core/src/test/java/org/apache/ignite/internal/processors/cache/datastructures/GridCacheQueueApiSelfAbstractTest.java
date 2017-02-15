@@ -25,6 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheMode;
@@ -38,9 +40,11 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Queue basic tests.
@@ -768,6 +772,60 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
             });
 
             assertEquals(100, res.intValue());
+        }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            String queueName = UUID.randomUUID().toString();
+
+            IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                for (int i = 0; i < QUEUE_CAPACITY; i++)
+                    queue.put("Item-" + i);
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(QUEUE_CAPACITY, queue.size());
+
+            queue.remove("Item-1");
+
+            assertEquals(QUEUE_CAPACITY - 1, queue.size());
+
+            assertEquals("Item-0", queue.peek());
+            assertEquals("Item-0", queue.poll());
+            assertEquals("Item-2", queue.poll());
+
+            assertEquals(0, queue.size());
+
+            queue.clear();
+
+            assertTrue(queue.isEmpty());
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
         }
     }
 

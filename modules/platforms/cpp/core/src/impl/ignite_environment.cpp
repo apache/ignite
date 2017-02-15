@@ -21,6 +21,8 @@
 #include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/binary/binary.h"
 #include "ignite/impl/binary/binary_type_updater_impl.h"
+#include "ignite/impl/module_manager.h"
+#include "ignite/ignite_binding.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -29,15 +31,16 @@ using namespace ignite::impl::binary;
 using namespace ignite::binary;
 using namespace ignite::impl::cache::query::continuous;
 
-namespace ignite 
+namespace ignite
 {
     namespace impl
     {
         /**
-        * Callback codes.
-        */
+         * Callback codes.
+         */
         enum CallbackOp
         {
+            CACHE_INVOKE = 8,
             CONTINUOUS_QUERY_LISTENER_APPLY = 18,
             CONTINUOUS_QUERY_FILTER_RELEASE = 21,
             REALLOC = 36,
@@ -77,6 +80,15 @@ namespace ignite
                 case CONTINUOUS_QUERY_FILTER_RELEASE:
                 {
                     // No-op.
+                    break;
+                }
+
+                case CACHE_INVOKE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->CacheInvokeCallback(mem);
+
                     break;
                 }
 
@@ -131,24 +143,33 @@ namespace ignite
             return 0;
         }
 
-        IgniteEnvironment::IgniteEnvironment() :
+        IgniteEnvironment::IgniteEnvironment(const IgniteConfiguration& cfg) :
+            cfg(new IgniteConfiguration(cfg)),
             ctx(SharedPointer<JniContext>()),
-            latch(new SingleLatch),
+            latch(),
             name(0),
             proc(),
+            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP),
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
-            registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP)
+            binding(new IgniteBindingImpl()),
+            moduleMgr(new ModuleManager(GetBindingContext()))
         {
             // No-op.
         }
 
         IgniteEnvironment::~IgniteEnvironment()
         {
-            delete latch;
-            delete name;
-            delete metaMgr;
+            delete[] name;
+
             delete metaUpdater;
+            delete metaMgr;
+            delete cfg;
+        }
+
+        const IgniteConfiguration& IgniteEnvironment::GetConfiguration() const
+        {
+            return *cfg;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -172,16 +193,23 @@ namespace ignite
 
         void IgniteEnvironment::Initialize()
         {
-            latch->CountDown();
+            latch.CountDown();
 
             jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
-
             metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
+
+            common::dynamic::Module currentModule = common::dynamic::GetCurrent();
+            moduleMgr.Get()->RegisterModule(currentModule);
         }
 
         const char* IgniteEnvironment::InstanceName() const
         {
             return name;
+        }
+
+        void* IgniteEnvironment::GetProcessor()
+        {
+            return (void*)proc.Get();
         }
 
         JniContext* IgniteEnvironment::Context()
@@ -233,6 +261,16 @@ namespace ignite
             return metaUpdater;
         }
 
+        IgniteBinding IgniteEnvironment::GetBinding() const
+        {
+            return IgniteBinding(binding);
+        }
+
+        IgniteBindingContext IgniteEnvironment::GetBindingContext() const
+        {
+            return IgniteBindingContext(*cfg, GetBinding());
+        }
+
         void IgniteEnvironment::ProcessorReleaseStart()
         {
             if (proc.Get())
@@ -280,10 +318,38 @@ namespace ignite
                 contQry->ReadAndProcessEvents(rawReader);
             }
         }
+
+        void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
+        {
+            if (!binding.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteBinding is not initialized.");
+
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+
+            InteropOutputStream outStream(mem.Get());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            bool local = reader.ReadBool();
+
+            if (local)
+                throw IgniteError(IgniteError::IGNITE_ERR_UNSUPPORTED_OPERATION, "Local invokation is not supported.");
+
+            BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
+            BinaryObjectImpl binProc = binProcHolder.GetField(0);
+
+            int64_t procId = binProc.GetTypeId();
+
+            bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
+
+            if (!invoked)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ entry processor is not registered on the node (did you compile your program without -rdynamic?).",
+                    "procId", procId);
+            }
+
+            outStream.Synchronize();
+        }
     }
 }
-
-
-
-
-
