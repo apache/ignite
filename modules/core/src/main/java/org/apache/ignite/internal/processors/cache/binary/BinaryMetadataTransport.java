@@ -16,32 +16,35 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
@@ -80,12 +83,15 @@ final class BinaryMetadataTransport {
     /** */
     private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
 
+    /** */
+    private final List<BinaryMetadataUpdatedListener> binaryUpdatedLsnrs = new CopyOnWriteArrayList<>();
+
     /**
      * @param metaLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
      */
-    BinaryMetadataTransport(ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache, GridKernalContext ctx, IgniteLogger log) {
+    BinaryMetadataTransport(ConcurrentMap<Integer, BinaryMetadataHolder> metaLocCache, final GridKernalContext ctx, IgniteLogger log) {
         this.metaLocCache = metaLocCache;
 
         this.ctx = ctx;
@@ -108,6 +114,27 @@ final class BinaryMetadataTransport {
             ioMgr.addMessageListener(GridTopic.TOPIC_METADATA_REQ, new MetadataResponseListener());
         else
             ioMgr.addMessageListener(GridTopic.TOPIC_METADATA_REQ, new MetadataRequestListener(ioMgr));
+
+        if (clientNode)
+            ctx.event().addLocalEventListener(new GridLocalEventListener() {
+                @Override public void onEvent(Event evt) {
+                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+
+                    if (!ctx.isStopping()) {
+                        for (ClientMetadataRequestFuture fut : clientReqSyncMap.values())
+                            fut.onNodeLeft(evt0.eventNode().id());
+                    }
+                }
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /**
+     * Adds BinaryMetadata updates {@link BinaryMetadataUpdatedListener listener} to transport.
+     *
+     * @param lsnr Listener.
+     */
+    void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr) {
+        binaryUpdatedLsnrs.add(lsnr);
     }
 
     /**
@@ -377,6 +404,9 @@ final class BinaryMetadataTransport {
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
             }
 
+            for (BinaryMetadataUpdatedListener lsnr : binaryUpdatedLsnrs)
+                lsnr.binaryMetadataUpdated(holder.metadata());
+
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
             if (fut != null)
@@ -502,18 +532,20 @@ final class BinaryMetadataTransport {
 
             MetadataResponseMessage resp = new MetadataResponseMessage(typeId);
 
-            if (metaHolder != null) {
-                byte[] binMetaBytes = null;
+            byte[] binMetaBytes = null;
 
+            if (metaHolder != null) {
                 try {
                     binMetaBytes = U.marshal(ctx, metaHolder);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal binary metadata for [typeId: " + typeId + "]", e);
-                }
 
-                resp.binaryMetadataBytes(binMetaBytes);
+                    resp.markErrorOnRequest();
+                }
             }
+
+            resp.binaryMetadataBytes(binMetaBytes);
 
             try {
                 ioMgr.send(nodeId, GridTopic.TOPIC_METADATA_REQ, resp, SYSTEM_POOL);
@@ -536,6 +568,7 @@ final class BinaryMetadataTransport {
             MetadataResponseMessage msg0 = (MetadataResponseMessage) msg;
 
             int typeId = msg0.typeId();
+
             byte[] binMetaBytes = msg0.binaryMetadataBytes();
 
             ClientMetadataRequestFuture fut = clientReqSyncMap.get(typeId);
@@ -543,22 +576,30 @@ final class BinaryMetadataTransport {
             if (fut == null)
                 return;
 
+            if (msg0.metadataNotFound()) {
+                fut.onDone(MetadataUpdateResult.createSuccessfulResult());
+
+                return;
+            }
+
             try {
                 BinaryMetadataHolder newHolder = U.unmarshal(ctx, binMetaBytes, U.resolveClassLoader(ctx.config()));
 
-                BinaryMetadataHolder oldHolder;
+                BinaryMetadataHolder oldHolder = metaLocCache.putIfAbsent(typeId, newHolder);
 
-                do {
-                    oldHolder = metaLocCache.get(typeId);
+                if (oldHolder != null) {
+                    do {
+                        oldHolder = metaLocCache.get(typeId);
 
-                    if (obsoleteUpdate(
-                            oldHolder.pendingVersion(),
-                            oldHolder.acceptedVersion(),
-                            newHolder.pendingVersion(),
-                            newHolder.acceptedVersion()))
-                        break;
+                        if (oldHolder != null && obsoleteUpdate(
+                                oldHolder.pendingVersion(),
+                                oldHolder.acceptedVersion(),
+                                newHolder.pendingVersion(),
+                                newHolder.acceptedVersion()))
+                            break;
+                    }
+                    while (!metaLocCache.replace(typeId, oldHolder, newHolder));
                 }
-                while (!metaLocCache.replace(typeId, oldHolder, newHolder));
 
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
             }

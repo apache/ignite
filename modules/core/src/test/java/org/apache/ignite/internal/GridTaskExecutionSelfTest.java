@@ -85,6 +85,8 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobIdCollision() throws Exception {
+        fail("Test refactoring is needed: https://issues.apache.org/jira/browse/IGNITE-4706");
+
         long locId = IgniteUuid.lastLocalId();
 
         ArrayList<IgniteFuture<Object>> futs = new ArrayList<>(2016);

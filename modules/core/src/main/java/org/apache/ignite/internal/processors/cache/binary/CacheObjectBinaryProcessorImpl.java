@@ -222,6 +222,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
     }
 
+    /**
+     * @param lsnr Listener.
+     */
+    public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr) {
+        if (transport != null)
+            transport.addBinaryMetadataUpdateListener(lsnr);
+    }
+
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         if (ctx.clientNode())
@@ -441,8 +449,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-            //need to propose mergedMeta here to the grid and wait for the accepted response back
-
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
 
             assert res != null;
@@ -494,8 +500,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Nullable @Override public BinaryType metadata(final int typeId, final int schemaId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
-        if (holder != null) {
-            if (ctx.clientNode() && !holder.metadata().hasSchema(schemaId)) {
+        if (ctx.clientNode()) {
+            if (holder == null || (holder != null && !holder.metadata().hasSchema(schemaId))) {
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
 
@@ -505,7 +511,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     // No-op.
                 }
             }
-
+        }
+        else {
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,
@@ -861,7 +868,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             for (Map.Entry<Integer, BinaryMetadataHolder> e : receivedData.entrySet()) {
                 BinaryMetadataHolder holder = e.getValue();
 
-                metadataLocCache.put(e.getKey(), new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), holder.acceptedVersion()));
+                metadataLocCache.put(e.getKey(), new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), holder.pendingVersion()));
             }
         }
     }

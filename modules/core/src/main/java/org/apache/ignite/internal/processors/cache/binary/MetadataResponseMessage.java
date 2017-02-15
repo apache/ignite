@@ -36,6 +36,9 @@ public class MetadataResponseMessage implements Message {
     private byte[] binaryMetadataBytes;
 
     /** */
+    private ClientResponseStatus status;
+
+    /** */
     public MetadataResponseMessage() {
         // No-op.
     }
@@ -66,6 +69,12 @@ public class MetadataResponseMessage implements Message {
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeInt("status", status.ordinal()))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeByteArray("binMetaBytes", binaryMetadataBytes))
                     return false;
 
@@ -92,6 +101,14 @@ public class MetadataResponseMessage implements Message {
                 reader.incrementState();
 
             case 1:
+                status = ClientResponseStatus.values()[reader.readInt("status")];
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 binaryMetadataBytes = reader.readByteArray("binMetaBytes");
 
                 if (!reader.isLastRead())
@@ -108,19 +125,32 @@ public class MetadataResponseMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+
     }
 
     /**
-     * @param binaryMetadataBytes Binary metadata bytes.
+     * @param bytes Binary metadata bytes.
      */
-    void binaryMetadataBytes(byte[] binaryMetadataBytes) {
-        this.binaryMetadataBytes = binaryMetadataBytes;
+    void binaryMetadataBytes(byte[] bytes) {
+        if (bytes != null)
+            status = ClientResponseStatus.METADATA_FOUND;
+        else
+            status = ClientResponseStatus.METADATA_NOT_FOUND;
+
+        binaryMetadataBytes = bytes;
+    }
+
+    /**
+     * Marks message if any exception happened during preparing response.
+     */
+    void markErrorOnRequest() {
+        status = ClientResponseStatus.ERROR;
     }
 
     /**
@@ -135,6 +165,27 @@ public class MetadataResponseMessage implements Message {
      */
     byte[] binaryMetadataBytes() {
         return binaryMetadataBytes;
+    }
+
+    /**
+     * @return {@code true} if metadata was not found on server node replied with the response.
+     */
+    boolean metadataNotFound() {
+        return status == ClientResponseStatus.METADATA_NOT_FOUND;
+    }
+
+    /**
+     * Response statuses enum.
+     */
+    private enum ClientResponseStatus {
+        /** */
+        METADATA_FOUND,
+
+        /** */
+        METADATA_NOT_FOUND,
+
+        /** */
+        ERROR
     }
 
     /** {@inheritDoc} */

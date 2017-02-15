@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -124,7 +125,28 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
                                     + typeId + "]")));
     }
 
+    /**
+     * If left node is the one latest metadata request was sent to,
+     * request is sent again to the next node in topology.
+     *
+     * @param leftNodeId ID of left node.
+     */
+    void onNodeLeft(UUID leftNodeId) {
+        boolean reqAgain = false;
 
+        synchronized (this) {
+            if (pendingNode != null && pendingNode.id().equals(leftNodeId)) {
+                aliveSrvNodes.remove(pendingNode);
+
+                pendingNode = null;
+
+                reqAgain = true;
+            }
+        }
+
+        if (reqAgain)
+            requestMetadata();
+    }
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable MetadataUpdateResult res, @Nullable Throwable err) {

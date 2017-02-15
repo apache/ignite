@@ -157,6 +157,10 @@ public class BinaryMetadata implements Externalizable {
         return schemas != null ? schemas : Collections.<BinarySchema>emptyList();
     }
 
+    /**
+     * @param schemaId Schema ID.
+     * @return {@code true} if <b>BinaryMetadata</b> instance has schema with ID specified, {@code false} otherwise.
+     */
     public boolean hasSchema(int schemaId) {
         return schemaIds.contains(schemaId);
     }

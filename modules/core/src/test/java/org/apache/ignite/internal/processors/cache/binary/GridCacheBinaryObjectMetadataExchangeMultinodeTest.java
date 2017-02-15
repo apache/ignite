@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,11 +28,14 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +45,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
+import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,6 +73,9 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /** */
     private static final int BINARY_TYPE_ID = 708045005;
 
+    /** */
+    private static final AtomicInteger metadataReqsCounter = new AtomicInteger(0);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -81,9 +90,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             });
         }
 
-        cfg.setPeerClassLoadingEnabled(false);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -96,60 +103,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * Hook object intervenes to handling discovery message
-     * and thus allows to make assertions or other actions like skipping certain discovery messages.
-     */
-    private static class DiscoveryHook {
-        /**
-         * @param msg Message.
-         */
-        boolean handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-            return true;
-        }
-
-        /**
-         * @param ignite Ignite.
-         */
-        void ignite(IgniteEx ignite) {
-            // No-op.
-        }
-    }
-
-    /**
-     * Injects {@link DiscoveryHook} into handling logic.
-     */
-    private static final class DiscoverySpiListenerWrapper implements DiscoverySpiListener {
-        /** */
-        private final DiscoverySpiListener delegate;
-
-        /** */
-        private final DiscoveryHook hook;
-
-        /**
-         * @param delegate Delegate.
-         * @param hook Hook.
-         */
-        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
-            this.hook = hook;
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
-            if (hook.handleDiscoveryMessage(spiCustomMsg))
-                delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
-        }
-
-        /**
-         * @param delegate Delegate.
-         * @param discoveryHook Discovery hook.
-         */
-        static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
-            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
-        }
     }
 
     /**
@@ -198,7 +151,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     public void testReadRequestBlockedOnUpdatingMetadata() throws Exception {
         applyDiscoveryHook = true;
         discoveryHook = new DiscoveryHook() {
-            @Override public boolean handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
@@ -211,8 +164,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                             // No-op.
                         }
                 }
-
-                return true;
             }
         };
 
@@ -228,7 +179,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         discoveryHook = new DiscoveryHook() {
             private volatile IgniteEx ignite;
 
-            @Override public boolean handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
@@ -257,8 +208,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
                         }
                     }
                 }
-
-                return true;
             }
 
             @Override public void ignite(IgniteEx ignite) {
@@ -352,27 +301,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         }).get();
 
-        clientMode = true;
-        applyDiscoveryHook = true;
-        discoveryHook = new DiscoveryHook() {
-            @Override boolean handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                        : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
-
-                if (customMsg instanceof MetadataUpdateProposedMessage) {
-                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
-                        return false;
-                }
-                else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
-                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
-                        return false;
-                }
-
-                return true;
-            }
-        };
-
-        final Ignite client = startGrid("client");
+        final Ignite client = startDeafClient("client");
 
         ClusterGroup clientGrp = client.cluster().forClients();
 
@@ -391,6 +320,107 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         });
 
         assertEquals(strVal, res);
+    }
+
+    /**
+     * Verifies that client resends request for up-to-date metadata in case of failure on server received first request.
+     */
+    public void testClientRequestsUpToDateMetadataOneNodeDies() throws Exception {
+        final Ignite srv0 = startGrid(0);
+        replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv0, "ctx")).io(), 0);
+
+        final Ignite srv1 = startGrid(1);
+        replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv1, "ctx")).io());
+
+        final Ignite srv2 = startGrid(2);
+        replaceWithCountingMappingRequestListener(((GridKernalContext)U.field(srv2, "ctx")).io());
+
+        final Ignite client = startDeafClient("client");
+
+        ClusterGroup clientGrp = client.cluster().forClients();
+
+        srv0.executorService().submit(new Runnable() {
+            @Override public void run() {
+                addStringField(srv0, "f2", "strVal101", 0);
+            }
+        }).get();
+
+        client.compute(clientGrp).call(new IgniteCallable<String>() {
+            @Override public String call() throws Exception {
+                return ((BinaryObject)client.cache(null).withKeepBinary().get(0)).field("f2");
+            }
+        });
+
+        assertEquals(metadataReqsCounter.get(), 2);
+    }
+
+    /**
+     * Starts client node that skips <b>MetadataUpdateProposedMessage</b> and <b>MetadataUpdateAcceptedMessage</b>
+     * messages.
+     *
+     * @param clientName name of client node.
+     */
+    private Ignite startDeafClient(String clientName) throws Exception {
+        clientMode = true;
+        applyDiscoveryHook = true;
+        discoveryHook = new DiscoveryHook() {
+            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+                DiscoveryCustomMessage customMsg = msg == null ? null
+                        : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
+
+                if (customMsg instanceof MetadataUpdateProposedMessage) {
+                    if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                        GridTestUtils.setFieldValue(customMsg, "typeId", 1);
+                }
+                else if (customMsg instanceof MetadataUpdateAcceptedMessage) {
+                    if (((MetadataUpdateAcceptedMessage) customMsg).typeId() == BINARY_TYPE_ID)
+                        GridTestUtils.setFieldValue(customMsg, "typeId", 1);
+                }
+            }
+        };
+
+        Ignite client = startGrid(clientName);
+
+        clientMode = false;
+        applyDiscoveryHook = false;
+
+        return client;
+    }
+
+    /**
+     *
+     */
+    private void replaceWithStoppingMappingRequestListener(GridIoManager ioMgr, final int nodeIdToStop) {
+        ioMgr.removeMessageListener(GridTopic.TOPIC_METADATA_REQ);
+
+        ioMgr.addMessageListener(GridTopic.TOPIC_METADATA_REQ, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        metadataReqsCounter.incrementAndGet();
+                        stopGrid(nodeIdToStop, true);
+                    }
+                }).start();
+            }
+        });
+    }
+
+    /**
+     *
+     */
+    private void replaceWithCountingMappingRequestListener(GridIoManager ioMgr) {
+        GridMessageListener[] lsnrs = U.field(ioMgr, "sysLsnrs");
+
+        final GridMessageListener delegate = lsnrs[GridTopic.TOPIC_METADATA_REQ.ordinal()];
+
+        GridMessageListener wrapper = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                metadataReqsCounter.incrementAndGet();
+                delegate.onMessage(nodeId, msg);
+            }
+        };
+
+        lsnrs[GridTopic.TOPIC_METADATA_REQ.ordinal()] = wrapper;
     }
 
     /**

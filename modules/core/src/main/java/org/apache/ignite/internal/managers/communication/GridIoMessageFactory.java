@@ -620,16 +620,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 80:
-                msg = new MetadataRequestMessage();
-
-                break;
-
-            case 81:
-                msg = new MetadataResponseMessage();
-
-                break;
-
             case 78:
                 msg = new MissingMappingRequestMessage();
 
@@ -637,6 +627,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 79:
                 msg = new MissingMappingResponseMessage();
+
+                break;
+
+            case 80:
+                msg = new MetadataRequestMessage();
+
+                break;
+
+            case 81:
+                msg = new MetadataResponseMessage();
 
                 break;
 

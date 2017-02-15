@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataUpdateAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
+public class MetadataUpdateAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
