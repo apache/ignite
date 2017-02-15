@@ -1191,7 +1191,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(it.next().getKey());
 
-                    final GridCacheEntryEx entryEx = cctx.cache().peekEx(key);
+                    final GridCacheEntryEx entryEx = cctx.cache().entryEx(key);
 
                     return entryEx;
                 }
