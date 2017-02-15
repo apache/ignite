@@ -51,6 +51,7 @@ public class IgniteDbMemoryLeakIndexedTest extends IgniteDbMemoryLeakAbstractTes
     }
 
     @Override
+    // TODO: move test to module ignite-indexing.
     protected boolean indexingEnabled() {
         return true;
     }
@@ -63,6 +64,8 @@ public class IgniteDbMemoryLeakIndexedTest extends IgniteDbMemoryLeakAbstractTes
             DbKey key = new DbKey(rnd.nextInt(200_000));
 
             DbValue v0 = new DbValue(key.val, "test-value-" + rnd.nextInt(200), rnd.nextInt(500));
+
+            // TODO: also execute sql queries.
 
             switch (rnd.nextInt(3)) {
                 case 0:

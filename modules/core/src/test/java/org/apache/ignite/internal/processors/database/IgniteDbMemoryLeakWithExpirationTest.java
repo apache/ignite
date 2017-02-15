@@ -34,7 +34,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *
  */
 public class IgniteDbMemoryLeakWithExpirationTest extends IgniteDbMemoryLeakAbstractTest {
-
+    /** */
     private static final ExpiryPolicy EXPIRY = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 10L));
 
     @Override

@@ -27,10 +27,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * TODO: fix javadoc warnings, code style.
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
-
+    // TODO: take duration from system property.
     /** Test duration in seconds*/
     protected abstract int duration();
 
@@ -44,16 +44,18 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
     /** */
     public void testMemoryLeak() throws Exception {
+        // TODO: take PageMemory max size is the same as we configured.
 
         final long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(duration());
 
-        int tasksCount = Runtime.getRuntime().availableProcessors() * 4;
+        // TODO: use threads instead of compute or make sure there are enough threads in pool.
+        int tasksCnt = Runtime.getRuntime().availableProcessors() * 4;
 
         IgniteCompute compute = grid(0).compute().withAsync();
 
-        ComputeTaskFuture[] futs = new ComputeTaskFuture[tasksCount];
+        ComputeTaskFuture[] futs = new ComputeTaskFuture[tasksCnt];
 
-        for (int i = 0; i < tasksCount; i++) {
+        for (int i = 0; i < tasksCnt; i++) {
             compute.run(new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ig;
@@ -75,9 +77,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
             futs[i] = compute.future();
         }
 
-        for (ComputeTaskFuture fut : futs) {
+        for (ComputeTaskFuture fut : futs)
             fut.get();
-        }
     }
 
     protected void check(IgniteEx ig) {}

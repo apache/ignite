@@ -29,9 +29,8 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  */
 public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
-
-    @Override
-    protected int duration() {
+    /** {@inheritDoc} */
+    @Override protected int duration() {
         return 300;
     }
 
@@ -64,12 +63,17 @@ public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
 
             DbValue v0 = new DbValue(key.val, "test-value-" + rnd.nextInt(200), rnd.nextInt(500));
 
+            // TODO: also execute scan query.
+
             switch (rnd.nextInt(3)) {
                 case 0:
                     cache.getAndPut(key, v0);
+                    break;
+
                 case 1:
                     cache.get(key);
                     break;
+
                 case 2:
                     cache.getAndRemove(key);
             }

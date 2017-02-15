@@ -47,6 +47,7 @@ public class IgniteDbMemoryLeakLargePagesTest extends IgniteDbMemoryLeakAbstract
 
     @Override
     protected void configure(MemoryConfiguration mCfg) {
+        // TODO: understand why such overhead with large pages.
         mCfg.setPageCacheSize(100 * 1024 * 1024);
     }
 
@@ -60,6 +61,7 @@ public class IgniteDbMemoryLeakLargePagesTest extends IgniteDbMemoryLeakAbstract
         return true;
     }
 
+    // TODO: avoid copy/paste.
     protected void operation(IgniteEx ig){
         IgniteCache<Object, Object> cache = ig.cache("non-primitive");
         Random rnd = ThreadLocalRandom.current();
