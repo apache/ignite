@@ -3533,7 +3533,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 try {
                     if(!cctx.isSwapOrOffheapEnabled()) {
-                        val = !entry.obsolete() ? entry.rawGet() :
+                        val = !entry.obsolete() ? entry.peek(true, true, true, expiryPlc) :
                             cctx.cache().entryEx(key).peek(true, true, true, expiryPlc);
                     }
                     else
