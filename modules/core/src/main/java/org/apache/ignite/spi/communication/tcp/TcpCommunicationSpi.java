@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -1243,6 +1245,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets maximum idle connection timeout upon which a connection
      * to client will be closed.
      * <p>
+     * If not provided, default value is {@link #DFLT_IDLE_CONN_TIMEOUT}.
      * If not provided, default value is {@link #DFLT_IDLE_CONN_TIMEOUT}.
      *
      * @param idleConnTimeout Maximum idle connection time.
@@ -2749,22 +2752,48 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         LinkedHashSet<InetSocketAddress> addrs;
 
+        boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
+        boolean sameContainer = U.sameVirtualMacs(getSpiContext().localNode(), node);
+
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
             List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
 
-            boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
-
-            Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
+            Collections.sort(addrs0, U.inetAddressesComparator(sameHost, sameContainer));
 
             addrs = new LinkedHashSet<>(addrs0);
         }
         else
             addrs = new LinkedHashSet<>();
 
-        // Then on mapped external addresses.
+        // Then add mapped external addresses.
         if (isExtAddrsExist)
-            addrs.addAll(extAddrs);
+            if (sameHost && sameContainer) {
+                LinkedHashSet<InetSocketAddress> allAddrs = new LinkedHashSet<>();
+                boolean extAdded = false;
+
+                for (InetSocketAddress addr : addrs) {
+                    NetworkInterface ifc = null;
+
+                    try {
+                        ifc = NetworkInterface.getByInetAddress(addr.getAddress());
+                    }
+                    catch (SocketException ignored) {
+                        //No-op.
+                    }
+
+                    if ((addr.getAddress().isLoopbackAddress() || (ifc != null && ifc.isVirtual())) && !extAdded) {
+                        allAddrs.addAll(extAddrs);
+                        extAdded = true;
+                    }
+
+                    allAddrs.add(addr);
+                }
+
+                addrs = allAddrs;
+            }
+            else
+                addrs.addAll(extAddrs);
 
         boolean conn = false;
         GridCommunicationClient client = null;

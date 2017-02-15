@@ -1040,10 +1040,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
+    LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost, boolean sameContainer) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
-        Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+        Collections.sort(addrs, U.inetAddressesComparator(sameHost, sameContainer));
 
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
 

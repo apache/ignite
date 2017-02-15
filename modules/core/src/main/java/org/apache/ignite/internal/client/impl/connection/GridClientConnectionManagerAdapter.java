@@ -69,6 +69,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.INFO;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VIRTUAL_MACS;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CLIENT_CLOSED;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.FAILED;
 
@@ -87,6 +88,9 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
 
     /** All local enabled MACs. */
     private final Collection<String> macs;
+
+    /** All local enabled virtual MACs. */
+    private final Collection<String> virtualMacs;
 
     /** NIO server. */
     private GridNioServer srv;
@@ -170,6 +174,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             throw new GridClientException("Failed to start client (marshaller is not configured).");
 
         macs = U.allLocalMACs();
+        virtualMacs = U.allLocalVirtualMACs();
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
@@ -323,10 +328,13 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         boolean sameHost = node.attributes().isEmpty() ||
             F.containsAny(macs, node.attribute(ATTR_MACS).toString().split(", "));
 
+        boolean sameContainer = node.attributes().isEmpty() ||
+            F.containsAny(virtualMacs, node.attribute(ATTR_VIRTUAL_MACS).toString().split(", "));
+
         Collection<InetSocketAddress> srvs = new LinkedHashSet<>();
 
         if (sameHost) {
-            Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
+            Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true, sameContainer));
 
             srvs.addAll(resolvedEndpoints);
         }

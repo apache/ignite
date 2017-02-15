@@ -30,6 +30,8 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -57,6 +59,12 @@ import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -64,6 +72,8 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
+@PowerMockIgnore( {"javax.management.*"})
+@RunWith(PowerMockRunner.class)
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
@@ -701,16 +711,53 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        Collections.sort(ips, U.inetAddressesComparator(true));
+        Collections.sort(ips, U.inetAddressesComparator(true, false));
 
         assertTrue(ips.get(0).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
 
-        Collections.sort(ips, U.inetAddressesComparator(false));
+        Collections.sort(ips, U.inetAddressesComparator(false, false));
 
         assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
+
+    /**
+     * Test InetAddress Comparator.
+     */
+    @Test
+    @PrepareForTest({IgniteUtils.class})
+    public void testInetAddressesComparatorSameContainer() {
+        final InetSocketAddress localContainerAddress = new InetSocketAddress("100.0.0.1", 1);
+        final NetworkInterface mockIfc = PowerMockito.mock(NetworkInterface.class);
+
+        PowerMockito.when(mockIfc.isVirtual()).thenReturn(true);
+
+        PowerMockito.mockStatic(NetworkInterface.class);
+
+        try {
+            PowerMockito.when(NetworkInterface.getByInetAddress(localContainerAddress.getAddress())).thenReturn(mockIfc);
+        }
+        catch (SocketException ignored) {
+            // No-op.
+        }
+        List<InetSocketAddress> ips = new ArrayList<InetSocketAddress>() {
+            {
+                add(new InetSocketAddress("127.0.0.1", 1));
+                add(new InetSocketAddress("10.0.0.1", 1));
+                add(new InetSocketAddress("172.16.0.1", 1));
+                add(new InetSocketAddress("192.168.0.1", 1));
+                add(localContainerAddress);
+                add(new InetSocketAddress("XXX", 1));
+            }
+        };
+
+        Collections.sort(ips, IgniteUtils.inetAddressesComparator(true, true));
+        assertEquals(localContainerAddress, ips.get(0));
+        assertTrue(ips.get(ips.size() - 1).isUnresolved());
+
+    }
+
 
 
     public void testMD5Calculation() throws Exception {
