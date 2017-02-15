@@ -114,7 +114,7 @@ public class DemoCachesLoadService implements Service {
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
         if (cachePool != null)
-            cachePool.shutdown();
+            cachePool.shutdownNow();
     }
 
     /** {@inheritDoc} */
