@@ -44,6 +44,18 @@ public class MatrixOffHeapStorage implements MatrixStorage {
         ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
     }
 
+    /** */
+    public MatrixOffHeapStorage(double[][] data) {
+        this.rows = data.length;
+        this.cols = data[0].length;
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                set(i,j,data[i][j]);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public double get(int x, int y) {

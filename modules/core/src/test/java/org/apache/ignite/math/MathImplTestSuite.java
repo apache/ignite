@@ -39,7 +39,8 @@ import org.junit.runners.Suite;
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,
     VectorViewTest.class,
-    MatrixOffHeapStorageTest.class
+    MatrixOffHeapStorageTest.class,
+    DenseLocalOffHeapMatrixTest.class
 })
 public class MathImplTestSuite {
 }
