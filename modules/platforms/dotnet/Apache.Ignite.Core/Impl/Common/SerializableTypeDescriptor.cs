@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal class SerializableTypeDescriptor
     {
-        /** Cached decriptors. */
+        /** Cached descriptors. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, SerializableTypeDescriptor> Descriptors 
             = new CopyOnWriteConcurrentDictionary<Type, SerializableTypeDescriptor>();
 
