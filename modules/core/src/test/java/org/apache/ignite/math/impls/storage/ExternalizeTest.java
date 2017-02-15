@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.math.impls.storage;
 
 import java.io.Externalizable;
@@ -6,7 +23,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import org.apache.ignite.math.VectorStorage;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.VALUE_NOT_EQUALS;
@@ -18,23 +34,23 @@ import static org.junit.Assert.fail;
  */
 public abstract class ExternalizeTest<T extends Externalizable> {
     /** */
-    protected void externalizeTest(T initialObj) {
+    protected void externalizeTest(T initObj) {
         try {
             PipedOutputStream pipedOutputStream = new PipedOutputStream();
 
             PipedInputStream pipedInputStream = new PipedInputStream(pipedOutputStream);
 
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(pipedOutputStream);
+            ObjectOutputStream objOutputStream = new ObjectOutputStream(pipedOutputStream);
 
-            ObjectInputStream objectInputStream = new ObjectInputStream(pipedInputStream);
+            ObjectInputStream objInputStream = new ObjectInputStream(pipedInputStream);
 
-            objectOutputStream.writeObject(initialObj);
+            objOutputStream.writeObject(initObj);
 
-            T objRestored = (T) objectInputStream.readObject();
+            T objRestored = (T) objInputStream.readObject();
 
-            objectInputStream.close();
+            objInputStream.close();
 
-            assertTrue(VALUE_NOT_EQUALS, initialObj.equals(objRestored));
+            assertTrue(VALUE_NOT_EQUALS, initObj.equals(objRestored));
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         }
