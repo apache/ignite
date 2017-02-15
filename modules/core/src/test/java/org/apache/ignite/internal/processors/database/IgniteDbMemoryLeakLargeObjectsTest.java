@@ -29,15 +29,16 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  */
 public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstractTest {
-
+    /** */
     private final static int[] ARRAY;
+
     static {
         ARRAY = new int[1024];
-        Random rnd = new Random();
-        for (int i = 0; i < ARRAY.length; i++) {
-            ARRAY[i] = rnd.nextInt();
-        }
 
+        Random rnd = new Random();
+
+        for (int i = 0; i < ARRAY.length; i++)
+            ARRAY[i] = rnd.nextInt();
     }
 
     @Override
