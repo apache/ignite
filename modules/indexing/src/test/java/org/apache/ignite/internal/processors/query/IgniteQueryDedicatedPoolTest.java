@@ -96,7 +96,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that SQL queries are executed in dedicated pool
+     * Tests that SQL queries are executed in dedicated pool
      * @throws Exception If failed.
      */
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
@@ -119,7 +119,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that Scan queries are executed in dedicated pool
+     * Tests that Scan queries are executed in dedicated pool
      * @throws Exception If failed.
      */
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
@@ -142,7 +142,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that SPI queries are executed in dedicated pool
+     * Tests that SPI queries are executed in dedicated pool
      * @throws Exception If failed.
      */
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
