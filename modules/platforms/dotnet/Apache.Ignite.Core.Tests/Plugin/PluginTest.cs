@@ -117,6 +117,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Throws custom mapped exception.
             var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
             Assert.AreEqual("Baz", ex.Message);
+            Assert.AreEqual(Ignition.GetIgnite(null), ex.Ignite);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", ex.ClassName);
 
             var javaEx = ex.InnerException as JavaException;
             Assert.IsNotNull(javaEx);

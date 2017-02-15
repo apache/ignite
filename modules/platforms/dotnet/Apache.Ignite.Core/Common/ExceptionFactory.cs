@@ -22,9 +22,10 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Exception factory delegate.
     /// </summary>
-    /// <param name="ignite">Ignite instance.</param>
+    /// <param name="className">Exception class name.</param>
     /// <param name="message">Exception message.</param>
     /// <param name="inner">Inner exception.</param>
+    /// <param name="ignite">Ignite instance.</param>
     /// <returns>Exception.</returns>
-    public delegate Exception ExceptionFactory(IIgnite ignite, string message, Exception inner);
+    public delegate Exception ExceptionFactory(string className, string message, Exception inner, IIgnite ignite);
 }

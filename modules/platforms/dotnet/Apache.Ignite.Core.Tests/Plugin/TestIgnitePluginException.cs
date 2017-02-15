@@ -25,14 +25,40 @@ namespace Apache.Ignite.Core.Tests.Plugin
     /// </summary>
     public class TestIgnitePluginException : IgniteException
     {
+        /** */
+        private readonly string _className;
+
+        /** */
+        private readonly IIgnite _ignite;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="TestIgnitePluginException"/> class.
+        /// Initializes a new instance of the <see cref="TestIgnitePluginException" /> class.
         /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="cause">The cause.</param>
-        public TestIgnitePluginException(string message, Exception cause) : base(message, cause)
+        /// <param name="className">Name of the class.</param>
+        /// <param name="message">Message.</param>
+        /// <param name="ignite">Ignite.</param>
+        /// <param name="cause">Cause.</param>
+        public TestIgnitePluginException(string className, string message, IIgnite ignite, Exception cause) 
+            : base(message, cause)
         {
-            // No-op.
+            _className = className;
+            _ignite = ignite;
+        }
+
+        /// <summary>
+        /// Gets the name of the class.
+        /// </summary>
+        public string ClassName
+        {
+            get { return _className; }
+        }
+
+        /// <summary>
+        /// Gets the ignite.
+        /// </summary>
+        public IIgnite Ignite
+        {
+            get { return _ignite; }
         }
     }
 }

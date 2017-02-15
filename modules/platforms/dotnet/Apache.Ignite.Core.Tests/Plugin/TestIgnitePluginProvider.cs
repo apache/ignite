@@ -66,7 +66,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         public void Start(IPluginContext<TestIgnitePluginConfiguration> context)
         {
             context.RegisterExceptionMapping("org.apache.ignite.platform.plugin.PlatformTestPluginException",
-                (ignite, message, inner) => new TestIgnitePluginException(message, inner));
+                (className, message, inner, ignite) =>
+                    new TestIgnitePluginException(className, message, ignite, inner));
 
             Context = context;
 
