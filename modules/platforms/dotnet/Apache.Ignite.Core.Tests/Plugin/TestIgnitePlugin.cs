@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+namespace Apache.Ignite.Core.Tests.Plugin
+{
+    /// <summary>
+    /// Test Ignite plugin.
+    /// </summary>
+    public class TestIgnitePlugin
+    {
+        /// <summary>
+        /// Gets the provider.
+        /// </summary>
+        public TestIgnitePluginProvider Provider { get; private set; }
 
-import org.apache.ignite.internal.GridKernalContext;
-
-/**
- * Indicates whether particular file system accepts kernal context.
- */
-public interface IgfsKernalContextAware {
-    /**
-     * Set kernal context.
-     *
-     * @param ctx Kernal context.
-     */
-    public void setKernalContext(GridKernalContext ctx);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestIgnitePlugin"/> class.
+        /// </summary>
+        /// <param name="provider">The provider.</param>
+        public TestIgnitePlugin(TestIgnitePluginProvider provider)
+        {
+            Provider = provider;
+        }
+    }
 }

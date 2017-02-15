@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl;
+package org.apache.ignite.hadoop.planner;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,7 +65,7 @@ public class HadoopTestRoundRobinMrPlanner implements HadoopMapReducePlanner {
                 it = top.iterator();
         }
 
-        int[] rdc = new int[job.info().reducers()];
+        int[] rdc = new int[job.reducers()];
 
         for (int i = 0; i < rdc.length; i++)
             rdc[i] = i;

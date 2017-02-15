@@ -130,6 +130,9 @@ public class IgfsDataManager extends IgfsManager {
     /** Async file delete worker. */
     private AsyncDeleteWorker delWorker;
 
+    /** Async file delete worker. */
+    private String dataCacheName;
+
     /** On-going remote reads futures. */
     private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
         new ConcurrentHashMap8<>();
@@ -180,19 +183,21 @@ public class IgfsDataManager extends IgfsManager {
 
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
             "igfs-" + igfsName + "-delete-worker", log);
+
+        dataCacheName = IgfsUtils.getDataCacheName(igfsCtx.configuration());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
+        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(dataCacheName);
 
         assert dataCachePrj != null;
 
         dataCache = (IgniteInternalCache)dataCachePrj;
 
         AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
-            .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
+            .internalCache(dataCacheName).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).getGroupSize() : 1;
@@ -201,7 +206,7 @@ public class IgfsDataManager extends IgfsManager {
 
         assert grpBlockSize != 0;
 
-        igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
+        igfsCtx.kernalContext().cache().internalCache(dataCacheName).preloader()
             .startFuture().listen(new CI1<IgniteInternalFuture<Object>>() {
             @Override public void apply(IgniteInternalFuture<Object> f) {
                 dataCacheStartLatch.countDown();
@@ -275,6 +280,16 @@ public class IgfsDataManager extends IgfsManager {
      */
     public ClusterNode affinityNode(Object affinityKey) {
         return dataCache.affinity().mapKeyToNode(affinityKey);
+    }
+
+    /**
+     * Maps affinity key to node.
+     *
+     * @param affinityKey Affinity key to map.
+     * @return Primary node for this key.
+     */
+    public Collection<ClusterNode> affinityNodes(Object affinityKey) {
+        return dataCache.affinity().mapKeyToPrimaryAndBackups(affinityKey);
     }
 
     /**
@@ -1045,7 +1060,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // Create non-colocated key.
         IgfsBlockKey key = new IgfsBlockKey(colocatedKey.getFileId(), null,
-            colocatedKey.evictExclude(), colocatedKey.getBlockId());
+            colocatedKey.evictExclude(), colocatedKey.blockId());
 
         try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.

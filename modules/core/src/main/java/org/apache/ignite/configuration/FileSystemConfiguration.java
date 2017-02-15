@@ -99,9 +99,11 @@ public class FileSystemConfiguration {
     private String name;
 
     /** Cache name to store IGFS meta information. */
+    @Deprecated
     private String metaCacheName;
 
     /** Cache name to store file's data blocks. */
+    @Deprecated
     private String dataCacheName;
 
     /** File's data block size (bytes). */
@@ -185,6 +187,12 @@ public class FileSystemConfiguration {
     /** Update file length on flush flag. */
     private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
 
+    /** Meta cache config. */
+    private CacheConfiguration metaCacheCfg;
+
+    /** Data cache config. */
+    private CacheConfiguration dataCacheCfg;
+
     /**
      * Constructs default configuration.
      */
@@ -206,6 +214,7 @@ public class FileSystemConfiguration {
         blockSize = cfg.getBlockSize();
         bufSize = cfg.getStreamBufferSize();
         colocateMeta = cfg.isColocateMetadata();
+        dataCacheCfg = cfg.getDataCacheConfiguration();
         dataCacheName = cfg.getDataCacheName();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
@@ -222,6 +231,7 @@ public class FileSystemConfiguration {
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
+        metaCacheCfg = cfg.getMetaCacheConfiguration();
         metaCacheName = cfg.getMetaCacheName();
         mgmtPort = cfg.getManagementPort();
         name = cfg.getName();
@@ -255,11 +265,64 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Cache name to store IGFS meta information. If {@code null}, then instance
-     * with default meta-cache name will be used.
+     * Cache config to store IGFS meta information.
+     *
+     * @return Cache configuration object.
+     */
+    @Nullable public CacheConfiguration getMetaCacheConfiguration() {
+        return metaCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS meta information. If {@code null}, then default config for
+     * meta-cache will be used.
+     *
+     * Default configuration for the meta cache is:
+     * <ul>
+     *     <li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 1</li>
+     * </ul>
+     *
+     * @param metaCacheCfg Cache configuration object.
+     */
+    public void setMetaCacheConfiguration(CacheConfiguration metaCacheCfg) {
+        this.metaCacheCfg = metaCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS data.
+     *
+     * @return Cache configuration object.
+     */
+    @Nullable public CacheConfiguration getDataCacheConfiguration() {
+        return dataCacheCfg;
+    }
+
+    /**
+     * Cache config to store IGFS data. If {@code null}, then default config for
+     * data cache will be used.
+     *
+     * Default configuration for the data cache is:
+     * <ul>
+     *     <<li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 0</li>
+     * </ul>
+     *
+     * @param dataCacheCfg Cache configuration object.
+     */
+    public void setDataCacheConfiguration(CacheConfiguration dataCacheCfg) {
+        this.dataCacheCfg = dataCacheCfg;
+    }
+
+    /**
+     * Cache name to store IGFS meta information.
      *
      * @return Cache name to store IGFS meta information.
+     * @deprecated Since 2.0, use {@link #getMetaCacheConfiguration()} instead.
      */
+    @Deprecated
     @Nullable public String getMetaCacheName() {
         return metaCacheName;
     }
@@ -268,7 +331,9 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS meta information.
      *
      * @param metaCacheName Cache name to store IGFS meta information.
+     * @deprecated Since 2.0, use {@link #setMetaCacheConfiguration(CacheConfiguration)} instead.
      */
+    @Deprecated
     public void setMetaCacheName(String metaCacheName) {
         this.metaCacheName = metaCacheName;
     }
@@ -277,7 +342,9 @@ public class FileSystemConfiguration {
      * Cache name to store IGFS data.
      *
      * @return Cache name to store IGFS data.
+     * @deprecated Since 2.0, use {@link #getDataCacheConfiguration()} instead.
      */
+    @Deprecated
     @Nullable public String getDataCacheName() {
         return dataCacheName;
     }
@@ -286,7 +353,9 @@ public class FileSystemConfiguration {
      * Sets cache name to store IGFS data.
      *
      * @param dataCacheName Cache name to store IGFS data.
+     * @deprecated Since 2.0, use {@link #setDataCacheConfiguration(CacheConfiguration)} instead.
      */
+    @Deprecated
     public void setDataCacheName(String dataCacheName) {
         this.dataCacheName = dataCacheName;
     }

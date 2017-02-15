@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -31,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
@@ -38,12 +44,14 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
@@ -65,6 +73,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -127,6 +137,27 @@ public class IgfsUtils {
     /** Flag: this is a file. */
     private static final byte FLAG_FILE = 0x2;
 
+    /** Filesystem cache prefix. */
+    public static final String IGFS_CACHE_PREFIX = "igfs-internal-";
+
+    /** Data cache suffix. */
+    public static final String DATA_CACHE_SUFFIX = "-data";
+
+    /** Meta cache suffix. */
+    public static final String META_CACHE_SUFFIX = "-meta";
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
+
+    /** Min available TCP port. */
+    private static final int MIN_TCP_PORT = 1;
+
+    /** Max available TCP port. */
+    private static final int MAX_TCP_PORT = 0xFFFF;
+
+    /*
+     * Static initializer.
+     */
     static {
         TRASH_IDS = new IgniteUuid[TRASH_CONCURRENCY];
 
@@ -308,6 +339,7 @@ public class IgfsUtils {
     /**
      * Sends a series of event.
      *
+     * @param kernalCtx Kernal context.
      * @param path The path of the created file.
      * @param type The type of event to send.
      */
@@ -318,6 +350,7 @@ public class IgfsUtils {
     /**
      * Sends a series of event.
      *
+     * @param kernalCtx Kernal context.
      * @param path The path of the created file.
      * @param newPath New path.
      * @param type The type of event to send.
@@ -339,11 +372,22 @@ public class IgfsUtils {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean matchIgfsCacheName(@Nullable String cacheName) {
+        return cacheName != null && cacheName.startsWith(IGFS_CACHE_PREFIX);
+    }
+
+    /**
      * @param cfg Grid configuration.
      * @param cacheName Cache name.
      * @return {@code True} in this is IGFS data or meta cache.
      */
     public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        if (matchIgfsCacheName(cacheName))
+            return true;
+
         FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
 
         if (igfsCfgs != null) {
@@ -363,44 +407,230 @@ public class IgfsUtils {
      * Prepare cache configuration if this is IGFS meta or data cache.
      *
      * @param cfg Configuration.
-     * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
      */
-    public static void prepareCacheConfiguration(IgniteConfiguration cfg, CacheConfiguration ccfg) {
+    public static void prepareCacheConfigurations(IgniteConfiguration cfg) throws IgniteCheckedException {
         FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+        List<CacheConfiguration> ccfgs = new ArrayList<>(Arrays.asList(cfg.getCacheConfiguration()));
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                if (igfsCfg != null) {
-                    if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
-                        // No copy-on-read.
-                        ccfg.setCopyOnRead(false);
+                if (igfsCfg == null)
+                    continue;
 
-                        // Always full-sync to maintain consistency.
-                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                String metaCacheName = igfsCfg.getMetaCacheName();
 
-                        // Set co-located affinity mapper if needed.
-                        if (igfsCfg.isColocateMetadata() && ccfg.getAffinityMapper() == null)
-                            ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+                CacheConfiguration ccfgMeta = igfsCfg.getMetaCacheConfiguration();
 
-                        return;
-                    }
+                CacheConfiguration effectiveMetaCacheCfg = ccfgMeta;
 
-                    if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
-                        // No copy-on-read.
-                        ccfg.setCopyOnRead(false);
+                if (ccfgMeta == null) {
+                    if(metaCacheName != null)
+                        effectiveMetaCacheCfg = CU.config(cfg, metaCacheName);
+                    else {
+                        ccfgMeta = defaultMetaCacheConfig();
 
-                        // Always full-sync to maintain consistency.
-                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                        igfsCfg.setMetaCacheConfiguration(ccfgMeta);
 
-                        // Set affinity mapper if needed.
-                        if (ccfg.getAffinityMapper() == null)
-                            ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
-
-                        return;
+                        effectiveMetaCacheCfg = ccfgMeta;
                     }
                 }
+
+                if (effectiveMetaCacheCfg == null)
+                    throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + igfsCfg);
+
+                if (ccfgMeta != null) {
+                    ccfgMeta.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + META_CACHE_SUFFIX);
+
+                    ccfgs.add(ccfgMeta);
+                }
+
+                String dataCacheName = igfsCfg.getDataCacheName();
+
+                CacheConfiguration ccfgData = igfsCfg.getDataCacheConfiguration();
+
+                CacheConfiguration effectiveDataCacheCfg = ccfgData;
+
+                if (ccfgData == null) {
+                    if(dataCacheName != null)
+                        effectiveDataCacheCfg = CU.config(cfg, dataCacheName);
+                    else {
+                        ccfgData = defaultDataCacheConfig();
+
+                        igfsCfg.setDataCacheConfiguration(ccfgData);
+
+                        effectiveDataCacheCfg = ccfgData;
+                    }
+                }
+
+                if (effectiveDataCacheCfg == null)
+                    throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
+
+                if (ccfgData != null) {
+                    ccfgData.setName(IGFS_CACHE_PREFIX + igfsCfg.getName() + DATA_CACHE_SUFFIX);
+
+                    ccfgs.add(ccfgData);
+                }
+
+
+                // No copy-on-read.
+                effectiveMetaCacheCfg.setCopyOnRead(false);
+                effectiveDataCacheCfg.setCopyOnRead(false);
+
+                // Always full-sync to maintain consistency.
+                effectiveMetaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+                effectiveDataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                // Set co-located affinity mapper if needed.
+                if (igfsCfg.isColocateMetadata() && effectiveMetaCacheCfg.getAffinityMapper() == null)
+                    effectiveMetaCacheCfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+
+                // Set affinity mapper if needed.
+                if (effectiveDataCacheCfg.getAffinityMapper() == null)
+                    effectiveDataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
             }
+
+            cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
         }
+
+        validateLocalIgfsConfigurations(cfg);
+    }
+
+    /**
+     * Validates local IGFS configurations. Compares attributes only for IGFSes with same name.
+     *
+     * @param igniteCfg Ignite config.
+     * @throws IgniteCheckedException If any of IGFS configurations is invalid.
+     */
+    private static void validateLocalIgfsConfigurations(IgniteConfiguration igniteCfg)
+        throws IgniteCheckedException {
+
+        if (igniteCfg.getFileSystemConfiguration() == null || igniteCfg.getFileSystemConfiguration().length == 0)
+            return;
+
+        Collection<String> cfgNames = new HashSet<>();
+        Collection<String> metaCacheNames = new HashSet<>();
+        Collection<String> dataCacheNames = new HashSet<>();
+
+        for (FileSystemConfiguration cfg : igniteCfg.getFileSystemConfiguration()) {
+            String name = cfg.getName();
+
+            if (cfgNames.contains(name))
+                throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
+                    "assign unique name to each): " + name);
+
+            CacheConfiguration dataCacheCfg = cfg.getDataCacheConfiguration();
+
+            String dataCacheName = cfg.getDataCacheName();
+
+            if (dataCacheCfg == null && dataCacheName != null && dataCacheNames.contains(dataCacheName)) {
+                throw new IgniteCheckedException("Data cache names should be different for different " +
+                    "IGFS instances configuration (fix configuration " + cfg + ')');
+            }
+
+            CacheConfiguration metaCacheCfg = cfg.getMetaCacheConfiguration();
+
+            String metaCacheName = cfg.getMetaCacheName();
+
+            if (metaCacheCfg == null && metaCacheName != null && metaCacheNames.contains(metaCacheName)) {
+                throw new IgniteCheckedException("Meta cache names should be different for different " +
+                    "IGFS instances configuration (fix configuration " + cfg + ')');
+            }
+
+            if (dataCacheCfg == null && metaCacheCfg == null) {
+                dataCacheNames.add(dataCacheName);
+                metaCacheNames.add(metaCacheName);
+
+                if (F.eq(dataCacheName, metaCacheName)
+                    || dataCacheNames.contains(metaCacheName)
+                    || metaCacheNames.contains(dataCacheName)) {
+                    throw new IgniteCheckedException("Meta cache and data cache should be different " +
+                        "(fix configuration " + cfg + ')');
+                }
+            }
+
+            CacheConfiguration effectiveMetaCacheCfg = metaCacheCfg != null ? metaCacheCfg
+                : CU.config(igniteCfg, metaCacheName);
+
+            CacheConfiguration effectiveDataCacheCfg = dataCacheCfg != null ? dataCacheCfg
+                : CU.config(igniteCfg, dataCacheName);
+
+            if (GridQueryProcessor.isEnabled(effectiveDataCacheCfg))
+                throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
+
+            if (GridQueryProcessor.isEnabled(effectiveMetaCacheCfg))
+                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
+
+            if (effectiveMetaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
+                throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
+
+            if (!(effectiveDataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
+                throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
+                    IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
+
+            IgfsIpcEndpointConfiguration ipcCfg = cfg.getIpcEndpointConfiguration();
+
+            if (ipcCfg != null) {
+                final int tcpPort = ipcCfg.getPort();
+
+                if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
+                    throw new IgniteCheckedException("IGFS endpoint TCP port is out of range [" + MIN_TCP_PORT +
+                        ".." + MAX_TCP_PORT + "]: " + tcpPort);
+
+                if (ipcCfg.getThreadCount() <= 0)
+                    throw new IgniteCheckedException("IGFS endpoint thread count must be positive: " +
+                        ipcCfg.getThreadCount());
+            }
+
+            boolean secondary = cfg.getDefaultMode() == IgfsMode.PROXY;
+
+            if (cfg.getPathModes() != null) {
+                for (Map.Entry<String, IgfsMode> mode : cfg.getPathModes().entrySet()) {
+                    if (mode.getValue() == IgfsMode.PROXY)
+                        secondary = true;
+                }
+            }
+
+            if (secondary && cfg.getSecondaryFileSystem() == null) {
+                // When working in any mode except of primary, secondary FS config must be provided.
+                throw new IgniteCheckedException("Grid configuration parameter invalid: " +
+                    "secondaryFileSystem cannot be null when mode is not " + IgfsMode.PRIMARY);
+            }
+
+            cfgNames.add(name);
+        }
+    }
+
+
+    /**
+     * @return Default IGFS cache configuration.
+     */
+    private static CacheConfiguration defaultCacheConfig() {
+        CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        return cfg;
+    }
+
+    /**
+     * @return Default IGFS meta cache configuration.
+     */
+    private static CacheConfiguration defaultMetaCacheConfig() {
+        CacheConfiguration cfg = defaultCacheConfig();
+
+        cfg.setBackups(1);
+
+        return cfg;
+    }
+
+    /**
+     * @return Default IGFS data cache configuration.
+     */
+    private static CacheConfiguration defaultDataCacheConfig() {
+        return defaultCacheConfig();
     }
 
     /**
@@ -529,6 +759,7 @@ public class IgfsUtils {
      *
      * @param in Reader.
      * @return Entry.
+     * @throws IOException If failed.
      */
     @Nullable public static IgfsListingEntry readListingEntry(DataInput in) throws IOException {
         if (in.readBoolean()) {
@@ -972,5 +1203,131 @@ public class IgfsUtils {
      */
     private static boolean hasFlag(byte flags, byte flag) {
         return (flags & flag) == flag;
+    }
+
+    /**
+     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
+     *
+     * @param in Data input.
+     * @throws IOException If write failed.
+     * @return Read result.
+     */
+    public static Map<String, String> readStringMap(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size == -1)
+            return null;
+        else {
+            Map<String, String> map = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                map.put(readUTF(in), readUTF(in));
+
+            return map;
+        }
+    }
+
+    /**
+     * Writes string-to-string map to given data output.
+     *
+     * @param out Data output.
+     * @param map Map.
+     * @throws IOException If write failed.
+     */
+    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
+        if (map != null) {
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, String> e : map.entrySet()) {
+                writeUTF(out, e.getKey());
+                writeUTF(out, e.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Get metadata cache name from IGFS configuration.
+     *
+     * @param igfsCfg IGFS configuration.
+     * @return Meta cache name.
+     */
+    public static String getMetaCacheName(FileSystemConfiguration igfsCfg) {
+        return igfsCfg.getMetaCacheConfiguration() != null ?
+            igfsCfg.getMetaCacheConfiguration().getName() :
+            igfsCfg.getMetaCacheName();
+    }
+
+    /**
+     * Get data cache name from IGFS configuration.
+     *
+     * @param igfsCfg IGFS configuration.
+     * @return Data cache name.
+     */
+    public static String getDataCacheName(FileSystemConfiguration igfsCfg) {
+        return igfsCfg.getDataCacheConfiguration() != null ?
+            igfsCfg.getDataCacheConfiguration().getName() :
+            igfsCfg.getDataCacheName();
     }
 }

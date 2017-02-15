@@ -154,6 +154,9 @@ public class IgfsMetaManager extends IgfsManager {
     /** Compute facade for client tasks. */
     private IgniteCompute cliCompute;
 
+    /** Compute facade for client tasks. */
+    private String metaCacheName;
+
     /**
      * Constructor.
      *
@@ -188,16 +191,18 @@ public class IgfsMetaManager extends IgfsManager {
         sampling = new IgfsSamplingKey(cfg.getName());
 
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
+
+        metaCacheName = IgfsUtils.getMetaCacheName(cfg);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
+        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(metaCacheName);
 
         assert metaCache != null;
 
-        igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
+        igfsCtx.kernalContext().cache().internalCache(metaCacheName).preloader().startFuture()
             .listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> f) {
                     metaCacheStartLatch.countDown();
@@ -266,7 +271,7 @@ public class IgfsMetaManager extends IgfsManager {
     <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().affinityCall(metaCacheName, affinityFileId, task) :
                 clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
@@ -287,7 +292,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (cliCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
-            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
+            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), metaCacheName);
 
             cliCompute0 = ignite.compute(cluster);
 
@@ -2793,7 +2798,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public void updateTimes(IgfsPath path, long accessTime, long modificationTime,
-        IgfsSecondaryFileSystemV2 secondaryFs) throws IgniteCheckedException {
+        IgfsSecondaryFileSystem secondaryFs) throws IgniteCheckedException {
         while (true) {
             if (busyLock.enterBusy()) {
                 try {

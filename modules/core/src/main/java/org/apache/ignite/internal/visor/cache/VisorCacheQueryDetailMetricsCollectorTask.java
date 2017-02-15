@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryDetailMetrics;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryDetailMetricsAdapter;
@@ -116,8 +115,6 @@ public class VisorCacheQueryDetailMetricsCollectorTask extends VisorMultiNodeTas
         @Override protected Collection<? extends QueryDetailMetrics> run(@Nullable Long arg) throws IgniteException {
             assert arg != null;
 
-            IgniteConfiguration cfg = ignite.configuration();
-
             GridCacheProcessor cacheProc = ignite.context().cache();
 
             Collection<String> cacheNames = cacheProc.cacheNames();
@@ -125,7 +122,7 @@ public class VisorCacheQueryDetailMetricsCollectorTask extends VisorMultiNodeTas
             Map<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> aggMetrics = new HashMap<>();
 
             for (String cacheName : cacheNames) {
-                if (!isSystemCache(cacheName) && !isIgfsCache(cfg, cacheName)) {
+                if (!isSystemCache(cacheName) && !isIgfsCache(ignite.configuration(), cacheName)) {
                     IgniteInternalCache<Object, Object> cache = cacheProc.cache(cacheName);
 
                     if (cache == null || !cache.context().started())

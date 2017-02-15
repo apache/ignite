@@ -72,14 +72,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Block size. */
     private static final int BLOCK_SIZE = 384;
 
-    /** Cache name. */
-    private static final String DATA_CACHE_NAME = "dataCache";
-
-    /** Cache name. */
-    private static final String META_CACHE_NAME = "metaCache";
-
     /** IGFS name. */
-    private static final String IGFS_NAME = "igfs";
+    private static final String IGFS_NAME = "test";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -120,8 +114,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setName(IGFS_NAME);
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(false);
@@ -131,7 +123,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCfg = defaultCacheConfiguration();
 
-        dataCfg.setName(DATA_CACHE_NAME);
         dataCfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED) {
@@ -148,19 +139,20 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
 
-        metaCfg.setName(META_CACHE_NAME);
         metaCfg.setCacheMode(REPLICATED);
 
         metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCfg.setRebalanceMode(SYNC);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCfg);
+        igfsCfg.setDataCacheConfiguration(dataCfg);
+
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCfg, dataCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
@@ -284,7 +276,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            IgniteInternalCache cache = g.cachex(DATA_CACHE_NAME).cache();
+            IgniteInternalCache cache = g.cachex(g.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration()
+                .getName()).cache();
 
             assert cache.isIgfsDataCache();
         }
@@ -547,7 +540,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.affinity(DATA_CACHE_NAME).isPrimaryOrBackup(node, key))
+            if (grid.affinity(grid.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration().getName())
+                .isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 
@@ -572,8 +566,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<IgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<IgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
-            .<IgfsBlockKey, byte[]>cache();
+        IgniteEx g = (IgniteEx)G.ignite(nodeId);
+        return (GridCacheAdapter<IgfsBlockKey, byte[]>)g.cachex(g.igfsx(IGFS_NAME).configuration()
+            .getDataCacheConfiguration().getName()).<IgfsBlockKey, byte[]>cache();
     }
 
     /**

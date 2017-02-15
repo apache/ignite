@@ -71,6 +71,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
@@ -630,7 +631,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (locNode.order() > 0)
                         node = locNode.clientReconnectNode();
 
-                    msg = new TcpDiscoveryJoinRequestMessage(node, spi.collectExchangeData(getLocalNodeId()));
+                    msg = new TcpDiscoveryJoinRequestMessage(
+                            node,
+                            spi.collectExchangeData(new DiscoveryDataPacket(getLocalNodeId())));
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);
@@ -1055,7 +1058,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            TcpDiscoveryAbstractMessage msg;
+            TcpDiscoveryAbstractMessage msg = null;
 
             while (!Thread.currentThread().isInterrupted()) {
                 Socket sock;
@@ -1069,7 +1072,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         continue;
                     }
 
-                    msg = queue.poll();
+                    if (msg == null)
+                        msg = queue.poll();
 
                     if (msg == null) {
                         mux.wait();
@@ -1727,11 +1731,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
 
-                        Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
+                        DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                        if (data != null)
-                            spi.onExchange(newNodeId, newNodeId, data,
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                        if (dataPacket != null && dataPacket.hasJoiningNodeData())
+                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
                     }
                 }
                 else {
@@ -1750,13 +1753,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joining()) {
-                    Map<UUID, Map<Integer, byte[]>> dataMap = msg.clientDiscoData();
+                    DiscoveryDataPacket dataContainer = msg.clientDiscoData();
 
-                    if (dataMap != null) {
-                        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
-                    }
+                    if (dataContainer != null)
+                        spi.onExchange(dataContainer, U.resolveClassLoader(spi.ignite().configuration()));
 
                     locNode.setAttributes(msg.clientNodeAttributes());
                     locNode.visible(true);

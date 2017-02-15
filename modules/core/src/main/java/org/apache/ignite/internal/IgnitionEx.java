@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.igfs.IgfsProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -114,7 +115,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -174,7 +174,7 @@ public class IgnitionEx {
     /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
-    /**
+    /*
      * Checks runtime version to be 1.7.x or 1.8.x.
      * This will load pretty much first so we must do these checks here.
      */
@@ -522,6 +522,7 @@ public class IgnitionEx {
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
      * failIfStarted Throw or not an exception if grid is already started.
+     * @param failIfStarted Throw or not an exception if grid is already started.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
@@ -543,7 +544,8 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx)
+        throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), true).grid();
@@ -563,7 +565,8 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
+        boolean failIfStarted) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
@@ -606,7 +609,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName)
+        throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -997,7 +1001,8 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted )
+        throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -1472,14 +1477,14 @@ public class IgnitionEx {
         /** IGFS executor service. */
         private ThreadPoolExecutor igfsExecSvc;
 
+        /** Data streamer executor service. */
+        private ThreadPoolExecutor dataStreamerExecSvc;
+
         /** REST requests executor service. */
         private ThreadPoolExecutor restExecSvc;
 
         /** Utility cache executor service. */
         private ThreadPoolExecutor utilityCacheExecSvc;
-
-        /** Marshaller cache executor service. */
-        private ThreadPoolExecutor marshCacheExecSvc;
 
         /** Affinity executor service. */
         private ThreadPoolExecutor affExecSvc;
@@ -1702,6 +1707,17 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
+            // Note that we do not pre-start threads here as this pool may not be needed.
+            dataStreamerExecSvc = new IgniteThreadPoolExecutor(
+                "data-streamer",
+                cfg.getGridName(),
+                cfg.getDataStreamerThreadPoolSize(),
+                cfg.getDataStreamerThreadPoolSize(),
+                DFLT_THREAD_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>());
+
+            dataStreamerExecSvc.allowCoreThreadTimeOut(true);
+
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
 
@@ -1750,18 +1766,6 @@ public class IgnitionEx {
 
             utilityCacheExecSvc.allowCoreThreadTimeOut(true);
 
-            validateThreadPoolSize(myCfg.getMarshallerCacheThreadPoolSize(), "marshaller cache");
-
-            marshCacheExecSvc = new IgniteThreadPoolExecutor(
-                "marshaller-cache",
-                cfg.getGridName(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheThreadPoolSize(),
-                myCfg.getMarshallerCacheKeepAliveTime(),
-                new LinkedBlockingQueue<Runnable>());
-
-            marshCacheExecSvc.allowCoreThreadTimeOut(true);
-
             affExecSvc = new IgniteThreadPoolExecutor(
                 "aff",
                 cfg.getGridName(),
@@ -1799,13 +1803,13 @@ public class IgnitionEx {
                 grid0.start(
                     myCfg,
                     utilityCacheExecSvc,
-                    marshCacheExecSvc,
                     execSvc,
                     sysExecSvc,
                     stripedExecSvc,
                     p2pExecSvc,
                     mgmtExecSvc,
                     igfsExecSvc,
+                    dataStreamerExecSvc,
                     restExecSvc,
                     affExecSvc,
                     idxExecSvc,
@@ -2053,8 +2057,6 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            cacheCfgs.add(marshallerSystemCache());
-
             cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
@@ -2083,9 +2085,10 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
-                    if (CU.isMarshallerCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
+                    if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException(
+                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                                + "\" because it is reserved for IGFS internal purposes.");
 
                     cacheCfgs.add(ccfg);
                 }
@@ -2093,11 +2096,9 @@ public class IgnitionEx {
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
 
-            // Iterate over IGFS caches and prepare their configurations if needed.
             assert cfg.getCacheConfiguration() != null;
 
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
-                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
+            IgfsUtils.prepareCacheConfigurations(cfg);
         }
 
         /**
@@ -2262,29 +2263,6 @@ public class IgnitionEx {
         }
 
         /**
-         * Creates marshaller system cache configuration.
-         *
-         * @return Marshaller system cache configuration.
-         */
-        private static CacheConfiguration marshallerSystemCache() {
-            CacheConfiguration cache = new CacheConfiguration();
-
-            cache.setName(CU.MARSH_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(ATOMIC);
-            cache.setSwapEnabled(false);
-            cache.setRebalanceMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-            cache.setStartSize(300);
-            cache.setRebalanceOrder(-2);//Prior to other system caches.
-            cache.setCopyOnRead(false);
-
-            return cache;
-        }
-
-        /**
          * Creates utility system cache configuration.
          *
          * @return Utility system cache configuration.
@@ -2445,6 +2423,10 @@ public class IgnitionEx {
 
             p2pExecSvc = null;
 
+            U.shutdownNow(getClass(), dataStreamerExecSvc, log);
+
+            dataStreamerExecSvc = null;
+
             U.shutdownNow(getClass(), igfsExecSvc, log);
 
             igfsExecSvc = null;
@@ -2457,10 +2439,6 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 
             utilityCacheExecSvc = null;
-
-            U.shutdownNow(getClass(), marshCacheExecSvc, log);
-
-            marshCacheExecSvc = null;
 
             U.shutdownNow(getClass(), affExecSvc, log);
 
