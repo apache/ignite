@@ -1,6 +1,5 @@
 package org.apache.ignite.math.impls.storage;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -12,7 +11,7 @@ import static org.junit.Assert.*;
  * Unit test for {@link VectorArrayStorage}.
  */
 public class VectorArrayStorageTest extends VectorBaseStorageTest<VectorArrayStorage> {
-
+    /** */
     @Override public void setUp() {
         storage = new VectorArrayStorage(STORAGE_SIZE);
     }

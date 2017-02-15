@@ -18,7 +18,6 @@ import static org.junit.Assert.*;
  * Unit tests for {@link VectorOffheapStorage}.
  */
 public class VectorOffheapStorageTest extends VectorBaseStorageTest<VectorOffheapStorage> {
-
     /** */
     private static final double DOUBLE_ZERO = 0d;
 
