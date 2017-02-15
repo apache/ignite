@@ -507,84 +507,80 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         cctx.shared().database().checkpointReadLock();
 
-        synchronized (cctx.shared().exchange().interruptLock()) {
-            try {
+        try {
+            synchronized (cctx.shared().exchange().interruptLock()) {
                 if (Thread.currentThread().isInterrupted())
                     throw new IgniteInterruptedCheckedException("Thread is interrupted: " + Thread.currentThread());
 
                 U.writeLock(lock);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                cctx.shared().database().checkpointReadUnlock();
 
-                throw e;
-            }
+                try {
+                    GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
-            try {
-                GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+                    if (stopping)
+                        return;
 
-                if (stopping)
-                    return;
+                    assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
+                        topVer + ", exchId=" + exchId + ']';
 
-                assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                    topVer + ", exchId=" + exchId + ']';
+                    if (exchId.isLeft())
+                        removeNode(exchId.nodeId());
 
-                if (exchId.isLeft())
-                    removeNode(exchId.nodeId());
+                    ClusterNode oldest = currentCoordinator();
 
-                ClusterNode oldest = currentCoordinator();
+                    if (log.isDebugEnabled())
+                        log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
 
-                if (log.isDebugEnabled())
-                    log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
+                    long updateSeq = this.updateSeq.incrementAndGet();
 
-                long updateSeq = this.updateSeq.incrementAndGet();
+                    cntrMap.clear();
 
-                cntrMap.clear();
+                    // If this is the oldest node.
+                    if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
+                        if (node2part == null) {
+                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
-                // If this is the oldest node.
-                if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
-                    if (node2part == null) {
-                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
+                            if (log.isDebugEnabled())
+                                log.debug("Created brand new full topology map on oldest node [exchId=" +
+                                    exchId + ", fullMap=" + fullMapString() + ']');
+                        }
+                        else if (!node2part.valid()) {
+                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Created brand new full topology map on oldest node [exchId=" +
-                                exchId + ", fullMap=" + fullMapString() + ']');
+                            if (log.isDebugEnabled())
+                                log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
+                                    node2part + ']');
+                        }
+                        else if (!node2part.nodeId().equals(loc.id())) {
+                            node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
+                                    exchId + ", fullMap=" + fullMapString() + ']');
+                        }
                     }
-                    else if (!node2part.valid()) {
-                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
-                                node2part + ']');
-                    }
-                    else if (!node2part.nodeId().equals(loc.id())) {
-                        node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+                    if (affReady)
+                        initPartitions0(exchFut, updateSeq);
+                    else {
+                        List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
 
-                        if (log.isDebugEnabled())
-                            log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
-                                exchId + ", fullMap=" + fullMapString() + ']');
+                        createPartitions(aff, updateSeq);
                     }
+
+                    consistencyCheck();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
+                            fullMapString() + ']');
                 }
-
-                if (affReady)
-                    initPartitions0(exchFut, updateSeq);
-                else {
-                    List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
-
-                    createPartitions(aff, updateSeq);
+                finally {
+                    lock.writeLock().unlock();
                 }
-
-                consistencyCheck();
-
-                if (log.isDebugEnabled())
-                    log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
-                        fullMapString() + ']');
             }
-            finally {
-                lock.writeLock().unlock();
-
-                cctx.shared().database().checkpointReadUnlock();
-            }
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
 
         // Wait for evictions.

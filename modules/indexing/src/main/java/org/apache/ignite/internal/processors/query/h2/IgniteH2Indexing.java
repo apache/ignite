@@ -1679,23 +1679,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (int p = 0; p < cctx.affinity().partitions(); p++) {
             try (GridCloseableIterator<KeyCacheObject> keyIter = offheapMgr.keysIterator(p)) {
                 while (keyIter.hasNext()) {
-                    KeyCacheObject key = keyIter.next();
+                    cctx.shared().database().checkpointReadLock();
 
-                    while (true) {
-                        try {
-                            GridCacheEntryEx entry = cctx.isNear() ?
-                                cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
+                    try {
+                        KeyCacheObject key = keyIter.next();
 
-                            entry.ensureIndexed();
+                        while (true) {
+                            try {
+                                GridCacheEntryEx entry = cctx.isNear() ?
+                                    cctx.near().dht().entryEx(key) : cctx.cache().entryEx(key);
 
-                            break;
+                                entry.ensureIndexed();
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                // Retry.
+                            }
+                            catch (GridDhtInvalidPartitionException ignore) {
+                                break;
+                            }
                         }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            // Retry.
-                        }
-                        catch (GridDhtInvalidPartitionException ignore) {
-                            break;
-                        }
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }

@@ -845,6 +845,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onClientDisconnected() {
+        if (internal)
+            return;
+
+        for (PartitionRecovery rec : rcvs.values())
+            rec.resetTopologyCache();
+    }
+
     /**
      * @param ctx Context.
      * @param partId Partition id.
@@ -960,6 +969,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 curTop = topVer;
             }
+        }
+
+        /**
+         * Resets cached topology.
+         */
+        void resetTopologyCache() {
+            curTop = AffinityTopologyVersion.NONE;
         }
 
         /**

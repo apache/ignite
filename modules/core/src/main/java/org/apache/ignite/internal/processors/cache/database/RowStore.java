@@ -70,8 +70,14 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
+        cctx.shared().database().checkpointReadLock();
 
-        freeList.removeDataRowByLink(link);
+        try {
+            freeList.removeDataRowByLink(link);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -79,7 +85,14 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
-        freeList.insertDataRow(row);
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            freeList.insertDataRow(row);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
