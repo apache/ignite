@@ -696,7 +696,9 @@ public class JdbcConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        String schema = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema();
+        String schema = U.firstNotNull(
+                ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema(),
+                cacheName);
 
         return U.firstNotNull(schema, "");
     }
