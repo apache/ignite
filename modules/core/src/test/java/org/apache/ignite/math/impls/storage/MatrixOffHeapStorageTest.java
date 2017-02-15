@@ -32,107 +32,41 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for {@link MatrixOffHeapStorage}.
  */
-public class MatrixOffHeapStorageTest {
+public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest {
 
-    /** */
-    private MatrixOffHeapStorage matrixOffHeapStorage;
-
-    /** */
-    private static final String EXTERNALIZE_TEST_FILE_NAME = "externalizeTest";
-
-    @Before
-    public void setUp() throws Exception {
-        matrixOffHeapStorage = new MatrixOffHeapStorage(STORAGE_SIZE, STORAGE_SIZE);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        matrixOffHeapStorage.destroy();
-    }
-
-    /** */
-    @AfterClass
-    public static void cleanup() throws IOException {
-        Files.deleteIfExists(Paths.get(EXTERNALIZE_TEST_FILE_NAME));
-    }
-
-    @Test
-    public void getSet() throws Exception {
-        int rows = STORAGE_SIZE;
-        int cols = STORAGE_SIZE;
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                double data = Math.random();
-
-                matrixOffHeapStorage.set(i, j, data);
-
-                assertEquals(VALUE_NOT_EQUALS, matrixOffHeapStorage.get(i, j), data, NIL_DELTA);
-            }
-        }
-    }
-
-    @Test
-    public void columnSize() throws Exception {
-        assertEquals(VALUE_NOT_EQUALS, matrixOffHeapStorage.columnSize(), STORAGE_SIZE);
-    }
-
-    @Test
-    public void rowSize() throws Exception {
-        assertEquals(VALUE_NOT_EQUALS, matrixOffHeapStorage.rowSize(), STORAGE_SIZE);
+    @Override public void setUp() {
+        storage = new MatrixOffHeapStorage(STORAGE_SIZE, STORAGE_SIZE);
     }
 
     @Test
     public void isArrayBased() throws Exception {
-        assertFalse(UNEXPECTED_VALUE, matrixOffHeapStorage.isArrayBased());
+        assertFalse(UNEXPECTED_VALUE, storage.isArrayBased());
     }
 
     @Test
     public void isSequentialAccess() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isSequentialAccess());
+        assertTrue(UNEXPECTED_VALUE, storage.isSequentialAccess());
     }
 
     @Test
     public void isDense() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isDense());
+        assertTrue(UNEXPECTED_VALUE, storage.isDense());
     }
 
     @Test
     public void getLookupCost() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.getLookupCost() == 0d);
+        assertTrue(UNEXPECTED_VALUE, storage.getLookupCost() == 0d);
     }
 
     @Test
     public void isAddConstantTime() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, matrixOffHeapStorage.isAddConstantTime());
+        assertTrue(UNEXPECTED_VALUE, storage.isAddConstantTime());
     }
 
     @Test
     public void data() throws Exception {
-        assertNull(UNEXPECTED_VALUE, matrixOffHeapStorage.data());
+        assertNull(UNEXPECTED_VALUE, storage.data());
     }
 
-    @Test
-    public void writeReadExternal() throws Exception {
-        File f = new File(EXTERNALIZE_TEST_FILE_NAME);
-
-        try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(f));
-
-            objectOutputStream.writeObject(matrixOffHeapStorage);
-
-            objectOutputStream.close();
-
-            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(f));
-
-            MatrixOffHeapStorage mohsRestored = (MatrixOffHeapStorage) objectInputStream.readObject();
-
-            objectInputStream.close();
-
-            assertTrue(VALUE_NOT_EQUALS, matrixOffHeapStorage.equals(mohsRestored));
-        } catch (ClassNotFoundException | IOException e) {
-            fail(e.getMessage());
-        }
-    }
 
 }

@@ -36,7 +36,7 @@ public class MatrixArrayStorage implements MatrixStorage {
      *
      */
     public MatrixArrayStorage() {
-        this(null);
+        // No-op.
     }
 
     /**

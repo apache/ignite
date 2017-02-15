@@ -18,6 +18,7 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.impls.storage.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.storage.MatrixOffHeapStorageTest;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
 import org.apache.ignite.math.impls.storage.VectorOffheapStorageTest;
@@ -40,6 +41,7 @@ import org.junit.runners.Suite;
     VectorOffheapStorageTest.class,
     VectorViewTest.class,
     MatrixOffHeapStorageTest.class,
+    MatrixArrayStorageTest.class,
     DenseLocalOffHeapMatrixTest.class
 })
 public class MathImplTestSuite {
