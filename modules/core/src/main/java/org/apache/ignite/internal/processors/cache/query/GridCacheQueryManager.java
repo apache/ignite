@@ -1191,7 +1191,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(it.next().getKey());
 
-                    final GridCacheEntryEx entryEx = cctx.cache().entryEx(key);
+                    final GridCacheEntryEx entryEx = cctx.cache().peekEx(key);
 
                     return entryEx;
                 }
@@ -3532,8 +3532,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 CacheObject val;
 
                 try {
-                    val = heapOnly && !entry.obsolete() ? entry.rawGet() :
-                        cctx.cache().entryEx(key).peek(true, true, true, expiryPlc);
+                    if(!cctx.isSwapOrOffheapEnabled()) {
+                        val = !entry.obsolete() ? entry.rawGet() :
+                            cctx.cache().entryEx(key).peek(true, true, true, expiryPlc);
+                    }
+                    else
+                        val = value(entry.key());
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     continue;
@@ -3597,7 +3601,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @return Value.
          * @throws IgniteCheckedException If failed to peek value.
          */
-        private CacheObject value(K key) throws IgniteCheckedException {
+        private CacheObject value(KeyCacheObject key) throws IgniteCheckedException {
             while (true) {
                 try {
                     GridCacheEntryEx entry = heapOnly ? cache.peekEx(key) : cache.entryEx(key);
