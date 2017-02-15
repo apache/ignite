@@ -45,6 +45,19 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
             PageIO.registerH2ExtraLeaf(getVersions((short)(PageIO.T_H2_EX_REF_LEAF_START + payload - 1), payload));
     }
 
+    /**
+     * @param payload Payload size.
+     * @return IOVersions for given payload.
+     */
+    public static IOVersions<? extends BPlusLeafIO<SearchRow>> getVersions(int payload) {
+        assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
+
+        if (payload == 0)
+            return H2LeafIO.VERSIONS;
+        else
+            return (IOVersions<BPlusLeafIO<SearchRow>>)PageIO.getLeafVersions((short)(payload - 1));
+    }
+
     /** */
     private static IOVersions<H2ExtrasLeafIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasLeafIO(type, 1, payload));

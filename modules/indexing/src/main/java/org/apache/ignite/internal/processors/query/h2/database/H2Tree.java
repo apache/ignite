@@ -26,7 +26,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
@@ -51,7 +52,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public H2Tree(
+    protected H2Tree(
         String name,
         ReuseList reuseList,
         int cacheId,
@@ -76,7 +77,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         this.rowStore = rowStore;
 
-        setIos(IgniteH2Indexing.getInnerVersions(this.inlineSize), IgniteH2Indexing.getLeafVersions(this.inlineSize));
+        setIos(H2ExtrasInnerIO.getVersions(this.inlineSize), H2ExtrasLeafIO.getVersions(this.inlineSize));
 
         initTree(initNew);
 
@@ -97,7 +98,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
     }
 
-    /** */
+    /**
+     * @return Inline size.
+     */
     public int inlineSize() {
         return inlineSize;
     }

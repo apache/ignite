@@ -41,7 +41,7 @@ public class QueryIndex implements Serializable {
     private QueryIndexType type;
 
     /** */
-    private int inlineSize;
+    private int inlineSize = -1;
 
     /**
      * Creates an empty index. Should be populated via setters.

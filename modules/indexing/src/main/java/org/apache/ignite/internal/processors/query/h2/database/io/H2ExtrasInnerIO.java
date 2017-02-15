@@ -44,6 +44,19 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
             PageIO.registerH2ExtraInner(getVersions((short)(PageIO.T_H2_EX_REF_INNER_START + payload - 1), payload));
     }
 
+    /**
+     * @param payload Payload size.
+     * @return IOVersions for given payload.
+     */
+    public static IOVersions<? extends BPlusInnerIO<SearchRow>> getVersions(int payload) {
+        assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
+
+        if (payload == 0)
+            return H2InnerIO.VERSIONS;
+        else
+            return (IOVersions<BPlusInnerIO<SearchRow>>)PageIO.getInnerVersions((short)(payload - 1));
+    }
+
     /** */
     private static IOVersions<H2ExtrasInnerIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasInnerIO(type, 1, payload));

@@ -77,7 +77,6 @@ public abstract class BPlusIO<L> extends PageIO {
         setCount(pageAddr, 0);
         setForward(pageAddr, 0);
         setRemoveId(pageAddr, 0);
-
     }
 
     /**

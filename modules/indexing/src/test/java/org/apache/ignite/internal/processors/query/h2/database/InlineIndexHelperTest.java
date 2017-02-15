@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import junit.framework.TestCase;
-/**
- *
- */
 
 /**
  * Simple tests for {@link InlineIndexHelper}.
@@ -36,6 +33,14 @@ public class InlineIndexHelperTest extends TestCase {
 
         String s = new String(bytes);
         assertEquals(3, s.length());
+    }
+
+    /** Limit is too small to cut */
+    public void testShort() {
+        // 6 bytes total: 3b, 3b.
+
+        byte[] bytes = InlineIndexHelper.toBytes("\u20ac\u20ac", 2);
+        assertNull(bytes);
     }
 
 }

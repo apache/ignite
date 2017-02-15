@@ -97,11 +97,11 @@ public class InlineIndexHelper {
             case Value.BYTE:
                 return 1;
 
-            case Value.INT:
-                return 4;
-
             case Value.SHORT:
                 return 2;
+
+            case Value.INT:
+                return 4;
 
             case Value.LONG:
                 return 8;
@@ -147,15 +147,21 @@ public class InlineIndexHelper {
      * @return Value.
      */
     public Value get(long pageAddr, int off, int maxSize) {
-        if (size() > 0 && size() + 1 >= maxSize)
+        if (size() > 0 && size() + 1 > maxSize)
             return null;
 
         int type = PageUtils.getByte(pageAddr, off);
 
+        if (type == Value.UNKNOWN)
+            return null;
+
         if (type == Value.NULL)
             return ValueNull.INSTANCE;
 
-        switch (type) {
+        if (this.type != type)
+            throw new UnsupportedOperationException("invalid fast index type " + type);
+
+        switch (this.type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get(PageUtils.getByte(pageAddr, off + 1) != 0);
 
@@ -187,7 +193,7 @@ public class InlineIndexHelper {
      * @return NUmber of bytes saved.
      */
     public int put(long pageAddr, int off, Value val, int maxSize) {
-        if (size() > 0 && size() + 1 >= maxSize)
+        if (size() > 0 && size() + 1 > maxSize)
             return 0;
 
         if (val.getType() == Value.NULL) {
@@ -195,7 +201,7 @@ public class InlineIndexHelper {
             return 1;
         }
 
-        if (val.getType() != type())
+        if (val.getType() != type)
             throw new UnsupportedOperationException("value type doesn't match");
 
         switch (type) {
@@ -225,17 +231,23 @@ public class InlineIndexHelper {
                 return size() + 1;
 
             case Value.STRING:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
-
                 byte[] s;
-                if (val.getString().getBytes(CHARSET).length + 2 <= maxSize)
+                if (val.getString().getBytes(CHARSET).length + 3 <= maxSize)
                     s = val.getString().getBytes(CHARSET);
                 else
-                    s = toBytes(val.getString(), maxSize - 2);
+                    s = toBytes(val.getString(), maxSize - 3);
 
-                PageUtils.putShort(pageAddr, off + 1, (short)s.length);
-                PageUtils.putBytes(pageAddr, off + 3, s);
-                return s.length + 3;
+                if (s == null) {
+                    // Can't fit anything to
+                    PageUtils.putByte(pageAddr, off, (byte)Value.UNKNOWN);
+                    return 0;
+                }
+                else {
+                    PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                    PageUtils.putShort(pageAddr, off + 1, (short)s.length);
+                    PageUtils.putBytes(pageAddr, off + 3, s);
+                    return s.length + 3;
+                }
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -244,6 +256,7 @@ public class InlineIndexHelper {
 
     /**
      * Convert String to byte[] with size limit, according to UTF-8 encoding.
+     *
      * @param s String.
      * @param limit Size limit.
      * @return byte[].

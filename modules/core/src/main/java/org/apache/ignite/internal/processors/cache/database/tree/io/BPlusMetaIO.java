@@ -26,7 +26,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class BPlusMetaIO extends PageIO {
     /** */
     public static final IOVersions<BPlusMetaIO> VERSIONS = new IOVersions<>(
-        new BPlusMetaIO(1)
+        new BPlusMetaIO(1), new BPlusMetaIO(2)
     );
 
     /** */
@@ -169,9 +169,8 @@ public class BPlusMetaIO extends PageIO {
      * @param size Offset size.
      */
     public void setInlineSize(long pageAddr, int size) {
-        assert inlineSizeOff > -1;
-
-        PageUtils.putShort(pageAddr, inlineSizeOff, (short)size);
+        if (inlineSizeOff > -1)
+            PageUtils.putShort(pageAddr, inlineSizeOff, (short)size);
     }
 
     /**

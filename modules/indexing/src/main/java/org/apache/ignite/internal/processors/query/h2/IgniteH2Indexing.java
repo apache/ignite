@@ -81,9 +81,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -159,7 +156,6 @@ import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.jdbc.JdbcStatement;
 import org.h2.message.DbException;
 import org.h2.mvstore.cache.CacheLongKeyLIRS;
-import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.server.web.WebServer;
 import org.h2.table.Column;
@@ -223,32 +219,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
-    }
-
-    /**
-     * @param payload Payload size.
-     * @return IOVersions for given payload.
-     */
-    public static IOVersions<? extends BPlusInnerIO<SearchRow>> getInnerVersions(int payload) {
-        assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
-
-        if (payload == 0)
-            return H2InnerIO.VERSIONS;
-        else
-            return (IOVersions<BPlusInnerIO<SearchRow>>)PageIO.getInnerVersions((short)(payload - 1));
-    }
-
-    /**
-     * @param payload Payload size.
-     * @return IOVersions for given payload.
-     */
-    public static IOVersions<? extends BPlusLeafIO<SearchRow>> getLeafVersions(int payload) {
-        assert payload >= 0 && payload <= PageIO.MAX_PAYLOAD_SIZE;
-
-        if (payload == 0)
-            return H2LeafIO.VERSIONS;
-        else
-            return (IOVersions<BPlusLeafIO<SearchRow>>)PageIO.getLeafVersions((short)(payload - 1));
     }
     
     /** Default DB options. */

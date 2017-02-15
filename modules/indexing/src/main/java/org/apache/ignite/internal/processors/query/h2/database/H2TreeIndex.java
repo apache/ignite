@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseS
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -418,28 +419,33 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** */
-    private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int confInlineVal) {
-        int maxVal = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, 2048);
+    private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
+        int maxSize = PageIO.MAX_PAYLOAD_SIZE;
 
-        if (maxVal == 0)
+        int propSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, 0);
+
+        if (cfgInlineSize == 0)
             return 0;
 
         if (F.isEmpty(inlineIdxs))
             return 0;
-        if (confInlineVal == -1) {
+
+        if (cfgInlineSize == -1) {
             int size = 0;
 
             for (int i = 0; i < inlineIdxs.size(); i++) {
-                InlineIndexHelper indexHelper = inlineIdxs.get(i);
-                if (indexHelper.size() <= 0)
+                InlineIndexHelper idxHelper = inlineIdxs.get(i);
+                if (idxHelper.size() <= 0) {
+                    size = propSize;
                     break;
+                }
                 // 1 byte type + size
-                size += indexHelper.size() + 1;
+                size += idxHelper.size() + 1;
             }
 
-            return Math.min(maxVal, size);
+            return Math.min(maxSize, size);
         }
         else
-            return Math.min(maxVal, confInlineVal);
+            return Math.min(maxSize, cfgInlineSize);
     }
 }
