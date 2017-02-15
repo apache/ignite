@@ -103,16 +103,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private final float maxFill;
 
     /** */
-    private final long metaPageId;
+    protected final long metaPageId;
 
     /** */
-    private final boolean canGetRowFromInner;
+    private boolean canGetRowFromInner;
 
     /** */
-    private final IOVersions<? extends BPlusInnerIO<L>> innerIos;
+    private IOVersions<? extends BPlusInnerIO<L>> innerIos;
 
     /** */
-    private final IOVersions<? extends BPlusLeafIO<L>> leafIos;
+    private IOVersions<? extends BPlusLeafIO<L>> leafIos;
 
     /** */
     private final AtomicLong globalRmvId;
@@ -711,17 +711,63 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
-        assert innerIos != null;
-        assert leafIos != null;
         assert metaPageId != 0L;
 
-        this.canGetRowFromInner = innerIos.latest().canGetRow(); // TODO refactor
-        this.innerIos = innerIos;
-        this.leafIos = leafIos;
         this.metaPageId = metaPageId;
         this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
+
+        setIos(innerIos, leafIos);
+    }
+
+    /**
+     * @param name Tree name.
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
+     * @param globalRmvId Remove ID.
+     * @param metaPageId Meta page ID.
+     * @param reuseList Reuse list.
+     * @throws IgniteCheckedException If failed.
+     */
+    public BPlusTree(
+        String name,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
+        long metaPageId,
+        ReuseList reuseList
+    ) throws IgniteCheckedException {
+        super(cacheId, pageMem, wal);
+
+        assert !F.isEmpty(name);
+
+        // TODO make configurable: 0 <= minFill <= maxFill <= 1
+        minFill = 0f; // Testing worst case when merge happens only on empty page.
+        maxFill = 0f; // Avoiding random effects on testing.
+
+        assert metaPageId != 0L;
+
+        this.metaPageId = metaPageId;
+        this.name = name;
+        this.reuseList = reuseList;
+        this.globalRmvId = globalRmvId;
+    }
+
+    /**
+     * @param innerIos Inner IO versions.
+     * @param leafIos Leaf IO versions.
+     */
+    public void setIos(IOVersions<? extends BPlusInnerIO<L>> innerIos,
+        IOVersions<? extends BPlusLeafIO<L>> leafIos) {
+        assert innerIos != null;
+        assert leafIos != null;
+
+        this.canGetRowFromInner = innerIos.latest().canGetRow(); // TODO refactor
+        this.innerIos = innerIos;
+        this.leafIos = leafIos;
     }
 
     /**

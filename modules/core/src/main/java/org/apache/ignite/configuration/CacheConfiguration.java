@@ -2456,15 +2456,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          *
          * @param idxName Index name.
          * @param type Index type.
+         * @param inlineSize Inline size.
          * @return Index descriptor.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
-            IndexDescriptor idx = new IndexDescriptor(type);
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type, int inlineSize) {
+            IndexDescriptor idx = new IndexDescriptor(type, inlineSize);
 
             if (indexes.put(idxName, idx) != null)
                 throw new CacheException("Index with name '" + idxName + "' already exists.");
 
             return idx;
+        }
+
+        /**
+         * Adds index.
+         *
+         * @param idxName Index name.
+         * @param type Index type.
+         * @return Index descriptor.
+         */
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
+            return addIndex(idxName, type, 0);
         }
 
         /**
@@ -2594,13 +2606,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         private final GridQueryIndexType type;
 
+        /** */
+        private final int inlineSize;
+
+        /**
+         * @param type Type.
+         * @param inlineSize Inline size.
+         */
+        private IndexDescriptor(GridQueryIndexType type, int inlineSize) {
+            assert type != null;
+
+            this.type = type;
+            this.inlineSize = inlineSize;
+        }
+
         /**
          * @param type Type.
          */
         private IndexDescriptor(GridQueryIndexType type) {
-            assert type != null;
-
-            this.type = type;
+            this(type, 0);
         }
 
         /** {@inheritDoc} */
@@ -2639,6 +2663,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** {@inheritDoc} */
         @Override public GridQueryIndexType type() {
             return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return inlineSize;
         }
 
         /** {@inheritDoc} */

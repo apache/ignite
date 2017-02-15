@@ -25,10 +25,11 @@ import junit.framework.TestCase;
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
-public class FastIndexHelperTest extends TestCase {
+public class InlineIndexHelperTest extends TestCase {
 
+    /** Test utf-8 string cutting. */
     public void testConvert() {
-        // 8 bytes total.
+        // 8 bytes total: 1b, 1b, 3b, 3b.
 
         byte[] bytes = InlineIndexHelper.toBytes("00\u20ac\u20ac", 7);
         assertEquals(5, bytes.length);

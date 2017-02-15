@@ -66,7 +66,7 @@ public abstract class BPlusIO<L> extends PageIO {
     /**
      * @return Item size in bytes.
      */
-    public final int itemSize() {
+    public final int getItemSize() {
         return itemSize;
     }
 

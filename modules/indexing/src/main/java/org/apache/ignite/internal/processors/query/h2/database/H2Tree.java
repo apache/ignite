@@ -19,17 +19,16 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
 
 /**
@@ -37,6 +36,9 @@ import org.h2.result.SearchRow;
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
     private final H2RowFactory rowStore;
+
+    /** */
+    private final int inlineSize;
 
     /**
      * @param name Tree name.
@@ -59,43 +61,28 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         H2RowFactory rowStore,
         long metaPageId,
         boolean initNew,
-        IOVersions<? extends BPlusInnerIO<SearchRow>> innerIos,
-        IOVersions<? extends BPlusLeafIO<SearchRow>> leafIos
+        int inlineSize
     ) throws IgniteCheckedException {
-        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+        super(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+
+        if (!initNew) {
+            // Page is ready - read inline size from it.
+            this.inlineSize = getMetaInlineSize();
+        }
+        else
+            this.inlineSize = inlineSize;
 
         assert rowStore != null;
 
         this.rowStore = rowStore;
 
+        setIos(IgniteH2Indexing.getInnerVersions(this.inlineSize), IgniteH2Indexing.getLeafVersions(this.inlineSize));
+
         initTree(initNew);
-    }
 
-    /**
-     * @param name Tree name.
-     * @param reuseList Reuse list.
-     * @param cacheId Cache ID.
-     * @param pageMem Page memory.
-     * @param wal Write ahead log manager.
-     * @param rowStore Row data store.
-     * @param metaPageId Meta page ID.
-     * @param initNew Initialize new index.
-     * @throws IgniteCheckedException If failed.
-     */
-    public H2Tree(
-        String name,
-        ReuseList reuseList,
-        int cacheId,
-        PageMemory pageMem,
-        IgniteWriteAheadLogManager wal,
-        AtomicLong globalRmvId,
-        H2RowFactory rowStore,
-        long metaPageId,
-        boolean initNew
-    ) throws IgniteCheckedException {
-        this(name, reuseList, cacheId, pageMem, wal, globalRmvId, rowStore, metaPageId, initNew, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        if (initNew)
+            saveMetaInlineSize(this.inlineSize);
     }
-
 
     /**
      * @return Row store.
@@ -108,6 +95,54 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, long pageAddr, int idx)
         throws IgniteCheckedException {
         return (GridH2Row)io.getLookupRow(this, pageAddr, idx);
+    }
+
+    /** */
+    public int inlineSize() {
+        return inlineSize;
+    }
+
+    /**
+     * @param inlineSize Inline size.
+     */
+    private void saveMetaInlineSize(int inlineSize) throws IgniteCheckedException {
+        try (Page meta = page(metaPageId)) {
+            long pageAddr = readLock(meta); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+                io.setInlineSize(pageAddr, inlineSize);
+            }
+            finally {
+                readUnlock(meta, pageAddr);
+            }
+        }
+    }
+
+    /**
+     * @return Inline size.
+     * @throws IgniteCheckedException
+     */
+    private int getMetaInlineSize() throws IgniteCheckedException {
+        try (Page meta = page(metaPageId)) {
+            long pageAddr = readLock(meta); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
+
+                return io.getInlineSize(pageAddr);
+            }
+            finally {
+                readUnlock(meta, pageAddr);
+            }
+        }
     }
 }
 

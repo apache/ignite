@@ -49,7 +49,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         // The structure of the page is the following:
         // |ITEMS_OFF|w|A|x|B|y|C|z|
         // where capital letters are data items, lowercase letters are 8 byte page references.
-        return (pageSize - ITEMS_OFF - 8) / (itemSize() + 8);
+        return (pageSize - ITEMS_OFF - 8) / (getItemSize() + 8);
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || srcPageAddr != dstPageAddr;
 
-        cnt *= itemSize() + 8; // From items to bytes.
+        cnt *= getItemSize() + 8; // From items to bytes.
 
         if (dstIdx > srcIdx) {
             PageHandler.copyMemory(srcPageAddr, dstPageAddr, offset(srcIdx), offset(dstIdx), cnt);
@@ -119,7 +119,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @return Offset from byte buffer begin in bytes.
      */
     private int offset0(int idx, int shift) {
-        return shift + (8 + itemSize()) * idx;
+        return shift + (8 + getItemSize()) * idx;
     }
 
     /** {@inheritDoc} */
