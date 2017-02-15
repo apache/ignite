@@ -39,7 +39,13 @@ suite('VersionServiceTestsSuite', () => {
     });
 
     test('Version a = b', () => {
-        assert.equal(INSTANCE.compare('1.7.0', '1.7.0'), 0);
+        assert.equal(INSTANCE.compare('1.0.0', '1.0.0'), 0);
+        assert.equal(INSTANCE.compare('1.2.0', '1.2.0'), 0);
+        assert.equal(INSTANCE.compare('1.2.3', '1.2.3'), 0);
+
+        assert.equal(INSTANCE.compare('1.0.0-1', '1.0.0-1'), 0);
+        assert.equal(INSTANCE.compare('1.2.0-1', '1.2.0-1'), 0);
+        assert.equal(INSTANCE.compare('1.2.3-1', '1.2.3-1'), 0);
     });
 
     test('Version a < b', () => {

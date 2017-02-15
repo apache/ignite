@@ -22,91 +22,16 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <!-- Imports no-ODBC Ignite configuration -->
+    <import resource="queries-default.xml"/>
+
+    <bean parent="ignite.cfg">
         <!-- Enabling ODBC. -->
         <property name="odbcConfiguration">
             <bean class="org.apache.ignite.configuration.OdbcConfiguration">
                 <property name="endpointAddress" value="127.0.0.1:11110"/>
-            </bean>
-        </property>
-
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cache"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <!-- Configure type metadata to enable queries. -->
-                    <property name="queryEntities">
-                        <list>
-                            <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="keyType" value="java.lang.Long"/>
-                                <property name="valueType" value="TestType"/>
-
-                                <property name="fields">
-                                    <map>
-                                        <entry key="i8Field" value="java.lang.Byte"/>
-                                        <entry key="i16Field" value="java.lang.Short"/>
-                                        <entry key="i32Field" value="java.lang.Integer"/>
-                                        <entry key="i64Field" value="java.lang.Long"/>
-                                        <entry key="strField" value="java.lang.String"/>
-                                        <entry key="floatField" value="java.lang.Float"/>
-                                        <entry key="doubleField" value="java.lang.Double"/>
-                                        <entry key="boolField" value="java.lang.Boolean"/>
-                                        <entry key="guidField" value="java.util.UUID"/>
-                                        <entry key="dateField" value="java.util.Date"/>
-                                        <entry key="timestampField" value="java.sql.Timestamp"/>
-                                    </map>
-                                </property>
-
-                                <property name="keyFields">
-                                    <list></list>
-                                </property>
-
-                                <property name="indexes">
-                                    <list>
-                                        <bean class="org.apache.ignite.cache.QueryIndex">
-                                            <constructor-arg value="i32Field"/>
-                                        </bean>
-                                        <bean class="org.apache.ignite.cache.QueryIndex">
-                                            <constructor-arg value="i64Field"/>
-                                        </bean>
-                                    </list>
-                                </property>
-                            </bean>
-                        </list>
-                    </property>
-                </bean>
-            </list>
-        </property>
-
-        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <!--
-                        Ignite provides several options for automatic discovery that can be used
-                        instead os static IP based discovery.
-                    -->
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="addresses">
-                            <list>
-                                <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

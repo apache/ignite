@@ -49,6 +49,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorEvents(gcj::JniContext* ctx, void* obj, void* prj);
     void* IGNITE_CALL IgniteProcessorServices(gcj::JniContext* ctx, void* obj, void* prj);
     void* IGNITE_CALL IgniteProcessorExtensions(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteProcessorExtension(gcj::JniContext* ctx, void* obj, int id);
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
     void* IGNITE_CALL IgniteProcessorAtomicSequence(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
     void* IGNITE_CALL IgniteProcessorAtomicReference(gcj::JniContext* ctx, void* obj, char* name, long long memPtr, bool create);
@@ -79,9 +80,6 @@ extern "C" {
     void IGNITE_CALL IgniteDeleteContext(gcj::JniContext* ctx);
 
     void IGNITE_CALL IgniteDestroyJvm(gcj::JniContext* ctx);
-
-    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
-    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 
     void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
     void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);

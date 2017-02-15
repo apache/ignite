@@ -170,7 +170,9 @@ BOOST_AUTO_TEST_CASE(TestTimestamp)
     BinaryReaderImpl reader(&in);
     Timestamp readVal = reader.ReadTopObject<Timestamp>();
 
-    BOOST_REQUIRE(readVal == writeVal);
+    BOOST_CHECK(readVal == writeVal);
+    BOOST_CHECK_EQUAL(readVal.GetMilliseconds(), writeVal.GetMilliseconds());
+    BOOST_CHECK_EQUAL(readVal.GetSecondFraction(), writeVal.GetSecondFraction());
 }
 
 BOOST_AUTO_TEST_CASE(TestString)

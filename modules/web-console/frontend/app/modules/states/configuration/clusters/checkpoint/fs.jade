@@ -36,13 +36,13 @@ include /app/helpers/jade/mixins.jade
             -var valid = form + '[' + name + '].$valid'
             -var save = dirPaths + '[$index] = ' + model
 
-            div(ng-repeat='model in #{dirPaths} track by $index' ng-init='obj = {}')
+            div(ng-repeat='item in #{dirPaths} track by $index' ng-init='obj = {}')
                 label.col-xs-12.col-sm-12.col-md-12
                     .indexField
                         | {{ $index+1 }})
-                    +table-remove-conditional-button(dirPaths, 'true', 'Remove path')
+                    +table-remove-conditional-button(dirPaths, 'true', 'Remove path', 'item')
                     span(ng-hide='field.edit')
-                        a.labelFormField(ng-click='(field.edit = true) && (#{model} = model)') {{ model }}
+                        a.labelFormField(ng-click='(field.edit = true) && (#{model} = item)') {{ item }}
                     span(ng-if='field.edit')
                         +table-text-field(name, model, dirPaths, valid, save, 'Input directory path', false)
                             +table-save-button(valid, save, false)
@@ -63,4 +63,4 @@ include /app/helpers/jade/mixins.jade
 
 .settings-row
     +java-class('Listener:', 'model.FS.checkpointListener', '"checkpointFsListener" + $index', 'true', 'false',
-        'Checkpoint listener implementation class name')
+        'Checkpoint listener implementation class name', 'model.kind === "FS"')

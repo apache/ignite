@@ -16,6 +16,6 @@
 
 .alert(ng-show='type' ng-class='[type ? "alert-" + type : null]')
     button.close(type='button', ng-if='dismissable', ng-click='$hide()') &times;
-    i.alert-icon.fa(ng-if='icon' ng-class='[icon]')
+    i.alert-icon(ng-if='icon' ng-class='[icon]')
     span.alert-title(ng-bind-html='title')
     span.alert-content(ng-bind-html='content')

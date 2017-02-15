@@ -14,63 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.row(ng-controller='adminController')
+.admin-page.row
     .docs-content.greedy
         .docs-header
-            h1 List of registered users
+            h1 Admin panel
             hr
         .docs-body
-            .col-xs-12
-                table.table.table-striped.table-vertical-middle.admin(st-table='displayedUsers' st-safe-src='users')
-                    thead
-                        tr
-                            th.header(colspan='10')
-                                .col-xs-3
-                                    input.form-control(type='text' st-search='label' placeholder='Filter users...')
-                                .col-xs-9.admin-summary.text-right(colspan='10')
-                                    strong Total users: {{ users.length }}
-                                .col-xs-offset-6.col-xs-6.text-right
-                                    div(st-pagination st-items-by-page='15' st-displayed-pages='5' st-template='../templates/pagination.html')
-                        tr
-                            th(st-sort='userName') User
-                            th(st-sort='email') Email
-                            th(st-sort='company') Company
-                            th(st-sort='country') Country
-                            th.col-xs-2(st-sort='lastLogin' st-sort-default='reverse') Last login
-                            th.text-nowrap(st-sort='counters.clusters' st-descending-first bs-tooltip='"Clusters count"' data-placement='top')
-                                i.fa.fa-sitemap()
-                            th.text-nowrap(st-sort='counters.models' st-descending-first bs-tooltip='"Models count"' data-placement='top')
-                                i.fa.fa-object-group()
-                            th.text-nowrap(st-sort='counters.caches' st-descending-first bs-tooltip='"Caches count"' data-placement='top')
-                                i.fa.fa-database()
-                            th.text-nowrap(st-sort='counters.igfs' st-descending-first bs-tooltip='"IGFS count"' data-placement='top')
-                                i.fa.fa-folder-o()
-                            th(width='1%') Actions
-                    tbody
-                        tr(ng-repeat='row in displayedUsers track by row._id')
-                            td {{::row.userName}}
-                            td
-                                a(ng-href='mailto:{{::row.email}}') {{::row.email}}
-                            td {{::row.company}}
-                            td {{::row.countryCode}}
-                            td {{::row.lastLogin | date:'medium'}}
-                            td {{::row.counters.clusters}}
-                            td {{::row.counters.models}}
-                            td {{::row.counters.caches}}
-                            td {{::row.counters.igfs}}
-                            td.text-center
-                                a.btn.btn-default.dropdown-toggle(bs-dropdown='' ng-show='row._id != user._id' data-placement='bottom-right')
-                                    i.fa.fa-gear &nbsp;
-                                    span.caret
-                                ul.dropdown-menu(role='menu')
-                                    li
-                                        a(ng-click='becomeUser(row)') Become this user
-                                    li
-                                        a(ng-click='toggleAdmin(row)' ng-if='row.admin && row._id !== user._id') Revoke admin
-                                        a(ng-click='toggleAdmin(row)' ng-if='!row.admin && row._id !== user._id')  Grant admin
-                                    li
-                                        a(ng-click='removeUser(row)') Remove user
-                    tfoot
-                        tr
-                            td.text-right(colspan='10')
-                                div(st-pagination st-items-by-page='15' st-displayed-pages='5' st-template='../templates/pagination.html')
+            .row
+                .col-xs-12
+                    ignite-list-of-registered-users(data-options='ctrl.data')

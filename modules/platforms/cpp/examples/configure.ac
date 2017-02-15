@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite C++ Examples], [1.8.0.14218], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
+AC_INIT([Apache Ignite C++ Examples], [2.0.0.16694], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
 
 AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])
@@ -56,6 +56,7 @@ AC_CONFIG_FILES([ \
     putget-example/Makefile \
     odbc-example/Makefile \
     query-example/Makefile \
+    continuous-query-example/Makefile \
 ])
 
 AC_OUTPUT

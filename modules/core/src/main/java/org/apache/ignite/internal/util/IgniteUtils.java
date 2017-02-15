@@ -73,6 +73,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -153,7 +155,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -236,7 +237,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.SharedSecrets;
 import sun.misc.URLClassPath;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
@@ -265,9 +265,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
-    /** {@code True} if {@code unsafe} should be used for array copy. */
-    private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
-
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
 
@@ -370,6 +367,9 @@ public abstract class IgniteUtils {
 
     /** Indicates whether current OS is Mac OS. */
     private static boolean mac;
+
+    /** Indicates whether current OS is of RedHat family. */
+    private static boolean redHat;
 
     /** Indicates whether current OS architecture is Sun Sparc. */
     private static boolean sparc;
@@ -509,10 +509,29 @@ public abstract class IgniteUtils {
         }
     };
 
-    /**
-     * Initializes enterprise check.
+    /** */
+    private static final boolean assertionsEnabled;
+
+    /*
+     *
      */
     static {
+        boolean assertionsEnabled0 = true;
+
+        try {
+            assert false;
+
+            assertionsEnabled0 = false;
+        }
+        catch (AssertionError ignored) {
+            assertionsEnabled0 = true;
+        }
+        finally {
+            assertionsEnabled = assertionsEnabled0;
+        }
+
+        redHat = Files.exists(Paths.get("/etc/redhat-release")); // RedHat family OS (Fedora, CentOS, RedHat)
+
         String osName = System.getProperty("os.name");
 
         String osLow = osName.toLowerCase();
@@ -1284,6 +1303,27 @@ public abstract class IgniteUtils {
             deadlockedThreadsIds = Collections.emptySet();
 
         return deadlockedThreadsIds;
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @param sb Builder.
+     */
+    public static void printStackTrace(long threadId, GridStringBuilder sb) {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
+
+        printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
+    }
+
+    /**
+     * @return {@code true} if there is java level deadlock.
+     */
+    public static boolean deadlockPresent() {
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+
+        return !F.isEmpty(mxBean.findDeadlockedThreads());
     }
 
     /**
@@ -5079,76 +5119,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes string-to-string map to given data output.
-     *
-     * @param out Data output.
-     * @param map Map.
-     * @throws IOException If write failed.
-     */
-    public static void writeStringMap(DataOutput out, @Nullable Map<String, String> map) throws IOException {
-        if (map != null) {
-            out.writeInt(map.size());
-
-            for (Map.Entry<String, String> e : map.entrySet()) {
-                writeUTFStringNullable(out, e.getKey());
-                writeUTFStringNullable(out, e.getValue());
-            }
-        }
-        else
-            out.writeInt(-1);
-    }
-
-    /**
-     * Reads string-to-string map written by {@link #writeStringMap(DataOutput, Map)}.
-     *
-     * @param in Data input.
-     * @throws IOException If write failed.
-     * @return Read result.
-     */
-    public static Map<String, String> readStringMap(DataInput in) throws IOException {
-        int size = in.readInt();
-
-        if (size == -1)
-            return null;
-        else {
-            Map<String, String> map = U.newHashMap(size);
-
-            for (int i = 0; i < size; i++)
-                map.put(readUTFStringNullable(in), readUTFStringNullable(in));
-
-            return map;
-        }
-    }
-
-    /**
-     * Write UTF string which can be {@code null}.
-     *
-     * @param out Output stream.
-     * @param val Value.
-     * @throws IOException If failed.
-     */
-    public static void writeUTFStringNullable(DataOutput out, @Nullable String val) throws IOException {
-        if (val != null) {
-            out.writeBoolean(true);
-
-            out.writeUTF(val);
-        }
-        else
-            out.writeBoolean(false);
-    }
-
-    /**
-     * Read UTF string which can be {@code null}.
-     *
-     * @param in Input stream.
-     * @return Value.
-     * @throws IOException If failed.
-     */
-    public static String readUTFStringNullable(DataInput in) throws IOException {
-        return in.readBoolean() ? in.readUTF() : null;
-    }
-
-    /**
      * Read hash map.
      *
      * @param in Input.
@@ -6144,6 +6114,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return {@code True} if assertions enabled.
+     */
+    public static boolean assertionsEnabled() {
+        return assertionsEnabled;
+    }
+
+    /**
      * Gets OS JDK string.
      *
      * @return OS JDK string.
@@ -6239,6 +6216,13 @@ public abstract class IgniteUtils {
      */
     public static boolean isMacOs() {
         return mac;
+    }
+
+    /**
+     * @return {@code True} if current OS is RedHat.
+     */
+    public static boolean isRedHat() {
+        return redHat;
     }
 
     /**
@@ -8340,6 +8324,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets absolute value for long. If argument is {@link Long#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Argument.
+     * @return Absolute value.
+     */
+    public static long safeAbs(long i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
      * Gets wrapper class for a primitive type.
      *
      * @param cls Class. If {@code null}, method is no-op.
@@ -8482,28 +8478,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * As long as array copying uses JVM-private API, which is not guaranteed
-     * to be available on all JVM, this method should be called to ensure
-     * logic could work properly.
-     *
-     * @return {@code True} if unsafe copying can work on the current JVM or
-     *      {@code false} if it can't.
-     */
-    @SuppressWarnings("TypeParameterExtendsFinalClass")
-    private static boolean unsafeByteArrayCopyAvailable() {
-        try {
-            Class<? extends Unsafe> unsafeCls = Unsafe.class;
-
-            unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-
-            return true;
-        }
-        catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    /**
      * @param src Buffer to copy from (length included).
      * @param off Offset in source buffer.
      * @param resBuf Result buffer.
@@ -8514,10 +8488,7 @@ public abstract class IgniteUtils {
     public static int arrayCopy(byte[] src, int off, byte[] resBuf, int resOff, int len) {
         assert resBuf.length >= resOff + len;
 
-        if (UNSAFE_BYTE_ARR_CP)
-            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
-        else
-            System.arraycopy(src, off, resBuf, resOff, len);
+        System.arraycopy(src, off, resBuf, resOff, len);
 
         return resOff + len;
     }
@@ -9284,7 +9255,7 @@ public abstract class IgniteUtils {
     public static byte[] copyMemory(long ptr, int size) {
         byte[] res = new byte[size];
 
-        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
+        GridUnsafe.copyOffheapHeap(ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
 
         return res;
     }
@@ -9447,7 +9418,7 @@ public abstract class IgniteUtils {
 
                 return fld;
             }
-            catch (NoSuchFieldException e) {
+            catch (NoSuchFieldException ignored) {
                 // No-op.
             }
 

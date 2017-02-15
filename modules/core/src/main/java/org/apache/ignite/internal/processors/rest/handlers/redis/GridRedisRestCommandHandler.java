@@ -44,6 +44,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     /**
      * Constructor.
      *
+     * @param log Logger.
      * @param hnd REST protocol handler.
      */
     public GridRedisRestCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {

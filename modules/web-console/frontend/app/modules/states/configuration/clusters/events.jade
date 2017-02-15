@@ -59,10 +59,10 @@ include /app/helpers/jade/mixins.jade
                     .settings-row
                         +java-class('Filter:', modelEventStorage + '.Memory.filter', '"EventStorageFilter"', 'true', 'false',
                         'Filter for events to be recorded<br/>\
-                        Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;')
+                        Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;', eventStorageMemory)
 
                 .settings-row(ng-show=eventStorageCustom)
-                    +java-class('Class:', modelEventStorage + '.Custom.className', '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name')
+                    +java-class('Class:', modelEventStorage + '.Custom.className', '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name', eventStorageCustom)
 
             .col-sm-6
                 +preview-xml-java(model, 'clusterEvents')

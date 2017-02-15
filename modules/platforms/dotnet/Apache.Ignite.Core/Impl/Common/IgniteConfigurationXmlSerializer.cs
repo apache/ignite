@@ -84,6 +84,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
+            if (property != null && !property.CanWrite)
+                return;
+
             if (valueType == typeof(IgniteConfiguration))
                 writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
             else
@@ -142,7 +145,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
         {
-            var props = GetNonDefaultProperties(obj).ToList();
+            var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
             // Specify type for interfaces and abstract classes
             if (valueType.IsAbstract)
@@ -353,7 +356,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return type.Assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
+            return typeof(IIgnite).Assembly.GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 
         /// <summary>

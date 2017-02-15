@@ -41,7 +41,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
         try {
             GEOMETRY_FROM_BYTES = Class.forName("org.h2.value.ValueGeometry").getMethod("get", byte[].class);
         }
-        catch (NoSuchMethodException | ClassNotFoundException e) {
+        catch (NoSuchMethodException | ClassNotFoundException ignored) {
             throw new IllegalStateException("Check H2 version in classpath.");
         }
     }

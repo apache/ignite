@@ -101,6 +101,10 @@ public class IgniteBenchmarkArguments {
     public int preloadAmount = 500_000;
 
     /** */
+    @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
+    public long preloadLogsInterval = 30_000;
+
+    /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
     private int jobs = 10;
 
@@ -288,6 +292,13 @@ public class IgniteBenchmarkArguments {
     public int preloadAmount() {
         return preloadAmount;
     }
+
+    /**
+     * @return Preload log printing interval in seconds.
+     */
+     public long preloadLogsInterval() {
+         return preloadLogsInterval;
+     }
 
     /**
      * @return Configuration file.

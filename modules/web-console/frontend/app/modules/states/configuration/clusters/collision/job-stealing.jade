@@ -37,7 +37,7 @@ div
             'Node should attempt to steal jobs from other nodes')
     .details-row
         +java-class('External listener:', model + '.externalCollisionListener', '"jsExternalCollisionListener"', 'true', 'false',
-            'Listener to be set for notification of external collision events')
+            'Listener to be set for notification of external collision events', 'backupItem.collision.kind === "JobStealing"')
     .details-row
         +ignite-form-group
             ignite-form-field-label

@@ -77,13 +77,13 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
+    protected static final String SECONDARY_URI = "igfs://igfs-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
 
     /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "igfs://igfs:grid@/";
+    protected static final String PRIMARY_URI = "igfs://igfs@/";
 
     /** Primary file system configuration path. */
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
@@ -268,7 +268,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 
-        cfg.setInt(String.format(PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, "igfs:grid@"), seqReads);
+        cfg.setInt(String.format(PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, "igfs@"), seqReads);
 
         FileSystem fs = FileSystem.get(new URI(PRIMARY_URI), cfg);
 

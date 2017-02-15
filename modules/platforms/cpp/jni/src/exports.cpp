@@ -118,6 +118,10 @@ extern "C" {
         return ctx->ProcessorExtensions(static_cast<jobject>(obj));
     }
 
+    void* IGNITE_CALL IgniteProcessorExtension(gcj::JniContext* ctx, void* obj, int id) {
+        return ctx->ProcessorExtension(static_cast<jobject>(obj), id);
+    }
+
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
         return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
     }
@@ -212,14 +216,6 @@ extern "C" {
 
     void IGNITE_CALL IgniteDestroyJvm(gcj::JniContext* ctx) {
         ctx->DestroyJvm();
-    }
-
-    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableCancel(static_cast<jobject>(obj));
-    }
-
-    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
     }
 
     void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {

@@ -19,28 +19,22 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
-import org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi;
-import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
@@ -73,7 +67,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new TestRun(orgId));
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
             // The test checks only correct partition release in case CollisionSpi is used.
         }

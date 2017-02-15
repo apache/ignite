@@ -28,14 +28,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import kafka.consumer.ConsumerConfig;
-import kafka.serializer.StringDecoder;
-import kafka.utils.VerifiableProperties;
+import kafka.message.MessageAndMetadata;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -146,7 +146,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     private void consumerStream(String topic, Map<String, String> keyValMap)
         throws TimeoutException, InterruptedException {
-        KafkaStreamer<String, String, String> kafkaStmr = null;
+        KafkaStreamer<String, String> kafkaStmr = null;
 
         Ignite ignite = grid();
 
@@ -173,13 +173,29 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
-            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
+            kafkaStmr.setConsumerConfig(
+                createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
 
-            // Set the decoders.
-            StringDecoder strDecoder = new StringDecoder(new VerifiableProperties());
+            kafkaStmr.setMultipleTupleExtractor(
+                new StreamMultipleTupleExtractor<MessageAndMetadata<byte[], byte[]>, String, String>() {
+                @Override public Map<String, String> extract(MessageAndMetadata<byte[], byte[]> msg) {
+                    Map<String, String> entries = new HashMap<>();
 
-            kafkaStmr.setKeyDecoder(strDecoder);
-            kafkaStmr.setValueDecoder(strDecoder);
+                    try {
+                        String key = new String(msg.key());
+                        String val = new String(msg.message());
+
+                        // Convert the message into number of cache entries with same key or dynamic key from actual message.
+                        // For now using key as cache entry key and value as cache entry value - for test purpose.
+                        entries.put(key, val);
+                    }
+                    catch (Exception ex) {
+                        fail("Unexpected error." + ex);
+                    }
+
+                    return entries;
+                }
+            });
 
             // Start kafka streamer.
             kafkaStmr.start();

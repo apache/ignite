@@ -17,7 +17,6 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -121,8 +120,8 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
         }
         catch (ClassNotFoundException e) {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
-                "(make sure same versions of all classes are available on all nodes or enable peer-class-loading): " +
-                clsLdr, e);
+                "(make sure same versions of all classes are available on all nodes or enable peer-class-loading) " +
+                "[clsLdr=" + clsLdr + ", cls=" + e.getMessage() + "]", e);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);

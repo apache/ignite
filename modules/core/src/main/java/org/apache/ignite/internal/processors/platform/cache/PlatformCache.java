@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryProxy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
@@ -400,7 +401,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
         throws IgniteCheckedException {
         try {
             switch (type) {
@@ -815,7 +816,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (pred != null)
             filter = platformCtx.createCacheEntryFilter(pred, 0);
 
-        Object[] args = reader.readObjectArray();
+        Object[] args = null;
+
+        int argCnt = reader.readInt();
+
+        if (argCnt > 0) {
+            args = new Object[argCnt];
+
+            for (int i = 0; i < argCnt; i++)
+                args[i] = reader.readObjectDetached();
+        }
 
         if (loc)
             cache.localLoadCache(filter, args);
@@ -824,20 +834,20 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
-                return runQuery(reader, readSqlQuery(reader));
+                return runQuery(readSqlQuery(reader));
 
             case OP_QRY_SQL_FIELDS:
-                return runFieldsQuery(reader, readFieldsQuery(reader));
+                return runFieldsQuery(readFieldsQuery(reader));
 
             case OP_QRY_TXT:
-                return runQuery(reader, readTextQuery(reader));
+                return runQuery(readTextQuery(reader));
 
             case OP_QRY_SCAN:
-                return runQuery(reader, readScanQuery(reader));
+                return runQuery(readScanQuery(reader));
 
             case OP_QRY_CONTINUOUS: {
                 long ptr = reader.readLong();
@@ -903,7 +913,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_NAME:
                 writer.writeObject(cache.getName());
@@ -940,7 +950,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         switch (type) {
             case OP_WITH_ASYNC: {
                 if (cache.isAsync())
@@ -983,7 +993,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_SIZE: {
                 CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes((int)val);
@@ -1121,12 +1131,12 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl) cacheAsync.future()).internalFuture();
     }
 
     /** <inheritDoc /> */
-    @Nullable @Override protected PlatformFutureUtils.Writer futureWriter(int opId) {
+    @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
         if (opId == OP_GET_ALL)
             return WRITER_GET_ALL;
 
@@ -1170,7 +1180,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified query.
      */
-    private PlatformQueryCursor runQuery(BinaryRawReaderEx reader, Query qry) throws IgniteCheckedException {
+    private PlatformQueryCursor runQuery(Query qry) throws IgniteCheckedException {
 
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -1186,7 +1196,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified fields query.
      */
-    private PlatformFieldsQueryCursor runFieldsQuery(BinaryRawReaderEx reader, Query qry)
+    private PlatformFieldsQueryCursor runFieldsQuery(Query qry)
         throws IgniteCheckedException {
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);

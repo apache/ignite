@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -65,7 +66,9 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -295,6 +298,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public PoolProcessor pools();
 
     /**
+     * Gets grid marshaller mapping processor.
+     *
+     * @return Mapping processor.
+     */
+    public GridMarshallerMappingProcessor mapping();
+
+    /**
      * Gets Hadoop helper.
      *
      * @return Hadoop helper.
@@ -307,13 +317,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
-
-    /**
-     * Gets marshaller cache pool.
-     *
-     * @return Marshaller cache pool.
-     */
-    public ExecutorService marshallerCachePool();
 
     /**
      * Gets async callback pool.
@@ -511,6 +514,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getSystemExecutorService();
 
     /**
+     * Executor service that is in charge of processing internal system messages
+     * in stripes (dedicated threads).
+     *
+     * @return Thread pool implementation to be used in grid for internal system messages.
+     */
+    public StripedExecutor getStripedExecutorService();
+
+    /**
      * Executor service that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      *
@@ -531,6 +542,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Thread pool implementation to be used for IGFS outgoing message sending.
      */
     public ExecutorService getIgfsExecutorService();
+
+    /**
+     * Executor service that is in charge of processing data stream messages.
+     *
+     * @return Thread pool implementation to be used for data stream messages.
+     */
+    public ExecutorService getDataStreamerExecutorService();
 
     /**
      * Should return an instance of fully configured thread pool to be used for
@@ -554,6 +572,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing executor service.
      */
     @Nullable public ExecutorService getIndexingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
 
     /**
      * Gets exception registry.

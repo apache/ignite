@@ -51,12 +51,12 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
     private static final int VAL_POS = 2;
 
     /**
-     * Constructor.
+     * Handler constructor.
      *
-     * @param log Logger.
-     * @param hnd Handler.
+     * @param log Logger to use.
+     * @param hnd Rest handler.
      */
-    public GridRedisAppendCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd) {
+    public GridRedisAppendCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
         super(log, hnd);
     }
 

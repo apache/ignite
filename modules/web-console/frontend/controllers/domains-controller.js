@@ -17,8 +17,8 @@
 
 // Controller for Domain model screen.
 export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes) {
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
         UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
@@ -460,6 +460,14 @@ export default ['domainsController', [
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
                 IgniteAgentMonitor.startWatch({text: 'Back to Domain models', goal: 'import domain model from database'})
+                    .then(() => {
+                        ActivitiesData.post({
+                            group: 'configuration',
+                            action: 'configuration/import/model'
+                        });
+
+                        return true;
+                    })
                     .then(importDomainModal.$promise)
                     .then(importDomainModal.show)
                     .then(() => {
@@ -756,15 +764,15 @@ export default ['domainsController', [
                 Loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
-                    .success(function(savedBatch) {
+                    .then(({data}) => {
                         let lastItem;
                         const newItems = [];
 
-                        _.forEach(_mapCaches(savedBatch.generatedCaches), function(cache) {
+                        _.forEach(_mapCaches(data.generatedCaches), function(cache) {
                             $scope.caches.push(cache);
                         });
 
-                        _.forEach(savedBatch.savedDomains, function(savedItem) {
+                        _.forEach(data.savedDomains, function(savedItem) {
                             const idx = _.findIndex($scope.domains, function(domain) {
                                 return domain._id === savedItem._id;
                             });
@@ -792,7 +800,7 @@ export default ['domainsController', [
 
                         $scope.ui.showValid = true;
                     })
-                    .error(Messages.showError)
+                    .catch(Messages.showError)
                     .finally(() => {
                         Loading.finish('importDomainFromDb');
 
@@ -1382,10 +1390,10 @@ export default ['domainsController', [
                 item.kind = 'store';
 
             $http.post('/api/v1/configuration/domains/save', item)
-                .success(function(res) {
+                .then(({data}) => {
                     $scope.ui.inputForm.$setPristine();
 
-                    const savedMeta = res.savedDomains[0];
+                    const savedMeta = data.savedDomains[0];
 
                     const idx = _.findIndex($scope.domains, function(domain) {
                         return domain._id === savedMeta._id;
@@ -1400,16 +1408,16 @@ export default ['domainsController', [
                         if (_.includes(item.caches, cache.value))
                             cache.cache.domains = _.union(cache.cache.domains, [savedMeta._id]);
                         else
-                            _.remove(cache.cache.domains, (id) => id === savedMeta._id);
+                            _.pull(cache.cache.domains, savedMeta._id);
                     });
 
                     $scope.selectItem(savedMeta);
 
-                    Messages.showInfo('Domain model "' + item.valueType + '" saved.');
+                    Messages.showInfo(`Domain model "${item.valueType}" saved.`);
 
                     _checkShowValidPresentation();
                 })
-                .error(Messages.showError);
+                .catch(Messages.showError);
         }
 
         // Save domain model.
@@ -1469,14 +1477,12 @@ export default ['domainsController', [
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/domains/remove', {_id})
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('Domain model has been removed: ' + selectedItem.valueType);
 
                             const domains = $scope.domains;
 
-                            const idx = _.findIndex(domains, function(domain) {
-                                return domain._id === _id;
-                            });
+                            const idx = _.findIndex(domains, {_id});
 
                             if (idx >= 0) {
                                 domains.splice(idx, 1);
@@ -1488,12 +1494,12 @@ export default ['domainsController', [
                                 else
                                     $scope.backupItem = emptyDomain;
 
-                                _.forEach($scope.caches, (cache) => _.remove(cache.cache.domains, (id) => id === _id));
+                                _.forEach($scope.caches, (cache) => _.pull(cache.cache.domains, _id));
                             }
 
                             _checkShowValidPresentation();
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -1504,7 +1510,7 @@ export default ['domainsController', [
             Confirm.confirm('Are you sure you want to remove all domain models?')
                 .then(function() {
                     $http.post('/api/v1/configuration/domains/remove/all')
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
@@ -1516,7 +1522,7 @@ export default ['domainsController', [
                             $scope.ui.inputForm.$error = {};
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 

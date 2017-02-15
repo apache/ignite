@@ -59,10 +59,10 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     private final GridKernalContext ctx;
 
     /**
-     * Constructor.
+     * Handler constructor.
      *
-     * @param log Logger.
-     * @param hnd Handler.
+     * @param log Logger to use.
+     * @param hnd Rest handler.
      * @param ctx Context.
      */
     public GridRedisSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
@@ -88,7 +88,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             try {
                 l.close();
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignored) {
                 U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
             }
         }

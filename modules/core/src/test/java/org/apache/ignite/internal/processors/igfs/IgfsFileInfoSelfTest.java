@@ -43,8 +43,6 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
 
-        final int max = Integer.MAX_VALUE;
-
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 

@@ -46,7 +46,7 @@ include /app/helpers/jade/mixins.jade
                         .group-content(ng-show='#{loadBalancingSpi} && #{loadBalancingSpi}.length > 0' ng-repeat='model in #{loadBalancingSpi} track by $index')
                             hr(ng-if='$index != 0')
                             .settings-row
-                                +dropdown-required('Load balancing:', 'model.kind', '"loadBalancingKind" + $index', 'true', 'true', 'Choose load balancing SPI', '[\
+                                +dropdown-required-autofocus('Load balancing:', 'model.kind', '"loadBalancingKind" + $index', 'true', 'true', 'Choose load balancing SPI', '[\
                                         {value: "RoundRobin", label: "Round-robin"},\
                                         {value: "Adaptive", label: "Adaptive"},\
                                         {value: "WeightedRandom", label: "Random"},\
@@ -78,27 +78,30 @@ include /app/helpers/jade/mixins.jade
                                         <li>Default - Default load probing implementation</li>\
                                     </ul>')
                             .settings-row(ng-show='model.kind === "Adaptive" && model.Adaptive.loadProbe.kind')
-                                .panel-details
-                                    .details-row(ng-show='model.Adaptive.loadProbe.kind === "Job"')
+                                .panel-details(ng-show='model.Adaptive.loadProbe.kind === "Job"')
+                                    .details-row
                                         +checkbox('Use average', 'model.Adaptive.loadProbe.Job.useAverage', '"loadBalancingAdaptiveJobUseAverage" + $index', 'Use average CPU load vs. current')
-                                    .details-row(ng-show='model.Adaptive.loadProbe.kind === "CPU"')
+                                .panel-details(ng-show='model.Adaptive.loadProbe.kind === "CPU"')
+                                    .details-row
                                         +checkbox('Use average', 'model.Adaptive.loadProbe.CPU.useAverage', '"loadBalancingAdaptiveCPUUseAverage" + $index', 'Use average CPU load vs. current')
-                                    .details-row(ng-show='model.Adaptive.loadProbe.kind === "CPU"')
+                                    .details-row
                                         +checkbox('Use processors', 'model.Adaptive.loadProbe.CPU.useProcessors', '"loadBalancingAdaptiveCPUUseProcessors" + $index', "divide each node's CPU load by the number of processors on that node")
-                                    .details-row(ng-show='model.Adaptive.loadProbe.kind === "CPU"')
+                                    .details-row
                                         +number-min-max-step('Processor coefficient:', 'model.Adaptive.loadProbe.CPU.processorCoefficient',
                                             '"loadBalancingAdaptiveCPUProcessorCoefficient" + $index', 'true', '1', '0.001', '1', '0.05', 'Coefficient of every CPU')
-                                    .details-row(ng-show='model.Adaptive.loadProbe.kind === "ProcessingTime"')
+                                .panel-details(ng-show='model.Adaptive.loadProbe.kind === "ProcessingTime"')
+                                    .details-row
                                         +checkbox('Use average', 'model.Adaptive.loadProbe.ProcessingTime.useAverage', '"loadBalancingAdaptiveJobUseAverage" + $index', 'Use average execution time vs. current')
-                                    .details-row(ng-show=loadProbeCustom)
+                                .panel-details(ng-show=loadProbeCustom)
+                                    .details-row
                                         +java-class('Load brobe implementation:', 'model.Adaptive.loadProbe.Custom.className', '"loadBalancingAdaptiveJobUseClass" + $index', 'true', loadProbeCustom,
-                                            'Custom load balancing SPI implementation class name.')
+                                            'Custom load balancing SPI implementation class name.', loadProbeCustom)
                             .settings-row(ng-show='model.kind === "WeightedRandom"')
                                 +number('Node weight:', 'model.WeightedRandom.nodeWeight', '"loadBalancingWRNodeWeight" + $index', 'true', 10, '1', 'Weight of node')
                             .settings-row(ng-show='model.kind === "WeightedRandom"')
                                 +checkbox('Use weights', 'model.WeightedRandom.useWeights', '"loadBalancingWRUseWeights" + $index', 'Node weights should be checked when doing random load balancing')
                             .settings-row(ng-show=loadBalancingCustom)
                                 +java-class('Load balancing SPI implementation:', 'model.Custom.className', '"loadBalancingClass" + $index', 'true', loadBalancingCustom,
-                                    'Custom load balancing SPI implementation class name.')
+                                    'Custom load balancing SPI implementation class name.', loadBalancingCustom)
             .col-sm-6
                 +preview-xml-java(model, 'clusterLoadBalancing')
