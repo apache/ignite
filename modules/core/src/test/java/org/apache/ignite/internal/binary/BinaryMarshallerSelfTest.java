@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.InetSocketAddress;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
@@ -311,6 +312,22 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         ts.setNanos(999999999);
 
         assertEquals(ts, marshalUnmarshal(ts));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTime() throws Exception {
+        Time time = new Time(System.currentTimeMillis());
+        assertEquals(time, marshalUnmarshal(time));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimeArray() throws Exception {
+        Time[] times = new Time[]{new Time(System.currentTimeMillis()), new Time(123456789)};
+        assertArrayEquals(times, marshalUnmarshal(times));
     }
 
     /**
@@ -629,10 +646,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         Date date = new Date();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
+        Time time = new Time(System.currentTimeMillis());
+        Time[] timeArr = new Time[]{time, new Time(date.getTime()), new Time(System.currentTimeMillis())};
 
         DateClass1 obj1 = new DateClass1();
         obj1.date = date;
         obj1.ts = ts;
+        obj1.time = time;
+        obj1.timeArr = timeArr;
 
         BinaryObject po1 = marshal(obj1, marsh);
 
@@ -640,10 +661,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(Date.class, po1.field("date").getClass());
         assertEquals(ts, po1.field("ts"));
         assertEquals(Timestamp.class, po1.field("ts").getClass());
+        assertEquals(time, po1.field("time"));
+        assertEquals(Time.class, po1.field("time").getClass());
+        assertArrayEquals(timeArr, (Object[])po1.field("timeArr"));
+        assertEquals(Time[].class, po1.field("timeArr").getClass());
 
         obj1 = po1.deserialize();
         assertEquals(date, obj1.date);
         assertEquals(ts, obj1.ts);
+        assertEquals(time, obj1.time);
+        assertArrayEquals(timeArr, obj1.timeArr);
     }
 
     /**
@@ -3976,6 +4003,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Timestamp ts;
 
         /** */
+        private Time time;
+
+        /** */
         private byte[] bArr;
 
         /** */
@@ -4007,6 +4037,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private Date[] dateArr;
+
+        /** */
+        private Time[] timeArr;
 
         /** */
         private Object[] objArr;
@@ -4124,6 +4157,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Timestamp tsRaw;
 
         /** */
+        private Time time;
+
+        /** */
+        private Time timeRaw;
+
+        /** */
         private byte[] bArr;
 
         /** */
@@ -4190,6 +4229,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Date[] dateArrRaw;
 
         /** */
+        private Time[] timeArr;
+
+        /** */
+        private Time[] timeArrRaw;
+
+        /** */
         private Object[] objArr;
 
         /** */
@@ -4245,6 +4290,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeUuid("_uuid", uuid);
             writer.writeDate("_date", date);
             writer.writeTimestamp("_ts", ts);
+            writer.writeTime("_time", time);
             writer.writeByteArray("_bArr", bArr);
             writer.writeShortArray("_sArr", sArr);
             writer.writeIntArray("_iArr", iArr);
@@ -4256,6 +4302,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             writer.writeStringArray("_strArr", strArr);
             writer.writeUuidArray("_uuidArr", uuidArr);
             writer.writeDateArray("_dateArr", dateArr);
+            writer.writeTimeArray("_timeArr", timeArr);
             writer.writeObjectArray("_objArr", objArr);
             writer.writeCollection("_col", col);
             writer.writeMap("_map", map);
@@ -4278,6 +4325,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             raw.writeUuid(uuidRaw);
             raw.writeDate(dateRaw);
             raw.writeTimestamp(tsRaw);
+            raw.writeTime(timeRaw);
             raw.writeByteArray(bArrRaw);
             raw.writeShortArray(sArrRaw);
             raw.writeIntArray(iArrRaw);
@@ -4289,6 +4337,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             raw.writeStringArray(strArrRaw);
             raw.writeUuidArray(uuidArrRaw);
             raw.writeDateArray(dateArrRaw);
+            raw.writeTimeArray(timeArrRaw);
             raw.writeObjectArray(objArrRaw);
             raw.writeCollection(colRaw);
             raw.writeMap(mapRaw);
@@ -4312,6 +4361,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             uuid = reader.readUuid("_uuid");
             date = reader.readDate("_date");
             ts = reader.readTimestamp("_ts");
+            time = reader.readTime("_time");
             bArr = reader.readByteArray("_bArr");
             sArr = reader.readShortArray("_sArr");
             iArr = reader.readIntArray("_iArr");
@@ -4323,6 +4373,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             strArr = reader.readStringArray("_strArr");
             uuidArr = reader.readUuidArray("_uuidArr");
             dateArr = reader.readDateArray("_dateArr");
+            timeArr = reader.readTimeArray("_timeArr");
             objArr = reader.readObjectArray("_objArr");
             col = reader.readCollection("_col");
             map = reader.readMap("_map");
@@ -4345,6 +4396,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             uuidRaw = raw.readUuid();
             dateRaw = raw.readDate();
             tsRaw = raw.readTimestamp();
+            timeRaw = raw.readTime();
             bArrRaw = raw.readByteArray();
             sArrRaw = raw.readShortArray();
             iArrRaw = raw.readIntArray();
@@ -4356,6 +4408,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             strArrRaw = raw.readStringArray();
             uuidArrRaw = raw.readUuidArray();
             dateArrRaw = raw.readDateArray();
+            timeArrRaw = raw.readTimeArray();
             objArrRaw = raw.readObjectArray();
             colRaw = raw.readCollection();
             mapRaw = raw.readMap();
@@ -4873,6 +4926,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         /** */
         private Timestamp ts;
+
+        /** */
+        private Time time;
+
+        /** */
+        private Time[] timeArr;
     }
 
     /**

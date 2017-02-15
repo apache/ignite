@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -45,9 +47,9 @@ import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_NODE_PORT;
 /**
  * API to translate REST requests to Ignite cluster.
  */
-public class RestHandler extends AbstractHandler {
+public class RestListener extends AbstractListener {
     /** */
-    private static final Logger log = Logger.getLogger(RestHandler.class.getName());
+    private static final Logger log = Logger.getLogger(RestListener.class.getName());
 
     /** */
     private final AgentConfiguration cfg;
@@ -58,21 +60,18 @@ public class RestHandler extends AbstractHandler {
     /**
      * @param cfg Config.
      */
-    public RestHandler(AgentConfiguration cfg) {
-        this.cfg = cfg;
-    }
+    public RestListener(AgentConfiguration cfg) {
+        super();
 
-    /**
-     * Start HTTP client for communication with node via REST.
-     */
-    public void start() {
+        this.cfg = cfg;
+
         httpClient = HttpClientBuilder.create().build();
     }
 
-    /**
-     * Stop HTTP client.
-     */
-    public void stop() {
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        super.stop();
+
         if (httpClient != null) {
             try {
                 httpClient.close();
@@ -81,6 +80,11 @@ public class RestHandler extends AbstractHandler {
                 // No-op.
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ExecutorService newThreadPool() {
+        return Executors.newCachedThreadPool();
     }
 
     /** {@inheritDoc} */
