@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in SECONDARY mode.
+ * IGFS Hadoop file system IPC shmem self test in PRIMARY mode.
  */
-public class IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
+public class IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest
+    extends IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTest {
     /**
      * Constructor.
      */
-    public IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest() {
-        super(PROXY, false);
+    public IgniteHadoopFileSystemShmemExternalToClientPrimarySelfTest() {
+        super(PRIMARY, true);
     }
 }
