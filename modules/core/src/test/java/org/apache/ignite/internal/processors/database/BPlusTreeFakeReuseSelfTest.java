@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 
 /**
  *
