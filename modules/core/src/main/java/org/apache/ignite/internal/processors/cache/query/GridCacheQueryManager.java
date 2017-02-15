@@ -3519,7 +3519,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 GridCacheEntryEx entry = entryIt.next();
 
-                if (entry.deleted())
+                if (entry == null || entry.deleted())
                     continue;
 
                 if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
