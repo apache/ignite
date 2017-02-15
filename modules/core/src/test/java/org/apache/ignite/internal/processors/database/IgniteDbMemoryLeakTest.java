@@ -18,72 +18,31 @@
 package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
  */
 public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
     /** {@inheritDoc} */
-    @Override protected int duration() {
-        return 300;
+    @Override protected IgniteCache<Object, Object> cache(IgniteEx ig) {
+        return ig.cache("non-primitive");
     }
 
-    @Override
-    protected int gridCount() {
-        return 1;
+    /** {@inheritDoc} */
+    @Override protected Object key() {
+        return new DbKey(getRandom().nextInt(200_000));
     }
 
-    @Override
-    protected void configure(IgniteConfiguration cfg) {
-        cfg.setMetricsLogFrequency(5000);
+    /** {@inheritDoc} */
+    @Override protected Object value(Object key) {
+        return new DbValue(((DbKey)key).val, "test-value-" + getRandom().nextInt(200), getRandom().nextInt(500));
     }
 
-    @Override
-    protected void configure(MemoryConfiguration mCfg) {
-        mCfg.setPageCacheSize(1024 * 1024);
-    }
-
-    @Override
-    protected boolean indexingEnabled() {
-        return false;
-    }
-
-    protected void operation(IgniteEx ig){
-        IgniteCache<Object, Object> cache = ig.cache("non-primitive");
-        Random rnd = ThreadLocalRandom.current();
-
-        for (int i = 0; i < 1000; i++) {
-            DbKey key = new DbKey(rnd.nextInt(200_000));
-
-            DbValue v0 = new DbValue(key.val, "test-value-" + rnd.nextInt(200), rnd.nextInt(500));
-
-            // TODO: also execute scan query.
-
-            switch (rnd.nextInt(3)) {
-                case 0:
-                    cache.getAndPut(key, v0);
-                    break;
-
-                case 1:
-                    cache.get(key);
-                    break;
-
-                case 2:
-                    cache.getAndRemove(key);
-            }
-        }
-    }
-
-    @Override
-    protected void check(IgniteEx ig) {
+    /** {@inheritDoc} */
+    @Override protected void check(IgniteEx ig) {
         long pages = ig.context().cache().context().database().pageMemory().loadedPages();
 
-        assertTrue(pages < 19100);
+        assertTrue(pages < 20000);
     }
 }

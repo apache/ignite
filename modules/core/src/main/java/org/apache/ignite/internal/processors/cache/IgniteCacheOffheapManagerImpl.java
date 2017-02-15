@@ -897,7 +897,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          */
         private boolean canUpdateOldRow(@Nullable CacheDataRow oldRow, DataRow dataRow)
             throws IgniteCheckedException {
-            if (oldRow == null || indexingEnabled)
+            if (oldRow == null || indexingEnabled || oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
             CacheObjectContext coCtx = cctx.cacheObjectContext();
