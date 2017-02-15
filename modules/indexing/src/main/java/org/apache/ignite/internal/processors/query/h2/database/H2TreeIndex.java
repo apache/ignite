@@ -133,14 +133,19 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                             int c = compareValues(v1, v2, fastIdx.sortType());
 
+                            if (fastIdx.type() == Value.STRING
+                                && v1.getType() != Value.NULL
+                                && v2.getType() != Value.NULL
+                                && c != 1
+                                && v1.getString().length() <= v2.getString().length()) {
+                                // Can't rely on compare, should use full string.
+                                break;
+                            }
+
                             lastIdxUsed++;
 
                             if (c != 0)
                                 return c;
-
-                            if (fastIdx.type() == Value.STRING && v1.getType() != Value.NULL && v1.getString().length() <= v2.getString().length()) {
-
-                            }
 
                             fieldOff += fastIdx.fullSize(pageAddr, off + fieldOff);
 
