@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
@@ -72,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 var extension = plugin.Provider.Context.GetExtension(0);
                 Assert.IsNotNull(extension);
 
-                CheckPluginTarget(extension);
+                CheckPluginTarget(extension, "barbaz");
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
@@ -82,10 +83,10 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Checks the plugin target operations.
         /// </summary>
-        private static void CheckPluginTarget(IPlatformTarget target)
+        private static void CheckPluginTarget(IPlatformTarget target, string expectedName)
         {
             // Returns name.
-            Assert.AreEqual(string.Empty, target.OutStream(1, r => r.ReadString()));
+            Assert.AreEqual(expectedName, target.OutStream(1, r => r.ReadString()));
 
             // Increments arg by one.
             Assert.AreEqual(3, target.InLongOutLong(1, 2));
@@ -164,13 +165,29 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class NoAttributeConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         [PluginProviderType(typeof(EmptyNamePluginProvider))]
         private class EmptyNameConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class EmptyNamePluginProvider : IPluginProvider<EmptyNameConfig>
@@ -187,7 +204,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(ExceptionPluginProvider))]
         private class ExceptionConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class ExceptionPluginProvider : IPluginProvider<ExceptionConfig>
@@ -221,7 +246,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(NormalPluginProvider))]
         private class NormalConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class NormalPluginProvider : IPluginProvider<NormalConfig>
