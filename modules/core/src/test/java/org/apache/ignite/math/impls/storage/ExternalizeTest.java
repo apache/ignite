@@ -17,14 +17,15 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import org.junit.Test;
 
+import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
 import static org.apache.ignite.math.impls.MathTestConstants.VALUE_NOT_EQUALS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -36,19 +37,17 @@ public abstract class ExternalizeTest<T extends Externalizable> {
     /** */
     protected void externalizeTest(T initObj) {
         try {
-            PipedOutputStream pipedOutputStream = new PipedOutputStream();
+            ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream(STORAGE_SIZE * Double.BYTES);
 
-            PipedInputStream pipedInputStream = new PipedInputStream(pipedOutputStream);
-
-            ObjectOutputStream objOutputStream = new ObjectOutputStream(pipedOutputStream);
-
-            ObjectInputStream objInputStream = new ObjectInputStream(pipedInputStream);
+            ObjectOutputStream objOutputStream = new ObjectOutputStream(byteArrOutputStream);
 
             objOutputStream.writeObject(initObj);
 
-            T objRestored = (T) objInputStream.readObject();
+            ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
 
-            objInputStream.close();
+            ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
+
+            T objRestored = (T) objInputStream.readObject();
 
             assertTrue(VALUE_NOT_EQUALS, initObj.equals(objRestored));
         } catch (ClassNotFoundException | IOException e) {
