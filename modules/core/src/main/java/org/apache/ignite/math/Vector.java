@@ -37,7 +37,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Vector extends MetaAttributes, Externalizable, StorageOpsKinds {
+public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetrics {
     /**
      * Holder for vector's element.
      */

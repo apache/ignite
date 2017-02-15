@@ -22,7 +22,7 @@ import org.apache.ignite.math.impls.*;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Row, column or diagonal vector-based view of the matrix
  */
 public class MatrixVectorStorage extends AbstractVectorStorage {
     private Matrix parent;

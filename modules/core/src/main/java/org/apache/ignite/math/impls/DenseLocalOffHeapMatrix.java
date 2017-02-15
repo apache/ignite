@@ -25,11 +25,19 @@ import org.apache.ignite.math.impls.storage.MatrixOffHeapStorage;
  * TODO add description
  */
 public class DenseLocalOffHeapMatrix extends AbstractMatrix {
-
+    /**
+     *
+     * @param data
+     */
     public DenseLocalOffHeapMatrix(double[][] data){
         setStorage(new MatrixOffHeapStorage(data));
     }
 
+    /**
+     *
+     * @param rows
+     * @param cols
+     */
     public DenseLocalOffHeapMatrix(int rows, int cols){
         setStorage(new MatrixOffHeapStorage(rows, cols));
     }

@@ -23,7 +23,7 @@ import org.apache.ignite.math.*;
  * TODO: add description.
  */
 public abstract class AbstractVectorStorage implements VectorStorage {
-    private StorageOpsKinds ops;
+    private StorageOpsMetrics ops;
 
     /**
      * 
@@ -36,7 +36,7 @@ public abstract class AbstractVectorStorage implements VectorStorage {
      *
      * @param ops Delegating instance.
      */
-    public AbstractVectorStorage(StorageOpsKinds ops) {
+    public AbstractVectorStorage(StorageOpsMetrics ops) {
         assert ops != null;
 
         this.ops = ops;

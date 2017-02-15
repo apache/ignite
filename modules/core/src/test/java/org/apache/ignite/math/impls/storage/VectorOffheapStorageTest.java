@@ -19,29 +19,22 @@ package org.apache.ignite.math.impls.storage;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
 
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.stream.DoubleStream;
 
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link VectorOffheapStorage}.
+ * Unit tests for {@link VectorOffHeapStorage}.
  */
-public class VectorOffheapStorageTest extends VectorBaseStorageTest<VectorOffheapStorage> {
+public class VectorOffheapStorageTest extends VectorBaseStorageTest<VectorOffHeapStorage> {
     /** */
     private static final double DOUBLE_ZERO = 0d;
 
     /** */
     @Before
     public void setUp() {
-        storage = new VectorOffheapStorage(STORAGE_SIZE);
+        storage = new VectorOffHeapStorage(STORAGE_SIZE);
     }
 
     /** */

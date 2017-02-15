@@ -1,6 +1,6 @@
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.math.StorageOpsKinds;
+import org.apache.ignite.math.StorageOpsMetrics;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
@@ -21,12 +21,12 @@ public class VectorAttributesTest {
 
     /** */ @Test
     public void isDenseTest() {
-        alwaysTrueAttributeTest(StorageOpsKinds::isDense);
+        alwaysTrueAttributeTest(StorageOpsMetrics::isDense);
     }
 
     /** */ @Test
     public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest(StorageOpsKinds::isSequentialAccess);
+        alwaysTrueAttributeTest(StorageOpsMetrics::isSequentialAccess);
     }
 
     /** */ @Test
@@ -36,7 +36,7 @@ public class VectorAttributesTest {
 
     /** */ @Test
     public void isAddConstantTimeTest() {
-        alwaysTrueAttributeTest(StorageOpsKinds::isAddConstantTime);
+        alwaysTrueAttributeTest(StorageOpsMetrics::isAddConstantTime);
     }
 
     /** */ @Test

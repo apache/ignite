@@ -30,7 +30,7 @@ import java.util.stream.*;
 public class DenseLocalOffHeapVector extends AbstractVector {
     /** */
     private void makeOffheapStorage(int size){
-        setStorage(new VectorOffheapStorage(size));
+        setStorage(new VectorOffHeapStorage(size));
     }
 
     /**

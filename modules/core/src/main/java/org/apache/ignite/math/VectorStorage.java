@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface VectorStorage extends Externalizable, StorageOpsKinds {
+public interface VectorStorage extends Externalizable, StorageOpsMetrics {
     /**
      *
      * @return
@@ -44,10 +44,10 @@ public interface VectorStorage extends Externalizable, StorageOpsKinds {
     public void set(int i, double v);
 
     /**
-     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
+     * Gets underlying array if {@link StorageOpsMetrics#isArrayBased()} returns {@code true}.
      * Returns {@code null} if in other cases.
      *
-     * @see StorageOpsKinds#isArrayBased()
+     * @see StorageOpsMetrics#isArrayBased()
      */
     public default double[] data() {
         return null;

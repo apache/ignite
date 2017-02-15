@@ -20,7 +20,7 @@ package org.apache.ignite.math;
 /**
  * Storage and operation cost characteristics.
  */
-public interface StorageOpsKinds {
+public interface StorageOpsMetrics {
     /**
      * Checks if this implementation should be considered to be iterable in index order in an efficient way.
      *

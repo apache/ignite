@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface MatrixStorage extends Externalizable, StorageOpsKinds {
+public interface MatrixStorage extends Externalizable, StorageOpsMetrics {
     /**
      *
      * @param x
@@ -52,9 +52,9 @@ public interface MatrixStorage extends Externalizable, StorageOpsKinds {
     public int rowSize();
 
     /**
-     * Gets underlying array if {@link StorageOpsKinds#isArrayBased()} returns {@code true}.
+     * Gets underlying array if {@link StorageOpsMetrics#isArrayBased()} returns {@code true}.
      *
-     * @see StorageOpsKinds#isArrayBased()
+     * @see StorageOpsMetrics#isArrayBased()
      */
     public double[][] data();
 

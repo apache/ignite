@@ -25,15 +25,15 @@ import java.util.stream.*;
 /**
  * TODO: add description.
  */
-public class VectorOffheapStorage implements VectorStorage {
+public class VectorOffHeapStorage implements VectorStorage {
     private int size;
     private long ptr;
 
-    public VectorOffheapStorage(){
+    public VectorOffHeapStorage(){
         // No-op.
     }
 
-    public VectorOffheapStorage(int size){
+    public VectorOffHeapStorage(int size){
         this.size = size;
 
         ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
@@ -120,12 +120,12 @@ public class VectorOffheapStorage implements VectorStorage {
     public boolean equals(Object obj) {
         return obj != null &&
             getClass().equals(obj.getClass()) &&
-            (size == ((VectorOffheapStorage)obj).size) &&
-            (size == 0 || isMemoryEquals((VectorOffheapStorage)obj));
+            (size == ((VectorOffHeapStorage)obj).size) &&
+            (size == 0 || isMemoryEquals((VectorOffHeapStorage)obj));
     }
 
     /** */
-    private boolean isMemoryEquals(VectorOffheapStorage otherStorage){
+    private boolean isMemoryEquals(VectorOffHeapStorage otherStorage){
         return IntStream.range(0, size).parallel().noneMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
     }
 
