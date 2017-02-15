@@ -150,11 +150,14 @@ namespace Apache.Ignite.Core.Impl
                 return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
 
             // Predefined mapping not found - check plugins.
-            ctor = ignite.PluginProcessor.GetExceptionMapping(clsName);
-
-            if (ctor != null)
+            if (ignite != null)
             {
-                return ctor(ignite, msg, innerException);
+                ctor = ignite.PluginProcessor.GetExceptionMapping(clsName);
+
+                if (ctor != null)
+                {
+                    return ctor(ignite, msg, innerException);
+                }
             }
 
             // Return default exception.
