@@ -429,7 +429,7 @@ public class VectorImplementationsTest {
             return new Double(exp).equals(obtained);
         }
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +

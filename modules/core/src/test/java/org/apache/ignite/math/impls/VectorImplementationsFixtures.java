@@ -15,13 +15,13 @@ class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
         new Supplier<Iterable<Vector>>() {
-            /** @{inheritDoc} */
+            /** {@inheritDoc} */
             @Override public Iterable<Vector> get() {
                 return new DenseLocalOnHeapVectorFixture();
             }
         },
         new Supplier<Iterable<Vector>>() {
-            /** @{inheritDoc} */
+            /** {@inheritDoc} */
             @Override public Iterable<Vector> get() {
                 return new DenseLocalOffHeapVectorFixture();
             }
@@ -63,16 +63,16 @@ class VectorImplementationsFixtures {
 
         /** */ private int shallowCpIdx = 0;
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public Iterator<Vector> iterator() {
             return new Iterator<Vector>() {
 
-                /** @{inheritDoc} */
+                /** {@inheritDoc} */
                 @Override public boolean hasNext() {
                     return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx) && hasNextShallowCp(shallowCpIdx);
                 }
 
-                /** @{inheritDoc} */
+                /** {@inheritDoc} */
                 @Override public Vector next() {
                     if (!hasNext())
                         throw new NoSuchElementException(DenseLocalOnHeapVectorFixture.this.toString());
@@ -112,7 +112,7 @@ class VectorImplementationsFixtures {
             };
         }
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return "DenseLocalOnHeapVectorFixture{" + "size=" + sizes[sizeIdx] +
@@ -178,16 +178,16 @@ class VectorImplementationsFixtures {
 
         /** */ private int deltaIdx = 0;
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public Iterator<Vector> iterator() {
             return new Iterator<Vector>() {
 
-                /** @{inheritDoc} */
+                /** {@inheritDoc} */
                 @Override public boolean hasNext() {
                     return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx);
                 }
 
-                /** @{inheritDoc} */
+                /** {@inheritDoc} */
                 @Override public Vector next() {
                     if (!hasNext())
                         throw new NoSuchElementException(DenseLocalOffHeapVectorFixture.this.toString());
@@ -216,7 +216,7 @@ class VectorImplementationsFixtures {
             };
         }
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return "DenseLocalOffHeapVectorFixture{" + "size=" + sizes[sizeIdx] +
