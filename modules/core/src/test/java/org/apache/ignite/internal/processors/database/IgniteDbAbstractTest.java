@@ -130,10 +130,16 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @param cfg IgniteConfiguration.
+     */
     protected void configure(IgniteConfiguration cfg){
         //NOP
     }
 
+    /**
+     * @param mCfg MemoryConfiguration.
+     */
     protected void configure(MemoryConfiguration mCfg){
         //NOP
     }
