@@ -376,6 +376,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
         if (curDelegate == null && !F.isEmpty(igniteCliCfgPath)) {
             HadoopIgfsInProc hadoop = null;
+
             try {
                 hadoop = HadoopIgfsInProc.create(igniteCliCfgPath, endpoint.igfs(), log, userName);
 
@@ -383,10 +384,8 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                     curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (Exception e) {
-                // Now the closing is not necessary because Delegate constructor doesn't throws an exception.
-                // Placed here for future modification of the delegate creation logic.
                 if (hadoop != null)
-                    hadoop.close(false);
+                    hadoop.close(true);
 
                 if (log.isDebugEnabled())
                     log.debug("Failed to connect to IGFS using Ignite client [host=" + endpoint.host() +

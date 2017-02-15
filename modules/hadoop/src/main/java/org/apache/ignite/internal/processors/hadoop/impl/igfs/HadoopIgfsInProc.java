@@ -146,9 +146,6 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
             boolean newNodeStarted = startRes.get2();
 
-            if (startRes.get1() == null)
-                throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
-
             if (newNodeStarted) {
                 assert !REF_CTRS.containsKey(nodeName) : "The ignite instance already exists in the ref count map";
 
@@ -164,8 +161,8 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                     Ignition.stop(nodeName, true);
                 }
 
-                throw new HadoopIgfsCommunicationException("Cannot find IGFS '" + igfsName + "' at the node '"
-                    + nodeName + '\'');
+                throw new HadoopIgfsCommunicationException("Ignite client node doesn't have IGFS with the " +
+                    "given name: " + igfsName);
             }
 
             return hadoop;
