@@ -109,7 +109,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
     public static HadoopIgfsInProc create(String igfsName, Log log, String userName) {
         synchronized (REF_CTR_MUX) {
             for (Ignite ignite : Ignition.allGrids()) {
-                HadoopIgfsInProc delegate = findIgfsAndCreate(ignite, igfsName, log, userName);
+                HadoopIgfsInProc delegate = create0(ignite, igfsName, log, userName);
 
                 if (delegate != null)
                     return delegate;
@@ -155,7 +155,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
                 REF_CTRS.put(nodeName, 0);
             }
 
-            HadoopIgfsInProc hadoop = findIgfsAndCreate(startRes.get1(), igfsName, log, userName);
+            HadoopIgfsInProc hadoop = create0(startRes.get1(), igfsName, log, userName);
 
             if (hadoop == null) {
                 if (newNodeStarted) {
@@ -182,17 +182,18 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
      * @return HadoopIgfsInProcWithIgniteRefsCount instance. {@code null} if the IGFS not found
      *      in the specified ignite instance.
      */
-    private static HadoopIgfsInProc findIgfsAndCreate(Ignite ignite, String igfsName, Log log, String userName) {
+    private static HadoopIgfsInProc create0(Ignite ignite, String igfsName, Log log, String userName) {
+        assert Thread.holdsLock(REF_CTR_MUX);
         assert ignite != null;
 
         if (Ignition.state(ignite.name()) == STARTED) {
             try {
                 for (IgniteFileSystem fs : ignite.fileSystems()) {
                     if (F.eq(fs.name(), igfsName)) {
-                        Integer cnt = REF_CTRS.get(ignite.name());
+                        Integer ctr = REF_CTRS.get(ignite.name());
 
-                        if (cnt != null)
-                            REF_CTRS.put(ignite.name(), cnt + 1);
+                        if (ctr != null)
+                            REF_CTRS.put(ignite.name(), ctr + 1);
 
                         return new HadoopIgfsInProc((IgfsEx)fs, log, userName);
                     }
