@@ -30,47 +30,6 @@
 using namespace ignite;
 using namespace boost::unit_test;
 
-struct GridTestKey
-{
-    int64_t id;
-
-    GridTestKey() : id(0)
-    {
-        // No-op.
-    }
-
-    GridTestKey(int64_t id) : id(id)
-    {
-        // No-op.
-    }
-};
-
-namespace ignite
-{
-    namespace binary
-    {
-        IGNITE_BINARY_TYPE_START(GridTestKey)
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(GridTestKey)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(GridTestKey)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(GridTestKey)
-            IGNITE_BINARY_IS_NULL_FALSE(GridTestKey)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(GridTestKey)
-
-            void Write(BinaryWriter& writer, const GridTestKey& obj)
-            {
-                writer.RawWriter().WriteInt64(obj.id);
-            }
-
-            GridTestKey Read(BinaryReader& reader)
-            {
-                return GridTestKey(reader.RawReader().ReadInt64());
-            }
-
-        IGNITE_BINARY_TYPE_END
-    }
-}
-
 /*
  * Test setup fixture.
  */
