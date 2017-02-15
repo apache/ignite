@@ -15,37 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform.plugin;
-
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
-import org.apache.ignite.internal.processors.platform.PlatformTarget;
+package org.apache.ignite.plugin.platform;
 
 /**
- * Test plugin extension.
+ * Factory for @{@link PlatformPluginConfigurationClosure} with a unique id.
  */
-public class PlatformTestPluginExtension implements PlatformPluginExtension {
-    /** */
-    private final IgniteEx ignite;
+public interface PlatformPluginConfigurationClosureFactory {
+    /**
+     * Gets the factory id.
+     *
+     * @return Factory id.
+     */
+    int id();
 
     /**
-     * Ctor.
+     * Creates configuration instance.
      *
-     * @param ignite Ignite.
+     * @return Configuration instance.
      */
-    PlatformTestPluginExtension(IgniteEx ignite) {
-        assert ignite != null;
-
-        this.ignite = ignite;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int id() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PlatformTarget createTarget() {
-        return new PlatformTestPluginTarget(ignite.context().platform().context(), null);
-    }
+    PlatformPluginConfigurationClosure create();
 }

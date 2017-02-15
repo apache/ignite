@@ -278,6 +278,7 @@ public class BinaryContext {
 
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
+        registerPredefinedType(Object.class, GridBinaryMarshaller.OBJECT);
         registerPredefinedType(Byte.class, GridBinaryMarshaller.BYTE);
         registerPredefinedType(Boolean.class, GridBinaryMarshaller.BOOLEAN);
         registerPredefinedType(Short.class, GridBinaryMarshaller.SHORT);
