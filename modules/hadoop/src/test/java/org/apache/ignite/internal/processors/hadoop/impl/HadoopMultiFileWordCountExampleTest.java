@@ -1,30 +1,28 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.Random;
-import org.apache.hadoop.examples.WordStandardDeviation;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.examples.MultiFileWordCount;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
 
 /**
- *
+ * Bbp Pi digits example.
  */
-public class HadoopWordDeviationExampleTest extends HadoopGenericExampleTest {
+public class HadoopMultiFileWordCountExampleTest extends HadoopGenericExampleTest {
+    /** {@inheritDoc} */
+    protected int numMaps() {
+        return gridCount() * 2;
+    }
+
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
-        private final WordStandardDeviation impl = new WordStandardDeviation();
+        private final Tool impl = new MultiFileWordCount();
 
         @Override void prepare(JobConf conf, FrameworkParameters params) throws IOException {
-            generateTextInput(1, conf, params);
+            generateTextInput(11, conf, params);
         }
 
         @Override String[] parameters(FrameworkParameters fp) {
-            // wordmean <in> <out>
             return new String[] {
                 inDir(fp),
                 outDir(fp) };
@@ -35,7 +33,7 @@ public class HadoopWordDeviationExampleTest extends HadoopGenericExampleTest {
         }
 
         @Override void verify(String[] parameters) {
-            assertEquals(3.025, impl.getStandardDeviation(), 1e-3);
+            // TODO: implement
         }
     };
 

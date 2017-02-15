@@ -19,21 +19,9 @@ public class HadoopWordMedianExampleTest extends HadoopGenericExampleTest {
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final WordMedian impl = new WordMedian();
 
-        private final Random random = new Random(0L);
-
-        private String inDir(FrameworkParameters fp) {
-            return fp.getWorkDir(name()) + "/in";
-        }
-
         /** {@inheritDoc} */
         @Override void prepare(JobConf conf, FrameworkParameters params) throws IOException {
-            // We cannot directly use Hadoop's RandomTextWriter since it is really random, but here
-            // we need definitely reproducible input data.
-            try (FileSystem fs = FileSystem.get(conf)) {
-                try (OutputStream os = fs.create(new Path(inDir(params) + "/in-00"), true)) {
-                    HadoopWordMeanExampleTest.generateSentence(random, 2000, os);
-                }
-            }
+            generateTextInput(1, conf, params);
         }
 
         /** {@inheritDoc} */
@@ -41,7 +29,7 @@ public class HadoopWordMedianExampleTest extends HadoopGenericExampleTest {
             // wordmean <in> <out>
             return new String[] {
                 inDir(fp),
-                fp.getWorkDir(name()) + "/out" };
+                outDir(fp) };
         }
 
         /** {@inheritDoc} */

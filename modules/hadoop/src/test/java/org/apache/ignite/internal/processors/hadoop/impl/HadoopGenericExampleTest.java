@@ -1,14 +1,24 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Random;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.RandomTextWriter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.MRConfig;
+import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorDescriptor;
+import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorJobBase;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.multijvm2.HadoopAbstract2Test;
@@ -83,9 +93,91 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * Abstract class representing an example.
      */
     static abstract class GenericHadoopExample {
+        /** */
+        protected final Random random = new Random(0L);
+        /**
+         * @return Extracts "words" array from class RandomTextWriter.
+         */
+        public static String[] getWords() {
+            try {
+                Field wordsField = RandomTextWriter.class.getDeclaredField("words");
+
+                wordsField.setAccessible(true);
+
+                return (String[])wordsField.get(null);
+            }
+            catch (Throwable t) {
+                throw new IgniteException(t);
+            }
+        }
+
+        /**
+         * @param random The random.
+         * @param noWords The number of words.
+         * @param os The stream.
+         * @throws IOException On error.
+         */
+        public static void generateSentence(Random random, int noWords, OutputStream os) throws IOException {
+            String[] words = getWords();
+
+            try (Writer w = new OutputStreamWriter(os)) {
+                String space = " ";
+
+                for (int i = 0; i < noWords; ++i) {
+                    w.write(words[random.nextInt(words.length)]);
+
+                    w.write(space);
+
+                    if (random.nextInt(13) == 0)
+                        w.write("\n");
+                }
+            }
+        }
+
         /** Gets the example name. */
         final String name() {
             return tool().getClass().getSimpleName();
+        }
+
+        /**
+         *
+         * @param fp
+         * @return
+         */
+        protected final String inDir(FrameworkParameters fp) {
+            return fp.getWorkDir(name()) + "/in";
+        }
+
+        /**
+         *
+         * @param fp
+         * @return
+         */
+        protected final String outDir(FrameworkParameters fp) {
+            return fp.getWorkDir(name()) + "/out";
+        }
+
+        /**
+         *  Utility method to generate predictable random text input.
+         *
+         * @param numFiles
+         * @param conf
+         * @param params
+         * @throws IOException
+         */
+        protected final void generateTextInput(int numFiles, JobConf conf,
+            FrameworkParameters params) throws IOException {
+            // We cannot directly use Hadoop's RandomTextWriter since it is really random, but here
+            // we need definitely reproducible input data.
+            try (FileSystem fs = FileSystem.get(conf)) {
+                final int files = 11;
+
+                for (int i=0; i<files; i++) {
+                    try (OutputStream os = fs.create(new Path(inDir(params) + "/in-" + i), true)) {
+                        generateSentence(random, 2000, os);
+                    }
+                }
+            }
         }
 
         /** Performs pre-execution preparation. */
@@ -173,8 +265,10 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 //            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
 
         // Set the Ignite framework and the address:
-        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite"); // "local" );
+        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
+
+//        conf.set(MRConfig.FRAMEWORK_NAME,  "local");
 
         // Start real calculation:
         FrameworkParameters fp = frameworkParameters();
@@ -190,6 +284,23 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         assertEquals(0, res);
 
         ex.verify(args);
+    }
+
+    /**
+     * Fixed version of method org.apache.hadoop.mapreduce.lib.aggregate
+     *     .ValueAggregatorJob#setAggregatorDescriptors(java.lang.Class[]): it adds correct "." to the property name.
+     *
+     * @param conf
+     * @param descriptors
+     */
+    static void setAggregatorDescriptors(Configuration conf,
+        Class<? extends ValueAggregatorDescriptor>[] descriptors) {
+        conf.setInt(ValueAggregatorJobBase.DESCRIPTOR_NUM, descriptors.length);
+        //specify the aggregator descriptors
+        for(int i=0; i< descriptors.length; i++) {
+            conf.set(ValueAggregatorJobBase.DESCRIPTOR + "." + i,
+                "UserDefined," + descriptors[i].getName());
+        }
     }
 
     /**

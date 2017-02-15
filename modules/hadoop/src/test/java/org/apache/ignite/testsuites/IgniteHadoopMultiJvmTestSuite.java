@@ -19,11 +19,15 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.hadoop.HadoopTestClassLoader;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopAggregateHistogramExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopAggregateWordCountExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopBbpExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDBCountPageViewExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistBbpExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedPentominoExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopGrepExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopMultiFileWordCountExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSecondarySortExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordCountExampleTest;
@@ -61,6 +65,17 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMeanExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordDeviationExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWordMedianExampleTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopAggregateHistogramExampleTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopAggregateWordCountExampleTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMultiFileWordCountExampleTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopGrepExampleTest.class.getName())));
+
+        // TODO:
+        // add TeraSort
+        // add (Sort ?)
 
         return suite;
     }

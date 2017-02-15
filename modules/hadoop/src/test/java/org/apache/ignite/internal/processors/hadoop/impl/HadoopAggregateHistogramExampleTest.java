@@ -2,21 +2,17 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.examples.WordCount;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.examples.AggregateWordHistogram;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorJob;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
 /**
  *
  */
-public class HadoopWordCountExampleTest extends HadoopGenericExampleTest {
+public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTest {
     /** */
     final Tool tool = new Tool() {
         private Configuration conf;
@@ -30,29 +26,24 @@ public class HadoopWordCountExampleTest extends HadoopGenericExampleTest {
         }
 
         @Override public int run(String[] args) throws Exception {
-            Configuration conf = getConf();
+            final Configuration conf = getConf();
 
             String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-            if (otherArgs.length != 2) {
-                System.err.println("Usage: wordcount <in> <out>");
+            if (otherArgs.length < 2) {
+                //            System.out.println("usage: inputDirs outDir "
+                //                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
+                System.err.println("Usage: wordcount <in> <out> [....]");
 
                 return 2;
             }
 
-            Job job = new Job(conf, "word count");
+            HadoopGenericExampleTest.setAggregatorDescriptors(conf,
+                new Class[] { AggregateWordHistogram.AggregateWordHistogramPlugin.class } );
 
-            job.setJarByClass(WordCount.class);
+            Job job = ValueAggregatorJob.createValueAggregatorJob(conf, otherArgs);
 
-            job.setMapperClass(WordCount.TokenizerMapper.class);
-            job.setCombinerClass(WordCount.IntSumReducer.class);
-            job.setReducerClass(WordCount.IntSumReducer.class);
-
-            job.setOutputKeyClass(Text.class);
-            job.setOutputValueClass(IntWritable.class);
-
-            FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-            FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+            job.setJarByClass(AggregateWordHistogram.class);
 
             return job.waitForCompletion(true) ? 0 : 1;
         }
@@ -60,15 +51,19 @@ public class HadoopWordCountExampleTest extends HadoopGenericExampleTest {
 
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
-
         @Override void prepare(JobConf conf, FrameworkParameters params) throws IOException {
-            generateTextInput(1, conf, params);
+            generateTextInput(11, conf, params);
         }
 
         @Override String[] parameters(FrameworkParameters fp) {
+//            System.out.println("usage: inputDirs outDir "
+//                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
             return new String[] {
                 inDir(fp),
-                outDir(fp) };
+                outDir(fp),
+                "1", // Numper of reduces other than 1 does not make sense.
+                "textinputformat"
+              };
         }
 
         @Override Tool tool() {
