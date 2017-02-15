@@ -2338,7 +2338,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> indexReadyFuture() {
-        IgniteInternalFuture fut = ctx.shared().database().indexRebuildFuture(ctx.cacheId());
+        IgniteInternalFuture fut = ctx.shared().persistentStore().indexRebuildFuture(ctx.cacheId());
 
         if (fut == null)
             return new IgniteFinishedFutureImpl<>();

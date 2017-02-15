@@ -2924,7 +2924,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
-        ctx.shared().database().checkpointReadLock();
+        ctx.shared().persistentStore().checkpointReadLock();
 
         if (req.size() == 1) {
             KeyCacheObject key = req.key(0);
@@ -3041,7 +3041,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 entry.onUnlock();
         }
 
-        ctx.shared().database().checkpointReadUnlock();
+        ctx.shared().persistentStore().checkpointReadUnlock();
 
         if (skip != null && skip.size() == locked.size())
             // Optimization.
@@ -3248,7 +3248,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        ctx.shared().database().checkpointReadLock();
+        ctx.shared().persistentStore().checkpointReadLock();
 
         try {
             for (int i = 0; i < req.size(); i++) {
@@ -3332,7 +3332,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         finally {
-            ctx.shared().database().checkpointReadUnlock();
+            ctx.shared().persistentStore().checkpointReadUnlock();
         }
 
         if (isNearEnabled(cacheCfg))

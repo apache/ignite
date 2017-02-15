@@ -503,7 +503,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         ClusterNode loc = cctx.localNode();
 
-        cctx.shared().database().checkpointReadLock();
+        cctx.shared().persistentStore().checkpointReadLock();
 
         synchronized (cctx.shared().exchange().interruptLock()) {
             if (Thread.currentThread().isInterrupted())
@@ -513,7 +513,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 U.writeLock(lock);
             }
             catch (IgniteInterruptedCheckedException e) {
-                cctx.shared().database().checkpointReadUnlock();
+                cctx.shared().persistentStore().checkpointReadUnlock();
 
                 throw e;
             }
@@ -581,7 +581,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             finally {
                 lock.writeLock().unlock();
 
-                cctx.shared().database().checkpointReadUnlock();
+                cctx.shared().persistentStore().checkpointReadUnlock();
             }
         }
 
@@ -1185,7 +1185,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             GridDhtPartitionMap2 nodeMap = partMap.get(cctx.localNodeId());
 
-            if (nodeMap != null && cctx.shared().database().persistenceEnabled()) {
+            if (nodeMap != null && cctx.shared().persistentStore().persistenceEnabled()) {
                 for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
                     int p = e.getKey();
                     GridDhtPartitionState state = e.getValue();

@@ -522,7 +522,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long reservations, GridDhtPartitionState toState) {
-        if (cctx.shared().database().persistenceEnabled()) {
+        if (cctx.shared().persistentStore().persistenceEnabled()) {
             synchronized (this) {
                 boolean update = state.compareAndSet(reservations, (reservations & 0xFFFF) | ((long)toState.ordinal() << 32));
 
@@ -873,7 +873,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         while (it.hasNext()) {
             GridDhtCacheEntry cached = null;
 
-            cctx.shared().database().checkpointReadLock();
+            cctx.shared().persistentStore().checkpointReadLock();
 
             try {
                 cached = it.next();
@@ -918,7 +918,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
             finally {
-                cctx.shared().database().checkpointReadUnlock();
+                cctx.shared().persistentStore().checkpointReadUnlock();
             }
         }
 
@@ -927,7 +927,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
 
                 while (it0.hasNext()) {
-                    cctx.shared().database().checkpointReadLock();
+                    cctx.shared().persistentStore().checkpointReadLock();
 
                     try {
                         CacheDataRow row = it0.next();
@@ -959,7 +959,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                         break; // Partition is already concurrently cleared and evicted.
                     }
                     finally {
-                        cctx.shared().database().checkpointReadUnlock();
+                        cctx.shared().persistentStore().checkpointReadUnlock();
                     }
                 }
             }

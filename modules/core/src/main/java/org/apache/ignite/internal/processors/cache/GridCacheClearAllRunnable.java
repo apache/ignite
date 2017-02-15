@@ -91,7 +91,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param e Entry.
      */
     protected void clearEntry(GridCacheEntryEx e) {
-        ctx.shared().database().checkpointReadLock();
+        ctx.shared().persistentStore().checkpointReadLock();
 
         try {
             e.clear(obsoleteVer, readers);
@@ -100,7 +100,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);
         }
         finally {
-            ctx.shared().database().checkpointReadUnlock();
+            ctx.shared().persistentStore().checkpointReadUnlock();
         }
     }
 

@@ -1135,7 +1135,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolQSize = exec.getQueue().size();
                             }
 
-                            PageMemory pageMem = ctx.cache().context().database().pageMemory();
+                            PageMemory pageMem = ctx.cache().context().persistentStore().pageMemory();
 
                             String id = U.id8(localNode().id());
 

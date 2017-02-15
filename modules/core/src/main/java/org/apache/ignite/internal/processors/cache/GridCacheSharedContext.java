@@ -547,7 +547,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Database manager.
      */
-    public IgniteCacheDatabaseSharedManager database() {
+    public IgniteCacheDatabaseSharedManager persistentStore() {
         return dbMgr;
     }
 

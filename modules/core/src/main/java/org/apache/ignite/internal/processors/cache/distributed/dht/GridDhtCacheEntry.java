@@ -119,7 +119,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void onUpdateFinished(long cntr) {
-        if (cctx.shared().database().persistenceEnabled())
+        if (cctx.shared().persistentStore().persistenceEnabled())
             locPart.onUpdateReceived(cntr);
     }
 

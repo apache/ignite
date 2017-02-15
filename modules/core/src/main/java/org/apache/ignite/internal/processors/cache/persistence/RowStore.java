@@ -52,7 +52,7 @@ public class RowStore {
         this.freeList = freeList;
 
         coctx = cctx.cacheObjectContext();
-        pageMem = cctx.shared().database().pageMemory();
+        pageMem = cctx.shared().persistentStore().pageMemory();
     }
 
     /**

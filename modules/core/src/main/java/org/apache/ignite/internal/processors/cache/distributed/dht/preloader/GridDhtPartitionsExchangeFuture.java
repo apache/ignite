@@ -547,7 +547,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 if (hasStop)
-                    cctx.cache().context().database().beforeCachesStop();
+                    cctx.cache().context().persistentStore().beforeCachesStop();
             }
 
             switch (exchange) {
@@ -596,7 +596,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
-        cctx.database().checkpointReadLock();
+        cctx.persistentStore().checkpointReadLock();
 
         try {
             if (crd != null) {
@@ -609,7 +609,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         finally {
-            cctx.database().checkpointReadUnlock();
+            cctx.persistentStore().checkpointReadUnlock();
         }
     }
 
@@ -819,7 +819,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
-        cctx.database().beforeExchange(this);
+        cctx.persistentStore().beforeExchange(this);
 
         // If a backup request, synchronously wait for backup start.
         if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -833,7 +833,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     assert node != null;
 
-                    IgniteInternalFuture fut = cctx.database().startLocalSnapshotCreation(backupMsg, node, backupMsg.message());
+                    IgniteInternalFuture fut = cctx.persistentStore().startLocalSnapshotCreation(backupMsg, node, backupMsg.message());
 
                     if (fut != null)
                         fut.get();
@@ -1619,7 +1619,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void assignPartitionsStates() {
-        if (cctx.database().persistenceEnabled()) {
+        if (cctx.persistentStore().persistenceEnabled()) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
                     continue;

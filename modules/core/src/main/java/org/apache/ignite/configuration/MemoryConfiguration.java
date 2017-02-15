@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Database configuration used to configure database.
+ * Database configuration used to configure persistent store.
  */
 public class MemoryConfiguration implements Serializable {
     /** */

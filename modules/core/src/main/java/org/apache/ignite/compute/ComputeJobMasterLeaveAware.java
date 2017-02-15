@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteException;
  * during job execution the callback method {@link #onMasterNodeLeft(ComputeTaskSession)} will be executed.
  * <p>
  * Implementing this interface gives you ability to preserve job execution result or its intermediate state
- * which could be reused later. E.g. you can save job execution result to the database or as a checkpoint
+ * which could be reused later. E.g. you can save job execution result to the persistent store or as a checkpoint
  * and reuse it when failed task is being executed again thus avoiding job execution from scratch.
  */
 public interface ComputeJobMasterLeaveAware {

@@ -482,7 +482,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     WALPointer ptr = null;
 
-                    cctx.database().checkpointReadLock();
+                    cctx.persistentStore().checkpointReadLock();
 
                     try {
                         Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
@@ -754,7 +754,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 "(transaction will be rolled back): " + this, e);
                         }
                         finally {
-                            cctx.database().checkpointReadUnlock();
+                            cctx.persistentStore().checkpointReadUnlock();
                         }
                     }
                     finally {

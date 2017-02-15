@@ -53,7 +53,7 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
         this.rmvId = rmvId;
 
         throw new IgniteException("Inner replace record should not be used directly (see GG-11640). " +
-            "Clear the database directory and restart the node.");
+            "Clear the persistent store directory and restart the node.");
     }
 
     /** {@inheritDoc} */

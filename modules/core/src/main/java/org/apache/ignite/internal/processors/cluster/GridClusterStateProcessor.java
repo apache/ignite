@@ -387,7 +387,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 sharedCtx.affinity().removeAllCacheInfo();
 
                 if (!ctx.clientNode()) {
-                    sharedCtx.database().onDeActivate(ctx);
+                    sharedCtx.persistentStore().onDeActivate(ctx);
 
                     if (sharedCtx.pageStore() != null)
                         sharedCtx.pageStore().onDeActivate(ctx);
@@ -440,7 +440,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         try {
             if (!client) {
-                sharedCtx.database().lock();
+                sharedCtx.persistentStore().lock();
 
                 IgnitePageStoreManager pageStore = sharedCtx.pageStore();
 
@@ -450,7 +450,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 if (sharedCtx.wal() != null)
                     sharedCtx.wal().onActivate(ctx);
 
-                sharedCtx.database().initDataBase();
+                sharedCtx.persistentStore().initDataBase();
 
                 for (CacheConfiguration cfg : cfgs) {
                     if (CU.isSystemCache(cfg.getName()))
@@ -464,7 +464,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                             pageStore.initializeForCache(cfg);
                 }
 
-                sharedCtx.database().onActivate(ctx);
+                sharedCtx.persistentStore().onActivate(ctx);
             }
 
             if (log.isInfoEnabled())
@@ -478,7 +478,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
                 ", topVer=" + cgsCtx.topVer + "]", e);
 
             if (!ctx.clientNode())
-                sharedCtx.database().unLock();
+                sharedCtx.persistentStore().unLock();
 
             return e;
         }
@@ -500,7 +500,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
             ctx.service().onDeActivate(ctx);
 
             if (log.isInfoEnabled())
-                log.info("Success deactivate services, dataStructures, database, pageStore, wal [id=" + ctx.localNodeId() + ", client=" +
+                log.info("Success deactivate services, dataStructures, persistentStore, pageStore, wal [id=" + ctx.localNodeId() + ", client=" +
                     client + ", topVer=" + cgsCtx.topVer + "]");
 
             return null;
@@ -513,7 +513,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
         }
         finally {
             if (!client)
-                sharedCtx.database().unLock();
+                sharedCtx.persistentStore().unLock();
         }
     }
 
@@ -576,7 +576,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
         try {
             if (!client) {
-                sharedCtx.database().onDeActivate(ctx);
+                sharedCtx.persistentStore().onDeActivate(ctx);
 
                 if (sharedCtx.pageStore() != null)
                     sharedCtx.pageStore().onDeActivate(ctx);

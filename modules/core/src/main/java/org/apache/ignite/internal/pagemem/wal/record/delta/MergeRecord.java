@@ -60,7 +60,7 @@ public class MergeRecord<L> extends PageDeltaRecord {
         this.emptyBranch = emptyBranch;
 
         throw new IgniteException("Merge record should not be used directly (see GG-11640). " +
-            "Clear the database directory and restart the node.");
+            "Clear the persistent store directory and restart the node.");
     }
 
     /** {@inheritDoc} */

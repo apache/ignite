@@ -543,13 +543,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             return;
 
-        cctx.shared().database().checkpointReadLock();
+        cctx.shared().persistentStore().checkpointReadLock();
 
         try {
             initializeCache(cctx);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            cctx.shared().persistentStore().checkpointReadUnlock();
 
             busyLock.leaveBusy();
         }

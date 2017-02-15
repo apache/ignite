@@ -645,7 +645,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             WALPointer ptr = null;
 
-            cctx.database().checkpointReadLock();
+            cctx.persistentStore().checkpointReadLock();
 
             try {
                 cctx.tm().txContext(this);
@@ -1007,7 +1007,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     "(transaction will be rolled back): " + this, e);
             }
             finally {
-                cctx.database().checkpointReadUnlock();
+                cctx.persistentStore().checkpointReadUnlock();
 
                 cctx.tm().resetContext();
             }

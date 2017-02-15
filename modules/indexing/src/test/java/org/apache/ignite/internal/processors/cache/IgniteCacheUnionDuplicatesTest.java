@@ -94,7 +94,7 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     }
 
     /**
-     * Insert {@link BaseH2CompareQueryTest.Organization} at h2 database.
+     * Insert {@link BaseH2CompareQueryTest.Organization} at h2 persistentStore.
      *
      * @param org Organization.
      * @throws SQLException If exception.

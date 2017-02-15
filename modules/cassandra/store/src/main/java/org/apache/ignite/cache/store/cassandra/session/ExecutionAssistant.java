@@ -74,9 +74,9 @@ public interface ExecutionAssistant<R> {
     public String operationName();
 
     /**
-     * Processes Cassandra database table row returned by specified CQL statement.
+     * Processes Cassandra persistentStore table row returned by specified CQL statement.
      *
-     * @param row Cassandra database table row.
+     * @param row Cassandra persistentStore table row.
      *
      * @return result of the operation.
      */

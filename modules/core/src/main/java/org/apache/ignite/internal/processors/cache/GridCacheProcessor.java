@@ -616,7 +616,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void registerCacheFromPersistentStore(CacheConfiguration[] cfgs) throws IgniteCheckedException {
         if (sharedCtx.pageStore() != null &&
-            sharedCtx.database().persistenceEnabled() &&
+            sharedCtx.persistentStore().persistenceEnabled() &&
             !ctx.config().isDaemon()) {
 
             Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
@@ -789,10 +789,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (activeOnStart && !ctx.clientNode() && !ctx.isDaemon())
-                sharedCtx.database().lock();
+                sharedCtx.persistentStore().lock();
 
-            // Must start database before start first cache.
-            sharedCtx.database().onKernalStart(false);
+            // Must start persistentStore before start first cache.
+            sharedCtx.persistentStore().onKernalStart(false);
 
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -841,7 +841,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
-            if (sharedCtx.database() != mgr)
+            if (sharedCtx.persistentStore() != mgr)
                 mgr.onKernalStart(false);
 
         // Escape if start active on start false
@@ -1241,7 +1241,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
-        ctx.kernalContext().cache().context().database().onCacheStop(ctx);
+        ctx.kernalContext().cache().context().persistentStore().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
@@ -2617,7 +2617,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!ctx.config().isDaemon() &&
             sharedCtx.pageStore() != null &&
-            sharedCtx.database().persistenceEnabled()) {
+            sharedCtx.persistentStore().persistenceEnabled()) {
             Set<String> savedCacheNames = sharedCtx.pageStore().savedCacheNames();
 
             for (String name : savedCacheNames) {

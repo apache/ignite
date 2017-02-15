@@ -551,7 +551,7 @@ public class GridDhtPartitionDemander {
 
         for (Integer part : parts) {
             try {
-                if (cctx.shared().database().persistenceEnabled()) {
+                if (cctx.shared().persistentStore().persistenceEnabled()) {
                     if (partCntrs == null)
                         partCntrs = new HashMap<>(parts.size(), 1.0f);
 
@@ -778,7 +778,7 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        cctx.shared().database().checkpointReadLock();
+        cctx.shared().persistentStore().checkpointReadLock();
 
         try {
             GridCacheEntryEx cached = null;
@@ -849,7 +849,7 @@ public class GridDhtPartitionDemander {
                 cctx.nodeId() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            cctx.shared().persistentStore().checkpointReadUnlock();
         }
 
         return true;
