@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryReflectiveReadAction[] _rActions;
 
         /** Callback type descriptor. */
-        private SerializableTypeDescriptor _serializableDescriptor;
+        private readonly SerializableTypeDescriptor _serializableDescriptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.

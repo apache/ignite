@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.Serialization;
 
