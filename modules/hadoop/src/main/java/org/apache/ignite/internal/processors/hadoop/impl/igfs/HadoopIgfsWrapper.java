@@ -25,24 +25,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathSummary;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint.LOCALHOST;
@@ -381,37 +375,19 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         String igniteCliCfgPath = parameter(conf, PARAM_IGFS_ENDPOINT_IGNITE_CFG_PATH, authority, null);
 
         if (curDelegate == null && !F.isEmpty(igniteCliCfgPath)) {
+            HadoopIgfsInProc hadoop = null;
             try {
-                IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgPair =
-                    IgnitionEx.loadConfiguration(igniteCliCfgPath);
+                hadoop = HadoopIgfsInProc.create(igniteCliCfgPath, endpoint.igfs(), log, userName);
 
-                IgniteConfiguration cfg = cfgPair.get1();
-
-                cfg.setClientMode(true);
-
-                String nodeName = cfg.getGridName();
-
-                HadoopIgfsInProc.lockRefCount();
-
-                try {
-                    T2<Ignite, Boolean> startRes = IgnitionEx.getOrStart(cfg);
-
-                    if (startRes.get1() == null)
-                        throw new HadoopIgfsCommunicationException("Cannot create Ignite client node. See the log");
-
-                    if (startRes.get2())
-                        HadoopIgfsInProc.addManagedIgniteInstance(nodeName);
-
-                    HadoopIgfsInProc hadoop = HadoopIgfsInProc.create(startRes.get1(), endpoint.igfs(), log, userName);
-
-                    if (hadoop != null)
-                        curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                finally {
-                    HadoopIgfsInProc.unlockRefCount();
-                }
+                if (hadoop != null)
+                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
             catch (Exception e) {
+                // Now the closing is not necessary because Delegate constructor doesn't throws an exception.
+                // Placed here for future modification of the delegate creation logic.
+                if (hadoop != null)
+                    hadoop.close(false);
+
                 if (log.isDebugEnabled())
                     log.debug("Failed to connect to IGFS using Ignite client [host=" + endpoint.host() +
                         ", port=" + endpoint.port() + ", igniteCfg=" + igniteCliCfgPath + ']', e);
