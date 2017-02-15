@@ -17,69 +17,157 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.compute.ComputeTaskFuture;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.GridRandom;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * TODO: fix javadoc warnings, code style.
+ * Base class for memory leaks tests.
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
-    // TODO: take duration from system property.
-    /** Test duration in seconds*/
-    protected abstract int duration();
 
-    @Override
-    protected long getTestTimeout() {
-        return duration() * 1200;
+    /** */
+    private volatile Exception ex = null;
+
+    /** */
+    private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<>();
+
+    /** {@inheritDoc} */
+    @Override protected void configure(IgniteConfiguration cfg) {
+        cfg.setMetricsLogFrequency(5000);
     }
 
-    /** */
-    protected abstract void operation(IgniteEx ig);
+    /** {@inheritDoc} */
+    @Override protected void configure(MemoryConfiguration mCfg) {
+        int concLvl = Runtime.getRuntime().availableProcessors();
 
-    /** */
-    public void testMemoryLeak() throws Exception {
-        // TODO: take PageMemory max size is the same as we configured.
+        mCfg.setConcurrencyLevel(concLvl);
+        mCfg.setPageCacheSize(1024 * 1024 * concLvl); //minimal possible value
+    }
 
-        final long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(duration());
+    /**
+     * @return Test duration in seconds.
+     */
+    protected int duration() {
+        return 300;
+    }
 
-        // TODO: use threads instead of compute or make sure there are enough threads in pool.
-        int tasksCnt = Runtime.getRuntime().availableProcessors() * 4;
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
 
-        IgniteCompute compute = grid(0).compute().withAsync();
+    /** {@inheritDoc} */
+    @Override protected boolean indexingEnabled() {
+        return false;
+    }
 
-        ComputeTaskFuture[] futs = new ComputeTaskFuture[tasksCnt];
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return (duration() + 1) * 1000;
+    }
 
-        for (int i = 0; i < tasksCnt; i++) {
-            compute.run(new IgniteRunnable() {
-                @IgniteInstanceResource
-                private Ignite ig;
+    /**
+     * @param ig Ignite instance.
+     * @return IgniteCache.
+     */
+    protected abstract IgniteCache<Object,Object> cache(IgniteEx ig);
 
-                @Override
-                public void run() {
-                    int i = 0;
-                    while (System.nanoTime() < end) {
-                        operation((IgniteEx) ig);
+    /**
+     * @return Cache key to perform an operation.
+     */
+    protected abstract Object key();
 
-                        if(i++ == 100) {
-                            check((IgniteEx) ig);
-                            i = 0;
-                        }
-                    }
-                }
-            });
+    /**
+     * @return Cache value to perform an operation.
+     * @param key Cache key to perform an operation.
+     */
+    protected abstract Object value(Object key);
 
-            futs[i] = compute.future();
+    /**
+     * @param cache IgniteCache.
+     */
+    protected void operation(IgniteCache<Object, Object> cache) {
+        Object key = key();
+        Object value = value(key);
+
+        switch (getRandom().nextInt(3)) {
+            case 0:
+                cache.getAndPut(key, value);
+            case 1:
+                cache.get(key);
+                break;
+            case 2:
+                cache.getAndRemove(key);
+        }
+    }
+
+    /**
+     * @return Random.
+     */
+    @NotNull protected static Random getRandom() {
+        Random rnd = THREAD_LOCAL_RANDOM.get();
+
+        if(rnd == null){
+            rnd = new GridRandom();
+            THREAD_LOCAL_RANDOM.set(rnd);
         }
 
-        for (ComputeTaskFuture fut : futs)
-            fut.get();
+        return rnd;
     }
 
-    protected void check(IgniteEx ig) {}
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMemoryLeak() throws Exception {
+        final long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(duration());
+
+        final IgniteEx ignite = grid(0);
+        final IgniteCache<Object, Object> cache = cache(ignite);
+
+        Runnable target = new Runnable() {
+            @Override public void run() {
+                while (ex == null && System.nanoTime() < end) {
+                    try {
+                        operation(cache);
+                        check(ignite);
+                    }
+                    catch (Exception e) {
+                        ex = e;
+
+                        break;
+                    }
+                }
+            }
+        };
+
+        Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
+
+        for (int i = 0; i < threads.length; i++) {
+            threads[i] = new Thread(target);
+            threads[i].start();
+        }
+
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        if(ex != null){
+            throw ex;
+        }
+    }
+
+    /**
+     * Callback to check the current state
+     *
+     * @param ig Ignite instance
+     * @throws Exception If failed.
+     */
+    protected void check(IgniteEx ig) throws Exception {
+    }
 }
