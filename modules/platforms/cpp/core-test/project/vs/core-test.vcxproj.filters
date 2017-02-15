@@ -127,5 +127,11 @@
     <None Include="..\..\config\cache-identity.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\cache-query-continuous.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-store.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

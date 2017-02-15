@@ -34,7 +34,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\cache-identity.xml" />
+    <None Include="..\..\config\cache-query-continuous.xml" />
     <None Include="..\..\config\cache-query.xml" />
+    <None Include="..\..\config\cache-store.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="..\..\config\cache-test.xml" />
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>

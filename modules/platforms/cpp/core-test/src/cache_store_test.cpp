@@ -21,6 +21,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include "ignite/common/utils.h"
+
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/test_utils.h"
@@ -28,18 +30,16 @@
 using namespace ignite;
 using namespace boost::unit_test;
 
-
-struct Person
+struct GridTestKey
 {
-    std::string name;
-    int age;
+    int64_t id;
 
-    Person() : name(), age(0)
+    GridTestKey() : id(0)
     {
         // No-op.
     }
 
-    Person(std::string name, int age) : name(name), age(age)
+    GridTestKey(int64_t id) : id(id)
     {
         // No-op.
     }
@@ -49,27 +49,23 @@ namespace ignite
 {
     namespace binary
     {
-        IGNITE_BINARY_TYPE_START(Person)
-        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
-        IGNITE_BINARY_IS_NULL_FALSE(Person)
-        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
+        IGNITE_BINARY_TYPE_START(GridTestKey)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(GridTestKey)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(GridTestKey)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(GridTestKey)
+            IGNITE_BINARY_IS_NULL_FALSE(GridTestKey)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(GridTestKey)
 
-        void Write(BinaryWriter& writer, Person obj)
-        {
-            writer.WriteString("name", obj.name);
-            writer.WriteInt32("age", obj.age);            
-        }
+            void Write(BinaryWriter& writer, const GridTestKey& obj)
+            {
+                writer.RawWriter().WriteInt64(obj.id);
+            }
 
-        Person Read(BinaryReader& reader)
-        {
-            std::string name = reader.ReadString("name");
-            int age = reader.ReadInt32("age");
-            
-            return Person(name, age);
-        }
+            GridTestKey Read(BinaryReader& reader)
+            {
+                return GridTestKey(reader.RawReader().ReadInt64());
+            }
 
         IGNITE_BINARY_TYPE_END
     }
@@ -87,7 +83,7 @@ struct CacheStoreTestSuiteFixture
      * Constructor.
      */
     CacheStoreTestSuiteFixture() : 
-        node(ignite_test::StartNode("cache-store.xml", "node"))
+        node(ignite_test::StartNode("cache-store.xml"))
     {
         // No-op.
     }
@@ -105,28 +101,43 @@ struct CacheStoreTestSuiteFixture
     /**
      * Cache accessor.
      */
-    cache::Cache<int32_t, Person> GetCache()
+    cache::Cache<int64_t, std::string> GetCache()
     {
-        return node.GetOrCreateCache<int32_t, Person>("cache1");
+        return node.GetOrCreateCache<int64_t, std::string>("cache1");
     }
 };
+
+void FillStore(cache::Cache<int64_t, std::string>& cache, int32_t n)
+{
+    for (int32_t i = 0; i < n; ++i)
+        cache.Put(i, common::LexicalCast<std::string>(i));
+
+    cache.Clear();
+}
 
 BOOST_FIXTURE_TEST_SUITE(CacheStoreTestSuite, CacheStoreTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(LoadCacheNoPredicate)
 {
-    cache::Cache<int32_t, Person> cache = GetCache();
+    const int32_t entriesNum = 100;
+
+    cache::Cache<int64_t, std::string> cache = GetCache();
+
+    BOOST_CHECK(cache.IsEmpty());
+
+    FillStore(cache, entriesNum);
+
+    BOOST_CHECK(cache.IsEmpty());
 
     cache.LoadCache();
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK_EQUAL(cache.Size(), 100);
+    BOOST_CHECK_EQUAL(cache.Size(), entriesNum);
 
-    Person person42 = cache.Get(42);
+    std::string val42 = cache.Get(42);
 
-    BOOST_CHECK_EQUAL(person42.age, 42);
-    BOOST_CHECK_EQUAL(person42.name, "John Doe");
+    BOOST_CHECK_EQUAL(val42, "42");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
