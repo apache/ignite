@@ -56,7 +56,9 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics {
      *
      * @see StorageOpsMetrics#isArrayBased()
      */
-    public double[][] data();
+    default public double[][] data() {
+        return null;
+    }
 
     /**
      * Destroys matrix storage if managed outside of JVM. It's a no-op in all other cases.
