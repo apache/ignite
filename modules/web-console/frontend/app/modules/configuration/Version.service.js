@@ -77,12 +77,34 @@ export default class IgniteVersion {
     }
 
     /**
+     * Check if node version in range
+     * @param {String} nodeVer Node version.
+     * @param {Array.<String>} ranges Version ranges to compare with.
+     * @returns {Boolean} `True` if node version is equal or greater than specified range.
+     */
+    includes(nodeVer, ...ranges) {
+        return !!_.find(ranges, ([after, before]) =>
+            this.compare(nodeVer, after) >= 0 && (_.isNil(before) || this.compare(nodeVer, before) < 0)
+        );
+    }
+
+    /**
      * Check if node version is newer or same
-     * @param {String} nodeVer
-     * @param {String} sinceVer
-     * @returns {Boolean}
+     * @param {String} nodeVer Node version.
+     * @param {String} sinceVer Version to compare with.
+     * @returns {Boolean} `True` if node version is equal or greater than specified version.
      */
     since(nodeVer, sinceVer) {
-        return this.compare(nodeVer, sinceVer) >= 0;
+        return this.includes(nodeVer, [sinceVer]);
+    }
+
+    /**
+     * Check whether node version before than specified version.
+     * @param {String} nodeVer Node version.
+     * @param {String} sinceVer Version to compare with.
+     * @return {Boolean} `True` if node version before than specified version.
+     */
+    before(nodeVer, sinceVer) {
+        return !this.since(nodeVer, sinceVer);
     }
 }
