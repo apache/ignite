@@ -13,101 +13,10 @@ import static org.junit.Assert.*;
 /** */
 public class VectorAttributesTest {
     /** */ @Test
-    public void defaultConstructorTest() {
-        DenseLocalOnHeapVector v = new DenseLocalOnHeapVector();
+    public void specialCasesTest() {
+        assertSpecialCases(new DenseLocalOnHeapVector());
 
-        boolean expECaught = false;
-
-        try {
-            assertTrue(v.isDense());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isSequentialAccess());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.getLookupCost() == 0);
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isAddConstantTime());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        assertNull(v.clusterGroup());
-
-        assertNotNull(v.guid());
-    }
-
-    /** */ @Test
-    public void nullOffHeapTest() {
-        DenseLocalOffHeapVector v = new DenseLocalOffHeapVector((double[])null);
-
-        boolean expECaught = false;
-
-        try {
-            assertTrue(v.isDense());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isSequentialAccess());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.getLookupCost() == 0);
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isAddConstantTime());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        assertNull(v.clusterGroup());
-
-        assertNotNull(v.guid());
+        assertSpecialCases(new DenseLocalOffHeapVector((double[])null));
     }
 
     /** */ @Test
@@ -212,5 +121,52 @@ public class VectorAttributesTest {
         assertTrue("1 size, off heap vector.",
             pred.test(new DenseLocalOffHeapVector(new double[1])));
 
+    }
+
+    /** */
+    private void assertSpecialCases(Vector v) {
+        boolean expECaught = false;
+
+        try {
+            assertTrue(v.isDense());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at dense check.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.isSequentialAccess());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at sequential access check.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.getLookupCost() == 0);
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at lookup cost check.", expECaught);
+
+        expECaught = false;
+
+        try {
+            assertTrue(v.isAddConstantTime());
+        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at add constant time check.", expECaught);
+
+        assertNull("Expect null cluster group.", v.clusterGroup());
+
+        assertNotNull("Expect non null guid.", v.guid());
     }
 }

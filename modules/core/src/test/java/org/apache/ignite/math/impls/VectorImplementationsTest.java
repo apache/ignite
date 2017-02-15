@@ -302,7 +302,6 @@ public class VectorImplementationsTest {
         /** */
         private final Double pow;
 
-
         /** */
         Norm(double[] arr, double pow) {
             this.arr = arr;
@@ -324,9 +323,6 @@ public class VectorImplementationsTest {
         double sumPowers() {
             if (pow.equals(0.0))
                 return countNonZeroes();
-
-            if (pow.equals(Double.POSITIVE_INFINITY))
-                return maxAbs();
 
             double norm = 0;
 
