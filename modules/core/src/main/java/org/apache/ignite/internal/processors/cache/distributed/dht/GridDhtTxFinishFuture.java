@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -354,7 +355,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
-                if (e instanceof ClusterTopologyCheckedException)
+                if (e instanceof ClusterTopologyLocalException)
                     fut.onNodeLeftWithClusterTopologyException();
                 else {
                     if (msgLog.isDebugEnabled()) {
@@ -458,7 +459,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
-                if (e instanceof ClusterTopologyCheckedException)
+                if (e instanceof ClusterTopologyLocalException)
                     fut.onNodeLeftWithClusterTopologyException();
                 else {
                     if (msgLog.isDebugEnabled()) {
@@ -528,7 +529,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException)
+                    if (e instanceof ClusterTopologyLocalException)
                         fut.onNodeLeftWithClusterTopologyException();
                     else {
                         if (msgLog.isDebugEnabled()) {

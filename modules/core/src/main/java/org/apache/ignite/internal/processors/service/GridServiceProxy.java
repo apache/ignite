@@ -42,6 +42,7 @@ import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -186,7 +187,7 @@ public class GridServiceProxy<T> implements Serializable {
                         ).get();
                     }
                 }
-                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
+                catch (GridServiceNotFoundException | ClusterTopologyLocalException e) {
                     if (log.isDebugEnabled())
                         log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
                 }

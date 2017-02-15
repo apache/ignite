@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
@@ -362,7 +363,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                             ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ignored) {
+                catch (ClusterTopologyLocalException ignored) {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DTH update fut, failed to send request, node left [futId=" + futVer +
                             ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');

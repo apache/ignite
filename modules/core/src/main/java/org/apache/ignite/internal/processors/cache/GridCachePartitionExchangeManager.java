@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -793,7 +794,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
             }
-            catch (ClusterTopologyCheckedException ignore) {
+            catch (ClusterTopologyLocalException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
                         node.id() + ", msg=" + m + ']');
@@ -953,7 +954,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
         }
-        catch (ClusterTopologyCheckedException ignore) {
+        catch (ClusterTopologyLocalException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
                     node.id() + ", msg=" + m + ']');

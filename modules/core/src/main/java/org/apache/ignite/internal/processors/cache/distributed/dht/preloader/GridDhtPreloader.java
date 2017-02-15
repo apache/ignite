@@ -33,6 +33,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -552,7 +553,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             cctx.io().send(node, res, cctx.ioPolicy());
         }
-        catch (ClusterTopologyCheckedException ignore) {
+        catch (ClusterTopologyLocalException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Received force key request form failed node (will ignore) [nodeId=" + node.id() +
                     ", req=" + msg + ']');

@@ -496,13 +496,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
             catch (ClusterTopologyCheckedException e) {
                 fut.onNodeLeft(e);
-
                 return e;
             } catch (ClusterTopologyLocalException e) {
                 ClusterTopologyCheckedException ex = e.toChecked(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
-
                 fut.onNodeLeft(ex);
-
                 return ex;
             }
             catch (IgniteCheckedException e) {

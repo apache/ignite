@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -275,7 +276,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ignored) {
+                catch (ClusterTopologyLocalException ignored) {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Failed to send deferred DHT update response, node left [" +
                             "futIds=" + msg.futureVersions() + ", node=" + nodeId + ']');
@@ -3325,7 +3326,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
             }
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyLocalException ignored) {
             U.warn(msgLog, "Failed to send DHT atomic update response, node left [futId=" + req.futureVersion() +
                 ", node=" + req.nodeId() + ']');
         }
@@ -3400,7 +3401,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (msgLog.isDebugEnabled())
                 msgLog.debug("Sent near update response [futId=" + res.futureVersion() + ", node=" + nodeId + ']');
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyLocalException ignored) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Failed to send near update response [futId=" + res.futureVersion() +
                     ", node=" + nodeId + ']');

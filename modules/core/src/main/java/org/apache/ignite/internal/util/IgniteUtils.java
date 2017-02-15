@@ -816,7 +816,9 @@ public abstract class IgniteUtils {
 
         m.put(ClusterTopologyLocalException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                throw new AssertionError("Should never happen if IGNITE-1948 done well");
+                ClusterTopologyException topEx = new ClusterTopologyException(e.getMessage(), e);
+                ClusterTopologyLocalException checked = (ClusterTopologyLocalException)e;;
+                return topEx;
             }
         });
 

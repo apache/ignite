@@ -187,7 +187,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                             ", node=" + nearNodeId + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ignore) {
+                catch (ClusterTopologyLocalException ignore) {
                     fut.onNodeLeft(nearNodeId);
                 }
                 catch (IgniteCheckedException e) {
@@ -306,7 +306,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                                 ", node=" + id + ']');
                         }
                     }
-                    catch (ClusterTopologyCheckedException ignored) {
+                    catch (ClusterTopologyLocalException ignored) {
                         fut.onNodeLeft(id);
                     }
                     catch (IgniteCheckedException e) {
@@ -345,7 +345,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                             ", node=" + nodeId + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ignored) {
+                catch (ClusterTopologyLocalException ignored) {
                     fut.onNodeLeft(nodeId);
                 }
                 catch (IgniteCheckedException e) {
@@ -503,7 +503,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                 cctx.tm().finishTxOnRecovery(tx, res);
             }
             else {
-                if (err instanceof ClusterTopologyCheckedException && nearTxCheck) {
+                if (err instanceof ClusterTopologyLocalException && nearTxCheck) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to check transaction on near node, " +
                             "ignoring [err=" + err + ", tx=" + tx + ']');

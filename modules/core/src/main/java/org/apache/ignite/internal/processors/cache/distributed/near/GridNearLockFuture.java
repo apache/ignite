@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -1334,7 +1335,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException ex) {
+                catch (ClusterTopologyLocalException ex) {
                     fut.onResult(ex);
                 }
             }
@@ -1347,7 +1348,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                             cctx.io().send(node, req, cctx.ioPolicy());
                         }
-                        catch (ClusterTopologyCheckedException ex) {
+                        catch (ClusterTopologyLocalException ex) {
                             fut.onResult(ex);
                         }
                         catch (IgniteCheckedException e) {
@@ -1537,7 +1538,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult(ClusterTopologyLocalException e) {
             if (isDone())
                 return;
 

@@ -354,7 +354,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException || e instanceof ClusterTopologyLocalException)
+                    if (e instanceof ClusterTopologyLocalException)
                         fut.onNodeLeftWithClusterTopologyException();
                     else
                         fut.onResult(e);

@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -96,7 +97,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (ClusterTopologyCheckedException e) {
+        catch (ClusterTopologyLocalException e) {
             log.info("Expected exception: " + e);
         }
     }

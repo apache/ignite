@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -1070,7 +1071,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             ", node=" + node.id() + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ex) {
+                catch (ClusterTopologyLocalException ex) {
                     assert fut != null;
 
                     fut.onResult(ex);
@@ -1088,7 +1089,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                     ", node=" + node.id() + ']');
                             }
                         }
-                        catch (ClusterTopologyCheckedException ex) {
+                        catch (ClusterTopologyLocalException ex) {
                             assert fut != null;
 
                             fut.onResult(ex);
@@ -1441,7 +1442,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult(ClusterTopologyLocalException e) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
                     ", inTx=" + inTx() +

@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class ClusterTopologyCheckedException extends IgniteCheckedException {
+public class ClusterTopologyCheckedException extends ClusterTopologyLocalException {
     /** */
     private static final long serialVersionUID = 0L;
 

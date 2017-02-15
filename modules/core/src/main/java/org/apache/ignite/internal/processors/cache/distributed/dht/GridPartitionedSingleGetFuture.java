@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -311,7 +312,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 cctx.io().send(node, req, cctx.ioPolicy());
             }
             catch (IgniteCheckedException e) {
-                if (e instanceof ClusterTopologyCheckedException)
+                if (e instanceof ClusterTopologyLocalException)
                     onNodeLeft(node.id());
                 else
                     onDone(e);

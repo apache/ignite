@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -621,7 +622,7 @@ class GridDhtPartitionSupplier {
 
             return true;
         }
-        catch (ClusterTopologyCheckedException ignore) {
+        catch (ClusterTopologyLocalException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send partition supply message because node left grid: " + n.id());
 
@@ -1024,7 +1025,7 @@ class GridDhtPartitionSupplier {
 
             return true;
         }
-        catch (ClusterTopologyCheckedException ignore) {
+        catch (ClusterTopologyLocalException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send partition supply message because node left grid: " + n.id());
 
