@@ -17,9 +17,11 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.MatrixOffHeapStorage;
+import org.apache.ignite.math.impls.storage.*;
+import java.util.*;
 
 /**
  * TODO add description
@@ -40,6 +42,21 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
      */
     public DenseLocalOffHeapMatrix(int rows, int cols){
         setStorage(new MatrixOffHeapStorage(rows, cols));
+    }
+
+    /**
+     *
+     * @param args
+     */
+    public DenseLocalOffHeapMatrix(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("rows") && args.containsKey("cols"))
+            setStorage(new MatrixArrayStorage((int)args.get("rows"), (int)args.get("cols")));
+        else if (args.containsKey("arr"))
+            setStorage(new MatrixArrayStorage((double[][])args.get("arr")));
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /** {@inheritDoc} */

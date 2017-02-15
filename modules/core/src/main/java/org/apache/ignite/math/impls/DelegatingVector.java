@@ -20,6 +20,8 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
@@ -28,9 +30,9 @@ import java.util.function.*;
  * Convenient class that can be used to add decorations to an existing vector. Subclasses
  * can add weights, indices, etc. while maintaining full vector functionality.
  */
-public class DelegatingVector implements org.apache.ignite.math.Vector {
+public class DelegatingVector implements Vector {
     // Delegating vector.
-    private org.apache.ignite.math.Vector dlg;
+    private Vector dlg;
 
     // Meta attribute storage.
     private Map<String, Object> meta = new HashMap<>();
@@ -42,8 +44,20 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
      *
      * @param dlg
      */
-    public DelegatingVector(org.apache.ignite.math.Vector dlg) {
+    public DelegatingVector(Vector dlg) {
         this.dlg = dlg;
+    }
+
+    /**
+     * @param args
+     */
+    public DelegatingVector(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("delegate"))
+            dlg = (Vector)args.get("delegate");
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     @Override
@@ -56,7 +70,7 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     @Override
     @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        dlg = (org.apache.ignite.math.Vector)in.readObject();
+        dlg = (Vector)in.readObject();
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
     }
@@ -102,7 +116,7 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public org.apache.ignite.math.Vector copy() {
+    public Vector copy() {
         return new DelegatingVector(dlg);
     }
 
@@ -132,47 +146,47 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public org.apache.ignite.math.Vector assign(double val) {
+    public Vector assign(double val) {
         return dlg.assign(val);
     }
 
     @Override
-    public org.apache.ignite.math.Vector assign(double[] vals) {
+    public Vector assign(double[] vals) {
         return dlg.assign(vals);
     }
 
     @Override
-    public org.apache.ignite.math.Vector assign(org.apache.ignite.math.Vector vec) {
+    public Vector assign(Vector vec) {
         return dlg.assign(vec);
     }
 
     @Override
-    public org.apache.ignite.math.Vector assign(IntToDoubleFunction fun) {
+    public Vector assign(IntToDoubleFunction fun) {
         return dlg.assign(fun);
     }
 
     @Override
-    public org.apache.ignite.math.Vector map(DoubleFunction<Double> fun) {
+    public Vector map(DoubleFunction<Double> fun) {
         return dlg.map(fun);
     }
 
     @Override
-    public org.apache.ignite.math.Vector map(org.apache.ignite.math.Vector vec, BiFunction<Double, Double, Double> fun) {
+    public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
         return dlg.map(vec, fun);
     }
 
     @Override
-    public org.apache.ignite.math.Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         return dlg.map(fun, y);
     }
 
     @Override
-    public org.apache.ignite.math.Vector divide(double x) {
+    public Vector divide(double x) {
         return dlg.divide(x);
     }
 
     @Override
-    public double dot(org.apache.ignite.math.Vector vec) {
+    public double dot(Vector vec) {
         return dlg.dot(vec);
     }
 
@@ -187,32 +201,32 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public org.apache.ignite.math.Vector like(int crd) {
+    public Vector like(int crd) {
         return dlg.like(crd);
     }
 
     @Override
-    public org.apache.ignite.math.Vector minus(org.apache.ignite.math.Vector vec) {
+    public Vector minus(Vector vec) {
         return dlg.minus(vec);
     }
 
     @Override
-    public org.apache.ignite.math.Vector normalize() {
+    public Vector normalize() {
         return dlg.normalize();
     }
 
     @Override
-    public org.apache.ignite.math.Vector normalize(double power) {
+    public Vector normalize(double power) {
         return dlg.normalize(power);
     }
 
     @Override
-    public org.apache.ignite.math.Vector logNormalize() {
+    public Vector logNormalize() {
         return dlg.logNormalize();
     }
 
     @Override
-    public org.apache.ignite.math.Vector logNormalize(double power) {
+    public Vector logNormalize(double power) {
         return dlg.logNormalize(power);
     }
 
@@ -232,32 +246,32 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public org.apache.ignite.math.Vector plus(double x) {
+    public Vector plus(double x) {
         return dlg.plus(x);
     }
 
     @Override
-    public org.apache.ignite.math.Vector plus(org.apache.ignite.math.Vector vec) {
+    public Vector plus(Vector vec) {
         return dlg.plus(vec);
     }
 
     @Override
-    public org.apache.ignite.math.Vector set(int idx, double val) {
+    public Vector set(int idx, double val) {
         return dlg.set(idx, val);
     }
 
     @Override
-    public org.apache.ignite.math.Vector setX(int idx, double val) {
+    public Vector setX(int idx, double val) {
         return dlg.setX(idx, val);
     }
 
     @Override
-    public org.apache.ignite.math.Vector incrementX(int idx, double val) {
+    public Vector incrementX(int idx, double val) {
         return dlg.incrementX(idx, val);
     }
 
     @Override
-    public org.apache.ignite.math.Vector increment(int idx, double val) {
+    public Vector increment(int idx, double val) {
         return dlg.increment(idx, val);
     }
 
@@ -267,17 +281,17 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public org.apache.ignite.math.Vector times(double x) {
+    public Vector times(double x) {
         return dlg.times(x);
     }
 
     @Override
-    public org.apache.ignite.math.Vector times(org.apache.ignite.math.Vector vec) {
+    public Vector times(Vector vec) {
         return dlg.times(vec);
     }
 
     @Override
-    public org.apache.ignite.math.Vector viewPart(int off, int len) {
+    public Vector viewPart(int off, int len) {
         return dlg.viewPart(off, len);
     }
 
@@ -292,7 +306,7 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public Matrix cross(org.apache.ignite.math.Vector vec) {
+    public Matrix cross(Vector vec) {
         return dlg.cross(vec);
     }
 
@@ -302,7 +316,7 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public <T> T foldMap(org.apache.ignite.math.Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
+    public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
         return dlg.foldMap(vec, foldFun, combFun, zeroVal);
     }
 
@@ -312,7 +326,7 @@ public class DelegatingVector implements org.apache.ignite.math.Vector {
     }
 
     @Override
-    public double getDistanceSquared(org.apache.ignite.math.Vector vec) {
+    public double getDistanceSquared(Vector vec) {
         return dlg.getDistanceSquared(vec);
     }
 

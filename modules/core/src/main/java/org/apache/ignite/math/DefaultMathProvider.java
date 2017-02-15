@@ -33,6 +33,17 @@ public class DefaultMathProvider implements MathProvider {
         // No-op.
     }
 
+    /**
+     *
+     * @param grp
+     */
+    private void ensureClusterGroupIsNull(String flavor, ClusterGroup grp) {
+        if (grp != null)
+            throw new UnsupportedOperationException(
+                String.format("Flavor '%s' does not support clustering (pass 'null' instead).", flavor)
+            );
+    }
+
     @Override
     public Optional<Matrix> matrix(String flavor, Map<String, Object> args, ClusterGroup grp) {
         assert flavor != null;
@@ -41,13 +52,20 @@ public class DefaultMathProvider implements MathProvider {
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
+            case "random":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new RandomMatrix(args));
+
             case "dense.local.onheap":
-                if (grp != null)
-                    throw new UnsupportedOperationException(
-                        String.format("Matrix flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
-                    );
+                ensureClusterGroupIsNull(flavorNorm, grp);
 
                 return Optional.of(new DenseLocalOnHeapMatrix(args));
+
+            case "dense.local.offheap":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new DenseLocalOffHeapMatrix(args));
 
             default:
                 return Optional.empty();
@@ -62,19 +80,23 @@ public class DefaultMathProvider implements MathProvider {
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
+            case "random":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new RandomVector(args));
+
+            case "delegate":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new DelegatingVector(args));
+
             case "dense.local.onheap":
-                if (grp != null)
-                    throw new UnsupportedOperationException(
-                        String.format("Vector flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
-                    );
+                ensureClusterGroupIsNull(flavorNorm, grp);
 
                 return Optional.of(new DenseLocalOnHeapVector(args));
 
             case "dense.local.offheap":
-                if (grp != null)
-                    throw new UnsupportedOperationException(
-                        String.format("Vector flavor '%s' does not support clustering (pass 'null' instead).", flavorNorm)
-                    );
+                ensureClusterGroupIsNull(flavorNorm, grp);
 
                 return Optional.of(new DenseLocalOffHeapVector(args));
 
