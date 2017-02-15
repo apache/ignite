@@ -28,10 +28,19 @@ public class VectorArrayStorage implements VectorStorage {
     /** */
     private double[] data;
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass())
             && Arrays.equals(data, ((VectorArrayStorage)o).data);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        final int prime = 37;
+        int result = 1;
+        result = result * prime + Arrays.hashCode(data);
+        return result;
     }
 
     /**

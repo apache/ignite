@@ -119,4 +119,15 @@ public class VectorDelegateStorage implements VectorStorage {
                 && len == ((VectorDelegateStorage)obj).len
                 && off == ((VectorDelegateStorage)obj).off);
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        final int prime = 37;
+        int result = 1;
+        result = result * prime + off;
+        result = result * prime + len;
+        result = result * prime + sto.hashCode();
+        return result;
+    }
 }

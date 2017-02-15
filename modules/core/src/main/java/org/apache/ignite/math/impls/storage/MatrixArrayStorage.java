@@ -60,10 +60,21 @@ public class MatrixArrayStorage implements MatrixStorage {
         this.cols = data[0].length;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass())
             && Arrays.deepEquals(data, ((MatrixArrayStorage)o).data);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        final int prime = 37;
+        int result = 1;
+        result = result * prime + rows;
+        result = result * prime + cols;
+        result = result * prime + Arrays.deepHashCode(data);
+        return result;
     }
 
     @Override

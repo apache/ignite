@@ -130,6 +130,16 @@ public class VectorOffHeapStorage implements VectorStorage {
             (size == 0 || isMemoryEquals((VectorOffHeapStorage)obj));
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        final int prime = 37;
+        int result = 1;
+        result = result * prime + size;
+        result = result * prime + Long.hashCode(ptr);
+        return result;
+    }
+
     /** */
     private boolean isMemoryEquals(VectorOffHeapStorage otherStorage){
         return IntStream.range(0, size).parallel().noneMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
