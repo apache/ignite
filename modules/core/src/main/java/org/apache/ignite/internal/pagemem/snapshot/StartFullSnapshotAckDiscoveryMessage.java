@@ -35,26 +35,17 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message. */
-    private final String msg;
+
+    private SnapshotOperation snapshotOperation;
 
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
-    private long globalSnapshotId;
-
-    /** */
     private Exception err;
 
     /** */
-    private Collection<String> cacheNames;
-
-    /** */
     private UUID initiatorNodeId;
-
-    /** Full snapshot. */
-    private boolean fullSnapshot;
 
     /** Last full snapshot id for cache. */
     private Map<Integer, Long> lastFullSnapshotIdForCache;
@@ -63,43 +54,21 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
     private Map<Integer, Long> lastSnapshotIdForCache;
 
     /**
-     * @param globalSnapshotId Snapshot ID.
+     * @param snapshotOperation Snapshot Operation.
      * @param err Error.
-     * @param cacheNames Cache names.
      */
     public StartFullSnapshotAckDiscoveryMessage(
-        long globalSnapshotId,
-        boolean fullSnapshot,
+        SnapshotOperation snapshotOperation,
         Map<Integer, Long> lastFullSnapshotIdForCache,
         Map<Integer, Long> lastSnapshotIdForCache,
-        Collection<String> cacheNames,
         Exception err,
-        UUID initiatorNodeId,
-        String msg
+        UUID initiatorNodeId
     ) {
-        this.globalSnapshotId = globalSnapshotId;
-        this.fullSnapshot = fullSnapshot;
+        this.snapshotOperation = snapshotOperation;
         this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
         this.lastSnapshotIdForCache = lastSnapshotIdForCache;
         this.err = err;
-        this.cacheNames = cacheNames;
         this.initiatorNodeId = initiatorNodeId;
-        this.msg = msg;
-
-        for (String cacheName : cacheNames) {
-            int i = CU.cacheId(cacheName);
-
-            if (lastFullSnapshotIdForCache.get(i) == null || lastSnapshotIdForCache.get(i) == null) {
-                throw new AssertionError();
-            }
-        }
-    }
-
-    /**
-     * @return Cache names.
-     */
-    public Collection<String> cacheNames() {
-        return cacheNames;
     }
 
     /** {@inheritDoc} */
@@ -128,25 +97,8 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
         return err != null;
     }
 
-    /**
-     * @return Snapshot ID.
-     */
-    public long globalSnapshotId() {
-        return globalSnapshotId;
-    }
-
-    /**
-     *
-     */
-    public boolean fullSnapshot() {
-        return fullSnapshot;
-    }
-
-    /**
-     *
-     */
-    public String message() {
-        return msg;
+    public SnapshotOperation snapshotOperation() {
+        return snapshotOperation;
     }
 
     /**
