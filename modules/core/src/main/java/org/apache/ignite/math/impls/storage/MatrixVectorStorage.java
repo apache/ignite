@@ -18,13 +18,12 @@
 package org.apache.ignite.math.impls.storage;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.*;
 import java.io.*;
 
 /**
  * Row, column or diagonal vector-based view of the matrix
  */
-public class MatrixVectorStorage extends AbstractVectorStorage {
+public class MatrixVectorStorage implements VectorStorage {
     private Matrix parent;
 
     private int row, col;
@@ -48,8 +47,6 @@ public class MatrixVectorStorage extends AbstractVectorStorage {
      * @param colStride
      */
     public MatrixVectorStorage(Matrix parent, int row, int col, int rowStride, int colStride) {
-        super(parent);
-
         if (row < 0 || row >= parent.rowSize())
             throw new IndexException(row);
         if (col < 0 || col >= parent.columnSize())
@@ -96,6 +93,31 @@ public class MatrixVectorStorage extends AbstractVectorStorage {
     @Override
     public void set(int i, double v) {
         parent.set(row + i * rowStride, col + i * colStride, v);
+    }
+
+    @Override
+    public boolean isSequentialAccess() {
+        return parent.isSequentialAccess();
+    }
+
+    @Override
+    public boolean isDense() {
+        return parent.isDense();
+    }
+
+    @Override
+    public double getLookupCost() {
+        return parent.getLookupCost();
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return parent.isAddConstantTime();
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return parent.isArrayBased();
     }
 
     @Override
