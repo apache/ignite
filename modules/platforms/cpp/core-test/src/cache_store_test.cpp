@@ -36,13 +36,13 @@ using namespace boost::unit_test;
 struct CacheStoreTestSuiteFixture
 {
     /* Nodes started during the test. */
-    Ignite node;
+    Ignite node1;
 
     /*
      * Constructor.
      */
     CacheStoreTestSuiteFixture() : 
-        node(ignite_test::StartNode("cache-store.xml"))
+        node1(ignite_test::StartNode("cache-store.xml", "node1"))
     {
         // No-op.
     }
@@ -52,9 +52,9 @@ struct CacheStoreTestSuiteFixture
      */
     ~CacheStoreTestSuiteFixture()
     {
-        Ignition::Stop(node.GetName(), true);
+        GetCache().RemoveAll();
 
-        node = Ignite();
+        Ignition::StopAll(true);
     }
 
     /**
@@ -62,13 +62,13 @@ struct CacheStoreTestSuiteFixture
      */
     cache::Cache<int64_t, std::string> GetCache()
     {
-        return node.GetOrCreateCache<int64_t, std::string>("cache1");
+        return node1.GetOrCreateCache<int64_t, std::string>("cache1");
     }
 };
 
-void FillStore(cache::Cache<int64_t, std::string>& cache, int32_t n)
+void FillStore(cache::Cache<int64_t, std::string>& cache, int64_t n)
 {
-    for (int32_t i = 0; i < n; ++i)
+    for (int64_t i = 0; i < n; ++i)
         cache.Put(i, common::LexicalCast<std::string>(i));
 
     cache.Clear();
@@ -76,9 +76,9 @@ void FillStore(cache::Cache<int64_t, std::string>& cache, int32_t n)
 
 BOOST_FIXTURE_TEST_SUITE(CacheStoreTestSuite, CacheStoreTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(LoadCacheNoPredicate)
+BOOST_AUTO_TEST_CASE(LoadCacheSingleNodeNoPredicate)
 {
-    const int32_t entriesNum = 100;
+    const int64_t entriesNum = 100;
 
     cache::Cache<int64_t, std::string> cache = GetCache();
 
@@ -92,7 +92,33 @@ BOOST_AUTO_TEST_CASE(LoadCacheNoPredicate)
 
     BOOST_CHECK(!cache.IsEmpty());
 
-    BOOST_CHECK_EQUAL(cache.Size(), entriesNum);
+    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
+
+    std::string val42 = cache.Get(42);
+
+    BOOST_CHECK_EQUAL(val42, "42");
+}
+
+BOOST_AUTO_TEST_CASE(LoadCacheSeveralNodesNoPredicate)
+{
+    BOOST_CHECKPOINT("Starting additional node");
+    Ignite node2 = ignite_test::StartNode("cache-store.xml", "node2");
+
+    const int64_t entriesNum = 100;
+
+    cache::Cache<int64_t, std::string> cache = GetCache();
+
+    BOOST_CHECK(cache.IsEmpty());
+
+    FillStore(cache, entriesNum);
+
+    BOOST_CHECK(cache.IsEmpty());
+
+    cache.LoadCache();
+
+    BOOST_CHECK(!cache.IsEmpty());
+
+    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
 
     std::string val42 = cache.Get(42);
 
