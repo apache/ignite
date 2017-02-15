@@ -18,20 +18,13 @@
 package org.apache.ignite.cache.eviction.lru;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
-import org.jsr166.LongAdder8;
-
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
 
 /**
  * Eviction policy based on {@code Least Recently Used (LRU)} algorithm and supports batch eviction.
@@ -50,21 +43,9 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * This implementation is very efficient since it is lock-free and does not create any additional table-like
  * data structures. The {@code LRU} ordering information is maintained by attaching ordering metadata to cache entries.
  */
-public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictionPolicyMBean, Externalizable {
+public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements LruEvictionPolicyMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Maximum size. */
-    private volatile int max = DFLT_CACHE_SIZE;
-
-    /** Batch size. */
-    private volatile int batchSize = 1;
-
-    /** Max memory size. */
-    private volatile long maxMemSize;
-
-    /** Memory size. */
-    private final LongAdder8 memSize = new LongAdder8();
 
     /** Queue. */
     private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
@@ -83,63 +64,12 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
      * @param max Maximum allowed size of cache before entry will start getting evicted.
      */
     public LruEvictionPolicy(int max) {
-        A.ensure(max >= 0, "max >= 0");
-
-        this.max = max;
-    }
-
-    /**
-     * Gets maximum allowed size of cache before entry will start getting evicted.
-     *
-     * @return Maximum allowed size of cache before entry will start getting evicted.
-     */
-    @Override public int getMaxSize() {
-        return max;
-    }
-
-    /**
-     * Sets maximum allowed size of cache before entry will start getting evicted.
-     *
-     * @param max Maximum allowed size of cache before entry will start getting evicted.
-     */
-    @Override public void setMaxSize(int max) {
-        A.ensure(max >= 0, "max >= 0");
-
-        this.max = max;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getBatchSize() {
-        return batchSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setBatchSize(int batchSize) {
-        A.ensure(batchSize > 0, "batchSize > 0");
-
-        this.batchSize = batchSize;
+        setMaxSize(max);
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
         return queue.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaxMemorySize() {
-        return maxMemSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMaxMemorySize(long maxMemSize) {
-        A.ensure(maxMemSize >= 0, "maxMemSize >= 0");
-
-        this.maxMemSize = maxMemSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getCurrentMemorySize() {
-        return memSize.longValue();
     }
 
     /**
@@ -152,30 +82,15 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
-        if (!rmv) {
-            if (!entry.isCached())
-                return;
-
-            if (touch(entry))
-                shrink();
-        }
-        else {
-            Node<EvictableEntry<K, V>> node = entry.removeMeta();
-
-            if (node != null) {
-                queue.unlinkx(node);
-
-                memSize.add(-entry.size());
-            }
-        }
+    @Override protected boolean removeMeta(Object meta) {
+        return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
 
     /**
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(EvictableEntry<K, V> entry) {
+    @Override protected boolean touch(EvictableEntry<K, V> entry) {
         Node<EvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.
@@ -185,7 +100,7 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
 
                 if (entry.putMetaIfAbsent(node) != null) {
                     // Was concurrently added, need to clear it from queue.
-                    queue.unlinkx(node);
+                    removeMeta(node);
 
                     // Queue has not been changed.
                     return false;
@@ -193,12 +108,12 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
                 else if (node.item() != null) {
                     if (!entry.isCached()) {
                         // Was concurrently evicted, need to clear it from queue.
-                        queue.unlinkx(node);
+                        removeMeta(node);
 
                         return false;
                     }
 
-                    memSize.add(entry.size());
+                    addToMemorySize(entry.size());
 
                     return true;
                 }
@@ -207,13 +122,13 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
                     return false;
             }
         }
-        else if (queue.unlinkx(node)) {
+        else if (removeMeta(node)) {
             // Move node to tail.
             Node<EvictableEntry<K, V>> newNode = queue.offerLastx(entry);
 
             if (!entry.replaceMeta(node, newNode))
                 // Was concurrently added, need to clear it from queue.
-                queue.unlinkx(newNode);
+                removeMeta(newNode);
         }
 
         // Entry is already in queue.
@@ -221,43 +136,11 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     }
 
     /**
-     * Shrinks queue to maximum allowed size.
-     */
-    private void shrink() {
-        long maxMem = this.maxMemSize;
-
-        if (maxMem > 0) {
-            long startMemSize = memSize.longValue();
-
-            if (startMemSize >= maxMem)
-                for (long i = maxMem; i < startMemSize && memSize.longValue() > maxMem;) {
-                    int size = shrink0();
-
-                    if (size == -1)
-                        break;
-
-                    i += size;
-                }
-        }
-
-        int max = this.max;
-
-        if (max > 0) {
-            int startSize = queue.sizex();
-
-            if (startSize >= max + (maxMem > 0 ? 1 : this.batchSize))
-                for (int i = max; i < startSize && queue.sizex() > max; i++)
-                    if (shrink0() == -1)
-                        break;
-        }
-    }
-
-    /**
      * Tries to remove one item from queue.
      *
      * @return number of bytes that was free. {@code -1} if queue is empty.
      */
-    private int shrink0() {
+    @Override protected int shrink0() {
         EvictableEntry<K, V> entry = queue.poll();
 
         if (entry == null)
@@ -270,7 +153,7 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
         if (meta != null) {
             size = entry.size();
 
-            memSize.add(-size);
+            addToMemorySize(-size);
 
             if (!entry.evict())
                 touch(entry);
@@ -280,21 +163,7 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(max);
-        out.writeInt(batchSize);
-        out.writeLong(maxMemSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        max = in.readInt();
-        batchSize = in.readInt();
-        maxMemSize = in.readLong();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(LruEvictionPolicy.class, this, "size", queue.sizex());
+        return S.toString(LruEvictionPolicy.class, this, "size", getCurrentSize());
     }
 }
