@@ -685,6 +685,11 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     @Override
+    public Matrix viewPart(int rowOff, int rows, int colOff, int cols) {
+        return viewPart(new int[] { rowOff, colOff}, new int[] {rows, cols});
+    }
+
+    @Override
     public Vector viewRow(int row) {
         return new MatrixVectorView(this, row, 0, 1, 0);
     }

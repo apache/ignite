@@ -104,6 +104,27 @@ public final class Functions {
         return (a) -> a * b;
     }
 
+    /** Function that returns <tt>a / b</tt>. <tt>a</tt> is a variable, <tt>b</tt> is fixed. */
+    public static DoubleFunction<Double> div(double b) {
+        return mult(1 / b);
+    }
+
+    /**
+     * Function that returns <tt>a + b*constant</tt>. <tt>a</tt> and <tt>b</tt> are variables,
+     * <tt>constant</tt> is fixed.
+     */
+    public static BiFunction<Double, Double, Double> plusMult(double constant) {
+        return (a, b) -> a + b * constant;
+    }
+
+    /**
+     * Function that returns <tt>a - b*constant</tt>. <tt>a</tt> and <tt>b</tt> are variables,
+     * <tt>constant</tt> is fixed.
+     */
+    public static BiFunction<Double, Double, Double> minusMult(double constant) {
+        return (a, b) -> a - b * constant;
+    }
+
     /**
      * 
      * @param b

@@ -384,6 +384,19 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     Matrix viewPart(int[] offset, int[] size);
 
     /**
+     * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
+     *
+     * @param rowOff
+     * @param rows
+     * @param colOff
+     * @param cols
+     * @return New view.
+     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws IndexException Thrown in case of offset is out of bound.
+     */
+    Matrix viewPart(int rowOff, int rows, int colOff, int cols);
+
+    /**
      * Creates new view into matrix row. Changes to the view will be propagated to this matrix.
      *
      * @param row Row index.
