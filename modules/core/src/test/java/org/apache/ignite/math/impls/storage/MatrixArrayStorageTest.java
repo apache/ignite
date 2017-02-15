@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for {@link MatrixArrayStorage}.
  */
-public class MatrixArrayStorageTest extends MatrixBaseStorageTest{
+public class MatrixArrayStorageTest extends MatrixBaseStorageTest<MatrixArrayStorage>{
 
     @Override public void setUp() {
         storage = new MatrixArrayStorage(STORAGE_SIZE, STORAGE_SIZE);

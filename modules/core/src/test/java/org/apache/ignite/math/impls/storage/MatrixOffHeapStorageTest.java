@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Unit tests for {@link MatrixOffHeapStorage}.
  */
-public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest {
+public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest<MatrixOffHeapStorage> {
 
     @Override public void setUp() {
         storage = new MatrixOffHeapStorage(STORAGE_SIZE, STORAGE_SIZE);
