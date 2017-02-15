@@ -23,6 +23,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
+import org.apache.ignite.math.Destroyable;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
@@ -33,9 +35,11 @@ import static org.junit.Assert.fail;
 /**
  * Common test for externalization.
  */
-public abstract class ExternalizeTest<T extends Externalizable> {
+public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
     /** */
     protected void externalizeTest(T initObj) {
+        T objRestored = null;
+
         try {
             ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream(STORAGE_SIZE * Double.BYTES);
 
@@ -47,11 +51,15 @@ public abstract class ExternalizeTest<T extends Externalizable> {
 
             ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
 
-            T objRestored = (T) objInputStream.readObject();
+            objRestored = (T) objInputStream.readObject();
 
             assertTrue(VALUE_NOT_EQUALS, initObj.equals(objRestored));
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
+        } finally {
+            if (objRestored != null){
+                objRestored.destroy();
+            }
         }
     }
 

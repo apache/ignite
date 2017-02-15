@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface VectorStorage extends Externalizable, StorageOpsMetrics {
+public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
      *
      * @return
@@ -53,10 +53,4 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics {
         return null;
     }
 
-    /**
-     * Destroys storage if managed outside of JVM. It's a no-op in all other cases.
-     */
-    public default void destroy() {
-        // No-op.
-    }
 }

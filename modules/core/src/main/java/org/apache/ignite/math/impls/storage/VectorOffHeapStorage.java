@@ -36,7 +36,7 @@ public class VectorOffHeapStorage implements VectorStorage {
     public VectorOffHeapStorage(int size){
         this.size = size;
 
-        ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
+        allocateMemory(size);
     }
 
     /** {@inheritDoc} */
@@ -96,15 +96,23 @@ public class VectorOffHeapStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(ptr);
         out.writeInt(size);
+
+        for (int i = 0; i < size; i++) {
+            out.writeDouble(get(i));
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ptr = in.readLong();
         size = in.readInt();
+
+        allocateMemory(size);
+
+        for (int i = 0; i < size; i++) {
+            set(i, in.readDouble());
+        }
     }
 
     /** {@inheritDoc} */
@@ -134,5 +142,10 @@ public class VectorOffHeapStorage implements VectorStorage {
      */
     private long pointerOffset(int i) {
         return ptr + i * Double.BYTES;
+    }
+
+    /** */
+    private void allocateMemory(int size) {
+        ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
     }
 }

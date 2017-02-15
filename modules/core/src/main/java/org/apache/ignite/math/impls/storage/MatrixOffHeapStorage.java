@@ -40,7 +40,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
 
         this.cols = cols;
 
-        ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
+        allocateMemory(rows, cols);
     }
 
     /** */
@@ -115,17 +115,29 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(ptr);
         out.writeInt(rows);
         out.writeInt(cols);
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                out.writeDouble(get(i, j));
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        ptr = in.readLong();
         rows = in.readInt();
         cols = in.readInt();
+
+        allocateMemory(rows, cols);
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                set(i, j, in.readDouble());
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -136,7 +148,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     private long pointerOffset(int x, int y){
-        return ptr + x * cols + y;
+        return ptr + x * cols * Double.BYTES + y * Double.BYTES;
     }
 
     /** {@inheritDoc} */
@@ -161,5 +173,10 @@ public class MatrixOffHeapStorage implements MatrixStorage {
             }
         }
         return result;
+    }
+
+    /** */
+    private void allocateMemory(int rows, int cols) {
+        ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
     }
 }

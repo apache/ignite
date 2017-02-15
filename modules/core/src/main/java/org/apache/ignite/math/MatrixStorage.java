@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public interface MatrixStorage extends Externalizable, StorageOpsMetrics {
+public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destroyable {
     /**
      *
      * @param x
@@ -58,12 +58,5 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics {
      */
     default public double[][] data() {
         return null;
-    }
-
-    /**
-     * Destroys matrix storage if managed outside of JVM. It's a no-op in all other cases.
-     */
-    default void destroy(){
-        // No-op.
     }
 }
