@@ -959,49 +959,30 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     try {
                         CacheDataRow row = it0.next();
 
-                        cctx.offheap().remove(row.key(), row.partition(), this);
+                        GridDhtCacheEntry cached = (GridDhtCacheEntry) getEntry(row.key());
 
-                        if (rec) {
-                            cctx.events().addEvent(row.partition(),
-                                row.key(),
-                                cctx.localNodeId(),
-                                (IgniteUuid)null,
-                                null,
-                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                null,
-                                false,
-                                row.value(),
-                                true,
-                                null,
-                                null,
-                                null,
-                                false);
+                        if (cached == null || cached.obsolete())
+                            cached = (GridDhtCacheEntry) putEntryIfObsoleteOrAbsent(
+                                cctx.affinity().affinityTopologyVersion(), row.key(), null, true, false);
+
+                        if (cached.clearInternal(clearVer, extras)) {
+                            if (rec) {
+                                cctx.events().addEvent(cached.partition(),
+                                    cached.key(),
+                                    cctx.localNodeId(),
+                                    (IgniteUuid)null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
+                            }
                         }
-
-//                        GridDhtCacheEntry cached = (GridDhtCacheEntry) getEntry(row.key());
-//
-//                        if (cached == null || cached.obsolete())
-//                            cached = (GridDhtCacheEntry) putEntryIfObsoleteOrAbsent(
-//                                cctx.affinity().affinityTopologyVersion(), row.key(), null, true, false);
-
-//                        if (cached.clearInternal(clearVer, extras)) {
-//                            if (rec) {
-//                                cctx.events().addEvent(cached.partition(),
-//                                    cached.key(),
-//                                    cctx.localNodeId(),
-//                                    (IgniteUuid)null,
-//                                    null,
-//                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-//                                    null,
-//                                    false,
-//                                    cached.rawGet(),
-//                                    cached.hasValue(),
-//                                    null,
-//                                    null,
-//                                    null,
-//                                    false);
-//                            }
-//                        }
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
