@@ -221,11 +221,16 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         if (batchArgs == null)
             return U.EMPTY_INTS;
 
-        int res = doUpdate(sql, F.flatCollections(batchArgs).toArray()).intValue();
+        long[] res = doBatchUpdate(sql, F.flatCollections(batchArgs).toArray());
+
+        int[] intRes = new int[res.length];
+
+        for (int i = 0; i < res.length; i++)
+            intRes[i] = Long.valueOf(res[i]).intValue();
 
         batchArgs = null;
 
-        return new int[] { res };
+        return intRes;
     }
 
     /** {@inheritDoc} */

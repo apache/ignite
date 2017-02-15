@@ -20,11 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.util.HashSet;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -99,14 +95,21 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /**
+     * @param allowOverwrite Allow overwriting of existing keys.
+     * @return Connection to use for the test.
+     * @throws Exception if failed.
+     */
+    private Connection createConnection(boolean allowOverwrite) throws Exception {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
 
-        conn = DriverManager.getConnection(BASE_URL, props);
+        if (allowOverwrite)
+            props.setProperty(IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE, "true");
+
+        return DriverManager.getConnection(BASE_URL, props);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +125,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsert() throws Exception {
+        conn = createConnection(false);
+
         ignite(0).cache(null).put(5, 500);
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
@@ -145,5 +150,36 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         // 5 should still point to 500.
         assertEquals(500, grid(0).cache(null).get(5));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testStreamedInsertWithOverwritesAllowed() throws Exception {
+        conn = createConnection(true);
+
+        ignite(0).cache(null).put(5, 500);
+
+        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+
+        for (int i = 1; i <= 100000; i++) {
+            stmt.setInt(1, i);
+            stmt.setInt(2, i);
+
+            stmt.executeUpdate();
+        }
+
+        // Data is not there yet.
+        assertNull(grid(0).cache(null).get(100000));
+
+        // Let the stream flush.
+        U.sleep(1500);
+
+        // Now let's check it's all there.
+        assertEquals(1, grid(0).cache(null).get(1));
+        assertEquals(100000, grid(0).cache(null).get(100000));
+
+        // 5 should now point to 5 as we've turned overwriting on.
+        assertEquals(5, grid(0).cache(null).get(5));
     }
 }

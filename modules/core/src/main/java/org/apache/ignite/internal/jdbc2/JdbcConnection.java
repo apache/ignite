@@ -79,6 +79,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 
@@ -138,6 +139,9 @@ public class JdbcConnection implements Connection {
     /** Parallel ops count per node for data streamer. */
     private final int streamNodeParOps;
 
+    /** Forbid duplicate keys on streamed {@code INSERT}s. */
+    private final boolean streamAllowOverwrite;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -160,6 +164,7 @@ public class JdbcConnection implements Connection {
         this.distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
+        streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
             String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
@@ -522,7 +527,7 @@ public class JdbcConnection implements Connection {
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps);
+                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }

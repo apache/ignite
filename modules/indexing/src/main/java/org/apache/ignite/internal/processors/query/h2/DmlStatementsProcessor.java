@@ -165,12 +165,18 @@ public class DmlStatementsProcessor {
                 cctx.operationContextPerCall(opCtx);
             }
 
-            if (F.isEmpty(r.errKeys))
-                return new UpdateResult(r.cnt + items, null);
-            else {
-                items += r.cnt;
-                errKeys = r.errKeys;
-            }
+            items += r.cnt;
+            errKeys = r.errKeys;
+
+            if (F.isEmpty(errKeys))
+                break;
+        }
+
+        if (F.isEmpty(errKeys)) {
+            if (items == 1L)
+                return UpdateResult.ONE;
+            else if (items == 0L)
+                return UpdateResult.ZERO;
         }
 
         return new UpdateResult(items, errKeys);
@@ -184,14 +190,70 @@ public class DmlStatementsProcessor {
      * @return Update result wrapped into {@link GridQueryFieldsResult}
      * @throws IgniteCheckedException if failed.
      */
+    @SuppressWarnings("ConstantConditions")
     private long[] batchUpdateSqlFields(String spaceName, PreparedStatement stmt, SqlFieldsQuery fieldsQry,
         boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
+        Object[] args = U.firstNotNull(fieldsQry.getArgs(), X.EMPTY_OBJECT_ARRAY);
 
-        // TODO split args from qry into per batch pieces and process counters and errors
+        int argsCnt = args.length;
 
-        updateSqlFields(spaceName, stmt, fieldsQry, null, loc, filters, cancel);
+        int paramsCnt;
 
-        return null;
+        try {
+            paramsCnt = stmt.getParameterMetaData().getParameterCount();
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        int batchSize;
+
+        if (paramsCnt == 0)
+            batchSize = 1;
+        else if (argsCnt % paramsCnt != 0)
+            throw new IgniteSQLException("Invalid number of query arguments - " + paramsCnt + " expected, " +
+                (argsCnt % paramsCnt) + " given", IgniteQueryErrorCode.INVALID_PARAMS_NUMBER);
+        else
+            batchSize = argsCnt / paramsCnt;
+
+        boolean isBatch = (batchSize > 1);
+
+        long[] resCnt = new long[batchSize];
+
+        Object[] stepArgs = args;
+
+        if (isBatch) // No need to reallocate args sub array on each batch step
+            stepArgs = new Object[paramsCnt];
+
+        int pos = 0;
+
+        List<Object> errKeys = null;
+
+        for (int i = 0; i < batchSize; i++) {
+            if (isBatch)
+                System.arraycopy(args, pos, stepArgs, 0, paramsCnt);
+
+            UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, stepArgs, loc, filters, cancel);
+
+            if (!F.isEmpty(res.errKeys)) {
+                if (!isBatch)
+                    errKeys = F.asList(res.errKeys);
+                else if (errKeys == null)
+                    errKeys = new ArrayList<>(F.asList(res.errKeys));
+                else
+                    errKeys.addAll(F.asList(res.errKeys));
+            }
+
+            resCnt[i] = res.cnt;
+
+            pos += paramsCnt;
+        }
+
+        if (!F.isEmpty(errKeys))
+            throw new IgniteSQLException("Failed to update or delete some keys: " + errKeys.toString(),
+                IgniteQueryErrorCode.CONCURRENT_UPDATE);
+
+        return resCnt;
     }
 
     /**
@@ -334,7 +396,7 @@ public class DmlStatementsProcessor {
         if (plan.fastUpdateArgs != null) {
             assert F.isEmpty(failedKeys) && errKeysPos == null;
 
-            return new UpdateResult(doFastUpdate(plan, args), X.EMPTY_OBJECT_ARRAY);
+            return doFastUpdate(plan, args);
         }
 
         assert !F.isEmpty(plan.selectQry);
@@ -437,7 +499,7 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static long doFastUpdate(UpdatePlan plan, Object[] args) throws IgniteCheckedException {
+    private static UpdateResult doFastUpdate(UpdatePlan plan, Object[] args) throws IgniteCheckedException {
         GridCacheContext cctx = plan.tbl.rowDescriptor().context();
 
         FastUpdateArguments singleUpdate = plan.fastUpdateArgs;
@@ -453,19 +515,19 @@ public class DmlStatementsProcessor {
             if (valBounded) {
                 Object val = singleUpdate.val.apply(args);
 
-                return (cctx.cache().replace(key, val, newVal) ? 1 : 0);
+                return (cctx.cache().replace(key, val, newVal) ? UpdateResult.ONE : UpdateResult.ZERO);
             }
             else
-                return (cctx.cache().replace(key, newVal) ? 1 : 0);
+                return (cctx.cache().replace(key, newVal) ? UpdateResult.ONE : UpdateResult.ZERO);
         }
         else { // Single item DELETE
             Object key = singleUpdate.key.apply(args);
             Object val = singleUpdate.val.apply(args);
 
             if (singleUpdate.val == FastUpdateArguments.NULL_ARGUMENT) // No _val bound in source query
-                return cctx.cache().remove(key) ? 1 : 0;
+                return cctx.cache().remove(key) ? UpdateResult.ONE : UpdateResult.ZERO;
             else
-                return cctx.cache().remove(key, val) ? 1 : 0;
+                return cctx.cache().remove(key, val) ? UpdateResult.ONE : UpdateResult.ZERO;
         }
     }
 
@@ -1142,6 +1204,12 @@ public class DmlStatementsProcessor {
             this.cnt = cnt;
             this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
         }
+
+        /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
+        public final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
+
+        /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
+        public final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
     }
 
     /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */

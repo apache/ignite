@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -137,10 +136,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
-import org.h2.command.dml.Merge;
-import org.h2.command.dml.Update;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -442,7 +438,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
-        long autoFlushFreq, int nodeBufSize, int nodeParOps) {
+        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
         Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
 
         if (!(prep instanceof Insert))
@@ -450,7 +446,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
+
         streamer.autoFlushFrequency(autoFlushFreq);
+
+        streamer.allowOverwrite(allowOverwrite);
 
         if (nodeBufSize > 0)
             streamer.perNodeBufferSize(nodeBufSize);

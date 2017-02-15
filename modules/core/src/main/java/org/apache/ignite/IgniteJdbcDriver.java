@@ -304,6 +304,12 @@ public class IgniteJdbcDriver implements Driver {
     /** DML streaming parallel operations per node. */
     private static final String PARAM_STREAMING_PER_NODE_PAR_OPS = "streamingPerNodeParallelOperations";
 
+    /**
+     * Overwrite existing cache values on key duplication.
+     * @see IgniteDataStreamer#allowOverwrite
+     */
+    private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -336,6 +342,12 @@ public class IgniteJdbcDriver implements Driver {
 
     /** DML stream parallel operations per node property name. */
     public static final String PROP_STREAMING_PER_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
+
+    /**
+     * DML streaming: * Overwrite existing cache values on key duplication.
+     * @see IgniteDataStreamer#allowOverwrite
+     */
+    public static final String PROP_STREAMING_ALLOW_OVERWRITE = PROP_PREFIX + PARAM_STREAMING_ALLOW_OVERWRITE;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";

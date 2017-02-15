@@ -74,6 +74,9 @@ public class JdbcStatement implements Statement {
     /** Current updated items count. */
     long updateCnt = -1;
 
+    /** */
+    private final static long[] EMPTY_LONG_ARRAY = new long[0];
+
     /**
      * Creates new statement.
      *
@@ -137,7 +140,16 @@ public class JdbcStatement implements Statement {
 
         updateCnt = -1;
 
-        return doUpdate(sql, getArgs()).intValue();
+        Long res;
+
+        long[] resCntrs = doBatchUpdate(sql, getArgs());
+
+        if (F.isEmpty(resCntrs))
+            res = -1L;
+        else
+            res = resCntrs[resCntrs.length - 1];
+
+        return res.intValue();
     }
 
     /**
@@ -147,7 +159,7 @@ public class JdbcStatement implements Statement {
      * @return Number of affected items.
      * @throws SQLException If failed.
      */
-    Long doUpdate(String sql, Object[] args) throws SQLException {
+    long[] doBatchUpdate(String sql, Object[] args) throws SQLException {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
@@ -169,9 +181,9 @@ public class JdbcStatement implements Statement {
             JdbcQueryTaskV2.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            Long res = updateCounterFromQueryResult(qryRes.getRows());
+            long[] res = updateCounterFromQueryResult(qryRes.getRows());
 
-            updateCnt = res;
+            updateCnt = !F.isEmpty(res) ? res[res.length - 1] : -1;
 
             return res;
         }
@@ -191,24 +203,27 @@ public class JdbcStatement implements Statement {
      * @return update counter, if found
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    private static Long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+    private static long[] updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
          if (F.isEmpty(rows))
-            return 0L;
+            return EMPTY_LONG_ARRAY;
 
-        if (rows.size() != 1)
-            throw new SQLException("Expected number of rows of 1 for update operation");
+        long[] res = new long[rows.size()];
 
-        List<?> row = rows.get(0);
+        for (int i = 0; i < res.length; i++) {
+            List<?> row = rows.get(i);
 
-        if (row.size() != 1)
-            throw new SQLException("Expected row size of 1 for update operation");
+            if (row.size() != 1)
+                throw new SQLException("Expected row size of 1 for update operation");
 
-        Object objRes = row.get(0);
+            Object objRes = row.get(0);
 
-        if (!(objRes instanceof Long))
-            throw new SQLException("Unexpected update result type");
+            if (!(objRes instanceof Long))
+                throw new SQLException("Unexpected update result type");
 
-        return (Long) objRes;
+            res[i] = (Long) objRes;
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -350,8 +365,15 @@ public class JdbcStatement implements Statement {
 
                 this.rs = rs;
             }
-            else
-                updateCnt = updateCounterFromQueryResult(res.getRows());
+            else {
+                long[] resCntrs = updateCounterFromQueryResult(res.getRows());
+
+                // Take results of the last batch item as last update counter
+                if (F.isEmpty(resCntrs))
+                    updateCnt = -1;
+                else
+                    updateCnt = resCntrs[resCntrs.length - 1];
+            }
 
             return res.isQuery();
         }
