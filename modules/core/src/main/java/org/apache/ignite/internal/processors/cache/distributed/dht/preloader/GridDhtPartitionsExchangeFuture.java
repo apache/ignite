@@ -1562,7 +1562,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             long minCntr = e.getValue();
 
             // If minimal counter is zero, do clean preloading.
-            if (minCntr == maxCntrs.get(p).cnt || minCntr == 0)
+            if (minCntr == 0 || minCntr == maxCntrs.get(p).cnt)
                 continue;
 
             if (localReserved != null) {
