@@ -55,7 +55,13 @@
     <ClCompile Include="..\..\src\dynamic_size_array_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache_invoke_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\interop_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cluster_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\continuous_query_test.cpp">

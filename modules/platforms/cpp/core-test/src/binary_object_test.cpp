@@ -53,7 +53,7 @@ void CheckSimple(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObject obj(mem, 0);
+    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0));
 
     T actual = obj.Deserialize<T>();
 
@@ -67,7 +67,7 @@ void CheckSimpleNP(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObject obj(mem, 0);
+    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0));
 
     T actual = obj.Deserialize<T>();
 
@@ -100,7 +100,7 @@ void CheckData(const T& obj)
     InteropUnpooledMemory mem(1024);
     FillMem<T>(mem, obj);
 
-    BinaryObjectImpl binObj(mem, 0);
+    BinaryObjectImpl binObj(BinaryObjectImpl::FromMemory(mem, 0));
 
     BOOST_REQUIRE_EQUAL(binObj.GetLength(), objData.GetSize());
 

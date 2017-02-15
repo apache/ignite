@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -571,6 +572,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing executor service.
      */
     @Nullable public ExecutorService getIndexingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
 
     /**
      * Gets exception registry.
