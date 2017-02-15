@@ -1567,9 +1567,6 @@ public class BinaryUtils {
         throws BinaryObjectException {
         Class cls;
 
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
-
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
@@ -1601,9 +1598,6 @@ public class BinaryUtils {
     public static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
         @Nullable ClassLoader ldr, boolean deserialize) {
         Class cls;
-
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize).describedClass();
