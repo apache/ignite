@@ -99,4 +99,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Number of deleted WAL segments.
      */
     public int truncate(WALPointer ptr);
+
+    /**
+     * @param ptr Pointer.
+     * @return True if given pointer is located in reserved segment.
+     */
+    public boolean reserved(WALPointer ptr);
 }
