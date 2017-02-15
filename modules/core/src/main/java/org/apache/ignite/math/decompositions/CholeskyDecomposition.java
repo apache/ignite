@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.deco;
+package org.apache.ignite.math.decompositions;
 
 /**
  * TODO: add description.
  */
-public class QRDecomposition {
+public class CholeskyDecomposition {
 }
