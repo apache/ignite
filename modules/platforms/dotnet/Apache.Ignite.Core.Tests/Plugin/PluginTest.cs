@@ -114,6 +114,19 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Returns a copy with same name.
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
+
+            // Throws custom mapped exception.
+            var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
+            Assert.AreEqual("Baz", ex.Message);
+            Assert.AreEqual(Ignition.GetIgnite(null), ex.Ignite);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", ex.ClassName);
+
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Baz", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", javaEx.JavaClassName);
+            Assert.IsTrue(javaEx.Message.Contains(
+                "at org.apache.ignite.platform.plugin.PlatformTestPluginTarget.processInLongOutLong"));
         }
 
         /// <summary>
