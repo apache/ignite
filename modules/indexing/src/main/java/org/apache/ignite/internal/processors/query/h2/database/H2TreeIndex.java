@@ -115,35 +115,29 @@ public class H2TreeIndex extends GridH2IndexBase {
                         int lastIdxUsed = 0;
 
                         for (int i = 0; i < inlineIdxs.size(); i++) {
-                            InlineIndexHelper fastIdx = inlineIdxs.get(i);
+                            InlineIndexHelper inlineIdx = inlineIdxs.get(i);
 
-                            Value v2 = row.getValue(fastIdx.columnIndex());
+                            Value v2 = row.getValue(inlineIdx.columnIndex());
 
                             if (v2 == null)
                                 return 0;
 
-                            Value v1 = fastIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
+                            Value v1 = inlineIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
 
                             if (v1 == null)
                                 break;
 
-                            int c = compareValues(v1, v2, fastIdx.sortType());
+                            int c = compareValues(v1, v2, inlineIdx.sortType());
 
-                            if (fastIdx.type() == Value.STRING
-                                && v1.getType() != Value.NULL
-                                && v2.getType() != Value.NULL
-                                && c >= 0
-                                && v1.getString().length() <= v2.getString().length()) {
-                                // Can't rely on compare, should use full string.
+                            if (!canRelyOnCompare(c, v1, v2, inlineIdx))
                                 break;
-                            }
 
                             lastIdxUsed++;
 
                             if (c != 0)
                                 return c;
 
-                            fieldOff += fastIdx.fullSize(pageAddr, off + fieldOff);
+                            fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
 
                             if (fieldOff > inlineSize())
                                 break;
@@ -418,7 +412,11 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
     }
 
-    /** */
+    /**
+     * @param inlineIdxs Inline index helpers.
+     * @param cfgInlineSize Inline size from cache config.
+     * @return Inline size.
+     */
     private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
         int maxSize = PageIO.MAX_PAYLOAD_SIZE;
 
@@ -447,5 +445,29 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
         else
             return Math.min(maxSize, cfgInlineSize);
+    }
+
+    /**
+     * @param c Compare result.
+     * @param shortVal Short value.
+     * @param v2 Second value;
+     * @param inlineIdx Index helper.
+     * @return {@code true} if we can rely on compare result.
+     */
+    protected static boolean canRelyOnCompare(int c, Value shortVal, Value v2, InlineIndexHelper inlineIdx) {
+        if (inlineIdx.type() == Value.STRING) {
+            if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                return false;
+
+            if (shortVal.getType() != Value.NULL
+                && v2.getType() != Value.NULL
+                && ((c < 0 && inlineIdx.sortType() == SortOrder.ASCENDING) || (c > 0 && inlineIdx.sortType() == SortOrder.DESCENDING))
+                && shortVal.getString().length() <= v2.getString().length()) {
+                // Can't rely on compare, should use full string.
+                return false;
+            }
+        }
+
+        return true;
     }
 }
