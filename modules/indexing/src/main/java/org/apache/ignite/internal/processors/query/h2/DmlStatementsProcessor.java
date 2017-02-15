@@ -1206,10 +1206,10 @@ public class DmlStatementsProcessor {
         }
 
         /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
-        public final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
+        final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
 
         /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
-        public final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+        final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
     }
 
     /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */
