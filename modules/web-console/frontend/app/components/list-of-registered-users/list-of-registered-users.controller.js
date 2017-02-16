@@ -96,6 +96,18 @@ export default class IgniteListOfRegisteredUsersCtrl {
             return new ActivitiesUserDialog({ user });
         };
 
+        const companiesExcludeFilter = (renderableRows) => {
+            if (_.isNil($ctrl.params.companiesExclude))
+                return renderableRows;
+
+            _.forEach(renderableRows, (row) => {
+                row.visible = _.isEmpty($ctrl.params.companiesExclude) ||
+                    row.entity.company.toLowerCase().indexOf($ctrl.params.companiesExclude.toLowerCase()) === -1;
+            });
+
+            return renderableRows;
+        };
+
         $ctrl.gridOptions = {
             data: [],
             columnVirtualizationThreshold: 30,
@@ -120,6 +132,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 api.removeUser = removeUser;
                 api.toggleAdmin = toggleAdmin;
                 api.showActivities = showActivities;
+
+                api.grid.registerRowsProcessor(companiesExcludeFilter, 300);
             }
         };
 
@@ -152,6 +166,10 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 })
                 .then((data) => $ctrl.adjustHeight(data.length));
         };
+
+        $scope.$watch(() => $ctrl.params.companiesExclude, () => {
+            $ctrl.gridApi.grid.refreshRows();
+        });
 
         $scope.$watch(() => $ctrl.params.startDate, (dt) => {
             $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(dt, 'yyyy_MM')}.csv`;
