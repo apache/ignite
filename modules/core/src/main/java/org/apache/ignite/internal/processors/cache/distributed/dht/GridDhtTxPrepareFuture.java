@@ -1143,17 +1143,42 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return Optimistic version check error.
      */
     private IgniteTxOptimisticCheckedException versionCheckError(IgniteTxEntry entry) {
+        StringBuilder msg = new StringBuilder("Failed to prepare transaction, " +
+            "read/write conflict [");
+
         GridCacheContext cctx = entry.context();
         CacheObjectContext cotx = cctx.cacheObjectContext();
-        Cache.Entry ce = entry.cached().wrap();
 
-        return new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
-            "read/write conflict [key=" + entry.key().value(cotx, false) +
-            ", class=" + entry.key().value(cotx, false).getClass().getName() +
-            ", actual value=" + ce.getValue() +
-            ", class=" + ce.getValue().getClass().getName() +
-            ", cache=" + cctx.name() + ", current thread: " + Thread.currentThread() + ']');
+        try {
+            Object key = entry.key().value(cotx, false);
 
+            assert key != null : entry.key();
+
+            msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
+        }
+        catch (Exception e) {
+            msg.append("key=<failed to get key: ").append(e.toString()).append(">");
+        }
+
+        try {
+            GridCacheEntryEx entryEx = entry.cached();
+
+            CacheObject cacheVal = entryEx != null ? entryEx.rawGet() : null;
+
+            Object val = cacheVal != null ? cacheVal.value(cotx, false) : null;
+
+            if (val != null)
+                msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
+            else
+                msg.append(", val=null");
+        }
+        catch (Exception e) {
+            msg.append(", val=<failed to get value: ").append(e.toString()).append(">");
+        }
+
+        msg.append(", cache=").append(cctx.name()).append(", thread=").append(Thread.currentThread()).append("]");
+
+        return new IgniteTxOptimisticCheckedException(msg.toString());
     }
 
     /**
