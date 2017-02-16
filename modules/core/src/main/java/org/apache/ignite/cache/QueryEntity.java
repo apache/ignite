@@ -238,12 +238,13 @@ public class QueryEntity implements Serializable {
      * @param idxType Index type.
      */
     public void ensureIndex(String idxName, QueryIndexType idxType) {
-        assert idxType != null;
-
         QueryIndex idx = idxs.get(idxName);
 
         if (idx == null) {
-            idx = new QueryIndex().setIndexType(idxType).setName(idxName);
+            idx = new QueryIndex();
+
+            idx.setName(idxName);
+            idx.setIndexType(idxType);
 
             idxs.put(idxName, idx);
         }
