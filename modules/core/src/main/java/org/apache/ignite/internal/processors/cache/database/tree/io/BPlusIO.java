@@ -51,7 +51,6 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param ver Page format version.
      * @param leaf If this is a leaf IO.
      * @param canGetRow If we can get full row from this page.
-     * @param itemSize Single item size on page.
      */
     protected BPlusIO(int type, int ver, boolean leaf, boolean canGetRow, int itemSize) {
         super(type, ver);
@@ -194,7 +193,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param idx Index of element.
      * @return Offset from byte buffer begin in bytes.
      */
-    protected abstract int offset(int idx);
+    public abstract int offset(int idx);
 
     /**
      * Store the needed info about the row in the page. Leaf and inner pages can store different info.

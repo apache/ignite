@@ -38,7 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
@@ -103,16 +103,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private final float maxFill;
 
     /** */
-    private final long metaPageId;
+    protected final long metaPageId;
 
     /** */
-    private final boolean canGetRowFromInner;
+    private boolean canGetRowFromInner;
 
     /** */
-    private final IOVersions<? extends BPlusInnerIO<L>> innerIos;
+    private IOVersions<? extends BPlusInnerIO<L>> innerIos;
 
     /** */
-    private final IOVersions<? extends BPlusLeafIO<L>> leafIos;
+    private IOVersions<? extends BPlusLeafIO<L>> leafIos;
 
     /** */
     private final AtomicLong globalRmvId;
@@ -661,7 +661,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class InitRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootId, int lvl)
+        @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootId, int inlineSize)
             throws IgniteCheckedException {
             assert rootId != null;
 
@@ -669,9 +669,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             BPlusMetaIO io = (BPlusMetaIO)iox;
 
             io.initRoot(pageAddr, rootId, pageSize());
+            io.setInlineSize(pageAddr, inlineSize);
 
             if (needWalDeltaRecord(meta))
-                wal.log(new MetaPageInitRootRecord(cacheId, meta.id(), rootId));
+                wal.log(new MetaPageInitRootInlineRecord(cacheId, meta.id(), rootId, inlineSize));
 
             assert io.getRootLevel(pageAddr) == 0;
             assert io.getFirstPageId(pageAddr, 0) == rootId;
@@ -694,7 +695,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param leafIos Leaf IO versions.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(
+    protected BPlusTree(
         String name,
         int cacheId,
         PageMemory pageMem,
@@ -705,6 +706,29 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        setIos(innerIos, leafIos);
+    }
+
+    /**
+     * @param name Tree name.
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
+     * @param globalRmvId Remove ID.
+     * @param metaPageId Meta page ID.
+     * @param reuseList Reuse list.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected BPlusTree(
+        String name,
+        int cacheId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
+        long metaPageId,
+        ReuseList reuseList
+    ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
 
         assert !F.isEmpty(name);
@@ -713,17 +737,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
-        assert innerIos != null;
-        assert leafIos != null;
         assert metaPageId != 0L;
 
-        this.canGetRowFromInner = innerIos.latest().canGetRow(); // TODO refactor
-        this.innerIos = innerIos;
-        this.leafIos = leafIos;
         this.metaPageId = metaPageId;
         this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
+    }
+
+    /**
+     * @param innerIos Inner IO versions.
+     * @param leafIos Leaf IO versions.
+     */
+    protected void setIos(IOVersions<? extends BPlusInnerIO<L>> innerIos,
+        IOVersions<? extends BPlusLeafIO<L>> leafIos) {
+        assert innerIos != null;
+        assert leafIos != null;
+
+        this.canGetRowFromInner = innerIos.latest().canGetRow(); // TODO refactor
+        this.innerIos = innerIos;
+        this.leafIos = leafIos;
     }
 
     /**
@@ -748,6 +781,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     protected final void initTree(boolean initNew) throws IgniteCheckedException {
+        initTree(initNew, 0);
+    }
+
+    /**
+     * Initialize new tree.
+     *
+     * @param initNew {@code True} if new tree should be created.
+     * @param inlineSize Inline size.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void initTree(boolean initNew, int inlineSize) throws IgniteCheckedException {
         if (initNew) {
             // Allocate the first leaf page, it will be our root.
             long rootId = allocatePage(null);
@@ -758,7 +802,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Initialize meta page with new root page.
             try (Page meta = page(metaPageId)) {
-                Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0, FALSE);
+                Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, inlineSize, FALSE);
 
                 assert res == TRUE: res;
             }
