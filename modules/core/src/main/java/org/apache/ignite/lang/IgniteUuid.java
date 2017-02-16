@@ -212,16 +212,19 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        out.writeUuid(gid);
         out.writeLong(locId);
+        out.writeLong(gid.getMostSignificantBits());
+        out.writeLong(gid.getLeastSignificantBits());
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        gid = in.readUuid();
         locId = in.readLong();
+        long mostSigBits = in.readLong();
+        long leastSigBits = in.readLong();
+        gid = new UUID(mostSigBits, leastSigBits);
     }
 
     /** {@inheritDoc} */
