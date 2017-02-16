@@ -2624,7 +2624,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @param type Type.
          */
         private IndexDescriptor(GridQueryIndexType type) {
-            this(type, 0);
+            this(type, -1);
         }
 
         /** {@inheritDoc} */
