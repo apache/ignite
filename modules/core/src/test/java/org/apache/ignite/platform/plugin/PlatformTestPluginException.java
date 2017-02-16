@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+package org.apache.ignite.platform.plugin;
 
-import static org.apache.ignite.igfs.IgfsMode.PROXY;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in SECONDARY mode.
+ * Custom plugin exception
  */
-public class IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
+public class PlatformTestPluginException extends IgniteCheckedException {
     /**
-     * Constructor.
+     * Ctor.
+     *
+     * @param msg Message.
      */
-    public IgniteHadoopFileSystemShmemEmbeddedSecondarySelfTest() {
-        super(PROXY, false);
+    public PlatformTestPluginException(String msg) {
+        super(msg);
     }
 }
