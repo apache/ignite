@@ -32,7 +32,7 @@ public class QueryIndex implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final QueryIndexType DEFAULT_INDEX_TYPE = QueryIndexType.SORTED;
+    private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
     /** Index name. */
     private String name;
@@ -41,7 +41,7 @@ public class QueryIndex implements Serializable {
     private LinkedHashMap<String, Boolean> fields;
 
     /** */
-    private QueryIndexType type = DEFAULT_INDEX_TYPE;
+    private QueryIndexType type = DFLT_IDX_TYP;
 
     /**
      * Creates an empty index. Should be populated via setters.

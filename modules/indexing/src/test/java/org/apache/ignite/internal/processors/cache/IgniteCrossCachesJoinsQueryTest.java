@@ -39,7 +39,6 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -763,10 +762,10 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             account.addQueryField("personStrId", String.class.getName(), null);
 
             if (idx) {
-                account.setIndexes(F.asList(new QueryIndex("id", QueryIndexType.SORTED, true),
-                    new QueryIndex("personId", QueryIndexType.SORTED, true),
-                    new QueryIndex("personDateId", QueryIndexType.SORTED, true),
-                    new QueryIndex("personStrId", QueryIndexType.SORTED, true)));
+                account.setIndexes(F.asList(new QueryIndex("id"),
+                    new QueryIndex("personId"),
+                    new QueryIndex("personDateId"),
+                    new QueryIndex("personStrId")));
             }
 
             entities.add(account);
@@ -786,14 +785,14 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             person.addQueryField("salary", Integer.class.getName(), null);
 
             if (idx) {
-                person.setIndexes(F.asList(new QueryIndex("id", QueryIndexType.SORTED, true),
-                    new QueryIndex("dateId", QueryIndexType.SORTED, true),
-                    new QueryIndex("strId", QueryIndexType.SORTED, true),
-                    new QueryIndex("orgId", QueryIndexType.SORTED, true),
-                    new QueryIndex("orgDateId", QueryIndexType.SORTED, true),
-                    new QueryIndex("orgStrId", QueryIndexType.SORTED, true),
-                    new QueryIndex("name", QueryIndexType.SORTED, true),
-                    new QueryIndex("salary", QueryIndexType.SORTED, true)));
+                person.setIndexes(F.asList(new QueryIndex("id"),
+                    new QueryIndex("dateId"),
+                    new QueryIndex("strId"),
+                    new QueryIndex("orgId"),
+                    new QueryIndex("orgDateId"),
+                    new QueryIndex("orgStrId"),
+                    new QueryIndex("name"),
+                    new QueryIndex("salary")));
             }
 
             entities.add(person);
@@ -809,10 +808,10 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
             org.addQueryField("name", String.class.getName(), null);
 
             if (idx) {
-                org.setIndexes(F.asList(new QueryIndex("id", QueryIndexType.SORTED, true),
-                    new QueryIndex("dateId", QueryIndexType.SORTED, true),
-                    new QueryIndex("strId", QueryIndexType.SORTED, true),
-                    new QueryIndex("name", QueryIndexType.SORTED, true)));
+                org.setIndexes(F.asList(new QueryIndex("id"),
+                    new QueryIndex("dateId"),
+                    new QueryIndex("strId"),
+                    new QueryIndex("name")));
             }
 
             entities.add(org);

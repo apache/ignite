@@ -2222,9 +2222,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryIndex().setIndexType(QueryIndexType.FULLTEXT).setName(idxEntry.getKey());
-
-                txtIdx.setFieldNames(idx.fields(), true);
+                txtIdx = new QueryIndex()
+                    .setIndexType(QueryIndexType.FULLTEXT)
+                    .setFieldNames(idx.fields(), true)
+                    .setName(idxEntry.getKey());
             }
             else {
                 Collection<String> grp = new ArrayList<>();
