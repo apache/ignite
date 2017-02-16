@@ -99,6 +99,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -209,13 +211,16 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+
     /**
      * Register IO for indexes.
      */
     static {
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        H2ExtrasInnerIO.register();
+        H2ExtrasLeafIO.register();
     }
-
+    
     /** Default DB options. */
     private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
@@ -2577,7 +2582,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 "_key_PK",
                 tbl,
                 true,
-                treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol)));
+                treeIndexColumns(new ArrayList<IndexColumn>(2), keyCol, affCol),
+                -1));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -2622,7 +2628,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         cols = treeIndexColumns(cols, keyCol, affCol);
 
-                        idxs.add(createSortedIndex(cacheId, name, tbl, false, cols));
+                        idxs.add(createSortedIndex(cacheId, name, tbl, false, cols, idx.inlineSize()));
                     }
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
@@ -2634,7 +2640,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Add explicit affinity key index if nothing alike was found.
             if (affCol != null && !affIdxFound) {
                 idxs.add(createSortedIndex(cacheId, "AFFINITY_KEY", tbl, false,
-                    treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol)));
+                    treeIndexColumns(new ArrayList<IndexColumn>(2), affCol, keyCol), -1));
             }
 
             return idxs;
@@ -2653,7 +2659,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             String name,
             GridH2Table tbl,
             boolean pk,
-            List<IndexColumn> cols
+            List<IndexColumn> cols,
+            int inlineSize
         ) {
             try {
                 GridCacheSharedContext<Object, Object> scctx = ctx.cache().context();
@@ -2663,7 +2670,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (log.isInfoEnabled())
                     log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
-                return new H2TreeIndex(cctx, tbl, name, pk, cols);
+                return new H2TreeIndex(cctx, tbl, name, pk, cols, inlineSize);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

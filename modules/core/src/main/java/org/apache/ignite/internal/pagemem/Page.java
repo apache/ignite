@@ -36,7 +36,7 @@ public interface Page extends AutoCloseable {
     public FullPageId fullId();
 
     /**
-     * @return Pointer for modifying the page.
+     * @return Pointer for reading the page.
      */
     public long getForReadPointer();
 

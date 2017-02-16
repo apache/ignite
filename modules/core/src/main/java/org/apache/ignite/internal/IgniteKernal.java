@@ -1157,6 +1157,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
 
                             log.info(msg);
+
+                            ctx.cache().context().database().dumpStatistics(log);
                         }
                         catch (IgniteClientDisconnectedException ignore) {
                             // No-op.
