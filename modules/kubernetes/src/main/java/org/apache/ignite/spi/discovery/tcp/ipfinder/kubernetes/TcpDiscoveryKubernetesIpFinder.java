@@ -137,7 +137,8 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
         Collection<InetSocketAddress> addrs = new ArrayList<>();
 
         try {
-            log.debug("Getting Apache Ignite endpoints from: " + url);
+            if (log.isDebugEnabled())
+                log.debug("Getting Apache Ignite endpoints from: " + url);
 
             HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
 
@@ -159,7 +160,8 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
                             for (Address address : subset.addresses) {
                                 addrs.add(new InetSocketAddress(address.ip, 0));
 
-                                log.debug("Added an address to the list: " + address.ip);
+                                if (log.isDebugEnabled())
+                                    log.debug("Added an address to the list: " + address.ip);
                             }
                         }
                     }
