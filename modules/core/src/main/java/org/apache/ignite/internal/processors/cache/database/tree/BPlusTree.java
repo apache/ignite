@@ -698,7 +698,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param leafIos Leaf IO versions.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(
+    protected BPlusTree(
         String name,
         int cacheId,
         PageMemory pageMem,
@@ -709,21 +709,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
-
-        assert !F.isEmpty(name);
-
-        // TODO make configurable: 0 <= minFill <= maxFill <= 1
-        minFill = 0f; // Testing worst case when merge happens only on empty page.
-        maxFill = 0f; // Avoiding random effects on testing.
-
-        assert metaPageId != 0L;
-
-        this.metaPageId = metaPageId;
-        this.name = name;
-        this.reuseList = reuseList;
-        this.globalRmvId = globalRmvId;
-
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
         setIos(innerIos, leafIos);
     }
 
@@ -737,7 +723,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(
+    protected BPlusTree(
         String name,
         int cacheId,
         PageMemory pageMem,

@@ -164,7 +164,7 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_EX_REF_INNER_START = 20000;
-    public static final short T_H2_EX_REF_INNER_END = 20000 + MAX_PAYLOAD_SIZE - 1;
+    public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     private final int ver;

@@ -2476,7 +2476,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @return Index descriptor.
          */
         public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
-            return addIndex(idxName, type, 0);
+            return addIndex(idxName, type, -1);
         }
 
         /**
