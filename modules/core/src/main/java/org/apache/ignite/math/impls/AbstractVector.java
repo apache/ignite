@@ -598,6 +598,12 @@ public abstract class AbstractVector implements Vector {
             throw new CardinalityException(size(), vec.length);
     }
 
+    /** */
+    protected void checkCardinality(int[] arr) {
+        if (arr.length != sto.size())
+            throw new CardinalityException(size(), arr.length);
+    }
+
     /** {@inheritDoc */
     @Override public Vector minus(Vector vec) {
         checkCardinality(vec);
