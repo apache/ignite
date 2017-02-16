@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -375,9 +374,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         account.setValueType(affKey ? AccountKeyWithAffinity.class.getName() : Account.class.getName());
         account.addQueryField("personKey", personKeyType, null);
         account.addQueryField("personId", Integer.class.getName(), null);
-        account.setIndexes(F.asList(
-            new QueryIndex("personKey", QueryIndexType.SORTED, true),
-            new QueryIndex("personId", QueryIndexType.SORTED, true)));
+        account.setIndexes(F.asList(new QueryIndex("personKey"), new QueryIndex("personId")));
 
         QueryEntity person = new QueryEntity();
         person.setKeyType(personKeyType);
@@ -385,10 +382,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         person.addQueryField("orgId", Integer.class.getName(), null);
         person.addQueryField("id", Integer.class.getName(), null);
         person.addQueryField("name", String.class.getName(), null);
-        person.setIndexes(F.asList(
-            new QueryIndex("orgId", QueryIndexType.SORTED, true),
-            new QueryIndex("id", QueryIndexType.SORTED, true),
-            new QueryIndex("name", QueryIndexType.SORTED, true)));
+        person.setIndexes(F.asList(new QueryIndex("orgId"), new QueryIndex("id"), new QueryIndex("name")));
 
         if (affKey && includeAffKey)
             person.addQueryField("affKey", Integer.class.getName(), null);
@@ -397,7 +391,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         org.setKeyType(Integer.class.getName());
         org.setValueType(Organization.class.getName());
         org.addQueryField("name", String.class.getName(), null);
-        org.setIndexes(F.asList(new QueryIndex("name", QueryIndexType.SORTED, true)));
+        org.setIndexes(F.asList(new QueryIndex("name")));
 
         ccfg.setQueryEntities(F.asList(account, person, org));
 

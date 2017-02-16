@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -78,7 +77,7 @@ public class IgniteCachePrimitiveFieldsQuerySelfTest extends GridCommonAbstractT
         entity.setFields(fields);
 
         entity.setIndexes(F.asList(
-            new QueryIndex("iVal", QueryIndexType.SORTED, true)
+            new QueryIndex("iVal")
         ));
 
         ccfg.setQueryEntities(F.asList(entity));

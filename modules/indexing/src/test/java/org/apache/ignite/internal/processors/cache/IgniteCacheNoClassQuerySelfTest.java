@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -95,9 +94,9 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
         qryEntity.setFields(fields);
 
         qryEntity.setIndexes(Arrays.asList(
-            new QueryIndex("strField", QueryIndexType.SORTED),
-            new QueryIndex("intField", QueryIndexType.SORTED),
-            new QueryIndex("doubleField", QueryIndexType.SORTED)
+            new QueryIndex("strField"),
+            new QueryIndex("intField"),
+            new QueryIndex("doubleField")
         ));
 
         cc.setQueryEntities(Collections.singletonList(

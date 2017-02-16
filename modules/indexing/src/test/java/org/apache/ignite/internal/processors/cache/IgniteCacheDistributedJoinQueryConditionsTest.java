@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -496,13 +495,13 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
         List<QueryIndex> idxs = new ArrayList<>();
 
         if (idxName) {
-            QueryIndex idx = new QueryIndex("name", QueryIndexType.SORTED, true);
+            QueryIndex idx = new QueryIndex("name");
 
             idxs.add(idx);
         }
 
         if (idxOrgId) {
-            QueryIndex idx = new QueryIndex("orgId", QueryIndexType.SORTED, true);
+            QueryIndex idx = new QueryIndex("orgId");
 
             idxs.add(idx);
         }
@@ -525,7 +524,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
         entity.addQueryField("name", String.class.getName(), null);
 
         if (idxName) {
-            QueryIndex idx = new QueryIndex("name", QueryIndexType.SORTED, true);
+            QueryIndex idx = new QueryIndex("name");
 
             entity.setIndexes(F.asList(idx));
         }
