@@ -27,7 +27,7 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -148,7 +148,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
                         info("Caught exception: " + e);
                     }
                     catch (CacheException | IgniteException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class))
+                        if (X.hasCause(e, ClusterTopologyLocalException.class))
                             info("Caught cache exception: " + e);
                         else
                             throw e;

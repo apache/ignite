@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -273,7 +273,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
                                             tx.commit();
                                         }
                                         catch (CacheException | IgniteException e) {
-                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                            if (!X.hasCause(e, ClusterTopologyLocalException.class)) {
                                                 log.error("Unexpected error: " + e);
 
                                                 throw e;
@@ -298,7 +298,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
                                             tx.commit();
                                         }
                                         catch (CacheException | IgniteException e) {
-                                            if (!X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                                            if (!X.hasCause(e, ClusterTopologyLocalException.class)) {
                                                 log.error("Unexpected error: " + e);
 
                                                 throw e;

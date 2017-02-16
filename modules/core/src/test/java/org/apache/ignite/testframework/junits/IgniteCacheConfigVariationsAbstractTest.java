@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.H2CacheStoreStrategy;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
@@ -295,7 +295,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                     break;
                 }
                 catch (Exception e) {
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                    if (X.hasCause(e, ClusterTopologyLocalException.class)) {
                         info("Got topology exception while tear down (will retry in 1000ms).");
 
                         U.sleep(1000);

@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -119,7 +119,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
                             }
                         }
                         catch (Exception e) {
-                            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+                            if (!X.hasCause(e, ClusterTopologyLocalException.class))
                                 throw e;
                         }
                     }

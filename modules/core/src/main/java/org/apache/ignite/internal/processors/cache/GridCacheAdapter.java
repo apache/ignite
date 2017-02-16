@@ -77,7 +77,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
@@ -4254,7 +4254,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     }
 
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class) && i != retries - 1) {
+                    if (X.hasCause(e, ClusterTopologyLocalException.class) && i != retries - 1) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
                         assert topVer != null && topVer.topologyVersion() > 0 : tx;
@@ -4966,7 +4966,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         onDone(res);
                     }
                     catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) && --retries > 0) {
+                        if (X.hasCause(e, ClusterTopologyLocalException.class) && --retries > 0) {
                             IgniteTxLocalAdapter tx = AsyncOpRetryFuture.this.tx;
 
                             assert tx != null;

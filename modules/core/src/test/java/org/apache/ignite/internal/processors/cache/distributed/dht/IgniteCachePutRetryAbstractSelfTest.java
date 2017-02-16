@@ -45,7 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -551,7 +551,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                     }
                     catch (Exception e) {
                         assertTrue("Invalid exception: " + e,
-                            X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class));
+                            X.hasCause(e, ClusterTopologyLocalException.class, CachePartialUpdateException.class));
 
                         eThrown = true;
 

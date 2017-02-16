@@ -36,7 +36,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
@@ -1325,7 +1325,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         @Override protected boolean ignoreFailure(Throwable err) {
             Class cls = err.getClass();
 
-            return ClusterTopologyCheckedException.class.isAssignableFrom(cls) ||
+            return ClusterTopologyLocalException.class.isAssignableFrom(cls) ||
                 CachePartialUpdateCheckedException.class.isAssignableFrom(cls);
         }
     }

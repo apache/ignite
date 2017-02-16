@@ -56,7 +56,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -3704,7 +3704,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                             }
                             catch (IgniteException | CacheException e) {
                                 assertTrue("Unexpected exception [err=" + e + ", cause=" + e.getCause() + ']',
-                                    restart && X.hasCause(e, ClusterTopologyCheckedException.class));
+                                    restart && X.hasCause(e, ClusterTopologyLocalException.class));
                             }
                         }
 
@@ -3824,7 +3824,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                             }
                             catch (IgniteException | CacheException e) {
                                 assertTrue("Unexpected exception [err=" + e + ", cause=" + e.getCause() + ']',
-                                    restart && X.hasCause(e, ClusterTopologyCheckedException.class));
+                                    restart && X.hasCause(e, ClusterTopologyLocalException.class));
                             }
                         }
 
@@ -4206,7 +4206,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                                 }
                                 catch (IgniteException | CacheException e) {
                                     assertTrue("Unexpected exception [err=" + e + ", cause=" + e.getCause() + ']',
-                                        restart && X.hasCause(e, ClusterTopologyCheckedException.class));
+                                        restart && X.hasCause(e, ClusterTopologyLocalException.class));
                                 }
                             }
                         }
