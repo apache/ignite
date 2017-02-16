@@ -26,7 +26,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -78,7 +77,7 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
             entity.setKeyType(Integer.class.getName());
             entity.setValueType(Person.class.getName());
             entity.addQueryField("orgId", Integer.class.getName(), null);
-            entity.setIndexes(F.asList(new QueryIndex("orgId", QueryIndexType.SORTED, true)));
+            entity.setIndexes(F.asList(new QueryIndex("orgId")));
 
             ccfg.setQueryEntities(F.asList(entity));
 
@@ -94,7 +93,7 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
             entity.setKeyType(Integer.class.getName());
             entity.setValueType(Person.class.getName());
             entity.addQueryField("orgId", Integer.class.getName(), null);
-            entity.setIndexes(F.asList(new QueryIndex("orgId", QueryIndexType.SORTED, true)));
+            entity.setIndexes(F.asList(new QueryIndex("orgId")));
 
             ccfg.setQueryEntities(F.asList(entity));
 

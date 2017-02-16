@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
@@ -190,7 +189,7 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
         entity.setKeyType(Integer.class.getName());
         entity.setValueType(TestObject.class.getName());
         entity.addQueryField("parentId", Integer.class.getName(), null);
-        entity.setIndexes(F.asList(new QueryIndex("parentId", QueryIndexType.SORTED, true)));
+        entity.setIndexes(F.asList(new QueryIndex("parentId")));
 
         ccfg.setQueryEntities(F.asList(entity));
 

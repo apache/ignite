@@ -30,7 +30,6 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -63,7 +62,7 @@ public class CacheQueryBuildValueTest extends GridCommonAbstractTest {
 
         ArrayList<QueryIndex> idxs = new ArrayList<>();
 
-        QueryIndex idx = new QueryIndex("iVal", QueryIndexType.SORTED, true);
+        QueryIndex idx = new QueryIndex("iVal");
         idxs.add(idx);
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
