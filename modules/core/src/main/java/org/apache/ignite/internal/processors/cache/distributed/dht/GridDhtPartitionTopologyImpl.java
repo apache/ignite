@@ -1879,10 +1879,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
-            updateLocal(part.id(), part.state(), seq);
-
             if (part.shouldBeMoving())
-                createPartition(part.id());
+                part = createPartition(part.id());
+
+            updateLocal(part.id(), part.state(), seq);
 
             consistencyCheck();
         }
