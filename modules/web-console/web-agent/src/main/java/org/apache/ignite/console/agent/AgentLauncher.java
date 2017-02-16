@@ -25,11 +25,15 @@ import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
+import java.net.Authenticator;
 import java.net.ConnectException;
+import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -76,9 +80,6 @@ public class AgentLauncher {
     /** */
     private static final String EVENT_AGENT_CLOSE = "agent:close";
 
-    /** */
-    private static final int RECONNECT_INTERVAL = 3000;
-
     /**
      * Create a trust manager that trusts all certificates It is not using a particular keyStore
      */
@@ -121,10 +122,42 @@ public class AgentLauncher {
                     System.exit(1);
                 }
 
+                ignore = X.cause(e, UnknownHostException.class);
+
+                if (ignore != null) {
+                    log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
+                    log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
+
+                    System.exit(1);
+                }
+
                 ignore = X.cause(e, IOException.class);
 
                 if (ignore != null && "404".equals(ignore.getMessage())) {
                     log.error("Failed to receive response from server (connection refused).");
+
+                    return;
+                }
+
+                if (ignore != null && "407".equals(ignore.getMessage())) {
+                    log.error("Failed to establish connection to server, due to proxy requires authentication.");
+
+                    String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
+
+                    if (userName == null || userName.trim().isEmpty())
+                        userName = readLine("Enter proxy user name: ");
+                    else
+                        System.out.println("Read username from system properties: " + userName);
+
+                    char[] pwd = readPassword("Enter proxy password: ");
+
+                    final PasswordAuthentication pwdAuth = new PasswordAuthentication(userName, pwd);
+
+                    Authenticator.setDefault(new Authenticator() {
+                        @Override protected PasswordAuthentication getPasswordAuthentication() {
+                            return pwdAuth;
+                        }
+                    });
 
                     return;
                 }
@@ -142,6 +175,32 @@ public class AgentLauncher {
             log.error(String.format("Connection closed: %s.", args));
         }
     };
+
+    /**
+     * @param fmt Format string.
+     * @param args Arguments.
+     */
+    private static String readLine(String fmt, Object ... args) {
+        if (System.console() != null)
+            return System.console().readLine(fmt, args);
+
+        System.out.print(String.format(fmt, args));
+
+        return new Scanner(System.in).nextLine();
+    }
+
+    /**
+     * @param fmt Format string.
+     * @param args Arguments.
+     */
+    private static char[] readPassword(String fmt, Object ... args) {
+        if (System.console() != null)
+            return System.console().readPassword(fmt, args);
+
+        System.out.print(String.format(fmt, args));
+
+        return new Scanner(System.in).nextLine().toCharArray();
+    }
 
     /**
      * @param args Args.
@@ -214,9 +273,9 @@ public class AgentLauncher {
             System.out.println("Security token is required to establish connection to the web console.");
             System.out.println(String.format("It is available on the Profile page: https://%s/profile", webHost));
 
-            System.out.print("Enter security tokens separated by comma: ");
+            String tokens = String.valueOf(readPassword("Enter security tokens separated by comma: "));
 
-            cfg.tokens(Arrays.asList(System.console().readLine().trim().split(",")));
+            cfg.tokens(Arrays.asList(tokens.trim().split(",")));
         }
 
         final RestHandler restHnd = new RestHandler(cfg);
@@ -226,11 +285,28 @@ public class AgentLauncher {
 
             URI uri = URI.create(cfg.serverUri());
 
+            // Create proxy authenticator using passed properties.
+            switch (uri.getScheme()) {
+                case "http":
+                case "https":
+                    final String username = System.getProperty(uri.getScheme() + ".proxyUsername");
+                    final char[] pwd = System.getProperty(uri.getScheme() +  ".proxyPassword", "").toCharArray();
+
+                    Authenticator.setDefault(new Authenticator() {
+                        @Override protected PasswordAuthentication getPasswordAuthentication() {
+                            return new PasswordAuthentication(username, pwd);
+                        }
+                    });
+
+                    break;
+
+                default:
+                    // No-op.
+            }
+
             IO.Options opts = new IO.Options();
 
             opts.path = "/agents";
-
-            opts.reconnectionDelay = RECONNECT_INTERVAL;
 
             // Workaround for use self-signed certificate
             if (Boolean.getBoolean("trust.all")) {

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -82,6 +83,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final String clsName;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private final String clause;
 
     /** */

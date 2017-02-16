@@ -650,14 +650,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                         const bParts = b.split('.');
 
                         for (let i = 0; i < aParts.length; ++i) {
-                            if (bParts.length === i)
-                                return 1;
-
-                            if (aParts[i] === aParts[i])
-                                continue;
-
-                            return aParts[i] > bParts[i] ? 1 : -1;
+                            if (aParts[i] !== bParts[i])
+                                return aParts[i] < bParts[i] ? 1 : -1;
                         }
+
+                        if (aParts.length === bParts.length)
+                            return 0;
+
+                        return aParts.length < bParts.length ? 1 : -1;
                     }));
 
                     // Latest version of agent distribution.

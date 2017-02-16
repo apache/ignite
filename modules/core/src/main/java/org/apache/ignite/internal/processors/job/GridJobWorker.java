@@ -566,8 +566,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         }
                     });
 
-                    if (log.isDebugEnabled())
-                        log.debug("Job execution has successfully finished [job=" + job + ", res=" + res + ']');
+                    if (log.isDebugEnabled()) {
+                        log.debug(S.toString("Job execution has successfully finished",
+                            "job", job, false,
+                            "res", res, true));
+                    }
                 }
             }
             catch (IgniteException e) {

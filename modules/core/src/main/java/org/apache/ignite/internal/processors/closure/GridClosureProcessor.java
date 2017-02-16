@@ -1778,7 +1778,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         protected IgniteClosure<T, R> job;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         private T arg;
 
         /**
@@ -1843,7 +1843,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         protected IgniteClosure<T, R> job;
 
         /** */
-        @GridToStringInclude
+        @GridToStringInclude(sensitive = true)
         protected T arg;
 
         /**
