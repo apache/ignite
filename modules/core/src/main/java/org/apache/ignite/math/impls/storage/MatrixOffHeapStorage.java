@@ -164,12 +164,11 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        final int prime = 37;
         int result = 1;
 
-        result = result * prime + rows;
-        result = result * prime + cols;
-        result = result * prime + Long.hashCode(ptr);
+        result = result * 37 + rows;
+        result = result * 37 + cols;
+        result = result * 37 + Long.hashCode(ptr);
 
         return result;
     }

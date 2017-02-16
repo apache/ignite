@@ -147,12 +147,11 @@ public class VectorDelegateStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        final int prime = 37;
         int result = 1;
 
-        result = result * prime + off;
-        result = result * prime + len;
-        result = result * prime + sto.hashCode();
+        result = result * 37 + off;
+        result = result * 37 + len;
+        result = result * 37 + sto.hashCode();
 
         return result;
     }

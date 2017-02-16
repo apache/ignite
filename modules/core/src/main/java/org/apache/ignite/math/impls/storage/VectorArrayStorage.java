@@ -37,10 +37,9 @@ public class VectorArrayStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        final int prime = 37;
         int result = 1;
 
-        result = result * prime + Arrays.hashCode(data);
+        result = result * 37 + Arrays.hashCode(data);
 
         return result;
     }
