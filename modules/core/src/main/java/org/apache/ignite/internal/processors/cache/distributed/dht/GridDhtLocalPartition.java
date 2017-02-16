@@ -141,6 +141,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * reservation is released. */
     private volatile boolean shouldBeRenting;
 
+    /** Set if partition must be re-created and preloaded after eviction. */
+    private boolean shouldBeMoving;
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -637,6 +640,20 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
+    }
+
+    /**
+     * @return {@code True} if partition should be set to moving after it is cleared.
+     */
+    public boolean shouldBeMoving() {
+        return shouldBeMoving;
+    }
+
+    /**
+     * @param value {@code shouldBeMoving} flag value.
+     */
+    public void shouldBeMoving(boolean value) {
+        shouldBeMoving = value;
     }
 
     /**

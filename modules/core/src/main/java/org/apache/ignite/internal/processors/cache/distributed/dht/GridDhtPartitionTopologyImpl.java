@@ -699,7 +699,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create)
         throws GridDhtInvalidPartitionException {
-        return localPartition0(p, topVer, create, false,true);
+        return localPartition0(p, topVer, create, false, true);
     }
 
     /** {@inheritDoc} */
@@ -1218,28 +1218,32 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     else if (state == MOVING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
-                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null && locPart.updateCounter() > 0) {
+                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null &&
+                            locPart != null && locPart.updateCounter() > 0) {
                             locPart.rent(true);
 
                             changed = true;
                         }
-                        else {
-                            if (locPart == null)
-                                locPart = createPartition(p);
 
-                            if (locPart.state() == OWNING) {
-                                locPart.moving();
+                        if (locPart != null && locPart.state() == RENTING)
+                            locPart.shouldBeMoving(true);
 
-                                changed = true;
-                            }
+                        if (locPart == null || locPart.state() == EVICTED)
+                            locPart = createPartition(p);
 
-                            if (cntrMap != null) {
-                                T2<Long, Long> cntr = cntrMap.get(p);
+                        if (locPart.state() == OWNING) {
+                            locPart.moving();
 
-                                if (cntr != null && cntr.get2() > locPart.updateCounter())
-                                    locPart.updateCounter(cntr.get2());
-                            }
+                            changed = true;
                         }
+
+                        if (cntrMap != null) {
+                            T2<Long, Long> cntr = cntrMap.get(p);
+
+                            if (cntr != null && cntr.get2() > locPart.updateCounter())
+                                locPart.updateCounter(cntr.get2());
+                        }
+
                     }
                 }
             }
@@ -1667,6 +1671,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
+                        part.shouldBeMoving(false);
+
                         part.rent(false);
 
                         updateSeq = updateLocal(part.id(), part.state(), updateSeq);
@@ -1692,6 +1698,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                 ClusterNode n = sorted.get(i);
 
                                 if (locId.equals(n.id())) {
+                                    part.shouldBeMoving(false);
+
                                     part.rent(false);
 
                                     updateSeq = updateLocal(part.id(), part.state(), updateSeq);
@@ -1873,7 +1881,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             updateLocal(part.id(), part.state(), seq);
 
-            if (cctx.affinity().partitionLocalNode(part.id(), topologyVersion()))
+            if (part.shouldBeMoving())
                 createPartition(part.id());
 
             consistencyCheck();
