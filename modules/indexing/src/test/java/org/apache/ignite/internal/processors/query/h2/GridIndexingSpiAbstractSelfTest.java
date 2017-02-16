@@ -500,6 +500,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         @Override public GridQueryIndexType type() {
             return GridQueryIndexType.FULLTEXT;
         }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return 0;
+        }
     }
 
     /**

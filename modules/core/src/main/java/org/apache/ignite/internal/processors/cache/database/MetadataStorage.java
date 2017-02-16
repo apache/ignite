@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -193,7 +192,7 @@ public class MetadataStorage implements MetaStore {
         /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final long pageAddr, final int idx,
             final IndexItem row) throws IgniteCheckedException {
-            final int off = ((IndexIO)io).getOffset(idx);
+            final int off = ((IndexIO)io).getOffset(pageAddr, idx);
 
             int shift = 0;
 
@@ -215,7 +214,7 @@ public class MetadataStorage implements MetaStore {
         /** {@inheritDoc} */
         @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final long pageAddr,
             final int idx) throws IgniteCheckedException {
-            return readRow(pageAddr, ((IndexIO)io).getOffset(idx));
+            return readRow(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx));
         }
     }
 
@@ -241,37 +240,6 @@ public class MetadataStorage implements MetaStore {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "I [idxName=" + new String(idxName) + ", pageId=" + U.hexLong(pageId) + ']';
-        }
-    }
-
-    /**
-     * Store row to buffer.
-     *
-     * @param buf Buffer.
-     * @param off Offset in buf.
-     * @param row Row to store.
-     */
-    private static void storeRow(
-        final ByteBuffer buf,
-        final int off,
-        final IndexItem row
-    ) {
-        int origPos = buf.position();
-
-        try {
-            buf.position(off);
-
-            // Index name length.
-            buf.put((byte)row.idxName.length);
-
-            // Index name.
-            buf.put(row.idxName);
-
-            // Page ID.
-            buf.putLong(row.pageId);
-        }
-        finally {
-            buf.position(origPos);
         }
     }
 
@@ -355,10 +323,11 @@ public class MetadataStorage implements MetaStore {
      */
     private interface IndexIO {
         /**
+         * @param pageAddr Page address.
          * @param idx Index.
          * @return Offset in buffer according to {@code idx}.
          */
-        int getOffset(int idx);
+        int getOffset(long pageAddr, int idx);
     }
 
     /**
@@ -379,11 +348,6 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, off, row);
-        }
-
-        /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, IndexItem row) throws IgniteCheckedException {
             storeRow(pageAddr, off, row);
         }
@@ -392,7 +356,7 @@ public class MetadataStorage implements MetaStore {
         @Override public void store(final long dstPageAddr, final int dstIdx, final BPlusIO<IndexItem> srcIo,
             final long srcPageAddr,
             final int srcIdx) throws IgniteCheckedException {
-            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcIdx));
+            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
         }
 
         /** {@inheritDoc} */
@@ -402,7 +366,7 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
-        @Override public int getOffset(final int idx) {
+        @Override public int getOffset(long pageAddr, final int idx) {
             return offset(idx);
         }
     }
@@ -425,11 +389,6 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, IndexItem row) throws IgniteCheckedException {
-            storeRow(buf, off, row);
-        }
-
-        /** {@inheritDoc} */
         @Override public void storeByOffset(long buf, int off, IndexItem row) throws IgniteCheckedException {
             storeRow(buf, off, row);
         }
@@ -440,7 +399,7 @@ public class MetadataStorage implements MetaStore {
             final BPlusIO<IndexItem> srcIo,
             final long srcPageAddr,
             final int srcIdx) throws IgniteCheckedException {
-            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcIdx));
+            storeRow(dstPageAddr, offset(dstIdx), srcPageAddr, ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx));
         }
 
         /** {@inheritDoc} */
@@ -451,7 +410,7 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
-        @Override public int getOffset(final int idx) {
+        @Override public int getOffset(long pageAddr, final int idx) {
             return offset(idx);
         }
     }

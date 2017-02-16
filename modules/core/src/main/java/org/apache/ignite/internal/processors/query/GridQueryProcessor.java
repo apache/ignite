@@ -1714,7 +1714,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxName = QueryEntity.defaultIndexName(idx);
 
                 if (idx.getIndexType() == QueryIndexType.SORTED || idx.getIndexType() == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
+                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL, idx.getInlineSize());
 
                     int i = 0;
 
@@ -2467,16 +2467,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          *
          * @param idxName Index name.
          * @param type Index type.
+         * @param inlineSize Inline size.
          * @return Index descriptor.
          * @throws IgniteCheckedException In case of error.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
-            IndexDescriptor idx = new IndexDescriptor(type);
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type,
+            int inlineSize) throws IgniteCheckedException {
+            IndexDescriptor idx = new IndexDescriptor(type, inlineSize);
 
             if (indexes.put(idxName, idx) != null)
                 throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
 
             return idx;
+        }
+
+        /**
+         * Adds index.
+         *
+         * @param idxName Index name.
+         * @param type Index type.
+         * @return Index descriptor.
+         * @throws IgniteCheckedException In case of error.
+         */
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
+            return addIndex(idxName, type, 0);
         }
 
         /**
@@ -2667,13 +2681,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private final GridQueryIndexType type;
 
+        /** */
+        private int inlineSize;
+
+        /**
+         * @param type Type.
+         * @param inlineSize Inline size.
+         */
+        private IndexDescriptor(GridQueryIndexType type, int inlineSize) {
+            assert type != null;
+
+            this.type = type;
+            this.inlineSize = inlineSize;
+        }
+
         /**
          * @param type Type.
          */
         private IndexDescriptor(GridQueryIndexType type) {
-            assert type != null;
-
-            this.type = type;
+            this(type, 0);
         }
 
         /** {@inheritDoc} */
@@ -2712,6 +2738,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public GridQueryIndexType type() {
             return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return inlineSize;
         }
 
         /** {@inheritDoc} */
