@@ -39,7 +39,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -179,7 +179,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     break;
                 }
                 catch (Exception e) {
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                    if (X.hasCause(e, ClusterTopologyLocalException.class)) {
                         info("Got topology exception while tear down (will retry in 1000ms).");
 
                         U.sleep(1000);

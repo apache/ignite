@@ -588,6 +588,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertFalse(cache.containsKeys(keys));
 
             tx.commit();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
         }
 
         try (Transaction tx = txs.txStart()) {
