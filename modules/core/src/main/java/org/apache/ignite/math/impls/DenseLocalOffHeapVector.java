@@ -112,4 +112,14 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     @Override public boolean equals(Object o) {
         return o != null && getClass().equals(o.getClass()) && (getStorage().equals(((Vector)o).getStorage()));
     }
+
+    @Override
+    public Matrix toMatrix(boolean row) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+        return null; // TODO
+    }
 }

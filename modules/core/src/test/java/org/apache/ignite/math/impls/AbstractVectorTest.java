@@ -785,6 +785,16 @@ public class AbstractVectorTest {
                 return false;
             }
 
+            @Override
+            public Matrix toMatrix(boolean row) {
+                return null; // TODO
+            }
+
+            @Override
+            public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+                return null; // TODO
+            }
+
             /** */
             @Override public boolean isSequentialAccess() {
                 return false;
@@ -857,6 +867,16 @@ public class AbstractVectorTest {
             /** */
             @Override public boolean isDense() {
                 return false;
+            }
+
+            @Override
+            public Matrix toMatrix(boolean row) {
+                return null; // TODO
+            }
+
+            @Override
+            public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+                return null; // TODO
             }
 
             /** */

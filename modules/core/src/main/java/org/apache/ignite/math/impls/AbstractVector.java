@@ -736,16 +736,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc */
-    @Override public Matrix toMatrix() {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
-    @Override public Matrix toMatrixPlusOne(double zeroVal) {
-        return null; // TODO
-    }
-
-    /** {@inheritDoc */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(meta);

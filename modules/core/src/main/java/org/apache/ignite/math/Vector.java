@@ -241,19 +241,21 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     Matrix likeMatrix(int rows, int cols);
 
     /**
-     * Converts this vector into [N x 1] matrix where N is this vector cardinality.
+     * Converts this vector into [N x 1] or [1 x N] matrix where N is this vector cardinality.
      *
+     * @param row Row [N x 1] or column [1 x N] matrix.
      * @return Newly created matrix.
      */
-    Matrix toMatrix();
+    Matrix toMatrix(boolean row);
 
     /**
-     * Converts this vector into [N+1 x 1] matrix where N is this vector cardinality.
+     * Converts this vector into [N+1 x 1] or [1 x N+1] matrix where N is this vector cardinality.
      * (0,0) element of this matrix will be {@code zeroVal} parameter.
      *
+     * @param row Row [N x 1] or column [1 x N] matrix.
      * @return Newly created matrix.
      */
-    Matrix toMatrixPlusOne(double zeroVal);
+    Matrix toMatrixPlusOne(boolean row, double zeroVal);
 
     /**
      * Creates new vector containing element by element difference between this vector and the argument one.

@@ -112,4 +112,14 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     @Override public Vector like(int crd) {
         return new DenseLocalOnHeapVector(crd);
     }
+
+    @Override
+    public Matrix toMatrix(boolean row) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+        return null; // TODO
+    }
 }

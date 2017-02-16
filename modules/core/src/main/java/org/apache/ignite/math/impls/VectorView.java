@@ -95,6 +95,19 @@ public class VectorView extends AbstractVector {
         setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
     }
 
+    /** {@inheritDoc */
+    @Override public Matrix toMatrix(boolean row) {
+        if (row)
+            return parent.likeMatrix(1, size()).assignRow(0, this);
+        else
+            return parent.likeMatrix(size(), 1).assignColumn(0, this);
+    }
+
+    /** {@inheritDoc */
+    @Override public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+        return null; // TODO
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o ||

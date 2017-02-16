@@ -105,4 +105,17 @@ public class RandomVector extends AbstractVector {
 
         fastHash = in.readBoolean();
     }
+
+    @Override
+    public Matrix toMatrix(boolean row) {
+        if (row)
+            return new RandomMatrix(1, size());
+        else
+            return new RandomMatrix(size(), 1);
+    }
+
+    @Override
+    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+        throw new UnsupportedOperationException();
+    }
 }

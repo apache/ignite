@@ -94,4 +94,14 @@ public class MatrixVectorView extends AbstractVector {
         rowStride = in.readInt();
         colStride = in.readInt();
     }
+
+    @Override
+    public Matrix toMatrix(boolean row) {
+        return null; // TODO
+    }
+
+    @Override
+    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+        return null; // TODO
+    }
 }

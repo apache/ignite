@@ -35,4 +35,11 @@ public class UnsupportedOperationException extends IgniteException {
     public UnsupportedOperationException(String errMsg) {
         super(errMsg);
     }
+
+    /**
+     *
+     */
+    public UnsupportedOperationException() {
+        this("Unsupported operation.");
+    }
 }
