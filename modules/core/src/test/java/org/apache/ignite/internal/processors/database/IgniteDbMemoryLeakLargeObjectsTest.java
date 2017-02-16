@@ -36,23 +36,25 @@ public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstra
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Object, Object> cache(IgniteEx ig) {
-        return ig.cache("non-primitive");
+        return ig.cache("large");
     }
 
     /** {@inheritDoc} */
     @Override protected Object key() {
-        return new DbKey(getRandom().nextInt(200_000));
+        return new LargeDbKey(getRandom().nextInt(10_000), 1024);
     }
 
     /** {@inheritDoc} */
     @Override protected Object value(Object key) {
-        return new DbValue(((DbKey)key).val, "test-value-" + getRandom().nextInt(200), getRandom().nextInt(500));
+        return new LargeDbValue("test-value-1-" + getRandom().nextInt(200), "test-value-2-" + getRandom().nextInt(200), ARRAY);
+    }
+
+    @Override protected int warmUp() {
+        return 600;
     }
 
     /** {@inheritDoc} */
-    @Override protected void check(IgniteEx ig) {
-        long pages = ig.context().cache().context().database().pageMemory().loadedPages();
-
-        assertTrue(pages < 20000);
+    @Override protected long pagesMax() {
+        return 2000000;
     }
 }
