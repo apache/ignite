@@ -18,20 +18,17 @@
 
 package org.apache.ignite.internal.pagemem.snapshot;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message indicating that a snapshot has been started.
  */
-public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartSnapshotOperationAckDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +54,7 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
      * @param snapshotOperation Snapshot Operation.
      * @param err Error.
      */
-    public StartFullSnapshotAckDiscoveryMessage(
+    public StartSnapshotOperationAckDiscoveryMessage(
         SnapshotOperation snapshotOperation,
         Map<Integer, Long> lastFullSnapshotIdForCache,
         Map<Integer, Long> lastSnapshotIdForCache,
@@ -127,6 +124,6 @@ public class StartFullSnapshotAckDiscoveryMessage implements DiscoveryCustomMess
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StartFullSnapshotAckDiscoveryMessage.class, this);
+        return S.toString(StartSnapshotOperationAckDiscoveryMessage.class, this);
     }
 }
