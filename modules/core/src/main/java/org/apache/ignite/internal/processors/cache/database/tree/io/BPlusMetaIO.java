@@ -169,7 +169,7 @@ public class BPlusMetaIO extends PageIO {
      * @param size Offset size.
      */
     public void setInlineSize(long pageAddr, int size) {
-        if (inlineSizeOff > -1)
+        if (getVersion() > 1)
             PageUtils.putShort(pageAddr, inlineSizeOff, (short)size);
     }
 
@@ -177,6 +177,6 @@ public class BPlusMetaIO extends PageIO {
      * @param pageAddr Page address.
      */
     public int getInlineSize(long pageAddr) {
-        return inlineSizeOff > -1 ? PageUtils.getShort(pageAddr, inlineSizeOff) : 0;
+        return getVersion() > 1 ? PageUtils.getShort(pageAddr, inlineSizeOff) : 0;
     }
 }

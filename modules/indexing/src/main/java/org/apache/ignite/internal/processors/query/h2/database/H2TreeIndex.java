@@ -70,6 +70,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
+     * @param inlineSize Inline size.
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(

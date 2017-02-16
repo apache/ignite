@@ -68,19 +68,18 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         if (!initNew) {
             // Page is ready - read inline size from it.
-            this.inlineSize = getMetaInlineSize();
+            inlineSize = getMetaInlineSize();
         }
-        else
-            this.inlineSize = inlineSize;
 
+        this.inlineSize = inlineSize;
 
         assert rowStore != null;
 
         this.rowStore = rowStore;
 
-        setIos(H2ExtrasInnerIO.getVersions(this.inlineSize), H2ExtrasLeafIO.getVersions(this.inlineSize));
+        setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
-        initTree(initNew, this.inlineSize);
+        initTree(initNew, inlineSize);
     }
 
     /**
@@ -101,27 +100,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      */
     public int inlineSize() {
         return inlineSize;
-    }
-
-    /**
-     * @param inlineSize Inline size.
-     */
-    private void saveMetaInlineSize(int inlineSize) throws IgniteCheckedException {
-        try (Page meta = page(metaPageId)) {
-            long pageAddr = readLock(meta); // Meta can't be removed.
-
-            assert pageAddr != 0 : "Failed to read lock meta page [page=" + meta + ", metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                io.setInlineSize(pageAddr, inlineSize);
-            }
-            finally {
-                readUnlock(meta, pageAddr);
-            }
-        }
     }
 
     /**
