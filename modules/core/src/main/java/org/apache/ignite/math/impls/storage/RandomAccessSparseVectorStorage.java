@@ -1,12 +1,10 @@
 package org.apache.ignite.math.impls.storage;
 
-import it.unimi.dsi.fastutil.ints.Int2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Map;
-import org.apache.ignite.math.VectorStorage;
+import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.objects.*;
+import org.apache.ignite.math.*;
+import java.io.*;
+import java.util.*;
 
 /**
  * Implements vector that only stores non-zero doubles.
@@ -25,20 +23,20 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
 
     /**
      *
-     * @param cardinality
+     * @param crd
      */
-    public RandomAccessSparseVectorStorage(int cardinality){
-        this(cardinality, Math.min(cardinality, INITIAL_CAPACITY));
+    public RandomAccessSparseVectorStorage(int crd){
+        this(crd, Math.min(crd, INITIAL_CAPACITY));
     }
 
     /**
      *
      * @param size
-     * @param initialCapacity
+     * @param initCap
      */
-    public RandomAccessSparseVectorStorage(int size, int initialCapacity) {
+    public RandomAccessSparseVectorStorage(int size, int initCap) {
         this.size = size;
-        this.data = new Int2DoubleOpenHashMap(initialCapacity, .5f);
+        this.data = new Int2DoubleOpenHashMap(initCap, .5f);
     }
 
     private RandomAccessSparseVectorStorage(int size, Int2DoubleOpenHashMap values) {
