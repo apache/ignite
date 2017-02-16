@@ -39,7 +39,9 @@ public class VectorArrayStorage implements VectorStorage {
     public int hashCode() {
         final int prime = 37;
         int result = 1;
+
         result = result * prime + Arrays.hashCode(data);
+
         return result;
     }
 

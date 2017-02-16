@@ -135,8 +135,10 @@ public class VectorOffHeapStorage implements VectorStorage {
     public int hashCode() {
         final int prime = 37;
         int result = 1;
+
         result = result * prime + size;
         result = result * prime + Long.hashCode(ptr);
+        
         return result;
     }
 

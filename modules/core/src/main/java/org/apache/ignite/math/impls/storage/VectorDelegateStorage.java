@@ -125,9 +125,11 @@ public class VectorDelegateStorage implements VectorStorage {
     public int hashCode() {
         final int prime = 37;
         int result = 1;
+
         result = result * prime + off;
         result = result * prime + len;
         result = result * prime + sto.hashCode();
+
         return result;
     }
 }

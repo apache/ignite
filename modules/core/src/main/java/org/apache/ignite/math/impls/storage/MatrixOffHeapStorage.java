@@ -20,7 +20,6 @@ package org.apache.ignite.math.impls.storage;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.math.*;
 import java.io.*;
-import java.util.Arrays;
 
 /**
  * TODO: add description.
@@ -167,9 +166,11 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     public int hashCode() {
         final int prime = 37;
         int result = 1;
+
         result = result * prime + rows;
         result = result * prime + cols;
         result = result * prime + Long.hashCode(ptr);
+
         return result;
     }
 
