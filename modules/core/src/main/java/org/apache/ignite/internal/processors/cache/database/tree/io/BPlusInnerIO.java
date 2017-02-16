@@ -130,17 +130,20 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     // Methods for B+Tree logic.
 
     /** {@inheritDoc} */
-    @Override public void insert(
+    @Override public byte[] insert(
         long pageAddr,
         int idx,
         L row,
         byte[] rowBytes,
-        long rightId
+        long rightId,
+        boolean needRowBytes
     ) throws IgniteCheckedException {
-        super.insert(pageAddr, idx, row, rowBytes, rightId);
+        rowBytes = super.insert(pageAddr, idx, row, rowBytes, rightId, needRowBytes);
 
         // Setup reference to the right page on split.
         setRight(pageAddr, idx, rightId);
+
+        return rowBytes;
     }
 
     /**
@@ -151,22 +154,27 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param rowBytes Bytes.
      * @param rightChildId Right child ID.
      * @param pageSize Page size.
+     * @param needRowBytes If we need row bytes back.
+     * @return Row bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void initNewRoot(
+    public byte[] initNewRoot(
         long newRootPageAddr,
         long newRootId,
         long leftChildId,
         L row,
         byte[] rowBytes,
         long rightChildId,
-        int pageSize
+        int pageSize,
+        boolean needRowBytes
     ) throws IgniteCheckedException {
         initNewPage(newRootPageAddr, newRootId, pageSize);
 
         setCount(newRootPageAddr, 1);
         setLeft(newRootPageAddr, 0, leftChildId);
-        store(newRootPageAddr, 0, row, rowBytes);
+        rowBytes = store(newRootPageAddr, 0, row, rowBytes, needRowBytes);
         setRight(newRootPageAddr, 0, rightChildId);
+
+        return rowBytes;
     }
 }
