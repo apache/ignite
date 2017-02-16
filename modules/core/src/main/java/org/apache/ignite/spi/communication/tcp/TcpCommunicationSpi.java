@@ -1246,7 +1246,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * to client will be closed.
      * <p>
      * If not provided, default value is {@link #DFLT_IDLE_CONN_TIMEOUT}.
-     * If not provided, default value is {@link #DFLT_IDLE_CONN_TIMEOUT}.
      *
      * @param idleConnTimeout Maximum idle connection time.
      */

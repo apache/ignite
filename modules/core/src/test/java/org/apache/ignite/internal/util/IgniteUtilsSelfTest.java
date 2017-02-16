@@ -726,7 +726,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      * Test InetAddress Comparator.
      */
     @Test
-    @PrepareForTest({IgniteUtils.class})
+    @PrepareForTest({IgniteUtils.class, NetworkInterface.class})
     public void testInetAddressesComparatorSameContainer() {
         final InetSocketAddress localContainerAddress = new InetSocketAddress("100.0.0.1", 1);
         final NetworkInterface mockIfc = PowerMockito.mock(NetworkInterface.class);
