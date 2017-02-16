@@ -35,6 +35,9 @@ public class PivotedVectorView extends AbstractVector {
      * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorView(Vector vec, int[] pivot, int[] unpivot) {
+        checkCardinality(pivot);
+        checkCardinality(unpivot);
+
         this.vec = vec;
 
         setStorage(new PivotedVectorStorage(vec.getStorage(), pivot, unpivot));
@@ -46,11 +49,17 @@ public class PivotedVectorView extends AbstractVector {
      * @param pivot
      */
     public PivotedVectorView(Vector vec, int[] pivot) {
+        checkCardinality(pivot);
+
         this.vec = vec;
 
         setStorage(new PivotedVectorStorage(vec.getStorage(), pivot));
     }
 
+    /**
+     *
+     * @return
+     */
     private PivotedVectorStorage storage() {
         return (PivotedVectorStorage)getStorage();
     }
@@ -60,6 +69,32 @@ public class PivotedVectorView extends AbstractVector {
      */
     public PivotedVectorView() {
         // No-op.
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public Vector getBaseVector() {
+        return vec;
+    }
+
+    /**
+     *
+     * @param i
+     * @return
+     */
+    public int pivot(int i) {
+        return storage().pivot()[i];
+    }
+
+    /**
+     *
+     * @param i
+     * @return
+     */
+    public int unpivot(int i) {
+        return storage().unpivot()[i];
     }
 
     /**
