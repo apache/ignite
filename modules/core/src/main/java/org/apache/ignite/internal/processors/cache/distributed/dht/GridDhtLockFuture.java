@@ -1259,6 +1259,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     cache0 = ((GridNearCacheAdapter)cache0).dht();
 
                 for (GridCacheEntryInfo info : res.preloadEntries()) {
+                    cctx.shared().database().checkpointReadLock();
+
                     try {
                         GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
@@ -1283,6 +1285,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     catch (GridCacheEntryRemovedException e) {
                         assert false : "Entry cannot become obsolete when DHT local candidate is added " +
                             "[e=" + e + ", ex=" + e + ']';
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
 
