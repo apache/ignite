@@ -119,6 +119,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool CompactFooter { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether type registration is disabled.
+        /// This may be desirable for static system marshallers where everything is written in unregistered mode.
+        /// </summary>
+        public bool RegistrationDisabled { get; set; }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>
@@ -495,6 +501,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                     _cfg.DefaultIdMapper, ser, false, null, type.IsEnum, null, registered)
                 : new BinaryFullTypeDescriptor(desc, type, ser, registered);
+
+            if (RegistrationDisabled)
+                return desc;
 
             var typeKey = BinaryUtils.TypeKey(true, typeId);
 

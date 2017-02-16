@@ -230,7 +230,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** System marshaller. */
-        private static readonly Marshaller Marsh = new Marshaller(new BinaryConfiguration {CompactFooter = false});
+        private static readonly Marshaller Marsh = new Marshaller(
+            new BinaryConfiguration {CompactFooter = false})
+        {
+            RegistrationDisabled = true
+        };
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
