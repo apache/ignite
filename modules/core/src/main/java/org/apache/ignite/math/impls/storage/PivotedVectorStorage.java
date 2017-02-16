@@ -61,8 +61,8 @@ public class PivotedVectorStorage implements VectorStorage {
     /**
      *
      * @param sto
-     * @param pivot
-     * @param unpivot
+     * @param pivot Mapping from external index to internal.
+     * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot, int[] unpivot) {
         this.sto = sto;
@@ -73,7 +73,7 @@ public class PivotedVectorStorage implements VectorStorage {
     /**
      *
      * @param sto
-     * @param pivot
+     * @param pivot Mapping from external index to internal.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot) {
         this(sto, pivot, reverse(pivot));

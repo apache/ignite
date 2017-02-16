@@ -27,11 +27,12 @@ import java.io.*;
  */
 public class PivotedVectorView extends AbstractVector {
     private Vector vec;
+
     /**
      *
      * @param vec
-     * @param pivot
-     * @param unpivot
+     * @param pivot Mapping from external index to internal.
+     * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorView(Vector vec, int[] pivot, int[] unpivot) {
         this.vec = vec;
@@ -59,6 +60,35 @@ public class PivotedVectorView extends AbstractVector {
      */
     public PivotedVectorView() {
         // No-op.
+    }
+
+    /**
+     *
+     * @param idx
+     * @return
+     */
+    protected Element makeElement(int idx) {
+        checkIndex(idx);
+
+        // External index.
+        int exIdx = storage().pivot()[idx];
+
+        return new Element() {
+            /** {@inheritDoc */
+            @Override public double get() {
+                return storageGet(idx);
+            }
+
+            /** {@inheritDoc */
+            @Override public int index() {
+                return exIdx;
+            }
+
+            /** {@inheritDoc */
+            @Override public void set(double val) {
+                storageSet(idx, val);
+            }
+        };
     }
 
     @Override
@@ -90,11 +120,15 @@ public class PivotedVectorView extends AbstractVector {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out); // TODO
+        super.writeExternal(out);
+
+        out.writeObject(vec);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in); // TODO
+        super.readExternal(in);
+
+        vec = (Vector)in.readObject();
     }
 }

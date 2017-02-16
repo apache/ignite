@@ -95,7 +95,7 @@ public abstract class AbstractVector implements Vector {
      *
      * @param idx Index to check.
      */
-    private void checkIndex(int idx) {
+    protected void checkIndex(int idx) {
         if (idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
@@ -161,7 +161,7 @@ public abstract class AbstractVector implements Vector {
      * @param idx
      * @return
      */
-    private Element mkElement(int idx) {
+    protected Element makeElement(int idx) {
         checkIndex(idx);
 
         return new Element() {
@@ -191,7 +191,7 @@ public abstract class AbstractVector implements Vector {
             if (storageGet(i) < storageGet(minIdx))
                 minIdx = i;
 
-        return mkElement(minIdx);
+        return makeElement(minIdx);
     }
 
     /** {@inheritDoc */
@@ -203,7 +203,7 @@ public abstract class AbstractVector implements Vector {
             if (storageGet(i) > storageGet(maxIdx))
                 maxIdx = i;
 
-        return mkElement(maxIdx);
+        return makeElement(maxIdx);
     }
 
     /** {@inheritDoc */
@@ -587,13 +587,13 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** */
-    private void checkCardinality(Vector vec) {
+    protected void checkCardinality(Vector vec) {
         if (vec.size() != sto.size())
             throw new CardinalityException(size(), vec.size());
     }
 
     /** */
-    private void checkCardinality(double[] vec) {
+    protected void checkCardinality(double[] vec) {
         if (vec.length != sto.size())
             throw new CardinalityException(size(), vec.length);
     }
@@ -732,7 +732,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc */
     @Override public Element getElement(int idx) {
-        return mkElement(idx);
+        return makeElement(idx);
     }
 
     /** {@inheritDoc */
