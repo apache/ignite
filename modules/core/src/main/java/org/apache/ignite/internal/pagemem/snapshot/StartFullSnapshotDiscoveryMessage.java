@@ -18,13 +18,11 @@
 
 package org.apache.ignite.internal.pagemem.snapshot;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -139,7 +137,7 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartFullSnapshotAckDiscoveryMessage(
+        return new StartSnapshotOperationAckDiscoveryMessage(
             snapshotOperation,
             lastFullSnapshotIdForCache,
             lastSnapshotIdForCache,

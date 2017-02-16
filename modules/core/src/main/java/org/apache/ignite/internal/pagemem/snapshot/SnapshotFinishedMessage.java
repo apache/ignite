@@ -33,20 +33,22 @@ public class SnapshotFinishedMessage implements Message {
     /** */
     private long snapshotId;
 
+    /** Operation type. */
+    private int operationType;
+
     /** */
     private boolean success;
 
-    /**
-     *
-     */
+    /** */
     public SnapshotFinishedMessage() {
     }
 
     /**
      * @param snapshotId Snapshot ID.
      */
-    public SnapshotFinishedMessage(long snapshotId, boolean success) {
+    public SnapshotFinishedMessage(long snapshotId, SnapshotOperationType type, boolean success) {
         this.snapshotId = snapshotId;
+        this.operationType = type.ordinal();
         this.success = success;
     }
 
@@ -57,6 +59,12 @@ public class SnapshotFinishedMessage implements Message {
         return snapshotId;
     }
 
+    /** */
+    public SnapshotOperationType operationType() {
+        return SnapshotOperationType.values()[operationType];
+    }
+
+    /** */
     public boolean success() {
         return success;
     }
@@ -80,6 +88,12 @@ public class SnapshotFinishedMessage implements Message {
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeInt("operationType", operationType))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeBoolean("success", success))
                     return false;
 
@@ -107,6 +121,14 @@ public class SnapshotFinishedMessage implements Message {
                 reader.incrementState();
 
             case 1:
+                operationType = reader.readInt("operationType");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 success = reader.readBoolean("success");
 
                 if (!reader.isLastRead())
@@ -126,7 +148,7 @@ public class SnapshotFinishedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */

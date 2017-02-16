@@ -97,4 +97,35 @@ public class SnapshotOperation implements Serializable {
     public Object extraParameter() {
         return extraParam;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SnapshotOperation operation = (SnapshotOperation)o;
+
+        if (snapshotId != operation.snapshotId)
+            return false;
+        if (type != operation.type)
+            return false;
+        if (cacheNames != null ? !cacheNames.equals(operation.cacheNames) : operation.cacheNames != null)
+            return false;
+        if (msg != null ? !msg.equals(operation.msg) : operation.msg != null)
+            return false;
+        return extraParam != null ? extraParam.equals(operation.extraParam) : operation.extraParam == null;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = type != null ? type.hashCode() : 0;
+        result = 31 * result + (int)(snapshotId ^ (snapshotId >>> 32));
+        result = 31 * result + (cacheNames != null ? cacheNames.hashCode() : 0);
+        result = 31 * result + (msg != null ? msg.hashCode() : 0);
+        result = 31 * result + (extraParam != null ? extraParam.hashCode() : 0);
+        return result;
+    }
 }
