@@ -39,10 +39,7 @@ public class IgniteDbMemoryLeakWithExpirationTest extends IgniteDbMemoryLeakTest
         return ig.cache("non-primitive").withExpiryPolicy(EXPIRY);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void check(IgniteEx ig) {
-        long pages = ig.context().cache().context().database().pageMemory().loadedPages();
-
-        assertTrue(pages < 7000);
+    @Override protected long pagesMax() {
+        return 7000;
     }
 }

@@ -18,12 +18,20 @@
 package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
  *
  */
 public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void configure(MemoryConfiguration mCfg) {
+        super.configure(mCfg);
+
+        mCfg.setPageCacheSize(20971520); // The space for 20000 pages
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteCache<Object, Object> cache(IgniteEx ig) {
         return ig.cache("non-primitive");
@@ -40,9 +48,7 @@ public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void check(IgniteEx ig) {
-        long pages = ig.context().cache().context().database().pageMemory().loadedPages();
-
-        assertTrue(pages < 20000);
+    @Override protected long pagesMax() {
+        return 20_000;
     }
 }
