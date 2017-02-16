@@ -55,9 +55,6 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** */
     private final BinaryContext ctx;
 
-    /** */
-    private final BinaryClassDescriptor desc;
-
     /** Output stream. */
     private final BinaryOutputStream out;
 
@@ -89,18 +86,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @param ctx Context.
      */
     public BinaryWriterExImpl(BinaryContext ctx) {
-        this(ctx, new BinaryHeapOutputStream(INIT_CAP, BinaryThreadLocalContext.get().chunk()),
-                BinaryThreadLocalContext.get().schemaHolder(), null, null);
+        this(ctx, BinaryThreadLocalContext.get());
     }
 
     /**
      * @param ctx Context.
-     * @param desc Class descriptor
      * @param size Predefined size.
      */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryClassDescriptor desc, int size) {
-        this(ctx, new BinaryHeapOutputStream(size, true),
-                BinaryThreadLocalContext.get().schemaHolder(), desc, null);
+    public BinaryWriterExImpl(BinaryContext ctx, int size) {
+        this(ctx, new BinaryHeapOutputStream(size, true), BinaryThreadLocalContext.get().schemaHolder(), null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param tlsCtx TLS context.
+     */
+    public BinaryWriterExImpl(BinaryContext ctx, BinaryThreadLocalContext tlsCtx) {
+        this(ctx, new BinaryHeapOutputStream(INIT_CAP, tlsCtx.chunk()), tlsCtx.schemaHolder(), null);
     }
 
     /**
@@ -110,19 +112,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      */
     public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles) {
-        this(ctx, out, schema, null, handles);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param out Output stream.
-     * @param desc Class descriptor
-     * @param handles Handles.
-     */
-    public BinaryWriterExImpl(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema,
-                              BinaryClassDescriptor desc, BinaryWriterHandles handles) {
         this.ctx = ctx;
-        this.desc = desc;
         this.out = out;
         this.schema = schema;
         this.handles = handles;
@@ -146,6 +136,23 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param obj Object.
+     * @param desc Given class descriptor.
+     * @throws BinaryObjectException In case of error.
+     */
+    void marshal(Object obj, BinaryClassDescriptor desc) throws BinaryObjectException {
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
+
+        try {
+            marshal0(obj, desc, false);
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
+        }
+    }
+
+    /**
+     * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj) throws BinaryObjectException {
@@ -158,11 +165,20 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
+        assert obj != null;
+
+        Class<?> cls = obj.getClass();
+
+        BinaryClassDescriptor desc = ctx.descriptorForClass(cls, false);
+
+        if (desc == null)
+            throw new BinaryObjectException("Object is not binary: [class=" + cls + ']');
+
         String newName = ctx.configuration().getGridName();
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
-            marshal0(obj, enableReplace);
+            marshal0(obj, desc, enableReplace);
         }
         finally {
             IgniteUtils.restoreOldIgniteName(oldName, newName);
@@ -171,19 +187,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param obj Object.
+     * @param desc Given class descriptor.
      * @param enableReplace Object replacing enabled flag.
-     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    private void marshal0(Object obj, boolean enableReplace) throws BinaryObjectException {
-        assert obj != null;
-
-        Class<?> cls = obj.getClass();
-
-        BinaryClassDescriptor desc = this.desc == null ? ctx.descriptorForClass(cls, false) : this.desc;
-
-        if (desc == null)
-            throw new BinaryObjectException("Object is not binary: [class=" + cls + ']');
-
+    private void marshal0(Object obj, BinaryClassDescriptor desc, boolean enableReplace) {
         if (desc.excluded()) {
             out.writeByte(GridBinaryMarshaller.NULL);
 
