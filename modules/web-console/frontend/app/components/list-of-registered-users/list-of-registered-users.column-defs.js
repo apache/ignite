@@ -49,7 +49,7 @@ const ACTIONS_TEMPLATE = `
 const EMAIL_TEMPLATE = '<div class="ui-grid-cell-contents"><a ng-href="mailto:{{ COL_FIELD }}">{{ COL_FIELD }}</a></div>';
 
 export default [
-    {displayName: 'Actions', categoryDisplayName: 'Actions', cellTemplate: ACTIONS_TEMPLATE, field: 'actions', minWidth: 70, width: 70, enableFiltering: false, enableSorting: false, pinnedLeft: true},
+    {displayName: 'Actions', categoryDisplayName: 'Actions', cellTemplate: ACTIONS_TEMPLATE, field: 'actions', minWidth: 65, width: 65, enableFiltering: false, enableSorting: false, pinnedLeft: true},
     {displayName: 'User', categoryDisplayName: 'User', field: 'userName', cellTemplate: USER_TEMPLATE, minWidth: 160, enableFiltering: true, filter: { placeholder: 'Filter by name...' }, pinnedLeft: true},
     {displayName: 'Email', categoryDisplayName: 'Email', field: 'email', cellTemplate: EMAIL_TEMPLATE, minWidth: 160, enableFiltering: true, filter: { placeholder: 'Filter by email...' }},
     {displayName: 'Company', categoryDisplayName: 'Company', field: 'company', minWidth: 160, enableFiltering: true},
@@ -64,9 +64,9 @@ export default [
     // Activities Total
     {displayName: 'Cfg', categoryDisplayName: 'Total activities', field: 'activitiesTotal["configuration"] || 0', type: 'number', headerTooltip: 'Total count of configuration usages', minWidth: 50, width: 50, enableFiltering: false},
     {displayName: 'Qry', categoryDisplayName: 'Total activities', field: 'activitiesTotal["queries"] || 0', type: 'number', headerTooltip: 'Total count of queries usages', minWidth: 50, width: 50, enableFiltering: false},
-    {displayName: 'Demo', categoryDisplayName: 'Total activities', field: 'activitiesTotal["demo"] || 0', type: 'number', headerTooltip: 'Total count of demo startup', minWidth: 50, width: 50, enableFiltering: false},
-    {displayName: 'Dnld', categoryDisplayName: 'Total activities', field: 'activitiesDetail["/agent/download"] || 0', type: 'number', headerTooltip: 'Total count of agent downloads', minWidth: 50, width: 50, enableFiltering: false},
-    {displayName: 'Str', categoryDisplayName: 'Total activities', field: 'activitiesDetail["/agent/start"] || 0', type: 'number', headerTooltip: 'Total count of agent startup', minWidth: 50, width: 50, enableFiltering: false},
+    {displayName: 'Demo', categoryDisplayName: 'Total activities', field: 'activitiesTotal["demo"] || 0', type: 'number', headerTooltip: 'Total count of demo startup', minWidth: 60, width: 60, enableFiltering: false},
+    {displayName: 'Dnld', categoryDisplayName: 'Total activities', field: 'activitiesDetail["/agent/download"] || 0', type: 'number', headerTooltip: 'Total count of agent downloads', minWidth: 55, width: 55, enableFiltering: false},
+    {displayName: 'Starts', categoryDisplayName: 'Total activities', field: 'activitiesDetail["/agent/start"] || 0', type: 'number', headerTooltip: 'Total count of agent startup', minWidth: 60, width: 60, enableFiltering: false},
     // Activities Configuration
     {displayName: 'Clusters', categoryDisplayName: 'Configuration\'s activities', field: 'activitiesDetail["/configuration/clusters"] || 0', type: 'number', headerTooltip: 'Configuration clusters', minWidth: 50, width: 80, enableFiltering: false, visible: false},
     {displayName: 'Model', categoryDisplayName: 'Configuration\'s activities', field: 'activitiesDetail["/configuration/domains"] || 0', type: 'number', headerTooltip: 'Configuration model', minWidth: 50, width: 80, enableFiltering: false, visible: false},
