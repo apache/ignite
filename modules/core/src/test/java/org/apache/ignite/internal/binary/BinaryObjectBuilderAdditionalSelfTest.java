@@ -1406,6 +1406,25 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         binBuilder2.build();
     }
 
+
+    /**
+     *
+     */
+    public void testArrayBinaryObjectBuilderField() {
+        BinaryObjectBuilder root = ignite(0).binary().builder("test");
+
+        BinaryObjectBuilder[] builders = new BinaryObjectBuilder[] {
+            ignite(0).binary().builder("test" + "_d").setField("x", 10),
+            ignite(0).binary().builder("test" + "_d").setField("x", 20)
+        };
+
+        root.setField("e", builders);
+
+        BinaryObject binaryObject = root.build();
+
+        binaryObject.field("e");
+    }
+
     /**
      * @param obj Object.
      * @return Object in binary format.
