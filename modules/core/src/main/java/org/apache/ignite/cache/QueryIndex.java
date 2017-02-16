@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
@@ -46,10 +45,7 @@ public class QueryIndex implements Serializable {
 
     /**
      * Creates an empty index. Should be populated via setters.
-     *
-     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
-    @Deprecated
     public QueryIndex() {
         // Empty constructor.
     }
@@ -58,10 +54,7 @@ public class QueryIndex implements Serializable {
      * Creates single-field sorted ascending index.
      *
      * @param field Field name.
-     *
-     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
-    @Deprecated
     public QueryIndex(String field) {
         this(field, QueryIndexType.SORTED, true);
     }
@@ -71,10 +64,7 @@ public class QueryIndex implements Serializable {
      *
      * @param field Field name.
      * @param asc Ascending flag.
-     *
-     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
-    @Deprecated
     public QueryIndex(String field, boolean asc) {
         this(field, QueryIndexType.SORTED, asc);
     }
@@ -85,10 +75,7 @@ public class QueryIndex implements Serializable {
      * @param field Field name.
      * @param asc Ascending flag.
      * @param name Index name.
-     *
-     * @deprecated This constructor is error prone. Index type should be set explicitly.
      */
-    @Deprecated
     public QueryIndex(String field, boolean asc, String name) {
         this(field, QueryIndexType.SORTED, asc);
 
@@ -138,16 +125,6 @@ public class QueryIndex implements Serializable {
         this.name = name;
     }
 
-    /**
-     * Creates index.
-     *
-     * @param type Index type.
-     * @param name Index name.
-     */
-    public QueryIndex(QueryIndexType type, String name) {
-        this.name = name;
-        this.type = type;
-    }
     /**
      * Creates index for a collection of fields. If index is sorted, fields will be sorted in
      * ascending order.
@@ -243,54 +220,6 @@ public class QueryIndex implements Serializable {
     }
 
     /**
-     * Add fields to the index.
-     *
-     * @param field Field name.
-     * @param asc Ascending flag.
-     * @return {@code this} for chaining.
-     */
-    public QueryIndex addField(String field, boolean asc) {
-        if (fields == null)
-            this.fields = new LinkedHashMap<>();
-
-        this.fields.put(field, asc);
-
-        return this;
-    }
-
-    /**
-     * Add fields to the index.
-     *
-     * @param fields Collection of index fields.
-     * @return {@code this} for chaining.
-     */
-    public QueryIndex addFields(LinkedHashMap<String, Boolean> fields) {
-        if (fields == null)
-            this.fields = new LinkedHashMap<>(fields);
-        else
-            this.fields.putAll(fields);
-
-        return this;
-    }
-
-    /**
-     * Add fields to the index.
-     *
-     * @param fields Collection of index fields.
-     * @param asc Ascending flag.
-     * @return {@code this} for chaining.
-     */
-    public QueryIndex addFields(Collection<String> fields, boolean asc) {
-        if (fields == null)
-            this.fields = new LinkedHashMap<>(fields.size());
-
-        for (String field : fields)
-            this.fields.put(field, asc);
-
-        return this;
-    }
-
-    /**
      * Gets index type.
      *
      * @return Index type.
@@ -303,9 +232,11 @@ public class QueryIndex implements Serializable {
      * Sets index type.
      *
      * @param type Index type.
+     * @return {@code this} for chaining.
      */
-    @Deprecated
-    public void setIndexType(QueryIndexType type) {
+    public QueryIndex setIndexType(QueryIndexType type) {
         this.type = type;
+
+        return this;
     }
 }

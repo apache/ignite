@@ -243,7 +243,7 @@ public class QueryEntity implements Serializable {
         QueryIndex idx = idxs.get(idxName);
 
         if (idx == null) {
-            idx = new QueryIndex(idxType, idxName);
+            idx = new QueryIndex().setIndexType(idxType).setName(idxName);
 
             idxs.put(idxName, idx);
         }
