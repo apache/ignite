@@ -388,7 +388,6 @@
     <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
     <Compile Include="Impl\Binary\IO\BinaryStreamBase.cs" />
     <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryStreamAdapter.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
