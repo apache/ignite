@@ -18,7 +18,9 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.*;
+import java.io.*;
 
 /**
  * Pivoted (index mapped) view over another vector.
@@ -48,6 +50,10 @@ public class PivotedVectorView extends AbstractVector {
         setStorage(new PivotedVectorStorage(vec.getStorage(), pivot));
     }
 
+    private PivotedVectorStorage storage() {
+        return (PivotedVectorStorage)getStorage();
+    }
+
     /**
      *
      */
@@ -57,12 +63,14 @@ public class PivotedVectorView extends AbstractVector {
 
     @Override
     public Vector copy() {
-        return null; // TODO
+        PivotedVectorStorage sto = storage();
+
+        return new PivotedVectorView(vec, sto.pivot(), sto.unpivot());
     }
 
     @Override
     public Vector like(int crd) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -77,6 +85,16 @@ public class PivotedVectorView extends AbstractVector {
 
     @Override
     public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out); // TODO
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in); // TODO
     }
 }

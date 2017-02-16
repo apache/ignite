@@ -79,6 +79,8 @@ public class MatrixVectorView extends AbstractVector {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
         out.writeObject(parent);
         out.writeInt(row);
         out.writeInt(col);
@@ -88,6 +90,8 @@ public class MatrixVectorView extends AbstractVector {
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
         parent = (Matrix)in.readObject();
         row = in.readInt();
         col = in.readInt();

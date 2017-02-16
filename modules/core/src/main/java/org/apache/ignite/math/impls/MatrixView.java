@@ -77,22 +77,22 @@ public class MatrixView extends AbstractMatrix {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(parent);
+        super.writeExternal(out);
 
+        out.writeObject(parent);
         out.writeInt(rowOff);
         out.writeInt(colOff);
-
         out.writeInt(rows);
         out.writeInt(cols);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+        
         parent = (Matrix)in.readObject();
-
         rowOff = in.readInt();
         colOff = in.readInt();
-
         rows = in.readInt();
         cols = in.readInt();
     }

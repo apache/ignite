@@ -76,20 +76,20 @@ public class VectorView extends AbstractVector {
     /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
         out.writeObject(parent);
-
         out.writeInt(off);
-
         out.writeInt(len);
     }
 
     /** {@inheritDoc} */
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
         parent = (Vector)in.readObject();
-
         off = in.readInt();
-
         len = in.readInt();
 
         setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
