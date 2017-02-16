@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -2222,10 +2223,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (idx.type() == FULLTEXT) {
                 assert txtIdx == null;
 
-                txtIdx = new QueryIndex()
-                    .setIndexType(QueryIndexType.FULLTEXT)
-                    .setFieldNames(idx.fields(), true)
-                    .setName(idxEntry.getKey());
+                txtIdx = new QueryIndex();
+
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
+
+                txtIdx.setFieldNames(idx.fields(), true);
+                txtIdx.setName(idxEntry.getKey());
             }
             else {
                 Collection<String> grp = new ArrayList<>();
@@ -2233,8 +2236,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 for (String fieldName : idx.fields())
                     grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
 
-                QueryIndex sortedIdx = new QueryIndex().setName(idxEntry.getKey())
-                    .setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                QueryIndex sortedIdx = new QueryIndex();
+
+                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 
@@ -2243,17 +2247,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 sortedIdx.setFields(fields);
 
+                sortedIdx.setName(idxEntry.getKey());
+
                 idxs.add(sortedIdx);
             }
         }
 
         if (desc.valueTextIndex()) {
             if (txtIdx == null) {
-                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>(1);
+                txtIdx = new QueryIndex();
 
-                fields.put(_VAL, true);
+                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx = new QueryIndex(fields, QueryIndexType.FULLTEXT);
+                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
             }
             else
                 txtIdx.getFields().put(_VAL, true);
