@@ -69,6 +69,14 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 (className, message, inner, ignite) =>
                     new TestIgnitePluginException(className, message, ignite, inner));
 
+            context.RegisterCallback(1, (input, output) =>
+            {
+                CallbackResult = input.ReadString();
+                output.WriteString(CallbackResult.ToUpper());
+
+                return CallbackResult.Length;
+            });
+
             Context = context;
 
             EnsureIgniteWorks();
@@ -112,6 +120,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is stopped.
         /// </summary>
         public bool? IgniteStopped { get; set; }
+
+        public string CallbackResult { get; private set; }
 
         /// <summary>
         /// Gets the context.
