@@ -133,7 +133,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 api.toggleAdmin = toggleAdmin;
                 api.showActivities = showActivities;
 
-                api.grid.registerRowsProcessor(companiesExcludeFilter, 300);
+                api.grid.registerRowsProcessor(companiesExcludeFilter, 50);
             }
         };
 
