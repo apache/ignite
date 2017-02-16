@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
 
@@ -36,6 +37,10 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /** Plugin providers by name. */
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
+
+        /** Plugin exception mappings. */
+        private readonly CopyOnWriteConcurrentDictionary<string, ExceptionFactory> _exceptionMappings
+            = new CopyOnWriteConcurrentDictionary<string, ExceptionFactory>();
 
         /** */
         private readonly Ignite _ignite;
@@ -113,6 +118,29 @@ namespace Apache.Ignite.Core.Impl.Plugin
                                   name, GetType().Assembly.Location));
 
             return provider;
+        }
+
+        /// <summary>
+        /// Gets the exception factory.
+        /// </summary>
+        public ExceptionFactory GetExceptionMapping(string className)
+        {
+            Debug.Assert(className != null);
+
+            ExceptionFactory res;
+
+            return _exceptionMappings.TryGetValue(className, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Registers the exception mapping.
+        /// </summary>
+        public void RegisterExceptionMapping(string className, ExceptionFactory factory)
+        {
+            Debug.Assert(className != null);
+            Debug.Assert(factory != null);
+
+            _exceptionMappings.GetOrAdd(className, _ => factory);
         }
 
         /// <summary>

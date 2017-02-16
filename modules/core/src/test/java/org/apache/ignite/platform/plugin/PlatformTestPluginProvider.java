@@ -30,7 +30,7 @@ import java.util.UUID;
 /**
  * Plugin provider for platform tests.
  */
-public class PlatformTestPluginProvider implements PluginProvider {
+public class PlatformTestPluginProvider implements PluginProvider<PlatformTestPluginConfiguration> {
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestPlatformPlugin";
@@ -86,12 +86,12 @@ public class PlatformTestPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin() {
-        return new PlatformTestPlugin();
+    @Override public <T extends IgnitePlugin> T plugin() {
+        return (T)new PlatformTestPlugin();
     }
 }
