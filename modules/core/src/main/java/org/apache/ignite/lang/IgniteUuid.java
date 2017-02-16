@@ -222,9 +222,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
         BinaryRawReader in = reader.rawReader();
 
         locId = in.readLong();
-        long mostSigBits = in.readLong();
-        long leastSigBits = in.readLong();
-        gid = new UUID(mostSigBits, leastSigBits);
+        gid = new UUID(in.readLong(), in.readLong());
     }
 
     /** {@inheritDoc} */
