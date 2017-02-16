@@ -65,14 +65,4 @@ public abstract class VectorBaseStorageTest<T extends VectorStorage> extends Ext
     @Override public void externalizeTest() {
         super.externalizeTest(storage);
     }
-
-    /**
-     * Fill storage by random doubles.
-     *
-     * @param size Storage size.
-     */
-    private void fillStorage(int size) {
-        for (int i = 0; i < size; i++)
-            storage.set(i, Math.random());
-    }
 }
