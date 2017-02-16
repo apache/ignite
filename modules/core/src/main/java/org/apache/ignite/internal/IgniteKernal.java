@@ -140,6 +140,9 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
+import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -945,6 +948,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Suggest configuration optimizations.
             suggestOptimizations(cfg);
+
+            // Suggest JVM optimizations.
+            ctx.performance().addAll(JvmConfigurationSuggestions.getSuggestions());
+
+            // Suggest Operation System optimizations.
+            ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();

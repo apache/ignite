@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+package org.apache.ignite.console.demo.service;
 
-import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in DUAL_SYNC mode.
+ * Demo service to provide on all nodes.
  */
-public class IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest() {
-        super(DUAL_SYNC, false);
+public class DemoServiceMultipleInstances implements Service {
+    /** {@inheritDoc} */
+    @Override public void cancel(ServiceContext ctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(ServiceContext ctx) throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void execute(ServiceContext ctx) throws Exception {
+        // No-op.
     }
 }

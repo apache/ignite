@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+package org.apache.ignite.console.demo.service;
 
-import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in PRIMARY mode.
+ * Demo service to provide for cache.
  */
-public class IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest() {
-        super(PRIMARY, false);
+public class DemoServiceKeyAffinity implements Service {
+    /** {@inheritDoc} */
+    @Override public void cancel(ServiceContext ctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(ServiceContext ctx) throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void execute(ServiceContext ctx) throws Exception {
+        // No-op.
     }
 }

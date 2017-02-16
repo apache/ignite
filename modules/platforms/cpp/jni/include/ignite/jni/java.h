@@ -345,7 +345,7 @@ namespace ignite
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
                 void ProcessorReleaseStart(jobject obj);
-                jobject ProcessorProjection(jobject obj);
+                jobject ProcessorProjection(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCache(jobject obj, const char* name);
                 jobject ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorCreateCache(jobject obj, const char* name);
