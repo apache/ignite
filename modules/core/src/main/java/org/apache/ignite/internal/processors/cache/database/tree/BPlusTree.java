@@ -660,7 +660,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class InitRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootId, int lvl)
+        @Override public Bool run(Page meta, PageIO iox, long pageAddr, Long rootId, int inlineSize)
             throws IgniteCheckedException {
             assert rootId != null;
 
@@ -668,9 +668,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             BPlusMetaIO io = (BPlusMetaIO)iox;
 
             io.initRoot(pageAddr, rootId, pageSize());
+            io.setInlineSize(pageAddr, inlineSize);
 
             if (needWalDeltaRecord(meta)) {
-                int inlineSize = io.getInlineSize(pageAddr);
                 if (inlineSize > 0)
                     wal.log(new MetaPageInitRootInlineRecord(cacheId, meta.id(), rootId, inlineSize));
                 else
@@ -784,6 +784,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     protected final void initTree(boolean initNew) throws IgniteCheckedException {
+        initTree(initNew, 0);
+    }
+
+    /**
+     * Initialize new tree.
+     *
+     * @param initNew {@code True} if new tree should be created.
+     * @param inlineSize Inline size.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void initTree(boolean initNew, int inlineSize) throws IgniteCheckedException {
         if (initNew) {
             // Allocate the first leaf page, it will be our root.
             long rootId = allocatePage(null);
@@ -794,7 +805,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Initialize meta page with new root page.
             try (Page meta = page(metaPageId)) {
-                Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, 0, FALSE);
+                Bool res = writePage(pageMem, meta, this, initRoot, BPlusMetaIO.VERSIONS.latest(), wal, rootId, inlineSize, FALSE);
 
                 assert res == TRUE: res;
             }

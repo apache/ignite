@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.tree;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -273,11 +272,6 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, Long row) {
             PageUtils.putLong(pageAddr, off, row);
         }
@@ -285,7 +279,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
+            return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
 
@@ -308,11 +302,6 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Override public void storeByOffset(long pageAddr, int off, Long row) {
             PageUtils.putLong(pageAddr, off, row);
         }
@@ -321,13 +310,13 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         @Override public void store(long dst, int dstIdx, BPlusIO<Long> srcIo, long src, int srcIdx) {
             assert srcIo == this;
 
-            PageUtils.putLong(dst, offset(dst, dstIdx), PageUtils.getLong(src, offset(src, srcIdx)));
+            PageUtils.putLong(dst, offset(dstIdx), PageUtils.getLong(src, offset(srcIdx)));
         }
 
         /** {@inheritDoc} */
         @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx)
             throws IgniteCheckedException {
-            return PageUtils.getLong(pageAddr, offset(pageAddr, idx));
+            return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
 }
