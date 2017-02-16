@@ -64,6 +64,14 @@ public class RandomMatrixStorage implements MatrixStorage {
             return ((((x * PRIME1) + y * PRIME2 + x * y * PRIME3) & 8) * 0.25) - 1;
     }
 
+    /**
+     * 
+     * @return
+     */
+    public boolean isFastHash() {
+        return fastHash;
+    }
+
     @Override
     public void set(int x, int y, double v) {
         throw new UnsupportedOperationException("ERR_MSG");

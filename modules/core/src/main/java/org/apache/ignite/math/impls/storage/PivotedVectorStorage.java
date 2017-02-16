@@ -44,6 +44,22 @@ public class PivotedVectorStorage implements VectorStorage {
 
     /**
      *
+     * @return
+     */
+    public int[] pivot() {
+        return pivot;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int[] unpivot() {
+        return unpivot;
+    }
+
+    /**
+     *
      * @param sto
      * @param pivot
      * @param unpivot
@@ -61,6 +77,13 @@ public class PivotedVectorStorage implements VectorStorage {
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot) {
         this(sto, pivot, reverse(pivot));
+    }
+
+    /**
+     *
+     */
+    public PivotedVectorStorage() {
+        // No-op.
     }
 
     @Override

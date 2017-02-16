@@ -54,6 +54,38 @@ public class MatrixDelegateStorage implements MatrixStorage {
         this.colOff = colOff;
     }
 
+    /**
+     *
+     * @return
+     */
+    public int rowOffset() {
+        return rowOff;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int columnOffset() {
+        return colOff;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int rowsLength() {
+        return rows;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int columnsLength() {
+        return cols;
+    }
+
     @Override
     public double get(int x, int y) {
         return sto.get(rowOff + x, colOff + y);

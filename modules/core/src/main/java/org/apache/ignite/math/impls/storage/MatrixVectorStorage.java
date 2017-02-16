@@ -64,6 +64,38 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
+     *
+     * @return
+     */
+    int row() {
+        return row;
+    }
+
+    /**
+     *
+     * @return
+     */
+    int column() {
+        return col;
+    }
+
+    /**
+     *
+     * @return
+     */
+    int rowStride() {
+        return rowStride;
+    }
+
+    /**
+     *
+     * @return
+     */
+    int columnStride() {
+        return colStride;
+    }
+
+    /**
      * 
      * @return
      */

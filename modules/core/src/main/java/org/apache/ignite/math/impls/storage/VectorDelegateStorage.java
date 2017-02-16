@@ -52,6 +52,30 @@ public class VectorDelegateStorage implements VectorStorage {
         this.len = len;
     }
 
+    /**
+     *
+     * @return
+     */
+    public VectorStorage delegate() {
+        return sto;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int offset() {
+        return off;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public int length() {
+        return len;
+    }
+
     @Override
     public int size() {
         return len;
