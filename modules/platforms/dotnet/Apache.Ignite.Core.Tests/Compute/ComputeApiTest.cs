@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
@@ -913,7 +912,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
 
-            Assert.AreEqual("Unknown pair [platformId= 1, typeId=2009791293]", ex.Message);
+            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
         }
 
         /// <summary>
