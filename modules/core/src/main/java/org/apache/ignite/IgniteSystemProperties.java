@@ -547,11 +547,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
 
     /**
-     * Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE}
-     */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 0;
-
-    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

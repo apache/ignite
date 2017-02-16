@@ -52,6 +52,9 @@ import org.jetbrains.annotations.Nullable;
  * H2 Index over {@link BPlusTree}.
  */
 public class H2TreeIndex extends GridH2IndexBase {
+    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 1024;
+
     /** PageContext for use in IO's */
     private static final ThreadLocal<H2TreeIndex> currentIndex = new ThreadLocal<>();
 
@@ -422,7 +425,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         int maxSize = PageIO.MAX_PAYLOAD_SIZE;
 
         int propSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
-            IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
+            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
 
         if (cfgInlineSize == 0)
             return 0;
