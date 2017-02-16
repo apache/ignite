@@ -197,6 +197,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         long txId = reader.readLong();
 
         IgniteFuture fut0;
+
         switch (type) {
             case OP_COMMIT_ASYNC:
                 fut0 = tx(txId).commitAsync();

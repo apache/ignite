@@ -93,6 +93,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache proxy.
  */
+@SuppressWarnings("unchecked")
 public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCache<K, V>, Externalizable {
     /** */
@@ -408,8 +409,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 return (IgniteFuture<Void>)createFuture(ctx.cache().isLocal() ?
-                    ctx.cache().localLoadCacheAsync(p, args)
-                    : ctx.cache().globalLoadCacheAsync(p, args));
+                    ctx.cache().localLoadCacheAsync(p, args) : ctx.cache().globalLoadCacheAsync(p, args));
             }
             finally {
                 onLeave(gate, prev);
@@ -525,6 +525,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param transformer Transformer
      * @param grp Optional cluster group.
      * @return Cursor.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private <T, R> QueryCursor<R> query(
@@ -582,6 +583,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param filter Filter.
      * @param grp Optional cluster group.
      * @return Cursor.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
@@ -690,6 +692,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      *
      * @param qry Query.
      * @param loc Local flag.
+     * @param keepBinary Keep binary flag.
      * @return Initial iteration cursor.
      */
     @SuppressWarnings("unchecked")
@@ -2595,6 +2598,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */
     @SuppressWarnings("unchecked")

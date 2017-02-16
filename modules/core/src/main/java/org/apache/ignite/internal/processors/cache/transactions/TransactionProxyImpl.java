@@ -46,6 +46,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Cache transaction proxy.
  */
+@SuppressWarnings("unchecked")
 public class TransactionProxyImpl<K, V> implements TransactionProxy, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -214,7 +214,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException;
 
-
     /**
      * Starts one or more nodes on remote host(s).
      * <p>
@@ -414,7 +413,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
-
 
     /**
      * Stops nodes satisfying optional set of predicates.
