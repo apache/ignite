@@ -157,7 +157,10 @@ public abstract class WALRecord {
         SWITCH_SEGMENT_RECORD,
 
         /** */
-        DATA_PAGE_UPDATE_RECORD
+        DATA_PAGE_UPDATE_RECORD,
+
+        /** init */
+        BTREE_META_PAGE_INIT_ROOT2
         ;
 
         /** */

@@ -167,11 +167,11 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         if (success)
-            Ignition.start(cfg);
+            startGrid(cfg.getGridName(), cfg);
         else {
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    Ignition.start(cfg);
+                    startGrid(cfg.getGridName(), cfg);
 
                     return null;
                 }

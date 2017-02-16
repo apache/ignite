@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.tree;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -269,12 +268,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
             throws IgniteCheckedException {
             Long row = srcIo.getLookupRow(null, src, srcIdx);
 
-            store(dst, dstIdx, row, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
+            store(dst, dstIdx, row, null, false);
         }
 
         /** {@inheritDoc} */
@@ -305,11 +299,6 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
                 return MAX_PER_PAGE;
 
             return super.getMaxCount(pageAddr, pageSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */

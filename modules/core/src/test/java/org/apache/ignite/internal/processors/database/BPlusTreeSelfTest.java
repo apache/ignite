@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1404,7 +1403,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             Long row = srcIo.getLookupRow(null, src, srcIdx);
 
-            store(dst, dstIdx, row, null);
+            store(dst, dstIdx, row, null, false);
         }
 
         /**
@@ -1413,11 +1412,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         private void checkNotRemoved(Long row) {
             if (rmvdIds.contains(row))
                 fail("Removed row: " + row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
@@ -1477,11 +1471,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 return MAX_PER_PAGE;
 
             return super.getMaxCount(pageAddr, pageSize);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void storeByOffset(ByteBuffer buf, int off, Long row) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */

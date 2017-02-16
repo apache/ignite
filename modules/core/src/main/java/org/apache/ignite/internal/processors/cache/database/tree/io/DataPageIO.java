@@ -457,7 +457,7 @@ public class DataPageIO extends PageIO {
      * @param pageAddr Page address.
      * @param itemId Item to position on.
      * @param pageSize Page size.
-     * @return Link to the next fragment or {@code 0} if it is the last fragment or the data row is not fragmented.
+     * @return {@link DataPagePayload} object.
      */
     public DataPagePayload readPayload(final long pageAddr, final int itemId, final int pageSize) {
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
@@ -1215,25 +1215,53 @@ public class DataPageIO extends PageIO {
         // Move right all of the entries if possible to make the page as compact as possible to its tail.
         int prevOff = pageSize;
 
-        for (int i = directCnt - 1; i >= 0; i--) {
-            int off = offs[i] >>> 8;
+        final int start = directCnt - 1;
+        int curOff = offs[start] >>> 8;
+        int curEntrySize = getPageEntrySize(pageAddr, curOff, SHOW_PAYLOAD_LEN | SHOW_LINK);
 
-            assert off < prevOff: off;
+        for (int i = start; i >= 0; i--) {
+            assert curOff < prevOff : curOff;
 
-            int entrySize = getPageEntrySize(pageAddr, off, SHOW_PAYLOAD_LEN | SHOW_LINK);
+            int delta = prevOff - (curOff + curEntrySize);
 
-            int delta = prevOff - (off + entrySize);
+            int off = curOff;
+            int entrySize = curEntrySize;
 
             if (delta != 0) { // Move right.
                 assert delta > 0: delta;
 
-                moveBytes(pageAddr, off, entrySize, delta, pageSize);
-
                 int itemId = offs[i] & 0xFF;
 
-                off += delta;
+                setItem(pageAddr, itemId, directItemFromOffset(curOff + delta));
 
-                setItem(pageAddr, itemId, directItemFromOffset(off));
+                for (int j = i - 1; j >= 0; j--) {
+                    int offNext = offs[j] >>> 8;
+                    int nextSize = getPageEntrySize(pageAddr, offNext, SHOW_PAYLOAD_LEN | SHOW_LINK);
+
+                    if (offNext + nextSize == off) {
+                        i--;
+
+                        off = offNext;
+                        entrySize += nextSize;
+
+                        itemId = offs[j] & 0xFF;
+                        setItem(pageAddr, itemId, directItemFromOffset(offNext + delta));
+                    }
+                    else {
+                        curOff = offNext;
+                        curEntrySize = nextSize;
+
+                        break;
+                    }
+                }
+
+                moveBytes(pageAddr, off, entrySize, delta, pageSize);
+
+                off += delta;
+            }
+            else if (i > 0) {
+                curOff = offs[i - 1] >>> 8;
+                curEntrySize = getPageEntrySize(pageAddr, curOff, SHOW_PAYLOAD_LEN | SHOW_LINK);
             }
 
             prevOff = off;
