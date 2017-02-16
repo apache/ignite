@@ -3,30 +3,51 @@ package org.apache.ignite.math.impls.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
+import org.apache.ignite.math.Functions;
 import org.apache.ignite.math.VectorStorage;
 
 /**
  * TODO wip
  */
 public class SequentialAccessSparseVectorStorage implements VectorStorage {
+    private Int2DoubleRBTreeMap data;
+
+    /** For serialization. */
+    public SequentialAccessSparseVectorStorage(){
+        // No-op.
+    }
+
+    public SequentialAccessSparseVectorStorage(int[] keys, double[] values) {
+        this.data = new Int2DoubleRBTreeMap(keys, values);
+    }
+
+    private SequentialAccessSparseVectorStorage(VectorStorage storage) {
+        this.data = new Int2DoubleRBTreeMap();
+        for (int i = 0; i < storage.size(); i++) {
+            data.put(i, storage.get(i));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public int size() {
-        return 0;// TODO wip
+        return data.size();
     }
 
     /** {@inheritDoc} */
     @Override public double get(int i) {
-        return 0;// TODO wip
+        return data.get(i);
     }
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        // TODO wip
+        data.put(i, v); // TODO wip, default/nodefault
     }
 
     /** {@inheritDoc} */
     @Override public double[] data() {
-        return new double[0];// TODO wip
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -49,14 +70,20 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     *
+     * Math.max(1, Math.round(Functions.LOG2.apply(getNumNondefaultElements())))
+     */
     @Override public double getLookupCost() {
+        // TODO wip
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAddConstantTime() {
-        return false; // TODO wip
+        return false;
     }
 
     /** {@inheritDoc} */

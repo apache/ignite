@@ -64,7 +64,7 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
 
     /** {@inheritDoc} */
     @Override public double[] data() {
-        return data.values().toDoubleArray();
+        return null;
     }
 
     /** {@inheritDoc} */
