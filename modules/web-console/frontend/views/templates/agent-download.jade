@@ -34,8 +34,8 @@
                     i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
                     a(ng-click='agentLoad.showToken = ! agentLoad.showToken') {{agentLoad.showToken ? 'Hide security token...' : 'Show security token...'}}
                 .details-row(ng-show='agentLoad.showToken')
-                    label.labelField Security token: {{user.token}}
-                    i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
+                    label.labelField Security token: {{user.becameToken || user.token}}
+                    i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{user.becameToken || user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                     i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
             .agent-download(ng-if='hasAgents')
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
