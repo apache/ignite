@@ -39,6 +39,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.internal.InstanceFactory;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -121,6 +123,9 @@ public class BinaryClassDescriptor {
     /** */
     private final Class<?>[] intfs;
 
+    /** */
+    @Nullable private final InstanceFactory instanceFactory;
+
     /** Whether stable schema was published. */
     private volatile boolean stableSchemaPublished;
 
@@ -171,6 +176,10 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
+
+        BinaryConfiguration binaryConfiguration = ctx.configuration().getBinaryConfiguration();
+
+        this.instanceFactory = binaryConfiguration != null ? binaryConfiguration.getInstanceFactory(cls) : null;
 
         overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
@@ -912,6 +921,9 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance() throws BinaryObjectException {
         try {
+            if (instanceFactory != null)
+                return instanceFactory.newInstance();
+
             return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
