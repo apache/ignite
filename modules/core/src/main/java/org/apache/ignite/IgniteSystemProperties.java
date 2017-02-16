@@ -542,8 +542,14 @@ public final class IgniteSystemProperties {
     /**
      * System property to specify maximum payload size in bytes for {@code H2TreeIndex}.
      * <p>
+     * Defaults to {@code 0}, meaning that inline index store is disabled.
      */
     public static final String IGNITE_MAX_INDEX_PAYLOAD_SIZE = "IGNITE_MAX_INDEX_PAYLOAD_SIZE";
+
+    /**
+     * Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE}
+     */
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 0;
 
     /**
      * Enforces singleton.
