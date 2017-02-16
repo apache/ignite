@@ -314,8 +314,10 @@ public class DemoCachesLoadService implements Service {
         // Indexes for EMPLOYEE.
         Collection<QueryIndex> indexes = new ArrayList<>();
 
-        QueryIndex idx = new QueryIndex().setIndexType(QueryIndexType.SORTED).setName("EMP_NAMES");
+        QueryIndex idx = new QueryIndex();
 
+        idx.setName("EMP_NAMES");
+        idx.setIndexType(QueryIndexType.SORTED);
         LinkedHashMap<String, Boolean> indFlds = new LinkedHashMap<>();
 
         indFlds.put("firstName", Boolean.FALSE);
