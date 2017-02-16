@@ -19,22 +19,14 @@ package org.apache.ignite.configuration;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.internal.InstanceFactory;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriteMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Configuration object for Ignite Binary Objects.
- *
  * @see org.apache.ignite.IgniteBinary
  */
 public class BinaryConfiguration {
@@ -49,9 +41,6 @@ public class BinaryConfiguration {
 
     /** Serializer. */
     private BinarySerializer serializer;
-
-    /** Instances initialization factory. */
-    private ConcurrentMap<Class<?>, InstanceFactory> initializationFactory = new ConcurrentHashMap8<>();
 
     /** Types. */
     private Collection<BinaryTypeConfiguration> typeCfgs;
@@ -169,50 +158,6 @@ public class BinaryConfiguration {
      */
     public void setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
-    }
-
-    /**
-     * Gets {@link InstanceFactory} by Class from the Initialization Factory.
-     *
-     * @param clazz - Class which mapping for the {@link InstanceFactory}.
-     * @return the {@link InstanceFactory} to which the specified Class is mapped, or null if this Initialization
-     * Factory contains no mapping for the Class.
-     */
-    @Nullable public InstanceFactory getInstanceFactory(@NotNull Class<?> clazz) {
-        return initializationFactory.get(clazz);
-    }
-
-    /**
-     * Removes {@link InstanceFactory} from the Initialization Factory.
-     *
-     * @param clazz - Class which mapping for the {@link InstanceFactory}.
-     * @return - the previous {@link InstanceFactory} associated with Class, or null if there was no mapping for Class.
-     */
-    @Nullable public InstanceFactory removeInstanceFactory(@NotNull Class<?> clazz) {
-        return initializationFactory.remove(clazz);
-    }
-
-    /**
-     * Associates the specified {@link InstanceFactory} with the specified Class in the Initialization Factory If the
-     * Initialization Factory previously contained a mapping for the Class, the old {@link InstanceFactory} is replaced
-     * by the specified {@link InstanceFactory}.
-     *
-     * @param clazz - Class which mapping for the {@link InstanceFactory}.
-     * @param factory - InstanceFactory which mapping for Class.
-     */
-    public void putInstanceFactory(@NotNull Class<?> clazz, @NotNull InstanceFactory factory) {
-        BinaryWriteMode mode = BinaryUtils.mode(clazz);
-
-        assert (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) : "The initialization factory doesn't support the class: " + clazz;
-
-        initializationFactory.put(clazz, factory);
-    }
-
-    /**
-     * Reset the instances Initialization Factory.
-     */
-    public void resetInitializationFactory() {
-        this.initializationFactory = new ConcurrentHashMap8<>();
     }
 
     /** {@inheritDoc} */
