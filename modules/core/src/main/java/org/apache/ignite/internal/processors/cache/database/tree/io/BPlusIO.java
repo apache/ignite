@@ -170,15 +170,24 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param idx Index.
      * @param row Lookup or full row.
      * @param rowBytes Row bytes.
+     * @param needRowBytes If we need stored row bytes.
+     * @return Stored row bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public final void store(long pageAddr, int idx, L row, byte[] rowBytes) throws IgniteCheckedException {
+    public final byte[] store(long pageAddr, int idx, L row, byte[] rowBytes, boolean needRowBytes)
+        throws IgniteCheckedException {
         int off = offset(idx);
 
-        if (rowBytes == null)
+        if (rowBytes == null) {
             storeByOffset(pageAddr, off, row);
+
+            if (needRowBytes)
+                rowBytes = PageUtils.getBytes(pageAddr, off, getItemSize());
+        }
         else
             putBytes(pageAddr, off, rowBytes);
+
+        return rowBytes;
     }
 
     /**
@@ -244,9 +253,11 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param row Row to insert.
      * @param rowBytes Row bytes.
      * @param rightId Page ID which will be to the right child for the inserted item.
+     * @param needRowBytes If we need stored row bytes.
+     * @return Row bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void insert(long pageAddr, int idx, L row, byte[] rowBytes, long rightId)
+    public byte[] insert(long pageAddr, int idx, L row, byte[] rowBytes, long rightId, boolean needRowBytes)
         throws IgniteCheckedException {
         int cnt = getCount(pageAddr);
 
@@ -255,7 +266,7 @@ public abstract class BPlusIO<L> extends PageIO {
 
         setCount(pageAddr, cnt + 1);
 
-        store(pageAddr, idx, row, rowBytes);
+        return store(pageAddr, idx, row, rowBytes, needRowBytes);
     }
 
     /**

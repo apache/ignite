@@ -362,10 +362,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 assert p.needReplaceInner == FALSE || p.needReplaceInner == DONE : p.needReplaceInner;
             }
 
-            io.store(pageAddr, idx, newRow, null);
+            boolean needWal = needWalDeltaRecord(page);
 
-            if (needWalDeltaRecord(page))
-                wal.log(new ReplaceRecord<>(cacheId, page.id(), io, newRow, null, idx));
+            byte[] newRowBytes = io.store(pageAddr, idx, newRow, null, needWal);
+
+            if (needWal)
+                wal.log(new ReplaceRecord<>(cacheId, page.id(), io, newRowBytes, idx));
 
             return FOUND;
         }
@@ -2340,10 +2342,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void insertSimple(Page page, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException {
-            io.insert(pageAddr, idx, row, null, rightId);
+            boolean needWal = needWalDeltaRecord(page);
 
-            if (needWalDeltaRecord(page))
-                wal.log(new InsertRecord<>(cacheId, page.id(), io, idx, row, null, rightId));
+            byte[] rowBytes = io.insert(pageAddr, idx, row, null, rightId, needWal);
+
+            if (needWal)
+                wal.log(new InsertRecord<>(cacheId, page.id(), io, idx, rowBytes, rightId));
         }
 
         /**
@@ -2420,17 +2424,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                                 long pageId = PageIO.getPageId(pageAddr);
 
-                                inner(io).initNewRoot(newRootPageAddr,
+                                boolean needWal = needWalDeltaRecord(newRoot);
+
+                                byte[] moveUpRowBytes = inner(io).initNewRoot(newRootPageAddr,
                                     newRootId,
                                     pageId,
                                     moveUpRow,
                                     null,
                                     fwdId,
-                                    pageSize());
+                                    pageSize(),
+                                    needWal);
 
-                                if (needWalDeltaRecord(newRoot))
+                                if (needWal)
                                     wal.log(new NewRootInitRecord<>(cacheId, newRoot.id(), newRootId,
-                                        inner(io), pageId, moveUpRow, null, fwdId));
+                                        inner(io), pageId, moveUpRowBytes, fwdId));
                             }
                             finally {
                                 writeUnlock(newRoot, newRootPageAddr, true);
