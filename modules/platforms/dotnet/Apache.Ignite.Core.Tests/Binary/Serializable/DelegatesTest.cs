@@ -102,10 +102,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             var del2Res = TestUtils.SerializeDeserialize(del2);
 
-            Assert.AreEqual(del2.Method, del2Res.Method);
-            Assert.AreNotEqual(del2.Target, del2Res.Target);
+            Assert.AreEqual(del2.Method, del2Res.Method, "Delegate methods are same");
 
-            Assert.AreEqual("ooz", del2Res("FOOZ", 1));
+            Assert.AreEqual("ooz", del2Res("FOOZ", 1), "Delegate works as expected");
         }
 
         /// <summary>
