@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in DUAL_ASYNC mode.
+ * IGFS Hadoop file system IPC loopback self test in PRIMARY mode.
  */
-public class IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
+public class IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest
+    extends IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelfTest {
     /**
      * Constructor.
      */
-    public IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest() {
-        super(DUAL_ASYNC, false);
+    public IgniteHadoopFileSystemLoopbackExternalToClientDualAsyncSelfTest() {
+        super(DUAL_ASYNC);
     }
 }
