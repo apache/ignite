@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
