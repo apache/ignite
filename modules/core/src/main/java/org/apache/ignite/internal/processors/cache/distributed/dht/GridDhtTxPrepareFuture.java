@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.cache.Cache;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -1142,10 +1144,16 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      */
     private IgniteTxOptimisticCheckedException versionCheckError(IgniteTxEntry entry) {
         GridCacheContext cctx = entry.context();
+        CacheObjectContext cotx = cctx.cacheObjectContext();
+        Cache.Entry ce = entry.cached().wrap();
 
         return new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
-            "read/write conflict [key=" + entry.key().value(cctx.cacheObjectContext(), false) +
-            ", cache=" + cctx.name() + ']');
+            "read/write conflict [key=" + entry.key().value(cotx, false) +
+            ", class=" + entry.key().value(cotx, false).getClass().getName() +
+            ", actual value=" + ce.getValue() +
+            ", class=" + ce.getValue().getClass().getName() +
+            ", cache=" + cctx.name() + ", current thread: " + Thread.currentThread() + ']');
+
     }
 
     /**
