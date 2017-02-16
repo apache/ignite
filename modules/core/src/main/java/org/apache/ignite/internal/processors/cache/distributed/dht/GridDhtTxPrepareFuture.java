@@ -1146,10 +1146,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             "read/write conflict [");
 
         GridCacheContext cctx = entry.context();
-        CacheObjectContext cotx = cctx.cacheObjectContext();
 
         try {
-            Object key = entry.key().value(cotx, false);
+            Object key = cctx.unwrapBinaryIfNeeded(entry.key(), entry.keepBinary(), false);
 
             assert key != null : entry.key();
 
@@ -1164,7 +1163,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             CacheObject cacheVal = entryEx != null ? entryEx.rawGet() : null;
 
-            Object val = cacheVal != null ? cacheVal.value(cotx, false) : null;
+            Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false) : null;
 
             if (val != null)
                 msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
