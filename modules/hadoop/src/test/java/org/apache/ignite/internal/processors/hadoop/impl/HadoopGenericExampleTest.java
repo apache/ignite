@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
  */
 public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     /**
-     * Class representing the sample execution parameters.
+     * Class representing Hadoop sample job execution parameters.
      */
     static class FrameworkParameters {
         /** */
@@ -95,6 +95,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     static abstract class GenericHadoopExample {
         /** */
         protected final Random random = new Random(0L);
+
         /**
          * @return Extracts "words" array from class RandomTextWriter.
          */
@@ -120,6 +121,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         public static void generateSentence(Random random, int noWords, OutputStream os) throws IOException {
             String[] words = getWords();
 
+            assertEquals(1000, words.length);
+
             try (Writer w = new OutputStreamWriter(os)) {
                 String space = " ";
 
@@ -134,24 +137,36 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
             }
         }
 
-        /** Gets the example name. */
+        /**
+         * Gets the example name.
+         */
         final String name() {
-            return tool().getClass().getSimpleName();
+            // Cannot use Class#getSimpleName() because for inner classes it returns empty string.
+            String x = tool().getClass().getName();
+
+            int lastDot = x.lastIndexOf('.');
+
+            if (lastDot < 0)
+                return x;
+
+            return x.substring(lastDot + 1);
         }
 
         /**
+         * Gets input dir.
          *
-         * @param fp
-         * @return
+         * @param fp Framework parameters.
+         * @return The input dir.
          */
         protected final String inDir(FrameworkParameters fp) {
             return fp.getWorkDir(name()) + "/in";
         }
 
         /**
+         * Gets the output dir.
          *
-         * @param fp
-         * @return
+         * @param fp The parameters.
+         * @return The output directory.
          */
         protected final String outDir(FrameworkParameters fp) {
             return fp.getWorkDir(name()) + "/out";
@@ -160,19 +175,17 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         /**
          *  Utility method to generate predictable random text input.
          *
-         * @param numFiles
-         * @param conf
-         * @param params
-         * @throws IOException
+         * @param numFiles Number of data files to generate.
+         * @param conf The Job configuration.
+         * @param params The execution parameters.
+         * @throws IOException On error.
          */
         protected final void generateTextInput(int numFiles, JobConf conf,
             FrameworkParameters params) throws IOException {
             // We cannot directly use Hadoop's RandomTextWriter since it is really random, but here
             // we need definitely reproducible input data.
             try (FileSystem fs = FileSystem.get(conf)) {
-                final int files = 11;
-
-                for (int i=0; i<files; i++) {
+                for (int i=0; i<numFiles; i++) {
                     try (OutputStream os = fs.create(new Path(inDir(params) + "/in-" + i), true)) {
                         generateSentence(random, 2000, os);
                     }
@@ -180,18 +193,26 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
             }
         }
 
-        /** Performs pre-execution preparation. */
+        /**
+         * Performs pre-execution preparation.
+         */
         void prepare(JobConf conf, FrameworkParameters fp) throws Exception {
             // noop
         }
 
-        /** Gets the String parameters to be passed to the Tool upon execution. */
+        /**
+         * Gets the String parameters to be passed to the Tool upon execution.
+         */
         abstract String[] parameters(FrameworkParameters fp);
 
-        /** Gets the tool to execute. */
+        /**
+         * Gets the tool to execute.
+         */
         abstract Tool tool();
 
-        /** Checks example calculation validity. */
+        /**
+         * Checks example calculation validity.
+         */
         abstract void verify(String[] parameters) throws Exception;
     }
 
@@ -230,7 +251,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     @Override protected void afterTest() throws Exception {
         IgniteNodeProxy2.stopAll();
 
-        // TODO: Delete files used:
+        // Delete the files used:
+        // TODO: uncomment to enable the deletion.
         //getFileSystem().delete(new Path(getFsBase()), true);
     }
 
@@ -242,42 +264,56 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     }
 
     /**
-     * Does actual calculation through Ignite API
+     * Makes preparations to the configuration.
      *
-     * @param gzip Whether to use GZIP.
+     * @param conf The configuration object.
      */
-    protected final void testImpl(boolean gzip) throws Exception {
-        final GenericHadoopExample ex = example();
+    protected final void prepareConf(Configuration conf) {
+        conf.set("fs.defaultFS", getFsBase());
 
-        System.out.println(ex.name() + ": ===============================================================");
+        //        // Ignite specific job properties:
+        //        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
+        //        conf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
+        //
+        //        if (gzip)
+        //            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
+
+//        // Set the Ignite framework and the address:
+//        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
+//        conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
+
+        conf.set(MRConfig.FRAMEWORK_NAME,  "local");
+    }
+
+    /**
+     * Runs the example.
+     */
+    protected final void runExampleTest() throws Exception {
+        final GenericHadoopExample ex = example();
 
         final JobConf conf = new JobConf();
 
-        conf.set("fs.defaultFS", getFsBase());
+        prepareConf(conf);
 
-        log().info("Desired number of maps: " + numMaps());
-
-//        // Ignite specific job properties:
-//        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
-//        conf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
-//
-//        if (gzip)
-//            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
-
-        // Set the Ignite framework and the address:
-        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
-        conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
-
-//        conf.set(MRConfig.FRAMEWORK_NAME,  "local");
-
-        // Start real calculation:
         FrameworkParameters fp = frameworkParameters();
 
+        runExample(conf, fp, ex);
+    }
+
+    /**
+     * Runs the given example.
+     *
+     * @param conf Th econfiguration.
+     * @param fp The framework parameters.
+     * @param ex Th example to run.
+     * @throws Exception On error.
+     */
+    protected final void runExample(JobConf conf, FrameworkParameters fp, GenericHadoopExample ex) throws Exception {
         ex.prepare(conf, fp);
 
         String[] args = ex.parameters(fp);
 
-        X.println("#### Running job with parameters: " + Arrays.toString(args));
+        X.println("Running example [" + ex.name() + "] with " + args.length + " parameters: " + Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 
@@ -290,8 +326,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * Fixed version of method org.apache.hadoop.mapreduce.lib.aggregate
      *     .ValueAggregatorJob#setAggregatorDescriptors(java.lang.Class[]): it adds correct "." to the property name.
      *
-     * @param conf
-     * @param descriptors
+     * @param conf The configuration.
+     * @param descriptors The descriptors.
      */
     static void setAggregatorDescriptors(Configuration conf,
         Class<? extends ValueAggregatorDescriptor>[] descriptors) {
@@ -330,7 +366,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @throws Exception If failed.
      */
     public void testExample() throws Exception {
-        testImpl(false);
+        runExampleTest();
     }
 
     /**

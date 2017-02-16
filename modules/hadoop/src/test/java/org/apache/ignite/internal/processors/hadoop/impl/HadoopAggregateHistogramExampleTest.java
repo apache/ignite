@@ -1,8 +1,11 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.AggregateWordHistogram;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorJob;
@@ -25,18 +28,11 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
             return conf;
         }
 
+        @SuppressWarnings("unchecked")
         @Override public int run(String[] args) throws Exception {
             final Configuration conf = getConf();
 
             String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
-            if (otherArgs.length < 2) {
-                //            System.out.println("usage: inputDirs outDir "
-                //                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
-                System.err.println("Usage: wordcount <in> <out> [....]");
-
-                return 2;
-            }
 
             HadoopGenericExampleTest.setAggregatorDescriptors(conf,
                 new Class[] { AggregateWordHistogram.AggregateWordHistogramPlugin.class } );
@@ -61,7 +57,7 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
             return new String[] {
                 inDir(fp),
                 outDir(fp),
-                "1", // Numper of reduces other than 1 does not make sense.
+                "1", // Numper of reduces other than 1 does not make sense there.
                 "textinputformat"
               };
         }
@@ -70,9 +66,18 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
             return tool;
         }
 
-        @Override void verify(String[] parameters) {
-            // TODO: verify the result.
+        @Override void verify(String[] parameters) throws Exception {
+            Path path = new Path(parameters[1] + "/part-r-00000");
+
+            try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(getFileSystem().open(path)))) {
+                assertTrue(br.readLine().startsWith("WORD_HISTOGRAM\t1000\t9\t22\t38\t22.0\t4.78"));
+
+                assertNull(br.readLine());
+            }
         }
+
+
     };
 
     /** {@inheritDoc} */

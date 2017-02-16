@@ -13,7 +13,21 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
 
         @Override String[] parameters(FrameworkParameters fp) {
             // pentomino <output> [-depth #] [-height #] [-width #]
-            return new String[] { fp.getWorkDir(name()) + "/out", "-depth", "3", "-height", "4", "-width", "5" };
+            return new String[] {
+                outDir(fp),
+
+//                "-depth", "2", hangs.
+//                "-width", "8",
+//                "-height", "9",
+
+                "-depth", "2",
+                "-width", "8",
+                "-height", "8",
+
+//                "-depth", "5",
+//                "-width", "9",
+//                "-height", "10",
+            };
         }
 
         @Override Tool tool() {

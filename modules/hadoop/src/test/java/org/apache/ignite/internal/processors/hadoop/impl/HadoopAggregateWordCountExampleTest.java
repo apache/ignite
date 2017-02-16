@@ -1,11 +1,10 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Random;
+import java.io.InputStreamReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.AggregateWordCount;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
@@ -29,18 +28,11 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
             return conf;
         }
 
+        @SuppressWarnings("unchecked")
         @Override public int run(String[] args) throws Exception {
             final Configuration conf = getConf();
 
             String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
-            if (otherArgs.length < 2) {
-                //            System.out.println("usage: inputDirs outDir "
-                //                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
-                System.err.println("Usage: wordcount <in> <out> [....]");
-
-                return 2;
-            }
 
             HadoopGenericExampleTest.setAggregatorDescriptors(conf,
                 new Class[] { AggregateWordCount.WordCountPlugInClass.class } );
@@ -74,8 +66,31 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
             return tool;
         }
 
-        @Override void verify(String[] parameters) {
-            // TODO: verify the result.
+        @Override void verify(String[] parameters) throws Exception {
+            Path path = new Path(parameters[1] + "/part-r-00000");
+
+            try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(getFileSystem().open(path)))) {
+                int wc = 0;
+                String line = null;
+
+                while (true) {
+                    String line0 = br.readLine();
+
+                    if (line0 == null)
+                        break;
+
+                    line = line0;
+
+                    wc++;
+
+                    if (wc == 1)
+                        assertEquals("Aktistetae\t15", line); // first line
+                }
+
+                assertEquals("zoonitic\t22", line); // last line
+                assertEquals(1000, wc);
+            }
         }
     };
 

@@ -35,7 +35,7 @@ public class HadoopWordDeviationExampleTest extends HadoopGenericExampleTest {
         }
 
         @Override void verify(String[] parameters) {
-            assertEquals(3.025, impl.getStandardDeviation(), 1e-3);
+            assertEquals(3.061, impl.getStandardDeviation(), 1e-3);
         }
     };
 

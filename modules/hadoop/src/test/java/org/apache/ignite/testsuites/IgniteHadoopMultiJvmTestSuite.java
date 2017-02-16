@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMultiFileWordCountExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSecondarySortExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopTeraSortExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordCountExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordDeviationExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordMeanExampleTest;
@@ -45,7 +46,6 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
      */
     public static TestSuite suite() throws Exception {
         downloadHadoop();
-        downloadHive();
 
         final ClassLoader ldr = new HadoopTestClassLoader();
 
@@ -72,10 +72,7 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMultiFileWordCountExampleTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopGrepExampleTest.class.getName())));
-
-        // TODO:
-        // add TeraSort
-        // add (Sort ?)
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopTeraSortExampleTest.class.getName())));
 
         return suite;
     }

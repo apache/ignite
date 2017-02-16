@@ -1,13 +1,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.Random;
 import org.apache.hadoop.examples.WordMedian;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
 
@@ -39,7 +33,7 @@ public class HadoopWordMedianExampleTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) {
-            assertEquals(9.00, impl.getMedian(), 1e-3);
+            assertEquals(10.00, impl.getMedian(), 1e-3);
         }
     };
 
