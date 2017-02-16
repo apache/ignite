@@ -22,6 +22,7 @@ import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.stream.DuplicateKeysHandler;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
@@ -280,6 +281,13 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @param rcvr Stream receiver.
      */
     public void receiver(StreamReceiver<K, V> rcvr);
+
+    /**
+     * Sets custom duplicate keys handler to this data streamer.
+     *
+     * @param dupHnd Handler.
+     */
+    public void duplicateKeysHandler(DuplicateKeysHandler<K, V> dupHnd);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.

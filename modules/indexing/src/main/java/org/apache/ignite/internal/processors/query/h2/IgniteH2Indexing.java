@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -460,6 +461,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         streamer.autoFlushFrequency(autoFlushFreq);
 
         streamer.allowOverwrite(allowOverwrite);
+
+        streamer.receiver(DataStreamerImpl.ISOLATED_UPDATER_NO_DUPLICATES);
 
         if (nodeBufSize > 0)
             streamer.perNodeBufferSize(nodeBufSize);

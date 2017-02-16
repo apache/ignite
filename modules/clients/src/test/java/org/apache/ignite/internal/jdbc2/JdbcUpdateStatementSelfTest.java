@@ -20,7 +20,6 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashSet;
 
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;

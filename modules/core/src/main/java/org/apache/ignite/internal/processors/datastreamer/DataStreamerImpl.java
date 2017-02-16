@@ -104,6 +104,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.stream.DuplicateKeysHandler;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -123,13 +124,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
 
     /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
+    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater(false);
+
+    /** Isolated receiver that forbids duplicate keys. */
+    public static final StreamReceiver ISOLATED_UPDATER_NO_DUPLICATES = new IsolatedUpdater(true);
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
+
+    /** Handler for duplicates. */
+    private DuplicateKeysHandler<K, V> dupHnd = (DuplicateKeysHandler<K, V>) DUPLICATES_LOGGER;
 
     /** */
     private byte[] updaterBytes;
@@ -439,8 +446,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
+    @Override public void duplicateKeysHandler(DuplicateKeysHandler<K, V> dupHnd) {
+        A.notNull(this.dupHnd, "dupHnd");
+
+        this.dupHnd = dupHnd;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return rcvr != ISOLATED_UPDATER;
+        return !(rcvr instanceof IsolatedUpdater);
     }
 
     /** {@inheritDoc} */
@@ -751,7 +765,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (cache == null)
                 throw new IgniteCheckedException("Cache not created or already destroyed.");
 
-            GridCacheContext cctx = cache.context();
+            final GridCacheContext cctx = cache.context();
 
             GridCacheGateway gate = null;
 
@@ -826,24 +840,86 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     final Collection<DataStreamerEntry> entriesForNode = e.getValue();
 
                     IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                        @SuppressWarnings("SuspiciousMethodCalls")
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             try {
-                                t.get();
+                                // Map of duplicate entries to compute intersection with activeKeys quickly -
+                                // needed only for faster checks
+                                Map<KeyCacheObject, DataStreamerEntry> dupsMap = null;
+
+                                try {
+                                    t.get();
+                                }
+                                catch (IgniteCheckedException e1) {
+                                    if (e1.getCause() instanceof DuplicateStreamedEntriesException) {
+                                        Collection<DataStreamerEntry> dupsCol =
+                                            ((DuplicateStreamedEntriesException) e1.getCause()).getDuplicateEntries();
+
+                                        assert !F.isEmpty(dupsCol);
+
+                                        dupsMap = new HashMap<>();
+
+                                        // First, let's form the map to do faster checks for duplication later
+                                        for (DataStreamerEntry dupEntry : dupsCol) {
+                                            dupEntry.getKey()
+                                                .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
+
+                                            dupEntry.getValue()
+                                                .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
+
+                                            dupsMap.put(dupEntry.getKey(), dupEntry);
+                                        }
+                                    }
+                                    else
+                                        throw e1;
+                                }
+
+                                // This will be the intersection of duplicate keys and those that appear in activeKeys
+                                List<DataStreamerEntry> dups =
+                                    !F.isEmpty(dupsMap) ? new ArrayList<DataStreamerEntry>(dupsMap.size()) : null;
 
                                 if (activeKeys != null) {
-                                    for (DataStreamerEntry e : entriesForNode)
-                                        activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+                                    for (DataStreamerEntry e : entriesForNode) {
+                                        KeyCacheObject key = e.getKey();
 
-                                    if (activeKeys.isEmpty())
-                                        resFut.onDone();
+                                        if (activeKeys.remove(key) && dupsMap != null) {
+                                            DataStreamerEntry dupEntry = dupsMap.get(key);
+
+                                            if (dupEntry != null)
+                                                dups.add(dupEntry);
+                                        }
+                                    }
                                 }
                                 else {
                                     assert entriesForNode.size() == 1;
 
-                                    // That has been a single key,
-                                    // so complete result future right away.
-                                    resFut.onDone();
+                                    if (dupsMap != null) {
+                                        KeyCacheObject key = F.first(entriesForNode).getKey();
+
+                                        DataStreamerEntry dupEntry = dupsMap.get(key);
+
+                                        if (dupEntry != null)
+                                            dups.add(dupEntry);
+                                    }
                                 }
+
+                                Throwable dupHndEx = null;
+
+                                if (!F.isEmpty(dups)) {
+                                    try {
+                                        dupHnd.onDuplicates(dups);
+                                    }
+                                    catch (Throwable e1) {
+                                        // If that handler throws an exception then let's just
+                                        // gracefully report it to the user and finish our future no matter what
+                                        dupHndEx = e1;
+                                    }
+                                }
+
+                                // We should stop either if activeKeys is null or if it has 0 elements,
+                                // as well as if duplicates handler yielded an error.
+                                if (F.isEmpty(activeKeys) || dupHndEx != null)
+                                    resFut.onDone(dupHndEx);
                             }
                             catch (IgniteClientDisconnectedCheckedException e1) {
                                 if (log.isDebugEnabled())
@@ -1903,6 +1979,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Whether this receiver should throw an exception when it encounters duplicate keys. */
+        private final boolean noDuplicates;
+
+        /**
+         * @param noDuplicates {@code true} if this receiver should throw an exception
+         * when it encounters duplicate keys, {@code false} otherwise.
+         */
+        public IsolatedUpdater(boolean noDuplicates) {
+            this.noDuplicates = noDuplicates;
+        }
+
         /** {@inheritDoc} */
         @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
@@ -1926,6 +2013,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ExpiryPolicy plc = cctx.expiry();
 
+            Collection<DataStreamerEntry> errEntries = null;
+
             for (Entry<KeyCacheObject, CacheObject> e : entries) {
                 try {
                     e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
@@ -1945,7 +2034,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                    entry.initialValue(e.getValue(),
+                    boolean entRes = entry.initialValue(e.getValue(),
                         ver,
                         ttl,
                         expiryTime,
@@ -1953,6 +2042,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         topVer,
                         primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                         false);
+
+                    if (!entRes && noDuplicates) {
+                        if (errEntries == null)
+                            errEntries = new ArrayList<>();
+
+                        // This is an InternalUpdater, so we're safe to cast to DataStreamerEntry -
+                        // see DataStreamerUpdateJob.unwrapEntries and its usage
+                        errEntries.add((DataStreamerEntry) e);
+                    }
 
                     cctx.evicts().touch(entry, topVer);
 
@@ -1969,6 +2067,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                 }
             }
+
+            if (noDuplicates && !F.isEmpty(errEntries))
+                throw new DuplicateStreamedEntriesException(errEntries);
         }
     }
 
@@ -2018,4 +2119,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             return S.toString(KeyCacheObjectWrapper.class, this);
         }
     }
+
+    /**
+     * Default simple handler that just prints duplicate entries to log.
+     */
+    private final static DuplicateKeysHandler<Object, Object> DUPLICATES_LOGGER = new DuplicateKeysHandler<Object, Object>() {
+        /** {@inheritDoc}
+         * @param duplicates*/
+        @Override public void onDuplicates(Collection<DataStreamerEntry> duplicates) {
+            throw new IgniteException("Some keys have been duplicated [duplicates=" + duplicates + ']');
+        }
+    };
 }
