@@ -125,4 +125,27 @@ BOOST_AUTO_TEST_CASE(LoadCacheSeveralNodesNoPredicate)
     BOOST_CHECK_EQUAL(val42, "42");
 }
 
+BOOST_AUTO_TEST_CASE(LocalLoadCacheSingleNodeNoPredicate)
+{
+    const int64_t entriesNum = 100;
+
+    cache::Cache<int64_t, std::string> cache = GetCache();
+
+    BOOST_CHECK(cache.IsEmpty());
+
+    FillStore(cache, entriesNum);
+
+    BOOST_CHECK(cache.IsEmpty());
+
+    cache.LocalLoadCache();
+
+    BOOST_CHECK(!cache.IsEmpty());
+
+    BOOST_CHECK_EQUAL(cache.Size(cache::IGNITE_PEEK_MODE_PRIMARY), entriesNum);
+
+    std::string val42 = cache.Get(42);
+
+    BOOST_CHECK_EQUAL(val42, "42");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

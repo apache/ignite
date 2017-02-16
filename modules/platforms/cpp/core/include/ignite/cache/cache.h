@@ -1471,6 +1471,23 @@ namespace ignite
                 IgniteError::ThrowIfNeeded(err);
             }
 
+            /**
+             * Loads state from the underlying persistent storage.
+             *
+             * This method is not transactional and may end up loading a stale value into
+             * cache if another thread has updated the value immediately after it has been
+             * loaded. It is mostly useful when pre-loading the cache from underlying
+             * data store before start, or for read-only caches.
+             */
+            void LocalLoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LocalLoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
         private:
             /** Implementation delegate. */
             common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;

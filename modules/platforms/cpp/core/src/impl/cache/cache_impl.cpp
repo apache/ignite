@@ -352,6 +352,27 @@ namespace ignite
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
             }
 
+            void CacheImpl::LocalLoadCache(IgniteError & err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), &err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+            }
+
             struct DummyQry { void Write(BinaryRawWriter&) const { }};
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
