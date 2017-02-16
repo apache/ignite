@@ -70,8 +70,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             // Page is ready - read inline size from it.
             this.inlineSize = getMetaInlineSize();
         }
-        else
+        else {
             this.inlineSize = inlineSize;
+            saveMetaInlineSize(this.inlineSize);
+        }
 
         assert rowStore != null;
 
@@ -80,9 +82,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(this.inlineSize), H2ExtrasLeafIO.getVersions(this.inlineSize));
 
         initTree(initNew);
-
-        if (initNew)
-            saveMetaInlineSize(this.inlineSize);
     }
 
     /**

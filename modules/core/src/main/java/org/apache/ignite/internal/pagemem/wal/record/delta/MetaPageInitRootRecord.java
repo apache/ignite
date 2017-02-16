@@ -44,6 +44,7 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
         BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
         io.initRoot(pageAddr, rootId, pageMem.pageSize());
+        io.setInlineSize(pageAddr, 0);
     }
 
     /** {@inheritDoc} */
