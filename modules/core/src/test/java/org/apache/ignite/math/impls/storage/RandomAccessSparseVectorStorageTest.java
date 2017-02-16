@@ -4,6 +4,8 @@ import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.math.impls.MathTestConstants.NULL_VALUE;
+import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
 import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
 import static org.junit.Assert.*;
 
@@ -15,19 +17,15 @@ public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<R
     /** */
     @Before
     public void setUp(){
-        storage = new RandomAccessSparseVectorStorage();
-    }
-
-    /** */
-    @Test
-    public void get() throws Exception {
-
+        storage = new RandomAccessSparseVectorStorage(STORAGE_SIZE);
     }
 
     /** */
     @Test
     public void data() throws Exception {
-
+        double[] data = storage.data();
+        assertNotNull(NULL_VALUE, data);
+        assertEquals(UNEXPECTED_VALUE, data.length, STORAGE_SIZE);
     }
 
     /** */
@@ -45,13 +43,13 @@ public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<R
     /** */
     @Test
     public void getLookupCost() throws Exception {
-
+        assertTrue(UNEXPECTED_VALUE, storage.getLookupCost() == 1);
     }
 
     /** */
     @Test
     public void isAddConstantTime() throws Exception {
-
+        assertTrue(UNEXPECTED_VALUE, storage.isAddConstantTime());
     }
 
     /** */
