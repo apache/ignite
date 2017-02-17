@@ -1,0 +1,7 @@
+Benchmark name,Timestamp (milliseconds),Time (milliseconds),Measure runs,Warmup runs,Tag,Comments
+DenseLocalOffHeapVector small sizes,1487355636892,0.760000,100,1,,
+DenseLocalOffHeapVector sizes powers of 2,1487355637018,9.710000,100,1,,
+DenseLocalOffHeapVector large sizes,1487355638051,57.620000,100,1,,
+DenseLocalOnHeapVector small sizes,1487355643918,0.150000,100,1,,
+DenseLocalOnHeapVector sizes powers of 2,1487355643964,7.340000,100,1,,
+DenseLocalOnHeapVector large sizes,1487355644755,48.690000,100,1,,
