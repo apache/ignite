@@ -32,6 +32,7 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
 
     /**
      * Creates new prepared statement.
+     *
      * @param conn Connection.
      * @param sql  SQL query.
      * @param streamer Data streamer to use with this statement. Will be closed on statement close.

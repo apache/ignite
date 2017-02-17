@@ -691,16 +691,15 @@ public class JdbcConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         assert ignite instanceof IgniteEx;
 
-        cacheName = ((IgniteEx) ignite).context().query().space(schema);
+        cacheName = ((IgniteEx)ignite).context().query().space(schema);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public String getSchema() throws SQLException {
-        String schema = U.firstNotNull(
-                ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema(),
-                cacheName);
+        String sqlSchema = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class).getSqlSchema();
 
-        return U.firstNotNull(schema, "");
+        return U.firstNotNull(sqlSchema, cacheName, "");
     }
 
     /** {@inheritDoc} */
