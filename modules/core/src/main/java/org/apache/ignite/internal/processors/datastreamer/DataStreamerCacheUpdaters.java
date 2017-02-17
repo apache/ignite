@@ -204,44 +204,6 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Simple cache updater implementation. Updates values only for present keys by performing {@link IgniteCache#replace}.
-     */
-    private static class Replace<K, V> implements StreamReceiver<K, V>, InternalUpdater {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
-            assert cache != null;
-            assert !F.isEmpty(entries);
-
-            for (Map.Entry<K, V> e : entries)
-                cache.replace(e.getKey(), e.getValue());
-        }
-    }
-
-    /**
-     * Simple cache updater implementation. Removes keys of given entries, values are ignored.
-     */
-    private static class Remove<K, V> implements StreamReceiver<K, V>, InternalUpdater {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
-            assert cache != null;
-            assert !F.isEmpty(entries);
-
-            Set<K> keys = new HashSet<>(entries.size());
-
-            for (Map.Entry<K, V> e : entries)
-                keys.add(e.getKey());
-
-            cache.removeAll(keys);
-        }
-    }
-
-    /**
      * Marker interface for updaters which do not need to unwrap cache objects.
      */
     public static interface InternalUpdater {

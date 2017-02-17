@@ -751,7 +751,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (cache == null)
                 throw new IgniteCheckedException("Cache not created or already destroyed.");
 
-            final GridCacheContext cctx = cache.context();
+            GridCacheContext cctx = cache.context();
 
             GridCacheGateway gate = null;
 
@@ -826,7 +826,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     final Collection<DataStreamerEntry> entriesForNode = e.getValue();
 
                     IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
-                        @SuppressWarnings("SuspiciousMethodCalls")
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             try {
                                 t.get();
@@ -848,8 +847,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             }
                             catch (IgniteClientDisconnectedCheckedException e1) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" +
-                                            e1 + ']');
+                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
 
                                 resFut.onDone(e1);
                             }
@@ -1927,8 +1925,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             long expiryTime = CU.EXPIRE_TIME_ETERNAL;
 
             ExpiryPolicy plc = cctx.expiry();
-
-            Collection<DataStreamerEntry> errEntries = null;
 
             for (Entry<KeyCacheObject, CacheObject> e : entries) {
                 try {
