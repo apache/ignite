@@ -79,7 +79,8 @@ libignite_odbc_la_SOURCES = \
     src/column.cpp \
     src/statement.cpp \
     src/type_traits.cpp \
-    src/utility.cpp
+    src/utility.cpp \
+    src/log.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;

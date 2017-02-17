@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -549,7 +550,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
-            true,
             null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
@@ -573,7 +573,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         return getAllAsyncInternal(keys,
             forcePrimary,
-            skipTx,
             subjId,
             taskName,
             deserializeBinary,
@@ -586,7 +585,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param keys Keys.
      * @param forcePrimary Force primary flag.
-     * @param skipTx Skip tx flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
@@ -599,7 +597,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<Map<K, V>> getAllAsyncInternal(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
-        boolean skipTx,
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
@@ -885,6 +882,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
+        long createTtl,
         long accessTtl) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
             "CacheAtomicityMode.ATOMIC mode (use CacheAtomicityMode.TRANSACTIONAL instead)"));
@@ -1586,7 +1584,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             GridCacheVersion ver = null;
 
                             if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                EntryGetResult res = entry.innerGetVersioned(
                                     null,
                                     null,
                                     /*swap*/true,
@@ -1597,11 +1595,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     taskName,
                                     expiry,
-                                    true);
+                                    true,
+                                    null);
 
                                 if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
+                                    v = res.value();
+                                    ver = res.version();
                                 }
                             }
                             else {
@@ -1708,7 +1707,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (forceFut != null)
                     forceFut.get();
             }
-            catch (NodeStoppingException e) {
+            catch (NodeStoppingException ignored) {
                 return;
             }
             catch (IgniteCheckedException e) {
@@ -1725,7 +1724,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         fut.get();
                     }
-                    catch (NodeStoppingException e) {
+                    catch (NodeStoppingException ignored) {
                         return;
                     }
                     catch (IgniteCheckedException e) {
@@ -2384,7 +2383,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         try {
                             GridCacheVersion ver = entry.version();
 
-                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null);
+                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null, null);
                         }
                         catch (GridCacheEntryRemovedException e) {
                             assert false : "Entry should not get obsolete while holding lock [entry=" + entry +
@@ -2462,7 +2461,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
-                boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.partition(),
+                boolean primary = !req.fastMap() || ctx.affinity().primaryByPartition(ctx.localNode(), entry.partition(),
                     req.topologyVersion());
 
                 Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
@@ -2552,7 +2551,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
-                        if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
+                        if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue()) {
                                 res.addNearValue(i,
@@ -2683,7 +2682,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 Map<KeyCacheObject, CacheObject> storeMap = req.fastMap() ?
                     F.view(putMap, new P1<CacheObject>() {
                         @Override public boolean apply(CacheObject key) {
-                            return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
+                            return ctx.affinity().primaryByKey(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
                     putMap;
@@ -2706,7 +2705,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 Collection<KeyCacheObject> storeKeys = req.fastMap() ?
                     F.view(rmvKeys, new P1<Object>() {
                         @Override public boolean apply(Object key) {
-                            return ctx.affinity().primary(ctx.localNode(), key, req.topologyVersion());
+                            return ctx.affinity().primaryByKey(ctx.localNode(), key, req.topologyVersion());
                         }
                     }) :
                     rmvKeys;
@@ -2745,7 +2744,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     assert writeVal != null || op == DELETE : "null write value found.";
 
-                    boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
+                    boolean primary = !req.fastMap() || ctx.affinity().primaryByPartition(ctx.localNode(),
+                        entry.partition(),
                         req.topologyVersion());
 
                     Collection<UUID> readers = null;
@@ -2841,7 +2841,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (hasNear) {
                         if (primary) {
-                            if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
+                            if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
                                 int idx = firstEntryIdx + i;
 
                                 if (req.operation() == TRANSFORM) {

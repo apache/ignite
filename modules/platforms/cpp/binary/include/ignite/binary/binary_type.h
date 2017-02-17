@@ -172,7 +172,7 @@ namespace ignite
              *
              * @return Type name.
              */
-            std::string GetTypeName() 
+            std::string GetTypeName()
             {
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeName function is not defined for binary type.");
             }
@@ -186,17 +186,6 @@ namespace ignite
             int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
-            }
-
-            /**
-             * Get binary object hash code.
-             *
-             * @param obj Binary object.
-             * @return Hash code.
-             */
-            int32_t GetHashCode(const T& obj)
-            {
-                return 0;
             }
 
             /**
@@ -255,9 +244,9 @@ namespace ignite
             /**
              * Constructor.
              */
-            BinaryType()
+            BinaryType() : typ()
             {
-                typ = BinaryType<T>();
+                // No-op.
             }
 
             int32_t GetTypeId()
@@ -273,11 +262,6 @@ namespace ignite
             int32_t GetFieldId(const char* name)
             {
                 return typ.GetFieldId(name);
-            }
-
-            int32_t GetHashCode(T* const& obj)
-            {
-                return typ.GetHashCode(*obj);
             }
 
             void Write(BinaryWriter& writer, T* const& obj)
@@ -301,7 +285,7 @@ namespace ignite
 
             T* GetNull()
             {
-                return NULL;
+                return 0;
             }
         };
     }

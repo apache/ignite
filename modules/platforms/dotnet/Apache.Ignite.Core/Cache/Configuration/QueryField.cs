@@ -109,6 +109,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this field belongs to the cache key.
+        /// Proper value here is required for SQL DML queries which create/modify cache keys.
+        /// </summary>
+        public bool IsKeyField { get; set; }
+
+        /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.
         /// </summary>
         internal void Validate(ILogger log, string logInfo)

@@ -127,7 +127,7 @@ else {
 
 # 2) Build .NET
 # Detect MSBuild 4.0+
-for ($i=4; $i -le 20; $i++) {
+for ($i=20; $i -ge 4; $i--) {
     $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
     if (Test-Path $regKey) { break }
 }

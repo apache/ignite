@@ -1,0 +1,20 @@
+Building from Ignite sources
+=========================================
+
+Run
+
+mvn clean package -Pyardstick -pl modules/yardstick -am -DskipTests
+
+in the Apache Ignite root directory.
+
+This command will compile the project and also unpack scripts from `yardstick-resources.zip` file to
+`modules/yardstick/target/assembly/bin` directory.
+
+Artifacts can be found in `modules/yardstick/target/assembly` directory.
+
+Writing Ignite Benchmarks
+=========================
+
+All benchmarks extend `AbstractBenchmark` class. A new benchmark should also extend this abstract class
+and implement `test` method. This is the method which actually tests performance.
+

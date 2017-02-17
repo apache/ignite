@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -399,6 +400,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
+        final ExpiryPolicy expiryPlc,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         assert cacheCtx.isLocal() : cacheCtx.name();
@@ -411,7 +413,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         try {
-            IgniteCacheExpiryPolicy expiryPlc = accessPolicy(cacheCtx, keys);
+            IgniteCacheExpiryPolicy expiryPlc0 = optimistic() ?
+                accessPolicy(cacheCtx, keys) :
+                cacheCtx.cache().expiryPolicy(expiryPlc);
 
             Map<KeyCacheObject, GridCacheVersion> misses = null;
 
@@ -426,7 +430,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         continue;
 
                     try {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        EntryGetResult res = entry.innerGetVersioned(
                             null,
                             this,
                             /*readSwap*/true,
@@ -436,8 +440,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             CU.subjectId(this, cctx),
                             null,
                             resolveTaskName(),
-                            expiryPlc,
-                            txEntry == null ? keepBinary : txEntry.keepBinary());
+                            expiryPlc0,
+                            txEntry == null ? keepBinary : txEntry.keepBinary(),
+                            null);
 
                         if (res == null) {
                             if (misses == null)
@@ -446,7 +451,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             misses.put(key, entry.version());
                         }
                         else
-                            c.apply(key, skipVals ? true : res.get1(), res.get2());
+                            c.apply(key, skipVals ? true : res.value(), res.version());
 
                         break;
                     }
@@ -476,17 +481,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
 
                                 try {
-                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null, null);
+                                    T2<CacheObject, GridCacheVersion> verVal = entry.versionedValue(cacheVal,
+                                        ver,
+                                        null,
+                                        null,
+                                        null);
 
-                                    boolean set = setVer != null;
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Set value loaded from store into entry [" +
+                                            "oldVer=" + ver +
+                                            ", newVer=" + verVal.get2() +
+                                            ", entry=" + entry + ']');
+                                    }
 
-                                    if (set)
-                                        ver = setVer;
-
-                                    if (log.isDebugEnabled())
-                                        log.debug("Set value loaded from store into entry [set=" + set +
-                                            ", curVer=" + ver + ", newVer=" + setVer + ", " +
-                                            "entry=" + entry + ']');
+                                    ver = verVal.get2();
 
                                     break;
                                 }
@@ -1098,7 +1106,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @return {@code True} if local node is current primary for given entry.
      */
     private boolean primaryLocal(GridCacheEntryEx entry) {
-        return entry.context().affinity().primary(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
+        return entry.context().affinity().primaryByPartition(cctx.localNode(), entry.partition(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -1182,7 +1190,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                             break;
                                         }
-                                        catch (GridCacheEntryRemovedException rmvdErr) {
+                                        catch (GridCacheEntryRemovedException ignored) {
                                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topVer));
                                         }
                                     }
@@ -1214,7 +1222,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     F.first(txEntry.entryProcessors()) : null;
 
                             if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = txEntry.cached().innerGetVersioned(
+                                EntryGetResult res = txEntry.cached().innerGetVersioned(
                                     null,
                                     this,
                                     /*swap*/true,
@@ -1225,11 +1233,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     transformClo,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary());
+                                    txEntry.keepBinary(),
+                                    null);
 
                                 if (res != null) {
-                                    val = res.get1();
-                                    readVer = res.get2();
+                                    val = res.value();
+                                    readVer = res.version();
                                 }
                             }
                             else {
@@ -1297,7 +1306,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
                             if (needReadVer) {
-                                T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
+                                EntryGetResult res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(
                                         null,
                                         this,
@@ -1309,11 +1318,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null,
                                         resolveTaskName(),
                                         accessPlc,
-                                        !deserializeBinary) : null;
+                                        !deserializeBinary,
+                                        null) : null;
 
                                 if (res != null) {
-                                    val = res.get1();
-                                    readVer = res.get2();
+                                    val = res.value();
+                                    readVer = res.version();
                                 }
                             }
                             else {
@@ -1386,7 +1396,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     finally {
                         if (entry != null && readCommitted()) {
                             if (cacheCtx.isNear()) {
-                                if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.partition(), topVer)) {
+                                if (cacheCtx.affinity().partitionBelongs(cacheCtx.localNode(), entry.partition(), topVer)) {
                                     if (entry.markObsolete(xidVer))
                                         cacheCtx.cache().removeEntry(entry);
                                 }
@@ -1434,6 +1444,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
+     * @param expiryPlc Expiry policy.
      * @return Loaded key-value pairs.
      */
     private <K, V> IgniteInternalFuture<Map<K, V>> checkMissed(
@@ -1445,7 +1456,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean skipStore,
-        final boolean needVer
+        final boolean needVer,
+        final ExpiryPolicy expiryPlc
 
     ) {
         if (log.isDebugEnabled())
@@ -1474,6 +1486,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 skipVals,
                 needReadVer,
                 !deserializeBinary,
+                expiryPlc,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
@@ -1598,6 +1611,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     expiryPlc = cacheCtx.expiry();
 
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
+                long createTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForCreation()) : CU.TTL_NOT_CHANGED;
 
                 long timeout = remainingTime();
 
@@ -1611,7 +1625,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     true,
                     isolation,
                     isInvalidate(),
+                    createTtl,
                     accessTtl);
+
+                final ExpiryPolicy expiryPlc0 = expiryPlc;
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
@@ -1648,7 +1665,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             F.first(txEntry.entryProcessors()) : null;
 
                                     if (needVer) {
-                                        T2<CacheObject, GridCacheVersion> res = cached.innerGetVersioned(
+                                        EntryGetResult res = cached.innerGetVersioned(
                                             null,
                                             IgniteTxLocalAdapter.this,
                                             /*swap*/cacheCtx.isSwapOrOffheapEnabled(),
@@ -1659,11 +1676,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             transformClo,
                                             resolveTaskName(),
                                             null,
-                                            txEntry.keepBinary());
+                                            txEntry.keepBinary(),
+                                            null);
 
                                         if (res != null) {
-                                            val = res.get1();
-                                            readVer = res.get2();
+                                            val = res.value();
+                                            readVer = res.version();
                                         }
                                     }
                                     else{
@@ -1734,7 +1752,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 skipVals,
                                 keepCacheObjects,
                                 skipStore,
-                                needVer);
+                                needVer,
+                                expiryPlc0);
                         }
 
                         return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -1807,7 +1826,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         skipVals,
                         keepCacheObjects,
                         skipStore,
-                        needVer);
+                        needVer,
+                        expiryPlc);
                 }
 
                 return new GridFinishedFuture<>(retMap);
@@ -2014,7 +2034,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     hasFilters,
                     /*read through*/(entryProcessor != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                     retval,
-                    keepBinary);
+                    keepBinary,
+                    expiryPlc);
             }
 
             return new GridFinishedFuture<>();
@@ -2183,7 +2204,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     hasFilters,
                     /*read through*/(invokeMap != null || cacheCtx.config().isLoadPreviousValue()) && !skipStore,
                     retval,
-                    keepBinary);
+                    keepBinary,
+                    expiryPlc);
             }
 
             return new GridFinishedFuture<>();
@@ -2203,6 +2225,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param hasFilters {@code True} if filters not empty.
      * @param readThrough Read through flag.
      * @param retval Return value flag.
+     * @param expiryPlc Expiry policy.
      * @return Load future.
      */
     private IgniteInternalFuture<Void> loadMissing(
@@ -2216,7 +2239,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final boolean hasFilters,
         final boolean readThrough,
         final boolean retval,
-        final boolean keepBinary) {
+        final boolean keepBinary,
+        final ExpiryPolicy expiryPlc) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
             new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key,
@@ -2290,6 +2314,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             /*skipVals*/singleRmv,
             needReadVer,
             keepBinary,
+            expiryPlc,
             c);
     }
 
@@ -2371,7 +2396,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (optimistic() && !implicit()) {
                         try {
                             if (needReadVer) {
-                                T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
+                                EntryGetResult res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(
                                         null,
                                         this,
@@ -2383,11 +2408,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         entryProcessor,
                                         resolveTaskName(),
                                         null,
-                                        keepBinary) : null;
+                                        keepBinary,
+                                        null) : null;
 
                                 if (res != null) {
-                                    old = res.get1();
-                                    readVer = res.get2();
+                                    old = res.value();
+                                    readVer = res.version();
                                 }
                             }
                             else {
@@ -2952,6 +2978,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     retval,
                     isolation,
                     isInvalidate(),
+                    -1L,
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
@@ -3130,6 +3157,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     retval,
                     isolation,
                     isInvalidate(),
+                    -1L,
                     -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
@@ -3424,6 +3452,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 retval,
                 isolation,
                 isInvalidate(),
+                -1L,
                 -1L);
 
             PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {

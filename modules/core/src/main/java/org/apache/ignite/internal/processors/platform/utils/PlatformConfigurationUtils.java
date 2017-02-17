@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
+import org.apache.ignite.binary.BinaryFieldIdentityResolver;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -40,10 +45,19 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
-import org.apache.ignite.platform.dotnet.*;
+import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -62,12 +76,17 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 /**
  * Configuration utils.
@@ -191,6 +210,17 @@ public class PlatformConfigurationUtils {
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
         ccfg.setAffinity(readAffinityFunction(in));
         ccfg.setExpiryPolicyFactory(readExpiryPolicyFactory(in));
+
+        int pluginCnt = in.readInt();
+
+        if (pluginCnt > 0) {
+            CachePluginConfiguration[] plugins = new CachePluginConfiguration[pluginCnt];
+
+            for (int i = 0; i < pluginCnt; i++)
+                plugins[i] = new PlatformCachePluginConfiguration(in.readObjectDetached());
+
+            ccfg.setPluginConfigurations(plugins);
+        }
 
         return ccfg;
     }
@@ -428,14 +458,25 @@ public class PlatformConfigurationUtils {
 
         // Fields
         int cnt = in.readInt();
+        Set<String> keyFields = new HashSet<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
 
-            for (int i = 0; i < cnt; i++)
-                fields.put(in.readString(), in.readString());
+            for (int i = 0; i < cnt; i++) {
+                String fieldName = in.readString();
+                String fieldType = in.readString();
+
+                fields.put(fieldName, fieldType);
+
+                if (in.readBoolean())
+                    keyFields.add(fieldName);
+            }
 
             res.setFields(fields);
+
+            if (!keyFields.isEmpty())
+                res.setKeyFields(keyFields);
         }
 
         // Aliases
@@ -539,11 +580,29 @@ public class PlatformConfigurationUtils {
             cfg.setCommunicationSpi(comm);
         }
 
-        if (in.readBoolean()) {
+        if (in.readBoolean()) {  // binary config is present
             if (cfg.getBinaryConfiguration() == null)
                 cfg.setBinaryConfiguration(new BinaryConfiguration());
 
-            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+            if (in.readBoolean())  // compact footer is set
+                cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+
+            int typeCnt = in.readInt();
+
+            if (typeCnt > 0) {
+                Collection<BinaryTypeConfiguration> types = new ArrayList<>(typeCnt);
+
+                for (int i = 0; i < typeCnt; i++) {
+                    BinaryTypeConfiguration type = new BinaryTypeConfiguration(in.readString());
+
+                    type.setEnum(in.readBoolean());
+                    type.setIdentityResolver(readBinaryIdentityResolver(in));
+
+                    types.add(type);
+                }
+
+                cfg.getBinaryConfiguration().setTypeConfigurations(types);
+            }
         }
 
         int attrCnt = in.readInt();
@@ -599,6 +658,8 @@ public class PlatformConfigurationUtils {
             default:
                 assert swapType == SWAP_TYP_NONE;
         }
+
+        readPluginConfiguration(cfg, in);
     }
 
     /**
@@ -794,6 +855,23 @@ public class PlatformConfigurationUtils {
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
         writeAffinityFunction(writer, ccfg.getAffinity());
         writeExpiryPolicyFactory(writer, ccfg.getExpiryPolicyFactory());
+
+        CachePluginConfiguration[] plugins = ccfg.getPluginConfigurations();
+        if (plugins != null) {
+            int cnt = 0;
+
+            for (CachePluginConfiguration cfg : plugins) {
+                if (cfg instanceof PlatformCachePluginConfiguration)
+                    cnt++;
+            }
+
+            writer.writeInt(cnt);
+
+            for (CachePluginConfiguration cfg : plugins) {
+                if (cfg instanceof PlatformCachePluginConfiguration)
+                    writer.writeObject(((PlatformCachePluginConfiguration)cfg).nativeCfg());
+            }
+        }
     }
 
     /**
@@ -812,11 +890,14 @@ public class PlatformConfigurationUtils {
         LinkedHashMap<String, String> fields = queryEntity.getFields();
 
         if (fields != null) {
+            Set<String> keyFields = queryEntity.getKeyFields();
+
             writer.writeInt(fields.size());
 
             for (Map.Entry<String, String> field : fields.entrySet()) {
                 writer.writeString(field.getKey());
                 writer.writeString(field.getValue());
+                writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
             }
         }
         else
@@ -941,10 +1022,28 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
-        w.writeBoolean(bc != null);
 
-        if (bc != null)
+        if (bc != null) {
+            w.writeBoolean(true);  // binary config exists
+            w.writeBoolean(true);  // compact footer is set
             w.writeBoolean(bc.isCompactFooter());
+
+            Collection<BinaryTypeConfiguration> types = bc.getTypeConfigurations();
+
+            if (types != null) {
+                w.writeInt(types.size());
+
+                for (BinaryTypeConfiguration type : types) {
+                    w.writeString(type.getTypeName());
+                    w.writeBoolean(type.isEnum());
+                    writeBinaryIdentityResolver(w, type.getIdentityResolver());
+                }
+            }
+            else
+                w.writeInt(0);
+        }
+        else
+            w.writeBoolean(false);
 
         Map<String, ?> attrs = cfg.getUserAttributes();
 
@@ -1114,6 +1213,115 @@ public class PlatformConfigurationUtils {
         assert def != null;
 
         w.writeInt(e == null ? def.ordinal() : e.ordinal());
+    }
+
+    /**
+     * Reads resolver
+     *
+     * @param r Reader.
+     * @return Resolver.
+     */
+    private static BinaryIdentityResolver readBinaryIdentityResolver(BinaryRawReader r) {
+        int type = r.readByte();
+
+        switch (type) {
+            case 0:
+                return null;
+
+            case 1:
+                return new BinaryArrayIdentityResolver();
+
+            case 2:
+                int cnt = r.readInt();
+
+                String[] fields = new String[cnt];
+
+                for (int i = 0; i < cnt; i++)
+                    fields[i] = r.readString();
+
+                return new BinaryFieldIdentityResolver().setFieldNames(fields);
+
+            default:
+                assert false;
+                return null;
+        }
+    }
+
+    /**
+     * Writes the resolver.
+     *
+     * @param w Writer.
+     * @param resolver Resolver.
+     */
+    private static void writeBinaryIdentityResolver(BinaryRawWriter w, BinaryIdentityResolver resolver) {
+        if (resolver instanceof BinaryArrayIdentityResolver)
+            w.writeByte((byte)1);
+        else if (resolver instanceof BinaryFieldIdentityResolver) {
+            w.writeByte((byte)2);
+
+            String[] fields = ((BinaryFieldIdentityResolver)resolver).getFieldNames();
+
+            if (fields != null) {
+                w.writeInt(fields.length);
+
+                for (String field : fields)
+                    w.writeString(field);
+            }
+            else
+                w.writeInt(0);
+        }
+        else {
+            w.writeByte((byte)0);
+        }
+    }
+
+    /**
+     * Reads the plugin configuration.
+     *
+     * @param cfg Ignite configuration to update.
+     * @param in Reader.
+     */
+    private static void readPluginConfiguration(IgniteConfiguration cfg, BinaryRawReader in) {
+        int cnt = in.readInt();
+
+        if (cnt == 0)
+            return;
+
+        for (int i = 0; i < cnt; i++) {
+            int plugCfgFactoryId = in.readInt();
+
+            PlatformPluginConfigurationClosure plugCfg = pluginConfiguration(plugCfgFactoryId);
+
+            plugCfg.apply(cfg, in);
+        }
+    }
+
+    /**
+     * Create PlatformPluginConfigurationClosure for the given factory ID.
+     *
+     * @param factoryId Factory ID.
+     * @return PlatformPluginConfigurationClosure.
+     */
+    private static PlatformPluginConfigurationClosure pluginConfiguration(final int factoryId) {
+        PlatformPluginConfigurationClosureFactory factory = AccessController.doPrivileged(
+                new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
+                    @Override public PlatformPluginConfigurationClosureFactory run() {
+                        for (PlatformPluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
+
+                        return null;
+                    }
+                });
+
+        if (factory == null) {
+            throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
+                    "(did you put into the classpath?): " + factoryId);
+        }
+
+        return factory.create();
     }
 
     /**

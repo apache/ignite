@@ -370,7 +370,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
                     registerResponse(req.nodeId());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ignored) {
                     U.error(msgLog, "Failed to send request [futId=" + futVer +
                         ", writeVer=" + writeVer + ", node=" + req.nodeId() + ']');
 

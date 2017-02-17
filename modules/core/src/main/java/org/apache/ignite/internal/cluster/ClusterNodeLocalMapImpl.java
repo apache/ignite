@@ -26,7 +26,6 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;

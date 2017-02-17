@@ -131,6 +131,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
+import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
+import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -613,6 +615,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 77:
                 msg = new GridTaskResultResponse();
+
+                break;
+
+            case 78:
+                msg = new MissingMappingRequestMessage();
+
+                break;
+
+            case 79:
+                msg = new MissingMappingResponseMessage();
 
                 break;
 
