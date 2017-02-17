@@ -28,8 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Striped LRU queue.
  */
-@SuppressWarnings("ForLoopReplaceableByForEach")
-class GridUnsafeLru {
+@SuppressWarnings("ForLoopReplaceableByForEach") class GridUnsafeLru {
     /** Number of stripes. */
     private final short cnt;
 
@@ -46,6 +45,9 @@ class GridUnsafeLru {
 
     /** Current round-robin remove stripe index. */
     private final AtomicInteger rmvIdx;
+
+    /** Max stripe index count. */
+    private final int maxIdxCnt;
 
     /** Released flag. */
     private AtomicBoolean released = new AtomicBoolean(false);
@@ -68,6 +70,8 @@ class GridUnsafeLru {
 
         addIdx = new AtomicInteger();
         rmvIdx = new AtomicInteger(cnt / 2);
+
+        maxIdxCnt = cnt - 1;
     }
 
     /**
@@ -156,7 +160,7 @@ class GridUnsafeLru {
      * @throws GridOffHeapOutOfMemoryException If failed.
      */
     long offer(int part, long addr, int hash) throws GridOffHeapOutOfMemoryException {
-        return lrus[addIdx.getAndIncrement() % cnt].offer(part, addr, hash);
+        return lrus[incrementAndGet(addIdx, maxIdxCnt)].offer(part, addr, hash);
     }
 
     /**
@@ -165,7 +169,7 @@ class GridUnsafeLru {
      * @return Queue node address.
      */
     long prePoll() {
-        int idx = rmvIdx.getAndIncrement();
+        int idx = incrementAndGet(rmvIdx, maxIdxCnt);
 
         // Must try to poll from each LRU.
         for (int i = 0; i < lrus.length; i++) {
@@ -180,6 +184,7 @@ class GridUnsafeLru {
 
     /**
      * Removes polling node from the queue.
+     *
      * @param qAddr Queue node address.
      */
     void poll(long qAddr) {
@@ -212,6 +217,23 @@ class GridUnsafeLru {
         if (released.compareAndSet(false, true)) {
             for (int i = 0; i < cnt; i++)
                 lrus[i].destruct();
+        }
+    }
+
+    /**
+     * Atomically increments the given value by one, re-starting from 0 when the specified maximum is reached.
+     *
+     * @param value Value to increment.
+     * @param max Maximum after reaching which the value is reset to 0.
+     * @return Incremented value.
+     */
+    private int incrementAndGet(AtomicInteger value, int max) {
+        while (true) {
+            int cur = value.get();
+            int next = cur == max ? 0 : cur + 1;
+
+            if (value.compareAndSet(cur, next))
+                return next;
         }
     }
 

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -69,6 +70,7 @@ namespace Apache.Ignite.Core.Binary
             TypeName = cfg.TypeName;
             KeepDeserialized = cfg.KeepDeserialized;
             IsEnum = cfg.IsEnum;
+            EqualityComparer = cfg.EqualityComparer;
         }
 
         /// <summary>
@@ -111,6 +113,18 @@ namespace Apache.Ignite.Core.Binary
         /// Gets or sets a value indicating whether this instance describes an enum type.
         /// </summary>
         public bool IsEnum { get; set; }
+
+        /// <summary>
+        /// Gets or sets the equality comparer to compute hash codes and compare objects
+        /// in <see cref="IBinaryObject"/> form.
+        /// This comparer is important only for types that are used as cache keys.
+        /// <para />
+        /// Null means legacy behavior: hash code is computed by calling <see cref="object.GetHashCode"/>, equality is
+        /// computed by comparing bytes in serialized (binary) form.
+        /// <para />
+        /// Only predefined implementations are supported: <see cref="BinaryArrayEqualityComparer"/>.
+        /// </summary>
+        public IEqualityComparer<IBinaryObject> EqualityComparer { get; set; }
 
         /// <summary>
         /// Returns a string that represents the current object.

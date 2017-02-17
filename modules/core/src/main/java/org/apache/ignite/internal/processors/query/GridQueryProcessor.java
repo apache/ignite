@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -44,9 +44,9 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
@@ -118,7 +118,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
     /** */
-    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
+    private static final Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
         Integer.class,
         Boolean.class,
         Byte.class,
@@ -159,9 +159,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
-
-    /** Default is @{true} */
-    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /**
      * @param ctx Kernal context.
@@ -253,9 +250,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
+                    String simpleValType = ((valCls == null) ? typeName(qryEntity.getValueType()) : typeName(valCls));
 
                     desc.name(simpleValType);
+
+                    desc.tableName(qryEntity.getTableName());
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
@@ -281,6 +280,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
                     }
+
+                    desc.keyTypeName(qryEntity.getKeyType());
+                    desc.valueTypeName(qryEntity.getValueType());
 
                     if (binaryEnabled && keyOrValMustDeserialize) {
                         if (mustDeserializeClss == null)
@@ -388,6 +390,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass(keyCls);
                     }
 
+                    desc.keyTypeName(meta.getKeyType());
+                    desc.valueTypeName(meta.getValueType());
+
                     if (binaryEnabled && keyOrValMustDeserialize) {
                         if (mustDeserializeClss == null)
                             mustDeserializeClss = new ArrayList<>();
@@ -466,7 +471,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+    private void addTypeByName(CacheConfiguration<?, ?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
         if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
@@ -483,7 +488,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 return;
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();
@@ -680,16 +685,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         CacheObjectContext coctx = null;
 
-        if (ctx.indexing().enabled()) {
-            coctx = cacheObjectContext(space);
-
-            Object key0 = unwrap(key, coctx);
-
-            Object val0 = unwrap(val, coctx);
-
-            ctx.indexing().store(space, key0, val0, expirationTime);
-        }
-
         if (idx == null)
             return;
 
@@ -743,13 +738,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Unwrap CacheObject if needed.
-     */
-    private Object unwrap(CacheObject obj, CacheObjectContext coctx) {
-        return isIndexingSpiAllowsBinary && ctx.cacheObjects().isBinaryObject(obj) ? obj : obj.value(coctx, false);
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     private void checkEnabled() throws IgniteCheckedException {
@@ -794,7 +782,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (type == null || !type.registered())
                         throw new CacheException("Failed to find SQL table for type: " + resType);
 
-                    return idx.queryLocalSql(space, clause, params, type, filters);
+                    return idx.queryLocalSql(space, clause, null, params, type, filters);
                 }
             }, false);
         }
@@ -816,8 +804,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
-                @Override public QueryCursor<List<?>> applyx() {
-                    return idx.queryTwoStep(cctx, qry);
+                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                    return idx.queryTwoStep(cctx, qry, null);
                 }
             }, true);
         }
@@ -888,7 +876,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
                             space,
-                            sqlQry,
+                            qry.getSql(),
+                            qry.getAlias(),
                             F.asList(params),
                             typeDesc,
                             idx.backupFilter(requestTopVer.get(), null));
@@ -922,11 +911,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }, true);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw new CacheException(e);
         }
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+        if (moduleEnabled())
+            return idx.runningQueries(duration);
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries) {
+        if (moduleEnabled())
+            idx.cancelQueries(queries);
     }
 
     /**
@@ -949,6 +961,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 null,
                 null));
         }
+    }
+
+    /**
+     *
+     * @param schema Schema.
+     * @param sql Query.
+     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     */
+    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+        checkxEnabled();
+
+        return idx.prepareNativeStatement(schema, sql);
     }
 
     /**
@@ -981,7 +1005,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Iterator.
      */
-    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?, ?> cctx, final SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -1035,14 +1059,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(space);
-
-            Object key0 = unwrap(key, coctx);
-
-            ctx.indexing().remove(space, key0);
-        }
 
         if (idx == null)
             return;
@@ -1181,14 +1197,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            Object key0 = unwrap(key, coctx);
-
-            ctx.indexing().onSwap(spaceName, key0);
-        }
-
         if (idx == null)
             return;
 
@@ -1217,16 +1225,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
-
-        if (ctx.indexing().enabled()) {
-            CacheObjectContext coctx = cacheObjectContext(spaceName);
-
-            Object key0 = unwrap(key, coctx);
-
-            Object val0 = unwrap(val, coctx);
-
-            ctx.indexing().onUnswap(spaceName, key0, val0);
-        }
 
         if (idx == null)
             return;
@@ -1424,7 +1422,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1436,7 +1434,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1448,7 +1446,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1466,7 +1464,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
+                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases,
+                        null);
 
                     d.addProperty(prop, false);
 
@@ -1480,7 +1479,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1500,8 +1499,35 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (aliases == null)
             aliases = Collections.emptyMap();
 
+        Set<String> keyFields = qryEntity.getKeyFields();
+
+        // We have to distinguish between empty and null keyFields when the key is not of SQL type -
+        // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
+        // is a value field, and null keyFields tells us that current configuration
+        // does not tell us anything about this field's ownership.
+        boolean hasKeyFields = (keyFields != null);
+
+        boolean isKeyClsSqlType = isSqlType(d.keyClass());
+
+        if (hasKeyFields && !isKeyClsSqlType) {
+            //ensure that 'keyFields' is case sensitive subset of 'fields'
+            for (String keyField : keyFields) {
+                if (!qryEntity.getFields().containsKey(keyField))
+                    throw new IgniteCheckedException("QueryEntity 'keyFields' property must be a subset of keys " +
+                        "from 'fields' property (case sensitive): " + keyField);
+            }
+        }
+
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true), aliases);
+            Boolean isKeyField;
+
+            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
+                isKeyField = false;
+            else
+                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
+                aliases, isKeyField);
 
             d.addProperty(prop, false);
         }
@@ -1601,9 +1627,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
+     * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
+     *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @return Binary property.
      */
-    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
+    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
+        @Nullable Boolean isKeyField) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         BinaryProperty res = null;
@@ -1618,7 +1647,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            res = new BinaryProperty(prop, res, resType, alias);
+            // The key flag that we've found out is valid for the whole path.
+            res = new BinaryProperty(prop, res, resType, isKeyField, alias);
         }
 
         return res;
@@ -1647,8 +1677,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
 
         if (res == null)
-            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
-                "key class '" + keyCls + "' and value class '" + valCls + "'. " +
+            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' of type '" +
+                resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
                 "Make sure that one of these classes contains respective getter method or field.");
 
         return res;
@@ -1662,7 +1692,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param aliases Aliases.
      * @return Property instance corresponding to the given path.
      */
-    static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
+    private static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
         Map<String,String> aliases, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
@@ -1678,57 +1708,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            StringBuilder bld = new StringBuilder("get");
+            PropertyAccessor accessor = findProperty(prop, cls);
 
-            bld.append(prop);
-
-            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
-            ClassProperty tmp = null;
-
-            try {
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-            }
-            catch (NoSuchMethodException ignore) {
-                // No-op.
-            }
-
-            if (tmp == null) { // Boolean getter can be defined as is###().
-                bld = new StringBuilder("is");
-
-                bld.append(prop);
-
-                bld.setCharAt(2, Character.toUpperCase(bld.charAt(2)));
-
-                try {
-                    tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignore) {
-                    // No-op.
-                }
-            }
-
-            Class cls0 = cls;
-
-            while (tmp == null && cls0 != null)
-                try {
-                    tmp = new ClassProperty(cls0.getDeclaredField(prop), key, alias, coCtx);
-                }
-                catch (NoSuchFieldException ignored) {
-                    cls0 = cls0.getSuperclass();
-                }
-
-            if (tmp == null) {
-                try {
-                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
-                }
-                catch (NoSuchMethodException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (tmp == null)
+            if (accessor == null)
                 return null;
+
+            ClassProperty tmp = new ClassProperty(accessor, key, alias, coCtx);
 
             tmp.parent(res);
 
@@ -1837,6 +1822,104 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Find a member (either a getter method or a field) with given name of given class.
+     * @param prop Property name.
+     * @param cls Class to search for a member in.
+     * @return Member for given name.
+     */
+    @Nullable private static PropertyAccessor findProperty(String prop, Class<?> cls) {
+        StringBuilder getBldr = new StringBuilder("get");
+        getBldr.append(prop);
+        getBldr.setCharAt(3, Character.toUpperCase(getBldr.charAt(3)));
+
+        StringBuilder setBldr = new StringBuilder("set");
+        setBldr.append(prop);
+        setBldr.setCharAt(3, Character.toUpperCase(setBldr.charAt(3)));
+
+        try {
+            Method getter = cls.getMethod(getBldr.toString());
+
+            Method setter;
+
+            try {
+                // Setter has to have the same name like 'setXxx' and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(setBldr.toString(), getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
+        }
+        catch (NoSuchMethodException ignore) {
+            // No-op.
+        }
+
+        getBldr = new StringBuilder("is");
+        getBldr.append(prop);
+        getBldr.setCharAt(2, Character.toUpperCase(getBldr.charAt(2)));
+
+        // We do nothing about setBldr here as it corresponds to setProperty name which is what we need
+        // for boolean property setter as well
+        try {
+            Method getter = cls.getMethod(getBldr.toString());
+
+            Method setter;
+
+            try {
+                // Setter has to have the same name like 'setXxx' and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(setBldr.toString(), getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
+        }
+        catch (NoSuchMethodException ignore) {
+            // No-op.
+        }
+
+        Class cls0 = cls;
+
+        while (cls0 != null)
+            try {
+                return new FieldAccessor(cls0.getDeclaredField(prop));
+            }
+            catch (NoSuchFieldException ignored) {
+                cls0 = cls0.getSuperclass();
+            }
+
+        try {
+            Method getter = cls.getMethod(prop);
+
+            Method setter;
+
+            try {
+                // Setter has to have the same name and single param of the same type
+                // as the return type of the getter.
+                setter = cls.getMethod(prop, getter.getReturnType());
+            }
+            catch (NoSuchMethodException ignore) {
+                // Have getter, but no setter - return read-only accessor.
+                return new ReadOnlyMethodsAccessor(getter, prop);
+            }
+
+            return new MethodsAccessor(getter, setter, prop);
+        }
+        catch (NoSuchMethodException ignored) {
+            // No-op.
+        }
+
+        // No luck.
+        return null;
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
@@ -1855,39 +1938,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private static class ClassProperty extends GridQueryProperty {
         /** */
-        private final Member member;
+        private final PropertyAccessor accessor;
+
+        /** */
+        private final boolean key;
 
         /** */
         private ClassProperty parent;
 
         /** */
-        private String name;
+        private final String name;
 
         /** */
-        private boolean field;
-
-        /** */
-        private boolean key;
-
-        /** */
-        private CacheObjectContext coCtx;
+        private final CacheObjectContext coCtx;
 
         /**
          * Constructor.
          *
-         * @param member Element.
+         * @param accessor Way of accessing the property.
          */
-        ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
-            this.member = member;
+        ClassProperty(PropertyAccessor accessor, boolean key, String name, @Nullable CacheObjectContext coCtx) {
+            this.accessor = accessor;
+
             this.key = key;
 
-            this.name = !F.isEmpty(name) ? name :
-                member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
-                member.getName().substring(3) : member.getName();
-
-            ((AccessibleObject) member).setAccessible(true);
-
-            field = member instanceof Field;
+            this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
 
             this.coCtx = coCtx;
         }
@@ -1902,21 +1977,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (x == null)
                 return null;
 
-            try {
-                if (field) {
-                    Field field = (Field)member;
+            return accessor.getValue(x);
+        }
 
-                    return field.get(x);
-                }
-                else {
-                    Method mtd = (Method)member;
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            Object x = unwrap(this.key ? key : val);
 
-                    return mtd.invoke(x);
-                }
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
+            if (parent != null)
+                x = parent.value(key, val);
+
+            if (x == null)
+                return;
+
+            accessor.setValue(x, propVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return key;
         }
 
         /**
@@ -1936,7 +2015,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Class<?> type() {
-            return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
+            return accessor.getType();
         }
 
         /**
@@ -1949,14 +2028,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ClassProperty.class, this);
-        }
-
-        /**
-         * @param cls Class.
-         * @return {@code true} If this property or some parent relates to member of the given class.
-         */
-        public boolean knowsClass(Class<?> cls) {
-            return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
         }
     }
 
@@ -1994,12 +2065,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
+         * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
+         * @param alias Field alias.
          */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, String alias) {
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, @Nullable Boolean key, String alias) {
+            super();
             this.propName = propName;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;
+
+            if (key != null)
+                this.isKeyProp = key ? 1 : -1;
         }
 
         /** {@inheritDoc} */
@@ -2046,6 +2123,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryObject obj0 = (BinaryObject)obj;
 
             return fieldValue(obj0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            Object obj = key() ? key : val;
+
+            if (obj == null)
+                return;
+
+            if (!(obj instanceof BinaryObjectBuilder))
+                throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
+
+            setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
+        }
+
+        /**
+         * @param builder Object builder.
+         * @param field Field name.
+         * @param val Value to set.
+         * @param valType Type of {@code val}.
+         * @param <T> Value type.
+         */
+        private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
+            //noinspection unchecked
+            builder.setField(field, (T)val, valType);
         }
 
         /**
@@ -2099,6 +2201,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public Class<?> type() {
             return type;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            int isKeyProp0 = isKeyProp;
+
+            if (isKeyProp0 == 0)
+                throw new IllegalStateException("Ownership flag not set for binary property. Have you set 'keyFields'" +
+                    " property of QueryEntity in programmatic or XML configuration?");
+
+            return isKeyProp0 == 1;
+        }
     }
 
     /**
@@ -2108,6 +2221,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private String name;
 
+        /** */
+        private String tblName;
+
         /** Value field names and types with preserved order. */
         @GridToStringInclude
         private final Map<String, Class<?>> fields = new LinkedHashMap<>();
@@ -2115,6 +2231,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         @GridToStringExclude
         private final Map<String, GridQueryProperty> props = new HashMap<>();
+
+        /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
+        private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -2128,6 +2247,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** */
         private Class<?> valCls;
+
+        /** */
+        private String keyTypeName;
+
+        /** */
+        private String valTypeName;
 
         /** */
         private boolean valTextIdx;
@@ -2166,6 +2291,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             this.name = name;
         }
 
+        /**
+         * Gets table name for type.
+         * @return Table name.
+         */
+        public String tableName() {
+            return tblName;
+        }
+
+        /**
+         * Sets table name for type.
+         *
+         * @param tblName Table name.
+         */
+        public void tableName(String tblName) {
+            this.tblName = tblName;
+        }
+
         /** {@inheritDoc} */
         @Override public Map<String, Class<?>> fields() {
             return fields;
@@ -2173,7 +2315,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public GridQueryProperty property(String name) {
-            return props.get(name);
+            return getProperty(name);
         }
 
         /** {@inheritDoc} */
@@ -2181,12 +2323,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            GridQueryProperty prop = props.get(field);
+            GridQueryProperty prop = getProperty(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
 
             return (T)prop.value(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void setValue(String field, Object key, Object val, Object propVal)
+            throws IgniteCheckedException {
+            assert field != null;
+
+            GridQueryProperty prop = getProperty(field);
+
+            if (prop == null)
+                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
+
+            prop.setValue(key, val, propVal);
         }
 
         /** {@inheritDoc} */
@@ -2256,6 +2412,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param valCls Value class.
          */
         void valueClass(Class<?> valCls) {
+            A.notNull(valCls, "Value class must not be null");
             this.valCls = valCls;
         }
 
@@ -2273,6 +2430,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             this.keyCls = keyCls;
         }
 
+        /** {@inheritDoc} */
+        @Override public String keyTypeName() {
+            return keyTypeName;
+        }
+
+        /**
+         * Set key type name.
+         *
+         * @param keyTypeName Key type name.
+         */
+        public void keyTypeName(String keyTypeName) {
+            this.keyTypeName = keyTypeName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueTypeName() {
+            return valTypeName;
+        }
+
+        /**
+         * Set value type name.
+         *
+         * @param valTypeName Value type name.
+         */
+        public void valueTypeName(String valTypeName) {
+            this.valTypeName = valTypeName;
+        }
+
         /**
          * Adds property to the type descriptor.
          *
@@ -2286,7 +2471,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
 
+            if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
+                throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
+
             fields.put(name, prop.type());
+        }
+
+        /**
+         * @param field Property name.
+         * @return Property with given field name.
+         */
+        private GridQueryProperty getProperty(String field) {
+            GridQueryProperty res = props.get(field);
+
+            if (res == null)
+                res = uppercaseProps.get(field.toUpperCase());
+
+            return res;
         }
 
         /** {@inheritDoc} */
@@ -2518,5 +2719,184 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         DESC,
         /** Text index. */
         TEXT
+    }
+
+    /** Way of accessing a property - either via field or getter and setter methods. */
+    private interface PropertyAccessor {
+        /**
+         * Get property value from given object.
+         *
+         * @param obj Object to retrieve property value from.
+         * @return Property value.
+         * @throws IgniteCheckedException if failed.
+         */
+        public Object getValue(Object obj) throws IgniteCheckedException;
+
+        /**
+         * Set property value on given object.
+         *
+         * @param obj Object to set property value on.
+         * @param newVal Property value.
+         * @throws IgniteCheckedException if failed.
+         */
+        public void setValue(Object obj, Object newVal)throws IgniteCheckedException;
+
+        /**
+         * @return Name of this property.
+         */
+        public String getPropertyName();
+
+        /**
+         * @return Type of the value of this property.
+         */
+        public Class<?> getType();
+    }
+
+    /** Accessor that deals with fields. */
+    private static final class FieldAccessor implements PropertyAccessor {
+        /** Field to access. */
+        private final Field fld;
+
+        /** */
+        private FieldAccessor(Field fld) {
+            fld.setAccessible(true);
+
+            this.fld = fld;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return fld.get(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to get field value", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            try {
+                fld.set(obj, newVal);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to set field value", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            return fld.getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return fld.getType();
+        }
+    }
+
+    /** Getter and setter methods based accessor. */
+    private static final class MethodsAccessor implements PropertyAccessor {
+        /** */
+        private final Method getter;
+
+        /** */
+        private final Method setter;
+
+        /** */
+        private final String propName;
+
+        /**
+         * @param getter Getter method.
+         * @param setter Setter method.
+         * @param propName Property name.
+         */
+        private MethodsAccessor(Method getter, Method setter, String propName) {
+            getter.setAccessible(true);
+            setter.setAccessible(true);
+
+            this.getter = getter;
+            this.setter = setter;
+            this.propName = propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return getter.invoke(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke getter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            try {
+                setter.invoke(obj, newVal);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke setter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            return propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return getter.getReturnType();
+        }
+    }
+
+    /** Accessor with getter only. */
+    private static final class ReadOnlyMethodsAccessor implements PropertyAccessor {
+        /** */
+        private final Method getter;
+
+        /** */
+        private final String propName;
+
+        /**
+         * @param getter Getter method.
+         * @param propName Property name.
+         */
+        private ReadOnlyMethodsAccessor(Method getter, String propName) {
+            getter.setAccessible(true);
+
+            this.getter = getter;
+            this.propName = propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getValue(Object obj) throws IgniteCheckedException {
+            try {
+                return getter.invoke(obj);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to invoke getter method " +
+                    "[type=" + getType() + ", property=" + propName + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
+            throw new UnsupportedOperationException("Property is read-only [type=" + getType() +
+                ", property=" + propName + ']');
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPropertyName() {
+            return propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> getType() {
+            return getter.getReturnType();
+        }
     }
 }

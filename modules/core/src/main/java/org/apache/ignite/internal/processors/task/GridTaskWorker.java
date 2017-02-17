@@ -1293,7 +1293,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 nodeId + ", taskName=" + ses.getTaskName() +
                                 ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']', e);
                     }
-                    catch (IgniteClientDisconnectedCheckedException e0) {
+                    catch (IgniteClientDisconnectedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send cancel request to node, client disconnected [nodeId=" +
                                 nodeId + ", taskName=" + ses.getTaskName() + ']');

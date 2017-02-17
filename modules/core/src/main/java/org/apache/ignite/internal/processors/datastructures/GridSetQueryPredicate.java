@@ -91,7 +91,7 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean apply(K k, V v) {
-        return !filter || ctx.affinity().primary(ctx.localNode(), k, ctx.affinity().affinityTopologyVersion());
+        return !filter || ctx.affinity().primaryByKey(ctx.localNode(), k, ctx.affinity().affinityTopologyVersion());
     }
 
     /**

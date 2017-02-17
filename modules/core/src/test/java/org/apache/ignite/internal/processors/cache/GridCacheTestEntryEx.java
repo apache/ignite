@@ -158,12 +158,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param nodeId Node ID.
      * @param threadId Thread ID.
      * @param ver Lock version.
-     * @param ec Not used.
      * @param tx Transaction flag.
      * @return Remote candidate.
      */
     GridCacheMvccCandidate addRemote(UUID nodeId, long threadId, GridCacheVersion ver,
-        boolean ec, boolean tx) {
+                                     boolean tx) {
         return mvcc.addRemote(this, nodeId, null, threadId, ver, tx, true, false);
     }
 
@@ -418,7 +417,27 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Nullable @Override public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+    @Override public void clearReserveForLoad(GridCacheVersion ver) {
+        assert false;
+    }
+
+    /** @inheritDoc */
+    @Override public EntryGetResult innerGetAndReserveForLoad(
+        boolean readSwap,
+        boolean updateMetrics,
+        boolean evt,
+        UUID subjId,
+        String taskName,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary,
+        @Nullable ReaderArguments args) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert false;
+
+        return null;
+    }
+
+    /** @inheritDoc */
+    @Nullable @Override public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -429,7 +448,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary) {
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;
@@ -665,9 +685,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersion versionedValue(CacheObject val,
+    @Override public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         GridCacheVersion curVer,
-        GridCacheVersion newVer) {
+        GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs) {
         assert false;
 
         return null;

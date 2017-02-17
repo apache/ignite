@@ -354,6 +354,10 @@ public class FairAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if (key == null)
+            throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+
         return U.safeAbs(hash(key.hashCode())) % parts;
     }
 

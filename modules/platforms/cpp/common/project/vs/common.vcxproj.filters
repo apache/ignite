@@ -58,6 +58,15 @@
     <ClInclude Include="..\..\include\ignite\common\decimal.h">
       <Filter>Code\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\reference_impl.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\reference.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\platform_utils.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">
@@ -70,9 +79,6 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp">
-      <Filter>Code\common</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\os\win\src\common\utils.cpp">
       <Filter>Code\common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\concurrent.cpp">
@@ -88,6 +94,12 @@
       <Filter>Code\common</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\common\bits.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\common\platform_utils.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\utils.cpp">
       <Filter>Code\common</Filter>
     </ClCompile>
   </ItemGroup>

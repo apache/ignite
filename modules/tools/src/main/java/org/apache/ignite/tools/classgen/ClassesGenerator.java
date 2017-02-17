@@ -122,7 +122,11 @@ public class ClassesGenerator {
             for (String err : errs)
                 sb.append("    ").append(err).append('\n');
 
-            throw new Exception(sb.toString().trim());
+            String msg = sb.toString().trim();
+
+            System.out.println(msg);
+
+            throw new Exception(msg);
         }
 
         PrintStream out = new PrintStream(new File(basePath,
@@ -236,7 +240,7 @@ public class ClassesGenerator {
                             if (!Modifier.isPublic(cons.getModifiers()))
                                 errs.add("Default constructor in Externalizable class is not public: " + cls.getName());
                         }
-                        catch (NoSuchMethodException e) {
+                        catch (NoSuchMethodException ignored) {
                             errs.add("No default constructor in Externalizable class: " + cls.getName());
                         }
                     }

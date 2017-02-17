@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.IO;
     using System.Reflection;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// IgniteHome resolver.
@@ -35,20 +36,28 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Calculate Ignite home.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        /// <returns></returns>
-        public static string Resolve(IgniteConfiguration cfg)
+        /// <param name="log">The log.</param>
+        public static string Resolve(IgniteConfiguration cfg, ILogger log = null)
         {
             var home = cfg == null ? null : cfg.IgniteHome;
 
             if (string.IsNullOrWhiteSpace(home))
+            {
                 home = Environment.GetEnvironmentVariable(EnvIgniteHome);
+
+                if (log != null)
+                    log.Debug("IgniteHome retrieved from {0} environment variable: '{1}'", EnvIgniteHome, home);
+            }
             else if (!IsIgniteHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("IgniteConfiguration.IgniteHome is not valid: '{0}'", home));
 
             if (string.IsNullOrWhiteSpace(home))
-                home = Resolve();
+                home = Resolve(log);
             else if (!IsIgniteHome(new DirectoryInfo(home)))
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
+
+            if (log != null)
+                log.Debug("IgniteHome resolved to '{0}'", home);
 
             return home;
         }
@@ -56,8 +65,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Automatically resolve Ignite home directory.
         /// </summary>
-        /// <returns>Ignite home directory.</returns>
-        private static string Resolve()
+        /// <param name="log">The log.</param>
+        /// <returns>
+        /// Ignite home directory.
+        /// </returns>
+        private static string Resolve(ILogger log)
         {
             var probeDirs = new[]
             {
@@ -65,8 +77,16 @@ namespace Apache.Ignite.Core.Impl.Common
                 Directory.GetCurrentDirectory()
             };
 
+            if (log != null)
+                log.Debug("Attempting to resolve IgniteHome in the assembly directory " +
+                          "'{0}' and current directory '{1}'...", probeDirs[0], probeDirs[1]);
+
+
             foreach (var probeDir in probeDirs.Where(x => !string.IsNullOrEmpty(x)))
             {
+                if (log != null)
+                    log.Debug("Probing IgniteHome in '{0}'...", probeDir);
+
                 var dir = new DirectoryInfo(probeDir);
 
                 while (dir != null)

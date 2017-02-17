@@ -170,7 +170,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
                             stopGrid(NODES_CNT);
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             // No-op.
                         }
                     }
@@ -211,7 +211,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
                             tx.commit();
                         }
                         catch (Exception e) {
-                            e.printStackTrace();
+                            log.info("Ignore error: " + e);
                         }
                     }
                 }, NODES_CNT * 3, "tx-thread");

@@ -360,7 +360,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         // Query thread can stuck in next page waiting loop because all nodes are left.
         try {
             fut1.get(5_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        } catch (IgniteFutureTimeoutCheckedException ignored) {
             fut1.cancel();
         }
 

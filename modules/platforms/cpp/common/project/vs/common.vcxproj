@@ -97,6 +97,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;WIN32;_DEBUG;_WINDOWS;_USRDLL;IGNITEJVM_EXPORTS;_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -171,10 +172,13 @@
     <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\bits.h" />
+    <ClInclude Include="..\..\include\ignite\common\platform_utils.h" />
+    <ClInclude Include="..\..\include\ignite\common\reference_impl.h" />
     <ClInclude Include="..\..\include\ignite\common\utils.h" />
     <ClInclude Include="..\..\include\ignite\date.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\ignite_error.h" />
+    <ClInclude Include="..\..\include\ignite\reference.h" />
     <ClInclude Include="..\..\include\ignite\timestamp.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h" />
@@ -182,11 +186,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp" />
-    <ClCompile Include="..\..\os\win\src\common\utils.cpp" />
+    <ClCompile Include="..\..\os\win\src\common\platform_utils.cpp" />
     <ClCompile Include="..\..\src\common\big_integer.cpp" />
     <ClCompile Include="..\..\src\common\bits.cpp" />
     <ClCompile Include="..\..\src\common\concurrent.cpp" />
     <ClCompile Include="..\..\src\common\decimal.cpp" />
+    <ClCompile Include="..\..\src\common\utils.cpp" />
     <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\ignite_error.cpp" />

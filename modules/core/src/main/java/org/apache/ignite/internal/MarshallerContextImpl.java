@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -166,7 +167,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
             return true;
         }
-        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException ignored) {
             if (++failedCnt > 10) {
                 if (log.isQuiet())
                     U.quiet(false, "Failed to register marshalled class for more than 10 times in a row " +
@@ -180,7 +181,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) throws IgniteCheckedException {
+    @Override public String className(int id) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
 
         if (cache0 == null) {
@@ -209,11 +210,11 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                     assert fileLock != null : fileName;
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                         clsName = reader.readLine();
                     }
                 }
-                catch (IOException e) {
+                catch (IOException ignored) {
                     throw new IgniteCheckedException("Class definition was not found " +
                         "at marshaller cache and local file. " +
                         "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
@@ -298,7 +299,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                             assert fileLock != null : fileName;
 
-                            try (Writer writer = new OutputStreamWriter(out)) {
+                            try (Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8)) {
                                 writer.write(evt.getValue());
 
                                 writer.flush();

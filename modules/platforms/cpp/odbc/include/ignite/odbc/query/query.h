@@ -39,6 +39,30 @@ namespace ignite
             class Query
             {
             public:
+                /** Query type. */
+                enum Type {
+                    /** Column metadata query type. */
+                    COLUMN_METADATA,
+
+                    /** Data query type. */
+                    DATA,
+
+                    /** Foreign keys query type. */
+                    FOREIGN_KEYS,
+
+                    /** Primary keys query type. */
+                    PRIMARY_KEYS,
+
+                    /** Special columns query type. */
+                    SPECIAL_COLUMNS,
+
+                    /** Table metadata query type. */
+                    TABLE_METADATA,
+
+                    /** Type info query type. */
+                    TYPE_INFO
+                };
+
                 /**
                  * Destructor.
                  */
@@ -99,18 +123,32 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const = 0;
 
+                /**
+                 * Get query type.
+                 *
+                 * @return Query type.
+                 */
+                Type GetType() const
+                {
+                    return type;
+                }
+
             protected:
                 /**
                  * Constructor.
                  */
-                Query(diagnostic::Diagnosable& diag) :
-                    diag(diag)
+                Query(diagnostic::Diagnosable& diag, Type type) :
+                    diag(diag),
+                    type(type)
                 {
                     // No-op.
                 }
 
                 /** Diagnostics collector. */
                 diagnostic::Diagnosable& diag;
+
+                /** Query type. */
+                Type type;
             };
         }
     }

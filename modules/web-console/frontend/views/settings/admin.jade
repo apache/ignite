@@ -14,38 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin grid-settings()
-    i.fa.fa-bars(data-animation='am-flip-x' bs-dropdown='' aria-haspopup='true' aria-expanded='expanded' data-auto-close='1' data-trigger='click')
-    ul.select.dropdown-menu(role='menu')
-        li(ng-repeat='item in ctrl.gridOptions.categories|filter:{selectable:true}')
-            a(ng-click='ctrl.toggleColumns(item, !item.visible)')
-                i.fa.fa-check-square-o.pull-left(ng-if='item.visible')
-                i.fa.fa-square-o.pull-left(ng-if='!item.visible')
-                span {{::item.name}}
-        li.divider
-        li
-            a(ng-click='ctrl.selectAllColumns()') Select all
-        li
-            a(ng-click='ctrl.clearAllColumns()') Clear all
-        li.divider
-        li
-            a(ng-click='$hide()') Close
-
-.admin-page.row(ng-controller='adminController')
+.admin-page.row
     .docs-content.greedy
         .docs-header
-            h1 List of registered users
+            h1 Admin panel
             hr
         .docs-body
             .row
                 .col-xs-12
-                    .panel.panel-default
-                        .panel-heading.ui-grid-settings
-                            +grid-settings
-                            label Total users: 
-                                strong {{ users.length }}&nbsp;&nbsp;&nbsp;
-                            label Showing users: 
-                                strong {{ ctrl.gridApi.grid.getVisibleRows().length }}
-                                sub(ng-show='users.length === ctrl.gridApi.grid.getVisibleRows().length') all
-                        .panel-collapse
-                            .grid(ui-grid='ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-pinning)
+                    ignite-list-of-registered-users(data-options='ctrl.data')

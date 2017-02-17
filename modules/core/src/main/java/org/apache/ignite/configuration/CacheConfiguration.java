@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -793,7 +794,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether expired cache entries will be eagerly removed from cache. When
+     * Gets flag indicating whether expired cache entries will be eagerly removed from cache.
+     * If there is at least one cache configured with this flag set to {@code true}, Ignite
+     * will create a single thread to clean up expired entries in background. When flag is
      * set to {@code false}, expired entries will be removed on next entry access.
      * <p>
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
@@ -2198,7 +2201,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    static QueryEntity convert(TypeDescriptor desc) {
+    private static QueryEntity convert(TypeDescriptor desc) {
         QueryEntity entity = new QueryEntity();
 
         // Key and val types.
@@ -2207,6 +2210,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
         for (ClassProperty prop : desc.props.values())
             entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
+
+        entity.setKeyFields(desc.keyProperties);
 
         QueryIndex txtIdx = null;
 
@@ -2355,7 +2360,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
 
@@ -2377,7 +2382,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
 
-                    type.addProperty(prop, true);
+                    type.addProperty(prop, key, true);
                 }
             }
         }
@@ -2458,6 +2463,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         @GridToStringExclude
         private final Map<String, ClassProperty> props = new LinkedHashMap<>();
+
+        /** */
+        @GridToStringInclude
+        private final Set<String> keyProperties = new HashSet<>();
 
         /** */
         @GridToStringInclude
@@ -2567,15 +2576,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * Adds property to the type descriptor.
          *
          * @param prop Property.
+         * @param key Property ownership flag (key or not).
          * @param failOnDuplicate Fail on duplicate flag.
          */
-        public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
+        void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
             String name = prop.fullName();
 
             if (props.put(name, prop) != null && failOnDuplicate)
                 throw new CacheException("Property with name '" + name + "' already exists.");
 
             fields.put(name, prop.type());
+
+            if (key)
+                keyProperties.add(name);
         }
 
         /**

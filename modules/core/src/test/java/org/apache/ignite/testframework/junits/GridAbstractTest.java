@@ -102,6 +102,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -173,6 +174,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
 
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
@@ -1537,10 +1539,18 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param gridName Grid name.
+     * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
+     */
+    protected boolean isFirstGrid(String gridName) {
+        return "0".equals(gridName.substring(getTestGridName().length()));
+    }
+
+    /**
+     * @param gridName Grid name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
     protected boolean isRemoteJvm(String gridName) {
-        return isMultiJvm() && !"0".equals(gridName.substring(getTestGridName().length()));
+        return isMultiJvm() && !isFirstGrid(gridName);
     }
 
     /**

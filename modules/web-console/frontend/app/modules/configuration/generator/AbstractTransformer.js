@@ -211,6 +211,11 @@ export default class AbstractTransformer {
     }
 
     // Generate cache memory group.
+    static cacheAffinity(cache) {
+        return this.toSection(this.generator.cacheAffinity(cache));
+    }
+
+    // Generate cache memory group.
     static cacheMemory(cache) {
         return this.toSection(this.generator.cacheMemory(cache));
     }

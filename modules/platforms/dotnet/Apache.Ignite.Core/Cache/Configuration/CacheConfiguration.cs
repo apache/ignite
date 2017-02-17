@@ -32,10 +32,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
@@ -270,6 +272,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
+            EnableStatistics = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -279,6 +282,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
+            ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
         }
 
         /// <summary>
@@ -325,6 +329,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
+            writer.WriteBoolean(EnableStatistics);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -352,6 +357,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
+            ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
         }
 
         /// <summary>
@@ -692,5 +698,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
         /// </summary>
         public IAffinityFunction AffinityFunction { get; set; }
+
+        /// <summary>
+        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations, 
+        /// unless <see cref="ICache{TK,TV}.WithExpiryPolicy"/> is called.
+        /// <para />
+        /// Default is null, which means no expiration.
+        /// </summary>
+        public IFactory<IExpiryPolicy> ExpiryPolicyFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether statistics gathering is enabled on a cache.
+        /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
+        /// </summary>
+        public bool EnableStatistics { get; set; }
     }
 }

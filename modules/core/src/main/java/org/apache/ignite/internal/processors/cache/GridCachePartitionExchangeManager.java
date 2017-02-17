@@ -57,6 +57,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -711,9 +712,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      * @param exchFut Exchange future.
      */
-    public void forcePreloadExchange(GridDhtPartitionsExchangeFuture exchFut) {
+    public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionsExchangeFuture exchFut) {
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+
         exchWorker.addFuture(
-            new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId()));
+            new GridDhtPartitionsExchangeFuture(cctx, exchFut.discoveryEvent(), exchFut.exchangeId(), fut));
+
+        return fut;
     }
 
     /**
@@ -848,24 +853,30 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     ready = cacheCtx.started();
 
                 if (ready) {
-                    GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
+                    GridAffinityAssignmentCache affCache = cacheCtx.affinity().affinityCache();
 
-                    if (useOldApi) {
-                        locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
-                            locMap.nodeOrder(),
-                            locMap.updateSequence(),
-                            locMap);
+                    if (affCache != null) {
+                        GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
+
+                        if (useOldApi) {
+                            locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
+                                locMap.nodeOrder(),
+                                locMap.updateSequence(),
+                                locMap);
+                        }
+
+                        addFullPartitionsMap(m,
+                            dupData,
+                            compress,
+                            cacheCtx.cacheId(),
+                            locMap,
+                            affCache.similarAffinityKey());
+
+                        if (exchId != null)
+                            m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
                     }
-
-                    addFullPartitionsMap(m,
-                        dupData,
-                        compress,
-                        cacheCtx.cacheId(),
-                        locMap,
-                        cacheCtx.affinity().affinityCache().similarAffinityKey());
-
-                    if (exchId != null)
-                        m.addPartitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters(true));
+                    else
+                        assert cctx.cacheContext(cacheCtx.cacheId()) == null : cacheCtx.name();
                 }
             }
         }
@@ -1788,7 +1799,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 Runnable cur = cacheCtx.preloader().addAssignments(assigns,
                                     forcePreload,
                                     cnt,
-                                    r);
+                                    r,
+                                    exchFut.forcedRebalanceFuture());
 
                                 if (cur != null) {
                                     rebList.add(U.maskName(cacheCtx.name()));
@@ -1829,7 +1841,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException e) {
+                catch (IgniteClientDisconnectedCheckedException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {

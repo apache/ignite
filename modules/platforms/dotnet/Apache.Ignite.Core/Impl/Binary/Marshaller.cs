@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (meta != BinaryType.Empty)
             {
                 desc = new BinaryFullTypeDescriptor(null, meta.TypeId, meta.TypeName, true, null, null, null, false, 
-                    meta.AffinityKeyFieldName, meta.IsEnum);
+                    meta.AffinityKeyFieldName, meta.IsEnum, null);
 
                 _idToDesc.GetOrAdd(typeKey, _ => desc);
 
@@ -416,6 +416,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return new BinarySurrogateTypeDescriptor(_cfg, typeId);
+        }
+
+        /// <summary>
+        /// Gets the user type descriptors.
+        /// </summary>
+        public ICollection<IBinaryTypeDescriptor> GetUserTypeDescriptors()
+        {
+            return _typeNameToDesc.Values;
         }
 
         /// <summary>
@@ -453,7 +461,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper);
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    affKeyFld, type.IsEnum);
+                    affKeyFld, type.IsEnum, typeCfg.EqualityComparer);
             }
             else
             {
@@ -463,7 +471,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
+                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum, typeCfg.EqualityComparer);
             }
         }
 
@@ -521,9 +529,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="comparer">Comparer.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum)
+            IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum, 
+            IEqualityComparer<IBinaryObject> comparer)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -545,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
-                serializer, keepDeserialized, affKeyFieldName, isEnum);
+                serializer, keepDeserialized, affKeyFieldName, isEnum, comparer);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -571,7 +581,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 typeId = BinaryUtils.TypeId(type.Name, null, null);
 
             AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
-                false);
+                false, null);
         }
 
         /// <summary>
@@ -579,26 +589,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void AddSystemTypes()
         {
-            AddSystemType(BinaryUtils.TypeNativeJobHolder, w => new ComputeJobHolder(w));
-            AddSystemType(BinaryUtils.TypeComputeJobWrapper, w => new ComputeJobWrapper(w));
-            AddSystemType(BinaryUtils.TypeIgniteProxy, w => new IgniteProxy());
-            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, w => new ComputeOutFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, w => new ComputeOutFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, w => new ComputeFuncWrapper(w));
-            AddSystemType(BinaryUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
-            AddSystemType(BinaryUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
-            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w),
+            AddSystemType(BinaryUtils.TypeNativeJobHolder, r => new ComputeJobHolder(r));
+            AddSystemType(BinaryUtils.TypeComputeJobWrapper, r => new ComputeJobWrapper(r));
+            AddSystemType(BinaryUtils.TypeIgniteProxy, r => new IgniteProxy());
+            AddSystemType(BinaryUtils.TypeComputeOutFuncJob, r => new ComputeOutFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeOutFuncWrapper, r => new ComputeOutFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncWrapper, r => new ComputeFuncWrapper(r));
+            AddSystemType(BinaryUtils.TypeComputeFuncJob, r => new ComputeFuncJob(r));
+            AddSystemType(BinaryUtils.TypeComputeActionJob, r => new ComputeActionJob(r));
+            AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, r => new ContinuousQueryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeSerializableHolder, r => new SerializableObjectHolder(r),
                 serializer: new SerializableSerializer());
-            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w),
+            AddSystemType(BinaryUtils.TypeDateTimeHolder, r => new DateTimeHolder(r),
                 serializer: new DateTimeSerializer());
-            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
-            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
-            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
-            AddSystemType(0, w => new AffinityKey(w), "affKey");
-            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
-            AddSystemType(0, w => new ObjectInfoHolder(w));
+            AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, r => new CacheEntryProcessorHolder(r));
+            AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, r => new CacheEntryFilterHolder(r));
+            AddSystemType(BinaryUtils.TypeMessageListenerHolder, r => new MessageListenerHolder(r));
+            AddSystemType(BinaryUtils.TypeStreamReceiverHolder, r => new StreamReceiverHolder(r));
+            AddSystemType(0, r => new AffinityKey(r), "affKey");
+            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(0, r => new ObjectInfoHolder(r));
         }
     }
 }

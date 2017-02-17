@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Security;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Cluster;
@@ -62,10 +63,10 @@ namespace Apache.Ignite.Core.Impl
             Justification = "Readability")]
         static ExceptionUtils()
         {
-            // Common Java exceptions mapped to common .Net exceptions.
+            // Common Java exceptions mapped to common .NET exceptions.
             Exs["java.lang.IllegalArgumentException"] = (i, m, e) => new ArgumentException(m, e);
             Exs["java.lang.IllegalStateException"] = (i, m, e) => new InvalidOperationException(m, e);
-            Exs["java.lang.UnsupportedOperationException"] = (i, m, e) => new NotImplementedException(m, e);
+            Exs["java.lang.UnsupportedOperationException"] = (i, m, e) => new NotSupportedException(m, e);
             Exs["java.lang.InterruptedException"] = (i, m, e) => new ThreadInterruptedException(m, e);
 
             // Generic Ignite exceptions.
@@ -73,6 +74,7 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.IgniteCheckedException"] = (i, m, e) => new IgniteException(m, e);
             Exs["org.apache.ignite.IgniteClientDisconnectedException"] = (i, m, e) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (i, m, e) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
+            Exs["org.apache.ignite.binary.BinaryObjectException"] = (i, m, e) => new BinaryObjectException(m, e);
 
             // Cluster exceptions.
             Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (i, m, e) => new ClusterGroupEmptyException(m, e);
