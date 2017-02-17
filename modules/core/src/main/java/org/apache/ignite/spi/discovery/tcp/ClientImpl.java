@@ -589,7 +589,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         int connectAttempts = 1;
 
-        int sslConnectAttempts = 2;
+        int sslConnectAttempts = 3;
 
         UUID locNodeId = getLocalNodeId();
 
