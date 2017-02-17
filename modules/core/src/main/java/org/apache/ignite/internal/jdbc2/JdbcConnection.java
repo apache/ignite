@@ -132,9 +132,6 @@ public class JdbcConnection implements Connection {
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
 
-    /** Warn about duplicate keys on streamed {@code INSERT}s. */
-    private final boolean streamNoDuplicates;
-
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -158,7 +155,6 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
-        streamNoDuplicates = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_NO_DUPLICATES));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
             String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
@@ -521,8 +517,7 @@ public class JdbcConnection implements Connection {
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite,
-                streamNoDuplicates);
+                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }

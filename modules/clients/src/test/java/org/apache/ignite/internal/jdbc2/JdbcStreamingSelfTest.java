@@ -27,13 +27,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridStringLogger;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -105,11 +102,10 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param allowOverwrite Allow overwriting of existing keys.
-     * @param noDuplicates Warn about keys duplication.
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(boolean allowOverwrite, boolean noDuplicates) throws Exception {
+    private Connection createConnection(boolean allowOverwrite) throws Exception {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
@@ -117,9 +113,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         if (allowOverwrite)
             props.setProperty(IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE, "true");
-
-        if (noDuplicates)
-            props.setProperty(IgniteJdbcDriver.PROP_STREAMING_NO_DUPLICATES, "true");
 
         return DriverManager.getConnection(BASE_URL, props);
     }
@@ -137,7 +130,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsert() throws Exception {
-        conn = createConnection(false, false);
+        conn = createConnection(false);
 
         ignite(0).cache(null).put(5, 500);
 
@@ -168,7 +161,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
-        conn = createConnection(true, false);
+        conn = createConnection(true);
 
         ignite(0).cache(null).put(5, 500);
 
@@ -193,46 +186,5 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         // 5 should now point to 5 as we've turned overwriting on.
         assertEquals(5, grid(0).cache(null).get(5));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testStreamedInsertWithNoDuplicates() throws Exception {
-        IgniteLogger oldLog = GridTestUtils.getFieldValue(DataStreamerImpl.class, DataStreamerImpl.class, "log");
-
-        GridStringLogger log = new GridStringLogger(false, this.log);
-
-        GridTestUtils.setFieldValue(DataStreamerImpl.class, DataStreamerImpl.class, "log", log);
-
-        conn = createConnection(false, true);
-
-        ignite(0).cache(null).put(5, 500);
-
-        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
-
-        for (int i = 1; i <= 100000; i++) {
-            stmt.setInt(1, i);
-            stmt.setInt(2, i);
-
-            stmt.executeUpdate();
-        }
-
-        // Data is not there yet.
-        assertNull(grid(0).cache(null).get(100000));
-
-        // Let the stream flush.
-        U.sleep(1500);
-
-        // Now let's check it's all there.
-        assertEquals(1, grid(0).cache(null).get(1));
-        assertEquals(100000, grid(0).cache(null).get(100000));
-
-        // 5 should still be 500.
-        assertEquals(500, grid(0).cache(null).get(5));
-
-        GridTestUtils.setFieldValue(DataStreamerImpl.class, DataStreamerImpl.class, "log", oldLog);
-
-        assertTrue(log.toString().contains("Some keys have been duplicated [duplicates=[5]]"));
     }
 }

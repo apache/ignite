@@ -104,7 +104,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.stream.DuplicateKeysHandler;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -124,19 +123,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final DefaultIoPolicyResolver DFLT_IO_PLC_RSLVR = new DefaultIoPolicyResolver();
 
     /** Isolated receiver. */
-    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater(false);
-
-    /** Isolated receiver that forbids duplicate keys. */
-    public static final StreamReceiver ISOLATED_UPDATER_NO_DUPLICATES = new IsolatedUpdater(true);
+    private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
-
-    /** Handler for duplicates. */
-    private DuplicateKeysHandler dupHnd = (DuplicateKeysHandler)DUPLICATES_LOGGER;
 
     /** */
     private byte[] updaterBytes;
@@ -446,15 +439,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @Override public void duplicateKeysHandler(DuplicateKeysHandler dupHnd) {
-        A.notNull(this.dupHnd, "dupHnd");
-
-        this.dupHnd = dupHnd;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean allowOverwrite() {
-        return !(rcvr instanceof IsolatedUpdater);
+        return rcvr != ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -843,32 +829,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         @SuppressWarnings("SuspiciousMethodCalls")
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             try {
-                                Collection<DataStreamerEntry> dups = null;
-
-                                try {
-                                    t.get();
-                                }
-                                catch (IgniteCheckedException e1) {
-                                    if (e1.getCause() instanceof DuplicateStreamedEntriesException) {
-                                        dups = ((DuplicateStreamedEntriesException) e1.getCause()).getDuplicateEntries();
-
-                                        assert !F.isEmpty(dups);
-
-                                        for (DataStreamerEntry dupEntry : dups) {
-                                            dupEntry.getKey()
-                                                .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
-
-                                            dupEntry.getValue()
-                                                .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
-                                        }
-                                    }
-                                    else
-                                        // Will be caught by handlers of outside try
-                                        throw e1;
-                                }
-
-                                if (!F.isEmpty(dups))
-                                    dupHnd.onDuplicates(cctx, dups);
+                                t.get();
 
                                 if (activeKeys != null) {
                                     for (DataStreamerEntry e : entriesForNode)
@@ -1944,17 +1905,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Whether this receiver should throw an exception when it encounters duplicate keys. */
-        private final boolean noDuplicates;
-
-        /**
-         * @param noDuplicates {@code true} if this receiver should throw an exception
-         * when it encounters duplicate keys, {@code false} otherwise.
-         */
-        public IsolatedUpdater(boolean noDuplicates) {
-            this.noDuplicates = noDuplicates;
-        }
-
         /** {@inheritDoc} */
         @Override public void receive(IgniteCache<KeyCacheObject, CacheObject> cache,
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
@@ -1999,7 +1949,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                    boolean entRes = entry.initialValue(e.getValue(),
+                    entry.initialValue(e.getValue(),
                         ver,
                         ttl,
                         expiryTime,
@@ -2007,16 +1957,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         topVer,
                         primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                         false);
-
-                    // Let's do notifications once per key - that's why we check for primary node
-                    if (!entRes && primary && noDuplicates) {
-                        if (errEntries == null)
-                            errEntries = new ArrayList<>();
-
-                        // This is an InternalUpdater, so we're safe to cast to DataStreamerEntry -
-                        // see DataStreamerUpdateJob.unwrapEntries and its usage
-                        errEntries.add((DataStreamerEntry) e);
-                    }
 
                     cctx.evicts().touch(entry, topVer);
 
@@ -2033,9 +1973,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     U.error(log, "Failed to set initial value for cache entry: " + e, ex);
                 }
             }
-
-            if (noDuplicates && !F.isEmpty(errEntries))
-                throw new DuplicateStreamedEntriesException(errEntries);
         }
     }
 
@@ -2085,19 +2022,4 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             return S.toString(KeyCacheObjectWrapper.class, this);
         }
     }
-
-    /**
-     * Default simple handler that just prints duplicate entries to log.
-     */
-    private final static DuplicateKeysHandler DUPLICATES_LOGGER = new DuplicateKeysHandler() {
-        /** {@inheritDoc} */
-        @Override public void onDuplicates(final GridCacheContext cctx, Collection<DataStreamerEntry> duplicates) {
-            U.warn(log, "Some keys have been duplicated [duplicates=" + F.transform(duplicates,
-                new IgniteClosure<DataStreamerEntry, Object>() {
-                    @Override public Object apply(DataStreamerEntry dataStreamerEntry) {
-                        return dataStreamerEntry.getKey().value(cctx.cacheObjectContext(), false);
-                }
-            }) + ']');
-        }
-    };
 }
