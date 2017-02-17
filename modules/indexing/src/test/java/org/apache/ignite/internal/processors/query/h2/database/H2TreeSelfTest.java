@@ -24,9 +24,9 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 
 /**
- * Simple tests for {@link H2TreeIndex}.
+ * Simple tests for {@link H2Tree}.
  */
-public class H2TreeIndexTest extends TestCase {
+public class H2TreeSelfTest extends TestCase {
 
     /** Test on String values compare */
     public void testRelyOnCompare() {
@@ -35,24 +35,24 @@ public class H2TreeIndexTest extends TestCase {
         InlineIndexHelper hd = new InlineIndexHelper(Value.STRING, 0, SortOrder.DESCENDING);
 
         // same size
-        assertFalse(H2TreeIndex.canRelyOnCompare(0, ValueString.get("aabb"), ValueString.get("aabb"), ha));
-        assertFalse(H2TreeIndex.canRelyOnCompare(0, ValueString.get("aabb"), ValueString.get("aabb"), hd));
+        assertFalse(H2Tree.canRelyOnCompare(0, ValueString.get("aabb"), ValueString.get("aabb"), ha));
+        assertFalse(H2Tree.canRelyOnCompare(0, ValueString.get("aabb"), ValueString.get("aabb"), hd));
 
         // second string is shorter
-        assertTrue(H2TreeIndex.canRelyOnCompare(1, ValueString.get("aabb"), ValueString.get("aab"), ha));
-        assertTrue(H2TreeIndex.canRelyOnCompare(-1, ValueString.get("aabb"), ValueString.get("aab"), hd));
+        assertTrue(H2Tree.canRelyOnCompare(1, ValueString.get("aabb"), ValueString.get("aab"), ha));
+        assertTrue(H2Tree.canRelyOnCompare(-1, ValueString.get("aabb"), ValueString.get("aab"), hd));
 
         // second string is longer
-        assertTrue(H2TreeIndex.canRelyOnCompare(1, ValueString.get("aabb"), ValueString.get("aaaaaa"), ha));
-        assertTrue(H2TreeIndex.canRelyOnCompare(-1, ValueString.get("aabb"), ValueString.get("aaaaaa"), hd));
+        assertTrue(H2Tree.canRelyOnCompare(1, ValueString.get("aabb"), ValueString.get("aaaaaa"), ha));
+        assertTrue(H2Tree.canRelyOnCompare(-1, ValueString.get("aabb"), ValueString.get("aaaaaa"), hd));
 
-        assertFalse(H2TreeIndex.canRelyOnCompare(-1, ValueString.get("aab"), ValueString.get("aabbbbb"), ha));
-        assertFalse(H2TreeIndex.canRelyOnCompare(1, ValueString.get("aab"), ValueString.get("aabbbbb"), hd));
+        assertFalse(H2Tree.canRelyOnCompare(-1, ValueString.get("aab"), ValueString.get("aabbbbb"), ha));
+        assertFalse(H2Tree.canRelyOnCompare(1, ValueString.get("aab"), ValueString.get("aabbbbb"), hd));
 
         // one is null
-        assertTrue(H2TreeIndex.canRelyOnCompare(1, ValueString.get("aabb"), ValueNull.INSTANCE, ha));
-        assertTrue(H2TreeIndex.canRelyOnCompare(-1, ValueNull.INSTANCE, ValueString.get("aab"), ha));
-        assertTrue(H2TreeIndex.canRelyOnCompare(0, ValueNull.INSTANCE, ValueNull.INSTANCE, ha));
+        assertTrue(H2Tree.canRelyOnCompare(1, ValueString.get("aabb"), ValueNull.INSTANCE, ha));
+        assertTrue(H2Tree.canRelyOnCompare(-1, ValueNull.INSTANCE, ValueString.get("aab"), ha));
+        assertTrue(H2Tree.canRelyOnCompare(0, ValueNull.INSTANCE, ValueNull.INSTANCE, ha));
 
     }
 

@@ -571,7 +571,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
+    public boolean doUpdate(final GridH2Row row, boolean del) throws IgniteCheckedException {
         // Here we assume that each key can't be updated concurrently and case when different indexes
         // getting updated from different threads with different rows with the same key is impossible.
         GridUnsafeMemory mem = desc == null ? null : desc.memory();
