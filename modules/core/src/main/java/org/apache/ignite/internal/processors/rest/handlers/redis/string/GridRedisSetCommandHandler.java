@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisM
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
@@ -112,9 +113,9 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             // get rid of SET value.
             params.remove(0);
 
-            if (isNx(params))
+            if (IgniteUtils.containsStringCollection(params, "nx", true))
                 restReq.command(CACHE_PUT_IF_ABSENT);
-            else if (isXx(params))
+            else if (IgniteUtils.containsStringCollection(params, "xx", true))
                 restReq.command(CACHE_REPLACE);
 
             setExpire(restReq, params);
@@ -135,6 +136,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
 
         while (it.hasNext()) {
             String opt = it.next();
+
             if ("px".equalsIgnoreCase(opt)) {
                 if (it.hasNext()) {
                     try {
@@ -162,33 +164,6 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
                     throw new GridRedisGenericException("Syntax error");
             }
         }
-    }
-
-    /**
-     * @param params Command parameters.
-     * @return True if NX option is available, otherwise false.
-     */
-
-    private boolean isNx(List<String> params) {
-        for (String p : params) {
-            if ("nx".equalsIgnoreCase(p))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param params Command parameters.
-     * @return True if XX option is available, otherwise false.
-     */
-    private boolean isXx(List<String> params) {
-        for (String p : params) {
-            if ("xx".equalsIgnoreCase(p))
-                return true;
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */
