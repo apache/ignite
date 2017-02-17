@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -73,6 +74,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             initDataStructures();
         }
+    }
+
+    /**
+     * @param log Logger.
+     */
+    public void dumpStatistics(IgniteLogger log) {
+        if (freeList != null)
+            freeList.dumpStatistics(log);
     }
 
     /**

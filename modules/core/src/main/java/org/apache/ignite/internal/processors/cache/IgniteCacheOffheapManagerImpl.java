@@ -98,6 +98,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected PendingEntriesTree pendingEntries;
 
     /** */
+    private volatile boolean hasPendingEntries;
+
+    /** */
     private static final PendingRow START_PENDING_ROW = new PendingRow(Long.MIN_VALUE, 0);
 
     /** */
@@ -773,7 +776,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
-        if (pendingEntries != null) {
+        if (hasPendingEntries && pendingEntries != null) {
             GridCacheVersion obsoleteVer = null;
 
             long now = U.currentTimeMillis();
@@ -979,8 +982,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                         rowStore.removeRow(old.link());
                 }
 
-                if (pendingEntries != null && expireTime != 0)
+                if (pendingEntries != null && expireTime != 0) {
                     pendingEntries.putx(new PendingRow(expireTime, dataRow.link()));
+
+                    hasPendingEntries = true;
+                }
 
                 updateIgfsMetrics(key, (old != null ? old.value() : null), val);
             }

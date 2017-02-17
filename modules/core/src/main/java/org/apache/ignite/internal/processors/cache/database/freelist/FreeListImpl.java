@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -312,6 +313,48 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         this.shift = shift;
 
         init(metaPageId, initNew);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dumpStatistics(IgniteLogger log) {
+        long dataPages = 0;
+
+        final boolean dumpBucketsInfo = false;
+
+        for (int b = 0; b < BUCKETS; b++) {
+            long size = bucketsSize[b].longValue();
+
+            if (!isReuseBucket(b))
+                dataPages += size;
+
+            if (dumpBucketsInfo) {
+                Stripe[] stripes = getBucket(b);
+
+                boolean empty = true;
+
+                if (stripes != null) {
+                    for (Stripe stripe : stripes) {
+                        if (!stripe.empty) {
+                            empty = false;
+
+                            break;
+                        }
+                    }
+                }
+
+                log.info("Bucket [b=" + b +
+                    ", size=" + size +
+                    ", stripes=" + (stripes != null ? stripes.length : 0) +
+                    ", stripesEmpty=" + empty + ']');
+            }
+        }
+
+        if (dataPages > 0) {
+            log.info("FreeList [name=" + name +
+                ", buckets=" + BUCKETS +
+                ", dataPages=" + dataPages +
+                ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+        }
     }
 
     /**

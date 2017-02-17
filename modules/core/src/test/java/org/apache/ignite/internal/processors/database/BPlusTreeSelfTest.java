@@ -1403,7 +1403,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             Long row = srcIo.getLookupRow(null, src, srcIdx);
 
-            store(dst, dstIdx, row, null);
+            store(dst, dstIdx, row, null, false);
         }
 
         /**
