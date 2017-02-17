@@ -462,6 +462,12 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                         clo.apply(key, val);
                     }
                 }
+                catch (NullPointerException e){
+                    //todo only for investigation
+                    System.out.println("Got NPE");
+
+                    e.printStackTrace();
+                }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to load cache", e);
                 }
