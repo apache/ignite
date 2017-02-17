@@ -32,7 +32,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_common_la_LDFLAGS = \
     -no-undefined \
@@ -43,16 +43,17 @@ libignite_common_la_LDFLAGS = \
 
 libignite_common_la_SOURCES = \
     os/linux/src/common/concurrent_os.cpp \
-    os/linux/src/common/utils.cpp \
+    os/linux/src/common/platform_utils.cpp \
     src/common/big_integer.cpp \
     src/common/concurrent.cpp \
     src/common/decimal.cpp \
     src/common/bits.cpp \
+    src/common/utils.cpp \
     src/date.cpp \
     src/ignite_error.cpp \
     src/guid.cpp \
     src/timestamp.cpp
-	
+
 clean-local:
 	$(RM) *.gcno *.gcda
 

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,9 +64,16 @@ public class PlatformClosureJob extends PlatformAbstractJob {
             createJob(ctx);
 
             try (PlatformMemory mem = ctx.memory().allocate()) {
-                PlatformInputStream in = mem.input();
+                PlatformOutputStream out = mem.output();
 
-                ctx.gateway().computeJobExecute(ptr, 0, mem.pointer());
+                out.writeLong(ptr);
+                out.writeBoolean(false);  // cancel
+
+                out.synchronize();
+
+                ctx.gateway().computeJobExecute(mem.pointer());
+
+                PlatformInputStream in = mem.input();
 
                 in.synchronize();
 

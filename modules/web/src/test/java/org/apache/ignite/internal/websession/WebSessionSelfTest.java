@@ -158,7 +158,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 assertNotNull(sesId);
             }
 
-            Ignite ignite2 = Ignition.start(srvCfg2);
+            Ignition.start(srvCfg2);
 
             stopGrid(ignite.name());
 
@@ -305,7 +305,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     private void testSessionRenewalDuringLogin(String cfg) throws Exception {
         Server srv = null;
-        String sesId = null;
+        String sesId;
         try {
             srv = startServerWithLoginService(TEST_JETTY_PORT, cfg, null, new SessionLoginServlet());
 
@@ -1072,7 +1072,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     req.getSession().invalidate();
                     res.getWriter().println("invalidated");
                 }
-                catch (Exception e) {
+                catch (Exception ignored) {
                     res.getWriter().println("failed");
                 }
 

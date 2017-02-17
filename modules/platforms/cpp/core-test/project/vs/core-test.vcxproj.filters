@@ -58,15 +58,39 @@
     <ClCompile Include="..\..\src\interop_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\continuous_query_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\reference_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary_object_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test_utils.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
       <Filter>TeamCity</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\binary_test_utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\complex_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\test_type.h">
+      <Filter>Code\Types</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\binary_test_defs.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\binary_test_utils.h">
+    <ClInclude Include="..\..\include\ignite\test_utils.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
@@ -80,12 +104,24 @@
     <Filter Include="TeamCity">
       <UniqueIdentifier>{76bceab0-e251-445f-88c3-3f6f8739423b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\Types">
+      <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Types">
+      <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\cache-test.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\invalid.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-identity.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

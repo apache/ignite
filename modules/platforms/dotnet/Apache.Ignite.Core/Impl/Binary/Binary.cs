@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 throw new IgniteException("Type is not binary (add it to BinaryConfiguration): " + 
                     type.FullName);
 
-            return Builder0(null, BinaryFromDescriptor(desc), desc);
+            return Builder0(null, null, desc);
         }
 
         /** <inheritDoc /> */
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(typeName);
             
-            return Builder0(null, BinaryFromDescriptor(desc), desc);
+            return Builder0(null, null, desc);
         }
 
         /** <inheritDoc /> */
@@ -178,30 +178,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             get
             {
                 return _marsh;
-            }
-        }
-
-        /// <summary>
-        /// Create empty binary object from descriptor.
-        /// </summary>
-        /// <param name="desc">Descriptor.</param>
-        /// <returns>Empty binary object.</returns>
-        private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
-        {
-            const int len = BinaryObjectHeader.Size;
-
-            var flags = desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None;
-
-            if (_marsh.CompactFooter && desc.UserType)
-                flags |= BinaryObjectHeader.Flag.CompactFooter;
-
-            var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len, flags);
-
-            using (var stream = new BinaryHeapStream(len))
-            {
-                BinaryObjectHeader.Write(hdr, stream, 0);
-
-                return new BinaryObject(_marsh, stream.InternalArray, 0, hdr);
             }
         }
 

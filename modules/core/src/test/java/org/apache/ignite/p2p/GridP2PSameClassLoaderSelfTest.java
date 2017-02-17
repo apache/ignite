@@ -82,12 +82,10 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
     /**
      * Test.
-     * @param isIsolatedDifferentTask Isolated different task flag.
-     * @param isIsolatedDifferentNode Isolated different mode flag.
      * @throws Exception if error occur
      */
     @SuppressWarnings({"unchecked"})
-    private void processTest(boolean isIsolatedDifferentTask, boolean isIsolatedDifferentNode) throws Exception {
+    private void processTest() throws Exception {
         try {
             final Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
@@ -128,7 +126,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
-        processTest(true, true);
+        processTest();
     }
 
     /**
@@ -139,7 +137,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
-        processTest(false, true);
+        processTest();
     }
 
     /**
@@ -150,7 +148,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
-        processTest(false, false);
+        processTest();
     }
 
     /**
@@ -161,7 +159,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
-        processTest(false, false);
+        processTest();
     }
 
     /**

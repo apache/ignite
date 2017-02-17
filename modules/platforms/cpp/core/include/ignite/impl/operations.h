@@ -531,7 +531,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            OutQueryGetAllOperation(std::vector<ignite::cache::CacheEntry<K, V>>* res) : res(res)
+            OutQueryGetAllOperation(std::vector<ignite::cache::CacheEntry<K, V> >* res) : res(res)
             {
                 // No-op.
             }
@@ -556,7 +556,7 @@ namespace ignite
 
         private:
             /** Entries. */
-            std::vector<ignite::cache::CacheEntry<K, V>>* res;
+            std::vector<ignite::cache::CacheEntry<K, V> >* res;
             
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperation)
         };

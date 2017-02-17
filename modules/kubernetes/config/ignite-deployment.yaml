@@ -1,0 +1,26 @@
+# An example of a Kubernetes configuration for Ignite pods deployment.
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  # Custom Ignite cluster's name.
+  name: ignite-cluster
+spec:
+  # Number of nodes to be started by Kubernetes initially.
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        # Must be equal to Ignite's Kubernetes service name.
+        app: ignite
+    spec:
+      containers:
+        # Custom Ignite node's pod  name.
+      - name: ignite-node
+        # Custom Ignite Docker image name.
+        image: ignite-kube:v1
+        ports:
+        # Ports to open.
+        - containerPort: 11211 # REST port number.
+        - containerPort: 47100 # communication SPI port number.
+        - containerPort: 47500 # discovery SPI port number.
+        - containerPort: 49112 # JMX port number.

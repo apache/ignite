@@ -125,7 +125,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                                 break;
                             }
-                            catch (GridCacheEntryRemovedException e) {
+                            catch (GridCacheEntryRemovedException ignored) {
                                 entry = ctx.cache().entryEx(entry.key(), tx.topologyVersion());
 
                                 txEntry.cached(entry);
@@ -230,8 +230,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
@@ -527,7 +529,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         GridCacheContext cacheCtx = entry.context();
 
         List<ClusterNode> nodes = cacheCtx.isLocal() ?
-            cacheCtx.affinity().nodes(entry.key(), topVer) :
+            cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
             cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);

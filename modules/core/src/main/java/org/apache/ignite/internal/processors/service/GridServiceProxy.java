@@ -84,11 +84,15 @@ public class GridServiceProxy<T> implements Serializable {
     /** Whether multi-node request should be done. */
     private final boolean sticky;
 
+    /** Service availability wait timeout. */
+    private final long waitTimeout;
+
     /**
      * @param prj Grid projection.
      * @param name Service name.
      * @param svc Service type class.
      * @param sticky Whether multi-node request should be done.
+     * @param timeout Service availability wait timeout. Cannot be negative.
      * @param ctx Context.
      */
     @SuppressWarnings("unchecked")
@@ -96,12 +100,16 @@ public class GridServiceProxy<T> implements Serializable {
         String name,
         Class<? super T> svc,
         boolean sticky,
+        long timeout,
         GridKernalContext ctx)
     {
+        assert timeout >= 0 : timeout;
+
         this.prj = prj;
         this.ctx = ctx;
         this.name = name;
         this.sticky = sticky;
+        this.waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
 
         log = ctx.log(getClass());
@@ -145,6 +153,8 @@ public class GridServiceProxy<T> implements Serializable {
         ctx.gateway().readLock();
 
         try {
+            final long startTime = U.currentTimeMillis();
+
             while (true) {
                 ClusterNode node = null;
 
@@ -171,7 +181,8 @@ public class GridServiceProxy<T> implements Serializable {
                             GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
-                            false
+                            false,
+                            waitTimeout
                         ).get();
                     }
                 }
@@ -203,6 +214,9 @@ public class GridServiceProxy<T> implements Serializable {
 
                     throw new IgniteException(e);
                 }
+
+                if (waitTimeout > 0 && U.currentTimeMillis() - startTime >= waitTimeout)
+                    throw new IgniteException("Service acquire timeout was reached, stopping. [timeout=" + waitTimeout + "]");
             }
         }
         finally {
@@ -246,7 +260,7 @@ public class GridServiceProxy<T> implements Serializable {
         if (hasLocNode && ctx.service().service(name) != null)
             return ctx.discovery().localNode();
 
-        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name);
+        Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name, waitTimeout);
 
         if (snapshot == null || snapshot.isEmpty())
             return null;

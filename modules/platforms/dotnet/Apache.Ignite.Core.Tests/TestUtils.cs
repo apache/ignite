@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable S2360 // Optional parameters should not be used
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -55,7 +54,8 @@ namespace Apache.Ignite.Core.Tests
                 "-Xms1g",
                 "-Xmx4g",
                 "-ea",
-                "-DIGNITE_QUIET=true"
+                "-DIGNITE_QUIET=true",
+                "-Duser.timezone=UTC"
             }
             : new List<string>
             {

@@ -749,7 +749,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
-                onAllReceived(false);
+                onAllReceived();
         }
         else
             sendPartitions(crd);
@@ -805,8 +805,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
                 if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
-                    U.warn(log, "Failed to wait for locks release future. " +
-                        "Dumping pending objects that might be the cause: " + cctx.localNodeId());
+                    U.warn(log, "Failed to wait for locks release future. Dumping pending objects that might be the " +
+                        "cause [topVer=" + topologyVersion() + ", nodeId=" + cctx.localNodeId() + "]: ");
 
                     U.warn(log, "Locked keys:");
 
@@ -959,7 +959,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             cctx.io().send(node, m, SYSTEM_POOL);
         }
-        catch (ClusterTopologyCheckedException e) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
         }
@@ -1213,7 +1213,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (allReceived) {
             awaitSingleMapUpdates();
 
-            onAllReceived(false);
+            onAllReceived();
         }
     }
 
@@ -1256,9 +1256,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
-    private void onAllReceived(boolean discoThread) {
+    private void onAllReceived() {
         try {
             assert crd.isLocal();
 
@@ -1556,6 +1555,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (isDone() || !enterBusy())
             return;
 
+        cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
+
         try {
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
@@ -1615,7 +1616,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (allReceived) {
                                 awaitSingleMapUpdates();
 
-                                onAllReceived(true);
+                                onAllReceived();
 
                                 return;
                             }
@@ -1628,7 +1629,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                         // It is possible that some nodes finished exchange with previous coordinator.
                                         cctx.io().send(nodeId, req, SYSTEM_POOL);
                                     }
-                                    catch (ClusterTopologyCheckedException e) {
+                                    catch (ClusterTopologyCheckedException ignored) {
                                         if (log.isDebugEnabled())
                                             log.debug("Node left during partition exchange [nodeId=" + nodeId +
                                                 ", exchId=" + exchId + ']');

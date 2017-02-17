@@ -94,3 +94,16 @@ igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
         templateUrl: 'templates/dropdown.html'
     });
 }]);
+
+// AngularStrap dropdowns () configuration.
+igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
+    angular.extend($datepickerProvider.defaults, {
+        autoclose: true,
+        iconLeft: 'icon-datepicker-left',
+        iconRight: 'icon-datepicker-right'
+    });
+}]);
+
+igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
+    $translateProvider.useSanitizeValueStrategy('sanitize');
+}]);

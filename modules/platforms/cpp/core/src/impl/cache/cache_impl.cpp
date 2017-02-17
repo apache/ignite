@@ -26,9 +26,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -88,6 +90,9 @@ namespace ignite
 
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
+
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
 
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
@@ -300,6 +305,33 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const SqlQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const TextQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const ScanQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+            }
+
+            struct DummyQry { void Write(BinaryRawWriter&) const { }};
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
+            {
+                DummyQry dummy;
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
         }
     }

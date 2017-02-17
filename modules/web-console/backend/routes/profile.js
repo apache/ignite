@@ -45,7 +45,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
 
             usersService.save(req.body)
                 .then((user) => {
-                    const becomeUsed = req.session.viewedUser && user.admin;
+                    const becomeUsed = req.session.viewedUser && req.user.admin;
 
                     if (becomeUsed) {
                         req.session.viewedUser = user;
@@ -64,6 +64,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
                         });
                     });
                 })
+                .then(() => usersService.get(req.user, req.session.viewedUser))
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

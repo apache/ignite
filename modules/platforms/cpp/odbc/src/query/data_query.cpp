@@ -17,6 +17,7 @@
 
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/query/data_query.h"
 
 namespace ignite
@@ -40,7 +41,7 @@ namespace ignite
             {
                 Close();
             }
-            
+
             SqlResult DataQuery::Execute()
             {
                 if (cursor.get())
@@ -186,7 +187,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                    LOG_MSG("Error: " << rsp.GetError());
 
                     diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
@@ -197,15 +198,13 @@ namespace ignite
 
                 resultMeta.assign(rsp.GetMeta().begin(), rsp.GetMeta().end());
 
-                LOG_MSG("Query id: %lld\n", cursor->GetQueryId());
-
+                LOG_MSG("Query id: " << cursor->GetQueryId());
                 for (size_t i = 0; i < rsp.GetMeta().size(); ++i)
                 {
-                    LOG_MSG("[%d] SchemaName:     %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
-                    LOG_MSG("[%d] TypeName:       %s\n", i, rsp.GetMeta()[i].GetTableName().c_str());
-                    LOG_MSG("[%d] ColumnName:     %s\n", i, rsp.GetMeta()[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnType:     %d\n", i, rsp.GetMeta()[i].GetDataType());
-                    LOG_MSG("\n");
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << rsp.GetMeta()[i].GetSchemaName()
+                        <<  "\n[" << i << "] TypeName:       " << rsp.GetMeta()[i].GetTableName()
+                        <<  "\n[" << i << "] ColumnName:     " << rsp.GetMeta()[i].GetColumnName()
+                        <<  "\n[" << i << "] ColumnType:     " << rsp.GetMeta()[i].GetDataType());
                 }
 
                 return SQL_RESULT_SUCCESS;
@@ -227,11 +226,11 @@ namespace ignite
                     return SQL_RESULT_ERROR;
                 }
 
-                LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
+                LOG_MSG("Query id: " << rsp.GetQueryId());
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                    LOG_MSG("Error: " << rsp.GetError());
 
                     diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 
@@ -261,7 +260,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                    LOG_MSG("Error: " << rsp.GetError());
 
                     diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
 

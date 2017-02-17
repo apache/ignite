@@ -55,14 +55,14 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         return cfg;
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
         checkMultiReducerWholeMapReduceExecution(false);
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {
@@ -100,6 +100,8 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
 
             if (striped)
                 jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "true");
+            else
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "false");
 
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 

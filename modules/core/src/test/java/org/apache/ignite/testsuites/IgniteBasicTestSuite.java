@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.util.AttributeNodeFilterSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCac
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
+import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessorValidationSelfTest;
@@ -54,6 +56,7 @@ import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.MarshallerContextSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
+import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
@@ -99,6 +102,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
+        suite.addTest(new TestSuite(IgniteMessagingSendAsyncTest.class));
 
         GridTestUtils.addTestIfNeeded(suite, ClusterGroupSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
@@ -111,6 +115,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(GridClosureSerializationTest.class);
         suite.addTestSuite(ClosureServiceClientsNodesTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
@@ -148,6 +153,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(MarshallerContextSelfTest.class);
 
         suite.addTestSuite(SecurityPermissionSetBuilderTest.class);
+
+        suite.addTestSuite(AttributeNodeFilterSelfTest.class);
 
         return suite;
     }

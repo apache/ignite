@@ -28,6 +28,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -35,6 +36,10 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="log4net, Version=1.2.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
@@ -58,10 +63,13 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryBuilderSelfTestArrayIdentity.cs" />
+    <Compile Include="Binary\BinaryEqualityComparerTest.cs" />
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\IO\BinaryStreamsTest.cs" />
     <Compile Include="Binary\JavaTypeMappingTest.cs" />
@@ -71,11 +79,15 @@
     <Compile Include="Cache\CacheMetricsTest.cs" />
     <Compile Include="Cache\CacheResultTest.cs" />
     <Compile Include="Cache\CacheSwapSpaceTest.cs" />
+    <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
+    <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
+    <Compile Include="Cache\Store\NamedNodeCacheStoreTest.cs" />
     <Compile Include="Collections\MultiValueDictionaryTest.cs" />
     <Compile Include="Collections\ReadOnlyCollectionTest.cs" />
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
+    <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
     <Compile Include="Log\Log4NetLoggerTest.cs" />
     <Compile Include="Log\NLogLoggerTest.cs" />

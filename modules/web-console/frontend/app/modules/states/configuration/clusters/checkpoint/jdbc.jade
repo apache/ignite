@@ -16,15 +16,17 @@
 
 include /app/helpers/jade/mixins.jade
 
+-var jdbcCheckpoint = 'model.kind === "JDBC"'
+
 .settings-row
-    +text('Data source bean name:', 'model.JDBC.dataSourceBean', '"checkpointJdbcDataSourceBean" + $index', 'model.kind === "JDBC"', 'Input bean name',
+    +text('Data source bean name:', 'model.JDBC.dataSourceBean', '"checkpointJdbcDataSourceBean" + $index', jdbcCheckpoint, 'Input bean name',
     'Name of the data source bean in Spring context')
 .settings-row
-    +dialect('Dialect:', 'model.JDBC.dialect', '"checkpointJdbcDialect" + $index', 'model.kind === "JDBC"',
+    +dialect('Dialect:', 'model.JDBC.dialect', '"checkpointJdbcDialect" + $index', jdbcCheckpoint,
     'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
 .settings-row
     +java-class('Listener:', 'model.JDBC.checkpointListener', '"checkpointJdbcListener" + $index', 'true', 'false',
-        'Checkpoint listener implementation class name')
+        'Checkpoint listener implementation class name', jdbcCheckpoint)
 +showHideLink('jdbcExpanded', 'settings')
     .details-row
         +text('User:', 'model.JDBC.user', '"checkpointJdbcUser" + $index', 'false', 'Input user name', 'Checkpoint jdbc user name')

@@ -115,6 +115,7 @@
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
 

@@ -73,6 +73,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "This class is just a proxy.")]
         public override string CommandText
         {
             get { return _command.CommandText; }

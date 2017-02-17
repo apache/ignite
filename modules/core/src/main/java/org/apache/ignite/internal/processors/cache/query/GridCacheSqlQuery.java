@@ -21,10 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,11 +45,11 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private String qry;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Object[] params;
 

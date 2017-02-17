@@ -46,6 +46,9 @@
     <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp">
       <Filter>Code\impl\cache\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -144,6 +147,24 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h">
       <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h">
+      <Filter>Code\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h">
+      <Filter>Code\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_handle_impl.h">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h">
+      <Filter>Code\impl\cache\query\continuous</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -175,6 +196,15 @@
     </Filter>
     <Filter Include="Code\transactions">
       <UniqueIdentifier>{146fe661-0ad3-4d51-83a3-fce8a897e84d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\query\continuous">
+      <UniqueIdentifier>{2056dfc8-4ced-4658-b2b7-a8c81a7ef797}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache\query\continuous">
+      <UniqueIdentifier>{d633f819-7b30-4e26-81ec-f708d1c1ff8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\cache\event">
+      <UniqueIdentifier>{e03c3690-ff22-4c78-83a0-b77cebb7f980}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

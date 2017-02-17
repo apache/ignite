@@ -16,7 +16,9 @@
  */
 
 import '../public/stylesheets/style.scss';
-import '../app/directives/ui-grid-settings/ui-grid-settings.scss';
+import '../app/components/ui-grid-header/ui-grid-header.scss';
+import '../app/components/ui-grid-settings/ui-grid-settings.scss';
+import '../app/components/form-field-datepicker/form-field-datepicker.scss';
 import './helpers/jade/mixins.jade';
 
 import './app.config';
@@ -25,10 +27,10 @@ import './decorator/select';
 import './decorator/tooltip';
 
 import './modules/form/form.module';
-import './modules/agent/agent.module.js';
+import './modules/agent/agent.module';
 import './modules/sql/sql.module';
 import './modules/nodes/nodes.module';
-import './modules/Demo/Demo.module.js';
+import './modules/demo/Demo.module';
 
 import './modules/states/signin.state';
 import './modules/states/logout.state';
@@ -39,6 +41,7 @@ import './modules/states/admin.state';
 import './modules/states/errors.state';
 
 // ignite:modules
+import './core';
 import './modules/user/user.module';
 import './modules/branding/branding.module';
 import './modules/navbar/navbar.module';
@@ -49,6 +52,9 @@ import './modules/ace.module';
 import './modules/socket.module';
 import './modules/loading/loading.module';
 // endignite
+
+// Data
+import i18n from './data/i18n';
 
 // Directives.
 import igniteAutoFocus from './directives/auto-focus.directive.js';
@@ -98,14 +104,9 @@ import defaultName from './filters/default-name.filter';
 import domainsValidation from './filters/domainsValidation.filter';
 import duration from './filters/duration.filter';
 import hasPojo from './filters/hasPojo.filter';
-
-// Generators
-import $generatorOptional from './modules/configuration/generator/generator-optional';
-
-window.$generatorOptional = $generatorOptional;
+import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 
 // Controllers
-import admin from 'controllers/admin-controller';
 import caches from 'controllers/caches-controller';
 import clusters from 'controllers/clusters-controller';
 import domains from 'controllers/domains-controller';
@@ -113,6 +114,10 @@ import igfs from 'controllers/igfs-controller';
 import profile from 'controllers/profile-controller';
 import auth from './controllers/auth.controller';
 import resetPassword from './controllers/reset-password.controller';
+
+// Components
+import igniteListOfRegisteredUsers from './components/list-of-registered-users';
+import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
@@ -134,6 +139,7 @@ angular
     'nvd3',
     'smart-table',
     'treeControl',
+    'pascalprecht.translate',
     'ui.grid',
     'ui.grid.saveState',
     'ui.grid.selection',
@@ -141,6 +147,7 @@ angular
     'ui.grid.autoResize',
     'ui.grid.exporter',
     // Base modules.
+    'ignite-console.core',
     'ignite-console.ace',
     'ignite-console.Form',
     'ignite-console.user',
@@ -191,6 +198,7 @@ angular
 .directive(...igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
+.directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
 // Services.
 .service('IgniteErrorPopover', ErrorPopover)
 .service('JavaTypes', JavaTypes)
@@ -209,8 +217,8 @@ angular
 .service(...FormUtils)
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
+.service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 // Controllers.
-.controller(...admin)
 .controller(...auth)
 .controller(...resetPassword)
 .controller(...caches)
@@ -224,7 +232,11 @@ angular
 .filter(...domainsValidation)
 .filter(...duration)
 .filter(...hasPojo)
-.config(['$stateProvider', '$locationProvider', '$urlRouterProvider', ($stateProvider, $locationProvider, $urlRouterProvider) => {
+.filter('uiGridSubcategories', uiGridSubcategories)
+.config(['$translateProvider', '$stateProvider', '$locationProvider', '$urlRouterProvider', ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
+    $translateProvider.translations('en', i18n);
+    $translateProvider.preferredLanguage('en');
+
     // Set up the states.
     $stateProvider
         .state('base', {

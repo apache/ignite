@@ -170,6 +170,13 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
     }
 
     /**
+     * @return Buffer length (how much memory is allocated).
+     */
+    public int bufferLength() {
+        return bufSize;
+    }
+
+    /**
      * @return Position.
      */
     public int position() {
@@ -181,6 +188,13 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
      */
     public boolean readyForFlush() {
         return pos >= flushSize;
+    }
+
+    /**
+     * Reset the stream.
+     */
+    public void reset() {
+        pos = 0;
     }
 
     /**

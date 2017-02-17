@@ -61,7 +61,7 @@ include /app/helpers/jade/mixins.jade
                                 Note that in this mode entries can be evicted only to swap\
                             </li>\
                         </ul>')
-                .settings-row(data-ng-show=model + '.memoryMode !== "OFFHEAP_VALUES"')
+                .settings-row(ng-show=model + '.memoryMode !== "OFFHEAP_VALUES"')
                     +dropdown-required('Off-heap memory:', model + '.offHeapMode', '"offHeapMode"', 'true',
                         model + '.memoryMode === "OFFHEAP_TIERED"',
                         'Disabled',
@@ -76,7 +76,7 @@ include /app/helpers/jade/mixins.jade
                             <li>Limited - Off-heap storage has limited size</li>\
                             <li>Unlimited - Off-heap storage grow infinitely (it is up to user to properly add and remove entries from cache to ensure that off-heap storage does not grow infinitely)</li>\
                         </ul>')
-                .settings-row(data-ng-if=model + '.offHeapMode === 1 && ' + model + '.memoryMode !== "OFFHEAP_VALUES"')
+                .settings-row(ng-if=model + '.offHeapMode === 1 && ' + model + '.memoryMode !== "OFFHEAP_VALUES"')
                     +number-required('Off-heap memory max size:', model + '.offHeapMaxMemory', '"offHeapMaxMemory"', 'true',
                         model + '.offHeapMode === 1', 'Enter off-heap memory size', '1',
                         'Maximum amount of memory available to off-heap storage in bytes')
