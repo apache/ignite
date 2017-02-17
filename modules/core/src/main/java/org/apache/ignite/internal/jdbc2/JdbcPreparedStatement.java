@@ -17,14 +17,28 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.io.*;
-import java.math.*;
-import java.net.*;
-import java.sql.*;
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Date;
-import java.util.*;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLXML;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
 
 /**
  * JDBC prepared statement implementation.
@@ -32,9 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
-
-    /** Batch arguments. */
-    private List<List<Object>> batchArgs;
 
     /** H2's parsed statement to retrieve metadata from. */
     PreparedStatement nativeStatement;
@@ -55,8 +66,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared " +
-            "statement (use addBatch() to add new set of arguments)");
+        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
     }
 
     /** {@inheritDoc} */
@@ -183,7 +193,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        batchArgs = null;
+        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
     }
 
     /** {@inheritDoc} */
@@ -206,31 +216,14 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        if (batchArgs == null)
-            batchArgs = new ArrayList<>();
-
-        batchArgs.add(new ArrayList<>(U.firstNotNull(args, Collections.emptyList())));
+        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        rs = null;
+        ensureNotClosed();
 
-        updateCnt = -1;
-
-        if (batchArgs == null)
-            return U.EMPTY_INTS;
-
-        long[] res = doBatchUpdate(sql, F.flatCollections(batchArgs).toArray());
-
-        int[] intRes = new int[res.length];
-
-        for (int i = 0; i < res.length; i++)
-            intRes[i] = Long.valueOf(res[i]).intValue();
-
-        batchArgs = null;
-
-        return intRes;
+        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
     }
 
     /** {@inheritDoc} */
