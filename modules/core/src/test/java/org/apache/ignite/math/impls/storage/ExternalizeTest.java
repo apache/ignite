@@ -41,7 +41,7 @@ public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
         T objRestored = null;
 
         try {
-            ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream(STORAGE_SIZE * Double.BYTES);
+            ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();//STORAGE_SIZE * Double.BYTES);
 
             ObjectOutputStream objOutputStream = new ObjectOutputStream(byteArrOutputStream);
 

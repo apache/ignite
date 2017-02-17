@@ -243,7 +243,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Converts this vector into [N x 1] or [1 x N] matrix where N is this vector cardinality.
      *
-     * @param row Row [N x 1] or column [1 x N] matrix.
+     * @param row {@code true} for row [N x 1], or {@code false} for column [1 x N] matrix.
      * @return Newly created matrix.
      */
     Matrix toMatrix(boolean row);
@@ -252,7 +252,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Converts this vector into [N+1 x 1] or [1 x N+1] matrix where N is this vector cardinality.
      * (0,0) element of this matrix will be {@code zeroVal} parameter.
      *
-     * @param row Row [N x 1] or column [1 x N] matrix.
+     * @param row {@code true} for row [N+1 x 1], or {@code false} for column [1 x N+1] matrix.
      * @return Newly created matrix.
      */
     Matrix toMatrixPlusOne(boolean row, double zeroVal);
