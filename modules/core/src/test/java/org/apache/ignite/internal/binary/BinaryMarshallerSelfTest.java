@@ -1012,12 +1012,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testBinarylizableClassCustomWithConstructor() throws Exception {
+    public void testBinarylizableClassWithCustomConstructor() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        TestBinarylizableClassCustomConstructor sut = new TestBinarylizableClassCustomConstructor(1, 2);
+        TestBinarylizableClassWithCustomConstructor sut = new TestBinarylizableClassWithCustomConstructor(1, 2);
 
-        TestBinarylizableClassCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
+        TestBinarylizableClassWithCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
 
         assertEquals(sut.anInt, sutUnmarshalled.anInt);
         assertEquals(sut.aLong, sutUnmarshalled.aLong);
@@ -1029,9 +1029,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testNotBinarylizableClassWithCustomConstructor() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        TestNotBinarylizableClassCustomConstructor sut = new TestNotBinarylizableClassCustomConstructor((byte)1, 2);
+        TestNotBinarylizableClassWithCustomConstructor sut = new TestNotBinarylizableClassWithCustomConstructor((byte)1, 2);
 
-        TestNotBinarylizableClassCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
+        TestNotBinarylizableClassWithCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
 
         assertEquals(sut.aByte, sutUnmarshalled.aByte);
         assertEquals(sut.aDouble, sutUnmarshalled.aDouble);
@@ -3383,7 +3383,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestBinarylizableClassCustomConstructor implements Binarylizable {
+    private static class TestBinarylizableClassWithCustomConstructor implements Binarylizable {
         /** */
         private int anInt;
 
@@ -3391,18 +3391,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private long aLong;
 
         /** */
-        TestBinarylizableClassCustomConstructor() {
+        TestBinarylizableClassWithCustomConstructor() {
             throw new AssertionError();
         }
 
         /** */
-        TestBinarylizableClassCustomConstructor(int anInt, long aLong) {
+        TestBinarylizableClassWithCustomConstructor(int anInt, long aLong) {
             this.anInt = anInt;
             this.aLong = aLong;
         }
 
         /** */
-        TestBinarylizableClassCustomConstructor(BinaryReader reader) {
+        TestBinarylizableClassWithCustomConstructor(BinaryReader reader) {
             BinaryRawReader rawReader = reader.rawReader();
 
             anInt = rawReader.readInt();
@@ -3427,7 +3427,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestNotBinarylizableClassCustomConstructor {
+    private static class TestNotBinarylizableClassWithCustomConstructor {
         /** */
         private byte aByte;
 
@@ -3435,17 +3435,17 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private double aDouble;
 
         /** */
-        TestNotBinarylizableClassCustomConstructor() {
+        TestNotBinarylizableClassWithCustomConstructor() {
         }
 
         /** */
-        TestNotBinarylizableClassCustomConstructor(byte aByte, double aDouble) {
+        TestNotBinarylizableClassWithCustomConstructor(byte aByte, double aDouble) {
             this.aByte = aByte;
             this.aDouble = aDouble;
         }
 
         /** */
-        TestNotBinarylizableClassCustomConstructor(BinaryReader reader) {
+        TestNotBinarylizableClassWithCustomConstructor(BinaryReader reader) {
             throw new AssertionError();
         }
     }
