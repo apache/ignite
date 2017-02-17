@@ -29,6 +29,28 @@ import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
  */
 public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     /**
+     * Utility method to add leading zeroes.
+     *
+     * @param len The desired length.
+     * @param n The number to nullify.
+     */
+    static String nullifyToLen(int len, int n) {
+        String res = String.valueOf(n);
+
+        int zero = len - res.length();
+
+        if (zero <= 0)
+            return res;
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i=0; i<zero; i++)
+            sb.append("0");
+
+        return sb.toString() + res;
+    }
+
+    /**
      * Class representing Hadoop sample job execution parameters.
      */
     static class FrameworkParameters {
@@ -140,7 +162,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         /**
          * Gets the example name.
          */
-        final String name() {
+        protected final String name() {
             // Cannot use Class#getSimpleName() because for inner classes it returns empty string.
             String x = tool().getClass().getName();
 
@@ -228,7 +250,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @return The base directory.
      */
     protected String getFsBase() {
-        return "file:///tmp/hadoop-test-" + getUser();
+        return "/tmp/hadoop-test-" + getUser();
     }
 
     /**
@@ -268,8 +290,9 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      *
      * @param conf The configuration object.
      */
-    protected final void prepareConf(Configuration conf) {
-        conf.set("fs.defaultFS", getFsBase());
+    protected void prepareConf(Configuration conf) {
+        conf.set("fs.defaultFS", "file:///"//getFsBase()
+        );
 
         //        // Ignite specific job properties:
         //        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);

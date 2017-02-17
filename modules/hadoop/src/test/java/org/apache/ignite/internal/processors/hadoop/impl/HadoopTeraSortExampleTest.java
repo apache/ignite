@@ -17,28 +17,6 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
     /** Number of data lines. */
     protected final int linesToGenerate = 100_000;
 
-    /**
-     * Utility method to add leading zeroes.
-     *
-     * @param len The desired length.
-     * @param n The number to nullify.
-     */
-    static String nullifyToLen(int len, int n) {
-        String res = String.valueOf(n);
-
-        int zero = len - res.length();
-
-        if (zero <= 0)
-            return res;
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i=0; i<zero; i++)
-            sb.append("0");
-
-        return sb.toString() + res;
-    }
-
     /** */
     private final GenericHadoopExample teragenEx = new GenericHadoopExample() {
         private final Tool teraGenTool = new TeraGen();
