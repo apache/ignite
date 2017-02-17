@@ -508,7 +508,7 @@ public class GridMapQueryExecutor {
      * @param parts Explicit partitions for current node.
      * @param tbls Tables.
      * @param pageSize Page size.
-     * @param distributedJoinMode1 Query distributed join mode.
+     * @param distributedJoinMode Query distributed join mode.
      */
     private void onQueryRequest0(
         ClusterNode node,
@@ -628,7 +628,7 @@ public class GridMapQueryExecutor {
 
                     assert rs instanceof JdbcResultSet : rs.getClass();
 
-                    qr.addResult(qryIdx, qry, ctx.localNodeId(), rs);
+                    qr.addResult(qryIdx, qry, node.id(), rs);
 
                     if (qr.canceled) {
                         qr.result(qryIdx).close();

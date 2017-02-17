@@ -2355,7 +2355,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets SQL query parallelism level - the number of segments that segmented indices will be split to.
+     * Gets SQL query parallelism level - the number of segments that indices will be split to.
      * So, SQL queries can be run in parallel manner, one thread per segment.
      * See also {@link CacheConfiguration#isIndexSegmentationEnabled()}
 

@@ -638,11 +638,9 @@ public class GridReduceQueryExecutor {
                                 (distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0))
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                    distributedJoins && !qry.isLocal())) {
+                    false)) {
 
-                    awaitAllReplies(r, nodes);
-
-                    cancel.checkCancelled();
+                    awaitAllReplies(r, nodes, cancel);
 
                     Object state = r.state.get();
 
@@ -826,11 +824,15 @@ public class GridReduceQueryExecutor {
     /**
      * @param r Query run.
      * @param nodes Nodes to check periodically if they alive.
+     * @param cancel Query cancel.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    private void awaitAllReplies(QueryRun r, Collection<ClusterNode> nodes)
-        throws IgniteInterruptedCheckedException {
+    private void awaitAllReplies(QueryRun r, Collection<ClusterNode> nodes, GridQueryCancel cancel)
+        throws IgniteInterruptedCheckedException, QueryCancelledException {
         while (!U.await(r.latch, 500, TimeUnit.MILLISECONDS)) {
+
+            cancel.checkCancelled();
+
             for (ClusterNode node : nodes) {
                 if (!ctx.discovery().alive(node)) {
                     handleNodeLeft(r, node.id());

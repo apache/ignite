@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
@@ -179,8 +180,10 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < orgCount; i++)
             c2.put(i, new Organization("org-" + i));
 
+        final Random random = new Random();
+
         for (int i = 0; i < 1000; i++) {
-            int orgID = i % orgCount + 10;
+            int orgID = 10 + random.nextInt(orgCount + 10);
 
             c1.put(i, new Person(orgID, "pers-" + i));
         }
