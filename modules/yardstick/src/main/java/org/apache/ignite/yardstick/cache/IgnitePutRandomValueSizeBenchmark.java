@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
+package org.apache.ignite.yardstick.cache;
 
-#include <boost/test/unit_test.hpp>
+import java.util.Map;
+import org.apache.ignite.IgniteCache;
 
-#include "ignite/ignite_error.h"
+/**
+ *
+ */
+public class IgnitePutRandomValueSizeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int key = nextRandom(args.range());
+        int size = 64 + nextRandom(64);
 
-using namespace ignite;
-using namespace boost::unit_test;
+        cache.put(key, new byte[size]);
 
-BOOST_AUTO_TEST_SUITE(IgniteErrorTestSuite)
-
-BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
-{
-    const std::string testMsg = "Exception was not caught as it was supposed to.";
-
-    try
-    {
-        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, testMsg.c_str());
+        return true;
     }
-    catch (std::exception& e)
-    {
-        BOOST_REQUIRE_EQUAL(testMsg, std::string(e.what()));
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("atomic-offheap");
     }
 }
-
-BOOST_AUTO_TEST_SUITE_END()

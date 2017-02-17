@@ -15,31 +15,28 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
+package org.apache.ignite.yardstick.cache;
 
-#include <boost/test/unit_test.hpp>
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-#include "ignite/ignite_error.h"
+/**
+ * Ignite benchmark that performs getAll operations.
+ */
+public class IgniteGetAllBenchmark extends IgniteGetBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        Set<Integer> keys = U.newHashSet(args.batch());
 
-using namespace ignite;
-using namespace boost::unit_test;
+        while (keys.size() < args.batch()) {
+            int key = nextRandom(args.range());
 
-BOOST_AUTO_TEST_SUITE(IgniteErrorTestSuite)
+            keys.add(key);
+        }
 
-BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
-{
-    const std::string testMsg = "Exception was not caught as it was supposed to.";
+        cache.getAll(keys);
 
-    try
-    {
-        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, testMsg.c_str());
-    }
-    catch (std::exception& e)
-    {
-        BOOST_REQUIRE_EQUAL(testMsg, std::string(e.what()));
+        return true;
     }
 }
-
-BOOST_AUTO_TEST_SUITE_END()
