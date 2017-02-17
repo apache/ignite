@@ -287,7 +287,7 @@ public class DmlStatementsProcessor {
         long[] res = batchUpdateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
 
         return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
-            new IgniteCloseableIteratorAdapter(Arrays.asList(res)));
+            new IgniteCloseableIteratorAdapter(Arrays.asList(res).iterator()));
     }
 
     /**

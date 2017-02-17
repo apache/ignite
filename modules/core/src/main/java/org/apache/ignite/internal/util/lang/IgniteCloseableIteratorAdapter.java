@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.lang;
 
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 
@@ -29,15 +28,14 @@ public class IgniteCloseableIteratorAdapter<T> extends GridCloseableIteratorAdap
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Original iterator. */
     private final Iterator<T> iter;
 
-    /** */
-    public IgniteCloseableIteratorAdapter(Iterable<T> iterable) {
-        this(iterable.iterator());
-    }
-
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param iter Original iterator.
+     */
     public IgniteCloseableIteratorAdapter(Iterator<T> iter) {
         this.iter = iter;
     }
@@ -49,9 +47,6 @@ public class IgniteCloseableIteratorAdapter<T> extends GridCloseableIteratorAdap
 
     /** {@inheritDoc} */
     @Override protected T onNext() throws IgniteCheckedException {
-        if (!onHasNext())
-            throw new NoSuchElementException();
-
         return iter.next();
     }
 }
