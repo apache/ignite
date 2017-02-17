@@ -44,9 +44,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             startDate: new Date()
         };
 
-        $ctrl.params.startDate.setDate(1);
-        $ctrl.params.startDate.setHours(0, 0, 0, 0);
-
         const columnCompany = _.find(columnDefs, { displayName: 'Company' });
         const columnCountry = _.find(columnDefs, { displayName: 'Country' });
 
@@ -151,7 +148,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
         };
 
         /**
-         * @param {{startDate: Date, endDate: Date}} params
+         * @param {{startDate: number, endDate: number}} params
          */
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
@@ -177,11 +174,10 @@ export default class IgniteListOfRegisteredUsersCtrl {
         $scope.$watch(() => $ctrl.params.startDate, (dt) => {
             $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(dt, 'yyyy_MM')}.csv`;
 
-            const endDate = new Date(dt);
+            const startDate = Date.UTC(dt.getFullYear(), dt.getMonth(), 1);
+            const endDate = Date.UTC(dt.getFullYear(), dt.getMonth() + 1, 1);
 
-            endDate.setMonth(endDate.getMonth() + 1);
-
-            reloadUsers({startDate: dtFilter(dt, 'yyyy-MM-dd'), endDate: dtFilter(endDate, 'yyyy-MM-dd')});
+            reloadUsers({ startDate, endDate });
         });
     }
 
@@ -237,6 +233,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
     }
 
     exportCsv() {
-        this.gridApi.exporter.csvExport('all', 'visible');
+        this.gridApi.exporter.csvExport('visible', 'visible');
     }
 }
