@@ -1012,6 +1012,34 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBinarylizableClassCustomWithConstructor() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        TestBinarylizableClassCustomConstructor sut = new TestBinarylizableClassCustomConstructor(1, 2);
+
+        TestBinarylizableClassCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
+
+        assertEquals(sut.anInt, sutUnmarshalled.anInt);
+        assertEquals(sut.aLong, sutUnmarshalled.aLong);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotBinarylizableClassWithCustomConstructor() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        TestNotBinarylizableClassCustomConstructor sut = new TestNotBinarylizableClassCustomConstructor((byte)1, 2);
+
+        TestNotBinarylizableClassCustomConstructor sutUnmarshalled = marshalUnmarshal(sut, marsh);
+
+        assertEquals(sut.aByte, sutUnmarshalled.aByte);
+        assertEquals(sut.aDouble, sutUnmarshalled.aDouble);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCustomSerializer() throws Exception {
         BinaryTypeConfiguration type =
             new BinaryTypeConfiguration(CustomSerializedObject1.class.getName());
@@ -3351,6 +3379,74 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 a.checkAfterUnmarshalled();
 
             assertEquals(floatVal, 567.89F, 0);
+        }
+    }
+
+    /** */
+    private static class TestBinarylizableClassCustomConstructor implements Binarylizable {
+        /** */
+        private int anInt;
+
+        /** */
+        private long aLong;
+
+        /** */
+        TestBinarylizableClassCustomConstructor() {
+            throw new AssertionError();
+        }
+
+        /** */
+        TestBinarylizableClassCustomConstructor(int anInt, long aLong) {
+            this.anInt = anInt;
+            this.aLong = aLong;
+        }
+
+        /** */
+        TestBinarylizableClassCustomConstructor(BinaryReader reader) {
+            BinaryRawReader rawReader = reader.rawReader();
+
+            anInt = rawReader.readInt();
+            aLong = rawReader.readLong();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            BinaryRawWriter rawWriter = writer.rawWriter();
+
+            rawWriter.writeInt(anInt);
+            rawWriter.writeLong(aLong);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            BinaryRawReader rawReader = reader.rawReader();
+
+            anInt = rawReader.readInt();
+            aLong = rawReader.readLong();
+        }
+    }
+
+    /** */
+    private static class TestNotBinarylizableClassCustomConstructor {
+        /** */
+        private byte aByte;
+
+        /** */
+        private double aDouble;
+
+        /** */
+        TestNotBinarylizableClassCustomConstructor() {
+        }
+
+        /** */
+        TestNotBinarylizableClassCustomConstructor(byte aByte, double aDouble) {
+            this.aByte = aByte;
+            this.aDouble = aDouble;
+        }
+
+        /** */
+        TestNotBinarylizableClassCustomConstructor(BinaryReader reader) {
+            throw new AssertionError();
         }
     }
 

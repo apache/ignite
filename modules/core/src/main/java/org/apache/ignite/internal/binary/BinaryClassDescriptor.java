@@ -36,6 +36,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
@@ -813,14 +814,16 @@ public class BinaryClassDescriptor {
 
         switch (mode) {
             case BINARY:
-                res = newInstance();
+                res = newInstance(reader);
 
-                reader.setHandle(res);
+                if (ctor == null || ctor.getParameterCount() == 0) {
+                    reader.setHandle(res);
 
-                if (serializer != null)
-                    serializer.readBinary(res, reader);
-                else
-                    ((Binarylizable)res).readBinary(reader);
+                    if (serializer != null)
+                        serializer.readBinary(res, reader);
+                    else
+                        ((Binarylizable)res).readBinary(reader);
+                }
 
                 break;
 
@@ -907,6 +910,23 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * @param reader BinaryReader.
+     * @return Instance.
+     * @throws BinaryObjectException In case of error.
+     */
+    private Object newInstance(BinaryReader reader) throws BinaryObjectException {
+        try {
+            if (ctor.getParameterCount() == 1)
+                return ctor.newInstance(reader);
+
+            return newInstance();
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
+        }
+    }
+
+    /**
      * @return Instance.
      * @throws BinaryObjectException In case of error.
      */
@@ -929,7 +949,13 @@ public class BinaryClassDescriptor {
         assert cls != null;
 
         try {
-            Constructor<?> ctor = U.forceEmptyConstructor(cls);
+            Constructor<?> ctor = null;
+
+            if (Binarylizable.class.isAssignableFrom(cls))
+                ctor = U.getConstructorBinaryReaderParameter(cls);
+
+            if (ctor == null)
+                ctor = U.forceEmptyConstructor(cls);
 
             if (ctor == null)
                 throw new BinaryObjectException("Failed to find empty constructor for class: " + cls.getName());
