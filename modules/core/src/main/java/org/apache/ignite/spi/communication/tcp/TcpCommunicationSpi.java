@@ -361,6 +361,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             @Override public void onConnected(GridNioSession ses) {
                 if (ses.accepted()) {
+                    if (log.isInfoEnabled())
+                        log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
+
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -370,6 +374,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
                     }
+                }
+                else {
+                    if (log.isInfoEnabled())
+                        log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
                 }
             }
 
