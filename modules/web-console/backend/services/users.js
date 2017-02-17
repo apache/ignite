@@ -212,11 +212,8 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, activ
 
             const becomeUsed = viewedUser && user.admin;
 
-            if (becomeUsed) {
-                user = viewedUser;
-
-                user.becomeUsed = true;
-            }
+            if (becomeUsed)
+                user = _.extend({}, viewedUser, {becomeUsed: true, becameToken: user.token});
             else
                 user = user.toJSON();
 
