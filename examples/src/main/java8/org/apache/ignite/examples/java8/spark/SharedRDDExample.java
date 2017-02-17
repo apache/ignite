@@ -26,7 +26,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import scala.Tuple2;
 
 import java.util.List;
@@ -99,7 +99,7 @@ public class SharedRDDExample {
         System.out.println(">>> Executing SQL query over Ignite Shared RDD...");
 
         // Execute SQL query over the Ignite RDD.
-        DataFrame df = sharedRDD.sql("select _val from Integer where _key < 9");
+        Dataset df = sharedRDD.sql("select _val from Integer where _key < 9");
 
         // Show the result of the execution.
         df.show();
