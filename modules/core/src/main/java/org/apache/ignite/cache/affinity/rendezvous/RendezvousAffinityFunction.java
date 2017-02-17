@@ -121,6 +121,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
 
+    /** Use Wang/Jenkins hash instead of MD5 to hashing the pair (node, partId). */
+    private boolean useWangHash = false;
+
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -150,6 +153,20 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
+     * and specified number of backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     * @param useWangHash Use Wang/Jenkins (fast) hash instead of MD5.
+     */
+    public RendezvousAffinityFunction(boolean exclNeighbors, boolean useWangHash) {
+        this(exclNeighbors, DFLT_PARTITION_COUNT, useWangHash);
+    }
+
+    /**
      * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
      * and specified number of backups and partitions.
      * <p>
@@ -160,7 +177,22 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Total number of partitions.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
-        this(exclNeighbors, parts, null);
+        this(exclNeighbors, parts, null, false);
+    }
+
+    /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
+     * and specified number of backups and partitions.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     * @param parts Total number of partitions.
+     * @param useWangHash Use Wang/Jenkins (fast) hash instead of MD5.
+     */
+    public RendezvousAffinityFunction(boolean exclNeighbors, int parts, boolean useWangHash) {
+        this(exclNeighbors, parts, null, useWangHash);
     }
 
     /**
@@ -176,7 +208,25 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
     public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
-        this(false, parts, backupFilter);
+        this(false, parts, backupFilter, false);
+    }
+
+    /**
+     * Initializes optional counts for replicas and backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param parts Total number of partitions.
+     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
+     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
+     *      argument is node being tested.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * @param useWangHash Use Wang/Jenkins (fast) hash instead of MD5.
+     */
+    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter,
+        boolean useWangHash) {
+        this(false, parts, backupFilter, useWangHash);
     }
 
     /**
@@ -185,14 +235,16 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param exclNeighbors Exclude neighbors flag.
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
+     * @param useWangHash Use Wang/Jenkins (fast) hash instead of MD5.
      */
     private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter, boolean useWangHash) {
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
+        this.useWangHash = useWangHash;
 
         try {
             MessageDigest.getInstance("MD5");
@@ -342,6 +394,22 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
+     * Check the flag to use Wang/Jenkins hash instead of MD5.
+     * @return {@code True} is Wang/Jenkins hash is used. {@code False} is MD5 is used.
+     */
+    public boolean isUseWangHash() {
+        return useWangHash;
+    }
+
+    /**
+     * Set the flag to use Wang/Jenkins hash insted of MD5.
+     * @param useWangHash Use Wang/Jenkins (fast) hash instead of MD5.
+     */
+    public void setUseWangHash(boolean useWangHash) {
+        this.useWangHash = useWangHash;
+    }
+
+    /**
      * Resolves node hash.
      *
      * @param node Cluster node;
@@ -365,6 +433,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param neighborhoodCache Neighborhood.
      * @return Assignment.
      */
+    @SuppressWarnings("unchecked")
     public List<ClusterNode> assignPartition(MessageDigest d,
         int part,
         List<ClusterNode> nodes,
@@ -374,7 +443,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         if (nodes.size() <= 1)
             return nodes;
 
-        if (d == null)
+        if (!useWangHash && d == null)
             d = digest.get();
 
         IgniteBiTuple<Long, ClusterNode> [] hashArr =
@@ -383,23 +452,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
 
-            byte[] nodeHashBytes = nodesHash[i];
-
-            U.intToBytes(part, nodeHashBytes, 0);
-
-            d.reset();
-
-            byte[] bytes = d.digest(nodeHashBytes);
-
-            long hash =
-                (bytes[0] & 0xFFL)
-                    | ((bytes[1] & 0xFFL) << 8)
-                    | ((bytes[2] & 0xFFL) << 16)
-                    | ((bytes[3] & 0xFFL) << 24)
-                    | ((bytes[4] & 0xFFL) << 32)
-                    | ((bytes[5] & 0xFFL) << 40)
-                    | ((bytes[6] & 0xFFL) << 48)
-                    | ((bytes[7] & 0xFFL) << 56);
+            long hash = useWangHash ? hashNodeAndPart(node, part) : hashNodeAndPart(nodesHash[i], part, d);
 
             hashArr[i] = F.t(hash, node);
         }
@@ -466,6 +519,66 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return res;
     }
 
+    /** MD5 hash of node consistentId & partition number.
+     *
+     * @param nodeHashBytes Node consistent ID.
+     * @param part Partition ID.
+     * @param d MD5 digest.
+     * @return Hash of node consistentId & partition number.
+     */
+    private long hashNodeAndPart(byte[] nodeHashBytes, int part, MessageDigest d) {
+        U.intToBytes(part, nodeHashBytes, 0);
+
+        d.reset();
+
+        byte[] bytes = d.digest(nodeHashBytes);
+
+        return (bytes[0] & 0xFFL)
+            | ((bytes[1] & 0xFFL) << 8)
+            | ((bytes[2] & 0xFFL) << 16)
+            | ((bytes[3] & 0xFFL) << 24)
+            | ((bytes[4] & 0xFFL) << 32)
+            | ((bytes[5] & 0xFFL) << 40)
+            | ((bytes[6] & 0xFFL) << 48)
+            | ((bytes[7] & 0xFFL) << 56);
+    }
+
+    /**
+     * Wang/Jenkins hash of the node consistentId and partition number.
+     *
+     * @param node Cluster node.
+     * @param part Partition ID.
+     * @return Hash of the node consistentId and partition number.
+     */
+    private long hashNodeAndPart(ClusterNode node, int part) {
+        Object nodeHash = resolveNodeHash(node);
+
+        return hash(nodeHash.hashCode(), part);
+    }
+
+    /**
+     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
+     * hash.
+     *
+     * @param key0 Hash key.
+     * @param key1 Hash key.
+     * @see <a href="https://gist.github.com/badboy/6267743#64-bit-mix-functions">64 bit mix functions</a>
+     * @return Long hash key.
+     */
+    private static long hash(int key0, int key1) {
+        long key = (key0 & 0xFFFFFFFFL)
+            | ((key1 & 0xFFFFFFFFL) << 32);
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key ^= (key >>> 24);
+        key += (key << 3) + (key << 8); // key * 265
+        key ^= (key >>> 14);
+        key += (key << 2) + (key << 4); // key * 21
+        key ^= (key >>> 28);
+        key += (key << 31);
+        return key;
+    }
+
+
     /** {@inheritDoc} */
     @Override public void reset() {
         // No-op.
@@ -496,12 +609,15 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
 
-        byte[][] nodesHashes;
-        try {
-            nodesHashes = nodesHash(nodes);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        byte[][] nodesHashes = null;
+
+        if (!useWangHash) {
+            try {
+                nodesHashes = nodesHash(nodes);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         for (int i = 0; i < parts; i++) {
@@ -609,7 +725,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         }
 
         /**
-         * Find
+         *
          */
         private class SortIterator implements Iterator<ClusterNode> {
             /** Index of the first unsorted element. */
