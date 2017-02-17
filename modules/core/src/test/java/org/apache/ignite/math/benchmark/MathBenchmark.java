@@ -5,6 +5,8 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
@@ -48,6 +50,8 @@ class MathBenchmark {
      * @throws Exception if something goes wrong
      */
     void execute(BenchmarkCode code) throws Exception {
+        System.out.println("Started benchmark [" + benchmarkName + "]");
+
         for (int cnt = 0; cnt < warmupTimes; cnt++)
             code.call();
 
@@ -59,6 +63,9 @@ class MathBenchmark {
         final long end = System.currentTimeMillis();
 
         writeResults(formatResults(start, end));
+
+        System.out.println("Finished benchmark [" + benchmarkName + "]"
+            + (outputFileName == null ? "" : ", results written to file [" + outputFileName + "]"));
     }
 
     /**
@@ -128,9 +135,13 @@ class MathBenchmark {
 
         assert !formatDouble(1000_000_001.1).contains(delim) : "Formatted results contain [" + delim + "].";
 
+        final String ts = formatTs(start);
+
+        assert !ts.contains(delim) : "Formatted timestamp contains [" + delim + "].";
+
         return benchmarkName +
             delim +
-            start + // IMPL NOTE timestamp
+            ts + // IMPL NOTE timestamp
             delim +
             formatDouble((double)(end - start) / measurementTimes) +
             delim +
@@ -146,6 +157,11 @@ class MathBenchmark {
     /** */
     private String formatDouble(double val) {
         return String.format(Locale.US, "%f", val);
+    }
+
+    /** */
+    private String formatTs(long ts) {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(ts));
     }
 
     /** */
