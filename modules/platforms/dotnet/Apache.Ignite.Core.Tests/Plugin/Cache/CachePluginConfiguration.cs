@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Plugin.Cache
 {
     using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Plugin.Cache;
+    using NUnit.Framework;
 
     /// <summary>
     /// Cache plugin config.
@@ -35,6 +37,28 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         /// <summary>
         /// Gets or sets a value indicating whether the plugin should throw an error.
         /// </summary>
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
         public bool ThrowError { get; set; }
+
+        /// <summary>
+        /// Gets the id to locate PlatformCachePluginConfigurationClosureFactory on Java side
+        /// and read the data written by
+        /// <see cref="WriteBinary(IBinaryRawWriter)" /> method.
+        /// </summary>
+        public int? CachePluginConfigurationClosureFactoryId
+        {
+            get { return null; }
+        }
+
+        /// <summary>
+        /// Writes this instance to a raw writer.
+        /// This method will be called when <see cref="CachePluginConfigurationClosureFactoryId" />
+        /// is not null to propagate configuration to the Java side.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        public void WriteBinary(IBinaryRawWriter writer)
+        {
+            Assert.Fail("Should not be called");
+        }
     }
 }
