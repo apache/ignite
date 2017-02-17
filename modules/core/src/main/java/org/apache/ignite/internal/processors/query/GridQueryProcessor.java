@@ -1566,8 +1566,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (idxName == null)
                     idxName = QueryEntity.defaultIndexName(idx);
 
-                if (idx.getIndexType() == QueryIndexType.SORTED || idx.getIndexType() == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
+                QueryIndexType idxTyp = idx.getIndexType();
+
+                if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
+                    d.addIndex(idxName, idxTyp == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
 
                     int i = 0;
 
@@ -1583,9 +1585,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToIndex(idxName, field, i++, !asc);
                     }
                 }
-                else {
-                    assert idx.getIndexType() == QueryIndexType.FULLTEXT;
-
+                else if (idxTyp == QueryIndexType.FULLTEXT){
                     for (String field : idx.getFields().keySet()) {
                         String alias = aliases.get(field);
 
@@ -1595,6 +1595,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToTextIndex(field);
                     }
                 }
+                else if (idxTyp != null)
+                    throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
+                        ", typ=" + idxTyp + ']');
+                else
+                    throw new IllegalArgumentException("Index type is not set: " + idx.getName());
             }
         }
     }

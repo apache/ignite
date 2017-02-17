@@ -207,6 +207,21 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                 entityList.add(qryEntity);
 
+                qryEntity = new QueryEntity();
+
+                qryEntity.setKeyType(Integer.class.getName());
+                qryEntity.setValueType(ObjectValue2.class.getName());
+
+                qryEntity.addQueryField("strVal", String.class.getName(), null);
+
+                final QueryIndex strIdx = new QueryIndex(); // Default index type
+
+                strIdx.setFieldNames(Collections.singletonList("strVal"), true);
+
+                qryEntity.setIndexes(Arrays.asList(strIdx));
+
+                entityList.add(qryEntity);
+
                 cc.setQueryEntities(entityList);
 
                 if (cacheMode() != CacheMode.LOCAL)
@@ -752,6 +767,40 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert iter.next() != null;
 
         assert !iter.hasNext();
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testObjectWithString() throws Exception {
+        IgniteCache<Integer, ObjectValue2> cache = ignite().cache(null);
+
+        cache.put(1, new ObjectValue2("value 1"));
+        cache.put(2, new ObjectValue2("value 2"));
+        cache.put(3, new ObjectValue2("value 3"));
+
+        QueryCursor<Cache.Entry<Integer, ObjectValue2>> qry
+            = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal like ?").setArgs("value%"));
+
+        int expCnt = 3;
+
+        List<Cache.Entry<Integer, ObjectValue2>> results = qry.getAll();
+
+        assertEquals(expCnt, results.size());
+
+        qry = cache.query(new SqlQuery<Integer, ObjectValue2>(ObjectValue2.class, "strVal > ?").setArgs("value 1"));
+
+        results = qry.getAll();
+
+        assertEquals(expCnt - 1, results.size());
+
+        qry = cache.query(new TextQuery<Integer, ObjectValue2>(ObjectValue2.class, "value"));
+
+        results = qry.getAll();
+
+        assertEquals(0, results.size()); //Should fail for FULL_TEXT index, but SORTED
     }
 
     /**
@@ -2057,6 +2106,54 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ObjectValueOther.class, this);
+        }
+    }
+
+    /**
+     * Another test value object.
+     */
+    private static class ObjectValue2 {
+        /** Value. */
+        private String strVal;
+
+        /**
+         * @param strVal String value.
+         */
+        ObjectValue2(String strVal) {
+            this.strVal = strVal;
+        }
+
+        /**
+         * Gets value.
+         *
+         * @return Value.
+         */
+        public String value() {
+            return strVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            ObjectValue2 other = (ObjectValue2)o;
+
+            return strVal == null ? other.strVal == null : strVal.equals(other.strVal);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return strVal != null ? strVal.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ObjectValue2.class, this);
         }
     }
 
