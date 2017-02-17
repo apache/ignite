@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProt
 import org.apache.ignite.internal.processors.hadoop.impl.client.HadoopClientProtocolSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTxConfigCacheTest;
 import org.apache.ignite.internal.processors.hadoop.impl.fs.KerberosHadoopFileSystemFactorySelfTest;
+import org.apache.ignite.internal.processors.hadoop.impl.igfs.Hadoop1OverIgfsProxyTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.ChainedUserNameMapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.util.KerberosUserNameMapperSelfTest;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSy
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.igfs.IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopCommandLineTest;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopDefaultMapReducePlannerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopFileSystemsTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopGroupingTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopJobTrackerSelfTest;
@@ -115,7 +115,6 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopUserLibsSelfTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopDefaultMapReducePlannerSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopWeightedMapReducePlannerTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(BasicUserNameMapperSelfTest.class.getName())));
@@ -136,6 +135,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualSyncTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsDualAsyncTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(Hadoop1OverIgfsProxyTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopFIleSystemFactorySelfTest.class.getName())));
 

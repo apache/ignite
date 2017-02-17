@@ -20,31 +20,34 @@ package org.apache.ignite.internal.processors.hadoop;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopJob;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Hadoop job.
  */
-public interface HadoopJob {
+public abstract class HadoopJobEx implements HadoopJob {
     /**
      * Gets job ID.
      *
      * @return Job ID.
      */
-    public HadoopJobId id();
+    abstract public HadoopJobId id();
 
     /**
      * Gets job information.
      *
      * @return Job information.
      */
-    public HadoopJobInfo info();
+    abstract public HadoopJobInfo info();
 
     /**
      * Gets collection of input splits for this job.
      *
      * @return Input splits.
      */
-    public Collection<HadoopInputSplit> input() throws IgniteCheckedException;
+    abstract public Collection<HadoopInputSplit> input();
 
     /**
      * Returns context for task execution.
@@ -53,7 +56,7 @@ public interface HadoopJob {
      * @return Task Context.
      * @throws IgniteCheckedException If failed.
      */
-    public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException;
+    abstract public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
@@ -66,7 +69,7 @@ public interface HadoopJob {
      * @param locNodeId Local node ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
+    abstract public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException;
 
     /**
      * Release all the resources.
@@ -77,7 +80,7 @@ public interface HadoopJob {
      * @param external If {@code true} then this job instance resides in external process.
      * @throws IgniteCheckedException If failed.
      */
-    public void dispose(boolean external) throws IgniteCheckedException;
+    abstract public void dispose(boolean external) throws IgniteCheckedException;
 
     /**
      * Prepare local environment for the task.
@@ -85,7 +88,7 @@ public interface HadoopJob {
      * @param info Task info.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
+    abstract public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up local environment of the task.
@@ -93,15 +96,45 @@ public interface HadoopJob {
      * @param info Task info.
      * @throws IgniteCheckedException If failed.
      */
-    public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
+    abstract public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException;
 
     /**
      * Cleans up the job staging directory.
      */
-    public void cleanupStagingDirectory();
+    abstract public void cleanupStagingDirectory();
 
     /**
      * @return Ignite work directory.
      */
-    public String igniteWorkDirectory();
+    abstract public String igniteWorkDirectory();
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String property(String name) {
+        return info().property(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasCombiner() {
+        return info().hasCombiner();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasReducer() {
+        return info().hasReducer();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reducers() {
+        return info().reducers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String jobName() {
+        return info().jobName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String user() {
+        return info().user();
+    }
 }

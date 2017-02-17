@@ -15,26 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.platform.plugin;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 
 /**
- * Extended version of secondary file system with missing methods.
- *
- * @deprecated Will be removed in Apache Ignite 2.0. Methods will be merged to {@link IgfsSecondaryFileSystem}.
+ * Test plugin extension.
  */
-@Deprecated
-public interface IgfsSecondaryFileSystemV2 extends IgfsSecondaryFileSystem {
+public class PlatformTestPluginExtension implements PlatformPluginExtension {
+    /** */
+    private final IgniteEx ignite;
+
     /**
-     * Set times for the given path.
+     * Ctor.
      *
-     * @param path Path.
-     * @param accessTime Access time.
-     * @param modificationTime Modification time.
-     * @throws IgniteException If failed.
+     * @param ignite Ignite.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    PlatformTestPluginExtension(IgniteEx ignite) {
+        assert ignite != null;
+
+        this.ignite = ignite;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int id() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createTarget() {
+        return new PlatformTestPluginTarget(ignite.context().platform().context(), "");
+    }
 }

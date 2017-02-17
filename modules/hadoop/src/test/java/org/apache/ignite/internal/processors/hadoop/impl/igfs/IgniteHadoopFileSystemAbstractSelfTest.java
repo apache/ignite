@@ -99,13 +99,13 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 @SuppressWarnings("all")
 public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Primary file system authority. */
-    private static final String PRIMARY_AUTHORITY = "igfs:grid0@";
+    private static final String PRIMARY_AUTHORITY = "igfs@";
 
     /** Primary file systme URI. */
     private static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
-    private static final String SECONDARY_AUTHORITY = "igfs_secondary:grid_secondary@127.0.0.1:11500";
+    private static final String SECONDARY_AUTHORITY = "igfs_secondary@127.0.0.1:11500";
 
     /** Secondary file systme URI. */
     private static final String SECONDARY_URI = "igfs://" + SECONDARY_AUTHORITY + "/";
