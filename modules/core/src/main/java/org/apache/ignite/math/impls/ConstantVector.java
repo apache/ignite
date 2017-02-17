@@ -18,7 +18,10 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.*;
+import java.util.*;
 
 /**
  * Constant value, read-only vector.
@@ -46,6 +49,18 @@ public class ConstantVector extends AbstractVector {
      */
     private ConstantVectorStorage storage() {
         return (ConstantVectorStorage)getStorage();
+    }
+
+    /**
+     * @param args
+     */
+    public ConstantVector(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("size") && args.containsKey("value"))
+            setStorage(new ConstantVectorStorage((int)args.get("size"), (double)args.get("value")));
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     @Override

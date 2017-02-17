@@ -58,6 +58,26 @@ public class SingleElementVectorView extends AbstractVector {
     }
 
     @Override
+    public Element minValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public Element maxValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public double sum() {
+        return getX(storage().index());
+    }
+
+    @Override
+    public int nonZeroElements() {
+        return 1;
+    }
+
+    @Override
     public Vector copy() {
         return new SingleElementVectorView(storage());
     }

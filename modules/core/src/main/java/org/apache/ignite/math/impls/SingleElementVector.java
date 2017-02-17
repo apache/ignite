@@ -18,7 +18,10 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.*;
+import java.util.*;
 
 /**
  * Read-write vector holding a single non-zero value at some index.
@@ -39,6 +42,23 @@ public class SingleElementVector extends AbstractVector {
      */
     public SingleElementVector(int size, int idx, double val) {
         super(new SingleElementVectorStorage(size, idx, val));
+    }
+
+    /**
+     * @param args
+     */
+    public SingleElementVector(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("size") && args.containsKey("index") && args.containsKey("value")) {
+            int size = (int)args.get("size");
+            int idx = (int)args.get("index");
+            double val = (double)args.get("value");
+
+            setStorage(new SingleElementVectorStorage(size, idx, val));
+        }
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**

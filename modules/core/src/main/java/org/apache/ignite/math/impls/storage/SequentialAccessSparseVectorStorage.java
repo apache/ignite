@@ -39,11 +39,22 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         // No-op.
     }
 
+    /**
+     *
+     * @param keys
+     * @param values
+     * @param noDefault
+     */
     public SequentialAccessSparseVectorStorage(int[] keys, double[] values, boolean noDefault) {
         this.noDefault = noDefault;
         this.data = new Int2DoubleRBTreeMap(keys, values);
     }
 
+    /**
+     *
+     * @param storage
+     * @param noDefault
+     */
     private SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
         this.data = new Int2DoubleRBTreeMap();
         this.noDefault = noDefault;

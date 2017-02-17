@@ -57,6 +57,11 @@ public class DefaultMathProvider implements MathProvider {
 
                 return Optional.of(new RandomMatrix(args));
 
+            case "diagonal":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new DiagonalMatrix(args));
+
             case "dense.local.onheap":
                 ensureClusterGroupIsNull(flavorNorm, grp);
 
@@ -84,6 +89,16 @@ public class DefaultMathProvider implements MathProvider {
                 ensureClusterGroupIsNull(flavorNorm, grp);
 
                 return Optional.of(new RandomVector(args));
+
+            case "constant":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new ConstantVector(args));
+
+            case "single.value":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new SingleElementVector(args));
 
             case "delegate":
                 ensureClusterGroupIsNull(flavorNorm, grp);
