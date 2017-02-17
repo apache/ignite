@@ -111,33 +111,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         return res.toArray((T[]) Array.newInstance(cls, res.size()));
     }
 
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfNoDataCacheIsConfigured() throws Exception {
-        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-
-        igfsCfg1.setName("igfs");
-        g1Cfg.setFileSystemConfiguration(igfsCfg1);
-        igfsCfg1.setDataCacheName("data-cache");
-
-        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfNoMetaCacheIsConfigured() throws Exception {
-        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-
-        igfsCfg1.setName("igfs");
-        g1Cfg.setFileSystemConfiguration(igfsCfg1);
-        igfsCfg1.setMetaCacheName("meta-cache");
-
-        checkGridStartFails(g1Cfg, "Metadata cache is not configured locally for IGFS", true);
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -283,21 +256,21 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testZeroEndpointTcpPort() throws Exception {
-        checkIvalidPort(0);
+        checkInvalidPort(0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNegativeEndpointTcpPort() throws Exception {
-        checkIvalidPort(-1);
+        checkInvalidPort(-1);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTooBigEndpointTcpPort() throws Exception {
-        checkIvalidPort(65536);
+        checkInvalidPort(65536);
     }
 
     /**
@@ -310,24 +283,22 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g1Cfg.setFileSystemConfiguration(igfsCfg1);
 
         CacheConfiguration ccfgData = dataCache(1024);
-        ccfgData.setName("data-cache");
         ccfgData.setRebalanceTimeout(10001);
 
         CacheConfiguration ccfgMeta = metaCache();
-        ccfgMeta.setName("meta-cache");
         ccfgMeta.setRebalanceTimeout(10002);
 
-        igfsCfg1.setDataCacheName("data-cache");
-        igfsCfg1.setMetaCacheName("meta-cache");
-
-        g1Cfg.setCacheConfiguration(ccfgData, ccfgMeta);
+        igfsCfg1.setDataCacheConfiguration(ccfgData);
+        igfsCfg1.setMetaCacheConfiguration(ccfgMeta);
 
         IgniteEx g = (IgniteEx)G.start(g1Cfg);
 
-        assertEquals(10001, g.cachex(g.igfsx("igfs").configuration().getDataCacheName())
-            .configuration().getRebalanceTimeout());
-        assertEquals(10002, g.cachex(g.igfsx("igfs").configuration().getMetaCacheName())
-            .configuration().getRebalanceTimeout());
+        assertEquals(10001,
+            g.cachex(g.igfsx("igfs").configuration().getDataCacheConfiguration().getName())
+                .configuration().getRebalanceTimeout());
+        assertEquals(10002,
+            g.cachex(g.igfsx("igfs").configuration().getMetaCacheConfiguration().getName())
+                .configuration().getRebalanceTimeout());
     }
 
     /**
@@ -336,7 +307,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @param port Port.
      * @throws Exception If failed.
      */
-    private void checkIvalidPort(int port) throws Exception {
+    private void checkInvalidPort(int port) throws Exception {
         final String failMsg = "IGFS endpoint TCP port is out of range";
 
         final String igfsCfgName = "igfs-cfg";

@@ -98,14 +98,6 @@ public class FileSystemConfiguration {
     /** IGFS instance name. */
     private String name;
 
-    /** Cache name to store IGFS meta information. */
-    @Deprecated
-    private String metaCacheName;
-
-    /** Cache name to store file's data blocks. */
-    @Deprecated
-    private String dataCacheName;
-
     /** File's data block size (bytes). */
     private int blockSize = DFLT_BLOCK_SIZE;
 
@@ -215,7 +207,6 @@ public class FileSystemConfiguration {
         bufSize = cfg.getStreamBufferSize();
         colocateMeta = cfg.isColocateMetadata();
         dataCacheCfg = cfg.getDataCacheConfiguration();
-        dataCacheName = cfg.getDataCacheName();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
         dualModePutExec = cfg.getDualModePutExecutorService();
@@ -232,7 +223,6 @@ public class FileSystemConfiguration {
         maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
         metaCacheCfg = cfg.getMetaCacheConfiguration();
-        metaCacheName = cfg.getMetaCacheName();
         mgmtPort = cfg.getManagementPort();
         name = cfg.getName();
         pathModes = cfg.getPathModes();
@@ -314,50 +304,6 @@ public class FileSystemConfiguration {
      */
     public void setDataCacheConfiguration(CacheConfiguration dataCacheCfg) {
         this.dataCacheCfg = dataCacheCfg;
-    }
-
-    /**
-     * Cache name to store IGFS meta information.
-     *
-     * @return Cache name to store IGFS meta information.
-     * @deprecated Since 2.0, use {@link #getMetaCacheConfiguration()} instead.
-     */
-    @Deprecated
-    @Nullable public String getMetaCacheName() {
-        return metaCacheName;
-    }
-
-    /**
-     * Sets cache name to store IGFS meta information.
-     *
-     * @param metaCacheName Cache name to store IGFS meta information.
-     * @deprecated Since 2.0, use {@link #setMetaCacheConfiguration(CacheConfiguration)} instead.
-     */
-    @Deprecated
-    public void setMetaCacheName(String metaCacheName) {
-        this.metaCacheName = metaCacheName;
-    }
-
-    /**
-     * Cache name to store IGFS data.
-     *
-     * @return Cache name to store IGFS data.
-     * @deprecated Since 2.0, use {@link #getDataCacheConfiguration()} instead.
-     */
-    @Deprecated
-    @Nullable public String getDataCacheName() {
-        return dataCacheName;
-    }
-
-    /**
-     * Sets cache name to store IGFS data.
-     *
-     * @param dataCacheName Cache name to store IGFS data.
-     * @deprecated Since 2.0, use {@link #setDataCacheConfiguration(CacheConfiguration)} instead.
-     */
-    @Deprecated
-    public void setDataCacheName(String dataCacheName) {
-        this.dataCacheName = dataCacheName;
     }
 
     /**
@@ -947,11 +893,11 @@ public class FileSystemConfiguration {
      * transaction with keys owned only by a single node.
      * <p>
      * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
-     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
-     * internal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
-     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
-     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
-     * metadata and hence could improve performance.
+     * {@link #getMetaCacheConfiguration()} property. Metadata updates caused by operations on IGFS usually require
+     * several internal keys to be updated. As IGFS metadata cache usually operates
+     * in {@link CacheMode#REPLICATED} mode, meaning that all nodes have all metadata locally, it makes sense to give
+     * a hint to Ignite to co-locate ownership of all metadata keys on a single node.
+     * This will decrease amount of network trips required to update metadata and hence could improve performance.
      * <p>
      * This property should be disabled if you see excessive CPU and network load on a single node, which
      * degrades performance and cannot be explained by business logic of your application.

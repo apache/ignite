@@ -26,19 +26,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
-import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsJob;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -47,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -56,7 +51,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 
 /**
@@ -103,7 +97,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             CacheConfiguration[] cacheCfgs = igniteCfg.getCacheConfiguration();
 
-            String metaCacheName = IgfsUtils.getMetaCacheName(cfg);
+            String metaCacheName = cfg.getMetaCacheConfiguration().getName();
 
             if (cacheCfgs != null) {
                 for (CacheConfiguration cacheCfg : cacheCfgs) {
@@ -157,7 +151,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
 
-            String dataCacheName = IgfsUtils.getDataCacheName(igfsCfg);
+            String dataCacheName = igfsCfg.getDataCacheConfiguration().getName();
 
             CacheConfiguration cacheCfg = cacheCfgs.get(dataCacheName);
 
@@ -175,7 +169,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
                 ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
-                IgfsUtils.getMetaCacheName(igfsCfg),
+                igfsCfg.getMetaCacheConfiguration().getName(),
                 dataCacheName,
                 igfsCfg.getDefaultMode(),
                 igfsCfg.getPathModes(),

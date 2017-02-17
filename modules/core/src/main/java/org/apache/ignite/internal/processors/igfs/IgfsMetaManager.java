@@ -193,7 +193,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
 
-        metaCacheName = IgfsUtils.getMetaCacheName(cfg);
+        metaCacheName = cfg.getMetaCacheConfiguration().getName();
     }
 
     /** {@inheritDoc} */

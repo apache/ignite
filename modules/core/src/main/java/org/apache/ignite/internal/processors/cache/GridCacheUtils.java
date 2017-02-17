@@ -1709,18 +1709,4 @@ public class GridCacheUtils {
             ? DEFAULT_TX_CFG
             : cfg.getTransactionConfiguration();
     }
-
-    /**
-     * @param cfg Ignite config.
-     * @param cacheName Cache name.
-     * @return Cache configuration with specified name. Otherwise returns {@code null}.
-     */
-    public static CacheConfiguration config(IgniteConfiguration cfg, String cacheName) {
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg.getName()))
-                return ccfg;
-        }
-
-        return null;
-    }
 }

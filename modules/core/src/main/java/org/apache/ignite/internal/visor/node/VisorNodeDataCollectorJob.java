@@ -229,7 +229,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                 FileSystemConfiguration igfsCfg = igfs.configuration();
 
-                if (proxyCache(IgfsUtils.getDataCacheName(igfsCfg)) || proxyCache(IgfsUtils.getMetaCacheName(igfsCfg)))
+                if (proxyCache(igfsCfg.getDataCacheConfiguration().getName())
+                    || proxyCache(igfsCfg.getMetaCacheConfiguration().getName()))
                     continue;
 
                 try {
