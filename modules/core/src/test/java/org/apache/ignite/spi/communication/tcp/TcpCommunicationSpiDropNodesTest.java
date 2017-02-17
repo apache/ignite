@@ -297,8 +297,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx)
-            throws IgniteCheckedException {
+        @Override protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
             if (pred.apply(getLocalNode(), node)) {
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
 

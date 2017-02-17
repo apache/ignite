@@ -31,6 +31,21 @@ namespace ignite
     {
         namespace interop
         {
+            /**
+             * Operation result.
+             */
+            enum OperationResult
+            {
+                /** Null. */
+                ResultNull = 0,
+
+                /** Object. */
+                ResultObject = 1,
+
+                /** Error. */
+                ResultError = -1
+            };
+
             InteropTarget::InteropTarget(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                 env(env), javaRef(javaRef)
             {
@@ -163,32 +178,13 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultSuccess)
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultObject)
                         ReadFrom(outInMem.Get(), outOp);
                     else if (res == ResultNull)
                         outOp.SetNull();
 
                     //Read and process error if res == ResultError here.
                 }
-            }
-
-            InteropTarget::OperationResult InteropTarget::InStreamOutLong(int32_t opType,
-                InteropMemory& outInMem, IgniteError* err)
-            {
-                JniErrorInfo jniErr;
-
-                int64_t outInPtr = outInMem.PointerLong();
-
-                if (outInPtr)
-                {
-                    int64_t res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outInPtr, &jniErr);
-
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return static_cast<OperationResult>(res);
-                }
-
-                return ResultError;
             }
 
             int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError* err)

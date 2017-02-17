@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -664,7 +665,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
-                (V)new EntryGetResult(skipVals ? true : v, ver) :
+                (V)new T2<>(skipVals ? true : v, ver) :
                 (V)(skipVals ? true : v);
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
@@ -672,7 +673,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         else {
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
             V val0 = needVer ?
-                (V)new EntryGetResult(!skipVals ?
+                (V)new T2<>(!skipVals ?
                     (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
                     (V)Boolean.TRUE, ver) :
                 !skipVals ?
@@ -758,9 +759,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         keepCacheObjects,
                         deserializeBinary,
                         false,
-                        needVer ? info.version() : null,
-                        0,
-                        0);
+                        needVer ? info.version() : null);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())

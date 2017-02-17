@@ -447,12 +447,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
-                    EntryGetResult getRes = null;
                     CacheObject v = null;
                     GridCacheVersion ver = null;
 
                     if (needVer) {
-                        getRes = entry.innerGetVersioned(
+                        EntryGetResult res = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -466,9 +465,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             !deserializeBinary,
                             null);
 
-                        if (getRes != null) {
-                            v = getRes.value();
-                            ver = getRes.version();
+                        if (res != null) {
+                            v = res.value();
+                            ver = res.version();
                         }
                     }
                     else {
@@ -502,11 +501,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             keepCacheObjects,
                             deserializeBinary,
                             true,
-                            getRes,
-                            ver,
-                            0,
-                            0,
-                            needVer);
+                            ver);
 
                         return true;
                     }
@@ -565,9 +560,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     keepCacheObjects,
                     deserializeBinary,
                     false,
-                    needVer ? info.version() : null,
-                    0,
-                    0);
+                    needVer ? info.version() : null);
             }
 
             return map;

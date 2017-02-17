@@ -761,7 +761,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public EntryGetResult versionedValue(CacheObject val,
+    public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
         @Nullable GridCacheVersion newVer,
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,

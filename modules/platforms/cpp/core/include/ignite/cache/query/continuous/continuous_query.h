@@ -198,7 +198,7 @@ namespace ignite
                     /**
                      * Set cache entry event listener.
                      *
-                     * @param lsnr Cache entry event listener. Invoked on the
+                     * @param val Cache entry event listener. Invoked on the
                      *     node where continuous query execution has been
                      *     started.
                      */
