@@ -1,17 +1,13 @@
 package org.apache.ignite.math.impls.storage;
 
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.math.impls.MathTestConstants.NULL_VALUE;
-import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
-import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
+import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link RandomAccessSparseVectorStorage}.
- * TODO wip
  */
 public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<RandomAccessSparseVectorStorage> {
     /** */
@@ -23,9 +19,7 @@ public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<R
     /** */
     @Test
     public void data() throws Exception {
-        double[] data = storage.data();
-        assertNotNull(NULL_VALUE, data);
-        assertEquals(UNEXPECTED_VALUE, data.length, STORAGE_SIZE);
+        assertNull(NULL_VALUE, storage.data());
     }
 
     /** */

@@ -12,19 +12,28 @@ import org.apache.ignite.math.VectorStorage;
  * TODO wip
  */
 public class SequentialAccessSparseVectorStorage implements VectorStorage {
+
+    private static final double DEFAULT_VALUE = 0.0;
     private Int2DoubleRBTreeMap data;
+    /**
+     * If true, doesn't allow DEFAULT_VALUEs in the mapping (adding a zero discards it). Otherwise, a DEFAULT_VALUE is
+     * treated like any other value.
+     */
+    private boolean noDefault = true;
 
     /** For serialization. */
     public SequentialAccessSparseVectorStorage(){
         // No-op.
     }
 
-    public SequentialAccessSparseVectorStorage(int[] keys, double[] values) {
+    public SequentialAccessSparseVectorStorage(int[] keys, double[] values, boolean noDefault) {
+        this.noDefault = noDefault;
         this.data = new Int2DoubleRBTreeMap(keys, values);
     }
 
-    private SequentialAccessSparseVectorStorage(VectorStorage storage) {
+    private SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
         this.data = new Int2DoubleRBTreeMap();
+        this.noDefault = noDefault;
         for (int i = 0; i < storage.size(); i++) {
             data.put(i, storage.get(i));
         }
@@ -72,13 +81,13 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
     /**
      * {@inheritDoc}
-     *
-     *
-     * Math.max(1, Math.round(Functions.LOG2.apply(getNumNondefaultElements())))
      */
     @Override public double getLookupCost() {
-        // TODO wip
-        return 0;
+        return Math.max(1, Math.round(Functions.LOG2.apply(data.values().stream().filter(this::nonDefault).count())));
+    }
+
+    private boolean nonDefault(double x) {
+        return Double.compare(x, DEFAULT_VALUE) != 0;
     }
 
     /** {@inheritDoc} */
