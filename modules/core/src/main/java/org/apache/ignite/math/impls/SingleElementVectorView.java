@@ -19,58 +19,72 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.*;
-import java.util.*;
 
 /**
- * Constant value, read-only vector.
+ * Single value vector view over another vector.
  */
-public class ConstantVector extends AbstractVector {
+public class SingleElementVectorView extends AbstractVector {
     /**
      *
      */
-    public ConstantVector() {
+    public SingleElementVectorView() {
         // No-op.
     }
 
     /**
      *
-     * @param size
-     * @param val
+     * @param vec
+     * @param idx
      */
-    public ConstantVector(int size, double val) {
-        super(true, new ConstantVectorStorage(size, val));
+    public SingleElementVectorView(Vector vec, int idx) {
+        super(new SingleElementVectorDelegateStorage(vec, idx));
     }
 
     /**
      *
      * @return
      */
-    private ConstantVectorStorage storage() {
-        return (ConstantVectorStorage)getStorage();
+    private SingleElementVectorDelegateStorage storage() {
+        return (SingleElementVectorDelegateStorage)getStorage();
     }
 
     /**
-     * @param args
+     *
+     * @param sto
      */
-    public ConstantVector(Map<String, Object> args) {
-        assert args != null;
+    protected SingleElementVectorView(SingleElementVectorDelegateStorage sto) {
+        super(sto);
+    }
 
-        if (args.containsKey("size") && args.containsKey("value"))
-            setStorage(new ConstantVectorStorage((int)args.get("size"), (double)args.get("value")));
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    @Override
+    public Element minValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public Element maxValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public double sum() {
+        return getX(storage().index());
+    }
+
+    @Override
+    public int nonZeroElements() {
+        return 1;
     }
 
     @Override
     public Vector copy() {
-        return new ConstantVector(storage().size(), storage().constant());
+        return new SingleElementVectorView(storage());
     }
 
     @Override
     public Vector like(int crd) {
-        return new ConstantVector(crd, storage().constant());
+        throw new UnsupportedOperationException();
     }
 
     @Override

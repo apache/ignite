@@ -130,20 +130,24 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     @Override public boolean isArrayBased() {
         return false;
     }
-
+    
     @Override protected Object clone() throws CloneNotSupportedException {
         return new RandomAccessSparseVectorStorage(size, data.clone());
     }
 
     @Override public boolean equals(Object obj) {
-        return obj != null && getClass().equals(obj.getClass()) &&
-            (size == ((RandomAccessSparseVectorStorage)obj).size) && data.equals(((RandomAccessSparseVectorStorage)obj).data);
+        return obj != null &&
+            getClass().equals(obj.getClass()) &&
+            (size == ((RandomAccessSparseVectorStorage)obj).size) &&
+            data.equals(((RandomAccessSparseVectorStorage)obj).data);
     }
 
     @Override public int hashCode() {
         int result = 1;
+
         result = 37 * result + size;
         result = 37 * result + data.hashCode();
+        
         return result;
     }
 }

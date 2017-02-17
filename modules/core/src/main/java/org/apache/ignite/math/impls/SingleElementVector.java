@@ -24,53 +24,83 @@ import org.apache.ignite.math.impls.storage.*;
 import java.util.*;
 
 /**
- * Constant value, read-only vector.
+ * Read-write vector holding a single non-zero value at some index.
  */
-public class ConstantVector extends AbstractVector {
+public class SingleElementVector extends AbstractVector {
     /**
      *
      */
-    public ConstantVector() {
-        // No-op.
+    public SingleElementVector() {
+        // No-op
     }
 
     /**
      *
      * @param size
+     * @param idx
      * @param val
      */
-    public ConstantVector(int size, double val) {
-        super(true, new ConstantVectorStorage(size, val));
+    public SingleElementVector(int size, int idx, double val) {
+        super(new SingleElementVectorStorage(size, idx, val));
+    }
+
+    /**
+     * @param args
+     */
+    public SingleElementVector(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("size") && args.containsKey("index") && args.containsKey("value")) {
+            int size = (int)args.get("size");
+            int idx = (int)args.get("index");
+            double val = (double)args.get("value");
+
+            setStorage(new SingleElementVectorStorage(size, idx, val));
+        }
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**
      *
      * @return
      */
-    private ConstantVectorStorage storage() {
-        return (ConstantVectorStorage)getStorage();
+    private SingleElementVectorStorage storage() {
+        return (SingleElementVectorStorage)getStorage();
     }
 
-    /**
-     * @param args
-     */
-    public ConstantVector(Map<String, Object> args) {
-        assert args != null;
+    @Override
+    public Element minValue() {
+        return makeElement(storage().index());
+    }
 
-        if (args.containsKey("size") && args.containsKey("value"))
-            setStorage(new ConstantVectorStorage((int)args.get("size"), (double)args.get("value")));
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    @Override
+    public Element maxValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public double sum() {
+        return getX(storage().index());
+    }
+
+    @Override
+    public int nonZeroElements() {
+        return 1;
     }
 
     @Override
     public Vector copy() {
-        return new ConstantVector(storage().size(), storage().constant());
+        int idx = storage().index();
+
+        return new SingleElementVector(size(), idx, getX(idx));
     }
 
     @Override
     public Vector like(int crd) {
-        return new ConstantVector(crd, storage().constant());
+        int idx = storage().index();
+
+        return new SingleElementVector(crd, idx, getX(idx));
     }
 
     @Override

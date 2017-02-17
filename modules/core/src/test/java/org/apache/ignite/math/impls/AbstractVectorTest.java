@@ -786,12 +786,12 @@ public class AbstractVectorTest {
             }
 
             @Override
-            public Matrix toMatrix(boolean row) {
+            public Matrix toMatrix(boolean rowLike) {
                 return null; // TODO
             }
 
             @Override
-            public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+            public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
                 return null; // TODO
             }
 
@@ -870,12 +870,12 @@ public class AbstractVectorTest {
             }
 
             @Override
-            public Matrix toMatrix(boolean row) {
+            public Matrix toMatrix(boolean rowLike) {
                 return null; // TODO
             }
 
             @Override
-            public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+            public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
                 return null; // TODO
             }
 

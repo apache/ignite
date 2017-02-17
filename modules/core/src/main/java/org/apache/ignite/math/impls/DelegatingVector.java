@@ -86,13 +86,13 @@ public class DelegatingVector implements Vector {
     }
 
     @Override
-    public Matrix toMatrix(boolean row) {
-        return dlg.toMatrix(row);
+    public Matrix toMatrix(boolean rowLike) {
+        return dlg.toMatrix(rowLike);
     }
 
     @Override
-    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
-        return dlg.toMatrixPlusOne(row, zeroVal);
+    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+        return dlg.toMatrixPlusOne(rowLike, zeroVal);
     }
 
     @Override
