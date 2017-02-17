@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Message indicating that snapshot has been finished on a single node.
  */
-public class SnapshotFinishedMessage implements Message {
+public class SnapshotOperationFinishedMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,17 +39,22 @@ public class SnapshotFinishedMessage implements Message {
     /** */
     private boolean success;
 
+    /** Error message. */
+    private String errorMsg;
+
     /** */
-    public SnapshotFinishedMessage() {
+    public SnapshotOperationFinishedMessage() {
     }
 
     /**
      * @param snapshotId Snapshot ID.
+     * @param errorMsg
      */
-    public SnapshotFinishedMessage(long snapshotId, SnapshotOperationType type, boolean success) {
+    public SnapshotOperationFinishedMessage(long snapshotId, SnapshotOperationType type, boolean success, String errorMsg) {
         this.snapshotId = snapshotId;
         this.operationType = type.ordinal();
         this.success = success;
+        this.errorMsg = errorMsg;
     }
 
     /**
@@ -67,6 +72,11 @@ public class SnapshotFinishedMessage implements Message {
     /** */
     public boolean success() {
         return success;
+    }
+
+    /** */
+    public String errorMessage() {
+        return errorMsg;
     }
 
     /** {@inheritDoc} */
@@ -95,6 +105,12 @@ public class SnapshotFinishedMessage implements Message {
 
             case 2:
                 if (!writer.writeBoolean("success", success))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeString("errorMsg", errorMsg))
                     return false;
 
                 writer.incrementState();
@@ -136,9 +152,16 @@ public class SnapshotFinishedMessage implements Message {
 
                 reader.incrementState();
 
+            case 3:
+                errorMsg = reader.readString("errorMsg");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
-        return reader.afterMessageRead(SnapshotFinishedMessage.class);
+        return reader.afterMessageRead(SnapshotOperationFinishedMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +171,7 @@ public class SnapshotFinishedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */

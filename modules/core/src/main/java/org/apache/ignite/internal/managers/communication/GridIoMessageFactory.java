@@ -33,7 +33,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.pagemem.snapshot.SnapshotFinishedMessage;
+import org.apache.ignite.internal.pagemem.snapshot.SnapshotOperationFinishedMessage;
 import org.apache.ignite.internal.pagemem.snapshot.SnapshotProgressMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
@@ -186,7 +186,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -45:
-                msg = new SnapshotFinishedMessage();
+                msg = new SnapshotOperationFinishedMessage();
 
                 break;
 
