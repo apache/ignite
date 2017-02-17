@@ -57,7 +57,11 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
             return (IOVersions<BPlusInnerIO<SearchRow>>)PageIO.getInnerVersions((short)(payload - 1));
     }
 
-    /** */
+    /**
+     * @param type Type.
+     * @param payload Payload size.
+     * @return
+     */
     private static IOVersions<H2ExtrasInnerIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasInnerIO(type, 1, payload));
     }
@@ -78,9 +82,11 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         assert row0.link != 0 : row0;
 
-        H2TreeIndex currentIdx = H2TreeIndex.getCurrentIndex();
-        assert currentIdx != null;
-        List<InlineIndexHelper> inlineIdx = currentIdx.inlineIndexes();
+        H2TreeIndex currIdx = H2TreeIndex.getCurrentIndex();
+
+        assert currIdx != null;
+
+        List<InlineIndexHelper> inlineIdx = currIdx.inlineIndexes();
 
         assert inlineIdx != null;
 
@@ -88,9 +94,12 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
 
         for (int i = 0; i < inlineIdx.size(); i++) {
             InlineIndexHelper idx = inlineIdx.get(i);
+
             int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIndex()), payloadSize - fieldOff);
+
             if (size == 0)
                 break;
+
             fieldOff += size;
         }
 

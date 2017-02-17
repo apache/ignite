@@ -108,7 +108,6 @@ public class H2TreeIndex extends GridH2IndexBase {
                 tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), computeInlineSize(inlineIdxs, inlineSize)) {
                 @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
                     throws IgniteCheckedException {
-
                     if (inlineSize() == 0)
                         return compareRows(getRow(io, pageAddr, idx), row);
                     else {

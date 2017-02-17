@@ -104,7 +104,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /**
      * @return Inline size.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private int getMetaInlineSize() throws IgniteCheckedException {
         try (Page meta = page(metaPageId)) {

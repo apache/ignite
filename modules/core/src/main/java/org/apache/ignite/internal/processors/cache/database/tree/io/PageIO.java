@@ -160,10 +160,14 @@ public abstract class PageIO {
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
+
+    /** */
     public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     public static final short T_H2_EX_REF_INNER_START = 20000;
+
+    /** */
     public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
@@ -310,19 +314,19 @@ public abstract class PageIO {
 
     /**
      * Registers extra inner IO versions.
+     *
+     * @param innerExtIOs Extra versions.
      */
-    public static void registerH2ExtraInner(
-        IOVersions<? extends BPlusInnerIO<?>> innerExtIOs
-    ) {
+    public static void registerH2ExtraInner(IOVersions<? extends BPlusInnerIO<?>> innerExtIOs) {
         h2ExtraInnerIOs.add(innerExtIOs);
     }
 
     /**
      * Registers extra inner IO versions.
+     *
+     * @param leafExtIOs Extra versions.
      */
-    public static void registerH2ExtraLeaf(
-        IOVersions<? extends BPlusLeafIO<?>> leafExtIOs
-    ) {
+    public static void registerH2ExtraLeaf(IOVersions<? extends BPlusLeafIO<?>> leafExtIOs) {
         h2ExtraLeafIOs.add(leafExtIOs);
     }
 
