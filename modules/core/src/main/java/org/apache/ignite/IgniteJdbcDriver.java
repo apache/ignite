@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.stream.DuplicateKeysHandler;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -310,6 +311,12 @@ public class IgniteJdbcDriver implements Driver {
      */
     private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
 
+    /**
+     * Print warnings on key duplicates. Overrides {@code streamingAllowOverwrite}.
+     * @see IgniteDataStreamer#duplicateKeysHandler
+     */
+    private static final String PARAM_STREAMING_NO_DUPLICATES = "streamingNoDuplicates";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -344,10 +351,16 @@ public class IgniteJdbcDriver implements Driver {
     public static final String PROP_STREAMING_PER_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
 
     /**
-     * DML streaming: * Overwrite existing cache values on key duplication.
+     * DML streaming: overwrite existing cache values on key duplication.
      * @see IgniteDataStreamer#allowOverwrite
      */
     public static final String PROP_STREAMING_ALLOW_OVERWRITE = PROP_PREFIX + PARAM_STREAMING_ALLOW_OVERWRITE;
+
+    /**
+     * DML streaming: print warnings on key duplicates.
+     * @see IgniteDataStreamer#allowOverwrite
+     */
+    public static final String PROP_STREAMING_NO_DUPLICATES = PROP_PREFIX + PARAM_STREAMING_NO_DUPLICATES;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";

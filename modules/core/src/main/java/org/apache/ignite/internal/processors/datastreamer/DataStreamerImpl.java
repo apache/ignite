@@ -136,7 +136,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
 
     /** Handler for duplicates. */
-    private DuplicateKeysHandler<K, V> dupHnd = (DuplicateKeysHandler<K, V>) DUPLICATES_LOGGER;
+    private DuplicateKeysHandler dupHnd = (DuplicateKeysHandler)DUPLICATES_LOGGER;
 
     /** */
     private byte[] updaterBytes;
@@ -446,7 +446,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @Override public void duplicateKeysHandler(DuplicateKeysHandler<K, V> dupHnd) {
+    @Override public void duplicateKeysHandler(DuplicateKeysHandler dupHnd) {
         A.notNull(this.dupHnd, "dupHnd");
 
         this.dupHnd = dupHnd;
@@ -843,87 +843,52 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         @SuppressWarnings("SuspiciousMethodCalls")
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             try {
-                                // Map of duplicate entries to compute intersection with activeKeys quickly -
-                                // needed only for faster checks
-                                Map<KeyCacheObject, DataStreamerEntry> dupsMap = null;
+                                Collection<DataStreamerEntry> dups = null;
 
                                 try {
                                     t.get();
                                 }
                                 catch (IgniteCheckedException e1) {
                                     if (e1.getCause() instanceof DuplicateStreamedEntriesException) {
-                                        Collection<DataStreamerEntry> dupsCol =
-                                            ((DuplicateStreamedEntriesException) e1.getCause()).getDuplicateEntries();
+                                        dups = ((DuplicateStreamedEntriesException) e1.getCause()).getDuplicateEntries();
 
-                                        assert !F.isEmpty(dupsCol);
+                                        assert !F.isEmpty(dups);
 
-                                        dupsMap = new HashMap<>();
-
-                                        // First, let's form the map to do faster checks for duplication later
-                                        for (DataStreamerEntry dupEntry : dupsCol) {
+                                        for (DataStreamerEntry dupEntry : dups) {
                                             dupEntry.getKey()
                                                 .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
 
                                             dupEntry.getValue()
                                                 .finishUnmarshal(cacheObjCtx, cctx.deploy().globalLoader());
-
-                                            dupsMap.put(dupEntry.getKey(), dupEntry);
                                         }
                                     }
                                     else
+                                        // Will be caught by handlers of outside try
                                         throw e1;
                                 }
 
-                                // This will be the intersection of duplicate keys and those that appear in activeKeys
-                                List<DataStreamerEntry> dups =
-                                    !F.isEmpty(dupsMap) ? new ArrayList<DataStreamerEntry>(dupsMap.size()) : null;
+                                if (!F.isEmpty(dups))
+                                    dupHnd.onDuplicates(cctx, dups);
 
                                 if (activeKeys != null) {
-                                    for (DataStreamerEntry e : entriesForNode) {
-                                        KeyCacheObject key = e.getKey();
+                                    for (DataStreamerEntry e : entriesForNode)
+                                        activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
 
-                                        if (activeKeys.remove(key) && dupsMap != null) {
-                                            DataStreamerEntry dupEntry = dupsMap.get(key);
-
-                                            if (dupEntry != null)
-                                                dups.add(dupEntry);
-                                        }
-                                    }
+                                    if (activeKeys.isEmpty())
+                                        resFut.onDone();
                                 }
                                 else {
                                     assert entriesForNode.size() == 1;
 
-                                    if (dupsMap != null) {
-                                        KeyCacheObject key = F.first(entriesForNode).getKey();
-
-                                        DataStreamerEntry dupEntry = dupsMap.get(key);
-
-                                        if (dupEntry != null)
-                                            dups.add(dupEntry);
-                                    }
+                                    // That has been a single key,
+                                    // so complete result future right away.
+                                    resFut.onDone();
                                 }
-
-                                Throwable dupHndEx = null;
-
-                                if (!F.isEmpty(dups)) {
-                                    try {
-                                        dupHnd.onDuplicates(dups);
-                                    }
-                                    catch (Throwable e1) {
-                                        // If that handler throws an exception then let's just
-                                        // gracefully report it to the user and finish our future no matter what
-                                        dupHndEx = e1;
-                                    }
-                                }
-
-                                // We should stop either if activeKeys is null or if it has 0 elements,
-                                // as well as if duplicates handler yielded an error.
-                                if (F.isEmpty(activeKeys) || dupHndEx != null)
-                                    resFut.onDone(dupHndEx);
                             }
                             catch (IgniteClientDisconnectedCheckedException e1) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" + e1 + ']');
+                                    log.debug("Future finished with disconnect error [nodeId=" + nodeId + ", err=" +
+                                            e1 + ']');
 
                                 resFut.onDone(e1);
                             }
@@ -2043,7 +2008,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                         false);
 
-                    if (!entRes && noDuplicates) {
+                    // Let's do notifications once per key - that's why we check for primary node
+                    if (!entRes && primary && noDuplicates) {
                         if (errEntries == null)
                             errEntries = new ArrayList<>();
 
@@ -2123,11 +2089,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      * Default simple handler that just prints duplicate entries to log.
      */
-    private final static DuplicateKeysHandler<Object, Object> DUPLICATES_LOGGER = new DuplicateKeysHandler<Object, Object>() {
-        /** {@inheritDoc}
-         * @param duplicates*/
-        @Override public void onDuplicates(Collection<DataStreamerEntry> duplicates) {
-            throw new IgniteException("Some keys have been duplicated [duplicates=" + duplicates + ']');
+    private final static DuplicateKeysHandler DUPLICATES_LOGGER = new DuplicateKeysHandler() {
+        /** {@inheritDoc} */
+        @Override public void onDuplicates(final GridCacheContext cctx, Collection<DataStreamerEntry> duplicates) {
+            U.warn(log, "Some keys have been duplicated [duplicates=" + F.transform(duplicates,
+                new IgniteClosure<DataStreamerEntry, Object>() {
+                    @Override public Object apply(DataStreamerEntry dataStreamerEntry) {
+                        return dataStreamerEntry.getKey().value(cctx.cacheObjectContext(), false);
+                }
+            }) + ']');
         }
     };
 }

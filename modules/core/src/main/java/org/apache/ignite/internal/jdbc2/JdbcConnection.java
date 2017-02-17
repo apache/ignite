@@ -71,17 +71,7 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_CACHE;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_CFG;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_COLLOCATED;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_DISTRIBUTED_JOINS;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * JDBC connection implementation.
@@ -139,8 +129,11 @@ public class JdbcConnection implements Connection {
     /** Parallel ops count per node for data streamer. */
     private final int streamNodeParOps;
 
-    /** Forbid duplicate keys on streamed {@code INSERT}s. */
+    /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
+
+    /** Warn about duplicate keys on streamed {@code INSERT}s. */
+    private final boolean streamNoDuplicates;
 
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
@@ -165,6 +158,7 @@ public class JdbcConnection implements Connection {
 
         stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
         streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
+        streamNoDuplicates = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_NO_DUPLICATES));
         streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
         streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
             String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
@@ -527,7 +521,8 @@ public class JdbcConnection implements Connection {
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
             IgniteDataStreamer<?, ?> streamer = ((IgniteEx) ignite).context().query().createStreamer(cacheName,
-                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite);
+                nativeStmt, streamFlushTimeout, streamNodeBufSize, streamNodeParOps, streamAllowOverwrite,
+                streamNoDuplicates);
 
             stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
         }

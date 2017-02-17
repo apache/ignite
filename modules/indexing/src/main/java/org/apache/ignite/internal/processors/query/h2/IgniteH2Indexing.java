@@ -449,7 +449,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
-        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite, boolean noDuplicates) {
         Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
 
         if (!(prep instanceof Insert))
@@ -462,7 +462,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         streamer.allowOverwrite(allowOverwrite);
 
-        streamer.receiver(DataStreamerImpl.ISOLATED_UPDATER_NO_DUPLICATES);
+        if (noDuplicates) {
+            if (allowOverwrite)
+                U.warn(log, "Both allowOverwrite and noDuplicates have been requested for a streamer -" +
+                    " noDuplicates behavior will be used");
+
+            streamer.receiver(DataStreamerImpl.ISOLATED_UPDATER_NO_DUPLICATES);
+        }
 
         if (nodeBufSize > 0)
             streamer.perNodeBufferSize(nodeBufSize);

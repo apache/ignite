@@ -36,6 +36,7 @@ public class DuplicateStreamedEntriesException extends IgniteException {
      * @param dupEntries Entries that failed to be processed due to keys duplication.
      */
     public DuplicateStreamedEntriesException(Collection<DataStreamerEntry> dupEntries) {
+        super("Some keys have been duplicated, data streamer will handle this");
         assert !F.isEmpty(dupEntries);
 
         this.dupEntries = dupEntries;

@@ -18,16 +18,19 @@
 package org.apache.ignite.stream;
 
 import java.util.Collection;
+
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 
 /**
  * Routine to handle keys duplication.
  */
-public interface DuplicateKeysHandler<K, V> {
+public interface DuplicateKeysHandler {
     /**
      * Handle entries with duplicate keys.
      *
+     * @param cctx Cache context.
      * @param duplicates Entries for which keys had been duplicated.
      */
-    public void onDuplicates(Collection<DataStreamerEntry> duplicates);
+    public void onDuplicates(GridCacheContext cctx, Collection<DataStreamerEntry> duplicates);
 }

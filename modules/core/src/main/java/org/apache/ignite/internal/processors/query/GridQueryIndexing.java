@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.stream.DuplicateKeysHandler;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -289,10 +290,12 @@ public interface GridQueryIndexing {
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
      * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
      * @param allowOverwrite Overwrite existing cache values on key duplication.
+     * @param noDuplicates Warn about duplicate keys. Forbids duplication and overrides {@code allowOverwrite}.
      * @see IgniteDataStreamer#allowOverwrite
+     * @see IgniteDataStreamer#duplicateKeysHandler
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
     public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
-        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite, boolean noDuplicates);
 }

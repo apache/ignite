@@ -283,11 +283,12 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public void receiver(StreamReceiver<K, V> rcvr);
 
     /**
-     * Sets custom duplicate keys handler to this data streamer.
+     * Sets custom duplicate keys handler to this data streamer to use in DML streaming mode from JDBC driver.
+     * By default duplicate keys will be logged with warning.
      *
      * @param dupHnd Handler.
      */
-    public void duplicateKeysHandler(DuplicateKeysHandler<K, V> dupHnd);
+    public void duplicateKeysHandler(DuplicateKeysHandler dupHnd);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
