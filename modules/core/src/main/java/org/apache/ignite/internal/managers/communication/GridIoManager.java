@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,7 +58,7 @@ import org.apache.ignite.internal.processors.platform.message.PlatformMessageFil
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -160,7 +161,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final Marshaller marsh;
 
     /** Busy lock. */
-    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+    private final ReadWriteLock busyLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
 
     /** Lock to sync maps access. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -577,7 +579,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         // Busy wait is intentional.
         while (true) {
             try {
-                if (busyLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
+                if (busyLock.writeLock().tryLock(200, TimeUnit.MILLISECONDS))
                     break;
                 else
                     Thread.sleep(200);
@@ -601,7 +603,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             stopping = true;
         }
         finally {
-            busyLock.writeUnlock();
+            busyLock.writeLock().unlock();
         }
     }
 
@@ -623,7 +625,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert nodeId != null;
         assert msg != null;
 
-        busyLock.readLock();
+        Lock busyLock0 = busyLock.readLock();
+
+        busyLock0.lock();
 
         try {
             if (stopping) {
@@ -712,7 +716,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             U.error(log, "Failed to process message (will ignore): " + msg, e);
         }
         finally {
-            busyLock.readUnlock();
+            busyLock0.unlock();
         }
     }
 
@@ -798,11 +802,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
 
-            if (msg0.processFromNioThread()) {
+            if (msg0.processFromNioThread())
                 c.run();
+            else
+                ctx.getStripedExecutorService().execute(-1, c);
 
-                return;
-            }
+            return;
         }
 
         if (ctx.config().getStripedPoolSize() > 0 &&
@@ -2173,7 +2178,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
 
-            busyLock.readLock();
+            Lock lock = busyLock.readLock();
+
+            lock.lock();
 
             try {
                 if (stopping) {
@@ -2251,7 +2258,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             }
             finally {
-                busyLock.readUnlock();
+                lock.unlock();
             }
         }
 
