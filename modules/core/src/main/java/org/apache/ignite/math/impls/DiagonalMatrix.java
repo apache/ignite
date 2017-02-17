@@ -20,5 +20,5 @@ package org.apache.ignite.math.impls;
 /**
  * TODO: add description.
  */
-public class LocalDiagonalMatrix {
+public class DiagonalMatrix {
 }
