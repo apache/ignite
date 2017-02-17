@@ -2113,7 +2113,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         private String strVal;
 
         /**
-         * @param val String value.
+         * @param strVal String value.
          */
         ObjectValue2(String strVal) {
             this.strVal = strVal;
