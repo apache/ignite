@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
@@ -72,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 var extension = plugin.Provider.Context.GetExtension(0);
                 Assert.IsNotNull(extension);
 
-                CheckPluginTarget(extension);
+                CheckPluginTarget(extension, "barbaz", plugin.Provider);
             }
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
@@ -82,10 +83,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Checks the plugin target operations.
         /// </summary>
-        private static void CheckPluginTarget(IPlatformTarget target)
+        private static void CheckPluginTarget(IPlatformTarget target, string expectedName,
+            TestIgnitePluginProvider provider)
         {
             // Returns name.
-            Assert.AreEqual(string.Empty, target.OutStream(1, r => r.ReadString()));
+            Assert.AreEqual(expectedName, target.OutStream(1, r => r.ReadString()));
 
             // Increments arg by one.
             Assert.AreEqual(3, target.InLongOutLong(1, 2));
@@ -103,16 +105,30 @@ namespace Apache.Ignite.Core.Tests.Plugin
             var newTarget = target.InStreamOutObject(1, w => w.WriteString("name1"));
             Assert.AreEqual("name1", newTarget.OutStream(1, r => r.ReadString()));
 
-            // Returns target with specified name appended.
+            // Invokes callback to modify name, returns target with specified name appended.
             var res = target.InObjectStreamOutObjectStream(1, newTarget, w => w.WriteString("_abc"),
                 (reader, t) => Tuple.Create(reader.ReadString(), t));
 
-            Assert.AreEqual("name1", res.Item1);  // Old name
+            Assert.AreEqual("NAME1", res.Item1);  // Old name converted by callback.
             Assert.AreEqual("name1_abc", res.Item2.OutStream(1, r => r.ReadString()));
+            Assert.AreEqual("name1", provider.CallbackResult);  // Old name.
 
             // Returns a copy with same name.
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
+
+            // Throws custom mapped exception.
+            var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
+            Assert.AreEqual("Baz", ex.Message);
+            Assert.AreEqual(Ignition.GetIgnite(null), ex.Ignite);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", ex.ClassName);
+
+            var javaEx = ex.InnerException as JavaException;
+            Assert.IsNotNull(javaEx);
+            Assert.AreEqual("Baz", javaEx.JavaMessage);
+            Assert.AreEqual("org.apache.ignite.platform.plugin.PlatformTestPluginException", javaEx.JavaClassName);
+            Assert.IsTrue(javaEx.Message.Contains(
+                "at org.apache.ignite.platform.plugin.PlatformTestPluginTarget.processInLongOutLong"));
         }
 
         /// <summary>
@@ -164,13 +180,29 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
         private class NoAttributeConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         [PluginProviderType(typeof(EmptyNamePluginProvider))]
         private class EmptyNameConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class EmptyNamePluginProvider : IPluginProvider<EmptyNameConfig>
@@ -187,7 +219,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(ExceptionPluginProvider))]
         private class ExceptionConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class ExceptionPluginProvider : IPluginProvider<ExceptionConfig>
@@ -221,7 +261,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
         [PluginProviderType(typeof(NormalPluginProvider))]
         private class NormalConfig : IPluginConfiguration
         {
-            // No-op.
+            public int? PluginConfigurationClosureFactoryId
+            {
+                get { return null; }
+            }
+
+            public void WriteBinary(IBinaryRawWriter writer)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class NormalPluginProvider : IPluginProvider<NormalConfig>

@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+package org.apache.ignite.platform.plugin;
 
-import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in DUAL_ASYNC mode.
+ * Custom plugin exception
  */
-public class IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
+public class PlatformTestPluginException extends IgniteCheckedException {
     /**
-     * Constructor.
+     * Ctor.
+     *
+     * @param msg Message.
      */
-    public IgniteHadoopFileSystemShmemEmbeddedDualAsyncSelfTest() {
-        super(DUAL_ASYNC, false);
+    public PlatformTestPluginException(String msg) {
+        super(msg);
     }
 }

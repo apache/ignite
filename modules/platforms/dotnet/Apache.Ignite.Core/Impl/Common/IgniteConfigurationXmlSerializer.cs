@@ -344,6 +344,13 @@ namespace Apache.Ignite.Core.Impl.Common
             var type = target.GetType();
             var property = GetPropertyOrThrow(propName, propVal, type);
 
+            if (!property.CanWrite)
+            {
+                throw new ConfigurationErrorsException(string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                        propName, propVal, type, property.Name));
+            }
+
             var converter = GetConverter(property, property.PropertyType);
 
             var convertedVal = converter.ConvertFromInvariantString(propVal);

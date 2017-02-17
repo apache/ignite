@@ -17,6 +17,30 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.security.PrivilegedExceptionAction;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.ContentSummary;
@@ -53,36 +77,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ThreadLocalRandom8;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.security.PrivilegedExceptionAction;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -102,7 +103,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static final String PRIMARY_AUTHORITY = "igfs@";
 
     /** Primary file systme URI. */
-    private static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
+    protected static final String PRIMARY_URI = "igfs://" + PRIMARY_AUTHORITY + "/";
 
     /** Secondary file system authority. */
     private static final String SECONDARY_AUTHORITY = "igfs_secondary@127.0.0.1:11500";
@@ -122,6 +123,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /** Group size. */
     public static final int GRP_SIZE = 128;
 
+    /** Group size. */
+    public static final int GRID_COUNT = 4;
+
     /** Path to the default hadoop configuration. */
     public static final String HADOOP_FS_CFG = "examples/config/filesystem/core-site.xml";
 
@@ -135,7 +139,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     private static CyclicBarrier barrier;
 
     /** File system. */
-    private static FileSystem fs;
+    protected static FileSystem fs;
 
     /** Default IGFS mode. */
     protected final IgfsMode mode;
@@ -187,6 +191,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         this.skipLocShmem = skipLocShmem;
 
         endpoint = skipLocShmem ? "127.0.0.1:10500" : "shmem:10500";
+
+        ((TcpDiscoveryVmIpFinder)IP_FINDER).setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }
 
     /**
@@ -199,7 +205,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Configuration secondaryConf = configuration(SECONDARY_AUTHORITY, true, true);
+        Configuration secondaryConf = configurationSecondary(SECONDARY_AUTHORITY);
 
         secondaryConf.setInt("fs.igfs.block.size", 1024);
 
@@ -220,11 +226,22 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /**
+     * @throws Exception
+     */
+    protected void stopNodes() throws Exception {
+        for (int i = 0; i < GRID_COUNT; ++i)
+            stopGrid(i);
+
+        G.stop("grid_secondary", false);
+
+        Thread.sleep(500);
+    }
+    /**
      * Starts the nodes for this test.
      *
      * @throws Exception If failed.
      */
-    private void startNodes() throws Exception {
+    protected void startNodes() throws Exception {
         if (mode != PRIMARY) {
             // Start secondary IGFS.
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
@@ -258,8 +275,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             cfg.setGridName("grid_secondary");
 
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+            discoSpi.setLocalPort(47510);
 
-            discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+            TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
+            discoSpi.setIpFinder(finder);
 
             cfg.setDiscoverySpi(discoSpi);
             cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
@@ -269,7 +288,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             G.start(cfg);
         }
 
-        startGrids(4);
+        for (int i = 1; i < GRID_COUNT; ++i)
+            startGrid(i);
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -329,12 +351,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
+        cfg.setGridName(gridName);
+        cfg.setMarshaller(new OptimizedMarshaller());
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
@@ -2049,7 +2073,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         final FSDataOutputStream s = fs.create(filePath); // Open the stream before stopping IGFS.
 
         try {
-            G.stopAll(true); // Stop the server.
+            stopNodes();
 
             startNodes(); // Start server again.
 
@@ -2095,7 +2119,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         for (int i = 0; i < nClients; i++)
             q.add(FileSystem.get(primaryFsUri, cfg));
 
-        G.stopAll(true); // Stop the server.
+        stopNodes();
 
         startNodes(); // Start server again.
 
@@ -2414,7 +2438,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @param skipLocShmem Whether to skip local shmem mode.
      * @return Configuration.
      */
-    private static Configuration configuration(String authority, boolean skipEmbed, boolean skipLocShmem) {
+    protected Configuration configuration(String authority, boolean skipEmbed, boolean skipLocShmem) {
         Configuration cfg = new Configuration();
 
         cfg.set("fs.defaultFS", "igfs://" + authority + "/");
@@ -2429,6 +2453,31 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         if (skipLocShmem)
             cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
+
+        return cfg;
+    }
+
+    /**
+     * Create configuration for test.
+     *
+     * @param authority Authority.
+     * @param skipEmbed Whether to skip embedded mode.
+     * @param skipLocShmem Whether to skip local shmem mode.
+     * @return Configuration.
+     */
+    protected Configuration configurationSecondary(String authority) {
+        Configuration cfg = new Configuration();
+
+        cfg.set("fs.defaultFS", "igfs://" + authority + "/");
+        cfg.set("fs.igfs.impl", IgniteHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.igfs.impl",
+            org.apache.ignite.hadoop.fs.v2.IgniteHadoopFileSystem.class.getName());
+
+        cfg.setBoolean("fs.igfs.impl.disable.cache", true);
+
+        cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED, authority), true);
+
+        cfg.setBoolean(String.format(HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM, authority), true);
 
         return cfg;
     }

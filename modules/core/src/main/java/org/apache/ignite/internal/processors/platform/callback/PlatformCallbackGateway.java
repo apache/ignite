@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -1216,6 +1217,28 @@ public class PlatformCallbackGateway {
         try {
             PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.CachePluginDestroy,
                     objPtr, cancel ? 1 : 0, 0, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Invoke plugin callback by id.
+     *
+     * @param callbackId Id of a callback registered in Platform.
+     * @param outMem Out memory (Java writes, platform reads).
+     * @param inMem In memory (platform writes, Java reads).
+     */
+    public void pluginCallback(long callbackId, PlatformMemory outMem, PlatformMemory inMem) {
+        enter();
+
+        try {
+            long outPtr = outMem == null ? 0 : outMem.pointer();
+            long inPtr = inMem == null ? 0 : inMem.pointer();
+
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                    PlatformCallbackOp.PluginCallbackInLongLongOutLong, callbackId, outPtr, inPtr, null);
         }
         finally {
             leave();
