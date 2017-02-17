@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapSwapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntryImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -1046,9 +1045,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         Integer part = qry.partition();
 
-        if (cctx.isLocal()) {
+        if (cctx.isLocal())
             entryIter = cctx.local().allEntries().iterator();
-        }
         else if (part == null) {
             GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -3589,27 +3587,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 GridCacheEntryEx entry = entryIt.next();
 
-                if (entry == null || entry.deleted())
+                if (entry.deleted())
                     continue;
-
-                if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
-                    dht.sendTtlUpdateRequest(expiryPlc);
-
-                    expiryPlc = cctx.cache().expiryPolicy(plc);
-                }
 
                 KeyCacheObject key = entry.key();
                 CacheObject val;
 
                 try {
-                    if(!cctx.isSwapOrOffheapEnabled()) {
-                        val = !entry.obsolete() ? entry.peek(true, true, true, expiryPlc) :
-                            cctx.cache().entryEx(key).peek(true, true, true, expiryPlc);
-                    }
+                    if (heapOnly)
+                        val = entry.peek(true, false, false, expiryPlc);
                     else
-                        val = value(entry.key());
+                        val = value(entry, entry.key());
                 }
                 catch (GridCacheEntryRemovedException ignore) {
+                    assert heapOnly;
+
                     continue;
                 }
                 catch (IgniteCheckedException e) {
@@ -3617,6 +3609,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         log.debug("Failed to peek value: " + e);
 
                     val = null;
+                }
+
+                if (dht != null && expiryPlc != null && expiryPlc.readyToFlush(100)) {
+                    dht.sendTtlUpdateRequest(expiryPlc);
+
+                    expiryPlc = cctx.cache().expiryPolicy(plc);
                 }
 
                 if (val != null) {
@@ -3667,23 +3665,24 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /**
+         * @param entry Entry.
          * @param key Key.
          * @return Value.
          * @throws IgniteCheckedException If failed to peek value.
          */
-        private CacheObject value(KeyCacheObject key) throws IgniteCheckedException {
+        private CacheObject value(GridCacheEntryEx entry, KeyCacheObject key) throws IgniteCheckedException {
             while (true) {
                 try {
-                    GridCacheEntryEx entry = heapOnly ? cache.peekEx(key) : cache.entryEx(key);
+                    if (entry == null)
+                        entry = cache.entryEx(key);
 
-                    if (expiryPlc != null && !heapOnly)
+                    if (expiryPlc != null)
                         entry.unswap();
 
-                    return entry != null ? entry.peek(true, !heapOnly, !heapOnly, topVer, expiryPlc) : null;
+                    return entry.peek(true, true, true, topVer, expiryPlc);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    if (heapOnly)
-                        return null;
+                    entry = null;
                 }
             }
         }
