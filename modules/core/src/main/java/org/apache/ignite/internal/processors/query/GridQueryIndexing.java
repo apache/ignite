@@ -263,14 +263,6 @@ public interface GridQueryIndexing {
     public String space(String schemaName);
 
     /**
-     * Gets space name from database schema.
-     *
-     * @param schemaName Schema name. Could not be null. Could be empty.
-     * @return Space name. Could be null.
-     */
-    public String space(String schemaName);
-
-    /**
      * Collect queries that already running more than specified duration.
      *
      * @param duration Duration to check.
@@ -298,10 +290,9 @@ public interface GridQueryIndexing {
      * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
      * @param allowOverwrite Overwrite existing cache values on key duplication.
      * @see IgniteDataStreamer#allowOverwrite
-     * @see IgniteDataStreamer#duplicateKeysHandler
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
     public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
-                                                  int nodeBufSize, int nodeParOps, boolean allowOverwrite);
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }
