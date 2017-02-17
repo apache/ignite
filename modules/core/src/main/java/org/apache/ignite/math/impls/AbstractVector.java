@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.*;
 import java.io.*;
@@ -42,12 +43,44 @@ public abstract class AbstractVector implements Vector {
     /** Cached value for length squared. */
     private double lenSq = 0.0;
 
+    // Readonly flag (false by default).
+    private boolean readOnly = false;
+
+    // Read-only error message.
+    private static final String RO_MSG = "Vector is read-only.";
+
+    /**
+     * 
+     */
+    private void ensureReadOnly() {
+        if (readOnly)
+            throw new UnsupportedOperationException(RO_MSG);
+    }
+
     /**
      *
      * @param sto
      */
     public AbstractVector(VectorStorage sto) {
         this.sto = sto;
+    }
+
+    /**
+     *
+     * @param readOnly
+     * @param sto
+     */
+    public AbstractVector(boolean readOnly, VectorStorage sto) {
+        this.readOnly = readOnly;
+        this.sto = sto;
+    }
+
+    /**
+     *
+     * @param readOnly
+     */
+    public AbstractVector(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     /**
@@ -71,6 +104,8 @@ public abstract class AbstractVector implements Vector {
      * @param v
      */
     protected void storageSet(int i, double v) {
+        ensureReadOnly();
+
         sto.set(i, v);
 
         lenSq = 0.0;
@@ -393,8 +428,11 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc */
     @Override public Vector assign(double val) {
-        if (sto.isArrayBased())
+        if (sto.isArrayBased()) {
+            ensureReadOnly();
+
             Arrays.fill(sto.data(), val);
+        }
         else {
             int len = sto.size();
 
@@ -410,6 +448,8 @@ public abstract class AbstractVector implements Vector {
         checkCardinality(vals);
 
         if (sto.isArrayBased()) {
+            ensureReadOnly();
+
             System.arraycopy(vals, 0, sto.data(), 0, vals.length);
 
             lenSq = 0.0;
@@ -438,8 +478,11 @@ public abstract class AbstractVector implements Vector {
     @Override public Vector assign(IntToDoubleFunction fun) {
         assert fun != null;
 
-        if (sto.isArrayBased())
+        if (sto.isArrayBased()) {
+            ensureReadOnly();
+
             Arrays.setAll(sto.data(), fun);
+        }
         else {
             int len = sto.size();
 
@@ -567,7 +610,15 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc */
     @Override public Matrix cross(Vector vec) {
-        return null; // TODO
+        Matrix res = likeMatrix(size(), vec.size());
+
+        for (Element e : nonZeroes()) {
+            int row = e.index();
+            
+            res.assignRow(row, vec.times(getX(row)));
+        }
+
+        return res;
     }
 
     /** {@inheritDoc */
@@ -746,6 +797,7 @@ public abstract class AbstractVector implements Vector {
         out.writeObject(sto);
         out.writeObject(meta);
         out.writeObject(guid);
+        out.writeBoolean(readOnly);
     }
 
     /** {@inheritDoc */
@@ -754,5 +806,6 @@ public abstract class AbstractVector implements Vector {
         sto = (VectorStorage)in.readObject();
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
+        readOnly = in.readBoolean();
     }
 }
