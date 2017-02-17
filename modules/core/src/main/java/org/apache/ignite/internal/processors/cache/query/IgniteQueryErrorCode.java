@@ -47,6 +47,9 @@ public final class IgniteQueryErrorCode {
     /** Analysis detected that the statement is trying to directly {@code UPDATE} key or its fields. */
     public final static int KEY_UPDATE = 2003;
 
+    /** Number of statement parameters does not divide number of given arguments evenly. */
+    public final static int INVALID_PARAMS_NUMBER = 2005;
+
     /* 3xxx - database API related runtime errors */
 
     /** Required table not found. */
