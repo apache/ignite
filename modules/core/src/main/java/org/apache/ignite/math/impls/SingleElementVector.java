@@ -21,41 +21,66 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.impls.storage.*;
 
 /**
- * Constant value, read-only vector.
+ * Read-write vector holding a single non-zero value at some index.
  */
-public class ConstantVector extends AbstractVector {
+public class SingleElementVector extends AbstractVector {
     /**
      *
      */
-    public ConstantVector() {
-        // No-op.
+    public SingleElementVector() {
+        // No-op
     }
 
     /**
      *
      * @param size
+     * @param idx
      * @param val
      */
-    public ConstantVector(int size, double val) {
-        super(true, new ConstantVectorStorage(size, val));
+    public SingleElementVector(int size, int idx, double val) {
+        super(new SingleElementVectorStorage(size, idx, val));
     }
 
     /**
      *
      * @return
      */
-    private ConstantVectorStorage storage() {
-        return (ConstantVectorStorage)getStorage();
+    private SingleElementVectorStorage storage() {
+        return (SingleElementVectorStorage)getStorage();
+    }
+
+    @Override
+    public Element minValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public Element maxValue() {
+        return makeElement(storage().index());
+    }
+
+    @Override
+    public double sum() {
+        return getX(storage().index());
+    }
+
+    @Override
+    public int nonZeroElements() {
+        return 1;
     }
 
     @Override
     public Vector copy() {
-        return new ConstantVector(storage().size(), storage().constant());
+        int idx = storage().index();
+
+        return new SingleElementVector(size(), idx, getX(idx));
     }
 
     @Override
     public Vector like(int crd) {
-        return new ConstantVector(crd, storage().constant());
+        int idx = storage().index();
+
+        return new SingleElementVector(crd, idx, getX(idx));
     }
 
     @Override

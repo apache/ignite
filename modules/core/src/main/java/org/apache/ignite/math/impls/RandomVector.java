@@ -107,15 +107,15 @@ public class RandomVector extends AbstractVector {
     }
 
     @Override
-    public Matrix toMatrix(boolean row) {
-        if (row)
+    public Matrix toMatrix(boolean rowLike) {
+        if (rowLike)
             return new RandomMatrix(1, size());
         else
             return new RandomMatrix(size(), 1);
     }
 
     @Override
-    public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         throw new UnsupportedOperationException();
     }
 }

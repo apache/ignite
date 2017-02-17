@@ -96,15 +96,15 @@ public class VectorView extends AbstractVector {
     }
 
     /** {@inheritDoc */
-    @Override public Matrix toMatrix(boolean row) {
-        if (row)
+    @Override public Matrix toMatrix(boolean rowLike) {
+        if (rowLike)
             return parent.likeMatrix(1, size()).assignRow(0, this);
         else
             return parent.likeMatrix(size(), 1).assignColumn(0, this);
     }
 
     /** {@inheritDoc */
-    @Override public Matrix toMatrixPlusOne(boolean row, double zeroVal) {
+    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         return null; // TODO
     }
 

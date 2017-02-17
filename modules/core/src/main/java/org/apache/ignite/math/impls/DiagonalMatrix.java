@@ -17,8 +17,83 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.storage.*;
+
 /**
  * TODO: add description.
  */
-public class DiagonalMatrix {
+public class DiagonalMatrix extends AbstractMatrix {
+    /**
+     *
+     */
+    public DiagonalMatrix() {
+        // No-op.
+    }
+
+    /**
+     *
+     * @param diagonal
+     */
+    public DiagonalMatrix(Vector diagonal) {
+        super(new DiagonalMatrixStorage(diagonal));
+    }
+
+    /**
+     *
+     * @param mtx
+     */
+    public DiagonalMatrix(Matrix mtx) {
+        super(new DiagonalMatrixStorage(mtx.viewDiagonal()));
+    }
+
+    /**
+     *
+     * @param vals
+     */
+    public DiagonalMatrix(double[] vals) {
+        super(new DiagonalMatrixStorage(new DenseLocalOnHeapVector(vals)));
+    }
+
+    /**
+     *
+     * @return
+     */
+    private DiagonalMatrixStorage storage() {
+        return (DiagonalMatrixStorage)getStorage();
+    }
+
+    /**
+     *
+     * @param size
+     * @param val
+     */
+    public DiagonalMatrix(int size, double val) {
+        super(new DiagonalMatrixStorage(new ConstantVector(size, val)));
+    }
+
+    @Override
+    public Vector viewRow(int row) {
+        return new SingleElementVectorView(storage().diagonal(), row);
+    }
+
+    @Override
+    public Vector viewColumn(int col) {
+        return new SingleElementVectorView(storage().diagonal(), col);
+    }
+
+    @Override
+    public Matrix copy() {
+        return new DiagonalMatrix(storage().diagonal());
+    }
+
+    @Override
+    public Matrix like(int rows, int cols) {
+        return null;
+    }
+
+    @Override
+    public Vector likeVector(int crd) {
+        return null; // TODO
+    }
 }
