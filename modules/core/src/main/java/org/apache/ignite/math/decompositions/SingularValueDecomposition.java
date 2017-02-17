@@ -18,7 +18,6 @@
 package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.*;
 
 /**
  * TODO: add description.
@@ -35,6 +34,8 @@ public class SingularValueDecomposition {
     private final int m;
     private final int n;
 
+    private Matrix arg;
+
     private boolean transpositionNeeded;
 
     /**
@@ -43,6 +44,8 @@ public class SingularValueDecomposition {
      * @param arg A rectangular matrix.
      */
     public SingularValueDecomposition(Matrix arg) {
+        this.arg = arg;
+        
         if (arg.rowSize() < arg.columnSize()) 
             transpositionNeeded = true;
 
@@ -503,7 +506,7 @@ public class SingularValueDecomposition {
             s[i][i] = this.s[i];
         }
 
-        return new DenseLocalOnHeapMatrix(s);
+        return arg.like(n, n).assign(s);
     }
 
     /**
@@ -523,11 +526,11 @@ public class SingularValueDecomposition {
      */
     public Matrix getU() {
         if (transpositionNeeded)
-            return new DenseLocalOnHeapMatrix(v);
+            return arg.like(v.length, v.length).assign(v);
         else {
             int numCols = Math.min(m + 1, n);
 
-            Matrix r = new DenseLocalOnHeapMatrix(m, numCols);
+            Matrix r = arg.like(m, numCols);
 
             for (int i = 0; i < m; i++)
                 for (int j = 0; j < numCols; j++)
@@ -546,7 +549,7 @@ public class SingularValueDecomposition {
         if (transpositionNeeded) {
             int numCols = Math.min(m + 1, n);
 
-            Matrix r = new DenseLocalOnHeapMatrix(m, numCols);
+            Matrix r = arg.like(m, numCols);
 
             for (int i = 0; i < m; i++)
                 for (int j = 0; j < numCols; j++)
@@ -555,7 +558,7 @@ public class SingularValueDecomposition {
             return r;
         }
         else
-            return new DenseLocalOnHeapMatrix(v);
+            return arg.like(v.length, v.length).assign(v);
     }
 
     /**
@@ -586,8 +589,8 @@ public class SingularValueDecomposition {
      * @param minSingularValue value below which singular values are ignored.
      */
     Matrix getCovariance(double minSingularValue) {
-        Matrix j = new DenseLocalOnHeapMatrix(s.length,s.length);
-        Matrix vMat = new DenseLocalOnHeapMatrix(this.v);
+        Matrix j = arg.like(s.length,s.length);
+        Matrix vMat = arg.like(v.length, v.length).assign(v);
 
         for (int i = 0; i < s.length; i++)
             j.set(i, i, s[i] >= minSingularValue ? 1 / (s[i] * s[i]) : 0.0);
