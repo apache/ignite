@@ -7586,7 +7586,12 @@ public abstract class IgniteUtils {
             return fut.get();
         }
         catch (ExecutionException e) {
-             throw new IgniteCheckedException(e.getCause());
+            //todo only for investigation
+            System.out.println("Task exception:");
+
+            e.getCause().printStackTrace();
+
+            throw new IgniteCheckedException(e.getCause());
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
