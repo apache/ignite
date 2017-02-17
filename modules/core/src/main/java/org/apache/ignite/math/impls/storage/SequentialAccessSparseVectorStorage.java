@@ -17,24 +17,20 @@
 
 package org.apache.ignite.math.impls.storage;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
-import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
-import org.apache.ignite.math.Functions;
-import org.apache.ignite.math.VectorStorage;
+import it.unimi.dsi.fastutil.ints.*;
+import org.apache.ignite.math.*;
+import java.io.*;
 
 /**
  * TODO wip
  */
 public class SequentialAccessSparseVectorStorage implements VectorStorage {
-
     private static final double DEFAULT_VALUE = 0.0;
     private Int2DoubleRBTreeMap data;
+
     /**
-     * If true, doesn't allow DEFAULT_VALUEs in the mapping (adding a zero discards it). Otherwise, a DEFAULT_VALUE is
-     * treated like any other value.
+     * If true, doesn't allow DEFAULT_VALUE in the mapping (adding a zero discards it).
+     * Otherwise, a DEFAULT_VALUE is treated like any other value.
      */
     private boolean noDefault = true;
 
@@ -51,9 +47,9 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
     private SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
         this.data = new Int2DoubleRBTreeMap();
         this.noDefault = noDefault;
-        for (int i = 0; i < storage.size(); i++) {
+
+        for (int i = 0; i < storage.size(); i++)
             data.put(i, storage.get(i));
-        }
     }
 
     /** {@inheritDoc} */

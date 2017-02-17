@@ -37,10 +37,10 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
 
     /**
      *
-     * @param crd
+     * @param size
      */
-    public RandomAccessSparseVectorStorage(int crd){
-        this(crd, Math.min(crd, INITIAL_CAPACITY));
+    public RandomAccessSparseVectorStorage(int size){
+        this(size, Math.min(size, INITIAL_CAPACITY));
     }
 
     /**
