@@ -726,14 +726,22 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testGetConstructorBinaryReaderParameter() throws Exception {
         assertNull(U.getConstructorBinaryReaderParameter(SimpleClassNoConstructor.class));
-        checkConstructorBinaryReaderParam(U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPublicConstructor.class));
-        checkConstructorBinaryReaderParam(U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderProtectedConstructor.class));
-        checkConstructorBinaryReaderParam(U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPrivateConstructor.class));
-        checkConstructorBinaryReaderParam(U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderDefaultConstructor.class));
-    }
 
-    private void checkConstructorBinaryReaderParam(Constructor<?> constructor) {
-        assertNotNull(constructor);
+        Constructor<?> constructor;
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPublicConstructor.class));
+        assertEquals(constructor.getParameterCount(), 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderProtectedConstructor.class));
+        assertEquals(constructor.getParameterCount(), 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPrivateConstructor.class));
+        assertEquals(constructor.getParameterCount(), 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderDefaultConstructor.class));
         assertEquals(constructor.getParameterCount(), 1);
         assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
     }
