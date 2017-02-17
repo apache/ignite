@@ -150,7 +150,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         assert igniteCfg.getFileSystemConfiguration() != null;
 
         for (FileSystemConfiguration igfsCfg : igniteCfg.getFileSystemConfiguration()) {
-
             String dataCacheName = igfsCfg.getDataCacheConfiguration().getName();
 
             CacheConfiguration cacheCfg = cacheCfgs.get(dataCacheName);

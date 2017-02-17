@@ -1227,29 +1227,4 @@ public class IgfsUtils {
             return sb.toString();
         }
     }
-
-//    /**
-//     * Get metadata cache name from IGFS configuration.
-//     *
-//     * @param igfsCfg IGFS configuration.
-//     * @return Meta cache name.
-//     */
-//    public static String getMetaCacheName(FileSystemConfiguration igfsCfg) {
-//        assert igfsCfg.getMetaCacheConfiguration() != null;
-//
-//        return igfsCfg.getMetaCacheConfiguration().getName();
-//    }
-//
-//    /**
-//     * Get data cache name from IGFS configuration.
-//     *
-//     * @param igfsCfg IGFS configuration.
-//     * @return Data cache name.
-//     */
-//    public static String getDataCacheName(FileSystemConfiguration igfsCfg) {
-//        assert igfsCfg.getDataCacheConfiguration() != null;
-//
-//        return igfsCfg.getDataCacheConfiguration().getName();
-//    }
-
 }
