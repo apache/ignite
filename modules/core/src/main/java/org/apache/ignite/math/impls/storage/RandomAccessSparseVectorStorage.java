@@ -1,14 +1,11 @@
 package org.apache.ignite.math.impls.storage;
 
 import it.unimi.dsi.fastutil.ints.*;
-import it.unimi.dsi.fastutil.objects.*;
 import org.apache.ignite.math.*;
 import java.io.*;
-import java.util.*;
 
 /**
  * Implements vector that only stores non-zero doubles.
- * TODO wip
  */
 public class RandomAccessSparseVectorStorage implements VectorStorage{
     private int size;
