@@ -178,7 +178,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.log = log.getLogger(HadoopShuffleJob.class);
         this.embedded = embedded;
 
-        // No stripes for combiner.
         boolean stripeMappers0 = get(job.info(), SHUFFLE_MAPPER_STRIPED_OUTPUT, true);
 
         if (stripeMappers0) {
