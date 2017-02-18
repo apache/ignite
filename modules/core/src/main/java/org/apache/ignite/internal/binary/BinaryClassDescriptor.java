@@ -816,7 +816,7 @@ public class BinaryClassDescriptor {
             case BINARY:
                 res = newInstance(reader);
 
-                if (ctor == null || ctor.getParameterCount() == 0) {
+                if (ctor == null || ctor.getParameterTypes().length == 0) {
                     reader.setHandle(res);
 
                     if (serializer != null)
@@ -916,7 +916,7 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance(BinaryReader reader) throws BinaryObjectException {
         try {
-            if (ctor.getParameterCount() == 1)
+            if (ctor.getParameterTypes().length == 1)
                 return ctor.newInstance(reader);
 
             return newInstance();

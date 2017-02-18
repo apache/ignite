@@ -730,19 +730,19 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         Constructor<?> constructor;
 
         assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPublicConstructor.class));
-        assertEquals(constructor.getParameterCount(), 1);
+        assertEquals(constructor.getParameterTypes().length, 1);
         assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
 
         assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderProtectedConstructor.class));
-        assertEquals(constructor.getParameterCount(), 1);
+        assertEquals(constructor.getParameterTypes().length, 1);
         assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
 
         assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPrivateConstructor.class));
-        assertEquals(constructor.getParameterCount(), 1);
+        assertEquals(constructor.getParameterTypes().length, 1);
         assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
 
         assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderDefaultConstructor.class));
-        assertEquals(constructor.getParameterCount(), 1);
+        assertEquals(constructor.getParameterTypes().length, 1);
         assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
     }
 

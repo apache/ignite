@@ -1415,7 +1415,7 @@ public abstract class IgniteUtils {
      */
     @Nullable public static Constructor<?> getConstructorBinaryReaderParameter(Class<?> clazz) {
         for (Constructor constructor : clazz.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() == 1) {
+            if (constructor.getParameterTypes().length == 1) {
                 if (BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]))
                     return constructor;
             }
