@@ -29,7 +29,7 @@ public class MathBenchmarkSelfTest {
         new MathBenchmark("demo config test")
             .outputFileName(null)
             .measurementTimes(2)
-            .warmupTimes(0)
+            .warmUpTimes(0)
             .tag("demo tag")
             .comments("demo comments")
             .execute(() -> System.out.println("config test"));
@@ -40,7 +40,7 @@ public class MathBenchmarkSelfTest {
         new MathBenchmark("")
             .outputFileName("whatever")
             .measurementTimes(1)
-            .warmupTimes(1)
+            .warmUpTimes(1)
             .tag("empty name test tag")
             .comments("empty name test comments")
             .execute(() -> System.out.println("empty name test"));

@@ -9,17 +9,23 @@ import java.util.Locale;
 
 /** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
 class MathBenchmark {
-    /** */ private final String outputFileName;
+    /** */
+    private final String outputFileName;
 
-    /** */ private final String benchmarkName;
+    /** */
+    private final String benchmarkName;
 
-    /** */ private final int measurementTimes;
+    /** */
+    private final int measurementTimes;
 
-    /** */ private final int warmupTimes;
+    /** */
+    private final int warmUpTimes;
 
-    /** */ private final String tag;
+    /** */
+    private final String tag;
 
-    /** */ private final String comments;
+    /** */
+    private final String comments;
 
     /** Constructor strictly for use within this class. */
     private MathBenchmark(String benchmarkName, String outputFileName, int measurementTimes, int warmupTimes,
@@ -27,7 +33,7 @@ class MathBenchmark {
         this.benchmarkName = benchmarkName;
         this.outputFileName = outputFileName;
         this.measurementTimes = measurementTimes;
-        this.warmupTimes = warmupTimes;
+        this.warmUpTimes = warmupTimes;
         this.tag = tag;
         this.comments = comments;
         validate();
@@ -48,7 +54,7 @@ class MathBenchmark {
      * @throws Exception if something goes wrong
      */
     void execute(BenchmarkCode code) throws Exception {
-        for (int cnt = 0; cnt < warmupTimes; cnt++)
+        for (int cnt = 0; cnt < warmUpTimes; cnt++)
             code.call();
 
         final long start = System.currentTimeMillis();
@@ -67,7 +73,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark outputFileName(String param) {
-        return new MathBenchmark(benchmarkName, param, measurementTimes, warmupTimes, tag, comments);
+        return new MathBenchmark(benchmarkName, param, measurementTimes, warmUpTimes, tag, comments);
     }
 
     /**
@@ -76,15 +82,15 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark measurementTimes(int param) {
-        return new MathBenchmark(benchmarkName, outputFileName, param, warmupTimes, tag, comments);
+        return new MathBenchmark(benchmarkName, outputFileName, param, warmUpTimes, tag, comments);
     }
 
     /**
-     * Set optional warmup times.
+     * Set optional warm up times.
      * @param param times
      * @return configured benchmark
      */
-    MathBenchmark warmupTimes(int param) {
+    MathBenchmark warmUpTimes(int param) {
         return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, param, tag, comments);
     }
 
@@ -94,7 +100,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark tag(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, param, comments);
+        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmUpTimes, param, comments);
     }
 
     /**
@@ -103,7 +109,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark comments(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, tag, param);
+        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmUpTimes, tag, param);
     }
 
     /** */
@@ -136,7 +142,7 @@ class MathBenchmark {
             delim +
             measurementTimes +
             delim +
-            warmupTimes +
+            warmUpTimes +
             delim +
             tag +
             delim +
