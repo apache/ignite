@@ -103,7 +103,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return (warmUp() + duration() + 1) * 1000; // One extra second to stop all threads
+        return (warmUp() + duration() + 1) * 2000; // Two extra seconds to stop all threads.
     }
 
     /**
