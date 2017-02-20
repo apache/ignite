@@ -1,10 +1,5 @@
 package org.apache.ignite.math.benchmark;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -12,7 +7,7 @@ import java.util.TimeZone;
 
 /** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
 class MathBenchmark {
-    /** */ private final String outputFileName;
+    /** */ private final boolean outputToConsole;
 
     /** */ private final String benchmarkName;
 
@@ -25,10 +20,10 @@ class MathBenchmark {
     /** */ private final String comments;
 
     /** Constructor strictly for use within this class. */
-    private MathBenchmark(String benchmarkName, String outputFileName, int measurementTimes, int warmupTimes,
+    private MathBenchmark(String benchmarkName, boolean outputToConsole, int measurementTimes, int warmupTimes,
         String tag, String comments) {
         this.benchmarkName = benchmarkName;
-        this.outputFileName = outputFileName;
+        this.outputToConsole = outputToConsole;
         this.measurementTimes = measurementTimes;
         this.warmupTimes = warmupTimes;
         this.tag = tag;
@@ -37,12 +32,11 @@ class MathBenchmark {
     }
 
     /**
-     * Benchmark with specified name and default parameters. In particular, default output file
-     * is "src/test/resources/math.benchmark.results.csv".
+     * Benchmark with specified name and default parameters, in particular, default output file.
      * @param benchmarkName name
      */
     MathBenchmark(String benchmarkName) {
-        this(benchmarkName, "src/test/resources/math.benchmark.results.csv", 100, 1, "", "");
+        this(benchmarkName, false, 100, 1, "", "");
     }
 
     /**
@@ -51,7 +45,7 @@ class MathBenchmark {
      * @throws Exception if something goes wrong
      */
     void execute(BenchmarkCode code) throws Exception {
-        System.out.println("Started benchmark [" + benchmarkName + "]");
+        System.out.println("Started benchmark [" + benchmarkName + "].");
 
         for (int cnt = 0; cnt < warmupTimes; cnt++)
             code.call();
@@ -65,17 +59,15 @@ class MathBenchmark {
 
         writeResults(formatResults(start, end));
 
-        System.out.println("Finished benchmark [" + benchmarkName + "]"
-            + (outputFileName == null ? "" : ", results written to file [" + outputFileName + "]"));
+        System.out.println("Finished benchmark [" + benchmarkName + "].");
     }
 
     /**
-     * Set optional output file name, null for using stdout.
-     * @param param name
+     * Set optional output mode for using stdout.
      * @return configured benchmark
      */
-    MathBenchmark outputFileName(String param) {
-        return new MathBenchmark(benchmarkName, param, measurementTimes, warmupTimes, tag, comments);
+    MathBenchmark outputToConsole() {
+        return new MathBenchmark(benchmarkName, true, measurementTimes, warmupTimes, tag, comments);
     }
 
     /**
@@ -84,7 +76,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark measurementTimes(int param) {
-        return new MathBenchmark(benchmarkName, outputFileName, param, warmupTimes, tag, comments);
+        return new MathBenchmark(benchmarkName, outputToConsole, param, warmupTimes, tag, comments);
     }
 
     /**
@@ -93,7 +85,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark warmupTimes(int param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, param, tag, comments);
+        return new MathBenchmark(benchmarkName, outputToConsole, measurementTimes, param, tag, comments);
     }
 
     /**
@@ -102,7 +94,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark tag(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, param, comments);
+        return new MathBenchmark(benchmarkName, outputToConsole, measurementTimes, warmupTimes, param, comments);
     }
 
     /**
@@ -111,23 +103,18 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark comments(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, tag, param);
+        return new MathBenchmark(benchmarkName, outputToConsole, measurementTimes, warmupTimes, tag, param);
     }
 
     /** */
-    private void writeResults(String results) throws IOException {
-        if (outputFileName == null) {
+    private void writeResults(String results) throws Exception {
+        if (outputToConsole) {
             System.out.println(results);
 
             return;
         }
 
-        final String unixLineSeparator = "\n";
-
-        try (final PrintWriter writer = new PrintWriter(Files.newBufferedWriter(Paths.get(outputFileName),
-            StandardOpenOption.APPEND, StandardOpenOption.CREATE))) {
-            writer.write(results + unixLineSeparator);
-        }
+        new ResultsWriter().append(results);
     }
 
     /** */
