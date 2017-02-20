@@ -31,19 +31,22 @@ public class VectorBenchmarkTest {
         });
 
         new MathBenchmark(namePrefix + " sizes powers of 2").execute(() -> {
-            for (int power: new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}) testMix(1 << power, constructor);
+            for (int power: new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14})
+                testMix(1 << power, constructor);
         });
 
         new MathBenchmark(namePrefix + " large sizes").execute(() -> {
-            for (int power: new int[] {10, 12, 14, 16}) for (int delta : new int[] {-1, 0, 1})
-                testMix((1 << power) + delta, constructor);
+            for (int power: new int[] {10, 12, 14, 16})
+                for (int delta : new int[] {-1, 0, 1})
+                    testMix((1 << power) + delta, constructor);
         });
 
         new MathBenchmark(namePrefix + " extra large sizes")
             .measurementTimes(10)
             .execute(() -> { // todo test powers 21, 22, 23 (power 24 killed my IDEA)
-            for (int power: new int[] {17, 18, 19, 20}) for (int delta : new int[] {-1, 0, 1})
-                testMix((1 << power) + delta, constructor);
+            for (int power: new int[] {17, 18, 19, 20})
+                for (int delta : new int[] {-1, 0}) // IMPL NOTE delta +1 is not intended for use here
+                    testMix((1 << power) + delta, constructor);
         });
     }
 

@@ -8,6 +8,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
 class MathBenchmark {
@@ -161,7 +162,11 @@ class MathBenchmark {
 
     /** */
     private String formatTs(long ts) {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(ts));
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        return sdf.format(new Date(ts));
     }
 
     /** */
