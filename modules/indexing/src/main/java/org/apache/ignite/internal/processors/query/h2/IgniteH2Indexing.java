@@ -442,7 +442,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        // TODO: Why false -> true?
         return prepareStatement(connectionForSpace(space(schema)), sql, true);
     }
 
@@ -456,7 +455,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        // TODO: Changed streamer fetch logic.
         IgniteDataStreamer streamer = ctx.grid().dataStreamer(spaceName);
 
         streamer.autoFlushFrequency(autoFlushFreq);

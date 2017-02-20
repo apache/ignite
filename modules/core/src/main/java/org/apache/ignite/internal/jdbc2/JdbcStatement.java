@@ -43,7 +43,6 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 /**
  * JDBC statement implementation.
  */
-// TODO: Do we really need updates in this class?
 public class JdbcStatement implements Statement {
     /** Default fetch size. */
     private static final int DFLT_FETCH_SIZE = 1024;
@@ -74,6 +73,9 @@ public class JdbcStatement implements Statement {
 
     /** Current updated items count. */
     long updateCnt = -1;
+
+    /** Batch statements. */
+    private List<String> batch;
 
     /**
      * Creates new statement.
@@ -205,7 +207,7 @@ public class JdbcStatement implements Statement {
         if (!(objRes instanceof Long))
             throw new SQLException("Unexpected update result type");
 
-        return  (Long)objRes;
+        return (Long)objRes;
     }
 
     /** {@inheritDoc} */
@@ -439,21 +441,27 @@ public class JdbcStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        if (F.isEmpty(sql))
+            throw new SQLException("SQL query is empty");
+
+        if (batch == null)
+            batch = new ArrayList<>();
+
+        batch.add(sql);
     }
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        batch = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */

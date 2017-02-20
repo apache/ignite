@@ -841,7 +841,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }, true);
         }
         catch (IgniteCheckedException e) {
-            // TODO: Why cache exception?
             throw new CacheException(e);
         }
         finally {

@@ -163,7 +163,6 @@ public class DmlStatementsProcessor {
                 cctx.operationContextPerCall(opCtx);
             }
 
-            // TODO: What is going on here?
             items += r.cnt;
             errKeys = r.errKeys;
 
@@ -194,7 +193,7 @@ public class DmlStatementsProcessor {
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
         UpdateResult res = updateSqlFields(spaceName, stmt, fieldsQry, false, null, cancel);
 
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>) new QueryCursorImpl(Collections.singletonList
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
             (Collections.singletonList(res.cnt)), null, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
@@ -231,10 +230,11 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, Object[] args) throws IgniteCheckedException {
+    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, Object[] args)
+        throws IgniteCheckedException {
         args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
 
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
         assert p != null;
 
@@ -257,7 +257,6 @@ public class DmlStatementsProcessor {
                 F.asList(args), null, false, 0, null);
 
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                /** {@inheritDoc} */
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
@@ -271,7 +270,6 @@ public class DmlStatementsProcessor {
             data.addAll(stepCur.getAll());
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                /** {@inheritDoc} */
                 @Override public Iterator<List<?>> iterator() {
                     return data.iterator();
                 }
@@ -350,7 +348,6 @@ public class DmlStatementsProcessor {
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                /** {@inheritDoc} */
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepBinary());
@@ -1089,6 +1086,12 @@ public class DmlStatementsProcessor {
 
     /** Update result - modifications count and keys to re-run query with, if needed. */
     private final static class UpdateResult {
+        /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
+        final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
+
+        /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
+        final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+
         /** Number of processed items. */
         final long cnt;
 
@@ -1102,12 +1105,6 @@ public class DmlStatementsProcessor {
             this.cnt = cnt;
             this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);
         }
-
-        /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
-        final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
-
-        /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
-        final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
     }
 
     /** Result of processing an individual page with {@link IgniteCache#invokeAll} including error details, if any. */
