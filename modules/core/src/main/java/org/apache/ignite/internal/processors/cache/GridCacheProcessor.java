@@ -263,8 +263,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (cfg.getCacheMode() == REPLICATED)
+        if (cfg.getCacheMode() == REPLICATED) {
             cfg.setBackups(Integer.MAX_VALUE);
+
+            if( cfg.getQueryParallelism() > 1)
+                throw new IgniteCheckedException("Replicated cache segmentation is not supported.");
+        }
 
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(cacheObjCtx.defaultAffMapper());

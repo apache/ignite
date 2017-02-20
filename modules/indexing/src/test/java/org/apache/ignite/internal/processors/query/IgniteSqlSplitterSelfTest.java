@@ -76,8 +76,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSqlQueryParallelismLevel(4);
-
         return cfg;
     }
 
@@ -108,6 +106,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests offset and limit clauses for query.
+     *
      * @throws Exception If failed.
      */
     public void testOffsetLimit() throws Exception {
@@ -757,9 +756,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      */
     public void testIndexSegmentation() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
-            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+            Integer.class, Person2.class).setQueryParallelism(4);
         CacheConfiguration ccfg2 = cacheConfig("org", true,
-            Integer.class, Organization.class).setIndexSegmentationEnabled(true);
+            Integer.class, Organization.class).setQueryParallelism(4);
 
         IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
         IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
@@ -773,9 +772,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
-            checkQueryPlan(c1,true, 1, new SqlFieldsQuery(select0));
+            checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0));
 
-            checkQueryPlan(c1,true, 1, new SqlFieldsQuery(select0).setLocal(true));
+            checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0).setLocal(true));
         }
         finally {
             c1.destroy();
@@ -786,11 +785,27 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIndexSegmentationFailurePartitionedReplicated() throws Exception {
+    public void testReplicationCacheIndexSegmentationFailure() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                CacheConfiguration ccfg = cacheConfig("org", false,
+                    Integer.class, Organization.class).setQueryParallelism(4);
+
+                IgniteCache<Object, Object> c = ignite(0).createCache(ccfg);
+
+                return null;
+            }
+        }, CacheException.class, "Replicated cache segmentation is not supported.");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSegmentationPartitionedReplicated() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
-            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+            Integer.class, Person2.class).setQueryParallelism(4);
         CacheConfiguration ccfg2 = cacheConfig("org", false,
-            Integer.class, Organization.class).setIndexSegmentationEnabled(true);
+            Integer.class, Organization.class);
 
         final IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
         final IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
@@ -802,19 +817,15 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key";
 
             final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
             qry.setDistributedJoins(true);
 
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    c1.query(qry);
+            List<List<?>> results = c1.query(qry).getAll();
 
-                    return null;
-                }
-            }, CacheException.class, "Using segmented and non-segmented index in same query is forbidden.");
+            assertEquals(2, results.size());
         }
         finally {
             c1.destroy();
@@ -825,11 +836,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIndexSegmentationFailureSegmentedWithNonSegmented() throws Exception {
+    public void testIndexWithDifferentSegmentationLevelsFailure() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
-            Integer.class, Person2.class).setIndexSegmentationEnabled(true);
+            Integer.class, Person2.class).setQueryParallelism(4);
         CacheConfiguration ccfg2 = cacheConfig("org", true,
-            Integer.class, Organization.class).setIndexSegmentationEnabled(false);
+            Integer.class, Organization.class).setQueryParallelism(3);
 
         final IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
         final IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
@@ -853,14 +864,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, CacheException.class, "Using segmented and non-segmented index in same query is forbidden.");
+            }, CacheException.class, "Using indexes with different parallelizm levels in same query is forbidden.");
         }
         finally {
             c1.destroy();
             c2.destroy();
         }
     }
-
 
     /**
      * @param cache Cache.
@@ -902,26 +912,26 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             false,
             0,
             select +
-                "from " + cache1 + ","  + cache2 + " "+ where);
+                "from " + cache1 + "," + cache2 + " " + where);
 
         checkQueryPlan(cache,
             false,
             0,
             select +
-                "from " + cache2 + ","  + cache1 + " "+ where);
+                "from " + cache2 + "," + cache1 + " " + where);
 
         if (testEnforceJoinOrder) {
             checkQueryPlan(cache,
                 true,
                 0,
                 select +
-                    "from " + cache1 + ","  + cache2 + " "+ where);
+                    "from " + cache1 + "," + cache2 + " " + where);
 
             checkQueryPlan(cache,
                 true,
                 0,
                 select +
-                    "from " + cache2 + ","  + cache1 + " "+ where);
+                    "from " + cache2 + "," + cache1 + " " + where);
         }
     }
 
@@ -936,7 +946,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         boolean enforceJoinOrder,
         int expBatchedJoins,
         String sql,
-        String...expText) {
+        String... expText) {
         checkQueryPlan(cache,
             enforceJoinOrder,
             expBatchedJoins,
@@ -961,7 +971,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         boolean enforceJoinOrder,
         int expBatchedJoins,
         SqlFieldsQuery qry,
-        String...expText) {
+        String... expText) {
         qry.setEnforceJoinOrder(enforceJoinOrder);
         qry.setDistributedJoins(true);
 
@@ -1097,7 +1107,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * @param args Arguments.
      * @return Column as list.
      */
-    private static <X> List<X> columnQuery(IgniteCache<?,?> c, String qry, Object... args) {
+    private static <X> List<X> columnQuery(IgniteCache<?, ?> c, String qry, Object... args) {
         return column(0, c.query(new SqlFieldsQuery(qry).setArgs(args)).getAll());
     }
 

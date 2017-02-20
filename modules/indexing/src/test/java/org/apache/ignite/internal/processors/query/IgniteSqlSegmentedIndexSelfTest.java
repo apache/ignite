@@ -43,6 +43,10 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static int QRY_PARALLELISM_LVL = 97;
+
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -58,8 +62,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-
-        cfg.setSqlQueryParallelismLevel(97);
 
         return cfg;
     }
@@ -79,6 +81,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         return new CacheConfiguration<K, V>()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
+            .setQueryParallelism(partitioned ? QRY_PARALLELISM_LVL : 1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setIndexedTypes(idxTypes);
     }
@@ -89,6 +92,9 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      */
     public void testSingleNodeIndexSegmentation() throws Exception {
         startGridsMultiThreaded(1, true);
+
+        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class));
 
         fillCache();
 
@@ -103,6 +109,26 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      */
     public void testMultiNodeIndexSegmentation() throws Exception {
         startGridsMultiThreaded(4, true);
+
+        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class));
+
+        fillCache();
+
+        checkDistributedQueryWithSegmentedIndex();
+
+        checkLocalQueryWithSegmentedIndex();
+    }
+
+    /**
+     * Run tests on multi-node grid
+     * @throws Exception If failed.
+     */
+    public void testMultiNodeSegmentedPartitionedWithReplicated() throws Exception {
+        startGridsMultiThreaded(4, true);
+
+        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig("org", false, Integer.class, Organization.class));
 
         fillCache();
 
@@ -165,15 +191,9 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
     /** */
     private void fillCache() {
-        CacheConfiguration<Object, Object> ccfg1 = cacheConfig("pers", true,
-            Integer.class, Person.class).setIndexSegmentationEnabled(true);
+        IgniteCache<Object, Object> c1 = ignite(0).cache("pers");
 
-        CacheConfiguration<Object, Object> ccfg2 = cacheConfig("org", true,
-            Integer.class, Organization.class).setIndexSegmentationEnabled(true);
-
-        IgniteCache<Object, Object> c1 = ignite(0).getOrCreateCache(ccfg1);
-
-        IgniteCache<Object, Object> c2 = ignite(0).getOrCreateCache(ccfg2);
+        IgniteCache<Object, Object> c2 = ignite(0).cache("org");
 
         final int orgCount = 500;
 

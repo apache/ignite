@@ -223,6 +223,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
 
+    /** Default SQL query parallelism level */
+    public static final int DFLT_SQL_QUERY_PARALLELISM_LVL = 1;
+
     /** Cache name. */
     private String name;
 
@@ -411,7 +414,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Collection<QueryEntity> qryEntities;
 
     /** */
-    private boolean indexSegmentationEnabled;
+    private int qryParallelism = DFLT_SQL_QUERY_PARALLELISM_LVL;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -465,7 +468,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
-        indexSegmentationEnabled = cc.isIndexSegmentationEnabled();
+        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
@@ -2110,33 +2113,42 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Get flag indicating sql index segmentation is enabled.
+     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
+     * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
+     * certain restrictions on parallelism depending on query type and/or cache type.
      * <p>
-     * If @{code true} sql index will be segmented, otherwise index will have single segment.
-     * Flag value is @{code false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
-     * </p>
-     * Note: Number of segments determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel()}.
-     *
-     * @return Index segmentation enabled flag.
+     * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
+     * <ul>
+     *     <li>Hint cannot be used for {@code REPLICATED} cache, exception is thrown otherwise</li>
+     *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
+     *     otherwise</li>
+     * </ul>
+     * These restrictions will be removed in future versions of Apache Ignite.
+     * <p>
+     * Defaults to {@code 1}.
      */
-    public boolean isIndexSegmentationEnabled() {
-        return indexSegmentationEnabled;
+    public int getQueryParallelism() {
+        return qryParallelism;
     }
 
     /**
-     * Set flag indicating sql index segmentation is enabled.
+     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
+     * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
+     * certain restrictions on parallelism depending on query type and/or cache type.
      * <p>
-     * If @{code true} sql index will be segmented, otherwise index will have single segment.
-     * Flag value is @{code false} by default. Flag has no affect to Replicated cache as it can't be partitioned.
-     * </p>
-     * Note: Number of segments determined by global option {@link IgniteConfiguration#getSqlQueryParallelismLevel()}.
+     * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
+     * <ul>
+     *     <li>Hint cannot be used for {@code REPLICATED} cache, exception is thrown otherwise</li>
+     *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
+     *     otherwise</li>
+     * </ul>
+     * These restrictions will be removed in future versions of Apache Ignite.
      *
-     * @param indexSegmentationEnabled Index segmentation enabled flag.
+     * @param qryParallelism Query parallelizm level.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V>  setIndexSegmentationEnabled(boolean indexSegmentationEnabled) {
-        this.indexSegmentationEnabled = indexSegmentationEnabled;
-
+    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+        this.qryParallelism = qryParallelism;
         return this;
     }
 

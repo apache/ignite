@@ -361,9 +361,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
-    /** */
-    private int queryParallelismLevel;
-
     /**
      * @return Kernal context.
      */
@@ -1092,8 +1089,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final SqlFieldsQuery qry, final IndexingQueryFilter filter, final GridQueryCancel cancel)
         throws IgniteCheckedException {
 
-        if (queryParallelismLevel > 1 && cctx != null
-            && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
+        if (cctx.config().getQueryParallelism() > 1) {
             qry.setDistributedJoins(true);
 
             assert qry.isLocal();
@@ -1130,8 +1126,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(final GridCacheContext<?, ?> cctx,
         final SqlQuery qry, final IndexingQueryFilter filter) throws IgniteCheckedException {
-        if (queryParallelismLevel > 1 && cctx != null
-            && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled()) {
+        if (cctx.config().getQueryParallelism() > 1) {
             qry.setDistributedJoins(true);
 
             assert qry.isLocal();
@@ -1474,35 +1469,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IllegalStateException if segmented indices used with non-segmented indices.
      */
     private void checkCacheIndexSegmentation(List<Integer> caches) {
-        final int parallelismLevel = ctx.config().getSqlQueryParallelismLevel();
-
-        if (parallelismLevel <= 1 || caches.isEmpty())
+        if (caches.isEmpty())
             return; //Segmentation is disabled or nothing to check
 
         GridCacheSharedContext sharedContext = ctx.cache().context();
 
-        GridCacheContext cctx = sharedContext.cacheContext(caches.get(0));
+        int expectedParallelism = 0;
 
-        assert cctx != null;
-
-        final boolean expected = isSegmentedIndex(cctx);
-
-        for (int i = 1; i < caches.size(); i++) {
-            cctx = sharedContext.cacheContext(caches.get(i));
+        for (int i = 0; i < caches.size(); i++) {
+            GridCacheContext cctx = sharedContext.cacheContext(caches.get(i));
 
             assert cctx != null;
 
-            if (isSegmentedIndex(cctx) != expected)
-                throw new IllegalStateException("Using segmented and non-segmented index in same query is forbidden.");
-        }
-    }
+            if(cctx.isReplicated())
+                continue;
 
-    /**
-     * @param cctx Cache context.
-     * @return {@code true} if index is segmented, otherwise {@code false}.
-     */
-    public boolean isSegmentedIndex(GridCacheContext cctx) {
-        return !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled();
+            if(expectedParallelism == 0)
+                expectedParallelism = cctx.config().getQueryParallelism();
+            else if (expectedParallelism != 0 && cctx.config().getQueryParallelism() != expectedParallelism)
+                throw new IllegalStateException("Using indexes with different parallelizm levels in same query is forbidden.");
+        }
     }
 
     /**
@@ -1939,12 +1925,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // This is allowed in some tests.
             nodeId = UUID.randomUUID();
             marshaller = new JdkMarshaller();
-            queryParallelismLevel = 1;
         }
         else {
             this.ctx = ctx;
-
-            queryParallelismLevel = ctx.config().getSqlQueryParallelismLevel();
 
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
@@ -2783,9 +2766,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
             GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
 
-            if (queryParallelismLevel > 1 && cctx != null
-                && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled())
-                return new GridH2TreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
+            if (cctx != null && cctx.config().getQueryParallelism() > 1)
+                return new GridH2TreeIndex(idxName, tbl, pk, columns, cctx.config().getQueryParallelism());
 
             return new GridH2TreeIndex(idxName, tbl, pk, columns, 1);
         }

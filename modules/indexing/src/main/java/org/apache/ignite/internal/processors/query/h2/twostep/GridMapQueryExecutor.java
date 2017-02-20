@@ -456,31 +456,30 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
-        if (mainCctx.config().isIndexSegmentationEnabled()) {
-            for (int i = 1; i < ctx.config().getSqlQueryParallelismLevel(); i++) {
-                final int segment = i;
+        //TODO: ensure correct context is used to determine parallelism level
+        for (int i = 1; i < mainCctx.config().getQueryParallelism(); i++) {
+            final int segment = i;
 
-                ctx.closure().callLocal(
-                    new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            onQueryRequest0(node,
-                                req.requestId(),
-                                segment,
-                                req.queries(),
-                                req.caches(),
-                                req.topologyVersion(),
-                                partsMap,
-                                parts,
-                                req.tables(),
-                                req.pageSize(),
-                                joinMode,
-                                req.timeout());
+            ctx.closure().callLocal(
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        onQueryRequest0(node,
+                            req.requestId(),
+                            segment,
+                            req.queries(),
+                            req.caches(),
+                            req.topologyVersion(),
+                            partsMap,
+                            parts,
+                            req.tables(),
+                            req.pageSize(),
+                            joinMode,
+                            req.timeout());
 
-                            return null;
-                        }
+                        return null;
                     }
-                    , QUERY_POOL);
-            }
+                }
+                , QUERY_POOL);
         }
 
         onQueryRequest0(node,

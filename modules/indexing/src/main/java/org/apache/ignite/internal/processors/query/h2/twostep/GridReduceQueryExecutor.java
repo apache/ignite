@@ -113,9 +113,6 @@ public class GridReduceQueryExecutor {
     private static final IgniteProductVersion DISTRIBUTED_JOIN_SINCE = IgniteProductVersion.fromString("1.7.0");
 
     /** */
-    public int sqlQryParallelismLvl;
-
-    /** */
     private GridKernalContext ctx;
 
     /** */
@@ -188,8 +185,6 @@ public class GridReduceQueryExecutor {
         this.h2 = h2;
 
         log = ctx.log(GridReduceQueryExecutor.class);
-
-        sqlQryParallelismLvl = ctx.config().getSqlQueryParallelismLevel();
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -551,7 +546,7 @@ public class GridReduceQueryExecutor {
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
-            final int segmentsPerIndex = h2.isSegmentedIndex(cctx) ? sqlQryParallelismLvl : 1;
+            final int segmentsPerIndex = cctx.config().getQueryParallelism();
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;

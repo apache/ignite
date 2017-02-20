@@ -221,9 +221,6 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
-    /** Default SQL query parallelism level */
-    public static final int DFLT_SQL_QUERY_PARALLELISM_LVL = 1;
-
     /** Optional grid name. */
     private String gridName;
 
@@ -471,9 +468,6 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
-    /** SQL query parallelism level. */
-    private int sqlQryParallelismLvl = DFLT_SQL_QUERY_PARALLELISM_LVL;
-
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -563,7 +557,6 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        sqlQryParallelismLvl = cfg.getSqlQueryParallelismLevel();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -2350,35 +2343,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
-
-        return this;
-    }
-
-    /**
-     * Gets SQL query parallelism level which defines a number of segments the indices will be split into.
-     * So, SQL queries can be run in parallel manner, one thread per segment.
-     * See also {@link CacheConfiguration#isIndexSegmentationEnabled()}
-     *
-     * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
-     *
-     * @return Number of segments that segmented indices consist of.
-     */
-    public int getSqlQueryParallelismLevel() {
-        return sqlQryParallelismLvl;
-    }
-
-    /**
-     * Sets SQL query parallelism level which defines a number of segments the indices will be split into.
-     * So, SQL queries can be run in parallel manner, one thread per segment.
-     * See also {@link CacheConfiguration#isIndexSegmentationEnabled()}
-     *
-     * If not provided, then default value {@link #DFLT_SQL_QUERY_PARALLELISM_LVL} is used.
-     * Max reasonable parallelism level is equals {@link IgniteConfiguration#getSystemThreadPoolSize()}.
-     *
-     * @param sqlQryParallelismLvl  Number of segments that segmented indices consist of.
-     */
-    public IgniteConfiguration setSqlQueryParallelismLevel(int sqlQryParallelismLvl) {
-        this.sqlQryParallelismLvl = sqlQryParallelismLvl;
 
         return this;
     }
