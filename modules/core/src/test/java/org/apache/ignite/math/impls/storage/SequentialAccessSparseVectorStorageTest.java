@@ -17,8 +17,13 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import java.util.stream.IntStream;
+import org.apache.ignite.math.Functions;
 import org.junit.Test;
 
+import static org.apache.ignite.math.impls.MathTestConstants.NIL_DELTA;
+import static org.apache.ignite.math.impls.MathTestConstants.NULL_VALUE;
+import static org.apache.ignite.math.impls.MathTestConstants.STORAGE_SIZE;
 import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
 import static org.junit.Assert.*;
 
@@ -28,14 +33,15 @@ import static org.junit.Assert.*;
  */
 public class SequentialAccessSparseVectorStorageTest extends VectorBaseStorageTest<SequentialAccessSparseVectorStorage> {
 
+    /** */
     @Override public void setUp() {
-        storage = new SequentialAccessSparseVectorStorage();
+        storage = new SequentialAccessSparseVectorStorage(true);
     }
 
     /** */
     @Test
     public void data() throws Exception {
-
+        assertNull(NULL_VALUE, storage.data());
     }
 
     /** */
@@ -53,13 +59,23 @@ public class SequentialAccessSparseVectorStorageTest extends VectorBaseStorageTe
     /** */
     @Test
     public void getLookupCost() throws Exception {
+        assertEquals(UNEXPECTED_VALUE, storage.getLookupCost(), 1, NIL_DELTA);
 
+        IntStream.rangeClosed(1, STORAGE_SIZE).forEach(i -> storage.set(i, i));
+
+        assertEquals(UNEXPECTED_VALUE, storage.getLookupCost(), Math.round(Functions.LOG2.apply(STORAGE_SIZE)), NIL_DELTA);
+    }
+
+    /** */
+    @Override public void size() {
+        IntStream.rangeClosed(1, STORAGE_SIZE).forEach(i -> storage.set(i, i));
+        super.size();
     }
 
     /** */
     @Test
     public void isAddConstantTime() throws Exception {
-
+        assertFalse(UNEXPECTED_VALUE, storage.isAddConstantTime());
     }
 
     /** */
