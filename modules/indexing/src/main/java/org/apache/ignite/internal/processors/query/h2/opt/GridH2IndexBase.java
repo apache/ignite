@@ -245,14 +245,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param filter Current filter.
      * @return Multiplier.
      */
-    public int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
+    public final int getDistributedMultiplier(Session ses, TableFilter[] filters, int filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        // We do complex optimizations with respect to distributed joins only on prepare stage
-        // because on run stage reordering of joined tables by Optimizer is explicitly disabled
-        // and thus multiplier will be always the same, so it will not affect choice of index.
+        // We do optimizations with respect to distributed joins only on PREPARE stage only.
+        // Notice that we check for isJoinBatchEnabled, because we can do multiple different
+        // optimization passes on PREPARE stage.
         // Query expressions can not be distributed as well.
-        if (qctx == null || qctx.type() != PREPARE || !qctx.distributedJoins() || ses.isPreparingQueryExpression())
+        if (qctx == null || qctx.type() != PREPARE || !qctx.distributedJoins() ||
+            !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
             return GridH2CollocationModel.MULTIPLIER_COLLOCATED;
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
@@ -368,17 +369,17 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
 
-        int affColId;
-        boolean ucast;
+        int affColId = -1;
+        boolean ucast = false;
 
         if (affCol != null) {
             affColId = affCol.column.getColumnId();
             int[] masks = filter.getMasks();
-            ucast = masks != null && masks[affColId] == IndexCondition.EQUALITY;
-        }
-        else {
-            affColId = -1;
-            ucast = false;
+
+            if (masks != null) {
+                ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
+                    (masks[KEY_COL] & IndexCondition.EQUALITY) != 0;
+            }
         }
 
         GridCacheContext<?,?> cctx = getTable().rowDescriptor().context();
@@ -713,6 +714,21 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param cmp Comparator.
+     */
+    public static <Z> void bubbleUp(Z[] arr, int off, Comparator<Z> cmp) {
+        // TODO Optimize: use binary search if the range in array is big.
+        for (int i = off, last = arr.length - 1; i < last; i++) {
+            if (cmp.compare(arr[i], arr[i + 1]) <= 0)
+                break;
+
+            U.swap(arr, i, i + 1);
+        }
+    }
+
+    /**
      * @param msg Message.
      * @return Row.
      */
@@ -877,12 +893,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             }
 
             // Bubble up current min stream with respect to fetched row to achieve correct sort order of streams.
-            for (int i = off, last = streams.length - 1; i < last; i++) {
-                if (compareRows(streams[i].get(rangeId), streams[i + 1].get(rangeId)) <= 0)
-                    break;
-
-                U.swap(streams, i, i + 1);
-            }
+            bubbleUp(streams, off, this);
 
             return true;
         }

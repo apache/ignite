@@ -84,6 +84,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REPLICATED;
 import static org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor.QUERY_POOL;
@@ -435,6 +436,7 @@ public class GridMapQueryExecutor {
             null,
             req.pageSize(),
             false,
+            true,
             req.timeout());
     }
 
@@ -456,6 +458,7 @@ public class GridMapQueryExecutor {
             req.tables(),
             req.pageSize(),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS),
+            req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER),
             req.timeout());
     }
 
@@ -482,6 +485,7 @@ public class GridMapQueryExecutor {
         Collection<String> tbls,
         int pageSize,
         boolean distributedJoins,
+        boolean enforceJoinOrder,
         int timeout
     ) {
         // Prepare to run queries.
@@ -541,8 +545,7 @@ public class GridMapQueryExecutor {
 
             Connection conn = h2.connectionForSpace(mainCctx.name());
 
-            // Here we enforce join order to have the same behavior on all the nodes.
-            h2.setupConnection(conn, distributedJoins, true);
+            setupConnection(conn, distributedJoins, enforceJoinOrder);
 
             GridH2QueryContext.set(qctx);
 

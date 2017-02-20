@@ -50,6 +50,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public static int FLAG_DISTRIBUTED_JOINS = 1;
 
+    /**
+     * Remote map query executor will enforce join order for the received map queries.
+     */
+    public static int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
+
     /** */
     private long reqId;
 
@@ -209,6 +214,8 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this}.
      */
     public GridH2QueryRequest flags(int flags) {
+        assert flags >= 0 && flags <= 255: flags;
+
         this.flags = (byte)flags;
 
         return this;
