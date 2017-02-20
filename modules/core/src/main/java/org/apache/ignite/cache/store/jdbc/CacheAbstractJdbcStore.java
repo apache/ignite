@@ -160,7 +160,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private final Lock cacheMappingsLock = new ReentrantLock();
 
     /** Data source. */
-    protected DataSource dataSrc;
+    protected volatile DataSource dataSrc;
 
     /** Cache with entry mapping description. (cache name, (key id, mapping description)). */
     protected volatile Map<String, Map<Object, EntryMapping>> cacheMappings = Collections.emptyMap();
@@ -467,6 +467,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     System.out.println("Got NPE");
 
                     e.printStackTrace();
+
+                    System.out.println("conn:" + conn + " stmt:" + stmt);
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to load cache", e);

@@ -468,7 +468,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                             printPartitionState(c);
 
                         assertTrue("Wrong local partition state part=" +
-                            loc.id() + ", should be OWNING [state=" + loc.state() +
+                            loc.id() + ", should be OWNING [state=" + actl +
                             "], node=" + g0.name() + " cache=" + c.getName(), res);
 
                         Collection<ClusterNode> affNodes =
