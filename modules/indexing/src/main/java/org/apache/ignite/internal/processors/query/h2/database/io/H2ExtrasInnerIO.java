@@ -60,7 +60,7 @@ public class H2ExtrasInnerIO extends BPlusInnerIO<SearchRow> {
     /**
      * @param type Type.
      * @param payload Payload size.
-     * @return
+     * @return Instance of IO versions.
      */
     private static IOVersions<H2ExtrasInnerIO> getVersions(short type, short payload) {
         return new IOVersions<>(new H2ExtrasInnerIO(type, 1, payload));
