@@ -92,8 +92,6 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
         }
     }
 
-
-
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
@@ -101,9 +99,8 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
         data = new Int2DoubleOpenHashMap(size, .5f);
 
         int actualSize = in.readInt();
-        for (int i = 0; i < actualSize; i++) {
+        for (int i = 0; i < actualSize; i++)
             data.put(in.readInt(), in.readDouble());
-        }
     }
 
     /** {@inheritDoc} */
@@ -131,10 +128,12 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
         return false;
     }
     
+    /** {@inheritDoc} */
     @Override protected Object clone() throws CloneNotSupportedException {
         return new RandomAccessSparseVectorStorage(size, data.clone());
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         return obj != null &&
             getClass().equals(obj.getClass()) &&
@@ -142,6 +141,7 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
             data.equals(((RandomAccessSparseVectorStorage)obj).data);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = 1;
 
