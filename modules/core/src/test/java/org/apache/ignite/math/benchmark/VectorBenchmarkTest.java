@@ -16,14 +16,14 @@ public class VectorBenchmarkTest {
     public void testDenseLocalOnHeapVector() throws Exception {
         benchmark("DenseLocalOnHeapVector basic mix", DenseLocalOnHeapVector::new, this::basicMix);
 
-        benchmark("DenseLocalOnHeapVector map", DenseLocalOnHeapVector::new, this::mapMix);
+        benchmark("DenseLocalOnHeapVector fold map", DenseLocalOnHeapVector::new, this::foldMapMix);
     }
 
     /** */ @Test
     public void testDenseLocalOffHeapVector() throws Exception {
         benchmark("DenseLocalOffHeapVector basic mix", DenseLocalOffHeapVector::new, this::basicMix);
 
-        benchmark("DenseLocalOffHeapVector map", DenseLocalOffHeapVector::new, this::mapMix);
+        benchmark("DenseLocalOffHeapVector fold map", DenseLocalOffHeapVector::new, this::foldMapMix);
     }
 
     /** */
@@ -91,7 +91,7 @@ public class VectorBenchmarkTest {
     }
 
     /** */
-    private void mapMix(int size, Function<Integer, Vector> constructor) {
+    private void foldMapMix(int size, Function<Integer, Vector> constructor) {
         final Vector v1 = constructor.apply(size), v2 = constructor.apply(size);
 
         for (int idx = 0; idx < size; idx++) {
@@ -106,6 +106,8 @@ public class VectorBenchmarkTest {
 
         assertNotNull(v1.map((val, val1) -> (val + val1), 2.0));
 
-        // todo write code for foldMap
+        assertNotNull(v1.foldMap((sum, val) -> (val + sum), (val) -> val, 0.0));
+
+        assertNotNull(v1.foldMap(v2, (sum, val) -> (val + sum), (val1, val2) -> val1 + val2, 0.0));
     }
 }
