@@ -48,8 +48,8 @@ public class VectorBenchmarkTest {
 
         new MathBenchmark(namePrefix + " extra large sizes")
             .measurementTimes(10)
-            .execute(() -> { // todo test powers 21, 22, 23 (power 24 killed my IDEA)
-                for (int power : new int[] {17, 18, 19, 20})
+            .execute(() -> { // IMPL NOTE trying below with power 22 almost killed my IDEA and laptop
+                for (int power : new int[] {17, 18, 19, 20, 21})
                     for (int delta : new int[] {-1, 0}) // IMPL NOTE delta +1 is not intended for use here
                         consumer.accept((1 << power) + delta, constructor);
             });
