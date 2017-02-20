@@ -2767,27 +2767,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         // Then add mapped external addresses.
         if (isExtAddrsExist)
-            if (sameHost && sameContainer) {
+            if (!sameHost && !sameContainer) {
                 LinkedHashSet<InetSocketAddress> allAddrs = new LinkedHashSet<>();
-                boolean extAdded = false;
 
-                for (InetSocketAddress addr : addrs) {
-                    NetworkInterface ifc = null;
-
-                    try {
-                        ifc = NetworkInterface.getByInetAddress(addr.getAddress());
-                    }
-                    catch (SocketException ignored) {
-                        //No-op.
-                    }
-
-                    if ((addr.getAddress().isLoopbackAddress() || (ifc != null && ifc.isVirtual())) && !extAdded) {
-                        allAddrs.addAll(extAddrs);
-                        extAdded = true;
-                    }
-
-                    allAddrs.add(addr);
-                }
+                allAddrs.addAll(extAddrs);
+                allAddrs.addAll(addrs);
 
                 addrs = allAddrs;
             }
