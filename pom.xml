@@ -88,6 +88,7 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
+        <module>modules/kubernetes</module>
     </modules>
 
     <profiles>
@@ -506,10 +507,13 @@
                                             <fileset dir="${basedir}/target/release-package/benchmarks/config/">
                                                 <include name="*.*" />
                                                 <exclude name="benchmark.properties"/>
+                                                <exclude name="benchmark-remote.properties"/>
                                                 <exclude name="benchmark-sample.properties"/>
+                                                <exclude name="benchmark-remote-sample.properties"/>
                                                 <exclude name="benchmark-multicast.properties"/>
                                                 <exclude name="ignite-base-config.xml"/>
                                                 <exclude name="ignite-localhost-config.xml"/>
+                                                <exclude name="ignite-remote-config.xml"/>
                                                 <exclude name="ignite-multicast-config.xml"/>
                                             </fileset>
                                         </delete>
@@ -541,7 +545,7 @@
                                               tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
                                         </copy>
 
-                                        <copy file="${basedir}/modules/yardstick/DEVNOTES.txt"
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
                                               tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
                                     </target>
                                 </configuration>

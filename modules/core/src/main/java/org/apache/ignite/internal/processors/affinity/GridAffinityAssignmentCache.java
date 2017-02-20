@@ -63,7 +63,7 @@ public class GridAffinityAssignmentCache {
     private final String cacheName;
 
     /** */
-    private final Integer cacheId;
+    private final int cacheId;
 
     /** Number of backups. */
     private final int backups;
@@ -169,7 +169,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @return Cache ID.
      */
-    public Integer cacheId() {
+    public int cacheId() {
         return cacheId;
     }
 
@@ -266,7 +266,7 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted;
 
         if (!locCache) {
-            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
+            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheId(), topVer));
 
             Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
         }
