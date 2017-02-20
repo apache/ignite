@@ -650,7 +650,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                     return null; // Prevent remote index call for local queries.
             }
 
-            if (!cctx.affinity().primary(cctx.localNode(), partition, qctx.topologyVersion()))
+            if (!cctx.affinity().primaryByKey(cctx.localNode(), partition, qctx.topologyVersion()))
                 return null;
 
             node = cctx.localNode();
