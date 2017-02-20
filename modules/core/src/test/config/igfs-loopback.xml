@@ -75,27 +75,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="igfs"/>
-                    <property name="metaCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="cacheMode" value="REPLICATED"/>
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                            <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                        </bean>
-                    </property>
-                    <property name="dataCacheConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                            <property name="cacheMode" value="PARTITIONED"/>
-                            <property name="atomicityMode" value="TRANSACTIONAL"/>
-                            <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                            <property name="backups" value="0"/>
-                            <property name="affinityMapper">
-                                <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
-                                    <!-- Haw many blocks in row will be stored on the same node. -->
-                                    <constructor-arg value="512"/>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
 
                     <!-- Must correlate with cache affinity mapper. -->
                     <property name="blockSize" value="#{128 * 1024}"/>
