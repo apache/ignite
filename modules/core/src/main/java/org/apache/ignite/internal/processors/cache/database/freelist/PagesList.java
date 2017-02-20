@@ -189,6 +189,7 @@ public abstract class PagesList extends DataStructure {
 
                 for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet()) {
                     int bucket = e.getKey();
+                    long bucketSize = 0;
 
                     Stripe[] old = getBucket(bucket);
                     assert old == null;
@@ -197,11 +198,36 @@ public abstract class PagesList extends DataStructure {
 
                     Stripe[] tails = new Stripe[upd.length];
 
-                    for (int i = 0; i < upd.length; i++)
-                        tails[i] = new Stripe(upd[i]);
+                    for (int i = 0; i < upd.length; i++) {
+                        long tailId = upd[i];
+
+                        try(Page tail = page(tailId)) {
+                            long tailAddr = readLock(tail);
+
+                            assert tailAddr != 0L;
+
+                            try {
+                                PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(tailAddr);
+
+                                int count = io.getCount(tailAddr);
+
+                                Stripe stripe = new Stripe(tailId);
+                                stripe.empty = count == 0;
+
+                                tails[i] = stripe;
+
+                                bucketSize += count;
+                            }
+                            finally {
+                                readUnlock(tail, tailAddr);
+                            }
+                        }
+                    }
 
                     boolean ok = casBucket(bucket, null, tails);
                     assert ok;
+
+                    bucketsSize[bucket].set(bucketSize);
                 }
             }
         }
