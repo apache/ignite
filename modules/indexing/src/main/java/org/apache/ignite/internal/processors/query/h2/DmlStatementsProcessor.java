@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -577,8 +578,11 @@ public class DmlStatementsProcessor {
                 if (hasNewVal && i == valColIdx - 2)
                     continue;
 
-                newColVals.put(plan.colNames[i], convert(e.get(i + 2), plan.colNames[i],
-                    plan.tbl.rowDescriptor(), plan.colTypes[i]));
+                GridQueryProperty prop = plan.tbl.rowDescriptor().type().property(plan.colNames[i]);
+
+                assert prop != null;
+
+                newColVals.put(plan.colNames[i], convert(e.get(i + 2), desc, prop.type(), plan.colTypes[i]));
             }
 
             newVal = plan.valSupplier.apply(e);
@@ -668,23 +672,17 @@ public class DmlStatementsProcessor {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param colName Column name to search for property.
      * @param desc Row descriptor.
+     * @param expCls Expected value class.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    private static Object convert(Object val, String colName, GridH2RowDescriptor desc, int type)
+    private static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls, int type)
         throws IgniteCheckedException {
         if (val == null)
             return null;
-
-        GridQueryProperty prop = desc.type().property(colName);
-
-        assert prop != null;
-
-        Class<?> expCls = prop.type();
 
         Class<?> currCls = val.getClass();
 
@@ -693,6 +691,11 @@ public class DmlStatementsProcessor {
             // precise Date instance. Let's satisfy it.
             return new Date(((Date) val).getTime());
         }
+
+        // User-given UUID is always serialized by H2 to byte array, so we have to deserialize manually
+        if (type == Value.UUID && currCls == byte[].class)
+            return U.unmarshal(desc.context().marshaller(), (byte[]) val,
+                U.resolveClassLoader(desc.context().gridConfig()));
 
         // We have to convert arrays of reference types manually - see https://issues.apache.org/jira/browse/IGNITE-4327
         // Still, we only can convert from Object[] to something more precise.
@@ -935,8 +938,23 @@ public class DmlStatementsProcessor {
     private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
         int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
         GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
+        GridQueryTypeDescriptor desc = rowDesc.type();
+
         Object key = keySupplier.apply(F.asList(row));
+
+        if (GridQueryProcessor.isSqlType(desc.keyClass())) {
+            assert keyColIdx != -1;
+
+            key = convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
+        }
+
         Object val = valSupplier.apply(F.asList(row));
+
+        if (GridQueryProcessor.isSqlType(desc.valueClass())) {
+            assert valColIdx != -1;
+
+            val = convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
+        }
 
         if (key == null)
             throw new IgniteSQLException("Key for INSERT or MERGE must not be null",  IgniteQueryErrorCode.NULL_KEY);
@@ -944,13 +962,17 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-        GridQueryTypeDescriptor desc = rowDesc.type();
-
         for (int i = 0; i < cols.length; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
-            desc.setValue(cols[i], key, val, convert(row[i], cols[i], rowDesc, colTypes[i]));
+            GridQueryProperty prop = desc.property(cols[i]);
+
+            assert prop != null;
+
+            Class<?> expCls = prop.type();
+
+            desc.setValue(cols[i], key, val, convert(row[i], rowDesc, expCls, colTypes[i]));
         }
 
         if (cctx.binaryMarshaller()) {
