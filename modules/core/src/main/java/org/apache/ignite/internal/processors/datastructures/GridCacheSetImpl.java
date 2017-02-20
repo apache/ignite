@@ -496,7 +496,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         Collection<ClusterNode> nodes;
 
         if (collocated) {
-            List<ClusterNode> nodes0 = ctx.affinity().nodes(hdrPart, topVer);
+            List<ClusterNode> nodes0 = ctx.affinity().nodesByPartition(hdrPart, topVer);
 
             nodes = !nodes0.isEmpty() ?
                 Collections.singleton(nodes0.contains(ctx.localNode()) ? ctx.localNode() : F.first(nodes0)) : nodes0;

@@ -167,7 +167,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<MessageAndMetadata<byte[]
                             try {
                                 Thread.sleep(retryTimeout);
                             }
-                            catch (InterruptedException ie) {
+                            catch (InterruptedException ignored) {
                                 // No-op.
                             }
                         }
@@ -194,7 +194,7 @@ public class KafkaStreamer<K, V> extends StreamAdapter<MessageAndMetadata<byte[]
                     if (log.isDebugEnabled())
                         log.debug("Timed out waiting for consumer threads to shut down, exiting uncleanly.");
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Interrupted during shutdown, exiting uncleanly.");
             }

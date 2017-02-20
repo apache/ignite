@@ -660,10 +660,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 // If we have explicit partitions map, we have to use it to calculate affinity node.
                 UUID nodeId = qctx.nodeForPartition(partition, cctx);
 
-                node = cctx.discovery().node(nodeId);
-            }
-            else // Get primary node for current topology version.
-                node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+            node = cctx.discovery().node(nodeId);
+        }
+        else // Get primary node for current topology version.
+            node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
 
             if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
                 throw new GridH2RetryException("Failed to find node.");

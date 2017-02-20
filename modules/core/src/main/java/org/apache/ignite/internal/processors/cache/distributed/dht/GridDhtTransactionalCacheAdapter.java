@@ -390,7 +390,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 try {
                     keyFut.get();
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignored) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -408,7 +408,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     try {
                         fut.get();
                     }
-                    catch (NodeStoppingException e) {
+                    catch (NodeStoppingException ignored) {
                         return;
                     }
                     catch (IgniteCheckedException e) {
@@ -439,11 +439,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
-        catch (ClusterTopologyCheckedException e0) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send lock reply to remote node because it left grid: " + nodeId);
         }
-        catch (IgniteCheckedException e0) {
+        catch (IgniteCheckedException ignored) {
             U.error(log, "Failed to send lock reply to node: " + nodeId, e);
         }
     }
@@ -1142,7 +1142,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
         }
-        catch (ClusterTopologyCheckedException e) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send client lock remap response, client node failed " +
                     "[node=" + nearNode + ", req=" + req + ']');
@@ -1654,7 +1654,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 if (keyBytes != null)
                     for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key, ctx.shared());
+                        req.addNearKey(key);
 
                 req.completedVersions(committed, rolledback);
 
@@ -1683,7 +1683,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 try {
                     for (KeyCacheObject key : keyBytes)
-                        req.addNearKey(key, ctx.shared());
+                        req.addNearKey(key);
 
                     req.completedVersions(committed, rolledback);
 

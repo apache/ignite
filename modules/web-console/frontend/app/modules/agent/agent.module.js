@@ -62,21 +62,6 @@ class IgniteAgentMonitor {
                 this._scope.$$postDigest(() => $state.go(this._scope.backState));
         };
 
-        this._scope.downloadAgent = () => {
-            const lnk = document.createElement('a');
-
-            lnk.setAttribute('href', '/api/v1/agent/download/zip');
-            lnk.setAttribute('target', '_self');
-            lnk.setAttribute('download', null);
-            lnk.style.display = 'none';
-
-            document.body.appendChild(lnk);
-
-            lnk.click();
-
-            document.body.removeChild(lnk);
-        };
-
         this._scope.hasAgents = null;
         this._scope.showModal = false;
 

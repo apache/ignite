@@ -77,7 +77,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new OptimizedMarshaller();
 
-        doCheckFailed(deploymentMode);
+        doCheckFailed();
     }
 
     /**
@@ -87,7 +87,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         deploymentMode = DeploymentMode.PRIVATE;
         marshaller = new OptimizedMarshaller();
 
-        doCheckFailed(deploymentMode);
+        doCheckFailed();
     }
 
     /**
@@ -133,10 +133,9 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mode Deployment mode.
      * @throws Exception If failed.
      */
-    private void doCheckFailed(DeploymentMode mode) throws Exception {
+    private void doCheckFailed() throws Exception {
         try {
             startGridsMultiThreaded(2);
         }

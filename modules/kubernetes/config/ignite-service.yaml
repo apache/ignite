@@ -1,0 +1,14 @@
+# An example of a Kubernetes configuration for Ignite lookup service deployment.
+apiVersion: v1
+kind: Service
+metadata:
+  # Name of Ignite Service used by Kubernetes IP finder for IP addresses lookup.
+  # The name must be equal to TcpDiscoveryKubernetesIpFinder.setServiceName parameter.
+  name: ignite
+spec:
+  clusterIP: None
+  ports:
+    - port: 9042 # some custom port (optional).
+  selector:
+    # Must be equal to the label set for Ignite pods.
+    app: ignite
