@@ -936,6 +936,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
             }
             catch (Throwable e) {
+                U.error(
+                    log, "Exception during start processors, node will be stopped and close connections", e);
+
                 // Stop discovery spi to close tcp socket.
                 ctx.discovery().stop(true);
 
