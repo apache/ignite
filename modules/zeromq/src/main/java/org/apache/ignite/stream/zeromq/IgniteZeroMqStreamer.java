@@ -37,8 +37,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /** Threads count used to transform zeromq message. */
     private int threadsCount = 1;
 
-    /** Parametr {@code True} if streamer started. */
-    private boolean isStart = false;
+    /** Parameter {@code True} if streamer started. */
+    private volatile boolean isStarted = false;
 
     /** Process stream asynchronously */
     private ExecutorService zeroMqExSrv;
@@ -99,12 +99,12 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
 
         log = getIgnite().log();
 
-        if (isStart) {
-            log.info("Attempted to start an already started ZeroMQ streamer");
+        if (isStarted) {
+            log.warning("Attempted to start an already started ZeroMQ streamer");
             return;
         }
 
-        isStart = true;
+        isStarted = true;
 
         ctx = ZMQ.context(ioThreads);
         socket = ctx.socket(socketType);
@@ -140,6 +140,6 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
 
         zeroMqExSrv.shutdownNow();
 
-        isStart = false;
+        isStarted = false;
     }
 }

@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -80,7 +81,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     public void testZeroMqSubSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
-                dataStreamer, 1, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
+                dataStreamer, 3, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
                 executeStreamer(streamer, ZMQ.PUB, TOPIC);
             }
         }
@@ -92,7 +93,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     public void testZeroMqPullSocket() throws Exception {
         try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
-                dataStreamer, 1, ZeroMqTypeSocket.PULL, ADDR, null);) {
+                dataStreamer, 4, ZeroMqTypeSocket.PULL, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PUSH, null);
             }
         }
@@ -108,8 +109,12 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         byte[] topic) throws InterruptedException {
         streamer.setSingleTupleExtractor(new ZeroMqStringSingleTupleExtractor());
 
+        IgniteCache<Integer, String> cache = grid().cache(null);
+
         // Checking streaming.
         CacheListener listener = subscribeToPutEvents();
+
+        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
         streamer.start();
 
@@ -122,8 +127,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         unsubscribeToPutEvents(listener);
 
         // Checking cache content after streaming finished.
-        IgniteCache<Integer, String> cache = grid().cache(null);
-
         int testId = CACHE_ENTRY_COUNT - 1;
 
         String cachedValue = cache.get(testId);
@@ -138,7 +141,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
     /**
      * @param dataStreamer Ignite Data Streamer.
-     * @returnd ZeroMQ Streamer.
+     * @return ZeroMQ Streamer.
      */
     private IgniteZeroMqStreamer newStreamerInstance(IgniteDataStreamer<Integer, String> dataStreamer,
         int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
