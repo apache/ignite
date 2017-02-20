@@ -76,9 +76,6 @@ public abstract class PagesList extends DataStructure {
             Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
 
     /** */
-    private final boolean trackBucketsSize = IgniteSystemProperties.getBoolean("IGNITE_PAGES_LIST_TRACK_SIZE", false);
-
-    /** */
     protected final LongAdder8[] bucketsSize;
 
     /** Page ID to store list metadata. */
@@ -600,8 +597,7 @@ public abstract class PagesList extends DataStructure {
         if (idx == -1)
             handlePageFull(pageId, page, pageAddr, io, dataPage, dataPageAddr, bucket);
         else {
-            if (trackBucketsSize)
-                bucketsSize[bucket].increment();
+            bucketsSize[bucket].increment();
 
             if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
@@ -695,8 +691,7 @@ public abstract class PagesList extends DataStructure {
 
                     assert idx != -1;
 
-                    if (trackBucketsSize)
-                        bucketsSize[bucket].increment();
+                    bucketsSize[bucket].increment();
 
                     dataIO.setFreeListPageId(dataPageAddr, nextId);
 
@@ -786,8 +781,7 @@ public abstract class PagesList extends DataStructure {
                     }
                 }
                 else {
-                    if (trackBucketsSize)
-                        bucketsSize[bucket].increment();
+                    bucketsSize[bucket].increment();
 
                     // TODO: use single WAL record for bag?
                     if (isWalDeltaRecordNeeded(wal, page))
@@ -819,7 +813,18 @@ public abstract class PagesList extends DataStructure {
         if (tails == null)
             return null;
 
-        return randomTail(tails);
+        int len = tails.length;
+        int init = randomInt(len);
+        int cur = init;
+
+        while (true) {
+            Stripe stripe = tails[cur];
+            if(!stripe.empty)
+                return stripe;
+
+            if((cur = (cur + 1) % len) == init)
+                return null;
+        }
     }
 
     /**
@@ -873,7 +878,7 @@ public abstract class PagesList extends DataStructure {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
 
-            if (stripe == null || stripe.empty)
+            if (stripe == null)
                 return 0L;
 
             long tailId = stripe.tailId;
@@ -904,8 +909,7 @@ public abstract class PagesList extends DataStructure {
                     long pageId = io.takeAnyPage(tailPageAddr);
 
                     if (pageId != 0L) {
-                        if (trackBucketsSize)
-                            bucketsSize[bucket].decrement();
+                        bucketsSize[bucket].decrement();
 
                         if (isWalDeltaRecordNeeded(wal, tail))
                             wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
@@ -965,8 +969,12 @@ public abstract class PagesList extends DataStructure {
 
                             ret = tailId;
                         }
-                        else
+                        else {
                             stripe.empty = true;
+
+                            if (bucketsSize[bucket].sum() > 0)
+                                continue;
+                        }
                     }
 
                     // If we do not have a previous page (we are at head), then we still can return
@@ -1026,8 +1034,7 @@ public abstract class PagesList extends DataStructure {
                 if (!rmvd)
                     return false;
 
-                if (trackBucketsSize)
-                    bucketsSize[bucket].decrement();
+                bucketsSize[bucket].decrement();
 
                 if (isWalDeltaRecordNeeded(wal, page))
                     wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataPageId));
