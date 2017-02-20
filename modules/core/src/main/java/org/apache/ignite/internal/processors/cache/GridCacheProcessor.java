@@ -269,6 +269,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getCacheMode() == REPLICATED)
             cfg.setBackups(Integer.MAX_VALUE);
 
+        if( cfg.getQueryParallelism() > 1 && cfg.getCacheMode() != PARTITIONED)
+            throw new IgniteCheckedException("Cache index segmentation is supported for PARTITIONED mode only.");
+
         if (cfg.getAffinityMapper() == null)
             cfg.setAffinityMapper(cacheObjCtx.defaultAffMapper());
 
