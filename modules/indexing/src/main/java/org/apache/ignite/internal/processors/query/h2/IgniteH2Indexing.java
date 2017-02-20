@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -134,6 +135,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
+import org.h2.command.dml.Insert;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -427,7 +429,32 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        return prepareStatement(connectionForSpace(schema), sql, false);
+        return prepareStatement(connectionForSpace(space(schema)), sql, true);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
+        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
+
+        if (!(prep instanceof Insert))
+            throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        IgniteDataStreamer streamer = ctx.grid().dataStreamer(spaceName);
+
+        streamer.autoFlushFrequency(autoFlushFreq);
+
+        streamer.allowOverwrite(allowOverwrite);
+
+        if (nodeBufSize > 0)
+            streamer.perNodeBufferSize(nodeBufSize);
+
+        if (nodeParOps > 0)
+            streamer.perNodeParallelOperations(nodeParOps);
+
+        return streamer;
     }
 
     /**
@@ -840,6 +867,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public long streamUpdateQuery(@Nullable String spaceName, String qry,
+        @Nullable Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
+        final Connection conn = connectionForSpace(spaceName);
+
+        final PreparedStatement stmt;
+
+        try {
+            stmt = prepareStatement(conn, qry, true);
+        }
+        catch (SQLException e) {
+            throw new IgniteSQLException(e);
+        }
+
+        return dmlProc.streamUpdateQuery(streamer, stmt, params);
     }
 
     /**
@@ -1638,13 +1682,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /**
-     * Gets space name from database schema.
-     *
-     * @param schemaName Schema name. Could not be null. Could be empty.
-     * @return Space name. Could be null.
-     */
-    public String space(String schemaName) {
+    /** {@inheritDoc} */
+    @Override public String space(String schemaName) {
         assert schemaName != null;
 
         Schema schema = schemas.get(schemaName);

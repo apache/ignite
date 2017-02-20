@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -97,6 +98,19 @@ public interface GridQueryIndexing {
     public GridQueryFieldsResult queryLocalSqlFields(@Nullable String spaceName, String qry,
         Collection<Object> params, IndexingQueryFilter filter, boolean enforceJoinOrder, int timeout,
         GridQueryCancel cancel) throws IgniteCheckedException;
+
+    /**
+     * Perform a MERGE statement using data streamer as receiver.
+     *
+     * @param spaceName Space name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param streamer Data streamer to feed data to.
+     * @return Query result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long streamUpdateQuery(@Nullable final String spaceName, final String qry,
+         @Nullable final Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -239,7 +253,28 @@ public interface GridQueryIndexing {
     public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
 
     /**
+     * Gets space name from database schema.
+     *
+     * @param schemaName Schema name. Could not be null. Could be empty.
+     * @return Space name. Could be null.
+     */
+    public String space(String schemaName);
+
+    /**
      * Cancels all executing queries.
      */
     public void cancelAllQueries();
+
+    /**
+     * @param spaceName Space name.
+     * @param nativeStmt Native statement.
+     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
+     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
+     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     * @param allowOverwrite Overwrite existing cache values on key duplication.
+     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
+     * {@code null} if given statement is a query.
+     */
+    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }
