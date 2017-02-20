@@ -34,6 +34,10 @@
     <version>1.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
+    <properties>
+        <jeromq.version>0.3.6</jeromq.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -65,7 +69,7 @@
         <dependency>
             <groupId>org.zeromq</groupId>
             <artifactId>jeromq</artifactId>
-            <version>0.3.6</version>
+            <version>${jeromq.version}</version>
         </dependency>
     </dependencies>
 </project>

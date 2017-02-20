@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteException;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
@@ -29,6 +30,7 @@ import org.zeromq.ZMQ;
 
 /**
  * This streamer uses https://github.com/zeromq/jeromq/.
+ * Implements socket types listed {@link ZeroMqTypeSocket}.
  */
 public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> implements AutoCloseable {
     /** Logger. */
@@ -43,28 +45,29 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /** Process stream asynchronously */
     private ExecutorService zeroMqExSrv;
 
-    /**  */
+    /** ZeroMQ context. */
     private ZMQ.Context ctx;
 
-    /**  */
+    /** ZeroMQ socket. */
     private ZMQ.Socket socket;
 
-    /** */
+    /** ZeroMQ context threads. */
     private int ioThreads;
 
-    /** */
+    /** ZeroMQ socket type. */
     private int socketType;
 
-    /** */
+    /** ZeroMQ socket address.*/
     private String addr;
 
-    /** */
+    /** ZeroMQ topic name. */
     private byte[] topic;
 
     /**
      * @param ioThreads Threads on context.
      * @param socketType Socket type.
      * @param addr Address to connect zmq.
+     * @param topic Topic name for PUB-SUB socket type, otherwise null.
      */
     public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
         A.ensure(ioThreads > 0, "Param ioThreads has been more than 0.");
@@ -138,7 +141,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
         socket.close();
         ctx.close();
 
-        zeroMqExSrv.shutdownNow();
+        zeroMqExSrv.shutdown();
+        zeroMqExSrv.awaitTermination(1, TimeUnit.MINUTES);
 
         isStarted = false;
     }

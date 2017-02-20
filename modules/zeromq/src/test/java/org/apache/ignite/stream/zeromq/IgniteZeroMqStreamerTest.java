@@ -31,19 +31,19 @@ import org.zeromq.ZMQ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
- *
+ * Tests {@link IgniteZeroMqStreamer}.
  */
 public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Cache entries count. */
     private static final int CACHE_ENTRY_COUNT = 1000;
 
-    /**  */
+    /** Local address for 0mq. */
     private final String ADDR = "tcp://localhost:5671";
 
-    /**  */
+    /** Topic name for PUB-SUB. */
     private final byte[] TOPIC = "0mq".getBytes();
 
-    /**  */
+    /** Constructor. */
     public IgniteZeroMqStreamerTest() {
         super(true);
     }
@@ -100,6 +100,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Execute ZeroMQ streamer and checking cache content after streaming finished.
+     * Set singleTupleExtractor via {@link ZeroMqStringSingleTupleExtractor} in streamer.
+     *
      * @param streamer ZeroMQ streamer.
      * @param clientSocket .
      * @param topic .
@@ -111,7 +114,6 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = grid().cache(null);
 
-        // Checking streaming.
         CacheListener listener = subscribeToPutEvents();
 
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
@@ -126,7 +128,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
 
         unsubscribeToPutEvents(listener);
 
-        // Checking cache content after streaming finished.
+        // Last element.
         int testId = CACHE_ENTRY_COUNT - 1;
 
         String cachedValue = cache.get(testId);
@@ -157,7 +159,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Start ZeroMQ client for testing.
+     * Starts ZeroMQ client for testing.
      *
      * @param clientSocket
      * @param topic

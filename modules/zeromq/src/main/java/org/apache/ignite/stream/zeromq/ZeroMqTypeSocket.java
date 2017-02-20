@@ -20,23 +20,34 @@ package org.apache.ignite.stream.zeromq;
 import org.zeromq.ZMQ;
 
 /**
- * Socket types supported IgniteZeroMqStreamer.
+ * Enumeration of all supported IgniteZeroMqStreamer socket types.
+ * <p>
+ * The following types are supported:
+ * <ul>
+ * <li>{@link #PAIR}</li>
+ * <li>{@link #SUB}</li>
+ * <li>{@link #PULL}</li>
+ * </ul>
+ *
  */
 public enum ZeroMqTypeSocket {
+    /** For PAIR-PAIR pattern. */
     PAIR(ZMQ.PAIR),
+
+    /** For PUB-SUB pattern. */
     SUB(ZMQ.SUB),
+
+    /** For PUSH-PULL pattern */
     PULL(ZMQ.PULL);
 
-    /**
-     * Socket type.
-     */
+    /** Socket type. */
     private int type;
 
     ZeroMqTypeSocket(int type) {
         this.type = type;
     }
 
-    /** */
+    /** @return ZeroMQ original type. */
     public int getType() {
         return type;
     }
