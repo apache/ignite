@@ -442,20 +442,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+        // TODO: Why false -> true?
         return prepareStatement(connectionForSpace(space(schema)), sql, true);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt,
-                                                             long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        long autoFlushFreq, int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
         Prepared prep = GridSqlQueryParser.prepared((JdbcPreparedStatement) nativeStmt);
 
         if (!(prep instanceof Insert))
             throw new IgniteSQLException("Only INSERT operations are supported in streaming mode",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        IgniteDataStreamer streamer = schemas.get(schema(spaceName)).cctx.grid().dataStreamer(spaceName);
+        // TODO: Changed streamer fetch logic.
+        IgniteDataStreamer streamer = ctx.grid().dataStreamer(spaceName);
 
         streamer.autoFlushFrequency(autoFlushFreq);
 

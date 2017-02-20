@@ -163,6 +163,7 @@ public class DmlStatementsProcessor {
                 cctx.operationContextPerCall(opCtx);
             }
 
+            // TODO: What is going on here?
             items += r.cnt;
             errKeys = r.errKeys;
 

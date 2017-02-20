@@ -66,7 +66,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
     }
 
     /** {@inheritDoc} */
@@ -193,7 +193,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -212,18 +212,15 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Batch statements are not currently supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -454,7 +451,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
      * Initialize {@link #args} and increase its capacity and size up to given argument if needed.
      * @param size new expected size.
      */
-    private void ensureArgsSize(int size) throws SQLException {
+    private void ensureArgsSize(int size) {
         if (args == null)
             args = new ArrayList<>(size);
 

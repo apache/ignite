@@ -19,7 +19,6 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.IgniteEx;
 
@@ -40,7 +39,9 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
     JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer,
         PreparedStatement nativeStmt) {
         super(conn, sql);
+
         this.streamer = streamer;
+
         nativeStatement = nativeStmt;
     }
 
@@ -54,19 +55,5 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
     /** {@inheritDoc} */
     @Override long doUpdate(String sql, Object[] args) throws SQLException {
         return ((IgniteEx)conn.ignite()).context().query().streamUpdateQuery(conn.cacheName(), streamer, sql, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addBatch(String sql) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Batching is not supported on streamed connections");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addBatch() throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Batching is not supported on streamed connections");
     }
 }

@@ -43,6 +43,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 /**
  * JDBC statement implementation.
  */
+// TODO: Do we really need updates in this class?
 public class JdbcStatement implements Statement {
     /** Default fetch size. */
     private static final int DFLT_FETCH_SIZE = 1024;

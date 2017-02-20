@@ -289,11 +289,9 @@ public interface GridQueryIndexing {
      * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
      * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
      * @param allowOverwrite Overwrite existing cache values on key duplication.
-     * @see IgniteDataStreamer#allowOverwrite
-     * @see IgniteDataStreamer#duplicateKeysHandler
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
      * {@code null} if given statement is a query.
      */
     public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
-                                                  int nodeBufSize, int nodeParOps, boolean allowOverwrite);
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }

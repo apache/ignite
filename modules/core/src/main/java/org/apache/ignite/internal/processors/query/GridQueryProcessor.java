@@ -841,6 +841,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }, true);
         }
         catch (IgniteCheckedException e) {
+            // TODO: Why cache exception?
             throw new CacheException(e);
         }
         finally {
@@ -1026,7 +1027,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata.
      */
     public IgniteDataStreamer<?, ?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
-                                                   int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite) {
         return idx.createStreamer(spaceName, nativeStmt, autoFlushFreq, nodeBufSize, nodeParOps, allowOverwrite);
     }
 
