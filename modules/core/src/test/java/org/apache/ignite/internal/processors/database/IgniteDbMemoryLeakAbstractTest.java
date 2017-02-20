@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.database.DataStructure;
 import org.apache.ignite.internal.util.GridRandom;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,6 +56,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+        DataStructure.rnd = null;
 
         long startTime = System.nanoTime();
         warmUpEndTime = startTime + TimeUnit.SECONDS.toNanos(warmUp());
@@ -246,6 +248,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @return Expected average number of pages, on which their total number can grow per 5 seconds.
      */
     @SuppressWarnings("WeakerAccess") protected int pagesDelta() {
-        return 5;
+        return 3;
     }
 }
