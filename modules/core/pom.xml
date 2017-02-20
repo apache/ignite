@@ -218,6 +218,12 @@
             <version>7.0.12</version>
         </dependency>
 
+        <dependency>
+            <!-- IMPL NOTE this is to write math benchmarks results, IGN-6530 -->
+            <groupId>com.dropbox.core</groupId>
+            <artifactId>dropbox-core-sdk</artifactId>
+            <version>2.1.1</version>
+        </dependency>
     </dependencies>
 
     <build>

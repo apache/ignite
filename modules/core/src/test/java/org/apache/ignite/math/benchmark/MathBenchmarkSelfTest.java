@@ -10,7 +10,7 @@ public class MathBenchmarkSelfTest {
     public void demoTest() throws Exception {
         for (int i = 0; i < 2; i++)
             new MathBenchmark("demo test")
-                .outputFileName(null) // IMPL NOTE this is to write output into console instead of a file
+                .outputToConsole() // IMPL NOTE this is to write output into console instead of a file
                 .tag(null) // IMPL NOTE try null for tag, expect it to be formatted reasonably
                 .comments(null) // IMPL NOTE try null for comments, expect it to be formatted reasonably
                 .execute(() -> {
@@ -27,7 +27,7 @@ public class MathBenchmarkSelfTest {
     /** */ @Test
     public void configTest() throws Exception {
         new MathBenchmark("demo config test")
-            .outputFileName(null)
+            .outputToConsole()
             .measurementTimes(2)
             .warmupTimes(0)
             .tag("demo tag")
@@ -38,11 +38,31 @@ public class MathBenchmarkSelfTest {
     /** */ @Test(expected = IllegalArgumentException.class)
     public void emptyNameTest() throws Exception {
         new MathBenchmark("")
-            .outputFileName("whatever")
+            .outputToConsole()
             .measurementTimes(1)
             .warmupTimes(1)
             .tag("empty name test tag")
             .comments("empty name test comments")
             .execute(() -> System.out.println("empty name test"));
+    }
+
+    /** */ @Test(expected = IllegalArgumentException.class)
+    public void nullDropboxPathTest() throws Exception {
+        new ResultsWriter(null, "whatever", "whatever");
+    }
+
+    /** */ @Test(expected = IllegalArgumentException.class)
+    public void nullDropboxUrlTest() throws Exception {
+        new ResultsWriter("whatever", null, "whatever");
+    }
+
+    /** */ @Test(expected = IllegalArgumentException.class)
+    public void nullDropboxTokenTest() throws Exception {
+        new ResultsWriter("whatever", "whatever", null);
+    }
+
+    /** */ @Test(expected = IllegalArgumentException.class)
+    public void nullResultsTest() throws Exception {
+        new ResultsWriter("whatever", "whatever", "whatever").append(null);
     }
 }
