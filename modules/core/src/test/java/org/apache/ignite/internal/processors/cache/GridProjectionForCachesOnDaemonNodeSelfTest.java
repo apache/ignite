@@ -102,7 +102,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
         try {
             daemon.cluster().forDataNodes(null);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             return;
         }
 
@@ -120,7 +120,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
         try {
             daemon.cluster().forClientNodes(null);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             return;
         }
 
@@ -138,7 +138,7 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
         try {
             daemon.cluster().forCacheNodes(null);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignored) {
             return;
         }
 

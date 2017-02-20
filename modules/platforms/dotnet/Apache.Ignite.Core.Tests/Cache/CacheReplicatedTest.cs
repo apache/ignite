@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     [Category(TestUtils.CategoryIntensive)]
-    public class CacheReplicatedTest : CacheAbstractTest
+    public class CacheReplicatedTest : CacheAbstractTransactionalTest
     {
         protected override int CachePartitions()
         {
@@ -40,11 +40,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         protected override bool NearEnabled()
         {
             return false;
-        }
-
-        protected override bool TxEnabled()
-        {
-            return true;
         }
 
         protected override int Backups()

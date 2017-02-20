@@ -58,11 +58,11 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -99,6 +99,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 
 /**
@@ -121,7 +122,7 @@ public class GridReduceQueryExecutor {
     private IgniteLogger log;
 
     /** */
-    private final AtomicLong reqIdGen = new AtomicLong();
+    private final AtomicLong qryIdGen;
 
     /** */
     private final ConcurrentMap<Long, QueryRun> runs = new ConcurrentHashMap8<>();
@@ -168,9 +169,11 @@ public class GridReduceQueryExecutor {
     };
 
     /**
+     * @param qryIdGen Query ID generator.
      * @param busyLock Busy lock.
      */
-    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
+    public GridReduceQueryExecutor(AtomicLong qryIdGen, GridSpinBusyLock busyLock) {
+        this.qryIdGen = qryIdGen;
         this.busyLock = busyLock;
     }
 
@@ -382,17 +385,10 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param cctx Cache context.
-     * @return {@code true} If cache context
+     * @return {@code True} If cache has partitions in {@link GridDhtPartitionState#MOVING} state.
      */
     private boolean hasMovingPartitions(GridCacheContext<?, ?> cctx) {
-        GridDhtPartitionFullMap fullMap = cctx.topology().partitionMap(false);
-
-        for (GridDhtPartitionMap2 map : fullMap.values()) {
-            if (map.hasMovingPartitions())
-                return true;
-        }
-
-        return false;
+        return !cctx.isLocal() && cctx.topology().hasMovingPartitions();
     }
 
     /**
@@ -501,11 +497,13 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            final long qryReqId = reqIdGen.incrementAndGet();
+            final long qryReqId = qryIdGen.incrementAndGet();
 
             final String space = cctx.name();
 
-            final QueryRun r = new QueryRun(h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize());
+            final QueryRun r = new QueryRun(qryReqId, qry.originalSql(), space,
+                h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize(),
+                U.currentTimeMillis(), cancel);
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -1311,9 +1309,45 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of IDs and statements of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
+        Collection<GridRunningQueryInfo> res = new ArrayList<>();
+
+        long curTime = U.currentTimeMillis();
+
+        for (QueryRun run : runs.values()) {
+            if (run.qry.longQuery(curTime, duration))
+                res.add(run.qry);
+        }
+
+        return res;
+    }
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries IDs to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries) {
+        for (Long qryId : queries) {
+            QueryRun run = runs.get(qryId);
+
+            if (run != null)
+                run.qry.cancel();
+        }
+    }
+
+    /**
      * Query run.
      */
     private static class QueryRun {
+        /** */
+        private final GridRunningQueryInfo qry;
+
         /** */
         private final List<GridMergeIndex> idxs;
 
@@ -1330,11 +1364,17 @@ public class GridReduceQueryExecutor {
         private final AtomicReference<Object> state = new AtomicReference<>();
 
         /**
+         * @param id Query ID.
+         * @param qry Query text.
+         * @param cache Cache where query was executed.
          * @param conn Connection.
          * @param idxsCnt Number of indexes.
          * @param pageSize Page size.
+         * @param startTime Start time.
+         * @param cancel Query cancel handler.
          */
-        private QueryRun(Connection conn, int idxsCnt, int pageSize) {
+        private QueryRun(Long id, String qry, String cache, Connection conn, int idxsCnt, int pageSize, long startTime, GridQueryCancel cancel) {
+            this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, cache, startTime, cancel, false);
             this.conn = (JdbcConnection)conn;
             this.idxs = new ArrayList<>(idxsCnt);
             this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;

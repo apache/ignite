@@ -51,6 +51,7 @@ git-patch-prop-local.sh
 *.opensdf
 *.db
 *.opendb
+.vs
 ipch/
 [Oo]bj/
 [Bb]in

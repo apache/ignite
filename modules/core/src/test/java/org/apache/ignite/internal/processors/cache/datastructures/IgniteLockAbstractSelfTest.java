@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
@@ -42,6 +43,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -54,6 +56,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -61,7 +64,9 @@ import org.junit.rules.ExpectedException;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Cache reentrant lock self test.
@@ -112,8 +117,55 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     }
 
     /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                boolean success = lock.tryLock(1, MILLISECONDS);
+
+                assertTrue(success);
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertTrue(lock.isLocked());
+
+            lock.unlock();
+
+            assertFalse(lock.isLocked());
+
+            lock.close();
+
+            assertTrue(lock.removed());
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
+    }
+
+    /**
      * @param failoverSafe Failover safe flag.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void checkFailover(final boolean failoverSafe, final boolean fair) throws Exception {
         IgniteEx g = startGrid(NODES_CNT + 1);
@@ -500,7 +552,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("Condition not associated with this lock passed as argument.");
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 info("IllegalArgumentException thrown as it should be.");
             }
 
@@ -511,7 +563,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -529,7 +581,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("Condition not associated with this lock passed as argument.");
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 info("IllegalArgumentException thrown as it should be.");
             }
 
@@ -540,7 +592,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -604,7 +656,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 fail("This method should throw exception when lock is not held.");
             }
-            catch (IllegalMonitorStateException e) {
+            catch (IllegalMonitorStateException ignored) {
                 info("IllegalMonitorStateException thrown as it should be.");
             }
 
@@ -746,7 +798,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         lock0.lockInterruptibly();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         assertFalse(Thread.currentThread().isInterrupted());
 
                         isInterrupted = true;
@@ -842,7 +894,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                                         l.lockInterruptibly();
                                     }
-                                    catch(IgniteInterruptedException e){
+                                    catch(IgniteInterruptedException ignored){
                                         exceptionThrown.set(true);
                                     }
                                     finally {
@@ -946,7 +998,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         lock0.lock();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
 
                         fail("Lock() method is uninterruptible.");
@@ -1031,7 +1083,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         locked = lock0.tryLock();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
 
                         fail("tryLock() method is uninterruptible.");
@@ -1114,7 +1166,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         locked = lock0.tryLock(100, TimeUnit.MILLISECONDS);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {
@@ -1190,7 +1242,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         cond.awaitUninterruptibly();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {
@@ -1279,7 +1331,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                     try {
                         cond.await();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedException ignored) {
                         isInterrupted = true;
                     }
                     finally {

@@ -282,20 +282,13 @@ namespace ignite
         factoryLock.Leave();
 
         if (failed) 
-        {
-            if (envTarget)
-                delete envTarget;
-
             return Ignite();
-        }
-        else 
-        {
-            env.Get()->ProcessorReleaseStart();
 
-            IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        env.Get()->ProcessorReleaseStart();
 
-            return Ignite(impl);
-        }
+        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+
+        return Ignite(impl);
     }
 
     Ignite Ignition::Get()

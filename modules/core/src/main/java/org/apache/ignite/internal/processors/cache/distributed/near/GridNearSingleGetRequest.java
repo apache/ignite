@@ -80,6 +80,9 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
     private int taskNameHash;
 
     /** TTL for read operation. */
+    private long createTtl;
+
+    /** TTL for read operation. */
     private long accessTtl;
 
     /**
@@ -99,6 +102,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
+     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
      * @param addReader Add reader flag.
      * @param needVer {@code True} if entry version is needed.
@@ -112,6 +116,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         @NotNull AffinityTopologyVersion topVer,
         UUID subjId,
         int taskNameHash,
+        long createTtl,
         long accessTtl,
         boolean skipVals,
         boolean addReader,
@@ -127,6 +132,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.addDepInfo = addDepInfo;
 
@@ -181,10 +187,22 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
     }
 
     /**
+     * @return New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public long createTtl() {
+        return createTtl;
+    }
+
+    /**
      * @return New TTL to set after entry is accessed, -1 to leave unchanged.
      */
     public long accessTtl() {
         return accessTtl;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
     }
 
     /**
@@ -266,7 +284,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 4:
-                flags = reader.readByte("flags");
+                createTtl = reader.readLong("createTtl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -274,7 +292,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 5:
-                futId = reader.readLong("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -282,7 +300,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 6:
-                key = reader.readMessage("key");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -290,7 +308,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 7:
-                subjId = reader.readUuid("subjId");
+                key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
                     return false;
@@ -298,7 +316,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 8:
-                taskNameHash = reader.readInt("taskNameHash");
+                partId = reader.readInt("partId", -1);
 
                 if (!reader.isLastRead())
                     return false;
@@ -306,7 +324,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readMessage("topVer");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +332,15 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 10:
-                partId = reader.readInt("partId", -1);
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -348,43 +374,49 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeLong("createTtl", createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -406,7 +438,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

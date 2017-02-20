@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -608,6 +607,11 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
     }
 
     /** {@inheritDoc} */

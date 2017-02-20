@@ -61,10 +61,10 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -115,7 +115,6 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
@@ -139,6 +138,10 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
+import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
+import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -165,6 +168,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -175,6 +179,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
@@ -183,7 +188,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -200,7 +204,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -209,11 +212,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JMX_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_ARGS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LANG_RUNTIME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -292,6 +296,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName restExecSvcMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName stripedExecSvcMBean;
 
     /** Kernal start timestamp. */
     private long startTime = U.currentTimeMillis();
@@ -664,6 +672,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param utilityCachePool Utility cache pool.
      * @param execSvc Executor service.
      * @param sysExecSvc System executor service.
+     * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
@@ -674,11 +683,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final IgniteConfiguration cfg,
+    public void start(
+        final IgniteConfiguration cfg,
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         final ExecutorService execSvc,
         final ExecutorService sysExecSvc,
+        final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
@@ -686,7 +697,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
-        GridAbsClosure errHnd)
+        GridAbsClosure errHnd
+    )
         throws IgniteCheckedException
     {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
@@ -786,6 +798,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 marshCachePool,
                 execSvc,
                 sysExecSvc,
+                stripedExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
@@ -793,7 +806,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 affExecSvc,
                 idxExecSvc,
                 callbackExecSvc,
-                plugins);
+                plugins
+            );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
@@ -924,6 +938,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Suggest configuration optimizations.
             suggestOptimizations(cfg);
 
+            // Suggest JVM optimizations.
+            ctx.performance().addAll(JvmConfigurationSuggestions.getSuggestions());
+
+            // Suggest Operation System optimizations.
+            ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
+
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
 
@@ -948,6 +968,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerKernalMBean();
             registerLocalNodeMBean();
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
+            registerStripedExecutorMBean(stripedExecSvc);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -987,24 +1008,51 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */
-                private long lastCompletedCnt;
+                private long lastCompletedCntPub;
+
+                /** Last completed task count. */
+                private long lastCompletedCntSys;
 
                 @Override public void run() {
-                    if (!(execSvc instanceof ThreadPoolExecutor))
-                        return;
+                    if (execSvc instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-                    ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+                        lastCompletedCntPub = checkPoolStarvation(exec, lastCompletedCntPub, "public");
+                    }
 
+                    if (sysExecSvc instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
+
+                        lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
+                    }
+
+                    if (stripedExecSvc != null)
+                        stripedExecSvc.checkStarvation();
+                }
+
+                /**
+                 * @param exec Thread pool executor to check.
+                 * @param lastCompletedCnt Last completed tasks count.
+                 * @param pool Pool name for message.
+                 * @return Current completed tasks count.
+                 */
+                private long checkPoolStarvation(
+                    ThreadPoolExecutor exec,
+                    long lastCompletedCnt,
+                    String pool
+                ) {
                     long completedCnt = exec.getCompletedTaskCount();
 
                     // If all threads are active and no task has completed since last time and there is
                     // at least one waiting request, then it is possible starvation.
                     if (exec.getPoolSize() == exec.getActiveCount() && completedCnt == lastCompletedCnt &&
                         !exec.getQueue().isEmpty())
-                        LT.warn(log, "Possible thread pool starvation detected (no task completed in last " +
-                            interval + "ms, is executorService pool size large enough?)");
+                        LT.warn(
+                            log,
+                            "Possible thread pool starvation detected (no task completed in last " +
+                                interval + "ms, is " + pool + " thread pool size large enough?)");
 
-                    lastCompletedCnt = completedCnt;
+                    return completedCnt;
                 }
             }, interval, interval);
         }
@@ -1128,6 +1176,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }, longOpDumpTimeout, longOpDumpTimeout);
         }
+
+        ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
         ctx.performance().logSuggestions(log, gridName);
 
@@ -1256,9 +1306,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (ctx.checkpoint().enabled())
             perf.add("Disable checkpoints (remove 'checkpointSpi' from configuration)");
-
-        if (cfg.isPeerClassLoadingEnabled())
-            perf.add("Disable peer class loading (set 'peerClassLoadingEnabled' to false)");
 
         if (cfg.isMarshalLocalJobs())
             perf.add("Disable local jobs marshalling (set 'marshalLocalJobs' to false)");
@@ -1500,7 +1547,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** @throws IgniteCheckedException If registration failed. */
+    /**
+     * @param execSvc
+     * @param sysExecSvc
+     * @param p2pExecSvc
+     * @param mgmtExecSvc
+     * @param restExecSvc
+     * @throws IgniteCheckedException If failed.
+     */
     private void registerExecutorMBeans(ExecutorService execSvc,
         ExecutorService sysExecSvc,
         ExecutorService p2pExecSvc,
@@ -1541,8 +1595,34 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return res;
         }
         catch (JMException e) {
-            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name + ", exec=" + exec + ']',
-                e);
+            throw new IgniteCheckedException("Failed to register executor service MBean [name=" + name +
+                ", exec=" + exec + ']', e);
+        }
+    }
+
+    /**
+     * @param stripedExecSvc Executor service.
+     * @throws IgniteCheckedException If registration failed.
+     */
+    private void registerStripedExecutorMBean(StripedExecutor stripedExecSvc) throws IgniteCheckedException {
+        if (stripedExecSvc != null) {
+            String name = "StripedExecutor";
+
+            try {
+                stripedExecSvcMBean = U.registerMBean(
+                    cfg.getMBeanServer(),
+                    cfg.getGridName(),
+                    "Thread Pools",
+                    name,
+                    new StripedExecutorMXBeanAdapter(stripedExecSvc),
+                    StripedExecutorMXBean.class);
+
+                if (log.isDebugEnabled())
+                    log.debug("Registered executor service MBean: " + stripedExecSvcMBean);
+            } catch (JMException e) {
+                throw new IgniteCheckedException("Failed to register executor service MBean [name="
+                    + name + ", exec=" + stripedExecSvc + ']', e);
+            }
         }
     }
 
@@ -2005,7 +2085,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
                     unregisterMBean(locNodeMBean) &
-                    unregisterMBean(restExecSvcMBean)
+                    unregisterMBean(restExecSvcMBean) &
+                    unregisterMBean(stripedExecSvcMBean)
             ))
                 errOnStop = false;
 
@@ -3517,6 +3598,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (Exception e) {
             U.error(log, "Failed to dump debug info for node: " + e, e);
         }
+    }
+
+    /**
+     * @param node Node.
+     * @param payload Message payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
+     */
+    public IgniteInternalFuture sendIoTest(ClusterNode node, byte[] payload, boolean procFromNioThread) {
+        return ctx.io().sendIoTest(node, payload, procFromNioThread);
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param payload Message payload.
+     * @param procFromNioThread If {@code true} message is processed from NIO thread.
+     * @return Response future.
+     */
+    public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
+        return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
     }
 
     /** {@inheritDoc} */

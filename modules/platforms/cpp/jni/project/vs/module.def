@@ -26,8 +26,8 @@ IgniteTargetInLongOutLong @24
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 
-IgniteAcquire @80 
-IgniteRelease @81 
+IgniteAcquire @80
+IgniteRelease @81
 IgniteThrowToJava @82 
 IgniteHandlersSize @83 
 IgniteCreateContext @84 
@@ -36,8 +36,6 @@ IgniteDestroyJvm @86
 IgniteTargetOutObject @91 
 IgniteProcessorExtensions @97
 IgniteProcessorAtomicLong @98
-IgniteListenableCancel @110
-IgniteListenableIsCancelled @111
 IgniteProcessorCreateCacheFromConfig @114
 IgniteProcessorGetOrCreateCacheFromConfig @115
 IgniteProcessorGetIgniteConfiguration @116

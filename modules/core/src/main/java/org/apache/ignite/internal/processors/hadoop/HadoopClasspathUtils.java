@@ -69,7 +69,7 @@ public class HadoopClasspathUtils {
                 try {
                     res.add(file.toURI().toURL());
                 }
-                catch (MalformedURLException e) {
+                catch (MalformedURLException ignored) {
                     throw new IOException("Failed to convert file path to URL: " + file.getPath());
                 }
             }

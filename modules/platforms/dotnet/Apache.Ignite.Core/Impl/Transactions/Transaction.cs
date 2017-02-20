@@ -142,5 +142,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             return _tx.RemoveMeta<TV>(name);
         }
+
+        /// <summary>
+        /// Executes prepare step of the two phase commit.
+        /// </summary>
+        public void Prepare()
+        {
+            _tx.Prepare();
+        }
     }
 }

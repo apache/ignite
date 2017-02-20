@@ -53,7 +53,7 @@
         <aspectj.bundle.version>1.7.2_1</aspectj.bundle.version>
         <aspectj.version>1.7.2</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
-        <aws.sdk.version>1.10.29</aws.sdk.version>
+        <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
         <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.8.3</commons.beanutils.version>
@@ -462,7 +462,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2017 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>

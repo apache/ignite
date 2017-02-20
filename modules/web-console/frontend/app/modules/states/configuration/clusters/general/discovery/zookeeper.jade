@@ -27,7 +27,7 @@ div
         +java-class('Curator:', model + '.curator', '"curator"', 'true', 'false',
             'The Curator framework in use<br/>\
             By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
-            class with configured connect string, retry policy, and default session and connection timeouts')
+            class with configured connect string, retry policy, and default session and connection timeouts', required)
     .details-row
         +text('Connect string:', model + '.zkConnectionString', '"' + discoveryKind + 'ConnectionString"', required, 'host:port[chroot][,host:port[chroot]]',
             'When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used')

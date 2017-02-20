@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text.RegularExpressions;
@@ -63,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private bool _runDbConsole;
 
         /** */
-        private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime StartDateTime = new DateTime(2000, 5, 17, 15, 4, 5, DateTimeKind.Utc);
 
         /// <summary>
         /// Fixture set up.
@@ -106,12 +107,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             orgCache[1000] = new Organization {Id = 1000, Name = "Org_0"};
             orgCache[1001] = new Organization {Id = 1001, Name = "Org_1"};
+            orgCache[1002] = new Organization {Id = 1002, Name = null};
 
             var roleCache = GetRoleCache();
 
             roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime};
             roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
-            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddHours(5432)};
         }
 
         /// <summary>
@@ -425,6 +427,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the cross cache join.
+        /// </summary>
+        [Test]
+        public void TestCrossCacheJoinInline()
+        {
+            var res = GetPersonCache().AsCacheQueryable().Join(GetRoleCache().AsCacheQueryable(), 
+                person => person.Key, role => role.Key.Foo, (person, role) => role).ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+            Assert.AreEqual(101, res[0].Key.Bar);
+        }
+
+        /// <summary>
         /// Tests the multi cache join.
         /// </summary>
         [Test]
@@ -516,7 +531,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// Tests the multiple from.
+        /// Tests query with multiple from clause.
         /// </summary>
         [Test]
         public void TestMultipleFrom()
@@ -530,6 +545,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var filtered = 
                 from person in persons
                 from role in roles
+                where person.Key == role.Key.Foo
+                select new {Person = person.Value.Name, Role = role.Value.Name};
+
+            var res = filtered.ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        /// <summary>
+        /// Tests query with multiple from clause with inline query sources.
+        /// </summary>
+        [Test]
+        public void TestMultipleFromInline()
+        {
+            var filtered =
+                from person in GetPersonCache().AsCacheQueryable()
+                from role in GetRoleCache().AsCacheQueryable()
                 where person.Key == role.Key.Foo
                 select new {Person = person.Value.Name, Role = role.Value.Name};
 
@@ -554,6 +586,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Same queryables
             var qry2 = p1.Join(p1, x => x.Value.Age, x => x.Key, (x, y) => x.Key);
             Assert.AreEqual(PersonCount, qry2.ToArray().Distinct().Count());
+        }
+
+        /// <summary>
+        /// Tests the join of a table to itself with inline queryable.
+        /// </summary>
+        [Test]
+        public void TestSelfJoinInline()
+        {
+            var qry = GetPersonCache().AsCacheQueryable().Join(GetPersonCache().AsCacheQueryable(), 
+                x => x.Value.Age, x => x.Key, (x, y) => x.Key);
+
+            Assert.AreEqual(PersonCount, qry.ToArray().Distinct().Count());
         }
 
         /// <summary>
@@ -705,6 +749,74 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests IEnumerable.Contains.
+        /// </summary>
+        [Test]
+        public void TestContains()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+            var orgCache = GetOrgCache().AsCacheQueryable();
+
+            var keys = new[] { 1, 2, 3 };
+            var emptyKeys = new int[0];
+
+            var bigNumberOfKeys = 10000;
+            var aLotOfKeys = Enumerable.Range(-bigNumberOfKeys + 10 - PersonCount, bigNumberOfKeys + PersonCount)
+                .ToArray();
+            var hashSetKeys = new HashSet<int>(keys);
+
+            CheckWhereFunc(cache, e => new[] { 1, 2, 3 }.Contains(e.Key));
+            CheckWhereFunc(cache, e => emptyKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new int[0].Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int> { 1, 2, 3 }.Contains(e.Key));
+            CheckWhereFunc(cache, e => new List<int>(keys).Contains(e.Key));
+            CheckWhereFunc(cache, e => aLotOfKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => hashSetKeys.Contains(e.Key));
+            CheckWhereFunc(cache, e => !keys.Contains(e.Key));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", "NonExistentName", null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new[] { "Org_1", null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => !new string[] { null, null }.Contains(e.Value.Name));
+            CheckWhereFunc(orgCache, e => new string[] { null, null }.Contains(e.Value.Name));
+
+            //check passing a null object as collection
+            int[] nullKeys = null;
+            var nullKeysEntries = cache
+                .Where(e => nullKeys.Contains(e.Key))
+                .ToArray();
+            Assert.AreEqual(0, nullKeysEntries.Length, "Evaluating 'null.Contains' should return zero results");
+
+
+            Func<int[]> getKeysFunc = () => null;
+            var funcNullKeyEntries = cache
+                .Where(e => getKeysFunc().Contains(e.Key))
+                .ToArray();
+            Assert.AreEqual(0, funcNullKeyEntries.Length, "Evaluating 'null.Contains' should return zero results");
+
+
+            // Check subselect from other cache
+            var subSelectCount = cache
+                .Count(entry => orgCache
+                    .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                    .Select(orgEntry => orgEntry.Key)
+                    .Contains(entry.Value.OrganizationId));
+            var orgNumberOne = orgCache
+                .Where(orgEntry => orgEntry.Value.Name == "Org_1")
+                .Select(orgEntry => orgEntry.Key)
+                .First();
+            var subSelectCheckCount = cache.Count(entry => entry.Value.OrganizationId == orgNumberOne);
+            Assert.AreEqual(subSelectCheckCount, subSelectCount, "subselecting another CacheQueryable failed");
+
+            var ex = Assert.Throws<NotSupportedException>(() =>
+                CompiledQuery2.Compile((int[] k) => cache.Where(x => k.Contains(x.Key))));
+            Assert.AreEqual("'Contains' clause coming from compiled query parameter is not supported.", ex.Message);
+        }
+
+        /// <summary>
         /// Tests nulls.
         /// </summary>
         [Test]
@@ -729,18 +841,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var persons = GetPersonCache().AsCacheQueryable();
 
             // Invalid dateTime
-            var now = DateTime.Now;
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > now).ToArray());
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
+            Assert.AreEqual("DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.", 
+                ex.Message);
 
             // Test retrieval
             var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date);
-            var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), StartDateTime.AddYears(2)};
+            var expDates = GetRoleCache().Select(x => x.Value.Date).OrderBy(x => x).ToArray();
             Assert.AreEqual(expDates, dates.ToArray());
 
             // Filtering
             Assert.AreEqual(1, persons.Count(x => x.Value.Birthday == StartDateTime));
             Assert.AreEqual(PersonCount, persons.Count(x => x.Value.Birthday >= StartDateTime));
+            Assert.Greater(persons.Count(x => x.Value.Birthday > DateTime.UtcNow), 1);
 
             // Joins
             var join = 
@@ -748,10 +863,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 join person in persons on role.Value.Date equals person.Value.Birthday
                 select person;
 
-            Assert.AreEqual(RoleCount, join.Count());
+            Assert.AreEqual(2, join.Count());
 
             // Functions
-            Assert.AreEqual("01 01 2000 00:00:00", dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
+            var strings = dates.Select(x => x.ToString("dd MM YYYY HH:mm:ss")).ToArray();
+            Assert.AreEqual(new[] {"17 05 2000 15:04:05", "29 12 2000 23:04:05", "17 05 2001 15:04:05"}, strings);
+
+            // Properties
+            Assert.AreEqual(new[] {2000, 2000, 2001}, dates.Select(x => x.Year).ToArray());
+            Assert.AreEqual(new[] {5, 12, 5}, dates.Select(x => x.Month).ToArray());
+            Assert.AreEqual(new[] {17, 29, 17}, dates.Select(x => x.Day).ToArray());
+            Assert.AreEqual(expDates.Select(x => x.DayOfYear).ToArray(), dates.Select(x => x.DayOfYear).ToArray());
+            Assert.AreEqual(expDates.Select(x => x.DayOfWeek).ToArray(), dates.Select(x => x.DayOfWeek).ToArray());
+            Assert.AreEqual(new[] {15, 23, 15}, dates.Select(x => x.Hour).ToArray());
+            Assert.AreEqual(new[] { 4, 4, 4 }, dates.Select(x => x.Minute).ToArray());
+            Assert.AreEqual(new[] { 5, 5, 5 }, dates.Select(x => x.Second).ToArray());
         }
 
         /// <summary>
@@ -1351,6 +1477,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Perform intermediate anonymous type conversion to check type projection
             actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo)
                 .OrderBy(x => x).ToArray();
+
+            // Compare results
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
+        }
+
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
+        private static void CheckWhereFunc<TKey, TEntry>(IQueryable<ICacheEntry<TKey,TEntry>> query, Expression<Func<ICacheEntry<TKey, TEntry>,bool>> whereExpression)
+        {
+            // Calculate result locally, using real method invocation
+            var expected = query
+                .ToArray()
+                .AsQueryable()
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .OrderBy(x => x)
+                .ToArray();
+
+            // Perform SQL query
+            var actual = query
+                .Where(whereExpression)
+                .Select(entry => entry.Key)
+                .ToArray()
+                .OrderBy(x => x)
+                .ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());

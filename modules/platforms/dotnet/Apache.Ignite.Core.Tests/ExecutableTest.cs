@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests
                 var proc = new IgniteProcess(reader, args);
 
                 int exitCode;
-                Assert.IsTrue(proc.Join(3000, out exitCode));
+                Assert.IsTrue(proc.Join(30000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
                 lock (reader.List)

@@ -30,13 +30,30 @@ mixin ignite-form-field-input(name, model, disabled, required, placeholder)
         data-ignite-form-panel-field=''
     )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes: {})
 
+mixin ignite-form-field-url-input(name, model, disabled, required, placeholder)
+    input.form-control(
+        id='{{ #{name} }}Input'
+        name='{{ #{name} }}'
+        placeholder=placeholder
+        type='url'
+
+        data-ng-model=model
+
+        data-ng-required=required && '#{required}'
+        data-ng-disabled=disabled && '#{disabled}'
+        data-ng-focus='tableReset()'
+
+        data-ignite-form-panel-field=''
+    )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes: {})
+
 mixin ignite-form-field-text(label, model, name, disabled, required, placeholder, tip)
     -var errLbl = label.substring(0, label.length - 1)
 
     .ignite-form-field
         +ignite-form-field__label(label, name, required)
         .ignite-form-field__control
-            i.tipField.icon-help(bs-tooltip='' data-title=tip)
+            if tip
+                i.tipField.icon-help(bs-tooltip='' data-title=tip)
             
             if block
                 block

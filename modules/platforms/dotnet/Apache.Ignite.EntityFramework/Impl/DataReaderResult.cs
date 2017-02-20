@@ -21,6 +21,7 @@ namespace Apache.Ignite.EntityFramework.Impl
     using System.Collections.Generic;
     using System.Data;
     using System.Data.Common;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -38,6 +39,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         /// <summary>
         /// Initializes a new instance of the <see cref="DataReaderResult"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public DataReaderResult(IDataReader reader)
         {
             try

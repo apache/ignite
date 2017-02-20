@@ -20,9 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -157,5 +161,136 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
         ignite0.close();
 
         fut2.get(5, SECONDS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockRelease2() throws Exception {
+        final Ignite ignite0 = startGrid(0);
+
+        Ignite ignite1 = startGrid(1);
+
+        Lock lock = ignite1.cache(null).lock("key");
+        lock.lock();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        });
+
+        final AffinityTopologyVersion topVer = new AffinityTopologyVersion(2, 0);
+
+        // Wait when affinity change exchange start.
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                AffinityTopologyVersion topVer0 =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+
+                return topVer.compareTo(topVer0) < 0;
+            }
+        }, 10_000);
+
+        assertTrue(wait);
+
+        assertFalse(fut.isDone());
+
+        ignite1.close();
+
+        fut.get(10_000);
+
+        Ignite ignite2 = ignite(2);
+
+        lock = ignite2.cache(null).lock("key");
+        lock.lock();
+        lock.unlock();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockRelease3() throws Exception {
+        startGrid(0);
+
+        Ignite ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        Lock lock = ignite1.cache(null).lock("key");
+        lock.lock();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        });
+
+        assertFalse(fut.isDone());
+
+        ignite1.close();
+
+        fut.get(10_000);
+
+        Ignite ignite2 = ignite(2);
+
+        lock = ignite2.cache(null).lock("key");
+        lock.lock();
+        lock.unlock();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxLockRelease2() throws Exception {
+        final Ignite ignite0 = startGrid(0);
+
+        Ignite ignite1 = startGrid(1);
+
+        IgniteCache cache = ignite1.cache(null);
+        ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+        cache.get(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(2);
+
+                return null;
+            }
+        });
+
+        final AffinityTopologyVersion topVer = new AffinityTopologyVersion(2, 0);
+
+        // Wait when affinity change exchange start.
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                AffinityTopologyVersion topVer0 =
+                    ((IgniteKernal)ignite0).context().cache().context().exchange().topologyVersion();
+
+                return topVer.compareTo(topVer0) < 0;
+            }
+        }, 10_000);
+
+        assertTrue(wait);
+
+        assertFalse(fut.isDone());
+
+        ignite1.close();
+
+        fut.get(10_000);
+
+        Ignite ignite2 = ignite(2);
+
+        cache = ignite2.cache(null);
+
+        try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.get(1);
+
+            tx.commit();
+        }
     }
 }

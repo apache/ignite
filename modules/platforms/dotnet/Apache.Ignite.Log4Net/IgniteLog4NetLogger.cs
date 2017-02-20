@@ -55,7 +55,7 @@ namespace Apache.Ignite.Log4Net
         /// <summary>
         /// Logs the specified message.
         /// </summary>
-        /// <param name="logLevel">The level.</param>
+        /// <param name="level">The level.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments to format <paramref name="message" />.
         /// Can be null (formatting will not occur).</param>
@@ -63,10 +63,10 @@ namespace Apache.Ignite.Log4Net
         /// <param name="category">The logging category name.</param>
         /// <param name="nativeErrorInfo">The native error information.</param>
         /// <param name="ex">The exception. Can be null.</param>
-        public void Log(LogLevel logLevel, string message, object[] args, IFormatProvider formatProvider, 
+        public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
             string category, string nativeErrorInfo, Exception ex)
         {
-            var level = ConvertLogLevel(logLevel);
+            var logLevel = ConvertLogLevel(level);
 
             var repo = _log.Logger.Repository;
 
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Log4Net
                 ? (object) message 
                 : new SystemStringFormat(formatProvider, message, args);
 
-            var evt = new LoggingEvent(GetType(), repo, category, level, messageObject, ex);
+            var evt = new LoggingEvent(GetType(), repo, category, logLevel, messageObject, ex);
 
             if (nativeErrorInfo != null)
                 evt.Properties["nativeErrorInfo"] = nativeErrorInfo;
@@ -85,15 +85,15 @@ namespace Apache.Ignite.Log4Net
         /// <summary>
         /// Determines whether the specified log level is enabled.
         /// </summary>
-        /// <param name="logLevel">The level.</param>
+        /// <param name="level">The level.</param>
         /// <returns>
         /// Value indicating whether the specified log level is enabled
         /// </returns>
-        public bool IsEnabled(LogLevel logLevel)
+        public bool IsEnabled(LogLevel level)
         {
-            var level = ConvertLogLevel(logLevel);
+            var logLevel = ConvertLogLevel(level);
 
-            return _log.Logger.IsEnabledFor(level);
+            return _log.Logger.IsEnabledFor(logLevel);
         }
 
         /// <summary>

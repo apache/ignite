@@ -102,9 +102,9 @@ mixin hibernateField(name, model, items, valid, save, newItem)
                                         'Parallel load cache minimum threshold.<br/>\
                                         If <b>0</b> then load sequentially.')
                                 .details-row
-                                    +java-class('Hasher', pojoStoreFactory + '.hasher', '"pojoHasher"', 'true', 'false', 'Hash calculator')
+                                    +java-class('Hasher', pojoStoreFactory + '.hasher', '"pojoHasher"', 'true', 'false', 'Hash calculator', required)
                                 .details-row
-                                    +java-class('Transformer', pojoStoreFactory + '.transformer', '"pojoTransformer"', 'true', 'false', 'Types transformer')
+                                    +java-class('Transformer', pojoStoreFactory + '.transformer', '"pojoTransformer"', 'true', 'false', 'Types transformer', required)
                                 .details-row
                                     +checkbox('Escape table and filed names', pojoStoreFactory + '.sqlEscapeAll', '"sqlEscapeAll"',
                                         'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\

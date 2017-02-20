@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,7 +47,8 @@ public class GridCacheGateway<K, V> {
     private IgniteFuture<?> reconnectFut;
 
     /** */
-    private GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
+    private StripedCompositeReadWriteLock rwLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
 
     /**
      * @param ctx Cache context.
@@ -63,7 +66,7 @@ public class GridCacheGateway<K, V> {
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
 
-        rwLock.readLock();
+        rwLock.readLock().lock();
 
         checkState(true, true);
     }
@@ -78,7 +81,7 @@ public class GridCacheGateway<K, V> {
 
         if (state != State.STARTED) {
             if (lock)
-                rwLock.readUnlock();
+                rwLock.readLock().unlock();
 
             if (state == State.STOPPED) {
                 if (stopErr)
@@ -106,7 +109,7 @@ public class GridCacheGateway<K, V> {
         onEnter();
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
-        rwLock.readLock();
+        rwLock.readLock().lock();
 
         return checkState(true, false);
     }
@@ -139,10 +142,10 @@ public class GridCacheGateway<K, V> {
      */
     public void leave() {
         try {
-           leaveNoLock();
+            leaveNoLock();
         }
         finally {
-            rwLock.readUnlock();
+            rwLock.readLock().unlock();
         }
     }
 
@@ -168,7 +171,9 @@ public class GridCacheGateway<K, V> {
 
         onEnter();
 
-        rwLock.readLock();
+        Lock lock = rwLock.readLock();
+
+        lock.lock();
 
         checkState(true, true);
 
@@ -178,7 +183,7 @@ public class GridCacheGateway<K, V> {
             return setOperationContextPerCall(opCtx);
         }
         catch (Throwable e) {
-            rwLock.readUnlock();
+            lock.unlock();
 
             throw e;
         }
@@ -219,7 +224,7 @@ public class GridCacheGateway<K, V> {
             leaveNoLock(prev);
         }
         finally {
-            rwLock.readUnlock();
+            rwLock.readLock().unlock();
         }
     }
 
@@ -269,14 +274,14 @@ public class GridCacheGateway<K, V> {
      *
      */
     public void writeLock(){
-        rwLock.writeLock();
+        rwLock.writeLock().lock();
     }
 
     /**
      *
      */
     public void writeUnlock() {
-        rwLock.writeUnlock();
+        rwLock.writeLock().unlock();
     }
 
     /**
@@ -295,15 +300,14 @@ public class GridCacheGateway<K, V> {
         boolean interrupted = false;
 
         while (true) {
-            if (rwLock.tryWriteLock())
-                break;
-            else {
-                try {
+            try {
+                if (rwLock.writeLock().tryLock(200, TimeUnit.MILLISECONDS))
+                    break;
+                else
                     U.sleep(200);
-                }
-                catch (IgniteInterruptedCheckedException ignore) {
-                    interrupted = true;
-                }
+            }
+            catch (IgniteInterruptedCheckedException | InterruptedException ignore) {
+                interrupted = true;
             }
         }
 
@@ -314,7 +318,7 @@ public class GridCacheGateway<K, V> {
             state.set(State.STOPPED);
         }
         finally {
-            rwLock.writeUnlock();
+            rwLock.writeLock().unlock();
         }
     }
 

@@ -319,11 +319,12 @@ public interface GridCacheEntryEx {
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
      * @param keepBinary Keep binary flag.
+     * @param readerArgs Reader will be added if not null.
      * @return Cached value and entry version.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+    public EntryGetResult innerGetVersioned(
         @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
@@ -334,8 +335,37 @@ public interface GridCacheEntryEx {
         Object transformClo,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        boolean keepBinary)
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param readSwap Flag indicating whether to check swap memory.
+     * @param updateMetrics If {@code true} then metrics should be updated.
+     * @param evt Flag to signal event notification.
+     * @param subjId Subject ID initiated this read.
+     * @param taskName Task name.
+     * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
+     * @param readerArgs Reader will be added if not null.
+     * @throws IgniteCheckedException If loading value failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     * @return Cached value, entry version and flag indicating if entry was reserved.
+     */
+    public EntryGetResult innerGetAndReserveForLoad(boolean readSwap,
+        boolean updateMetrics,
+        boolean evt,
+        UUID subjId,
+        String taskName,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean keepBinary,
+        @Nullable ReaderArguments readerArgs) throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param ver Expected entry version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void clearReserveForLoad(GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Reloads entry from underlying storage.
@@ -725,13 +755,17 @@ public interface GridCacheEntryEx {
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
-     * @return Non null version if value was set.
+     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
+     * @param readerArgs Reader will be added if not null.
+     * @return Current version and value.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public GridCacheVersion versionedValue(CacheObject val,
+    public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer)
+        @Nullable GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

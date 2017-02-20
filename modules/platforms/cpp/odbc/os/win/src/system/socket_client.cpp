@@ -28,6 +28,7 @@
 
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/log.h"
 
 namespace ignite
 {
@@ -64,7 +65,7 @@ namespace ignite
                 addrinfo *result = NULL;
                 addrinfo hints;
 
-                LOG_MSG("Host: %s, port: %d\n", hostname, port);
+                LOG_MSG("Host: " << hostname << " port: " << port);
 
                 memset(&hints, 0, sizeof(hints));
                 hints.ai_family = AF_UNSPEC;
@@ -83,8 +84,10 @@ namespace ignite
                 // Attempt to connect to an address until one succeeds
                 for (addrinfo *it = result; it != NULL; it = it->ai_next)
                 {
-                    LOG_MSG("Addr: %u.%u.%u.%u\n", it->ai_addr->sa_data[2] & 0xFF, it->ai_addr->sa_data[3] & 0xFF,
-                                                   it->ai_addr->sa_data[4] & 0xFF, it->ai_addr->sa_data[5] & 0xFF);
+                    LOG_MSG("Addr: " << (it->ai_addr->sa_data[2] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[3] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[4] & 0xFF) << "."
+                                     << (it->ai_addr->sa_data[5] & 0xFF));
 
                     // Create a SOCKET for connecting to server
                     socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);

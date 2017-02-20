@@ -63,7 +63,9 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                U.allPluginProviders());
+                null,
+                U.allPluginProviders()
+        );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
 

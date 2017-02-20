@@ -36,7 +36,7 @@ namespace ignite
          * This is the analogue of the standard vector. It is needed to be used
          * in exported classes as we can't export standard library classes.
          */
-        template<typename T, typename A = DefaultAllocator<T>>
+        template<typename T, typename A = DefaultAllocator<T> >
         class IGNITE_IMPORT_EXPORT DynamicSizeArray
         {
         public:

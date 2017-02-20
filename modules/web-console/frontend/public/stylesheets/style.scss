@@ -227,7 +227,7 @@ ul.navbar-nav, .sidebar-nav {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        
+
         &:hover,
         &:focus {
             text-decoration: none;
@@ -601,6 +601,10 @@ button.form-control {
 .theme-line .notebook-header {
     border-color: $gray-lighter;
 
+    button:last-child {
+        margin-right: 0;
+    }
+
     h1 {
         padding: 0;
         margin: 0;
@@ -611,7 +615,7 @@ button.form-control {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-top: 5px;
+            height: 24px;
         }
 
         .btn-group {
@@ -637,7 +641,7 @@ button.form-control {
 }
 
 .theme-line .paragraphs {
-    .panel-group .panel + .panel {
+    .panel-group .panel-paragraph + .panel-paragraph {
         margin-top: 30px;
     }
 
@@ -679,8 +683,14 @@ button.form-control {
         line-height: 55px;
     }
 
-    .sql-controls {
+    .panel-collapse {
         border-top: 1px solid $ignite-border-color;
+    }
+
+    .sql-controls {
+        position: relative;
+        top: -1px;
+        border-top: 1px solid #ddd;
 
         padding: 10px 10px;
 
@@ -690,8 +700,49 @@ button.form-control {
         }
 
         label {
-            line-height: 20px !important;
+            line-height: 28px;
             vertical-align: middle;
+        }
+
+        .btn {
+            line-height: 20px;
+        }
+
+        .ignite-form-field {
+            margin-right: 10px;
+
+            .ignite-form-field__label {
+                float: left;
+                width: auto;
+                margin-right: 5px;
+                line-height: 28px;
+            }
+
+            .ignite-form-field__label + div {
+                display: block;
+                float: none;
+                width: auto;
+            }
+        }
+
+        .tipLabel .btn {
+            float: right;
+        }
+
+        .pull-right {
+            margin-left: 10px;
+
+            .ignite-form-field {
+                margin-right: -24px;
+
+                label {
+                    margin-left: 5px;
+                }
+            }
+        }
+
+        .col-sm-3 + .tipLabel {
+            margin-left: 0;
         }
     }
 
@@ -1243,6 +1294,17 @@ button.form-control {
     .clickable { cursor: pointer; }
 }
 
+
+.theme-line .summary {
+    .actions-note {
+        i {
+            margin-right: 5px;
+        }
+
+        margin: 15px 0;
+    }
+}
+
 .theme-line .popover.summary-project-structure {
     @extend .popover.settings;
 
@@ -1693,6 +1755,7 @@ th[st-sort] {
 }
 
 .chart-settings-link {
+    margin-top: -2px;
     padding-left: 10px;
     line-height: $input-height;
 
@@ -1991,6 +2054,10 @@ treecontrol.tree-classic {
         margin-right: 0
     }
 
+    .ui-grid-cell-actions {
+        line-height: 28px;
+    }
+
     .no-rows {
         .center-container {
             background: white;
@@ -2224,5 +2291,68 @@ html,body,.splash-screen {
     &.ng-animate {
         -webkit-animation: none 0s;
         animation: none 0s;
+    }
+}
+
+.admin-page {
+    .panel-heading {
+        border-bottom: 0;
+        padding-bottom: 0;
+
+        cursor: default;
+
+        i {
+            margin-top: 2px;
+            margin-right: 10px;
+        }
+
+        label {
+            cursor: default;
+            line-height: 28px;
+        }
+
+        sub {
+            bottom: 0;
+        }
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-filter-select {
+        width: calc(100% - 10px);
+    }
+
+    .ui-grid-cell-contents > i {
+        line-height: $line-height-base;
+    }
+}
+
+.datepicker.dropdown-menu {
+    width: 250px;
+    height: 270px;
+
+    button {
+        outline: none;
+        border: 0;
+    }
+
+    tbody {
+        height: 180px;
+    }
+
+    tbody button {
+        padding: 6px;
+    }
+
+    &.datepicker-mode-1, &.datepicker-mode-2 {
+        tbody button {
+            height: 65px;
+        }
     }
 }

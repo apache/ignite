@@ -36,7 +36,7 @@ struct HandleRegistryTestProbe
     }
 };
 
-class HandleRegistryTestEntry : public HandleRegistryEntry
+class HandleRegistryTestEntry
 {
 public:
     HandleRegistryTestEntry(HandleRegistryTestProbe* probe) : probe(probe)
@@ -67,9 +67,9 @@ BOOST_AUTO_TEST_CASE(TestCritical)
     HandleRegistryTestEntry* entry1 = new HandleRegistryTestEntry(&probe1);
     HandleRegistryTestEntry* entry2 = new HandleRegistryTestEntry(&probe2);
 
-    int64_t hnd0 = reg.AllocateCritical(SharedPointer<HandleRegistryEntry>(entry0));
-    int64_t hnd1 = reg.AllocateCritical(SharedPointer<HandleRegistryEntry>(entry1));
-    int64_t hnd2 = reg.AllocateCritical(SharedPointer<HandleRegistryEntry>(entry2));
+    int64_t hnd0 = reg.AllocateCritical(SharedPointer<HandleRegistryTestEntry>(entry0));
+    int64_t hnd1 = reg.AllocateCritical(SharedPointer<HandleRegistryTestEntry>(entry1));
+    int64_t hnd2 = reg.AllocateCritical(SharedPointer<HandleRegistryTestEntry>(entry2));
 
     BOOST_REQUIRE(reg.Get(hnd0).Get() == entry0);
     BOOST_REQUIRE(!probe0.deleted);
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(TestCritical)
     HandleRegistryTestProbe closedProbe;
     HandleRegistryTestEntry* closedEntry = new HandleRegistryTestEntry(&closedProbe);
 
-    int64_t closedHnd = closedReg.AllocateCritical(SharedPointer<HandleRegistryEntry>(closedEntry));
+    int64_t closedHnd = closedReg.AllocateCritical(SharedPointer<HandleRegistryTestEntry>(closedEntry));
     BOOST_REQUIRE(closedHnd == -1);
     BOOST_REQUIRE(closedProbe.deleted);
 }
@@ -126,9 +126,9 @@ BOOST_AUTO_TEST_CASE(TestNonCritical)
     HandleRegistryTestEntry* entry1 = new HandleRegistryTestEntry(&probe1);
     HandleRegistryTestEntry* entry2 = new HandleRegistryTestEntry(&probe2);
 
-    int64_t hnd0 = reg.AllocateCritical(SharedPointer<HandleRegistryEntry>(entry0));
-    int64_t hnd1 = reg.Allocate(SharedPointer<HandleRegistryEntry>(entry1));
-    int64_t hnd2 = reg.Allocate(SharedPointer<HandleRegistryEntry>(entry2));
+    int64_t hnd0 = reg.AllocateCritical(SharedPointer<HandleRegistryTestEntry>(entry0));
+    int64_t hnd1 = reg.Allocate(SharedPointer<HandleRegistryTestEntry>(entry1));
+    int64_t hnd2 = reg.Allocate(SharedPointer<HandleRegistryTestEntry>(entry2));
 
     BOOST_REQUIRE(reg.Get(hnd0).Get() == entry0);
     BOOST_REQUIRE(!probe0.deleted);
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(TestNonCritical)
     HandleRegistryTestProbe closedProbe;
     HandleRegistryTestEntry* closedEntry = new HandleRegistryTestEntry(&closedProbe);
 
-    int64_t closedHnd = closedReg.Allocate(SharedPointer<HandleRegistryEntry>(closedEntry));
+    int64_t closedHnd = closedReg.Allocate(SharedPointer<HandleRegistryTestEntry>(closedEntry));
     BOOST_REQUIRE(closedHnd == -1);
     BOOST_REQUIRE(closedProbe.deleted);
 }

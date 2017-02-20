@@ -16,15 +16,19 @@
  */
 
 import _ from 'lodash';
-import JSZip from 'jszip';
 import saver from 'file-saver';
 
+const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+
 export default [
-    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'IgniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'IgniteConfigurationGenerator', 'SpringTransformer', 'JavaTransformer', 'GeneratorDocker', 'GeneratorPom', 'IgnitePropertiesGenerator', 'IgniteReadmeGenerator', 'IgniteFormUtils',
-    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, generator, spring, java, docker, pom, propsGenerator, readme, FormUtils) {
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteLoading', '$filter', 'IgniteConfigurationResource', 'JavaTypes', 'IgniteVersion', 'IgniteConfigurationGenerator', 'SpringTransformer', 'JavaTransformer', 'IgniteDockerGenerator', 'IgniteMavenGenerator', 'IgnitePropertiesGenerator', 'IgniteReadmeGenerator', 'IgniteFormUtils', 'IgniteSummaryZipper', 'IgniteActivitiesData',
+    function($root, $scope, $http, LegacyUtils, Messages, Loading, $filter, Resource, JavaTypes, Version, generator, spring, java, docker, pom, propsGenerator, readme, FormUtils, SummaryZipper, ActivitiesData) {
         const ctrl = this;
 
-        $scope.ui = { ready: false };
+        $scope.ui = {
+            isSafari: !!(/constructor/i.test(window.HTMLElement) || window.safari),
+            ready: false
+        };
 
         Loading.start('summaryPage');
 
@@ -223,10 +227,6 @@ export default [
             return false;
         }
 
-        function escapeFileName(name) {
-            return name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
-        }
-
         $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
 
@@ -297,84 +297,21 @@ export default [
 
         // TODO IGNITE-2114: implemented as independent logic for download.
         $scope.downloadConfiguration = function() {
+            if ($scope.isPrepareDownloading)
+                return;
+
             const cluster = $scope.cluster;
 
-            const zip = new JSZip();
+            $scope.isPrepareDownloading = true;
 
-            if (!ctrl.data)
-                ctrl.data = {};
+            ActivitiesData.post({ action: '/configuration/download' });
 
-            if (!ctrl.data.docker)
-                ctrl.data.docker = docker.generate(cluster, 'latest');
-
-            zip.file('Dockerfile', ctrl.data.docker);
-            zip.file('.dockerignore', docker.ignoreFile());
-
-            const cfg = generator.igniteConfiguration(cluster, false);
-            const clientCfg = generator.igniteConfiguration(cluster, true);
-            const clientNearCaches = _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled'));
-
-            const secProps = propsGenerator.generate(cfg);
-
-            if (secProps)
-                zip.file('src/main/resources/secret.properties', secProps);
-
-            const srcPath = 'src/main/java';
-            const resourcesPath = 'src/main/resources';
-
-            const serverXml = `${escapeFileName(cluster.name)}-server.xml`;
-            const clientXml = `${escapeFileName(cluster.name)}-client.xml`;
-
-            const metaPath = `${resourcesPath}/META-INF`;
-
-            zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
-            zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());
-
-            const cfgPath = `${srcPath}/config`;
-
-            zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ServerConfigurationFactory').asString());
-            zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
-
-            if (java.isDemoConfigured(cluster, $root.IgniteDemoMode)) {
-                zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',
-                    'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
-            }
-
-            // Generate loader for caches with configured store.
-            const cachesToLoad = _.filter(cluster.caches, (cache) => _.nonNil(cache.cacheStoreFactory));
-
-            if (_.nonEmpty(cachesToLoad))
-                zip.file(`${srcPath}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, 'load', 'LoadCaches', `"${clientXml}"`));
-
-            const startupPath = `${srcPath}/startup`;
-
-            zip.file(`${startupPath}/ServerNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeSpringStartup', `"${serverXml}"`));
-            zip.file(`${startupPath}/ClientNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeSpringStartup', `"${clientXml}"`));
-
-            zip.file(`${startupPath}/ServerNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeCodeStartup',
-                'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
-            zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
-                'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
-
-            zip.file('pom.xml', pom.generate(cluster, Version.productVersion().ignite).asString());
-
-            zip.file('README.txt', readme.generate());
-            zip.file('jdbc-drivers/README.txt', readme.generateJDBC());
-
-            if (_.isEmpty(ctrl.data.pojos))
-                ctrl.data.pojos = java.pojos(cluster.caches);
-
-            for (const pojo of ctrl.data.pojos) {
-                if (pojo.keyClass && JavaTypes.nonBuiltInClass(pojo.keyType))
-                    zip.file(`${srcPath}/${pojo.keyType.replace(/\./g, '/')}.java`, pojo.keyClass);
-
-                zip.file(`${srcPath}/${pojo.valueType.replace(/\./g, '/')}.java`, pojo.valueClass);
-            }
-
-            $generatorOptional.optionalContent(zip, cluster);
-
-            zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'})
-                .then((blob) => saver.saveAs(blob, escapeFileName(cluster.name) + '-project.zip'));
+            return new SummaryZipper({ cluster, data: ctrl.data || {}, IgniteDemoMode: $root.IgniteDemoMode })
+                .then((data) => {
+                    saver.saveAs(data, escapeFileName(cluster.name) + '-project.zip');
+                })
+                .catch((err) => Messages.showError('Failed to generate project files. ' + err.message))
+                .then(() => $scope.isPrepareDownloading = false);
         };
 
         /**
@@ -393,7 +330,7 @@ export default [
             const dialects = $scope.dialects;
 
             if (dialects.Oracle)
-                window.open('http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html');
+                window.open('http://www.oracle.com/technetwork/database/features/jdbc/default-2280470.html');
 
             if (dialects.DB2)
                 window.open('http://www-01.ibm.com/support/docview.wss?uid=swg21363866');

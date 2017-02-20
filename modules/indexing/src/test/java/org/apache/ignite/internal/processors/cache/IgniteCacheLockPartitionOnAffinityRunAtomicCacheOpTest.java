@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
@@ -270,13 +268,10 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         @Override public void run() {
             log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(cacheName);
-            Map<Integer, Integer> vals = new HashMap<>();
 
             for (int i = 0; i < KEYS_CNT; ++i)
                 cache.put(i + keyBegin, i + keyBegin);
-//                vals.put(i + keyBegin, i + keyBegin);
 
-//            cache.putAll(vals);
             log.info("End run " + keyBegin);
         }
     }
@@ -315,15 +310,11 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         @Override public void run() {
             log.info("Begin run " + keyBegin);
             IgniteCache cache = ignite.cache(Person.class.getSimpleName());
-            Map<Person.Key, Person> pers = new HashMap<>();
 
             for (int i = 0; i < KEYS_CNT; ++i) {
                 Person p = new Person(i + keyBegin, orgId);
-//                pers.put(p.createKey(), p);
                 cache.put(p.createKey(), p);
             }
-
-//            cache.putAll(pers);
         }
     }
 }

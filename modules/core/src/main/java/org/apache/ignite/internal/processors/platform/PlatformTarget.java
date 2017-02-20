@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.platform.utils.*;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -27,94 +29,89 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("UnusedDeclaration")
 public interface PlatformTarget {
     /**
-     * Operation accepting long value and returning long value.
+     * Process IN operation.
      *
-     * @param type Operation type.
+     * @param type Type.
      * @param val Value.
      * @return Result.
-     * @throws Exception If case of failure.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public long inLongOutLong(int type, long val) throws Exception;
+    long processInLongOutLong(int type, long val) throws IgniteCheckedException;
 
     /**
-     * Operation accepting memory stream and returning long value.
+     * Process IN operation.
      *
-     * @param type Operation type.
-     * @param memPtr Memory pointer.
+     * @param type Type.
+     * @param reader Binary reader.
      * @return Result.
-     * @throws Exception If case of failure.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public long inStreamOutLong(int type, long memPtr) throws Exception;
+    long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
 
     /**
-     * Operation accepting memory stream and returning object.
+     * Process IN operation.
      *
-     * @param type Operation type.
-     * @param memPtr Memory pointer.
+     * @param type Type.
+     * @param reader Binary reader.
      * @return Result.
-     * @throws Exception If case of failure.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public Object inStreamOutObject(int type, long memPtr) throws Exception;
+    long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException;
 
     /**
-     * Operation accepting one memory stream and returning result to another memory stream.
+     * Process IN-OUT operation.
      *
-     * @param type Operation type.
-     * @param inMemPtr Input memory pointer.
-     * @param outMemPtr Output memory pointer.
-     * @throws Exception In case of failure.
+     * @param type Type.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception;
+    void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+        throws IgniteCheckedException;
 
     /**
-     * Operation accepting an object and a memory stream and returning result to another memory stream and an object.
+     * Process IN-OUT operation.
      *
-     * @param type Operation type.
-     * @param arg Argument (optional).
-     * @param inMemPtr Input memory pointer.
-     * @param outMemPtr Output memory pointer.
-     * @return Result.
-     * @throws Exception In case of failure.
+     * @param type Type.
+     * @param reader Binary reader.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public Object inObjectStreamOutObjectStream(int type, @Nullable Object arg, long inMemPtr, long outMemPtr)
-        throws Exception;
+    PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException;
 
     /**
-     * Operation returning result to memory stream.
+     * Process IN-OUT operation.
      *
-     * @param type Operation type.
-     * @param memPtr Memory pointer.
-     * @throws Exception In case of failure.
+     * @param type Type.
+     * @param arg Argument.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public void outStream(int type, long memPtr) throws Exception;
+    PlatformTarget processInObjectStreamOutObjectStream(int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
-     * Operation returning object result.
+     * Process OUT operation.
      *
-     * @param type Operation type.
-     * @return Result.
-     * @throws Exception If failed.
+     * @param type Type.
+     * @param writer Binary writer.
+     * @throws IgniteCheckedException In case of exception.
      */
-    public Object outObject(int type) throws Exception;
+    void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException;
 
     /**
-     * Start listening for the future.
+     * Process OUT operation.
      *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @throws IgniteCheckedException In case of failure.
+     * @param type Type.
+     * @throws IgniteCheckedException In case of exception.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public void listenFuture(final long futId, int typ) throws Exception;
+    PlatformTarget processOutObject(int type) throws IgniteCheckedException;
 
     /**
-     * Start listening for the future for specific operation type.
+     * Convert caught exception.
      *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @param opId Operation ID required to pick correct result writer.
-     * @throws IgniteCheckedException In case of failure.
+     * @param e Exception to convert.
+     * @return Converted exception.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    Exception convertException(Exception e);
 }

@@ -78,6 +78,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         bool IsEnum { get; }
 
         /// <summary>
+        /// Gets the equality comparer.
+        /// </summary>
+        IBinaryEqualityComparer EqualityComparer { get; }
+
+        /// <summary>
         /// Write type structure.
         /// </summary>
         BinaryStructure WriterTypeStructure { get; }

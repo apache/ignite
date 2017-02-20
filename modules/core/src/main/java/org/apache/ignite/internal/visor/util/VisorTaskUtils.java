@@ -270,6 +270,19 @@ public class VisorTaskUtils {
     /**
      * Compact class names.
      *
+     * @param cls Class object for compact.
+     * @return Compacted string.
+     */
+    @Nullable public static String compactClass(Class cls) {
+        if (cls == null)
+            return null;
+
+        return U.compact(cls.getName());
+    }
+
+    /**
+     * Compact class names.
+     *
      * @param obj Object for compact.
      * @return Compacted string.
      */
@@ -277,7 +290,7 @@ public class VisorTaskUtils {
         if (obj == null)
             return null;
 
-        return U.compact(obj.getClass().getName());
+        return compactClass(obj.getClass());
     }
 
     /**

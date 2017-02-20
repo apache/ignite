@@ -75,7 +75,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
         try {
             assertEquals(0, ignite.cluster().forHost(null, null, null).nodes().size());
         }
-        catch (NullPointerException e) {
+        catch (NullPointerException ignored) {
             gotNpe = true;
         }
         finally {
@@ -99,7 +99,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
         try {
             clusterHosts.add("valueShouldNotToBeAdded");
         }
-        catch (UnsupportedOperationException e) {
+        catch (UnsupportedOperationException ignored) {
             gotNpe = true;
         }
         finally {

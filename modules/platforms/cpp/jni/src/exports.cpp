@@ -214,14 +214,6 @@ extern "C" {
         ctx->DestroyJvm();
     }
 
-    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableCancel(static_cast<jobject>(obj));
-    }
-
-    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
-        return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
-    }
-
     void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
         gcj::JniContext::SetConsoleHandler(consoleHandler);
     }

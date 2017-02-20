@@ -181,7 +181,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                         notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
                         if (!notificationInProgress) {
-                            ctx.getSystemExecutorService().submit(new Runnable() {
+                            ctx.getSystemExecutorService().execute(new Runnable() {
                                 @Override public void run() {
                                     if (!ctx.continuous().lockStopping())
                                         return;
@@ -389,6 +389,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     /** {@inheritDoc} */
     @Override public GridContinuousBatch createBatch() {
         return new GridContinuousBatchAdapter();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClientDisconnected() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
