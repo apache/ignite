@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <yardstick.version>0.8.2</yardstick.version>
+        <yardstick.version>0.8.3</yardstick.version>
         <spring.version>4.1.0.RELEASE</spring.version>
     </properties>
 
