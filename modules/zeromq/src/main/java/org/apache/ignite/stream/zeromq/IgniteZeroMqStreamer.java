@@ -20,7 +20,6 @@ package org.apache.ignite.stream.zeromq;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.ignite.IgniteException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -35,9 +34,6 @@ import org.zeromq.ZMQ;
 public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> implements AutoCloseable {
     /** Logger. */
     protected IgniteLogger log;
-
-    /** Threads count used to transform zeromq message. */
-    private int threadsCount = 1;
 
     /** Parameter {@code True} if streamer started. */
     private volatile boolean isStarted = false;
@@ -63,6 +59,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /** ZeroMQ topic name. */
     private byte[] topic;
 
+    /** Maximum time to wait (time unit minutes). */
+    private int timeout = 2;
+
     /**
      * @param ioThreads Threads on context.
      * @param socketType Socket type.
@@ -72,26 +71,12 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
         A.ensure(ioThreads > 0, "Param ioThreads has been more than 0.");
         A.ensure(!"".equals(addr), "Param addr has been not empty.");
+        A.ensure(socketType != null, "This socket type is not implemented in this version of ZeroMQ streamer.");
 
         this.ioThreads = ioThreads;
         this.addr = addr;
         this.topic = topic;
-
-        if (ZeroMqTypeSocket.check(socketType))
-            this.socketType = socketType.getType();
-        else
-            throw new IgniteException("This socket type not implementation this version ZeroMQ streamer.");
-    }
-
-    /**
-     * Sets Threads count.
-     *
-     * @param threadsCount Threads count.
-     */
-    private void setThreadsCount(int threadsCount) {
-        A.ensure(threadsCount > 0, "Param threadsCount has been more than 0.");
-
-        this.threadsCount = threadsCount;
+        this.socketType = socketType.getType();
     }
 
     /**
@@ -116,22 +101,20 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
         if (ZeroMqTypeSocket.SUB.getType() == socketType)
             socket.subscribe(topic);
 
-        zeroMqExSrv = Executors.newFixedThreadPool(threadsCount);
+        zeroMqExSrv = Executors.newSingleThreadExecutor();
 
-        for (int i = 0; i < threadsCount; i++) {
-            Callable<Boolean> task = new Callable<Boolean>() {
-                @Override
-                public Boolean call() {
-                    while (true) {
-                        if (ZeroMqTypeSocket.SUB.getType() == socketType)
-                            socket.recv();
-                        addMessage(socket.recv());
-                    }
+        Callable<Boolean> task = new Callable<Boolean>() {
+            @Override
+            public Boolean call() {
+                while (true) {
+                    if (ZeroMqTypeSocket.SUB.getType() == socketType)
+                        socket.recv();
+                    addMessage(socket.recv());
                 }
-            };
+            }
+        };
 
-            zeroMqExSrv.submit(task);
-        }
+        zeroMqExSrv.submit(task);
     }
 
     /**
@@ -142,7 +125,8 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
         ctx.close();
 
         zeroMqExSrv.shutdown();
-        zeroMqExSrv.awaitTermination(1, TimeUnit.MINUTES);
+        timeout = 1;
+        zeroMqExSrv.awaitTermination(timeout, TimeUnit.MINUTES);
 
         isStarted = false;
     }

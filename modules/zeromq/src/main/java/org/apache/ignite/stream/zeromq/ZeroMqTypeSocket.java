@@ -51,18 +51,4 @@ public enum ZeroMqTypeSocket {
     public int getType() {
         return type;
     }
-
-    /**
-     * Check socket type support.
-     *
-     * @param type
-     * @return {@code True} if socket type is support.
-     */
-    public static boolean check(ZeroMqTypeSocket type) {
-        for (ZeroMqTypeSocket ts : ZeroMqTypeSocket.values()) {
-            if (ts.getType() == type.getType())
-                return true;
-        }
-        return false;
-    }
 }
