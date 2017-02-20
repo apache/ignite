@@ -242,10 +242,7 @@ public class GridBinaryMarshaller {
         try (BinaryWriterExImpl writer = isFixedSize ?
             new BinaryWriterExImpl(ctx, desc.fixedSize()) : new BinaryWriterExImpl(ctx)) {
 
-            if(isFixedSize)
-                writer.marshal(obj, desc);
-            else
-                writer.marshal(obj);
+            writer.marshal(obj, desc);
 
             return writer.array(!isFixedSize);
         }

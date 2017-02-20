@@ -144,7 +144,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         String oldName = IgniteUtils.setCurrentIgniteName(newName);
 
         try {
-            marshal0(obj, desc, false);
+            marshal0(obj, desc, true);
         }
         finally {
             IgniteUtils.restoreOldIgniteName(oldName, newName);
