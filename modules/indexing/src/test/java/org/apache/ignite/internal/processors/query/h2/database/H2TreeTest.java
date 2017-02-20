@@ -57,6 +57,9 @@ public class H2TreeTest extends TestCase {
     private static final int PAGE_SIZE = 1024;
 
     /** */
+    private static final int INLINE_SIZE = 32;
+
+    /** */
     private static final long MB = 1024 * 1024;
 
     /** */
@@ -88,7 +91,7 @@ public class H2TreeTest extends TestCase {
 
         final IndexColumn[] cols = new IndexColumn[] {col1, col2};
 
-        tree = new H2Tree("name", new MockReuseList(), 1, pageMem, new NoOpWALManager(), new AtomicLong(), new MockRowFactory(), metaPage.pageId(), true, cols, idxs, 16) {
+        tree = new H2Tree("name", new MockReuseList(), CACHE_ID, pageMem, new NoOpWALManager(), new AtomicLong(), new MockRowFactory(), metaPage.pageId(), true, cols, idxs, INLINE_SIZE) {
 
             @Override public int compareValues(Value v1, Value v2, int order) {
                 if (v1 == v2)
@@ -103,7 +106,7 @@ public class H2TreeTest extends TestCase {
             }
         };
 
-        IndexKeeper.setContext(new IndexKeeper.PageContext(idxs));
+        InlineIndexHelper.setCurrentInlineIndexes(idxs);
 
         for (long i = 0; i < KEYS; i++) {
             GridH2Row row = makeRow(i + 1, "aaa");

@@ -30,12 +30,17 @@ import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
+import org.h2.value.ValueStringFixed;
+import org.h2.value.ValueStringIgnoreCase;
 
 /**
  * Helper class for in-page indexes.
  */
 public class InlineIndexHelper {
     private static final Charset CHARSET = StandardCharsets.UTF_8;
+
+    /** PageContext for use in IO's */
+    private static final ThreadLocal<List<InlineIndexHelper>> currentIndex = new ThreadLocal<>();
 
     /** */
     public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
@@ -44,7 +49,9 @@ public class InlineIndexHelper {
         Value.SHORT,
         Value.INT,
         Value.LONG,
-        Value.STRING
+        Value.STRING,
+        Value.STRING_FIXED,
+        Value.STRING_IGNORECASE
     );
 
     /** */
@@ -89,6 +96,27 @@ public class InlineIndexHelper {
     }
 
     /**
+     * @return Page context for current thread.
+     */
+    public static List<InlineIndexHelper> getCurrentInlineIndexes() {
+        return currentIndex.get();
+    }
+
+    /**
+     * Sets page context for current thread.
+     */
+    public static void setCurrentInlineIndexes(List<InlineIndexHelper> inlineIdxs) {
+        currentIndex.set(inlineIdxs);
+    }
+
+    /**
+     * Clears current context.
+     */
+    public static void clearCurrentInlineIndexes() {
+        currentIndex.remove();
+    }
+
+    /**
      * @return Value size.
      */
     public short size() {
@@ -107,6 +135,8 @@ public class InlineIndexHelper {
                 return 8;
 
             case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
                 return -1;
 
             default:
@@ -134,6 +164,8 @@ public class InlineIndexHelper {
                 return size() + 1;
 
             case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
                 return PageUtils.getShort(pageAddr, off + 1) + 3;
 
             default:
@@ -177,9 +209,20 @@ public class InlineIndexHelper {
             case Value.LONG:
                 return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
 
-            case Value.STRING:
+            case Value.STRING: {
                 short size = PageUtils.getShort(pageAddr, off + 1);
                 return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
+            }
+
+            case Value.STRING_FIXED: {
+                short size = PageUtils.getShort(pageAddr, off + 1);
+                return ValueStringFixed.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
+            }
+
+            case Value.STRING_IGNORECASE: {
+                short size = PageUtils.getShort(pageAddr, off + 1);
+                return ValueStringIgnoreCase.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
+            }
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -231,6 +274,8 @@ public class InlineIndexHelper {
                 return size() + 1;
 
             case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
                 byte[] s;
                 if (val.getString().getBytes(CHARSET).length + 3 <= maxSize)
                     s = val.getString().getBytes(CHARSET);

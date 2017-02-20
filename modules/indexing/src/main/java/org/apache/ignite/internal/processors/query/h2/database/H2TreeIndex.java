@@ -58,7 +58,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     private final H2Tree tree;
 
     /** */
-    private final IndexKeeper.PageContext pageContext;
+    private final List<InlineIndexHelper> inlineIdxs;
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
@@ -97,8 +97,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             RootPage page = getMetaPage(name);
 
-            List<InlineIndexHelper> inlineIdxs = getAvailableInlineColumns(cols);
-            pageContext = new IndexKeeper.PageContext(inlineIdxs);
+            inlineIdxs = getAvailableInlineColumns(cols);
 
             tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                 dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
@@ -111,7 +110,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         else {
             // We need indexes on the client node, but index will not contain any data.
             tree = null;
-            pageContext = null;
+            inlineIdxs = null;
         }
 
         initDistributedJoinMessaging(tbl);
@@ -190,7 +189,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            IndexKeeper.setContext(pageContext);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             return tree.put(row);
         }
@@ -198,14 +197,14 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            IndexKeeper.clearContext();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            IndexKeeper.setContext(pageContext);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             return tree.putx(row);
         }
@@ -213,35 +212,35 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            IndexKeeper.clearContext();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
-            IndexKeeper.setContext(pageContext);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            IndexKeeper.clearContext();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removex(SearchRow row) {
         try {
-            IndexKeeper.setContext(pageContext);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
             tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            IndexKeeper.clearContext();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 

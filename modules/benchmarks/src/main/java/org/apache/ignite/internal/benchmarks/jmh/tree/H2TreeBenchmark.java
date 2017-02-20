@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.IndexKeeper;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
@@ -92,6 +91,9 @@ public class H2TreeBenchmark extends JmhAbstractBenchmark {
     /** */
     private List<InlineIndexHelper> idxs;
 
+    /** */
+    private volatile boolean beSlow = false;
+
     /**
      * Run benchmarks.
      *
@@ -131,13 +133,15 @@ public class H2TreeBenchmark extends JmhAbstractBenchmark {
 
         setupTable();
 
-        IndexKeeper.setContext(new IndexKeeper.PageContext(idxs));
+        InlineIndexHelper.setCurrentInlineIndexes(idxs);
 
         for (long i = 1; i < KEYS; i++) {
             GridH2Row row = makeRow(i, "aaa");
             tree.put(row);
             rows.put(i, row);
         }
+
+        beSlow = true;
     }
 
     /**
@@ -158,12 +162,12 @@ public class H2TreeBenchmark extends JmhAbstractBenchmark {
 //        GridH2Row row = makeRow(key, UUID.randomUUID().toString());
         GridH2Row row = makeRow(key, "bb");
         try {
-            IndexKeeper.setContext(new IndexKeeper.PageContext(idxs));
+            InlineIndexHelper.setCurrentInlineIndexes(idxs);
             rows.put(key, row);
             tree.put(row);
         }
         finally {
-            IndexKeeper.clearContext();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
@@ -253,7 +257,8 @@ public class H2TreeBenchmark extends JmhAbstractBenchmark {
         /** {@inheritDoc} */
         @Override public GridH2Row getRow(long link) throws IgniteCheckedException {
             // heavy operation.
-            U.sleep(1);
+            if (beSlow)
+                U.sleep(5);
             return rows.get(link);
         }
     }

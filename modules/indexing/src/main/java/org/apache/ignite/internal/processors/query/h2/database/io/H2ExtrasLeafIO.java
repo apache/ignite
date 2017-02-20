@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.IndexKeeper;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
@@ -82,11 +81,7 @@ public class H2ExtrasLeafIO extends BPlusLeafIO<SearchRow> {
 
         assert row0.link != 0;
 
-        IndexKeeper.PageContext pageContext = IndexKeeper.getContext();
-
-        assert pageContext != null;
-
-        List<InlineIndexHelper> inlineIdxs = pageContext.inlineIndexes();
+        List<InlineIndexHelper> inlineIdxs = InlineIndexHelper.getCurrentInlineIndexes();
 
         assert inlineIdxs != null : "no inline index helpers";
 
