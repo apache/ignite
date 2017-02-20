@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
-import org.apache.ignite.internal.util.GridRandom;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,6 +33,10 @@ import org.jetbrains.annotations.NotNull;
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
     @SuppressWarnings("WeakerAccess") protected static final int CONCURRENCY_LEVEL = 8;
+
+    /** */
+    private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;
+
     /** */
     private volatile Exception ex = null;
 
@@ -51,9 +55,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /** */
     private long probeCnt = 0;
 
-    /** */
-    private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<>();
-
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
         DataStructure.rnd = null;
@@ -71,6 +72,9 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /** {@inheritDoc} */
     @Override protected void configure(MemoryConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
+
+        long size = 1024 * pagesMax() * (isLargePage() ? 16 : 1);
+        mCfg.setPageCacheSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
     }
 
     /**
@@ -81,7 +85,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     }
 
     /**
-     * @return Warm up duration.
+     * @return Warm up duration in seconds.
      */
     @SuppressWarnings("WeakerAccess") protected int warmUp() {
         return 300;
@@ -144,21 +148,13 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @return Random.
      */
     @NotNull protected static Random getRandom() {
-        Random rnd = THREAD_LOCAL_RANDOM.get();
-
-        if (rnd == null) {
-            rnd = new GridRandom();
-            THREAD_LOCAL_RANDOM.set(rnd);
-        }
-
-        return rnd;
+        return ThreadLocalRandom.current();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMemoryLeak() throws Exception {
-
         final IgniteEx ignite = grid(0);
         final IgniteCache<Object, Object> cache = cache(ignite);
 

@@ -17,19 +17,10 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.configuration.MemoryConfiguration;
-
 /**
  *
  */
 public class IgniteDbMemoryLeakLargePagesTest extends IgniteDbMemoryLeakTest {
-    /** {@inheritDoc} */
-    @Override protected void configure(MemoryConfiguration mCfg) {
-        super.configure(mCfg);
-
-        mCfg.setPageCacheSize(67108864); // The space for 4000 large pages
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean isLargePage() {
         return true;

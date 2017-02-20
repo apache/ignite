@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
@@ -33,13 +32,6 @@ public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstra
 
         for (int i = 0; i < ARRAY.length; i++)
             ARRAY[i] = getRandom().nextInt();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void configure(MemoryConfiguration mCfg) {
-        super.configure(mCfg);
-
-        mCfg.setPageCacheSize(35840000); // The space for 35000 pages
     }
 
     /** {@inheritDoc} */

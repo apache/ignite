@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
 import javax.cache.expiry.CreatedExpiryPolicy;
