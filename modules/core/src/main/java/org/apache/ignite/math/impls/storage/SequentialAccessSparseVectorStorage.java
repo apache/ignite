@@ -22,10 +22,12 @@ import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
- * TODO wip
+ * TODO add description
  */
 public class SequentialAccessSparseVectorStorage implements VectorStorage {
+    /** */
     private static final double DEFAULT_VALUE = 0.0;
+    /** */
     private Int2DoubleRBTreeMap data;
 
     /**
@@ -37,6 +39,15 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
     /** For serialization. */
     public SequentialAccessSparseVectorStorage(){
         // No-op.
+    }
+
+    /**
+     *
+     * @param noDefault
+     */
+    public SequentialAccessSparseVectorStorage(boolean noDefault){
+        this.noDefault = noDefault;
+        this.data = new Int2DoubleRBTreeMap();
     }
 
     /**
@@ -55,12 +66,23 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
      * @param storage
      * @param noDefault
      */
-    private SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
+    public SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
         this.data = new Int2DoubleRBTreeMap();
         this.noDefault = noDefault;
 
         for (int i = 0; i < storage.size(); i++)
             data.put(i, storage.get(i));
+    }
+
+    /**
+     *
+     * @param data
+     * @param noDefault
+     */
+    public SequentialAccessSparseVectorStorage(Int2DoubleRBTreeMap data, boolean noDefault){
+        this.noDefault = noDefault;
+
+        this.data = data;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +97,8 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        data.put(i, v); // TODO wip, default/nodefault
+        if (!(noDefault && Double.compare(v, DEFAULT_VALUE) == 0))
+            data.put(i, v);
     }
 
     /** {@inheritDoc} */
@@ -85,12 +108,16 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO wip
+        out.writeBoolean(noDefault);
+
+        out.writeObject(data);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO wip
+        noDefault = in.readBoolean();
+
+        data = (Int2DoubleRBTreeMap)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -124,11 +151,24 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         return false;
     }
 
-    @Override public boolean equals(Object obj) {
-        return super.equals(obj); //TODO
+    /** {@inheritDoc} */
+    @Override protected Object clone() throws CloneNotSupportedException {
+        return new SequentialAccessSparseVectorStorage(data.clone(), noDefault);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj != null &&
+            getClass().equals(obj.getClass()) &&
+            (noDefault == ((SequentialAccessSparseVectorStorage)obj).noDefault) &&
+            data.equals(((SequentialAccessSparseVectorStorage)obj).data);
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return super.hashCode(); //TODO
+        int result = 1;
+        result = result * 37 + Boolean.hashCode(noDefault);
+        result = result * 37 + data.hashCode();
+        return result;
     }
 }
