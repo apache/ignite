@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
 /** */
 public class VectorBenchmarkTest {
     // todo add benchmarks for map and fold methods (possibly a separate one),
-    //   for assign and other methods in Vector and for other types of Vector and Matrix
+    //  and other methods in Vector and for other types of Vector and Matrix
     /** */ @Test
     public void testDenseLocalOnHeapVector() throws Exception {
         benchmark("DenseLocalOnHeapVector", DenseLocalOnHeapVector::new);
@@ -79,5 +79,9 @@ public class VectorBenchmarkTest {
         assertNotNull(v1.plus(v2));
 
         assertNotNull(v1.dot(v2));
+
+        assertNotNull(v1.assign(v2));
+
+        assertNotNull(v1.assign(1)); // IMPL NOTE this would better be last test for it sets all values the same
     }
 }
