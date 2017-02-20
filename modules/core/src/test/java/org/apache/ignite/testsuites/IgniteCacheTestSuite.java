@@ -39,12 +39,12 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreOptimizedMarshallerW
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
+import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
-import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxOff
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxReplicatedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerTxTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorCallTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheEntryUpdateFailedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheManyAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheNearLockValueSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTransactionalStopBusySelfTest;
@@ -322,6 +323,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
         suite.addTestSuite(CacheDeferredDeleteSanitySelfTest.class);
         suite.addTestSuite(CacheDeferredDeleteQueueTest.class);
+        suite.addTestSuite(IgniteCacheEntryUpdateFailedTest.class);
 
         suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
 

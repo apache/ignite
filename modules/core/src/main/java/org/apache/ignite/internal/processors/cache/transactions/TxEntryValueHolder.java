@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
@@ -72,7 +73,7 @@ public class TxEntryValueHolder implements Message {
         this.op = op;
         this.val = val;
 
-        this.hasWriteVal = hasWriteVal || op == CREATE || op == UPDATE || op == DELETE;
+        this.hasWriteVal = hasWriteVal || op == CREATE || op == UPDATE || op == DELETE || op == TRANSFORM;
         this.hasReadVal = hasReadVal || op == READ;
     }
 
