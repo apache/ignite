@@ -77,7 +77,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
     ) {
         ioMgr = ctx.io();
         discoMgr = ctx.discovery();
-        aliveSrvNodes = new LinkedList<>(discoMgr.aliveSrvNodes());
+        aliveSrvNodes = new LinkedList<>(discoMgr.aliveServerNodes());
         this.item = item;
         this.syncMap = syncMap;
 

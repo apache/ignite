@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.Serializable;
-import java.io.Externalizable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -1555,8 +1553,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** @return all alive server nodes is topology */
-    public Collection<ClusterNode> aliveSrvNodes() {
-        return discoCache().aliveSrvNodes();
+    public Collection<ClusterNode> aliveServerNodes() {
+        return discoCache().aliveServerNodes();
     }
 
     /** @return Full topology size. */
@@ -2525,6 +2523,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Highest node order. */
         private final long maxOrder;
 
+        /** Alive server nodes */
+        private final Collection<ClusterNode> aliveSrvNodes;
+
         /**
          * Cached alive server remote nodes with caches.
          */
@@ -2728,9 +2729,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /**
-         * Gets all alive server nodes.
+         * @return All alive server nodes.
          */
-        Collection<ClusterNode> aliveSrvNodes() {
+        Collection<ClusterNode> aliveServerNodes() {
             return aliveSrvNodes;
         }
 
