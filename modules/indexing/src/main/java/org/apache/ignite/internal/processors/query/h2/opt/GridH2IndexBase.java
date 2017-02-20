@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -53,14 +52,11 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
-import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -76,7 +72,6 @@ import org.h2.index.ViewIndex;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.util.DoneFuture;
@@ -102,7 +97,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends BaseIndex implements Comparator<GridSearchRowPointer>{
+public abstract class GridH2IndexBase extends BaseIndex {
     /** */
     private static final Object EXPLICIT_NULL = new Object();
 
@@ -125,7 +120,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
     private IgniteLogger log;
 
     /** */
-    private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
+    private final CIX2<ClusterNode,Message> locNodeHnd = new CIX2<ClusterNode,Message>() {
         @Override public void applyx(ClusterNode clusterNode, Message msg) throws IgniteCheckedException {
             onMessage0(clusterNode.id(), msg);
         }
@@ -247,7 +242,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
      * @param ses Session.
      */
     private static void clearViewIndexCache(Session ses) {
-        Map<Object, ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
+        Map<Object,ViewIndex> viewIdxCache = ses.getViewIndexCache(true);
 
         if (!viewIdxCache.isEmpty())
             viewIdxCache.clear();
@@ -266,9 +261,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         // because on run stage reordering of joined tables by Optimizer is explicitly disabled
         // and thus multiplier will be always the same, so it will not affect choice of index.
         // Query expressions can not be distributed as well.
-        if (qctx == null || qctx.type() != PREPARE
-            || qctx.distributedJoinMode() == OFF
-            || ses.isPreparingQueryExpression())
+        if (qctx == null || qctx.type() != PREPARE || qctx.distributedJoinMode() == OFF || ses.isPreparingQueryExpression())
             return GridH2CollocationModel.MULTIPLIER_COLLOCATED;
 
         // We have to clear this cache because normally sub-query plan cost does not depend on anything
@@ -379,9 +372,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
     @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if (qctx == null
-            || qctx.distributedJoinMode() == OFF
-            || !getTable().isPartitioned())
+        if (qctx == null || qctx.distributedJoinMode() == OFF || !getTable().isPartitioned())
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
@@ -401,9 +392,9 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
 
         GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
 
-        final boolean localQuery = qctx.distributedJoinMode() == LOCAL_ONLY;
+        boolean isLocal = qctx.distributedJoinMode() == LOCAL_ONLY;
 
-        return new DistributedLookupBatch(cctx, ucast, affColId, localQuery);
+        return new DistributedLookupBatch(cctx, ucast, affColId, isLocal);
     }
 
     /**
@@ -449,7 +440,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
     /**
      * @return Kernal context.
      */
-    protected final GridKernalContext kernalContext() {
+    private GridKernalContext kernalContext() {
         return getTable().rowDescriptor().context().kernalContext();
     }
 
@@ -540,10 +531,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
      */
     private void onIndexRangeResponse(ClusterNode node, GridH2IndexRangeResponse msg) {
         GridH2QueryContext qctx = GridH2QueryContext.get(kernalContext().localNodeId(),
-            msg.originNodeId(),
-            msg.queryId(),
-            msg.originSegmentId(),
-            MAP);
+            msg.originNodeId(), msg.queryId(), msg.originSegmentId(), MAP);
 
         if (qctx == null)
             return;
@@ -585,6 +573,139 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         req.batchLookupId(batchLookupId);
 
         return req;
+    }
+
+
+    /**
+     * @param qctx Query context.
+     * @param cctx Cache context.
+     * @param isLocalQry Local query flag.
+     * @return Collection of nodes for broadcasting.
+     */
+    private List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?, ?> cctx, boolean isLocalQry) {
+        Map<UUID, int[]> partMap = qctx.partitionsMap();
+
+        List<ClusterNode> nodes;
+
+        if (isLocalQry) {
+            if (partMap != null && !partMap.containsKey(cctx.localNodeId()))
+                return Collections.<SegmentKey>emptyList(); // Prevent remote index call for local queries.
+
+            nodes = Collections.singletonList(cctx.localNode());
+        }
+        else {
+            if (partMap == null)
+                nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
+            else {
+                nodes = new ArrayList<>(partMap.size());
+
+                GridKernalContext ctx = kernalContext();
+
+                for (UUID nodeId : partMap.keySet()) {
+                    ClusterNode node = ctx.discovery().node(nodeId);
+
+                    if (node == null)
+                        throw new GridH2RetryException("Failed to find node.");
+
+                    nodes.add(node);
+                }
+            }
+
+            if (F.isEmpty(nodes))
+                throw new GridH2RetryException("Failed to collect affinity nodes.");
+        }
+
+        int segmentsCount = segmentsCount();
+
+        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCount);
+
+        for (ClusterNode node : nodes) {
+            for (int seg = 0; seg < segmentsCount; seg++)
+                res.add(new SegmentKey(node, seg));
+        }
+
+        return res;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param qctx Query context.
+     * @param affKeyObj Affinity key.
+     * @param isLocalQry Local query flag.
+     * @return Segment key for Affinity key.
+     */
+    private SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj, boolean isLocalQry) {
+        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
+
+        ClusterNode node;
+
+        int partition = cctx.affinity().partition(affKeyObj);
+
+        if (isLocalQry) {
+            if (qctx.partitionsMap() != null) {
+                // If we have explicit partitions map, we have to use it to calculate affinity node.
+                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+
+                if(!cctx.localNodeId().equals(nodeId))
+                    return null; // Prevent remote index call for local queries.
+            }
+
+            if (!cctx.affinity().primary(cctx.localNode(), partition, qctx.topologyVersion()))
+                return null;
+
+            node = cctx.localNode();
+        }
+        else{
+            if (qctx.partitionsMap() != null) {
+                // If we have explicit partitions map, we have to use it to calculate affinity node.
+                UUID nodeId = qctx.nodeForPartition(partition, cctx);
+
+                node = cctx.discovery().node(nodeId);
+            }
+            else // Get primary node for current topology version.
+                node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+
+            if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
+                throw new GridH2RetryException("Failed to find node.");
+        }
+
+        return new SegmentKey(node, segment(partition));
+    }
+
+    /** */
+    protected class SegmentKey {
+        /** */
+        final ClusterNode node;
+
+        /** */
+        final int segmentId;
+
+        SegmentKey(ClusterNode node, int segmentId) {
+            assert node != null;
+
+            this.node = node;
+            this.segmentId = segmentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SegmentKey key = (SegmentKey)o;
+
+            return segmentId == key.segmentId && node.id().equals(key.node.id());
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = node.hashCode();
+            result = 31 * result + segmentId;
+            return result;
+        }
     }
 
     /**
@@ -707,57 +828,6 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         return database.createRow(vals0, MEMORY_CALCULATE);
     }
 
-    /**
-     * @param qctx Query context.
-     * @param cctx Cache context.
-     * @param isLocalQry Local query flag.
-     * @return Collection of nodes for broadcasting.
-     */
-    private List<SegmentKey> broadcastSegments(GridH2QueryContext qctx, GridCacheContext<?, ?> cctx, boolean isLocalQry) {
-        Map<UUID, int[]> partMap = qctx.partitionsMap();
-
-        List<ClusterNode> nodes;
-
-        if (isLocalQry) {
-            if (partMap != null && !partMap.containsKey(cctx.localNodeId()))
-                return Collections.<SegmentKey>emptyList(); // Prevent remote index call for local queries.
-
-            nodes = Collections.singletonList(cctx.localNode());
-        }
-        else {
-            if (partMap == null)
-                nodes = new ArrayList<>(CU.affinityNodes(cctx, qctx.topologyVersion()));
-            else {
-                nodes = new ArrayList<>(partMap.size());
-
-                GridKernalContext ctx = kernalContext();
-
-                for (UUID nodeId : partMap.keySet()) {
-                    ClusterNode node = ctx.discovery().node(nodeId);
-
-                    if (node == null)
-                        throw new GridH2RetryException("Failed to find node.");
-
-                    nodes.add(node);
-                }
-            }
-
-            if (F.isEmpty(nodes))
-                throw new GridH2RetryException("Failed to collect affinity nodes.");
-        }
-
-        int segmentsCount = segmentsCount();
-
-        List<SegmentKey> res = new ArrayList<>(nodes.size() * segmentsCount);
-
-        for (ClusterNode node : nodes) {
-            for (int seg = 0; seg < segmentsCount; seg++)
-                res.add(new SegmentKey(node, seg));
-        }
-
-        return res;
-    }
-
     /** @return Index segments count. */
     protected int segmentsCount() {
         return 1;
@@ -771,136 +841,6 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         return 0;
     }
 
-    /**
-     * @param cctx Cache context.
-     * @param qctx Query context.
-     * @param affKeyObj Affinity key.
-     * @param isLocalQry Local query flag.
-     * @return Segment key for Affinity key.
-     */
-    private SegmentKey rangeSegment(GridCacheContext<?, ?> cctx, GridH2QueryContext qctx, Object affKeyObj, boolean isLocalQry) {
-        assert affKeyObj != null && affKeyObj != EXPLICIT_NULL : affKeyObj;
-
-        ClusterNode node;
-
-        int partition = cctx.affinity().partition(affKeyObj);
-
-        if (isLocalQry) {
-            if (qctx.partitionsMap() != null) {
-                // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
-
-                if(!cctx.localNodeId().equals(nodeId))
-                    return null; // Prevent remote index call for local queries.
-            }
-
-            if (!cctx.affinity().primary(cctx.localNode(), partition, qctx.topologyVersion()))
-                return null;
-
-            node = cctx.localNode();
-        }
-        else{
-            if (qctx.partitionsMap() != null) {
-                // If we have explicit partitions map, we have to use it to calculate affinity node.
-                UUID nodeId = qctx.nodeForPartition(partition, cctx);
-
-                node = cctx.discovery().node(nodeId);
-            }
-            else // Get primary node for current topology version.
-                node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
-
-            if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
-                throw new GridH2RetryException("Failed to find node.");
-        }
-
-        return new SegmentKey(node, segment(partition));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-        throw DbException.throwInternalError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cursor find(Session ses, @Nullable SearchRow first, @Nullable SearchRow last) {
-        return new GridH2Cursor(doFind(first, true, last));
-    }
-
-    /**
-     * Finds row with key equal one in given search row.
-     * WARNING!! Method call must be protected by {@link GridUnsafeGuard#begin()}
-     * {@link GridUnsafeGuard#end()} block.
-     *
-     * @param row Search row.
-     * @return Row.
-     */
-    public abstract GridH2Row findOne(GridSearchRowPointer row);
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        SB sb = new SB((indexType.isUnique() ? "Unique index '" : "Index '") + getName() + "' [");
-
-        boolean first = true;
-
-        for (IndexColumn col : getIndexColumns()) {
-            if (first)
-                first = false;
-            else
-                sb.a(", ");
-
-            sb.a(col.getSQL());
-        }
-
-        sb.a(" ]");
-
-        return sb.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cursor findNext(Session ses, SearchRow higherThan, SearchRow last) {
-        return new GridH2Cursor(doFind(higherThan, false, last));
-    }
-
-    /** */
-    protected class SegmentKey {
-        /** */
-        final ClusterNode node;
-
-        /** */
-        final int segmentId;
-
-        SegmentKey(ClusterNode node, int segmentId) {
-            assert node != null;
-
-            this.node = node;
-            this.segmentId = segmentId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SegmentKey key = (SegmentKey)o;
-
-            return segmentId == key.segmentId && node.id().equals(key.node.id());
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = node.hashCode();
-            result = 31 * result + segmentId;
-            return result;
-        }
-    }
 
     /**
      * Simple cursor from a single node.
@@ -1080,7 +1020,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
      */
     private class DistributedLookupBatch implements IndexLookupBatch {
         /** */
-        final GridCacheContext<?, ?> cctx;
+        final GridCacheContext<?,?> cctx;
 
         /** */
         final boolean ucast;
@@ -1385,7 +1325,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
 
             final long start = U.currentTimeMillis();
 
-            for (int attempt = 0; ; attempt++) {
+            for (int attempt = 0;; attempt++) {
                 if (qctx.isCleared())
                     throw new GridH2RetryException("Query is cancelled.");
 
@@ -1397,7 +1337,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
                 try {
                     res = respQueue.poll(500, TimeUnit.MILLISECONDS);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     throw new GridH2RetryException("Interrupted.");
                 }
 
@@ -1460,7 +1400,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
          * @return {@code true} If next row for the requested range was found.
          */
         private boolean next(final int rangeId) {
-            for (; ; ) {
+            for (;;) {
                 if (rangeId == cursorRangeId) {
                     if (cursor.next())
                         return true;
@@ -1571,7 +1511,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         public GridH2RowRange next(int maxRows) {
             assert maxRows > 0 : maxRows;
 
-            for (; ; ) {
+            for (;;) {
                 if (curRange.hasNext()) {
                     // Here we are getting last rows from previously partially fetched range.
                     List<GridH2RowMessage> rows = new ArrayList<>();
@@ -1634,74 +1574,6 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
     }
 
     /**
-     * Returns sub-tree bounded by given values.
-     *
-     * @param first Lower bound.
-     * @param includeFirst Whether lower bound should be inclusive.
-     * @param last Upper bound always inclusive.
-     * @return Iterator over rows in given range.
-     */
-    @SuppressWarnings("unchecked")
-    protected Iterator<GridH2Row> doFind(@Nullable SearchRow first, boolean includeFirst, @Nullable SearchRow last) {
-        int seg = threadLocalSegment();
-
-        ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t = treeForRead(seg);
-
-        return doFind0(t, first, includeFirst, last, threadLocalFilter());
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCount(@Nullable Session ses) {
-        IndexingQueryFilter f = threadLocalFilter();
-
-        int seg = threadLocalSegment();
-
-        // Fast path if we don't need to perform any filtering.
-        if (f == null || f.forSpace((getTable()).spaceName()) == null)
-            return treeForRead(seg).size();
-
-        Iterator<GridH2Row> iter = doFind(null, false, null);
-
-        long size = 0;
-
-        while (iter.hasNext()) {
-            iter.next();
-
-            size++;
-        }
-
-        return size;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return table.getRowCountApproximation();
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        long rowCnt = getRowCountApproximation();
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false);
-        int mul = getDistributedMultiplier(ses, filters, filter);
-
-        return mul * baseCost;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canFindNext() {
-        return false;
-    }
-
-    /** */
-    protected abstract boolean isSnapshotEnabled();
-
-    /** {@inheritDoc} */
-    public int compare(GridSearchRowPointer r1, GridSearchRowPointer r2) {
-        // Second row here must be data row if first is a search row.
-        return -compareRows(r2, r1);
-    }
-
-    /**
      * @param t Tree.
      * @param first Lower bound.
      * @param includeFirst Whether lower bound should be inclusive.
@@ -1709,76 +1581,12 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
      * @param filter Filter.
      * @return Iterator over rows in given range.
      */
-    private Iterator<GridH2Row> doFind0(ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
+    protected Iterator<GridH2Row> doFind0(ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> t,
         @Nullable SearchRow first,
         boolean includeFirst,
         @Nullable SearchRow last,
         IndexingQueryFilter filter) {
-        includeFirst &= first != null;
-
-        NavigableMap<GridSearchRowPointer, GridH2Row> range = subTree(t, comparable(first, includeFirst ? -1 : 1),
-            comparable(last, 1));
-
-        if (range == null)
-            return new GridEmptyIterator<>();
-
-        return filter(range.values().iterator(), filter);
-    }
-
-
-    /**
-     * @param row Row.
-     * @param bias Bias.
-     * @return Comparable row.
-     */
-    protected GridSearchRowPointer comparable(SearchRow row, int bias) {
-        if (row == null)
-            return null;
-
-        if (bias == 0 && row instanceof GridH2Row)
-            return (GridSearchRowPointer)row;
-
-        return new ComparableRow(row, bias);
-    }
-
-    /**
-     * Takes sup-map from given one.
-     *
-     * @param map Map.
-     * @param first Lower bound.
-     * @param last Upper bound.
-     * @return Sub-map.
-     */
-    @SuppressWarnings({"IfMayBeConditional", "TypeMayBeWeakened"})
-    private NavigableMap<GridSearchRowPointer, GridH2Row> subTree(NavigableMap<GridSearchRowPointer, GridH2Row> map,
-        @Nullable GridSearchRowPointer first, @Nullable GridSearchRowPointer last) {
-        // We take exclusive bounds because it is possible that one search row will be equal to multiple key rows
-        // in tree and we must return them all.
-        if (first == null) {
-            if (last == null)
-                return map;
-            else
-                return map.headMap(last, false);
-        }
-        else {
-            if (last == null)
-                return map.tailMap(first, false);
-            else {
-                if (compare(first, last) > 0)
-                    return null;
-
-                return map.subMap(first, false, last, false);
-            }
-        }
-    }
-
-    /**
-     * Gets iterator over all rows in this index.
-     *
-     * @return Rows iterator.
-     */
-    Iterator<GridH2Row> rows() {
-        return doFind(null, false, null);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1827,7 +1635,7 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
         @SuppressWarnings("unchecked")
         @Override protected boolean accept(GridH2Row row) {
             if (row instanceof GridH2AbstractKeyValueRow) {
-                if (((GridH2AbstractKeyValueRow)row).expirationTime() <= time)
+                if (((GridH2AbstractKeyValueRow) row).expirationTime() <= time)
                     return false;
             }
 
@@ -1841,97 +1649,6 @@ public abstract class GridH2IndexBase extends BaseIndex implements Comparator<Gr
             assert !isValRequired || val != null;
 
             return fltr.apply(key, val);
-        }
-    }
-
-    /**
-     * Comparable row with bias. Will be used for queries to have correct bounds (in case of multicolumn index
-     * and query on few first columns we will multiple equal entries in tree).
-     */
-    final class ComparableRow implements GridSearchRowPointer, Comparable<SearchRow> {
-        /** */
-        private final SearchRow row;
-
-        /** */
-        private final int bias;
-
-        /**
-         * @param row Row.
-         * @param bias Bias.
-         */
-         ComparableRow(SearchRow row, int bias) {
-            this.row = row;
-            this.bias = bias;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(SearchRow o) {
-            int res = compareRows(o, row);
-
-            if (res == 0)
-                return bias;
-
-            return -res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            throw new IllegalStateException("Should never be called.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnCount() {
-            return row.getColumnCount();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value getValue(int idx) {
-            return row.getValue(idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(int idx, Value v) {
-            row.setValue(idx, v);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setKeyAndVersion(SearchRow old) {
-            row.setKeyAndVersion(old);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVersion() {
-            return row.getVersion();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setKey(long key) {
-            row.setKey(key);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getKey() {
-            return row.getKey();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMemory() {
-            return row.getMemory();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long pointer() {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void incrementRefCount() {
-            throw new IllegalStateException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void decrementRefCount() {
-            throw new IllegalStateException();
         }
     }
 }

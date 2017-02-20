@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2StripedTreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -2786,9 +2785,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (queryParallelismLevel > 1 && cctx != null
                 && !cctx.isReplicated() && cctx.config().isIndexSegmentationEnabled())
-                return new GridH2StripedTreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
+                return new GridH2TreeIndex(idxName, tbl, pk, columns, queryParallelismLevel);
 
-            return new GridH2TreeIndex(idxName, tbl, pk, columns);
+            return new GridH2TreeIndex(idxName, tbl, pk, columns, 1);
         }
     }
 
