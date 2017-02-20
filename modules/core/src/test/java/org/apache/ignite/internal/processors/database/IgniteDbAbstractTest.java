@@ -56,7 +56,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     protected abstract boolean indexingEnabled();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @SuppressWarnings("unchecked") @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
@@ -112,11 +112,21 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg4.setAffinity(new RendezvousAffinityFunction(false, 32));
 
+        CacheConfiguration ccfg5 = new CacheConfiguration("atomic");
+
+        if (indexingEnabled())
+            ccfg5.setIndexedTypes(DbKey.class, DbValue.class);
+
+        ccfg5.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg5.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg5.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg5.setAffinity(new RendezvousAffinityFunction(false, 32));
+
         final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
 
         ccfg4.setAffinity(aff);
 
-        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4);
+        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
