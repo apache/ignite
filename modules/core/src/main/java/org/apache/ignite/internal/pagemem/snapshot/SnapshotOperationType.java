@@ -26,5 +26,7 @@ public enum SnapshotOperationType {
     /** Move. */
     MOVE,
     /** Delete. */
-    DELETE
+    DELETE,
+    /** Check. */
+    CHECK
 }

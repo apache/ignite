@@ -17,7 +17,9 @@
  */
 package org.apache.ignite.internal.pagemem.snapshot;
 
+import java.io.File;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -96,6 +98,34 @@ public class SnapshotOperation implements Serializable {
      */
     public Object extraParameter() {
         return extraParam;
+    }
+
+
+    /**
+     * @param op Op.
+     */
+    public static Collection<File> getOptionalPathsParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.CHECK || op.extraParameter() instanceof Collection;
+
+        return (Collection<File>)op.extraParameter();
+    }
+
+    /**
+     * @param op Op.
+     */
+    public static Boolean getFullSnapshotParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.CREATE && op.extraParameter() instanceof Boolean;
+
+        return (Boolean)op.extraParameter();
+    }
+
+    /**
+     * @param op Op.
+     */
+    public static File getMovingPathParameter(SnapshotOperation op) {
+        assert op.type() == SnapshotOperationType.MOVE && op.extraParameter() instanceof File;
+
+        return (File)op.extraParameter();
     }
 
     @Override public boolean equals(Object o) {
