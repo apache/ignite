@@ -71,12 +71,12 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         // This key should become primary for ignite1.
-        final Integer key = ignite0.configuration().getMarshaller() instanceof OptimizedMarshaller ? 2 : 7;
+        final Integer key = primaryKey(ignite1.cache(null));
 
         assertNull(cache.getAndPut(key, key));
-
-        awaitPartitionMapExchange();
 
         assertTrue(ignite0.affinity(null).isPrimary(ignite1.cluster().localNode(), key));
     }
