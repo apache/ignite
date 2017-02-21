@@ -15,4 +15,4 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.benchmark;
+package org.apache.ignite.math.decompositions;
