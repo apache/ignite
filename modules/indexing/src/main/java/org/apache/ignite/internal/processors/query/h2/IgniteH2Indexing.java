@@ -1156,7 +1156,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(final GridCacheContext<?, ?> cctx,
-        final SqlQuery qry, final IndexingQueryFilter filter) throws IgniteCheckedException {
+        final SqlQuery qry, final IndexingQueryFilter filter, final boolean keepBinary) throws IgniteCheckedException {
         if (cctx.config().getQueryParallelism() > 1) {
             qry.setDistributedJoins(true);
 
@@ -1165,16 +1165,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return queryTwoStep(cctx, qry);
         }
         else {
-            final boolean keepBinary = cctx.keepBinary();
-
             String space = cctx.name();
             String type = qry.getType();
             String sqlQry = qry.getSql();
+            String alias = qry.getAlias();
             Object[] params = qry.getArgs();
 
             GridQueryCancel cancel = new GridQueryCancel();
 
-            final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(space, sqlQry, qry.getAlias(),
+            final GridCloseableIterator<IgniteBiTuple<K, V>> i = queryLocalSql(space, sqlQry, alias,
                 F.asList(params), type, filter, cancel);
 
             return new QueryCursorImpl<Cache.Entry<K, V>>(new Iterable<Cache.Entry<K, V>>() {

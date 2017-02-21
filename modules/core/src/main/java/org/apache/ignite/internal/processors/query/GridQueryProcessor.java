@@ -842,7 +842,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             qry.getSql(),
                             qry.getArgs());
 
-                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), null));
+                        return idx.queryLocalSql(cctx, qry, idx.backupFilter(requestTopVer.get(), null), keepBinary);
                     }
                 }, true);
         }

@@ -99,10 +99,11 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @param qry Query.
      * @param filter Space name and key filter.
+     * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
     public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
-        IndexingQueryFilter filter) throws IgniteCheckedException;
+        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Executes text query.

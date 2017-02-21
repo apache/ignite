@@ -53,7 +53,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /**
      * Restrict distributed joins range-requests to local index segments. Range requests to other nodes will not be sent.
      */
-    public static int FLAG_IS_LOCAL = 2;
+    public static int FLAG_IS_LOCAL = 1 << 1;
 
     /** */
     private long reqId;
