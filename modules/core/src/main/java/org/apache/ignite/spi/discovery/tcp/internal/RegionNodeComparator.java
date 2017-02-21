@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * New behavior for node ordering. Sort firstly by region ID, and secondly by topology version.
- * Node without region ID (it is equal null) is less the node with the region ID.
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
     /** {@inheritDoc} */
