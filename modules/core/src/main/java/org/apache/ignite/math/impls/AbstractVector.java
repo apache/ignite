@@ -28,7 +28,8 @@ import java.util.*;
 import java.util.function.*;
 
 /**
- * TODO: add description.
+ * This class provides a skeletal implementation of the {@link Vector}
+ * interface to minimize the effort required to implement this interface.
  */
 public abstract class AbstractVector implements Vector {
     /** Vector storage implementation. */
@@ -50,7 +51,7 @@ public abstract class AbstractVector implements Vector {
     private static final String RO_MSG = "Vector is read-only.";
 
     /**
-     * 
+     *
      */
     private void ensureReadOnly() {
         if (readOnly)
@@ -614,11 +615,39 @@ public abstract class AbstractVector implements Vector {
 
         for (Element e : nonZeroes()) {
             int row = e.index();
-            
+
             res.assignRow(row, vec.times(getX(row)));
         }
 
         return res;
+    }
+
+    /** {@inheritDoc */
+    @Override public Matrix toMatrix(boolean rowLike) {
+        Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+
+        if (rowLike)
+            res.assignRow(0, this);
+        else
+            res.assignColumn(0, this);
+
+        return res;
+        // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
+    }
+
+    /** {@inheritDoc */
+    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+        Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+
+        res.set(0, 0, zeroVal);
+
+        if (rowLike)
+            new MatrixView(res, 1, 0, size(), 1).assignRow(0, this);
+        else
+            new MatrixView(res, 0, 1, 1, size()).assignColumn(0, this);
+
+        return res;
+        // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
     }
 
     /** {@inheritDoc */
