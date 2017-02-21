@@ -2813,7 +2813,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param cols Columns.
          */
         private SpatialIndex createH2SpatialIndex(
-            Table tbl,
+            GridH2Table tbl,
             String idxName,
             IndexColumn[] cols
         ) {
@@ -2823,14 +2823,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 Class<?> cls = Class.forName(className);
 
                 Constructor<?> ctor = cls.getConstructor(
-                    Table.class,
+                    GridH2Table.class,
                     String.class,
+                    Integer.TYPE,
                     IndexColumn[].class);
 
                 if (!ctor.isAccessible())
                     ctor.setAccessible(true);
 
-                return (SpatialIndex)ctor.newInstance(tbl, idxName, cols);
+                final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+
+                return (SpatialIndex)ctor.newInstance(tbl, idxName, segments, cols);
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to instantiate: " + className, e);
@@ -2845,12 +2848,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @return
          */
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
-            GridCacheContext<?, ?> cctx = tbl.rowDescriptor().context();
+            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
 
-            if (cctx != null && cctx.config().getQueryParallelism() > 1)
-                return new GridH2TreeIndex(idxName, tbl, pk, columns, cctx.config().getQueryParallelism());
-
-            return new GridH2TreeIndex(idxName, tbl, pk, columns, 1);
+            return new GridH2TreeIndex(idxName, tbl, pk, columns, segments);
         }
     }
 

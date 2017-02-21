@@ -183,7 +183,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Index segment ID for current query context.
      */
     protected int threadLocalSegment() {
-       return 0;
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if(segmentsCount() == 1)
+            return 0;
+
+        if(qctx == null)
+            throw new IllegalStateException("GridH2QueryContext is not initialized.");
+
+        return qctx.segment();
     }
 
     /**
@@ -669,7 +677,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 throw new GridH2RetryException("Failed to find node.");
         }
 
-        return new SegmentKey(node, segment(partition));
+        return new SegmentKey(node, segmentForPartition(partition));
     }
 
     /** */
@@ -829,18 +837,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /** @return Index segments count. */
-    protected int segmentsCount() {
-        return 1;
-    }
+    protected abstract int segmentsCount();
 
     /**
      * @param partition Partition idx.
      * @return Segment ID for given key
      */
-    protected int segment(int partition) {
-        return 0;
+    protected int segmentForPartition(int partition){
+        return segmentsCount() == 1 ? 0 : (partition % segmentsCount());
     }
-
 
     /**
      * Simple cursor from a single node.
