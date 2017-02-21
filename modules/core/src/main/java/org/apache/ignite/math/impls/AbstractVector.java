@@ -121,8 +121,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param i
-     * @param v
+     * @param i Index.
+     * @param v Value.
      */
     protected void storageSet(int i, double v) {
         ensureReadOnly();
@@ -134,8 +134,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param i
-     * @return
+     * @param i Index.
+     * @return Value.
      */
     protected double storageGet(int i) {
         return sto.get(i);
@@ -168,8 +168,8 @@ public abstract class AbstractVector implements Vector {
         return storageGet(idx);
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
 
@@ -214,8 +214,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param idx
-     * @return
+     * @param idx Index.
+     * @return Value.
      */
     protected Element makeElement(int idx) {
         checkIndex(idx);
@@ -638,6 +638,9 @@ public abstract class AbstractVector implements Vector {
     @Override public Matrix cross(Vector vec) {
         Matrix res = likeMatrix(size(), vec.size());
 
+        if (res == null)
+            return null;
+
         for (Element e : nonZeroes()) {
             int row = e.index();
 
@@ -651,18 +654,23 @@ public abstract class AbstractVector implements Vector {
     @Override public Matrix toMatrix(boolean rowLike) {
         Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
 
+        if (res == null)
+            return null;
+
         if (rowLike)
             res.assignRow(0, this);
         else
             res.assignColumn(0, this);
 
         return res;
-        // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
     }
 
     /** {@inheritDoc} */
     @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+
+        if (res == null)
+            return null;
 
         res.set(0, 0, zeroVal);
 
@@ -672,7 +680,6 @@ public abstract class AbstractVector implements Vector {
             new MatrixView(res, 0, 1, 1, size()).assignColumn(0, this);
 
         return res;
-        // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
     }
 
     /** {@inheritDoc} */
@@ -778,10 +785,9 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
-     * @param power
-     * @param normLen
-     * @return
+     * @param power Power.
+     * @param normLen Normalized length.
+     * @return logNormalized value.
      */
     private Vector logNormalize(double power, double normLen) {
         assert !(Double.isInfinite(power) || power <= 1.0);
@@ -826,7 +832,7 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @return
+     * @return Result of dot with self.
      */
     protected double dotSelf() {
         double sum = 0.0;

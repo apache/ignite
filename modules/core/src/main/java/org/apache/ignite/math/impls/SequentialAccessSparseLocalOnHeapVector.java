@@ -58,14 +58,4 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
     @Override public Matrix likeMatrix(int rows, int cols) {
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrix(boolean rowLike) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return null;
-    }
 }
