@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -28,6 +29,9 @@ import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
+import org.h2.value.ValueDate;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
@@ -35,6 +39,9 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueStringFixed;
 import org.h2.value.ValueStringIgnoreCase;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueTimestampUtc;
 
 /**
  * Helper class for in-page indexes.
@@ -52,6 +59,13 @@ public class InlineIndexHelper {
         Value.SHORT,
         Value.INT,
         Value.LONG,
+        Value.LONG,
+        Value.FLOAT,
+        Value.DOUBLE,
+        Value.DATE,
+        Value.TIME,
+        Value.TIMESTAMP,
+        Value.TIMESTAMP_UTC,
         Value.STRING,
         Value.STRING_FIXED,
         Value.STRING_IGNORECASE
@@ -137,6 +151,24 @@ public class InlineIndexHelper {
             case Value.LONG:
                 return 8;
 
+            case Value.FLOAT:
+                return Float.SIZE;
+
+            case Value.DOUBLE:
+                return Float.SIZE;
+
+            case Value.DATE:
+                return 8;
+
+            case Value.TIME:
+                return 8;
+
+            case Value.TIMESTAMP:
+                return 16;
+
+            case Value.TIMESTAMP_UTC:
+                return 8;
+
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
@@ -158,22 +190,10 @@ public class InlineIndexHelper {
         if (type == Value.NULL)
             return 1;
 
-        switch (type) {
-            case Value.BOOLEAN:
-            case Value.BYTE:
-            case Value.INT:
-            case Value.SHORT:
-            case Value.LONG:
-                return size() + 1;
-
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-                return PageUtils.getShort(pageAddr, off + 1) + 3;
-
-            default:
-                throw new UnsupportedOperationException("no get operation for fast index type " + type);
-        }
+        if (size() > 0)
+            return size() + 1;
+        else
+            return PageUtils.getShort(pageAddr, off + 1) + 3;
     }
 
     /**
@@ -211,6 +231,30 @@ public class InlineIndexHelper {
 
             case Value.LONG:
                 return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
+
+            case Value.FLOAT: {
+                byte[] bytes = PageUtils.getBytes(pageAddr, off + 1, size());
+                ByteBuffer buf = ByteBuffer.wrap(bytes);
+                return ValueFloat.get(buf.getFloat());
+            }
+
+            case Value.DOUBLE: {
+                byte[] bytes = PageUtils.getBytes(pageAddr, off + 1, size());
+                ByteBuffer buf = ByteBuffer.wrap(bytes);
+                return ValueDouble.get(buf.getDouble());
+            }
+
+            case Value.TIME:
+                return ValueTime.fromNanos(PageUtils.getLong(pageAddr, off + 1));
+
+            case Value.DATE:
+                return ValueDate.fromDateValue(PageUtils.getLong(pageAddr, off + 1));
+
+            case Value.TIMESTAMP:
+                return ValueTimestamp.fromDateValueAndNanos(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
+
+            case Value.TIMESTAMP_UTC:
+                return ValueTimestampUtc.fromNanos(PageUtils.getLong(pageAddr, off + 1));
 
             case Value.STRING: {
                 int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
@@ -325,6 +369,43 @@ public class InlineIndexHelper {
             case Value.LONG:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, val.getLong());
+                return size() + 1;
+
+            case Value.FLOAT: {
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                byte[] bytes = new byte[size()];
+                ByteBuffer.wrap(bytes).putFloat(val.getFloat());
+                PageUtils.putBytes(pageAddr, off + 1, bytes);
+                return size() + 1;
+            }
+
+            case Value.DOUBLE: {
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                byte[] bytes = new byte[size()];
+                ByteBuffer.wrap(bytes).putDouble(val.getDouble());
+                PageUtils.putBytes(pageAddr, off + 1, bytes);
+                return size() + 1;
+            }
+
+            case Value.TIME:
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putLong(pageAddr, off + 1, ((ValueTime)val).getNanos());
+                return size() + 1;
+
+            case Value.DATE:
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putLong(pageAddr, off + 1, ((ValueDate)val).getDateValue());
+                return size() + 1;
+
+            case Value.TIMESTAMP:
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putLong(pageAddr, off + 1, ((ValueTimestamp)val).getDateValue());
+                PageUtils.putLong(pageAddr, off + 9, ((ValueTimestamp)val).getTimeNanos());
+                return size() + 1;
+
+            case Value.TIMESTAMP_UTC:
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putLong(pageAddr, off + 1, ((ValueTimestampUtc)val).getUtcDateTimeNanos());
                 return size() + 1;
 
             case Value.STRING:

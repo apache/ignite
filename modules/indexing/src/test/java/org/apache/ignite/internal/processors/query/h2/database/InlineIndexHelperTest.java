@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -30,11 +33,17 @@ import org.h2.value.CompareMode;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
+import org.h2.value.ValueDate;
+import org.h2.value.ValueDouble;
+import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
+import org.h2.value.ValueTimestampUtc;
 
 /**
  * Simple tests for {@link InlineIndexHelper}.
@@ -143,13 +152,8 @@ public class InlineIndexHelperTest extends TestCase {
     }
 
     /** */
-    public void testInt() throws Exception {
-        testPutGet(ValueInt.get(-1), ValueInt.get(2), ValueInt.get(3));
-    }
-
-    /** */
-    public void testLong() throws Exception {
-        testPutGet(ValueLong.get(-1), ValueLong.get(2), ValueLong.get(3));
+    public void testBoolean() throws Exception {
+        testPutGet(ValueBoolean.get(true), ValueBoolean.get(false), ValueBoolean.get(true));
     }
 
     /** */
@@ -163,8 +167,51 @@ public class InlineIndexHelperTest extends TestCase {
     }
 
     /** */
-    public void testBoolean() throws Exception {
-        testPutGet(ValueBoolean.get(true), ValueBoolean.get(false), ValueBoolean.get(true));
+    public void testInt() throws Exception {
+        testPutGet(ValueInt.get(-1), ValueInt.get(2), ValueInt.get(3));
+    }
+
+    /** */
+    public void testLong() throws Exception {
+        testPutGet(ValueLong.get(-1), ValueLong.get(2), ValueLong.get(3));
+    }
+
+    /** */
+    public void testFloat() throws Exception {
+        testPutGet(ValueFloat.get(1.1f), ValueFloat.get(2.2f), ValueFloat.get(1.1f));
+    }
+
+    /** */
+    public void testDouble() throws Exception {
+        testPutGet(ValueDouble.get(1.1f), ValueDouble.get(2.2f), ValueDouble.get(1.1f));
+    }
+
+    /** */
+    public void testDate() throws Exception {
+        testPutGet(ValueDate.get(Date.valueOf("2017-02-20")),
+            ValueDate.get(Date.valueOf("2017-02-21")),
+            ValueDate.get(Date.valueOf("2017-02-19")));
+    }
+
+    /** */
+    public void testTime() throws Exception {
+        testPutGet(ValueTime.get(Time.valueOf("10:01:01")),
+            ValueTime.get(Time.valueOf("11:02:02")),
+            ValueTime.get(Time.valueOf("12:03:03")));
+    }
+
+    /** */
+    public void testTimestamp() throws Exception {
+        testPutGet(ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
+            ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")),
+            ValueTimestamp.get(Timestamp.valueOf("2017-02-20 10:01:01")));
+    }
+
+    /** */
+    public void testTimestampUTC() throws Exception {
+        testPutGet(ValueTimestampUtc.fromMillis(System.currentTimeMillis()),
+            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 100),
+            ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 200));
     }
 
     /** */
