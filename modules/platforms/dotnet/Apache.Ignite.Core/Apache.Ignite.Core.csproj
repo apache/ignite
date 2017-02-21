@@ -219,7 +219,6 @@
     <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
     <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
     <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
-    <Compile Include="Cache\Configuration\CacheMemoryMode.cs" />
     <Compile Include="Cache\Configuration\CacheMode.cs" />
     <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
     <Compile Include="Cache\Configuration\CacheWriteSynchronizationMode.cs" />
