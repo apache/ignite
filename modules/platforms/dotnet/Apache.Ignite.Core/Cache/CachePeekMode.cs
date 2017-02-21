@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Peeks value from the on-heap storage only.
         /// </summary>
-        Onheap = 0x20,  // TODO: IGNITE-3477
+        Onheap = 0x10,
 
         /// <summary>
         /// Peeks value from the off-heap storage only, without loading off-heap value into cache.
