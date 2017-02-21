@@ -31,7 +31,8 @@
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <!-- build output -->
-                <exclude>%regex[(?!((?!${project.build.directory}/)[^/]+/)*src/).*${project.build.directory}.*]</exclude>
+                <exclude>%regex[(?!((?!${project.build.directory}/)[^/]+/)*src/).*${project.build.directory}/.*]</exclude>
+                <exclude>%regex[(?!((?!${project.build.directory}/)[^/]+/)*src/).*${project.build.directory}]</exclude>
 
                 <!-- NOTE: Most of the following excludes should not be required
                      if the standard release process is followed. This is because the
@@ -68,10 +69,6 @@
 
                 <!-- dotnet assemblies -->
                 <exclude>modules/platforms/dotnet/bin/**</exclude>
-
-                <!-- cpp -->
-                <exclude>modules/platforms/cpp/**/*.h</exclude>
-                <exclude>modules/platforms/cpp/**/*.cpp</exclude>
             </excludes>
         </fileSet>
         <!-- license, readme, etc. calculated at build time -->
