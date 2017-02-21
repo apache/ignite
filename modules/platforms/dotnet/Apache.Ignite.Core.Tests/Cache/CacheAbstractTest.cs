@@ -1077,6 +1077,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestEvict()
         {
             var cache = Cache();
@@ -1101,6 +1102,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestEvictAllKeys()
         {
             var cache = Cache();
@@ -1553,6 +1555,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestPromote()
         {
             var cache = Cache();
@@ -1577,6 +1580,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        [Ignore("IGNITE-4535")]
         public void TestPromoteAll()
         {
             var cache = Cache();
