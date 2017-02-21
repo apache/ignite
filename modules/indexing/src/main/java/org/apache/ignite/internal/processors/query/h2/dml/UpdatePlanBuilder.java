@@ -76,7 +76,7 @@ public final class UpdatePlanBuilder {
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
         assert !prepared.isQuery();
 
-        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt);

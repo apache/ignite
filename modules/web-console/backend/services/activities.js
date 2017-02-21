@@ -37,10 +37,10 @@ module.exports.factory = (_, mongo) => {
          * @param {String} owner - User ID
          * @param {String} action - Action string presentation.
          * @param {String} group - Action group string presentation.
-         * @param {Date} [date] - Optional date to save in activity.
+         * @param {Date} [now] - Optional date to save in activity.
          * @returns {Promise.<mongo.ObjectId>} that resolve activity
          */
-        static merge(owner, {action, group}, date = new Date()) {
+        static merge(owner, {action, group}, now = new Date()) {
             mongo.Account.findById(owner)
                 .then((user) => {
                     user.lastActivity = new Date();
@@ -48,8 +48,7 @@ module.exports.factory = (_, mongo) => {
                     return user.save();
                 });
 
-            date.setDate(1);
-            date.setHours(0, 0, 0, 0);
+            const date = Date.UTC(now.getFullYear(), now.getMonth(), 1);
 
             return mongo.Activities.findOne({owner, action, date}).exec()
                 .then((activity) => {

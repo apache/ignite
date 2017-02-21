@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
@@ -100,8 +99,10 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
 /**
  * Reduce query executor.
@@ -597,7 +598,8 @@ public class GridReduceQueryExecutor {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
 
                     for (GridCacheSqlQuery mapQry : qry.mapQueries())
-                        mapQrys.add(new GridCacheSqlQuery("EXPLAIN " + mapQry.query(), mapQry.parameters()));
+                        mapQrys.add(new GridCacheSqlQuery("EXPLAIN " + mapQry.query())
+                            .parameters(mapQry.parameters(), mapQry.parameterIndexes()));
                 }
 
                 IgniteProductVersion minNodeVer = cctx.shared().exchange().minimumNodeVersion(topVer);
@@ -615,6 +617,15 @@ public class GridReduceQueryExecutor {
 
                 if (oldStyle && distributedJoins)
                     throw new CacheException("Failed to enable distributed joins. Topology contains older data nodes.");
+
+                // Always enforce join order on map side to have consistent behavior.
+                int flags = GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                if (distributedJoins)
+                    flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
+
+                if(qry.isLocal())
+                    flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
 
                 if (send(nodes,
                     oldStyle ?
@@ -634,8 +645,7 @@ public class GridReduceQueryExecutor {
                             .tables(distributedJoins ? qry.tables() : null)
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
-                            .flags((qry.isLocal() ? GridH2QueryRequest.FLAG_IS_LOCAL : 0) |
-                                (distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0))
+                            .flags(flags)
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
                     false)) {
@@ -674,23 +684,22 @@ public class GridReduceQueryExecutor {
                     if (skipMergeTbl) {
                         List<List<?>> res = new ArrayList<>();
 
-                        assert r.idxs.size() == 1 : r.idxs;
+                        // Simple UNION ALL can have multiple indexes.
+                        for (GridMergeIndex idx : r.idxs) {
+                            Cursor cur = idx.findInStream(null, null);
 
-                        GridMergeIndex idx = r.idxs.get(0);
+                            while (cur.next()) {
+                                Row row = cur.get();
 
-                        Cursor cur = idx.findInStream(null, null);
+                                int cols = row.getColumnCount();
 
-                        while (cur.next()) {
-                            Row row = cur.get();
+                                List<Object> resRow = new ArrayList<>(cols);
 
-                            int cols = row.getColumnCount();
+                                for (int c = 0; c < cols; c++)
+                                    resRow.add(row.getValue(c).getObject());
 
-                            List<Object> resRow = new ArrayList<>(cols);
-
-                            for (int c = 0; c < cols; c++)
-                                resRow.add(row.getValue(c).getObject());
-
-                            res.add(resRow);
+                                res.add(resRow);
+                            }
                         }
 
                         resIter = res.iterator();
@@ -700,7 +709,7 @@ public class GridReduceQueryExecutor {
 
                         UUID locNodeId = ctx.localNodeId();
 
-                        h2.setupConnection(r.conn, false, enforceJoinOrder);
+                        setupConnection(r.conn, false, enforceJoinOrder);
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoinMode(OFF));
@@ -846,14 +855,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param idx Table index.
-     * @return Table name.
-     */
-    private static String table(int idx) {
-        return GridSqlQuerySplitter.table(idx).getSQL();
-    }
-
-    /**
      * Gets or creates new fake table for index.
      *
      * @param c Connection.
@@ -871,7 +872,7 @@ public class GridReduceQueryExecutor {
             try {
                 if ((tbls = fakeTbls).size() == idx) { // Double check inside of lock.
                     try (Statement stmt = c.createStatement()) {
-                        stmt.executeUpdate("CREATE TABLE " + table(idx) +
+                        stmt.executeUpdate("CREATE TABLE " + mergeTableIdentifier(idx) +
                             "(fake BOOL) ENGINE \"" + GridThreadLocalTable.Engine.class.getName() + '"');
                     }
                     catch (SQLException e) {
@@ -1128,7 +1129,8 @@ public class GridReduceQueryExecutor {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false, 0, null);
+            ResultSet rs = h2.executeSqlQueryWithTimer(space, c,
+                "SELECT PLAN FROM " + mergeTableIdentifier(i), null, false, 0, null);
 
             lists.add(F.asList(getPlan(rs)));
         }

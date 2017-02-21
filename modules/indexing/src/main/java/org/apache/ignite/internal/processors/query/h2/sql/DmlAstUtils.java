@@ -95,7 +95,7 @@ public final class DmlAstUtils {
 
                 args[i] = arr;
 
-                GridSqlColumn newCol = new GridSqlColumn(null, from, colName, "TABLE." + colName);
+                GridSqlColumn newCol = new GridSqlColumn(null, from, null,"TABLE", colName);
 
                 newCol.resultType(cols[i].resultType());
 
@@ -146,10 +146,10 @@ public final class DmlAstUtils {
 
         Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
 
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
 
-        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
         valCol.resultType(GridSqlType.fromColumn(h2ValCol));
 
         mapQry.addColumn(keyCol, true);
@@ -234,7 +234,7 @@ public final class DmlAstUtils {
 
         // Does this WHERE limit only by _key?
         if (isKeyEqualityCondition(whereOp))
-            return new IgnitePair<>(whereOp.child(1), null);
+            return new IgnitePair<>((GridSqlElement)whereOp.child(1), null);
 
         // Or maybe it limits both by _key and _val?
         if (whereOp.operationType() != GridSqlOperationType.AND)
@@ -255,13 +255,13 @@ public final class DmlAstUtils {
             if (!isValueEqualityCondition(rightOp))
                 return null;
 
-            return new IgnitePair<>(leftOp.child(1), rightOp.child(1));
+            return new IgnitePair<>((GridSqlElement)leftOp.child(1), (GridSqlElement)rightOp.child(1));
         }
         else if (isKeyEqualityCondition(rightOp)) { // _val = ? and _key = ?
             if (!isValueEqualityCondition(leftOp))
                 return null;
 
-            return new IgnitePair<>(rightOp.child(1), leftOp.child(1));
+            return new IgnitePair<>((GridSqlElement)rightOp.child(1), (GridSqlElement)leftOp.child(1));
         }
         else // Neither
             return null;
@@ -329,10 +329,10 @@ public final class DmlAstUtils {
 
         Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
 
-        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
 
-        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName(), h2ValCol.getSQL());
+        GridSqlColumn valCol = new GridSqlColumn(h2ValCol, tbl, h2ValCol.getName());
         valCol.resultType(GridSqlType.fromColumn(h2ValCol));
 
         mapQry.addColumn(keyCol, true);
@@ -424,7 +424,7 @@ public final class DmlAstUtils {
 
         sel.from(from);
 
-        GridSqlColumn col = new GridSqlColumn(null, from, "_IGNITE_ERR_KEYS", "TABLE._IGNITE_ERR_KEYS");
+        GridSqlColumn col = new GridSqlColumn(null, from, null, "TABLE", "_IGNITE_ERR_KEYS");
 
         sel.addColumn(col, true);
 
@@ -459,8 +459,8 @@ public final class DmlAstUtils {
         findParams(union.left(), params, target, paramIdxs);
         findParams(union.right(), params, target, paramIdxs);
 
-        findParams(qry.limit(), params, target, paramIdxs);
-        findParams(qry.offset(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -477,16 +477,16 @@ public final class DmlAstUtils {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : qry.columns(false))
-            findParams(el, params, target, paramIdxs);
+        for (GridSqlAst el : qry.columns(false))
+            findParams((GridSqlElement)el, params, target, paramIdxs);
 
-        findParams(qry.from(), params, target, paramIdxs);
-        findParams(qry.where(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.from(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.where(), params, target, paramIdxs);
 
         // Don't search in GROUP BY and HAVING since they expected to be in select list.
 
-        findParams(qry.limit(), params, target, paramIdxs);
-        findParams(qry.offset(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.limit(), params, target, paramIdxs);
+        findParams((GridSqlElement)qry.offset(), params, target, paramIdxs);
 
         return target;
     }
@@ -524,10 +524,10 @@ public final class DmlAstUtils {
             paramIdxs.add(idx);
         }
         else if (el instanceof GridSqlSubquery)
-            findParams(((GridSqlSubquery)el).select(), params, target, paramIdxs);
+            findParams(((GridSqlSubquery)el).subquery(), params, target, paramIdxs);
         else
-            for (GridSqlElement child : el)
-                findParams(child, params, target, paramIdxs);
+            for (int i = 0; i < el.size(); i++)
+                findParams((GridSqlElement)el.child(i), params, target, paramIdxs);
     }
 
     /**
@@ -546,17 +546,17 @@ public final class DmlAstUtils {
 
         if (from instanceof GridSqlJoin) {
             // Left and right.
-            if (findTablesInFrom(from.child(0), c))
+            if (findTablesInFrom((GridSqlElement)from.child(0), c))
                 return true;
 
-            if (findTablesInFrom(from.child(1), c))
+            if (findTablesInFrom((GridSqlElement)from.child(1), c))
                 return true;
 
             // We don't process ON condition because it is not a joining part of from here.
             return false;
         }
         else if (from instanceof GridSqlAlias)
-            return findTablesInFrom(from.child(), c);
+            return findTablesInFrom((GridSqlElement)from.child(), c);
         else if (from instanceof GridSqlFunction)
             return false;
 

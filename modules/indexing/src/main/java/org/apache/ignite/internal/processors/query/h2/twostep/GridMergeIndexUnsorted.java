@@ -22,8 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
@@ -33,12 +31,11 @@ import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Unsorted merge index.
  */
-public class GridMergeIndexUnsorted extends GridMergeIndex {
+public final class GridMergeIndexUnsorted extends GridMergeIndex {
     /** */
     private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
@@ -74,43 +71,22 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
+    @Override protected Cursor findAllFetched(List<Row> fetched, SearchRow first, SearchRow last) {
+        // This index is unsorted: have to ignore bounds.
         return new GridH2Cursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
-    @Override protected Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last) {
-        return new FetchingCursor(new Iterator<Row>() {
+    @Override protected Cursor findInStream(SearchRow first, SearchRow last) {
+        // This index is unsorted: have to ignore bounds.
+        return new FetchingCursor(null, null, new Iterator<Row>() {
             /** */
             Iterator<Value[]> iter = Collections.emptyIterator();
 
             @Override public boolean hasNext() {
-                while (!iter.hasNext()) {
-                    GridResultPage page;
+                iter = pollNextIterator(queue, iter);
 
-                    for (;;) {
-                        try {
-                            page = queue.poll(500, TimeUnit.MILLISECONDS);
-                        }
-                        catch (InterruptedException e) {
-                            throw new CacheException("Query execution was interrupted.", e);
-                        }
-
-                        if (page != null)
-                            break;
-
-                        checkSourceNodesAlive();
-                    }
-
-                    if (page.isLast())
-                        return false; // We are done.
-
-                    fetchNextPage(page);
-
-                    iter = page.rows();
-                }
-
-                return true;
+                return iter.hasNext();
             }
 
             @Override public Row next() {
