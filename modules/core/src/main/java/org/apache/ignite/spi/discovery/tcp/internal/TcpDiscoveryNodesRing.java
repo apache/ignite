@@ -247,7 +247,7 @@ public class TcpDiscoveryNodesRing {
 
             nodesMap.put(node.id(), node);
 
-            if (!node.version().greaterThanEqual(1, 9, 0)) {
+            if (!node.version().greaterThanEqual(2, 0, 0)) {
                 oldNodesCount++;
                 TreeSet nodesTmp = new TreeSet<>();
                 nodesTmp.addAll(nodes);
@@ -311,7 +311,7 @@ public class TcpDiscoveryNodesRing {
             clear();
 
             for (TcpDiscoveryNode node : nodes) {
-                if (!node.version().greaterThanEqual(1, 9, 0))
+                if (!node.version().greaterThanEqual(2, 0, 0))
                     oldNodesCount++;
             }
 
@@ -379,7 +379,7 @@ public class TcpDiscoveryNodesRing {
             TcpDiscoveryNode rmv = nodesMap.remove(nodeId);
 
             if (rmv != null) {
-                if (!rmv.version().greaterThanEqual(1, 9, 0) && --oldNodesCount <= 0) {
+                if (!rmv.version().greaterThanEqual(2, 0, 0) && --oldNodesCount <= 0) {
                     TreeSet nodesTmp = new TreeSet<>(nodeComparator);
                     nodesTmp.addAll(nodes);
                     nodes = nodesTmp;
