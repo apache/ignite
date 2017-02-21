@@ -355,10 +355,13 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @throws IOException On error.
      */
     public void testDistribution() throws IOException {
-        AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
 
-        affinityDistribution(aff,
-            new FairAffinityFunction(true, 1024));
+        AffinityFunction aff1 = new RendezvousAffinityFunctionOld(true, 1024);
+
+        GridTestUtils.setFieldValue(aff1, "ignite", ignite);
+
+        affinityDistribution(aff0, aff1);
     }
 
     /**
