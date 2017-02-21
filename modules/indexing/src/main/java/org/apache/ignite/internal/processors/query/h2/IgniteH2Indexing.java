@@ -2831,7 +2831,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (!ctor.isAccessible())
                     ctor.setAccessible(true);
 
-                final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+                final int segments = tbl.rowDescriptor().configuration().getQueryParallelism();
 
                 return (SpatialIndex)ctor.newInstance(tbl, idxName, segments, cols);
             }
@@ -2848,7 +2848,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @return
          */
         private Index createTreeIndex(String idxName, GridH2Table tbl, boolean pk, List<IndexColumn> columns) {
-            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
+            final int segments = tbl.rowDescriptor().configuration().getQueryParallelism();
 
             return new GridH2TreeIndex(idxName, tbl, pk, columns, segments);
         }
