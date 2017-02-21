@@ -357,11 +357,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testDistribution() throws IOException {
         AffinityFunction aff = new RendezvousAffinityFunction(true, 1024);
 
-        GridTestUtils.setFieldValue(aff, "ignite", ignite);
-
-
         affinityDistribution(aff,
-            new RendezvousAffinityFunction(true, 1024, true));
+            new FairAffinityFunction(true, 1024));
     }
 
     /**
@@ -408,11 +405,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
         GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024, true));
+        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
     }
 
     /**
@@ -421,11 +418,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
-        AffinityFunction aff0 = new FairAffinityFunction(true, 1024);
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
 
-//        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024, true));
+        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
     }
 
     /**
@@ -516,10 +513,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         final int backups = 2;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 256, true);
+        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 256);
         AffinityFunction aff1 = new FairAffinityFunction(true, 256);
-
-        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
@@ -557,11 +552,10 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     /**
      *
      */
-    public void testAffinityCompatibility() {
+    public void _testAffinityCompatibility() {
         mode = TopologyModificationMode.ADD;
 
         AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
-        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
         // Use the full copy of the old implementaion of the RendezvousAffinityFunction to check the compatibility.
         AffinityFunction aff1 = new RendezvousAffinityFunctionOld(true, 1024);
