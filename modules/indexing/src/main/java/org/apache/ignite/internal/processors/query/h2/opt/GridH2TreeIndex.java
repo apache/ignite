@@ -45,25 +45,13 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+
 /**
  * Base class for snapshotable segmented tree indexes.
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
-    /** */
-    private static Field KEY_FIELD;
-
-    /** */
-    static {
-        try {
-            KEY_FIELD = GridH2AbstractKeyValueRow.class.getDeclaredField("key");
-            KEY_FIELD.setAccessible(true);
-        }
-        catch (NoSuchFieldException e) {
-            KEY_FIELD = null;
-        }
-    }
-
     /** Index segments. */
     private final ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row>[] segments;
 
@@ -451,22 +439,16 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             assert ctx != null;
 
-            if (row instanceof GridH2AbstractKeyValueRow && KEY_FIELD != null) {
-                try {
-                    Object o = KEY_FIELD.get(row);
+            final Value keyColValue = row.getValue(KEY_COL);
 
-                    if (o instanceof CacheObject)
-                        key = (CacheObject)o;
-                    else
-                        key = ctx.toCacheKeyObject(o);
+            assert keyColValue != null;
 
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
+            final Object o = keyColValue.getObject();
+
+            if (o instanceof CacheObject)
+                key = (CacheObject)o;
             else
-                key = ctx.toCacheKeyObject(row.getValue(0));
+                key = ctx.toCacheKeyObject(o);
 
             return segmentForPartition(ctx.affinity().partition(key));
         }
