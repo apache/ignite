@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls.storage;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
@@ -28,7 +27,7 @@ import static org.junit.Assert.*;
  */
 public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<RandomAccessSparseVectorStorage> {
     /** */
-    @Before
+    @Override
     public void setUp(){
         storage = new RandomAccessSparseVectorStorage(STORAGE_SIZE);
     }
