@@ -31,12 +31,12 @@ public class IgniteDbMemoryLeakTest extends IgniteDbMemoryLeakAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Object key() {
-        return new DbKey(getRandom().nextInt(200_000));
+        return new DbKey(nextInt(200_000));
     }
 
     /** {@inheritDoc} */
     @Override protected Object value(Object key) {
-        return new DbValue(((DbKey)key).val, "test-value-" + getRandom().nextInt(200), getRandom().nextInt(500));
+        return new DbValue(((DbKey)key).val, "test-value-" + nextInt(200), nextInt(500));
     }
 
     /** {@inheritDoc} */

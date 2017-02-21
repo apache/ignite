@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
@@ -25,7 +24,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Base class for memory leaks tests.
@@ -55,6 +53,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /** */
     private long probeCnt = 0;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
         DataStructure.rnd = null;
@@ -130,7 +129,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
         Object key = key();
         Object value = value(key);
 
-        switch (getRandom().nextInt(3)) {
+        switch (nextInt(3)) {
             case 0:
                 cache.getAndPut(key, value);
 
@@ -145,10 +144,18 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     }
 
     /**
-     * @return Random.
+     * @param bound Upper bound (exclusive). Must be positive.
+     * @return Random int value.
      */
-    @NotNull protected static Random getRandom() {
-        return ThreadLocalRandom.current();
+    protected static int nextInt(int bound) {
+        return ThreadLocalRandom.current().nextInt(bound);
+    }
+
+    /**
+     * @return Random int value.
+     */
+    protected static int nextInt() {
+        return ThreadLocalRandom.current().nextInt();
     }
 
     /**

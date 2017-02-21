@@ -31,7 +31,7 @@ public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstra
         ARRAY = new int[1024];
 
         for (int i = 0; i < ARRAY.length; i++)
-            ARRAY[i] = getRandom().nextInt();
+            ARRAY[i] = nextInt();
     }
 
     /** {@inheritDoc} */
@@ -41,16 +41,16 @@ public class IgniteDbMemoryLeakLargeObjectsTest extends IgniteDbMemoryLeakAbstra
 
     /** {@inheritDoc} */
     @Override protected Object key() {
-        return new LargeDbKey(getRandom().nextInt(10_000), 1024);
+        return new LargeDbKey(nextInt(10_000), 1024);
     }
 
     /** {@inheritDoc} */
     @Override protected Object value(Object key) {
-        return new LargeDbValue("test-value-1-" + getRandom().nextInt(200), "test-value-2-" + getRandom().nextInt(200), ARRAY);
+        return new LargeDbValue("test-value-1-" + nextInt(200), "test-value-2-" + nextInt(200), ARRAY);
     }
 
     /** {@inheritDoc} */
     @Override protected long pagesMax() {
-        return 35000;
+        return 35_000;
     }
 }
