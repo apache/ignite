@@ -109,8 +109,6 @@ public final class DmlAstUtils {
                     args[i].addChild(row[i]);
             }
 
-            sel.getSQL();
-
             return sel;
         }
         else {
