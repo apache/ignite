@@ -76,7 +76,6 @@ namespace Apache.Ignite.Core.Tests
                 "-springConfigUrl=" + springFile,
                 "-jvmClasspath=" + classpath,
                 "-J-ea",
-                "-J-Xcheck:jni",
                 "-J-Xms512m",
                 "-J-Xmx512m"
             });
