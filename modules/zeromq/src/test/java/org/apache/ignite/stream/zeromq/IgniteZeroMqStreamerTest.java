@@ -104,21 +104,21 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      * Set singleTupleExtractor via {@link ZeroMqStringSingleTupleExtractor} in streamer.
      *
      * @param streamer ZeroMQ streamer.
-     * @param clientSocket .
-     * @param topic .
-     * @throws InterruptedException Test exception.
+     * @param clientSocket ZeroMQ socket type.
+     * @param topic Topic name for PUB-SUB.
+     * @throws Exception Test exception.
      */
     private void executeStreamer(IgniteZeroMqStreamer streamer, int clientSocket,
-        byte[] topic) throws InterruptedException {
+        byte[] topic) throws Exception {
         streamer.setSingleTupleExtractor(new ZeroMqStringSingleTupleExtractor());
 
         IgniteCache<Integer, String> cache = grid().cache(null);
 
         CacheListener listener = subscribeToPutEvents();
 
-        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
-
         streamer.start();
+
+        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
         startZeroMqClient(clientSocket, topic);
 
@@ -161,8 +161,8 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * Starts ZeroMQ client for testing.
      *
-     * @param clientSocket
-     * @param topic
+     * @param clientSocket ZeroMQ socket type.
+     * @param topic Topic name for PUB-SUB.
      */
     private void startZeroMqClient(int clientSocket, byte[] topic) throws InterruptedException {
         try (ZMQ.Context context = ZMQ.context(1);

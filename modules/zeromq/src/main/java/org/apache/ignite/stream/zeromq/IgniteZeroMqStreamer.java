@@ -59,9 +59,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /** ZeroMQ topic name. */
     private byte[] topic;
 
-    /** Maximum time to wait (time unit minutes). */
-    private int timeout = 2;
-
+    /** Maximum time to wait. */
+    private long timeout = 3_000;
+    
     /**
      * @param ioThreads Threads on context.
      * @param socketType Socket type.
@@ -69,9 +69,9 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
      * @param topic Topic name for PUB-SUB socket type, otherwise null.
      */
     public IgniteZeroMqStreamer(int ioThreads, ZeroMqTypeSocket socketType, @NotNull String addr, byte[] topic) {
-        A.ensure(ioThreads > 0, "Param ioThreads has been more than 0.");
-        A.ensure(!"".equals(addr), "Param addr has been not empty.");
-        A.ensure(socketType != null, "This socket type is not implemented in this version of ZeroMQ streamer.");
+        A.ensure(ioThreads > 0, "ioThreads has to larger than 0.");
+        A.ensure(!"".equals(addr), "addr cannot be empty.");
+        A.ensure(socketType != null, "socketType is not null.");
 
         this.ioThreads = ioThreads;
         this.addr = addr;
@@ -125,8 +125,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
         ctx.close();
 
         zeroMqExSrv.shutdown();
-        timeout = 1;
-        zeroMqExSrv.awaitTermination(timeout, TimeUnit.MINUTES);
+        zeroMqExSrv.awaitTermination(timeout, TimeUnit.MILLISECONDS);
 
         isStarted = false;
     }
