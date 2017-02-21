@@ -23,17 +23,13 @@ class ResultsWriter {
         = "1MMmQjEyzGAAAAAAAAAAfDFrQ6oBPPi4NX-iU_VrgmXB2JDXqRHGa125cTkkEQ0V";
 
     /** */ private final String dropboxPath;
-
     /** */ private final String dropboxUrl;
-
     /** */ private final String accessTok;
 
     /** */
     ResultsWriter(String dropboxPath, String dropboxUrl, String accessTok) {
         this.dropboxPath = dropboxPath;
-
         this.dropboxUrl = dropboxUrl;
-
         this.accessTok = accessTok;
 
         if (dropboxPath == null || dropboxUrl == null || accessTok == null)
