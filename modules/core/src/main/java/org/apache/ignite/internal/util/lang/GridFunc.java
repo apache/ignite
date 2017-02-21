@@ -35,14 +35,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.F0;
@@ -52,7 +49,6 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.GridSerializableIterator;
-import org.apache.ignite.internal.util.GridSerializableList;
 import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -68,7 +64,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.NotNull;
@@ -95,7 +90,7 @@ import org.jsr166.ThreadLocalRandom8;
  * Also note, that in all methods with predicates, null predicate has a {@code true} meaning. So does
  * the empty predicate array.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "deprecation"})
 public class GridFunc {
     /** */
     private static final GridAbsClosure NOOP = new CA() {
@@ -153,38 +148,9 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgnitePredicate<Object> IS_NULL = new P1<Object>() {
-        @Override public boolean apply(Object o) {
-            return o == null;
-        }
-    };
-
-    /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new P1<Object>() {
         @Override public boolean apply(Object o) {
             return o != null;
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> LIST_FACTORY = new IgniteCallable<List>() {
-        @Override public List call() {
-            return new ArrayList();
-        }
-
-        @Override public String toString() {
-            return "Array list factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new IgniteCallable<LinkedList>() {
-        @Override public LinkedList call() {
-            return new LinkedList();
-        }
-
-        @Override public String toString() {
-            return "Linked list factory.";
         }
     };
 
@@ -207,39 +173,6 @@ public class GridFunc {
 
         @Override public String toString() {
             return "Atomic integer factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<AtomicLong> ATOMIC_LONG_FACTORY = new IgniteCallable<AtomicLong>() {
-        @Override public AtomicLong call() {
-            return new AtomicLong(0);
-        }
-
-        @Override public String toString() {
-            return "Atomic long factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<AtomicBoolean> ATOMIC_BOOL_FACTORY = new IgniteCallable<AtomicBoolean>() {
-        @Override public AtomicBoolean call() {
-            return new AtomicBoolean();
-        }
-
-        @Override public String toString() {
-            return "Atomic boolean factory.";
-        }
-    };
-
-    /** */
-    private static final IgniteCallable<?> ATOMIC_REF_FACTORY = new IgniteCallable<AtomicReference>() {
-        @Override public AtomicReference call() {
-            return new AtomicReference();
-        }
-
-        @Override public String toString() {
-            return "Atomic reference factory.";
         }
     };
 
@@ -322,35 +255,6 @@ public class GridFunc {
         }
     };
 
-    /** */
-    private static final IgniteClosure<ClusterNode, String> NODE2ID8 = new IgniteClosure<ClusterNode, String>() {
-        @Override public String apply(ClusterNode n) {
-            return U.id8(n.id());
-        }
-
-        @Override public String toString() {
-            return "Grid node to node ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
-        @Override public String apply(UUID id) {
-            return U.id8(id);
-        }
-
-        @Override public String toString() {
-            return "UUID to ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
-        @Override public boolean apply(IgniteInternalFuture<?> f) {
-            return !f.isDone();
-        }
-    };
-
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
      *
@@ -379,24 +283,6 @@ public class GridFunc {
                 return !n.id().equals(locNodeId);
             }
         };
-    }
-
-    /**
-     * Creates new collection by removing duplicates from the given collection.
-     *
-     * @param c Collection to remove duplicates from.
-     * @param <T> Type of the collection.
-     * @return De-duped collection.
-     */
-    @Deprecated
-    public static <T> Collection<T> dedup(Collection<? extends T> c) {
-        A.notNull(c, "c");
-
-        Collection<T> set = new GridLeanSet<>();
-
-        set.addAll(c);
-
-        return set;
     }
 
     /**
@@ -562,39 +448,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets collections of data items from grid job res casted to specified type.
-     * <p>
-     * Here's the typical example of how this method is used in {@code reduce()} method
-     * implementation (this example sums up all the values of {@code Integer} type):
-     * <pre name="code" class="java">
-     * public Integer reduce(List&lt;ComputeJobResult&gt; res) throws IgniteCheckedException {
-     *     return F.sum(F.&lt;Integer&gt;jobResults(res));
-     * }
-     * </pre>
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates over the input one.
-     *
-     * @param res Collection of grid job res.
-     * @param <T> Type of the data item to cast to. See {@link org.apache.ignite.compute.ComputeJobResult#getData()} method.
-     * @return Collections of data items casted to type {@code T}.
-     * @see org.apache.ignite.compute.ComputeJobResult#getData()
-     */
-    @Deprecated
-    public static <T> Collection<T> jobResults(@Nullable Collection<? extends ComputeJobResult> res) {
-        if (isEmpty(res))
-            return Collections.emptyList();
-
-        assert res != null;
-
-        Collection<T> c = new ArrayList<>(res.size());
-
-        for (ComputeJobResult r : res)
-            c.add(r.<T>getData());
-
-        return c;
-    }
-
-    /**
      * Convenient utility method that returns collection of node IDs for a given
      * collection of grid nodes.
      * <p>
@@ -609,43 +462,6 @@ public class GridFunc {
             return Collections.emptyList();
 
         return F.viewReadOnly(nodes, node2id());
-    }
-
-    /**
-     * Convenient utility method that returns collection of node ID8s for a given
-     * collection of grid nodes. ID8 is a shorter string representation of node ID,
-     * mainly the first 8 characters.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
-     *
-     * @param nodes Collection of grid nodes.
-     * @return Collection of node IDs for given collection of grid nodes.
-     */
-    public static Collection<String> nodeId8s(@Nullable Collection<? extends ClusterNode> nodes) {
-        if (nodes == null || nodes.isEmpty())
-            return Collections.emptyList();
-
-        return F.viewReadOnly(nodes, NODE2ID8);
-    }
-
-    /**
-     * Convenient utility method that returns collection of node ID8s for a given
-     * collection of node IDs. ID8 is a shorter string representation of node ID,
-     * mainly the first 8 characters.
-     * <p>
-     * Note that this method doesn't create a new collection but simply iterates
-     * over the input one.
-     *
-     * @param ids Collection of nodeIds.
-     * @return Collection of node IDs for given collection of grid nodes.
-     */
-    @Deprecated
-    public static Collection<String> id8s(@Nullable Collection<UUID> ids) {
-        if (ids == null || ids.isEmpty())
-            return Collections.emptyList();
-
-        return F.viewReadOnly(ids, ID2ID8);
     }
 
     /**
@@ -739,8 +555,6 @@ public class GridFunc {
                 return l;
             }
 
-            assert c != null;
-
             Collection<T> ret = new ArrayList<>(c.size() + 1);
 
             ret.add(t);
@@ -751,8 +565,6 @@ public class GridFunc {
         else {
             if (isEmpty(c))
                 return Collections.singletonList(t);
-
-            assert c != null;
 
             return new GridSerializableCollection<T>() {
                 @NotNull
@@ -804,6 +616,7 @@ public class GridFunc {
      * @param <T> Element type.
      * @return Concatenated {@code non-null} collection.
      */
+    @SuppressWarnings("ConstantConditions")
     public static <T> Collection<T> concat(boolean cp, @Nullable final Collection<T> c1,
         @Nullable final Collection<T> c2) {
         if (cp) {
@@ -1079,55 +892,6 @@ public class GridFunc {
     }
 
     /**
-     * Loses all entries in input map which keys are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    @Deprecated
-    public static <K, V> Map<K, V> loseKeys(
-        Map<K, V> m,
-        boolean cp,
-        @Nullable final IgnitePredicate<? super K>... p
-    ) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getKey(), p);
-            }
-        });
-    }
-
-    /**
-     * Loses all entries in input map which values are evaluated to {@code true} by all
-     * given predicates.
-     *
-     * @param m Map to filter.
-     * @param cp If {@code true} method creates new map not modifying input, otherwise does
-     *      <tt>in-place</tt> modifications.
-     * @param p Optional set of predicates to use for filtration. If none provided - original
-     *      map (or its copy) will be returned.
-     * @param <K> Type of the free variable for the predicate and type of map's keys.
-     * @param <V> Type of map's values.
-     * @return Filtered map.
-     */
-    @Deprecated
-    public static <K, V> Map<K, V> loseValues(Map<K, V> m, boolean cp,
-        @Nullable final IgnitePredicate<? super V>... p) {
-        return lose(m, cp, new P1<Map.Entry<K, V>>() {
-            @Override public boolean apply(Map.Entry<K, V> e) {
-                return isAll(e.getValue(), p);
-            }
-        });
-    }
-
-    /**
      * Loses all elements in input list that are contained in {@code filter} collection.
      *
      * @param c Input list.
@@ -1138,6 +902,7 @@ public class GridFunc {
      * @param <T> Type of list.
      * @return List of remaining elements
      */
+    @SuppressWarnings("SuspiciousMethodCalls")
     public static <T> List<T> loseList(List<T> c, boolean cp, @Nullable Collection<? super T> filter) {
         A.notNull(c, "c");
 
@@ -1361,41 +1126,6 @@ public class GridFunc {
     }
 
     /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @param <R> Output type.
-     * @return Curried closure.
-     */
-    @Deprecated
-    public static <T, R> IgniteOutClosure<R> curry(final IgniteClosure<? super T, R> f, final T e) {
-        return new IgniteOutClosure<R>() {
-            @Override public R apply() {
-                return f.apply(e);
-            }
-        };
-    }
-
-    /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @return Curried closure.
-     */
-    @Deprecated
-    public static <T> GridAbsClosure curry(final IgniteInClosure<? super T> f, final T e) {
-        return new GridAbsClosure() {
-            @Override public void apply() {
-                f.apply(e);
-            }
-        };
-    }
-
-    /**
      * Converts array to {@link List}. Note that resulting list cannot
      * be altered in size, as it it based on the passed in array -
      * only current elements can be changed.
@@ -1445,7 +1175,7 @@ public class GridFunc {
         return new GridSerializableCollection<T>() {
             @NotNull
             @Override public Iterator<T> iterator() {
-                return flat((Iterable<? extends Iterable<T>>)c);
+                return flat(c);
             }
 
             @Override public int size() {
@@ -1650,8 +1380,6 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
         return isEmpty(p) || isAlwaysTrue(p) ? c : new GridSerializableCollection<T>() {
             // Pass through (will fail for readonly).
             @Override public boolean add(T e) {
@@ -1696,8 +1424,6 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        assert c != null;
-
         return new GridSerializableCollection<T2>() {
             @NotNull
             @Override public Iterator<T2> iterator() {
@@ -1712,72 +1438,6 @@ public class GridFunc {
                 return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
             }
         };
-    }
-
-    /**
-     * Creates read-only light-weight view on given list with provided transformation.
-     * Resulting list will only "have" {@code transformed} elements. Note that only wrapping
-     * list will be created and no duplication of data will occur.
-     *
-     * @param c Input list that serves as a base for the view.
-     * @param trans Transformation closure.
-     * @param <T1> Type of the list.
-     * @return Light-weight view on given list with provided transformation.
-     */
-    @SuppressWarnings("RedundantTypeArguments")
-    @Deprecated
-    public static <T1, T2> List<T2> viewListReadOnly(@Nullable final List<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans) {
-        A.notNull(trans, "trans");
-
-        if (isEmpty(c))
-            return Collections.emptyList();
-
-        assert c != null;
-
-        return new GridSerializableList<T2>() {
-            /** */
-            private static final long serialVersionUID = 3126625219739967068L;
-
-            @Override public T2 get(int idx) {
-                return trans.apply(c.get(idx));
-            }
-
-            @NotNull
-            @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true);
-            }
-
-            @Override public int size() {
-                return c.size();
-            }
-
-            @Override public boolean isEmpty() {
-                return c.isEmpty();
-            }
-        };
-    }
-
-    /**
-     * Creates a view on given list with provided transformer and predicates.
-     * Resulting list will only "have" elements for which all provided predicates, if any,
-     * evaluate to {@code true}. Note that a new collection will be created and data will
-     * be copied.
-     *
-     * @param c Input list that serves as a base for the view.
-     * @param trans Transforming closure from T1 to T2.
-     * @param p Optional predicates. If predicates are not provided - all elements will be in the view.
-     * @return View on given list with provided predicate.
-     */
-    @Deprecated
-    public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
-        IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
-        A.notNull(c, "c", trans, "trans");
-
-        if (isAlwaysFalse(p))
-            return Collections.emptyList();
-
-        return new ArrayList<>(transform(retain(c, true, p), trans));
     }
 
     /**
@@ -1797,8 +1457,6 @@ public class GridFunc {
         @Nullable final IgnitePredicate<? super K>... p) {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
-
-        assert m != null;
 
         return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMap<K, V>() {
             /** */
@@ -1885,8 +1543,6 @@ public class GridFunc {
 
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
-
-        assert m != null;
 
         final boolean hasPred = p != null && p.length > 0;
 
@@ -2008,8 +1664,6 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        assert m != null;
-
         return new GridSerializableMap<K, V1>() {
             /** Entry predicate. */
             private IgnitePredicate<Entry<K, V>> ep = new P1<Map.Entry<K, V>>() {
@@ -2129,8 +1783,6 @@ public class GridFunc {
 
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyMap();
-
-        assert c != null;
 
         return new GridSerializableMap<K, V>() {
             /** Entry predicate. */
@@ -2313,60 +1965,6 @@ public class GridFunc {
     }
 
     /**
-     * Converts collection of numbers to primitive {@code int[]} array.
-     *
-     * @param col Collection of numbers.
-     * @return Array of integers.
-     */
-    public static int[] toIntArray(Collection<? extends Number> col) {
-        if (col == null)
-            return null;
-
-        int[] res = new int[col.size()];
-
-        Iterator<? extends Number> iter = col.iterator();
-
-        for (int i = 0; i < res.length; i++)
-            res[i] = iter.next().intValue();
-
-        return res;
-    }
-
-    /**
-     * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
-     * method but this one doesn't put the default value into the map when key is not found.
-     *
-     * @param map Map to get value from.
-     * @param key Map key (can be {@code null}).
-     * @param c Optional factory closure for the default value to be returned in
-     *      when {@code key} is not found. If closure is not provided - {@code null} will be returned.
-     * @param <K> Map key type.
-     * @param <V> Map value type.
-     * @return Value for the {@code key} or default value produced by {@code c} if key is not
-     *      found (or {@code null} if key is not found and closure is not provided).
-     * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
-     * @see #newList()
-     * @see #newSet()
-     * @see #newAtomicLong()
-     * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
-     */
-    @Deprecated
-    @Nullable public static <K, V> V returnIfAbsent(Map<? extends K, ? extends V> map, @Nullable K key,
-        @Nullable Callable<V> c) {
-        A.notNull(map, "map");
-
-        try {
-            return !map.containsKey(key) ? c == null ? null : c.call() : map.get(key);
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /**
      * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
      * Note that this method does not create a new closure but returns a static one.
      *
@@ -2380,20 +1978,6 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link List} instance. Note that this
-     * method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<List<T>> newList() {
-        return (IgniteCallable<List<T>>)LIST_FACTORY;
-    }
-
-    /**
      * Returns a factory closure that creates new {@link AtomicInteger} instance
      * initialized to {@code zero}. Note that this method does not create a new
      * closure but returns a static one.
@@ -2404,61 +1988,6 @@ public class GridFunc {
     @Deprecated
     public static IgniteCallable<AtomicInteger> newAtomicInt() {
         return ATOMIC_INT_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicLong} instance
-     * initialized to {@code zero}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicLong} instance
-     *      initialized to {@code zero} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @Deprecated
-    public static IgniteCallable<AtomicLong> newAtomicLong() {
-        return ATOMIC_LONG_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicReference} instance
-     * initialized to {@code null}. Note that this method does not create a new closure
-     * but returns a static one.
-     *
-     * @param <T> Type of the atomic reference.
-     * @return Factory closure that creates new {@link AtomicReference} instance
-     *      initialized to {@code null} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<AtomicReference<T>> newAtomicRef() {
-        return (IgniteCallable<AtomicReference<T>>)ATOMIC_REF_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link AtomicBoolean} instance
-     * initialized to {@code false}. Note that this method does not create a new
-     * closure but returns a static one.
-     *
-     * @return Factory closure that creates new {@link AtomicBoolean} instance
-     *      initialized to {@code false} every time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @Deprecated
-    public static IgniteCallable<AtomicBoolean> newAtomicBoolean() {
-        return ATOMIC_BOOL_FACTORY;
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link LinkedList} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link LinkedList}.
-     * @return Factory closure that creates new {@link LinkedList} instance every time its {@link
-     *         org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T> IgniteCallable<LinkedList<T>> newLinkedList() {
-        return (IgniteCallable<LinkedList<T>>)LINKED_LIST_FACTORY;
     }
 
     /**
@@ -2793,17 +2322,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate that evaluates to {@code true} if its free variable is {@code null}.
-     *
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
-     */
-    @Deprecated
-    public static <T> IgnitePredicate<T> isNull() {
-        return (IgnitePredicate<T>) IS_NULL;
-    }
-
-    /**
      * Gets predicate that evaluates to {@code true} if its free variable is not {@code null}.
      *
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
@@ -2869,25 +2387,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate that evaluates to {@code true} if its free variable is instance of the given class.
-     *
-     * @param cls Class to compare to.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if its free variable is instance
-     *      of the given class.
-     */
-    @Deprecated
-    public static <T> IgnitePredicate<T> instanceOf(final Class<?> cls) {
-        A.notNull(cls, "cls");
-
-        return new P1<T>() {
-            @Override public boolean apply(T t) {
-                return t != null && cls.isAssignableFrom(t.getClass());
-            }
-        };
-    }
-
-    /**
      * Gets first element from given collection or returns {@code null} if the collection is empty.
      *
      * @param c A collection.
@@ -2930,8 +2429,6 @@ public class GridFunc {
     @Nullable public static <T> T last(@Nullable Iterable<? extends T> c) {
         if (c == null)
             return null;
-
-        assert c != null;
 
         if (c instanceof RandomAccess && c instanceof List) {
             List<T> l = (List<T>)c;
@@ -2994,64 +2491,6 @@ public class GridFunc {
     }
 
     /**
-     * Get a predicate that evaluates to {@code true} if each of its component predicates
-     * evaluates to {@code true}. The components are evaluated in order they are supplied.
-     * Evaluation will be stopped as soon as first predicate evaluates to {@code false}.
-     * Passed in predicates are NOT copied. If no predicates are passed in the returned
-     * predicate will always evaluate to {@code false}.
-     *
-     * @param ps Passed in predicate. If none provided - always-{@code false} predicate is
-     *      returned.
-     * @param <T> Type of the free variable, i.e. the element the predicate is called on.
-     * @return Predicate that evaluates to {@code true} if each of its component predicates
-     *      evaluates to {@code true}.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
-        if (isEmpty(ps))
-            return F.alwaysTrue();
-
-        if (isAlwaysFalse(ps))
-            return F.alwaysFalse();
-
-        if (isAlwaysTrue(ps))
-            return F.alwaysTrue();
-
-        if (F0.isAllNodePredicates(ps)) {
-            assert ps != null;
-
-            Set<UUID> ids = new HashSet<>();
-
-            for (IgnitePredicate<? super T> p : ps) {
-                if (p != null) {
-                    Collection<UUID> list = ((GridNodePredicate)p).nodeIds();
-
-                    if (ids.isEmpty())
-                        ids.addAll(list);
-                    else
-                        ids.retainAll(list);
-                }
-            }
-
-            // T must be <T extends ClusterNode>.
-            return (IgnitePredicate<T>)new GridNodePredicate(ids);
-        }
-        else {
-            return new P1<T>() {
-                @Override public boolean apply(T t) {
-                    assert ps != null;
-
-                    for (IgnitePredicate<? super T> p : ps)
-                        if (p != null && !p.apply(t))
-                            return false;
-
-                    return true;
-                }
-            };
-        }
-    }
-
-    /**
      * Gets identity closure, i.e. the closure that returns its variable value.
      *
      * @param <T> Type of the variable and return value for the closure.
@@ -3090,8 +2529,6 @@ public class GridFunc {
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
         return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new P1<T>() {
             @Override public boolean apply(T t) {
-                assert c != null;
-
                 return !c.contains(t);
             }
         };
@@ -3203,13 +2640,8 @@ public class GridFunc {
      *      found (or {@code null} if key is not found and closure is not provided). Note that
      *      in case when key is not found the default value will be put into the map.
      * @throws GridClosureException Thrown in case when callable throws exception.
-     * @see #newLinkedList()
-     * @see #newList()
      * @see #newSet()
-     * @see #newAtomicLong()
      * @see #newAtomicInt()
-     * @see #newAtomicRef()
-     * @see #newAtomicBoolean()
      */
     @Nullable public static <K, V> V addIfAbsent(Map<? super K, V> map, @Nullable K key,
         @Nullable Callable<? extends V> c) {
@@ -3385,20 +2817,6 @@ public class GridFunc {
             d.add(f.apply(x));
 
         return d;
-    }
-
-    /**
-     * Upcasts collection type.
-     *
-     * @param c Initial collection.
-     * @return Resulting collection.
-     */
-    @SuppressWarnings("unchecked")
-    @Deprecated
-    public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
-        A.notNull(c, "c");
-
-        return (Collection<R>)c;
     }
 
     /**
@@ -3780,8 +3198,6 @@ public class GridFunc {
 
         if (!isEmpty(fs))
             for (D e : c) {
-                assert fs != null;
-
                 for (IgniteBiClosure<? super D, ? super B, B> f : fs)
                     b = f.apply(e, b);
             }
@@ -4445,75 +3861,6 @@ public class GridFunc {
     }
 
     /**
-     * Compares two arrays. Unlike {@code Arrays#equals(...)} method this implementation
-     * checks two arrays as sets allowing the same elements to be in different indexes.
-     *
-     * @param a1 First array to check.
-     * @param a2 Second array to check.
-     * @param sorted Tells whether or not both arrays are pre-sorted so that binary
-     *      search could be used instead of iteration.
-     * @param dups Tells whether or not arrays can contain duplicates. If arrays contain
-     *      duplicate the implementation will have to do double work.
-     * @return {@code True} if arrays are equal, {@code false} otherwise.
-     */
-    @Deprecated
-    public static boolean eqArray(Object[] a1, Object[] a2, boolean sorted, boolean dups) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null || a1.length != a2.length)
-            return false;
-
-        // Short circuit.
-        if (a1.length == 1)
-            return eq(a1[0], a2[0]);
-
-        for (Object o1 : a1) {
-            boolean found = false;
-
-            if (sorted)
-                found = Arrays.binarySearch(a2, o1) >= 0;
-            else {
-                for (Object o2 : a2) {
-                    if (eq(o1, o2)) {
-                        found = true;
-
-                        break;
-                    }
-                }
-            }
-
-            if (!found)
-                return false;
-        }
-
-        // If there are no dups - we can't skip checking seconds array
-        // against first one.
-        if (dups) {
-            for (Object o2 : a2) {
-                boolean found = false;
-
-                if (sorted)
-                    found = Arrays.binarySearch(a1, o2) >= 0;
-                else {
-                    for (Object o1 : a1) {
-                        if (eq(o2, o1)) {
-                            found = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                    return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
      * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
      * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
@@ -4580,26 +3927,6 @@ public class GridFunc {
      */
     public static GridClosureException wrap(Throwable e) {
         return new GridClosureException(e);
-    }
-
-    /**
-     * Checks if two collections passed in intersect.
-     *
-     * @param <E> Element type.
-     * @param s1 Set1.
-     * @param s2 Set2.
-     * @return {@code True} if there is an intersection, {@code false} otherwise.
-     */
-    @Deprecated
-    public static <E> boolean intersects(Iterable<E> s1, Collection<E>... s2) {
-        for (E e1 : s1) {
-            for (Collection<E> s : s2) {
-                if (s.contains(e1))
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -4673,15 +4000,5 @@ public class GridFunc {
         }
 
         return rdc == null ? null : rdc.reduce();
-    }
-
-    /**
-     * Returns predicate for filtering unfinished futures.
-     *
-     * @return Predicate for filtering unfinished futures.
-     */
-    @Deprecated
-    public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
-        return UNFINISHED_FUTURE;
     }
 }

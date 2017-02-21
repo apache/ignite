@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
+import org.apache.ignite.internal.util.lang.CompoundPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -364,16 +365,22 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
         A.notNull(p, "p");
 
         guard();
 
         try {
-            if (p != null)
-                ctx.resource().injectGeneric(p);
+            ctx.resource().injectGeneric(p);
 
-            return new ClusterGroupAdapter(ctx, subjId, this.p != null ? F.and(p, this.p) : p);
+            if (this.p == null)
+                return new ClusterGroupAdapter(ctx, subjId, p);
+            else {
+                IgnitePredicate<ClusterNode>[] preds = new IgnitePredicate[] { p, this.p };
+
+                return new ClusterGroupAdapter(ctx, subjId, new CompoundPredicate<>(preds));
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import javax.cache.Cache;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -69,11 +68,23 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
 
     /** {@inheritDoc} */
     @Override public Iterator<V> iterator() {
+        IgnitePredicate[] filter0;
+
+        if (F.isEmpty(filter))
+            filter0 = new IgnitePredicate[] { F.<K, V>cacheHasPeekValue() };
+        else {
+            filter0 = new IgnitePredicate[filter.length + 1];
+
+            System.arraycopy(filter, 0, filter0, 0, filter.length);
+
+            filter0[filter0.length - 1] = F.<K, V>cacheHasPeekValue();
+        }
+
         return new GridCacheIterator<K, V, V>(
             ctx,
             map.values(),
             F.<K, V>cacheEntry2Get(),
-            ctx.vararg(F0.and(filter, F.<K, V>cacheHasPeekValue()))
+            filter0
         ) {
             {
                 advance();

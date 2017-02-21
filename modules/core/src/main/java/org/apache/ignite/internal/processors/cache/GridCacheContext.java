@@ -1154,15 +1154,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param p Single predicate.
-     * @return Array containing single predicate.
-     */
-    @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
-        return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
-    }
-
-    /**
      * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
      *
      * @param e Element.
