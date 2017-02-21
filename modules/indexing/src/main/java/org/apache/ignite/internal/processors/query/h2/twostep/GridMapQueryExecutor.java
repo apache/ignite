@@ -456,7 +456,6 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
-        //TODO: ensure correct context is used to determine parallelism level
         for (int i = 1; i < mainCctx.config().getQueryParallelism(); i++) {
             final int segment = i;
 
