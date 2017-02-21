@@ -71,7 +71,7 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void getPositive() {
-        testVector.setStorage(createStorage());
+        testVector = getAbstractVector(createStorage());
 
         for (int i = 0; i < STORAGE_SIZE; i++)
             assertNotNull(NULL_VALUES, testVector.get(i));
@@ -103,12 +103,10 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void getX() {
-        VectorStorage storage = createStorage();
-
-        testVector.setStorage(storage);
+        double[] data = initVector();
 
         for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), storage.get(i), NIL_DELTA);
+            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i], NIL_DELTA);
     }
 
     /** */
@@ -136,13 +134,9 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void mapTwoVectors() {
-        VectorStorage storage = createStorage();
+        double[] data = initVector();
 
-        double[] data = storage.data().clone();
-
-        testVector.setStorage(storage);
-
-        AbstractVector testVector1 = getAbstractVector(storage);
+        AbstractVector testVector1 = getAbstractVector(createStorage(data));
 
         Vector map = testVector.map(testVector1, Functions.PLUS);
 
@@ -373,7 +367,7 @@ public class AbstractVectorTest {
 
         assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(), 0);
 
-        testVector.setStorage(storage);
+        testVector = getAbstractVector(storage);
 
         assertEquals(VALUE_NOT_EQUALS, testVector.nonZeroElements(), Arrays.stream(data).filter(x -> x != 0d).count());
 
@@ -425,11 +419,7 @@ public class AbstractVectorTest {
     public void nonZeroes() {
         assertNotNull(NULL_VALUE, testVector.nonZeroes());
 
-        VectorStorage storage = createStorage();
-
-        double[] data = storage.data();
-
-        testVector.setStorage(storage);
+        double[] data = initVector();
 
         assertNotNull(NULL_VALUE, testVector.nonZeroes());
 
@@ -491,11 +481,11 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void assignByFunc() {
-
         for (Vector.Element x : testVector.all())
             assertNotEquals(VALUES_SHOULD_BE_NOT_EQUALS, x.index(), x.get(), NIL_DELTA);
 
-        testVector.setStorage(createEmptyStorage());
+        initVector();
+
         testVector.assign(x -> x);
 
         for (Vector.Element x : testVector.all())
@@ -643,9 +633,7 @@ public class AbstractVectorTest {
 
         double[] data1 = storage.data().clone();
 
-        AbstractVector testVector1 = getAbstractVector();
-
-        testVector1.setStorage(storage);
+        AbstractVector testVector1 = getAbstractVector(storage);
 
         Vector plus = testVector.plus(testVector1);
 
@@ -679,9 +667,7 @@ public class AbstractVectorTest {
 
         double[] data1 = storage1.data().clone();
 
-        AbstractVector testVector1 = getAbstractVector();
-
-        testVector1.setStorage(storage1);
+        AbstractVector testVector1 = getAbstractVector(storage1);
 
         Vector minus = testVector.minus(testVector1);
 
@@ -701,9 +687,7 @@ public class AbstractVectorTest {
 
         double[] data1 = storage1.data().clone();
 
-        AbstractVector testVector1 = getAbstractVector();
-
-        testVector1.setStorage(storage1);
+        AbstractVector testVector1 = getAbstractVector(storage1);
 
         Vector times = testVector.times(testVector1);
 
@@ -779,7 +763,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: find out how to fix warning about missing constructor
+        return new AbstractVector(storage, STORAGE_SIZE) { // TODO: find out how to fix warning about missing constructor
             /** */
             @Override public boolean isDense() {
                 return false;
@@ -965,6 +949,21 @@ public class AbstractVectorTest {
     }
 
     /**
+     * Create new vector storage from given data.
+     *
+     * @param data Data.
+     * @return Vector storage.
+     */
+    private VectorStorage createStorage(double[] data){
+        VectorArrayStorage storage = new VectorArrayStorage(data.length);
+
+        for (int i = 0; i < data.length; i++)
+            storage.set(i, data[i]);
+
+        return storage;
+    }
+
+    /**
      * Init vector and return initialized values.
      *
      * @return Initial values.
@@ -973,7 +972,7 @@ public class AbstractVectorTest {
         VectorStorage storage = createStorage();
         double[] data = storage.data().clone();
 
-        testVector.setStorage(storage);
+        testVector = getAbstractVector(storage);
         return data;
     }
 

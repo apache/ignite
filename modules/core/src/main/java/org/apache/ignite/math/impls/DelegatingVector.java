@@ -349,4 +349,8 @@ public class DelegatingVector implements Vector {
     public IgniteUuid guid() {
         return guid;
     }
+
+    @Override public int getCardinality() {
+        return dlg.getCardinality();
+    }
 }

@@ -40,7 +40,7 @@ public class ConstantVector extends AbstractVector {
      * @param val
      */
     public ConstantVector(int size, double val) {
-        super(true, new ConstantVectorStorage(size, val));
+        super(true, new ConstantVectorStorage(size, val), size);
     }
 
     /**

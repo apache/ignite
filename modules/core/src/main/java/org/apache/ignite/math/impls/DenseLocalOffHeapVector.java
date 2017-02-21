@@ -37,6 +37,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
      * @param args
      */
     public DenseLocalOffHeapVector(Map<String, Object> args) {
+        super(args == null || !args.containsKey("size") ? 0 : (int) args.get("size"));
         assert args != null;
 
         if (args.containsKey("size"))
@@ -57,6 +58,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
      * @param arr Array to copy to offheap storage.
      */
     public DenseLocalOffHeapVector(double[] arr){
+        super(arr == null ? 0 : arr.length);
         if (arr == null) {
             setStorage(null);
 
@@ -73,6 +75,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
      * @param size
      */
     public DenseLocalOffHeapVector(int size){
+        super(size);
         makeOffheapStorage(size);
     }
 

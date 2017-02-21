@@ -48,7 +48,7 @@ public class VectorView extends AbstractVector {
      * @param len
      */
     public VectorView(Vector parent, int off, int len) {
-        super(new VectorDelegateStorage(parent.getStorage(), off, len));
+        super(new VectorDelegateStorage(parent.getStorage(), off, len), len);
 
         this.parent = parent;
         this.off = off;

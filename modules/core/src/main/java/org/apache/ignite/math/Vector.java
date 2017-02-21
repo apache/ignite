@@ -488,4 +488,10 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     default void destroy(){
         // No-op.
     }
+
+    /**
+     * Get vector cardinality.
+     * @return Cardinality.
+     */
+    int getCardinality();
 }
