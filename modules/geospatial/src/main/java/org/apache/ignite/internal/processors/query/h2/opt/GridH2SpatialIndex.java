@@ -121,6 +121,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         for (int i = 0; i < segmentsCnt; i++)
             segments[i] = store.openMap("spatialIndex-" + i, new MVRTreeMap.Builder<Long>());
+
+        ctx = tbl.rowDescriptor().context();
     }
 
     /**
@@ -156,21 +158,17 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert key != null;
 
+            final int seg = segmentForRow(row);
+
             Long rowId = keyToId.get(key);
 
-            int seg;
-
             if (rowId != null) {
-                seg = segmentForRowID(rowId);
-
                 Long oldRowId = segments[seg].remove(getEnvelope(idToRow.get(rowId), rowId));
 
                 assert rowId.equals(oldRowId);
             }
             else {
                 rowId = ++rowIds;
-
-                seg = segmentForRowID(rowId);
 
                 keyToId.put(key, rowId);
             }
@@ -187,17 +185,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
-    }
-
-    /**
-     * @param id Row ID.
-     *
-     * @return Segment ID for given row ID.
-     */
-    private int segmentForRowID(Long id) {
-        assert id != null;
-
-        return (int)(id % segmentsCount());
     }
 
     /**
@@ -235,7 +222,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert oldRow != null;
 
-            int seg = segmentForRowID(rowId);
+            final int seg = segmentForRow(row);
 
             if (!segments[seg].remove(getEnvelope(row, rowId), rowId))
                 throw DbException.throwInternalError("row not found");

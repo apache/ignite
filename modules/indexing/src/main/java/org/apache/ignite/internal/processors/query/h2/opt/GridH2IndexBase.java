@@ -43,6 +43,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
@@ -126,6 +127,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         }
     };
 
+    protected GridCacheContext<?, ?> ctx;
+
     /**
      * @param tbl Table.
      */
@@ -133,6 +136,8 @@ public abstract class GridH2IndexBase extends BaseIndex {
         final GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (desc != null && desc.context() != null) {
+            ctx = desc.context();
+
             GridKernalContext ctx = desc.context().kernalContext();
 
             log = ctx.log(getClass());
@@ -183,10 +188,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @return Index segment ID for current query context.
      */
     protected int threadLocalSegment() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
         if(segmentsCount() == 1)
             return 0;
+
+        GridH2QueryContext qctx = GridH2QueryContext.get();
 
         if(qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");
@@ -861,6 +866,35 @@ public abstract class GridH2IndexBase extends BaseIndex {
      */
     protected int segmentForPartition(int partition){
         return segmentsCount() == 1 ? 0 : (partition % segmentsCount());
+    }
+
+    /**
+     * @param row Table row.
+     * @return Segment ID for given row.
+     */
+    protected int segmentForRow(SearchRow row) {
+        assert row != null;
+
+        CacheObject key;
+
+        if (ctx != null) {
+            final Value keyColValue = row.getValue(KEY_COL);
+
+            assert keyColValue != null;
+
+            final Object o = keyColValue.getObject();
+
+            if (o instanceof CacheObject)
+                key = (CacheObject)o;
+            else
+                key = ctx.toCacheKeyObject(o);
+
+            return segmentForPartition(ctx.affinity().partition(key));
+        }
+
+        assert segmentsCount() == 1;
+
+        return 0;
     }
 
     /**

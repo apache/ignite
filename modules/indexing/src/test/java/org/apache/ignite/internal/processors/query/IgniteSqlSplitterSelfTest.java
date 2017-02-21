@@ -824,7 +824,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, CacheException.class, "Cache index segmentation is supported for PARTITIONED mode only.");
+        }, CacheException.class, " Segmented indices are supported for PARTITIONED mode only.");
     }
 
     /**

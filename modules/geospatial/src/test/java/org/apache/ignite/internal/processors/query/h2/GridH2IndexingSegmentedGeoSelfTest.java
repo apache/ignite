@@ -27,4 +27,6 @@ public class GridH2IndexingSegmentedGeoSelfTest extends GridH2IndexingGeoSelfTes
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         return super.cacheConfiguration(gridName).setQueryParallelism(7);
     }
+
+
 }

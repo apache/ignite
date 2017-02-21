@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
@@ -45,8 +42,6 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
-
 /**
  * Base class for snapshotable segmented tree indexes.
  */
@@ -57,9 +52,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** */
     private final boolean snapshotEnabled;
-
-    /** */
-    private final GridH2RowDescriptor desc;
 
     /**
      * Constructor with index initialization. Creates index with single segment.
@@ -91,8 +83,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         IndexColumn.mapColumns(cols, tbl);
 
-        desc = tbl.rowDescriptor();
-
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
@@ -106,8 +96,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             if (snapshotEnabled) {
                 for (int i = 0; i < segmentsCnt; i++) {
                     segments[i] = new SnapTreeMap<GridSearchRowPointer, GridH2Row>(this) {
-                        @Override
-                        protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
+                        @Override protected void afterNodeUpdate_nl(Node<GridSearchRowPointer, GridH2Row> node, Object val) {
                             if (val != null)
                                 node.key = (GridSearchRowPointer)val;
                         }
@@ -423,37 +412,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     /** {@inheritDoc} */
     @Override protected int segmentsCount() {
         return segments.length;
-    }
-
-    /**
-     * @param row Table row.
-     * @return Segment ID for given row.
-     */
-    private int segmentForRow(SearchRow row) {
-        assert row != null;
-
-        CacheObject key;
-
-        if (desc != null && desc.context() != null) {
-            GridCacheContext<?, ?> ctx = desc.context();
-
-            assert ctx != null;
-
-            final Value keyColValue = row.getValue(KEY_COL);
-
-            assert keyColValue != null;
-
-            final Object o = keyColValue.getObject();
-
-            if (o instanceof CacheObject)
-                key = (CacheObject)o;
-            else
-                key = ctx.toCacheKeyObject(o);
-
-            return segmentForPartition(ctx.affinity().partition(key));
-        }
-        else
-            return 0;
     }
 
     /**
