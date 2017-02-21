@@ -25,22 +25,13 @@ import org.jetbrains.annotations.NotNull;
  * Node without region ID (it is equal null) is less the node with the region ID.
  */
 public class RegionNodeComparator implements Comparator<TcpDiscoveryNode> {
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int compare(@NotNull TcpDiscoveryNode firstNode, @NotNull TcpDiscoveryNode secondNode) {
-        Long firstRegionId = firstNode.getClusterRegionId();
-        Long secondRegionId = secondNode.getClusterRegionId();
+    /** {@inheritDoc} */
+    @Override public int compare(@NotNull TcpDiscoveryNode firstNode, @NotNull TcpDiscoveryNode secondNode) {
+        long firstRegionId = firstNode.getClusterRegionId();
+        long secondRegionId = secondNode.getClusterRegionId();
 
-        if (firstRegionId == null && secondRegionId == null)
+        if (firstRegionId == secondRegionId)
             return firstNode.compareTo(secondNode);
-        if (firstRegionId == null)
-            return -1;
-        if (secondRegionId == null)
-            return 1;
-        if (firstRegionId.equals(secondRegionId))
-            return firstNode.compareTo(secondNode);
-        return firstRegionId.compareTo(secondRegionId);
+        return (firstRegionId<secondRegionId)?-1:1;
     }
 }

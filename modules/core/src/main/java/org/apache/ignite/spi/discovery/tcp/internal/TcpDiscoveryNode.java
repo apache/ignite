@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -150,8 +151,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean daemon;
 
-    /** cluster region id */
-    private Long regionId;
+    /** Cluster region id. */
+    private long clusterRegionId = Long.MIN_VALUE;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -177,7 +178,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId) {
+        Serializable consistentId,
+        long clusterRegionId
+    ) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -200,6 +203,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         metrics = metricsProvider.metrics();
         cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
+        if (clusterRegionId==Long.MIN_VALUE)
+            this.clusterRegionId =
+                IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_CLUSTER_REGION_ID, Long.MIN_VALUE);
+        else
+            this.clusterRegionId = clusterRegionId;
     }
 
     /**
@@ -253,22 +261,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      */
     public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
-        Object id = this.attrs.get("CLUSTER_REGION_ID");
-        if (id == null)
-            regionId = null;
-        else if (id instanceof Integer)
-            regionId = ((Integer)id).longValue();
-        else if (id instanceof Long)
-            regionId = (Long)id;
-        else if (id instanceof String)
-            try {
-                regionId = Long.valueOf((String)id);
-            }
-            catch (NumberFormatException ignored) {
-                regionId = null;
-            }
-        else
-            regionId = null;
     }
 
     /**
@@ -535,7 +527,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      */
     public TcpDiscoveryNode clientReconnectNode() {
         TcpDiscoveryNode node = new TcpDiscoveryNode(id, addrs, hostNames, discPort, metricsProvider, ver,
-            null);
+            null, clusterRegionId);
 
         node.attrs = attrs;
         node.clientRouterNodeId = clientRouterNodeId;
@@ -607,6 +599,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         out.writeLong(intOrder);
         out.writeObject(ver);
         U.writeUuid(out, clientRouterNodeId);
+        out.writeLong(clusterRegionId);
     }
 
     /** {@inheritDoc} */
@@ -647,15 +640,16 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+        clusterRegionId = in.readLong();
     }
 
     /**
      * Return cluster region id.
      *
-     * @return Cluster region id or null if not set.
+     * @return Cluster region id.
      */
-    public @Nullable Long getClusterRegionId() {
-        return regionId;
+    public long getClusterRegionId() {
+        return clusterRegionId;
     }
 
     /** {@inheritDoc} */

@@ -511,6 +511,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
 
     /**
+     * Cluster region ID used for sorting nodes in ring for discovery.
+     * <p>
+     * Defaults to {@code} Long.MIN_VALUE,
+     */
+    public static final String IGNITE_CLUSTER_REGION_ID = "IGNITE_CLUSTER_REGION_ID";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

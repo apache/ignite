@@ -17,6 +17,16 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -30,7 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -89,9 +98,7 @@ public class TcpDiscoveryNodesRing {
     /** */
     private IgniteProductVersion minNodeVer;
 
-    /**
-     * Comparator is used for choice next node in ring.
-     */
+    /** Comparator is used for choice next node in ring. */
     private final Comparator<TcpDiscoveryNode> nodeComparator = new RegionNodeComparator();
 
     public TcpDiscoveryNodesRing() {
@@ -343,8 +350,7 @@ public class TcpDiscoveryNodesRing {
      * @param nodeId Node id to find.
      * @return Node with ID provided or {@code null} if not found.
      */
-    @Nullable
-    public TcpDiscoveryNode node(UUID nodeId) {
+    @Nullable public TcpDiscoveryNode node(UUID nodeId) {
         assert nodeId != null;
 
         rwLock.readLock().lock();
@@ -363,8 +369,7 @@ public class TcpDiscoveryNodesRing {
      * @param nodeId ID of the node to remove.
      * @return {@code true} if node was removed.
      */
-    @Nullable
-    public TcpDiscoveryNode removeNode(UUID nodeId) {
+    @Nullable public TcpDiscoveryNode removeNode(UUID nodeId) {
         assert nodeId != null;
         assert !locNode.id().equals(nodeId);
 
@@ -407,9 +412,8 @@ public class TcpDiscoveryNodesRing {
             nodes = new TreeSet<>(nodeComparator);
             oldNodesCount = 0L;
 
-            if (locNode != null) {
+            if (locNode != null)
                 nodes.add(locNode);
-            }
 
             nodesMap = new HashMap<>();
 
@@ -655,9 +659,7 @@ public class TcpDiscoveryNodesRing {
         });
     }
 
-    /**
-     *
-     */
+    /** */
     private void initializeMinimumVersion() {
         minNodeVer = null;
 

@@ -468,6 +468,9 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
+    /** */
+    private long clusterRegionId = Long.MIN_VALUE;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -570,6 +573,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        clusterRegionId = cfg.getClusterRegionId();
     }
 
     /**
@@ -2666,6 +2670,27 @@ public class IgniteConfiguration {
         this.lateAffAssignment = lateAffAssignment;
 
         return this;
+    }
+
+    /**
+     * Sets cluster region ID.
+     *
+     * @param clusterRegionId Cluster region ID.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setClusterRegionId(long clusterRegionId) {
+        this.clusterRegionId = clusterRegionId;
+
+        return this;
+    }
+
+    /**
+     * Gets cluster region ID.
+     *
+     * @return Cluster region ID.
+     */
+    public long getClusterRegionId(){
+        return clusterRegionId;
     }
 
     /** {@inheritDoc} */

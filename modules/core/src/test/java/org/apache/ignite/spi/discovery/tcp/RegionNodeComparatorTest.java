@@ -18,6 +18,14 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import com.google.common.base.Supplier;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeSet;
+import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -26,12 +34,9 @@ import org.apache.ignite.spi.discovery.tcp.internal.RegionNodeComparator;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Tests for class RegionNodeComparator
- */
+/** Tests for class RegionNodeComparator. */
 public class RegionNodeComparatorTest extends GridCommonAbstractTest {
     /**
      * The test for the preservation of order.
@@ -78,20 +83,22 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Convert incorrect compared nodes to debug string.
+     *
      * @param pair Pair of nodes.
      * @return Debug string.
      */
     private static String pairToString(ComparatorTester.Pair<TcpDiscoveryNode> pair) {
         return "[firstNodeInternalOrder=" + pair.first.internalOrder() +
-            ", firstNodeRegionId=" + pair.first.getAttributes().get("CLUSTER_REGION_ID") +
+            ", firstNodeRegionId=" + pair.first.getClusterRegionId() +
             ", secondNodeInternalOrder=" + pair.second.internalOrder() +
-            ", secondNodeRegionId=" + pair.second.getAttributes().get("CLUSTER_REGION_ID") + ']';
+            ", secondNodeRegionId=" + pair.second.getClusterRegionId() + ']';
     }
 
     /**
      * Test for correct sorting
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testLogic() throws Exception {
         final int REGIONS = 13;
@@ -116,9 +123,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Build nodes with correct ids and CLUSTER_REGION_IDs.
-     */
+    /** Build nodes with correct ids and cluster region ids. */
     private static class NodeFactory implements Supplier<TcpDiscoveryNode> {
         /**  */
         final AtomicLong id = new AtomicLong(1L);
@@ -126,11 +131,27 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
         final Random random = new Random();
 
         /**
-         * @return Node without id and CLUSTER_REGION_ID.
+         * Return node with sequential id and random cluster region id.
+         *
+         * @return Node with sequential id and random cluster region id.
          */
-        private TcpDiscoveryNode getRaw() {
-            return new TcpDiscoveryNode(new UUID(0L, id.getAndIncrement()), Collections.singletonList("1.1.1.1"),
-                Collections.singletonList("1.1.1.1"), 88, new DiscoveryMetricsProvider() {
+        @Override
+        public TcpDiscoveryNode get() {
+            TcpDiscoveryNode node = get(random.nextInt(10));
+            return node;
+        }
+
+        /**
+         * Return node with sequential id and specific cluster region id.
+         *
+         * @param region Cluster region id.
+         * @return Node with sequential id and specific cluster region id.
+         */
+        public TcpDiscoveryNode get(long region) {
+
+            TcpDiscoveryNode node = new TcpDiscoveryNode(new UUID(0L, id.getAndIncrement()),
+                Collections.singletonList("1.1.1.1"), Collections.singletonList("1.1.1.1"), 88,
+                new DiscoveryMetricsProvider() {
                 private final Map<Integer, CacheMetrics> EMPTY = new HashMap<Integer, CacheMetrics>(0);
 
                 @Override
@@ -142,47 +163,19 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
                 public Map<Integer, CacheMetrics> cacheMetrics() {
                     return EMPTY;
                 }
-            }, new IgniteProductVersion(), null);
-        }
-
-        /**
-         * @return Node with sequential id and random CLUSTER_REGION_ID.
-         */
-        @Override
-        public TcpDiscoveryNode get() {
-            TcpDiscoveryNode node = getRaw();
-
-            node.setAttributes(Collections.<String, Object>singletonMap("CLUSTER_REGION_ID", random.nextInt(10)));
-            node.internalOrder(node.id().getLeastSignificantBits());
-            return node;
-        }
-
-        /**
-         * @param region CLUSTER_REGION_ID.
-         * @return Node with sequential id and specific CLUSTER_REGION_ID.
-         */
-        public TcpDiscoveryNode get(long region) {
-            TcpDiscoveryNode node = getRaw();
-
-            node.setAttributes(Collections.<String, Object>singletonMap("CLUSTER_REGION_ID", region));
+            }, new IgniteProductVersion(), null, region);
             node.internalOrder(node.id().getLeastSignificantBits());
             return node;
         }
 
     }
 
-    /**
-     * Class for testing comparators. In the future we may add new comparator, and then may use this class.
-     */
+    /** Class for testing comparators. In the future we may add new comparator, and then may use this class. */
     private static class ComparatorTester<T> {
-        /**
-         * The number of experiments
-         */
+        /** The number of experiments */
         final int N;
 
-        /**
-         *
-         */
+        /** */
         public ComparatorTester() {
             N = 1000;
         }
@@ -241,9 +234,7 @@ public class RegionNodeComparatorTest extends GridCommonAbstractTest {
             return null;
         }
 
-        /**
-         * Class is used for show in assert.
-         */
+        /** Class is used for show in assert. */
         static class Pair<T> {
             final T first;
             final T second;

@@ -99,9 +99,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
 
-/**
- * Clone of TcpDiscoverySelfTest but for using CLUSTER_REGION_ID
- */
+/** Clone of TcpDiscoverySelfTest but for using CLUSTER_REGION_ID */
 public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
     /** Region counter. */
     final static AtomicLong regionCount = new AtomicLong(0L);
@@ -116,184 +114,14 @@ public class RegionTcpDiscoverySelfTest extends TcpDiscoverySelfTest {
         super();
     }
 
-    private static void addRegion(Map<String, Object> attrs, String name) {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final long region;
-        if (regionIds.containsKey(name))
-            region = regionIds.get(name);
+        if (regionIds.containsKey(gridName))
+            region = regionIds.get(gridName);
         else {
             region = regionCount.getAndIncrement();
-            regionIds.put(name, region);
+            regionIds.put(gridName, region);
         }
-        attrs.put("CLUSTER_REGION_ID", region);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TcpDiscoverySpi getTcpDiscoverySpi() {
-        return new TcpDiscoverySpiWithRegion();
-    }
-
-    /** */
-    private static class TcpDiscoverySpiWithRegion extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestTcpDiscoverySpi getTestTcpDiscoverySpi() {
-        return new TestTcpDiscoverySpiWithRegion();
-    }
-
-    /** */
-    private static class TestTcpDiscoverySpiWithRegion extends TestTcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestDiscoveryDataDuplicateSpi getTestDiscoveryDataDuplicateSpi() {
-        return new TestDiscoveryDataDuplicateSpiWithRegion();
-    }
-
-    /** */
-    private static class TestDiscoveryDataDuplicateSpiWithRegion extends TestDiscoveryDataDuplicateSpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestEventDiscardSpi getTestEventDiscardSpi() {
-        return new TestEventDiscardSpiWithRegion();
-    }
-
-    /** */
-    private static class TestEventDiscardSpiWithRegion extends TestEventDiscardSpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestCustomerEventAckSpi getTestCustomerEventAckSpi() {
-        return new TestCustomerEventAckSpiWithRegion();
-    }
-
-    /** */
-    private static class TestCustomerEventAckSpiWithRegion extends TestCustomerEventAckSpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestFailedNodesSpi getTestFailedNodesSpi(int failOrder) {
-        return new TestFailedNodesSpi(failOrder);
-    }
-
-    /** */
-    private static class TestFailedNodesSpiWithRegion extends TestFailedNodesSpi {
-        /** {@inheritDoc} */
-        TestFailedNodesSpiWithRegion(int failOrder) {
-            super(failOrder);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestCustomEventCoordinatorFailureSpi getTestCustomEventCoordinatorFailureSpi() {
-        return new TestCustomEventCoordinatorFailureSpiWithRegion();
-    }
-
-    /** */
-    private static class TestCustomEventCoordinatorFailureSpiWithRegion extends TestCustomEventCoordinatorFailureSpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestCustomEventRaceSpi getTestCustomEventRaceSpi() {
-        return new TestCustomEventRaceSpiWithRegion();
-    }
-
-    /** */
-    private static class TestCustomEventRaceSpiWithRegion extends TestCustomEventRaceSpi {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestMessageWorkerFailureSpi1 getTestMessageWorkerFailureSpi1(int failureMode) {
-        return new TestMessageWorkerFailureSpi1WithRegion(failureMode);
-    }
-
-    /** */
-    private static class TestMessageWorkerFailureSpi1WithRegion extends TestMessageWorkerFailureSpi1 {
-        /** */
-        public TestMessageWorkerFailureSpi1WithRegion(int failureMode) {
-            super(failureMode);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected TestMessageWorkerFailureSpi2 getTestMessageWorkerFailureSpi2() {
-        return new TestMessageWorkerFailureSpi2WithRegion();
-    }
-
-    /** */
-    private static class TestMessageWorkerFailureSpi2WithRegion extends TestMessageWorkerFailureSpi2 {
-        /** {@inheritDoc} */
-        @Override public void setNodeAttributes(Map<String, Object> attrs,
-            IgniteProductVersion ver) {
-            addRegion(attrs, getName());
-            super.setNodeAttributes(attrs, ver);
-        }
+        return super.getConfiguration(gridName).setClusterRegionId(region);
     }
 }

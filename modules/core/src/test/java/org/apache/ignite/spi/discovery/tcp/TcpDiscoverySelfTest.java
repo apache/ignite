@@ -1976,6 +1976,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testDuplicatedDiscoveryDataRemoved() throws Exception {
         try {
+            //assertEquals(0, grid().cluster().nodes().size());
             TestDiscoveryDataDuplicateSpi.checkNodeAdded = false;
             TestDiscoveryDataDuplicateSpi.checkClientNodeAddFinished = false;
             TestDiscoveryDataDuplicateSpi.fail = false;
