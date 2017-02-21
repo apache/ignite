@@ -10,6 +10,8 @@ import static org.junit.Assert.*;
 
 /** */
 public class VectorBenchmarkTest {
+    // todo add benchmarks for map and fold methods (possibly a separate one),
+    //   for assign and other methods in Vector and for other types of Vector and Matrix
     /** */ @Test
     public void testDenseLocalOnHeapVector() throws Exception {
         benchmark("DenseLocalOnHeapVector", DenseLocalOnHeapVector::new);
@@ -34,6 +36,13 @@ public class VectorBenchmarkTest {
 
         new MathBenchmark(namePrefix + " large sizes").execute(() -> {
             for (int power: new int[] {10, 12, 14, 16}) for (int delta : new int[] {-1, 0, 1})
+                testMix((1 << power) + delta, constructor);
+        });
+
+        new MathBenchmark(namePrefix + " extra large sizes")
+            .measurementTimes(10)
+            .execute(() -> { // todo test powers 21, 22, 23 (power 24 killed my IDEA)
+            for (int power: new int[] {17, 18, 19, 20}) for (int delta : new int[] {-1, 0, 1})
                 testMix((1 << power) + delta, constructor);
         });
     }

@@ -5,27 +5,23 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /** Refer {@link MathBenchmarkSelfTest} for usage examples.*/
 class MathBenchmark {
-    /** */
-    private final String outputFileName;
+    /** */ private final String outputFileName;
 
-    /** */
-    private final String benchmarkName;
+    /** */ private final String benchmarkName;
 
-    /** */
-    private final int measurementTimes;
+    /** */ private final int measurementTimes;
 
-    /** */
-    private final int warmUpTimes;
+    /** */ private final int warmupTimes;
 
-    /** */
-    private final String tag;
+    /** */ private final String tag;
 
-    /** */
-    private final String comments;
+    /** */ private final String comments;
 
     /** Constructor strictly for use within this class. */
     private MathBenchmark(String benchmarkName, String outputFileName, int measurementTimes, int warmupTimes,
@@ -33,7 +29,7 @@ class MathBenchmark {
         this.benchmarkName = benchmarkName;
         this.outputFileName = outputFileName;
         this.measurementTimes = measurementTimes;
-        this.warmUpTimes = warmupTimes;
+        this.warmupTimes = warmupTimes;
         this.tag = tag;
         this.comments = comments;
         validate();
@@ -54,7 +50,9 @@ class MathBenchmark {
      * @throws Exception if something goes wrong
      */
     void execute(BenchmarkCode code) throws Exception {
-        for (int cnt = 0; cnt < warmUpTimes; cnt++)
+        System.out.println("Started benchmark [" + benchmarkName + "]");
+
+        for (int cnt = 0; cnt < warmupTimes; cnt++)
             code.call();
 
         final long start = System.currentTimeMillis();
@@ -65,6 +63,9 @@ class MathBenchmark {
         final long end = System.currentTimeMillis();
 
         writeResults(formatResults(start, end));
+
+        System.out.println("Finished benchmark [" + benchmarkName + "]"
+            + (outputFileName == null ? "" : ", results written to file [" + outputFileName + "]"));
     }
 
     /**
@@ -73,7 +74,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark outputFileName(String param) {
-        return new MathBenchmark(benchmarkName, param, measurementTimes, warmUpTimes, tag, comments);
+        return new MathBenchmark(benchmarkName, param, measurementTimes, warmupTimes, tag, comments);
     }
 
     /**
@@ -82,15 +83,15 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark measurementTimes(int param) {
-        return new MathBenchmark(benchmarkName, outputFileName, param, warmUpTimes, tag, comments);
+        return new MathBenchmark(benchmarkName, outputFileName, param, warmupTimes, tag, comments);
     }
 
     /**
-     * Set optional warm up times.
+     * Set optional warmup times.
      * @param param times
      * @return configured benchmark
      */
-    MathBenchmark warmUpTimes(int param) {
+    MathBenchmark warmupTimes(int param) {
         return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, param, tag, comments);
     }
 
@@ -100,7 +101,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark tag(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmUpTimes, param, comments);
+        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, param, comments);
     }
 
     /**
@@ -109,7 +110,7 @@ class MathBenchmark {
      * @return configured benchmark
      */
     MathBenchmark comments(String param) {
-        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmUpTimes, tag, param);
+        return new MathBenchmark(benchmarkName, outputFileName, measurementTimes, warmupTimes, tag, param);
     }
 
     /** */
@@ -134,15 +135,19 @@ class MathBenchmark {
 
         assert !formatDouble(1000_000_001.1).contains(delim) : "Formatted results contain [" + delim + "].";
 
+        final String ts = formatTs(start);
+
+        assert !ts.contains(delim) : "Formatted timestamp contains [" + delim + "].";
+
         return benchmarkName +
             delim +
-            start + // IMPL NOTE timestamp
+            ts + // IMPL NOTE timestamp
             delim +
             formatDouble((double)(end - start) / measurementTimes) +
             delim +
             measurementTimes +
             delim +
-            warmUpTimes +
+            warmupTimes +
             delim +
             tag +
             delim +
@@ -152,6 +157,11 @@ class MathBenchmark {
     /** */
     private String formatDouble(double val) {
         return String.format(Locale.US, "%f", val);
+    }
+
+    /** */
+    private String formatTs(long ts) {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(ts));
     }
 
     /** */
