@@ -201,7 +201,8 @@ public abstract class PagesList extends DataStructure {
                     for (int i = 0; i < upd.length; i++) {
                         long tailId = upd[i];
 
-                        try(Page tail = page(tailId)) {
+                        // TODO: need get full bucket size.
+                        try (Page tail = page(tailId)) {
                             long tailAddr = readLock(tail);
 
                             assert tailAddr != 0L;
@@ -847,10 +848,11 @@ public abstract class PagesList extends DataStructure {
 
         while (true) {
             Stripe stripe = tails[cur];
-            if(!stripe.empty)
+
+            if (!stripe.empty)
                 return stripe;
 
-            if((cur = (cur + 1) % len) == init)
+            if ((cur = (cur + 1) % len) == init)
                 return null;
         }
     }
@@ -921,12 +923,16 @@ public abstract class PagesList extends DataStructure {
                     continue;
                 }
 
-                if(!isReuseBucket(bucket) && stripe.empty) {
-                    // Another thread took the last page
+                // TODO: condition !isReuseBucket(bucket) is not correct.
+                if (!isReuseBucket(bucket) && stripe.empty) {
+                    // Another thread took the last page.
                     writeUnlock(tail, tailPageAddr, false);
 
-                    if(bucketsSize[bucket].get() > 0)
+                    if (bucketsSize[bucket].get() > 0) {
+                        lockAttempt = 0;
+
                         continue;
+                    }
                     else
                         return 0L;
                 }
@@ -958,6 +964,7 @@ public abstract class PagesList extends DataStructure {
 
                         boolean empty = io.isEmpty(tailPageAddr);
 
+                        // TODO: add comment, it seems flag is not set to correct value for reuse bucket.
                         stripe.empty = empty;
 
                         // If we got an empty page in non-reuse bucket, move it back to reuse list

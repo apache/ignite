@@ -38,21 +38,24 @@ public class IgniteDbMemoryLeakSqlQueryTest extends IgniteDbMemoryLeakTest {
     /** {@inheritDoc} */
     @Override protected void operation(IgniteCache<Object, Object> cache) {
         Object key = key();
-        Object value = value(key);
+        Object val = value(key);
 
         switch (nextInt(4)) {
             case 0:
-                cache.getAndPut(key, value);
+                cache.getAndPut(key, val);
 
                 break;
+
             case 1:
                 cache.get(key);
 
                 break;
+
             case 2:
                 cache.getAndRemove(key);
 
                 break;
+
             case 3:
                 cache.query(sqlQuery(cache)).getAll();
         }
@@ -63,9 +66,11 @@ public class IgniteDbMemoryLeakSqlQueryTest extends IgniteDbMemoryLeakTest {
      * @return SqlFieldsQuery.
      */
     @NotNull private SqlFieldsQuery sqlQuery(IgniteCache<Object, Object> cache) {
-        String query = String.format("select _key from \"%s\".DbValue where iVal=?", cache.getName());
-        SqlFieldsQuery sqlQuery = new SqlFieldsQuery(query);
-        sqlQuery.setArgs(nextInt(200_000));
-        return sqlQuery;
+        String qry = String.format("select _key from \"%s\".DbValue where iVal=?", cache.getName());
+
+        SqlFieldsQuery sqlQry = new SqlFieldsQuery(qry);
+        sqlQry.setArgs(nextInt(200_000));
+
+        return sqlQry;
     }
 }

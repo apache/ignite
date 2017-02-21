@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.AffinityFunction;
+import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,9 +32,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Random;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -56,7 +55,8 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     protected abstract boolean indexingEnabled();
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked") @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
@@ -80,9 +80,9 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (indexingEnabled())
             ccfg.setIndexedTypes(Integer.class, DbValue.class);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
@@ -90,9 +90,9 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (indexingEnabled())
             ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
 
-        ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg2.setAtomicityMode(TRANSACTIONAL);
+        ccfg2.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg2.setRebalanceMode(SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         CacheConfiguration ccfg3 = new CacheConfiguration("large");
@@ -100,31 +100,27 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         if (indexingEnabled())
             ccfg3.setIndexedTypes(Integer.class, LargeDbValue.class);
 
-        ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg3.setAtomicityMode(TRANSACTIONAL);
+        ccfg3.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg3.setRebalanceMode(SYNC);
         ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
 
-        ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg4.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg4.setAtomicityMode(TRANSACTIONAL);
+        ccfg4.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg4.setRebalanceMode(SYNC);
+        ccfg4.setAffinity(new RendezvousAffinityFunction(1, null));
 
         CacheConfiguration ccfg5 = new CacheConfiguration("atomic");
 
         if (indexingEnabled())
             ccfg5.setIndexedTypes(DbKey.class, DbValue.class);
 
-        ccfg5.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg5.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg5.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg5.setAtomicityMode(ATOMIC);
+        ccfg5.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg5.setRebalanceMode(SYNC);
         ccfg5.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
-
-        ccfg4.setAffinity(aff);
 
         cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
@@ -144,25 +140,25 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
      * @param cfg IgniteConfiguration.
      */
     protected void configure(IgniteConfiguration cfg){
-        //NOP
+        // No-op.
     }
 
     /**
      * @param mCfg MemoryConfiguration.
      */
     protected void configure(MemoryConfiguration mCfg){
-        //NOP
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
-        long seed = 1464583813940L; // System.currentTimeMillis();
-
-        info("Seed: " + seed + "L");
-
-        BPlusTree.rnd = new Random(seed);
+//        long seed = System.currentTimeMillis();
+//
+//        info("Seed: " + seed + "L");
+//
+//        BPlusTree.rnd = new Random(seed);
 
         startGrids(gridCount());
 
@@ -274,8 +270,6 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField
         long lVal;
-
-
 
         /**
          * @param iVal Integer value.

@@ -30,13 +30,13 @@ import org.apache.ignite.internal.processors.cache.database.DataStructure;
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
-    @SuppressWarnings("WeakerAccess") protected static final int CONCURRENCY_LEVEL = 8;
+    private static final int CONCURRENCY_LEVEL = 8;
 
     /** */
     private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;
 
     /** */
-    private volatile Exception ex = null;
+    private volatile Exception ex;
 
     /** */
     private long warmUpEndTime;
@@ -45,21 +45,24 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     private long endTime;
 
     /** */
-    private long loadedPages = 0;
+    private long loadedPages;
 
     /** */
-    private long delta = 0;
+    private long delta;
 
     /** */
-    private long probeCnt = 0;
+    private long probeCnt;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
         DataStructure.rnd = null;
 
         long startTime = System.nanoTime();
+
         warmUpEndTime = startTime + TimeUnit.SECONDS.toNanos(warmUp());
+
         endTime = warmUpEndTime + TimeUnit.SECONDS.toNanos(duration());
     }
 
@@ -73,6 +76,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
 
         long size = 1024 * pagesMax() * (isLargePage() ? 16 : 1);
+
         mCfg.setPageCacheSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
     }
 
@@ -86,7 +90,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @return Warm up duration in seconds.
      */
-    @SuppressWarnings("WeakerAccess") protected int warmUp() {
+    @SuppressWarnings("WeakerAccess")
+    protected int warmUp() {
         return 300;
     }
 
@@ -102,7 +107,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return (warmUp() + duration() + 1) * 2000; // Two extra seconds to stop all threads.
+        return (warmUp() + duration() + 10) * 1000; // Extra seconds to stop all threads.
     }
 
     /**
@@ -127,17 +132,19 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      */
     protected void operation(IgniteCache<Object, Object> cache) {
         Object key = key();
-        Object value = value(key);
+        Object val = value(key);
 
         switch (nextInt(3)) {
             case 0:
-                cache.getAndPut(key, value);
+                cache.getAndPut(key, val);
 
                 break;
+
             case 1:
                 cache.get(key);
 
                 break;
+
             case 2:
                 cache.getAndRemove(key);
         }
@@ -173,6 +180,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
                     }
                     catch (Exception e) {
                         ex = e;
+
                         break;
                     }
                 }
@@ -223,18 +231,19 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
         long pagesMax = pagesMax();
 
         assertTrue(
-            "Maximal allowed pages number is exceeded. [allowed=" + pagesMax + "; actual= " + pagesActual + "]",
+            "Maximal allowed pages number is exceeded [allowed=" + pagesMax + ", actual= " + pagesActual + "]",
             pagesActual <= pagesMax);
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;
+
             int allowedDelta = pagesDelta();
 
-            if(probeCnt++ > 12) { // we need some statistic first. Minimal statistic is taken for a minute.
+            if (probeCnt++ > 12) { // We need some statistic first. Minimal statistic is taken for a minute.
                 long actualDelta = delta / probeCnt;
 
                 assertTrue(
-                    "Average growth pages in the number is more than expected. [allowed=" + allowedDelta + "; actual=" + actualDelta + "]",
+                    "Average growth pages in the number is more than expected [allowed=" + allowedDelta + ", actual=" + actualDelta + "]",
                     actualDelta <= allowedDelta);
             }
         }
@@ -250,7 +259,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @return Expected average number of pages, on which their total number can grow per 5 seconds.
      */
-    @SuppressWarnings("WeakerAccess") protected int pagesDelta() {
+    @SuppressWarnings("WeakerAccess")
+    protected int pagesDelta() {
         return 3;
     }
 }
