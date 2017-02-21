@@ -458,6 +458,8 @@ public class GridMapQueryExecutor {
             req.isFlagSet(GridH2QueryRequest.FLAG_IS_LOCAL),
             req.isFlagSet(GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS));
 
+        final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
+
         for (int i = 1; i < mainCctx.config().getQueryParallelism(); i++) {
             final int segment = i;
 
@@ -475,6 +477,7 @@ public class GridMapQueryExecutor {
                             req.tables(),
                             req.pageSize(),
                             joinMode,
+                            enforceJoinOrder,
                             req.timeout());
 
                         return null;
@@ -494,7 +497,7 @@ public class GridMapQueryExecutor {
             req.tables(),
             req.pageSize(),
             joinMode,
-            req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER),
+            enforceJoinOrder,
             req.timeout());
     }
 
@@ -585,7 +588,7 @@ public class GridMapQueryExecutor {
             Connection conn = h2.connectionForSpace(mainCctx.name());
 
             // Here we enforce join order to have the same behavior on all the nodes.
-            h2.setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
+            setupConnection(conn, distributedJoinMode != OFF, enforceJoinOrder);
 
             GridH2QueryContext.set(qctx);
 

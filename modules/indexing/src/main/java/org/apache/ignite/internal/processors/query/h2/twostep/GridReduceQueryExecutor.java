@@ -624,7 +624,7 @@ public class GridReduceQueryExecutor {
                 if (distributedJoins)
                     flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
 
-                if(qry.isLocal())
+                if (qry.isLocal())
                     flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
 
                 if (send(nodes,
