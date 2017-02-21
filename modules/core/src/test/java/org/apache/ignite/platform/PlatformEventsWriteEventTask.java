@@ -96,7 +96,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_CACHE_QUERY_EXECUTED;
+                int evtType = EventType.EVT_NODE_FAILED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
