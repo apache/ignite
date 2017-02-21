@@ -272,8 +272,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     @Override void clear() {
         GridCacheDistributedQueryManager<K, V> qryMgr = (GridCacheDistributedQueryManager<K, V>)cctx.queries();
 
-        assert qryMgr != null;
-
-        qryMgr.removeQueryFuture(reqId);
+        if (qryMgr != null)
+            qryMgr.removeQueryFuture(reqId);
     }
 }
