@@ -33,7 +33,7 @@ import java.util.function.*;
  */
 public abstract class AbstractVector implements Vector {
     /** Vector cardinality. */
-    private int cardinality;
+    private int size;
 
     /** Vector storage implementation. */
     private VectorStorage sto;
@@ -77,7 +77,7 @@ public abstract class AbstractVector implements Vector {
     public AbstractVector(boolean readOnly, VectorStorage sto, int cardinality) {
         this.readOnly = readOnly;
         this.sto = sto;
-        this.cardinality = cardinality;
+        this.size = cardinality;
     }
 
     /**
@@ -108,7 +108,7 @@ public abstract class AbstractVector implements Vector {
      * @param vector Other vector.
      */
     public AbstractVector(Vector vector){
-        this(vector.getStorage(), vector.getCardinality());
+        this(vector.getStorage(), vector.size());
     }
 
     /**
@@ -152,7 +152,7 @@ public abstract class AbstractVector implements Vector {
      * @param idx Index to check.
      */
     protected void checkIndex(int idx) {
-        if (idx < 0 || idx >= cardinality)
+        if (idx < 0 || idx >= size)
             throw new IndexException(idx);
     }
 
@@ -317,11 +317,6 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public IgniteUuid guid() {
         return guid;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCardinality() {
-        return cardinality;
     }
 
     /** {@inheritDoc} */
@@ -858,7 +853,7 @@ public abstract class AbstractVector implements Vector {
         out.writeObject(meta);
         out.writeObject(guid);
         out.writeBoolean(readOnly);
-        out.writeInt(cardinality);
+        out.writeInt(size);
     }
 
     /** {@inheritDoc} */
@@ -868,6 +863,6 @@ public abstract class AbstractVector implements Vector {
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
         readOnly = in.readBoolean();
-        cardinality = in.readInt();
+        size = in.readInt();
     }
 }
