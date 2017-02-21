@@ -50,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("ComparatorNotSerializable")
 public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridSearchRowPointer> {
-
     /** */
     private static Field KEY_FIELD;
 
@@ -222,20 +221,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         super.destroy();
-    }
-
-
-    /** {@inheritDoc} */
-    protected int threadLocalSegment() {
-        GridH2QueryContext qctx = GridH2QueryContext.get();
-
-        if(segments.length == 1)
-            return 0;
-
-        if(qctx == null)
-            throw new IllegalStateException("GridH2QueryContext is not initialized.");
-
-        return qctx.segment();
     }
 
     /** {@inheritDoc} */
@@ -433,7 +418,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        int seg = segment(row);
+        int seg = segmentForRow(row);
 
         return segments[seg].put(row, row);
     }
@@ -442,7 +427,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public GridH2Row remove(SearchRow row) {
         GridSearchRowPointer comparable = comparable(row, 0);
 
-        int seg = segment(row);
+        int seg = segmentForRow(row);
 
         return segments[seg].remove(comparable);
     }
@@ -453,18 +438,10 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     }
 
     /**
-     * @param partition Parttition idx.
-     * @return index currentSegment Id for given key
+     * @param row Table row.
+     * @return Segment ID for given row.
      */
-    protected int segment(int partition) {
-        return partition % segments.length;
-    }
-
-    /**
-     * @param row
-     * @return index currentSegment Id for given row
-     */
-    private int segment(SearchRow row) {
+    private int segmentForRow(SearchRow row) {
         assert row != null;
 
         CacheObject key;
@@ -491,7 +468,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
             else
                 key = ctx.toCacheKeyObject(row.getValue(0));
 
-            return segment(ctx.affinity().partition(key));
+            return segmentForPartition(ctx.affinity().partition(key));
         }
         else
             return 0;
