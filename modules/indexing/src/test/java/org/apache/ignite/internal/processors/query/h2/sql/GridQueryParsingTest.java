@@ -283,6 +283,34 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select sch.\"#\".* from Person \"#\"");
     }
 
+    /**
+     * Query AST transformation heavily depends on this behavior.
+     *
+     * @throws Exception If failed.
+     */
+    public void testParseTableFilter() throws Exception {
+        Prepared prepared = parse("select Person.old, p1.old from Person, Person p1");
+
+        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
+
+        GridSqlJoin join = (GridSqlJoin)select.from();
+
+        GridSqlTable tbl1 = (GridSqlTable)join.leftTable();
+        GridSqlAlias tbl2Alias = (GridSqlAlias)join.rightTable();
+        GridSqlTable tbl2 = tbl2Alias.child();
+
+        // Must be distinct objects, even if it is the same table.
+        assertNotSame(tbl1, tbl2);
+
+        GridSqlColumn col1 = (GridSqlColumn)select.column(0);
+        GridSqlColumn col2 = (GridSqlColumn)select.column(1);
+
+        assertSame(tbl1, col1.expressionInFrom());
+
+        // Alias in FROM must be included in column.
+        assertSame(tbl2Alias, col2.expressionInFrom());
+    }
+
     /** */
     public void testParseMerge() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */

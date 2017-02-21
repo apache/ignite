@@ -344,7 +344,7 @@ public class GridSqlQueryParser {
     /**
      * @param filter Filter.
      */
-    private GridSqlElement parseTable(TableFilter filter) {
+    private GridSqlElement parseTableFilter(TableFilter filter) {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
@@ -369,9 +369,15 @@ public class GridSqlQueryParser {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(tbl);
 
         if (res == null) {
+            // We can't cache simple tables because otherwise it will be the same instance for all
+            // table filters. Thus we will not be able to distinguish one table filter from another.
+            // Table here is semantically equivalent to a table filter.
             if (tbl instanceof TableBase)
-                res = new GridSqlTable(tbl);
-            else if (tbl instanceof TableView) {
+                return new GridSqlTable(tbl);
+
+            // Other stuff can be cached because we will have separate instances in
+            // different table filters anyways. Thus the semantics will be correct.
+            if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView) tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
@@ -438,7 +444,7 @@ public class GridSqlQueryParser {
 
         for (int i = 0; i < tableFilters.size(); i++) {
             TableFilter f = tableFilters.get(i);
-            GridSqlElement gridFilter = parseTable(f);
+            GridSqlElement gridFilter = parseTableFilter(f);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, f.isJoinOuter(),
                 parseExpression(f.getJoinCondition(), false));
@@ -606,7 +612,7 @@ public class GridSqlQueryParser {
         res = new GridSqlDelete();
         h2ObjToGridObj.put(del, res);
 
-        GridSqlElement tbl = parseTable(DELETE_FROM.get(del));
+        GridSqlElement tbl = parseTableFilter(DELETE_FROM.get(del));
         GridSqlElement where = parseExpression(DELETE_WHERE.get(del), true);
         GridSqlElement limit = parseExpression(DELETE_LIMIT.get(del), true);
         res.from(tbl).where(where).limit(limit);
@@ -626,7 +632,7 @@ public class GridSqlQueryParser {
         res = new GridSqlUpdate();
         h2ObjToGridObj.put(update, res);
 
-        GridSqlElement tbl = parseTable(UPDATE_TARGET.get(update));
+        GridSqlElement tbl = parseTableFilter(UPDATE_TARGET.get(update));
 
         List<Column> srcCols = UPDATE_COLUMNS.get(update);
         Map<Column, Expression> srcSet = UPDATE_SET.get(update);
@@ -826,7 +832,7 @@ public class GridSqlQueryParser {
             ExpressionColumn expCol = (ExpressionColumn)expression;
 
             return new GridSqlColumn(expCol.getColumn(),
-                parseTable(expCol.getTableFilter()),
+                parseTableFilter(expCol.getTableFilter()),
                 SCHEMA_NAME.get(expCol),
                 expCol.getOriginalTableAliasName(),
                 expCol.getColumnName());
