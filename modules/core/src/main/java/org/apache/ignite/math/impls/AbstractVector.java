@@ -32,6 +32,9 @@ import java.util.function.*;
  * interface to minimize the effort required to implement this interface.
  */
 public abstract class AbstractVector implements Vector {
+    /** Vector cardinality. */
+    private int cardinality;
+
     /** Vector storage implementation. */
     private VectorStorage sto;
 
@@ -44,10 +47,10 @@ public abstract class AbstractVector implements Vector {
     /** Cached value for length squared. */
     private double lenSq = 0.0;
 
-    // Readonly flag (false by default).
+    /** Readonly flag (false by default). */
     private boolean readOnly = false;
 
-    // Read-only error message.
+    /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
 
     /**
@@ -60,35 +63,43 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param sto
+     * @param sto Storage.
      */
-    public AbstractVector(VectorStorage sto) {
-        this.sto = sto;
+    public AbstractVector(VectorStorage sto, int cardinality) {
+        this(false, sto, cardinality);
     }
 
     /**
-     *
-     * @param readOnly
-     * @param sto
+     * @param readOnly Is read only.
+     * @param sto Storage.
+     * @param cardinality Cardinality.
      */
-    public AbstractVector(boolean readOnly, VectorStorage sto) {
+    public AbstractVector(boolean readOnly, VectorStorage sto, int cardinality) {
         this.readOnly = readOnly;
         this.sto = sto;
+        this.cardinality = cardinality;
     }
 
     /**
-     *
-     * @param readOnly
+     * @param readOnly Is read only.
+     * @param cardinality Cardinality.
      */
-    public AbstractVector(boolean readOnly) {
-        this.readOnly = readOnly;
+    public AbstractVector(boolean readOnly, int cardinality) {
+        this(readOnly, null, cardinality);
     }
 
     /**
      *
      */
     public AbstractVector() {
-        sto = new VectorNullStorage();
+        this(false, new VectorNullStorage(), 0);
+    }
+
+    /**
+     * @param cardinality Cardinality.
+     */
+    public AbstractVector(int cardinality) {
+        this(false, new VectorNullStorage(), cardinality);
     }
 
     /**
@@ -121,7 +132,7 @@ public abstract class AbstractVector implements Vector {
         return sto.get(i);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public int size() {
         return sto.size();
     }
@@ -132,7 +143,7 @@ public abstract class AbstractVector implements Vector {
      * @param idx Index to check.
      */
     protected void checkIndex(int idx) {
-        if (idx < 0 || idx >= sto.size())
+        if (idx < 0 || idx >= cardinality)
             throw new IndexException(idx);
     }
 
@@ -143,7 +154,7 @@ public abstract class AbstractVector implements Vector {
         return storageGet(idx);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double getX(int idx) {
         return storageGet(idx);
     }
@@ -153,7 +164,7 @@ public abstract class AbstractVector implements Vector {
         return sto.isArrayBased();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector map(DoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {
             double[] data = sto.data();
@@ -170,7 +181,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
         checkCardinality(vec);
 
@@ -182,7 +193,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         int len = sto.size();
 
@@ -201,24 +212,24 @@ public abstract class AbstractVector implements Vector {
         checkIndex(idx);
 
         return new Element() {
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public double get() {
                 return storageGet(idx);
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public int index() {
                 return idx;
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public void set(double val) {
                 storageSet(idx, val);
             }
         };
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Element minValue() {
         int minIdx = 0;
         int len = sto.size();
@@ -230,7 +241,7 @@ public abstract class AbstractVector implements Vector {
         return makeElement(minIdx);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Element maxValue() {
         int maxIdx = 0;
         int len = sto.size();
@@ -242,7 +253,7 @@ public abstract class AbstractVector implements Vector {
         return makeElement(maxIdx);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector set(int idx, double val) {
         checkIndex(idx);
 
@@ -251,14 +262,14 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector setX(int idx, double val) {
         storageSet(idx, val);
 
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector increment(int idx, double val) {
         checkIndex(idx);
 
@@ -267,7 +278,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector incrementX(int idx, double val) {
         storageSet(idx, storageGet(idx) + val);
 
@@ -283,7 +294,7 @@ public abstract class AbstractVector implements Vector {
         return val == 0.0;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double sum() {
         double sum = 0;
         int len = sto.size();
@@ -294,22 +305,27 @@ public abstract class AbstractVector implements Vector {
         return sum;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public IgniteUuid guid() {
         return guid;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
+    @Override public int getCardinality() {
+        return cardinality;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return guid.hashCode();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || o != null && ((getClass() == o.getClass())) && ((sto.equals(((AbstractVector)o).sto)));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
         return new Iterable<Element>() {
             private int idx = 0;
@@ -317,7 +333,7 @@ public abstract class AbstractVector implements Vector {
             @Override public Iterator<Element> iterator() {
                 return new Iterator<Element>() {
                     @Override public boolean hasNext() {
-                        return idx < size();
+                        return size() > 0 && idx < size();
                     }
 
                     @Override public Element next() {
@@ -331,7 +347,7 @@ public abstract class AbstractVector implements Vector {
         };
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public int nonZeroElements() {
         int cnt = 0;
 
@@ -341,12 +357,12 @@ public abstract class AbstractVector implements Vector {
         return cnt;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Optional<ClusterGroup> clusterGroup() {
         return null;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
         int len = sto.size();
@@ -357,7 +373,7 @@ public abstract class AbstractVector implements Vector {
         return res;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
         checkCardinality(vec);
 
@@ -370,7 +386,7 @@ public abstract class AbstractVector implements Vector {
         return res;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Iterable<Element> nonZeroes() {
         return new Iterable<Element>() {
             private int idx = 0;
@@ -422,12 +438,12 @@ public abstract class AbstractVector implements Vector {
         };
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Map<String, Object> getMetaStorage() {
         return meta;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector assign(double val) {
         if (sto.isArrayBased()) {
             ensureReadOnly();
@@ -444,7 +460,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector assign(double[] vals) {
         checkCardinality(vals);
 
@@ -465,7 +481,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector assign(Vector vec) {
         checkCardinality(vec);
 
@@ -475,7 +491,7 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector assign(IntToDoubleFunction fun) {
         assert fun != null;
 
@@ -494,10 +510,10 @@ public abstract class AbstractVector implements Vector {
         return this;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Spliterator<Double> allSpliterator() {
         return new Spliterator<Double>() {
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public boolean tryAdvance(Consumer<? super Double> act) {
                 int len = sto.size();
 
@@ -507,27 +523,27 @@ public abstract class AbstractVector implements Vector {
                 return true;
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public Spliterator<Double> trySplit() {
                 return null; // No Splitting.
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public long estimateSize() {
                 return sto.size();
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public int characteristics() {
                 return ORDERED | SIZED;
             }
         };
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Spliterator<Double> nonZeroSpliterator() {
         return new Spliterator<Double>() {
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public boolean tryAdvance(Consumer<? super Double> act) {
                 int len = sto.size();
 
@@ -541,24 +557,24 @@ public abstract class AbstractVector implements Vector {
                 return true;
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public Spliterator<Double> trySplit() {
                 return null; // No Splitting.
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public long estimateSize() {
                 return nonZeroElements();
             }
 
-            /** {@inheritDoc */
+            /** {@inheritDoc} */
             @Override public int characteristics() {
                 return ORDERED | SIZED;
             }
         };
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double dot(Vector vec) {
         checkCardinality(vec);
 
@@ -571,7 +587,7 @@ public abstract class AbstractVector implements Vector {
         return sum;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double getLengthSquared() {
         if (lenSq == 0.0)
             lenSq = dotSelf();
@@ -579,37 +595,37 @@ public abstract class AbstractVector implements Vector {
         return lenSq;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double getLookupCost() {
         return sto.getLookupCost();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public VectorStorage getStorage() {
         return sto;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector viewPart(int off, int len) {
         return new VectorView(this, off, len);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Matrix cross(Vector vec) {
         Matrix res = likeMatrix(size(), vec.size());
 
@@ -622,7 +638,7 @@ public abstract class AbstractVector implements Vector {
         return res;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Matrix toMatrix(boolean rowLike) {
         Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
 
@@ -635,7 +651,7 @@ public abstract class AbstractVector implements Vector {
         // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
 
@@ -650,7 +666,7 @@ public abstract class AbstractVector implements Vector {
         // TODO remove overriding implementations in subclasses, assign method final to find these with compiler
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double getDistanceSquared(Vector vec) {
         checkCardinality(vec);
 
@@ -684,7 +700,7 @@ public abstract class AbstractVector implements Vector {
             throw new CardinalityException(size(), arr.length);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector minus(Vector vec) {
         checkCardinality(vec);
 
@@ -695,7 +711,7 @@ public abstract class AbstractVector implements Vector {
         return cp;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector plus(double x) {
         Vector cp = copy();
 
@@ -705,7 +721,7 @@ public abstract class AbstractVector implements Vector {
         return cp;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector divide(double x) {
         Vector cp = copy();
 
@@ -716,7 +732,7 @@ public abstract class AbstractVector implements Vector {
         return cp;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector times(double x) {
         if (x == 0.0)
             return like(size());
@@ -724,14 +740,14 @@ public abstract class AbstractVector implements Vector {
             return copy().map(Functions.mult(x));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector times(Vector vec) {
         checkCardinality(vec);
 
         return copy().map(vec, Functions.MULT);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector plus(Vector vec) {
         checkCardinality(vec);
 
@@ -742,12 +758,12 @@ public abstract class AbstractVector implements Vector {
         return cp;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector logNormalize() {
         return logNormalize(2.0, Math.sqrt(getLengthSquared()));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector logNormalize(double power) {
         return logNormalize(power, kNorm(power));
     }
@@ -771,7 +787,7 @@ public abstract class AbstractVector implements Vector {
         return cp;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public double kNorm(double power) {
         assert power >= 0.0;
 
@@ -789,12 +805,12 @@ public abstract class AbstractVector implements Vector {
             return Math.pow(foldMap(Functions.PLUS, Functions.pow(power), 0d), 1.0 / power);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector normalize() {
         return divide(Math.sqrt(getLengthSquared()));
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Vector normalize(double power) {
         return divide(kNorm(power));
     }
@@ -816,25 +832,27 @@ public abstract class AbstractVector implements Vector {
         return sum;
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public Element getElement(int idx) {
         return makeElement(idx);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(meta);
         out.writeObject(guid);
         out.writeBoolean(readOnly);
+        out.writeInt(cardinality);
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
         readOnly = in.readBoolean();
+        cardinality = in.readInt();
     }
 }

@@ -38,7 +38,7 @@ public class SingleElementVectorView extends AbstractVector {
      * @param idx
      */
     public SingleElementVectorView(Vector vec, int idx) {
-        super(new SingleElementVectorDelegateStorage(vec, idx));
+        super(new SingleElementVectorDelegateStorage(vec, idx), 1);
     }
 
     /**
@@ -54,7 +54,7 @@ public class SingleElementVectorView extends AbstractVector {
      * @param sto
      */
     protected SingleElementVectorView(SingleElementVectorDelegateStorage sto) {
-        super(sto);
+        super(sto, 1);
     }
 
     @Override
