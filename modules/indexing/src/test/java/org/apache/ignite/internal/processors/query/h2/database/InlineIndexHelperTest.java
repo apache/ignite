@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -44,6 +45,7 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampUtc;
+import org.h2.value.ValueUuid;
 
 /**
  * Simple tests for {@link InlineIndexHelper}.
@@ -212,6 +214,13 @@ public class InlineIndexHelperTest extends TestCase {
         testPutGet(ValueTimestampUtc.fromMillis(System.currentTimeMillis()),
             ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 100),
             ValueTimestampUtc.fromMillis(System.currentTimeMillis() + 200));
+    }
+
+    /** */
+    public void testUUID() throws Exception {
+        testPutGet(ValueUuid.get(UUID.randomUUID().toString()),
+            ValueUuid.get(UUID.randomUUID().toString()),
+            ValueUuid.get(UUID.randomUUID().toString()));
     }
 
     /** */
