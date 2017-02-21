@@ -667,11 +667,6 @@
                                             <xs:documentation>Maximum amount of memory available to off-heap storage. Possible values are -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage (it's up to user to properly add and remove entries from cache to ensure that off-heap storage does not grow indefinitely. Any positive value specifies the limit of off-heap storage in bytes.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="memoryMode" type="cacheMemoryMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Memory mode for cache.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>Timeout after which long query warning will be printed.</xs:documentation>
