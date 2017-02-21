@@ -41,7 +41,7 @@ public class GridSqlSubquery extends GridSqlElement {
     /**
      * @return Subquery AST.
      */
-    public GridSqlQuery subquery() {
+    public <X extends GridSqlQuery> X subquery() {
         return child(0);
     }
 }

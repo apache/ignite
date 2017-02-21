@@ -46,7 +46,7 @@ inner join (
   select e.date, e.rootOrderId as eRootOrderId, e.rootOrderId, sum(e.execShares) as execShares, 
 	sum(e.execShares*e.price)/sum(e.execShares) as price,
 	case when min(e.lastMkt) = max(e.lastMkt) then min(e.lastMkt) else min('XOFF') end as execMeet
-  from "repl".Exec e
+  from "part".Exec e
   group by e.date, e.rootOrderId
 ) oep on (cop.date = oep.date and cop.custOrderId = oep.eRootOrderId)
 left outer join (

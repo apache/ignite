@@ -31,8 +31,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and
@@ -54,7 +56,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
  *     -  date          -   |        -  date             -                                 |
  *     -  alias         -   |        -  alias            -                                 |
  *     -  archSeq       -   |        -  archSeq          -          -------------------    |
- *     ------------------   |        ---------------------          ----repl.Exec------    |
+ *     ------------------   |        ---------------------          ----part.Exec------    |
  *                          |                                       -------------------    |
  *     -----------------    |                                       -  rootOrderId PK - ----
  *     ---part.Cancel---    |                                       -  date           -
@@ -119,19 +121,15 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        if (mode == CacheMode.PARTITIONED)
+        if (mode == CacheMode.PARTITIONED) {
             cc.setIndexedTypes(
                 Integer.class, CustOrder.class,
                 useColocatedData() ? AffinityKey.class : Integer.class, ReplaceOrder.class,
                 useColocatedData() ? AffinityKey.class : Integer.class, OrderParams.class,
-                useColocatedData() ? AffinityKey.class : Integer.class, Cancel.class
+                useColocatedData() ? AffinityKey.class : Integer.class, Cancel.class,
+                useColocatedData() ? AffinityKey.class : Integer.class, Exec.class
             );
-        else if (mode == CacheMode.REPLICATED)
-            cc.setIndexedTypes(
-                Integer.class, Exec.class
-            );
-        else
-            throw new IllegalStateException("mode: " + mode);
+        }
     }
 
     /** {@inheritDoc} */
@@ -218,11 +216,12 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
                 int price = 1000 + rootOrderId;
                 int latsMkt = 3000 + rootOrderId;
 
-                Exec exec = new Exec(rootOrderId, dates.get(rootOrderId % dates.size()), execShares, price, latsMkt);
+                Exec exec = new Exec(idGen.incrementAndGet(), rootOrderId,
+                    dates.get(rootOrderId % dates.size()), execShares, price, latsMkt);
 
                 add(exec);
 
-                rCache.put(exec.rootOrderId, exec);
+                pCache.put(exec.key(useColocatedData()), exec);
 
                 insertInDb(exec);
             }
@@ -239,13 +238,20 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "from \"part\".ReplaceOrder");
         compareQueryRes0("select _key, _val, id, date, orderId, parentAlgo from \"part\".OrderParams\n");
         compareQueryRes0("select _key, _val, id, date, refOrderId from \"part\".Cancel\n");
-        compareQueryRes0(rCache, "select _key, _val, date, rootOrderId, execShares, price, lastMkt from \"repl\".Exec\n");
+        compareQueryRes0("select _key, _val, date, rootOrderId, execShares, price, lastMkt from \"part\".Exec\n");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testBigQuery() throws Exception {
+        X.println();
+        X.println(bigQry);
+        X.println();
+
+        X.println("Plan: " + pCache.query(new SqlFieldsQuery("EXPLAIN " + bigQry)
+            .setDistributedJoins(distributedJoins())).getAll());
+
         List<List<?>> res = compareQueryRes0(pCache, bigQry, distributedJoins(), new Object[0], Ordering.RANDOM);
 
         assertTrue(!res.isEmpty()); // Ensure we set good testing data at database.
@@ -301,9 +307,9 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             "  refOrderId int" +
             "  )");
 
-        st.execute("create table \"repl\".Exec" +
+        st.execute("create table \"part\".Exec" +
             "  (" +
-            "  _key int not null," +
+            "  _key " + keyType + " not null," +
             "  _val other not null," +
             "  rootOrderId int unique," +
             "  date Date, " +
@@ -414,11 +420,11 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      */
     private void insertInDb(Exec o) throws SQLException {
         try(PreparedStatement st = conn.prepareStatement(
-            "insert into \"repl\".Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
+            "insert into \"part\".Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
                 "values(?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
-            st.setObject(++i, o.rootOrderId);
+            st.setObject(++i, o.key(useColocatedData()));
             st.setObject(++i, o);
             st.setObject(++i, o.date);
             st.setObject(++i, o.rootOrderId);
@@ -654,8 +660,12 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * Execute information about root query.
      */
     static class Exec implements Serializable {
-        /** Primary key. */
+        /** */
         @QuerySqlField
+        private int id;
+
+        /** */
+        @QuerySqlField(index = true)
         private int rootOrderId;
 
         /** Date */
@@ -675,13 +685,15 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         private int lastMkt;
 
         /**
+         * @param id ID.
          * @param rootOrderId Root order id.
          * @param date Date.
          * @param execShares Execute shares.
          * @param price Price.
          * @param lastMkt Last mkt.
          */
-        Exec(int rootOrderId, Date date, int execShares, int price, int lastMkt) {
+        Exec(int id, int rootOrderId, Date date, int execShares, int price, int lastMkt) {
+            this.id = id;
             this.rootOrderId = rootOrderId;
             this.date = date;
             this.execShares = execShares;
@@ -691,12 +703,16 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o || o instanceof Exec && rootOrderId == ((Exec)o).rootOrderId;
+            return this == o || o instanceof Exec && id == ((Exec)o).id;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return rootOrderId;
+            return id;
+        }
+
+        public Object key(boolean useColocatedData) {
+            return useColocatedData ? new AffinityKey<>(id, rootOrderId) : id;
         }
     }
 }

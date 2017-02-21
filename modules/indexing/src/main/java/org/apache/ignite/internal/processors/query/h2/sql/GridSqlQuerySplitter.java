@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +36,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
@@ -407,15 +410,16 @@ public class GridSqlQuerySplitter {
      * @param qrym Query model.
      */
     private void injectSortingFirstJoin(QueryModel qrym) {
-        // Must always be generated unique aliases here.
-        GridSqlAlias leftTbl = qrym.get(0).ast();
-        GridSqlAlias rightTbl = qrym.get(1).ast();
-
         GridSqlJoin join = findJoin(qrym, 0);
 
         // We are at the beginning, thus left and right AST must be children of the same join AST.
-        assert join.leftTable() == leftTbl: join.getSQL();
-        assert join.rightTable() == rightTbl: join.getSQL();
+        //     join2
+        //      / \
+        //   join1 \
+        //    / \   \
+        //  T0   T1  T2
+        GridSqlAlias leftTbl = (GridSqlAlias)join.leftTable();
+        GridSqlAlias rightTbl = (GridSqlAlias)join.rightTable();
 
         // Collect all AND conditions.
         List<AndCondition> andConditions = new ArrayList<>();
@@ -461,9 +465,14 @@ public class GridSqlQuerySplitter {
      * @param orderByCols Columns for ORDER BY.
      */
     private void injectOrderBy(GridSqlAlias subQryAlias, List<GridSqlColumn> orderByCols) {
+        if (orderByCols.isEmpty())
+            return;
+
         // Structure: alias -> subquery -> query
-        GridSqlQuery qry = subQryAlias.child().child();
+        GridSqlQuery qry = GridSqlAlias.<GridSqlSubquery>unwrap(subQryAlias).subquery();
         GridSqlSelect select = leftmostSelect(qry); // The leftmost SELECT in UNION defines column names.
+
+        BitSet set = new BitSet();
 
         for (int i = 0; i < orderByCols.size(); i++) {
             GridSqlColumn col = orderByCols.get(i);
@@ -480,11 +489,20 @@ public class GridSqlQuerySplitter {
                 else if (expr instanceof GridSqlColumn)
                     colName = ((GridSqlColumn)expr).columnName();
                 else
-                    throw new IllegalStateException(); // It must be impossible to join by this column then.
+                    // It must be impossible to join by this column then, because the expression has no name.
+                    throw new IllegalStateException();
 
                 if (colName.equals(col.columnName()))
                     break; // Found the needed column index.
+
+                colIdx++;
             }
+
+            // Avoid duplicates.
+            if (set.get(colIdx))
+                continue;
+
+            set.set(colIdx, true);
 
             // Add sort column to the query.
             qry.addSort(new GridSqlSortColumn(colIdx, true, false, false));
@@ -591,8 +609,6 @@ public class GridSqlQuerySplitter {
         for (int i = begin; i <= end; i++) {
             QueryModel child = qrym.get(i);
 
-            assert !child.needSplit && !child.needSplitChild;
-
             wrapQrym.add(child);
         }
 
@@ -620,7 +636,7 @@ public class GridSqlQuerySplitter {
         int end,
         GridSqlAlias wrapAlias
     ) {
-        GridSqlSelect wrapSelect = wrapAlias.child();
+        GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
         final int last = qrym.size() - 1;
 
@@ -887,7 +903,7 @@ public class GridSqlQuerySplitter {
         if (select.where() == null)
             return;
 
-        GridSqlSelect wrapSelect = wrapAlias.child();
+        GridSqlSelect wrapSelect = GridSqlAlias.<GridSqlSubquery>unwrap(wrapAlias).subquery();
 
         List<AndCondition> andConditions = new ArrayList<>();
 
@@ -932,7 +948,7 @@ public class GridSqlQuerySplitter {
         }
         else {
             for (int i = 0; i < ast.size(); i++) {
-                if (!isAllRelatedToTables(tblAliases, ast))
+                if (!isAllRelatedToTables(tblAliases, ast.child(i)))
                     return false;
             }
         }
@@ -994,8 +1010,6 @@ public class GridSqlQuerySplitter {
 
         for (int i = qrym.size() - 1; i > idx; i--)
             join = (GridSqlJoin)join.leftTable();
-
-        assert join.rightTable() == qrym.get(idx).ast();
 
         return join;
     }
@@ -1956,6 +1970,7 @@ public class GridSqlQuerySplitter {
      */
     private static final class QueryModel extends ArrayList<QueryModel> {
         /** */
+        @GridToStringInclude
         final Type type;
 
         /** */
@@ -1968,9 +1983,11 @@ public class GridSqlQuerySplitter {
         int childIdx;
 
         /** If it is a SELECT and we need to split it. Makes sense only for type SELECT. */
+        @GridToStringInclude
         boolean needSplit;
 
         /** If we have a child SELECT that we should split. */
+        @GridToStringInclude
         boolean needSplitChild;
 
         /** If this is UNION ALL. Makes sense only for type UNION.*/
@@ -2002,6 +2019,11 @@ public class GridSqlQuerySplitter {
          */
         private boolean isQuery() {
             return type == Type.SELECT || type == Type.UNION;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(QueryModel.class, this);
         }
     }
 

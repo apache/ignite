@@ -31,6 +31,11 @@ public abstract class GridSqlStatement {
      */
     public abstract String getSQL();
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getSQL();
+    }
+
     /**
      * @param explain Explain.
      * @return {@code this}.
