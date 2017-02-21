@@ -19,4 +19,4 @@
  * <!-- Package description. -->
  * Basic examples for ignite functionality with spark.
  */
-package org.apache.ignite.examples.java8;
+package org.apache.ignite.examples.spark;
