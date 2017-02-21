@@ -30,7 +30,6 @@ import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.JobEvent;
-import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -84,7 +83,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
          *
          * @param ptr Stream ptr.
          */
-        public Job(long ptr, ClusterNode node) {
+        private Job(long ptr, ClusterNode node) {
             this.ptr = ptr;
             this.node = node;
         }
@@ -97,7 +96,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_SWAP_SPACE_CLEARED;
+                int evtType = EventType.EVT_CACHE_QUERY_EXECUTED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
