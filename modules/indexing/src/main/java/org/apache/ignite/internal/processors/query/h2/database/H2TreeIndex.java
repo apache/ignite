@@ -102,8 +102,11 @@ public class H2TreeIndex extends GridH2IndexBase {
             tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                 dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                 tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), cols, inlineIdxs, computeInlineSize(inlineIdxs, inlineSize)) {
-                @Override public int compareValues(Value v1, Value v2, int order) {
-                    return H2TreeIndex.this.compareValues(v1, v2, order);
+                @Override public int compareValues(Value v1, Value v2) {
+                    if (v1 == v2)
+                        return 0;
+
+                    return table.compareTypeSafe(v1, v2);
                 }
             };
         }
@@ -137,24 +140,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         return res;
-    }
-
-    /**
-     * @param a First value.
-     * @param b Second Value.
-     * @param sortType Sort type.
-     * @return Compare result.
-     */
-    private int compareValues(Value a, Value b, int sortType) {
-        if (a == b)
-            return 0;
-
-        int comp = table.compareTypeSafe(a, b);
-
-        if ((sortType & SortOrder.DESCENDING) != 0)
-            comp = -comp;
-
-        return comp;
     }
 
     /** {@inheritDoc} */
@@ -376,7 +361,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return RootPage for meta page.
      * @throws IgniteCheckedException
      */
-    protected RootPage getMetaPage(String name) throws IgniteCheckedException {
+    private RootPage getMetaPage(String name) throws IgniteCheckedException {
         return cctx.offheap().rootPageForIndex(name);
     }
 

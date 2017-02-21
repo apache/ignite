@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -157,6 +158,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
             int lastIdxUsed = 0;
 
+            Comparator<Value> comp = new Comparator<Value>() {
+                @Override public int compare(Value o1, Value o2) {
+                    return compareValues(o1, o2);
+                }
+            };
+
             for (int i = 0; i < inlineIdxs.size(); i++) {
                 InlineIndexHelper inlineIdx = inlineIdxs.get(i);
 
@@ -165,15 +172,20 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 if (v2 == null)
                     return 0;
 
-                Value v1 = inlineIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
+                int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
 
-                if (v1 == null)
+                if (c == -2)
                     break;
 
-                int c = compareValues(v1, v2, inlineIdx.sortType());
-
-                if (!canRelyOnCompare(c, v1, v2, inlineIdx))
-                    break;
+//                Value v1 = inlineIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
+//
+//                if (v1 == null)
+//                    break;
+//
+//                int c = compareValues(v1, v2, inlineIdx.sortType());
+//
+//                if (!canRelyOnCompare(c, v1, v2, inlineIdx))
+//                    break;
 
                 lastIdxUsed++;
 
@@ -203,37 +215,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
                 Value v1 = rowData.getValue(idx0);
 
-                int c = compareValues(v1, v2, col.sortType);
+                int c = compareValues(v1, v2);
                 if (c != 0)
-                    return c;
+                    return col.sortType == SortOrder.ASCENDING ? c : -c;
             }
 
             return 0;
         }
-    }
-
-    /**
-     * @param c Compare result.
-     * @param shortVal Short value.
-     * @param v2 Second value;
-     * @param inlineIdx Index helper.
-     * @return {@code true} if we can rely on compare result.
-     */
-    protected static boolean canRelyOnCompare(int c, Value shortVal, Value v2, InlineIndexHelper inlineIdx) {
-        if (inlineIdx.type() == Value.STRING) {
-            if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
-                return false;
-
-            if (shortVal.getType() != Value.NULL
-                && v2.getType() != Value.NULL
-                && ((c < 0 && inlineIdx.sortType() == SortOrder.ASCENDING) || (c > 0 && inlineIdx.sortType() == SortOrder.DESCENDING))
-                && shortVal.getString().length() <= v2.getString().length()) {
-                // Can't rely on compare, should use full string.
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -248,24 +236,21 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             return 0;
 
         for (int i = 0, len = cols.length; i < len; i++) {
-            int index = columnIds[i];
-            Value v1 = r1.getValue(index);
-            Value v2 = r2.getValue(index);
+            int idx = columnIds[i];
+            Value v1 = r1.getValue(idx);
+            Value v2 = r2.getValue(idx);
             if (v1 == null || v2 == null) {
                 // can't compare further
                 return 0;
             }
-            int c = compareValues(v1, v2, cols[i].sortType);
+            int c = compareValues(v1, v2);
             if (c != 0)
-                return c;
-
+                return cols[i].sortType == SortOrder.ASCENDING ? c : -c;
         }
         return 0;
     }
 
-    public abstract int compareValues(Value v1, Value v2, int order);
-
-
+    public abstract int compareValues(Value v1, Value v2);
 }
 
 

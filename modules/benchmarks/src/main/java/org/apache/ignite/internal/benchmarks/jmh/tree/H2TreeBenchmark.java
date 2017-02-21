@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.CompareMode;
@@ -193,16 +192,11 @@ public class H2TreeBenchmark extends JmhAbstractBenchmark {
         final IndexColumn[] cols = new IndexColumn[] {col1, col2};
 
         tree = new H2Tree("name", new MockReuseList(), 1, pageMem, new NoOpWALManager(), new AtomicLong(), new MockRowFactory(), metaPage.pageId(), true, cols, idxs, INLINE_SIZE) {
-            @Override public int compareValues(Value v1, Value v2, int order) {
+            @Override public int compareValues(Value v1, Value v2) {
                 if (v1 == v2)
                     return 0;
 
-                int comp = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
-
-                if ((order & SortOrder.DESCENDING) != 0)
-                    comp = -comp;
-
-                return comp;
+                return v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
             }
         };
     }

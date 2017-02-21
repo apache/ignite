@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
@@ -29,6 +31,7 @@ import org.h2.value.ValueByte;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
+import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueStringFixed;
 import org.h2.value.ValueStringIgnoreCase;
@@ -201,7 +204,7 @@ public class InlineIndexHelper {
                 return ValueByte.get(PageUtils.getByte(pageAddr, off + 1));
 
             case Value.SHORT:
-                return ValueInt.get(PageUtils.getShort(pageAddr, off + 1));
+                return ValueShort.get(PageUtils.getShort(pageAddr, off + 1));
 
             case Value.INT:
                 return ValueInt.get(PageUtils.getInt(pageAddr, off + 1));
@@ -210,22 +213,73 @@ public class InlineIndexHelper {
                 return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
 
             case Value.STRING: {
-                short size = PageUtils.getShort(pageAddr, off + 1);
+                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
                 return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
             }
 
             case Value.STRING_FIXED: {
-                short size = PageUtils.getShort(pageAddr, off + 1);
+                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
                 return ValueStringFixed.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
             }
 
             case Value.STRING_IGNORECASE: {
-                short size = PageUtils.getShort(pageAddr, off + 1);
+                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
                 return ValueStringIgnoreCase.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
             }
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @return {@code True} if string is not truncated on save.
+     */
+    protected boolean isStrungFull(long pageAddr, int off) {
+        switch (type) {
+            case Value.BOOLEAN:
+            case Value.BYTE:
+            case Value.INT:
+            case Value.SHORT:
+            case Value.LONG:
+                return true;
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Maximum size to read.
+     * @param v Value to compare.
+     * @param comp Comparator.
+     * @return Compare result
+     */
+    public int compare(long pageAddr, int off, int maxSize, Value v, Comparator<Value> comp) {
+        Value v1 = get(pageAddr, off, maxSize);
+
+        if (v1 == null)
+            return -2;
+
+        int c = comp.compare(v1, v);
+        assert c > -2;
+
+        if (size() < 0)
+            return sortType() == SortOrder.DESCENDING ? -c : c;
+        else {
+            if (isStrungFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
+                return sortType() == SortOrder.DESCENDING ? -c : c;
+            else
+                return -2;
         }
     }
 
@@ -277,10 +331,16 @@ public class InlineIndexHelper {
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
                 byte[] s;
-                if (val.getString().getBytes(CHARSET).length + 3 <= maxSize)
+                short size;
+
+                if (val.getString().getBytes(CHARSET).length + 3 <= maxSize) {
                     s = val.getString().getBytes(CHARSET);
-                else
+                    size = (short)s.length;
+                }
+                else {
                     s = toBytes(val.getString(), maxSize - 3);
+                    size = (short)(s.length | 0x8000);
+                }
 
                 if (s == null) {
                     // Can't fit anything to
@@ -289,7 +349,7 @@ public class InlineIndexHelper {
                 }
                 else {
                     PageUtils.putByte(pageAddr, off, (byte)val.getType());
-                    PageUtils.putShort(pageAddr, off + 1, (short)s.length);
+                    PageUtils.putShort(pageAddr, off + 1, size);
                     PageUtils.putBytes(pageAddr, off + 3, s);
                     return s.length + 3;
                 }
@@ -320,5 +380,28 @@ public class InlineIndexHelper {
         }
 
         return null;
+    }
+
+    /**
+     * @param c Compare result.
+     * @param shortVal Short value.
+     * @param v2 Second value;
+     * @return {@code true} if we can rely on compare result.
+     */
+    protected boolean canRelyOnCompare(int c, Value shortVal, Value v2) {
+        if (size() < 0) {
+            if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                return false;
+
+            if (shortVal.getType() != Value.NULL
+                && v2.getType() != Value.NULL
+                && c < 0
+                && shortVal.getString().length() <= v2.getString().length()) {
+                // Can't rely on compare, should use full string.
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -18,11 +18,39 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import junit.framework.TestCase;
+import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.h2.result.SortOrder;
+import org.h2.value.CompareMode;
+import org.h2.value.Value;
+import org.h2.value.ValueBoolean;
+import org.h2.value.ValueByte;
+import org.h2.value.ValueInt;
+import org.h2.value.ValueLong;
+import org.h2.value.ValueNull;
+import org.h2.value.ValueShort;
+import org.h2.value.ValueString;
 
 /**
  * Simple tests for {@link InlineIndexHelper}.
  */
 public class InlineIndexHelperTest extends TestCase {
+    /** */
+    private static final int CACHE_ID = 42;
+
+    /** */
+    private static final int PAGE_SIZE = 1024;
+
+    /** */
+    private static final long MB = 1024;
+
+    /** */
+    private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
     /** Test utf-8 string cutting. */
     public void testConvert() {
@@ -36,11 +64,159 @@ public class InlineIndexHelperTest extends TestCase {
     }
 
     /** Limit is too small to cut */
-    public void testShort() {
+    public void testStringCut() {
         // 6 bytes total: 3b, 3b.
 
         byte[] bytes = InlineIndexHelper.toBytes("\u20ac\u20ac", 2);
         assertNull(bytes);
+    }
+
+    /** Test on String values compare */
+    public void testRelyOnCompare() {
+
+        InlineIndexHelper ha = new InlineIndexHelper(Value.STRING, 0, SortOrder.ASCENDING);
+
+        // same size
+        assertFalse(getRes(ha, "aabb", "aabb"));
+
+        // second string is shorter
+        assertTrue(getRes(ha, "aabb", "aac"));
+        assertTrue(getRes(ha, "aabb", "aaa"));
+
+        // second string is longer
+        assertTrue(getRes(ha, "aabb", "aaaaaa"));
+        assertFalse(getRes(ha, "aaa", "aaaaaa"));
+
+        // one is null
+        assertTrue(getRes(ha, "a", null));
+        assertTrue(getRes(ha, null, "a"));
+        assertTrue(getRes(ha, null, null));
+    }
+
+    /** */
+    public void testStringTruncate() throws Exception {
+        long[] sizes = new long[CPUS];
+
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 1024 * MB / CPUS;
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
+            new UnsafeMemoryProvider(sizes),
+            null,
+            PAGE_SIZE,
+            false);
+
+        pageMem.start();
+        Page page = null;
+
+        try {
+            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
+            page = pageMem.page(fullId.cacheId(), fullId.pageId());
+            long pageAddr = page.getForReadPointer();
+
+            int off = 0;
+
+            InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0);
+            ih.put(pageAddr, off, ValueString.get("aaaaaaa"), 3 + 5);
+
+            assertFalse(ih.isStrungFull(pageAddr, off));
+
+            assertEquals("aaaaa", ih.get(pageAddr, off, 3 + 5).getString());
+
+            ih.put(pageAddr, off, ValueString.get("aaa"), 3 + 5);
+
+            assertTrue(ih.isStrungFull(pageAddr, off));
+
+            assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
+
+        }
+        finally {
+            if (page != null)
+                pageMem.releasePage(page);
+            pageMem.stop();
+        }
+    }
+
+    /** */
+    public void testNull() throws Exception {
+        testPutGet(ValueInt.get(-1), ValueNull.INSTANCE, ValueInt.get(3));
+    }
+
+    /** */
+    public void testInt() throws Exception {
+        testPutGet(ValueInt.get(-1), ValueInt.get(2), ValueInt.get(3));
+    }
+
+    /** */
+    public void testLong() throws Exception {
+        testPutGet(ValueLong.get(-1), ValueLong.get(2), ValueLong.get(3));
+    }
+
+    /** */
+    public void testByte() throws Exception {
+        testPutGet(ValueByte.get((byte)-1), ValueByte.get((byte)2), ValueByte.get((byte)3));
+    }
+
+    /** */
+    public void testShort() throws Exception {
+        testPutGet(ValueShort.get((short)-32000), ValueShort.get((short)2), ValueShort.get((short)3));
+    }
+
+    /** */
+    public void testBoolean() throws Exception {
+        testPutGet(ValueBoolean.get(true), ValueBoolean.get(false), ValueBoolean.get(true));
+    }
+
+    /** */
+    private void testPutGet(Value v1, Value v2, Value v3) throws Exception {
+        long[] sizes = new long[CPUS];
+
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 1024 * MB / CPUS;
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
+            new UnsafeMemoryProvider(sizes),
+            null,
+            PAGE_SIZE,
+            false);
+
+        pageMem.start();
+        Page page = null;
+
+        try {
+            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
+            page = pageMem.page(fullId.cacheId(), fullId.pageId());
+            long pageAddr = page.getForReadPointer();
+
+            int off = 0;
+            int max = 255;
+
+            InlineIndexHelper ih = new InlineIndexHelper(v1.getType(), 1, 0);
+
+            off += ih.put(pageAddr, off, v1, max - off);
+            off += ih.put(pageAddr, off, v2, max - off);
+            off += ih.put(pageAddr, off, v3, max - off);
+
+            Value v11 = ih.get(pageAddr, 0, max);
+            Value v22 = ih.get(pageAddr, ih.fullSize(pageAddr, 0), max);
+
+            assertEquals(v1.getObject(), v11.getObject());
+            assertEquals(v2.getObject(), v22.getObject());
+        }
+        finally {
+            if (page != null)
+                pageMem.releasePage(page);
+            pageMem.stop();
+        }
+    }
+
+    /** */
+    private boolean getRes(InlineIndexHelper ha, String s1, String s2) {
+        Value v1 = s1 == null ? ValueNull.INSTANCE : ValueString.get(s1);
+        Value v2 = s2 == null ? ValueNull.INSTANCE : ValueString.get(s2);
+
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        return ha.canRelyOnCompare(c, v1, v2);
     }
 
 }
