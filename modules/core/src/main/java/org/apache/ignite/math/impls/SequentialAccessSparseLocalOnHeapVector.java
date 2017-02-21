@@ -19,14 +19,29 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorage;
 
 /**
  * TODO: add description.
  */
 public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
+    /**
+     * Create new SequentialAccessSparseLocalOnHeapVector.
+     *
+     * @param cardinality Cardinality.
+     */
+    public SequentialAccessSparseLocalOnHeapVector(int cardinality){
+        super(cardinality);
+        setStorage(new SequentialAccessSparseVectorStorage());
+    }
 
-    private SequentialAccessSparseLocalOnHeapVector(SequentialAccessSparseLocalOnHeapVector other){
-        setStorage(other.getStorage());
+    /**
+     * Create SequentialAccessSparseLocalOnHeapVector from other vector
+     *
+     * @param vector Vector.
+     */
+    public SequentialAccessSparseLocalOnHeapVector(Vector vector) {
+        super(vector);
     }
 
     /** {@inheritDoc} */
@@ -36,7 +51,7 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        return null;
+        return new SequentialAccessSparseLocalOnHeapVector(crd);
     }
 
     /** {@inheritDoc} */
