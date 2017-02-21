@@ -38,7 +38,7 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
     /** For serialization. */
     public SequentialAccessSparseVectorStorage(){
-        // No-op.
+        this.data = new Int2DoubleRBTreeMap();
     }
 
     /**

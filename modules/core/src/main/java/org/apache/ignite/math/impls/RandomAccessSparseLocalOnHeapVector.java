@@ -7,8 +7,12 @@ import org.apache.ignite.math.Vector;
  * TODO: add description.
  */
 public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
+    public RandomAccessSparseLocalOnHeapVector(Vector vector) {
+        super(vector);
+    }
+
     @Override public Vector copy() {
-        return null;
+        return new RandomAccessSparseLocalOnHeapVector(this);
     }
 
     @Override public Vector like(int crd) {

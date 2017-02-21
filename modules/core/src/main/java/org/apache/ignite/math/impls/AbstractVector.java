@@ -103,6 +103,15 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Create new vector from other vector.
+     *
+     * @param vector Other vector.
+     */
+    public AbstractVector(Vector vector){
+        this(vector.getStorage(), vector.getCardinality());
+    }
+
+    /**
      *
      * @param sto
      */
