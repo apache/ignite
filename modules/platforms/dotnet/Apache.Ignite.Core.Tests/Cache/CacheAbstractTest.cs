@@ -1497,10 +1497,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             CheckEnumerator(e.GetEnumerator(), keys);
             CheckEnumerator(e.GetEnumerator(), keys);
 
-            e = cache.GetLocalEntries(CachePeekMode.Onheap, CachePeekMode.Swap);
-            CheckEnumerator(e.GetEnumerator(), keys);
-            CheckEnumerator(e.GetEnumerator(), keys);
-
             cache.Remove(keys[0]);
         }
 
