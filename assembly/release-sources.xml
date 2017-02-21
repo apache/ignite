@@ -68,6 +68,10 @@
 
                 <!-- dotnet assemblies -->
                 <exclude>modules/platforms/dotnet/bin/**</exclude>
+
+                <!-- cpp -->
+                <exclude>modules/platforms/cpp/**/*.h</exclude>
+                <exclude>modules/platforms/cpp/**/*.cpp</exclude>
             </excludes>
         </fileSet>
         <!-- license, readme, etc. calculated at build time -->
