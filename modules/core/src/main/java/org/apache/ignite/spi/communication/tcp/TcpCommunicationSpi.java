@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -293,7 +294,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /**
      * Default count of selectors for TCP server equals to
-     * {@code "Math.min(8, Runtime.getRuntime().availableProcessors())"}.
+     * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
@@ -360,6 +361,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             @Override public void onConnected(GridNioSession ses) {
                 if (ses.accepted()) {
+                    if (log.isInfoEnabled())
+                        log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
+
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
@@ -369,6 +374,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
                     }
+                }
+                else {
+                    if (log.isInfoEnabled())
+                        log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
                 }
             }
 
@@ -979,7 +989,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** */
-    private boolean usePairedConnections = true;
+    private boolean usePairedConnections;
 
     /** */
     private int connectionsPerNode = DFLT_CONN_PER_NODE;
@@ -1193,10 +1203,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Set this to {@code false} if each connection of {@link #getConnectionsPerNode()}
      * should be used for outgoing and incoming messages. In this case total number
      * of connections between local and each remote node is {@link #getConnectionsPerNode()}.
-     * In this case load NIO selectors load
-     * balancing of {@link GridNioServer} will be disabled.
      * <p>
-     * Default is {@code true}.
+     * Default is {@code false}.
      *
      * @param usePairedConnections {@code true} to use paired connections and {@code false} otherwise.
      * @see #getConnectionsPerNode()
@@ -2057,16 +2065,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .writerFactory(writerFactory)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
-                        .balancing(usePairedConnections) // Current balancing logic assumes separate in/out connections.
+                        .readWriteSelectorsAssign(usePairedConnections)
                         .build();
 
                 boundTcpPort = port;
 
                 // Ack Port the TCP server was bound to.
-                if (log.isInfoEnabled())
+                if (log.isInfoEnabled()) {
                     log.info("Successfully bound communication NIO server to TCP port " +
-                        "[port=" + boundTcpPort + ", locHost=" + locHost + ", selectorsCnt=" + selectorsCnt +
-                        ", selectorSpins=" + srvr.selectorSpins() + ']');
+                        "[port=" + boundTcpPort +
+                        ", locHost=" + locHost +
+                        ", selectorsCnt=" + selectorsCnt +
+                        ", selectorSpins=" + srvr.selectorSpins() +
+                        ", pairedConn=" + usePairedConnections + ']');
+                }
 
                 srvr.idleTimeout(idleConnTimeout);
 
@@ -2986,6 +2998,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
+            if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
+                X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                    IgniteSpiOperationTimeoutException.class)) {
+                LT.warn(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                    "cluster [" +
+                    "rmtNode=" + node +
+                    ", err=" + errs +
+                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+
+                getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                    "rmtNode=" + node +
+                    ", errs=" + errs +
+                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+            }
+
             throw errs;
         }
 
@@ -3769,7 +3796,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             e);
                     }
                 }
-                catch (IgniteClientDisconnectedException e0) {
+                catch (IgniteClientDisconnectedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to ping node, client disconnected.");
                 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link SqlFieldsQuery} with JDBC flavor - it has additional flag indicating whether JDBC driver expects

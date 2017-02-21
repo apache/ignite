@@ -1288,7 +1288,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         if (!skip && skipNonPrimary) {
                             skip = e.cached().isNear() ||
                                 e.cached().detached() ||
-                                !e.context().affinity().primary(e.cached().partition(), topologyVersion()).isLocal();
+                                !e.context().affinity().primaryByPartition(e.cached().partition(), topologyVersion()).isLocal();
                         }
 
                         if (!skip && !local() && // Update local store at backups only if needed.
@@ -1707,7 +1707,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         int part = cached != null ? cached.partition() : cacheCtx.affinity().partition(e.key());
 
-        List<ClusterNode> affNodes = cacheCtx.affinity().nodes(part, topologyVersion());
+        List<ClusterNode> affNodes = cacheCtx.affinity().nodesByPartition(part, topologyVersion());
 
         e.locallyMapped(F.contains(affNodes, cctx.localNode()));
 

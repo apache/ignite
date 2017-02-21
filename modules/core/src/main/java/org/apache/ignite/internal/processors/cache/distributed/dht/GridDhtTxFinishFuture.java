@@ -135,7 +135,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId), true);
+                    f.onNodeLeft();
 
                     return true;
                 }
@@ -634,14 +634,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @param e Node failure.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
-            onNodeLeft(e, false);
+            onNodeLeft();
         }
 
         /**
-         * @param e Node failure.
-         * @param discoThread {@code True} if executed from discovery thread.
          */
-        void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
+        void onNodeLeft() {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT finish fut, mini future node left [txId=" + tx.nearXidVersion() +
                     ", dhtTxId=" + tx.xidVersion() +

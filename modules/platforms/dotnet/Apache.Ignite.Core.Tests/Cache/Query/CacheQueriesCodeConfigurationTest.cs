@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         {
                             new QueryField("Name", typeof (string)),
                             new QueryField("Age", typeof (int)),
-                            new QueryField("Birthday", typeof(DateTime)), 
+                            new QueryField("Birthday", typeof(DateTime)),
                         },
                         Indexes = new[]
                         {
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache[1] = new QueryPerson("Arnold", 10);
                 cache[2] = new QueryPerson("John", 20);
 
-                using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > ? and birthday < ?", 
+                using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > ? and birthday < ?",
                     10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);

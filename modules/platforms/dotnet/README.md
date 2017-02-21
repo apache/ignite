@@ -148,3 +148,7 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 [apache-homepage]: https://ignite.apache.org/
 [getting-started]: https://apacheignite-net.readme.io/docs/getting-started-2
 [docs]: https://apacheignite-net.readme.io/docs
+
+## Contribute to Ignite.NET
+
+See [Ignite.NET Development](https://cwiki.apache.org/confluence/display/IGNITE/Ignite.NET+Development) on wiki.

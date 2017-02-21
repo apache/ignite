@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -116,6 +117,27 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             for (int i = 0; i < result.Length; i++)
                 result[i] = _fields[i + schemaOffset].Id;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        /// <param name="schemaOffset">The schema offset.</param>
+        /// <returns>Current schema as a dictionary.</returns>
+        public Dictionary<int, int> GetFullSchema(int schemaOffset)
+        {
+            var size = _idx - schemaOffset;
+
+            var result = new Dictionary<int, int>(size);
+
+            for (int i = schemaOffset; i < _idx; i++)
+            {
+                var fld = _fields[i];
+
+                result[fld.Id] = fld.Offset;
+            }
 
             return result;
         }

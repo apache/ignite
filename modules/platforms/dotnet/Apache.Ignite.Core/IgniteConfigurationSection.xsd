@@ -152,6 +152,20 @@
                                                             </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
+                                                    <xs:element name="equalityComparer" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>
+                                                                Equality comparer to compute hash codes and compare objects in IBinaryObject form.
+                                                            </xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
                                                 </xs:all>
                                                 <xs:attribute name="typeName" type="xs:string">
                                                     <xs:annotation>
@@ -295,6 +309,11 @@
                                                                                     <xs:attribute name="fieldTypeName" type="xs:string">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Java field type name.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="isKeyField" type="xs:boolean">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Indicates whether this field belongs to the cache key.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
                                                                                 </xs:complexType>

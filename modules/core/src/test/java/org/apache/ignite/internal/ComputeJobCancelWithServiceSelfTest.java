@@ -132,7 +132,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
 
                             svc.hello();
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             // No-op.
                         }
                     }
