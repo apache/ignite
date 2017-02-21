@@ -99,6 +99,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
@@ -674,23 +675,22 @@ public class GridReduceQueryExecutor {
                     if (skipMergeTbl) {
                         List<List<?>> res = new ArrayList<>();
 
-                        assert r.idxs.size() == 1 : r.idxs;
+                        // Simple UNION ALL can have multiple indexes.
+                        for (GridMergeIndex idx : r.idxs) {
+                            Cursor cur = idx.findInStream(null, null);
 
-                        GridMergeIndex idx = r.idxs.get(0);
+                            while (cur.next()) {
+                                Row row = cur.get();
 
-                        Cursor cur = idx.findInStream(null, null);
+                                int cols = row.getColumnCount();
 
-                        while (cur.next()) {
-                            Row row = cur.get();
+                                List<Object> resRow = new ArrayList<>(cols);
 
-                            int cols = row.getColumnCount();
+                                for (int c = 0; c < cols; c++)
+                                    resRow.add(row.getValue(c).getObject());
 
-                            List<Object> resRow = new ArrayList<>(cols);
-
-                            for (int c = 0; c < cols; c++)
-                                resRow.add(row.getValue(c).getObject());
-
-                            res.add(resRow);
+                                res.add(resRow);
+                            }
                         }
 
                         resIter = res.iterator();
@@ -700,7 +700,7 @@ public class GridReduceQueryExecutor {
 
                         UUID locNodeId = ctx.localNodeId();
 
-                        h2.setupConnection(r.conn, false, enforceJoinOrder);
+                        setupConnection(r.conn, false, enforceJoinOrder);
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
                             .pageSize(r.pageSize).distributedJoins(false));
