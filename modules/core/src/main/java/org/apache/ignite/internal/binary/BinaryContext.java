@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -193,6 +194,8 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        sysClss.add(IgniteUuid.class.getName());
 
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());

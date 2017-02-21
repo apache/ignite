@@ -44,7 +44,6 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -120,7 +119,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
     /** */
-    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
+    private static final Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
         Integer.class,
         Boolean.class,
         Byte.class,
@@ -921,6 +920,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration) {
+        if (moduleEnabled())
+            return idx.runningQueries(duration);
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries) {
+        if (moduleEnabled())
+            idx.cancelQueries(queries);
+    }
+
+    /**
      * @param sqlQry Sql query.
      * @param params Params.
      */
@@ -1566,8 +1588,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (idxName == null)
                     idxName = QueryEntity.defaultIndexName(idx);
 
-                if (idx.getIndexType() == QueryIndexType.SORTED || idx.getIndexType() == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idx.getIndexType() == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
+                QueryIndexType idxTyp = idx.getIndexType();
+
+                if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
+                    d.addIndex(idxName, idxTyp == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
 
                     int i = 0;
 
@@ -1583,9 +1607,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToIndex(idxName, field, i++, !asc);
                     }
                 }
-                else {
-                    assert idx.getIndexType() == QueryIndexType.FULLTEXT;
-
+                else if (idxTyp == QueryIndexType.FULLTEXT){
                     for (String field : idx.getFields().keySet()) {
                         String alias = aliases.get(field);
 
@@ -1595,6 +1617,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.addFieldToTextIndex(field);
                     }
                 }
+                else if (idxTyp != null)
+                    throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
+                        ", typ=" + idxTyp + ']');
+                else
+                    throw new IllegalArgumentException("Index type is not set: " + idx.getName());
             }
         }
     }
@@ -2768,7 +2795,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** Accessor that deals with fields. */
-    private final static class FieldAccessor implements PropertyAccessor {
+    private static final class FieldAccessor implements PropertyAccessor {
         /** Field to access. */
         private final Field fld;
 
@@ -2811,7 +2838,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** Getter and setter methods based accessor. */
-    private final static class MethodsAccessor implements PropertyAccessor {
+    private static final class MethodsAccessor implements PropertyAccessor {
         /** */
         private final Method getter;
 
@@ -2869,7 +2896,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /** Accessor with getter only. */
-    private final static class ReadOnlyMethodsAccessor implements PropertyAccessor {
+    private static final class ReadOnlyMethodsAccessor implements PropertyAccessor {
         /** */
         private final Method getter;
 

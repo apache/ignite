@@ -18,13 +18,12 @@
  import controller from './activities-user-dialog.controller';
  import templateUrl from './activities-user-dialog.jade';
 
- export default ['$modal', ($modal) => ({ show = true, user, params }) => {
+ export default ['$modal', ($modal) => ({ show = true, user }) => {
      const ActivitiesUserDialog = $modal({
          templateUrl,
          show,
          resolve: {
-             user: () => user,
-             params: () => params
+             user: () => user
          },
          placement: 'center',
          controller,
