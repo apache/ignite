@@ -439,7 +439,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
             assert ctx != null;
 
-            Object o = ctx.toCacheKeyObject(row.getValue(KEY_COL));
+            final Value keyColValue = row.getValue(KEY_COL);
+
+            assert keyColValue != null;
+
+            final Object o = keyColValue.getObject();
 
             if (o instanceof CacheObject)
                 key = (CacheObject)o;
