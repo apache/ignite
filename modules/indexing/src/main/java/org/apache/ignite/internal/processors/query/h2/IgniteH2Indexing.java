@@ -3221,11 +3221,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override public boolean snapshotableIndex() {
             return snapshotableIdx;
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean quoteAllIdentifiers() {
-            return schema.escapeAll();
-        }
     }
 
     /**
