@@ -22,7 +22,7 @@ import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
- * TODO add description
+ * Sequential access optimized sparse on-heap vector storage.
  */
 public class SequentialAccessSparseVectorStorage implements VectorStorage {
     /** */
@@ -47,7 +47,8 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
      */
     public SequentialAccessSparseVectorStorage(boolean noDefault){
         this.noDefault = noDefault;
-        this.data = new Int2DoubleRBTreeMap();
+
+        data = new Int2DoubleRBTreeMap();
     }
 
     /**
@@ -58,7 +59,8 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
      */
     public SequentialAccessSparseVectorStorage(int[] keys, double[] values, boolean noDefault) {
         this.noDefault = noDefault;
-        this.data = new Int2DoubleRBTreeMap(keys, values);
+
+        data = new Int2DoubleRBTreeMap(keys, values);
     }
 
     /**
@@ -67,8 +69,9 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
      * @param noDefault
      */
     public SequentialAccessSparseVectorStorage(VectorStorage storage, boolean noDefault) {
-        this.data = new Int2DoubleRBTreeMap();
         this.noDefault = noDefault;
+
+        data = new Int2DoubleRBTreeMap();
 
         for (int i = 0; i < storage.size(); i++)
             data.put(i, storage.get(i));
@@ -81,7 +84,6 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
      */
     public SequentialAccessSparseVectorStorage(Int2DoubleRBTreeMap data, boolean noDefault){
         this.noDefault = noDefault;
-
         this.data = data;
     }
 
@@ -109,14 +111,12 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeBoolean(noDefault);
-
         out.writeObject(data);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         noDefault = in.readBoolean();
-
         data = (Int2DoubleRBTreeMap)in.readObject();
     }
 
