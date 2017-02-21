@@ -143,7 +143,7 @@ public class GridSqlFunction extends GridSqlElement {
                     GridSqlElement e = child(i);
 
                     // id int = ?, name varchar = ('aaa', 'bbb')
-                    buff.append(((GridSqlAlias)e).alias())
+                    buff.append(Parser.quoteIdentifier(((GridSqlAlias)e).alias()))
                         .append(' ')
                         .append(e.resultType().sql())
                         .append('=')

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.h2.command.Parser;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
 import org.h2.table.Table;
@@ -46,8 +48,6 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
-
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
 
 /**
  * AST utils for DML
@@ -85,7 +85,7 @@ public final class DmlAstUtils {
             for (int i = 0; i < cols.length; i++) {
                 GridSqlArray arr = new GridSqlArray(rows.size());
 
-                String colName = IgniteH2Indexing.escapeName(cols[i].columnName(), desc.quoteAllIdentifiers());
+                String colName = cols[i].columnName();
 
                 GridSqlAlias alias = new GridSqlAlias(colName, arr);
 
@@ -108,6 +108,8 @@ public final class DmlAstUtils {
                 for (int i = 0; i < row.length; i++)
                     args[i].addChild(row[i]);
             }
+
+            sel.getSQL();
 
             return sel;
         }
@@ -339,7 +341,7 @@ public final class DmlAstUtils {
         mapQry.addColumn(valCol, true);
 
         for (GridSqlColumn c : update.cols()) {
-            String newColName = "_upd_" + c.columnName();
+            String newColName = Parser.quoteIdentifier("_upd_" + c.columnName());
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
             GridSqlAlias alias = new GridSqlAlias(newColName, elementOrDefault(update.set().get(c.columnName()), c), true);
