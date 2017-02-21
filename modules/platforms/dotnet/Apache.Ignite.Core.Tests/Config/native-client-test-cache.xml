@@ -107,10 +107,6 @@
             </list>
         </property>
 
-        <property name="swapSpaceSpi">
-            <bean class="org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi"/>
-        </property>
-
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class BinaryEqualityComparerSerializer
     {
         /// <summary>
-        /// SwapSpace type.
+        /// Comparer type.
         /// </summary>
         private enum Type : byte
         {
