@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -445,7 +446,14 @@ public class GridH2Table extends TableBase {
         Lock l = lock(true, Long.MAX_VALUE);
 
         try {
-            assert sessions.isEmpty() : sessions;
+           /* assert sessions.isEmpty() : sessions;*/
+
+            //todo only for investigation
+            if (!sessions.isEmpty()){
+                System.out.println(sessions);
+
+                U.dumpThreads(null);
+            }
 
             destroyed = true;
 
