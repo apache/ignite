@@ -2,6 +2,7 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -66,20 +67,38 @@ public class VectorToMatrixTest {
             if (!availableForTesting(v))
                 return;
 
+            fillWithNonZeroes(v);
+
             final Matrix matrixRow = v.toMatrix(true);
 
             final Matrix matrixCol = v.toMatrix(false);
 
-            // todo write code
+            for (Vector.Element e : v.all()) {
+                final int idx = e.index();
+
+                final double exp = e.get();
+
+                final Metric metricRow = new Metric(exp, matrixRow.get(0, idx));
+
+                assertTrue("Not close enough row like " + metricRow + " at index " + idx + " in " + desc,
+                    metricRow.closeEnough());
+
+                final Metric metricCol = new Metric(exp, matrixCol.get(idx, 0));
+
+                assertTrue("Not close enough cols like " + matrixCol + " at index " + idx + " in " + desc,
+                    metricCol.closeEnough());
+            }
         });
     }
 
     /** */ @Test
+    @Ignore("not yet implemented test case for toMatrixPlus method")
     public void testToMatrixPlusOne() {
-        //todo write code
+        // todo write code
     }
 
     /** */ @Test
+    @Ignore("not yet implemented test case for cross method")
     public void testCross() {
         //todo write code
     }
@@ -106,12 +125,40 @@ public class VectorToMatrixTest {
     private static Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap() {
         return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>> () {{
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
-            put(DenseLocalOffHeapVector.class, null);
+            put(DenseLocalOffHeapVector.class, null); // todo fill non-nulls for all vectors that are ready to test
             put(RandomVector.class, null);
+            put(ConstantVector.class, null);
             put(RandomAccessSparseLocalOnHeapVector.class, null);
             put(SequentialAccessSparseLocalOnHeapVector.class, null);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
+    }
+
+    /** */
+    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+        /** */
+        private final double exp;
+
+        /** */
+        private final double obtained;
+
+        /** **/
+        Metric(double exp, double obtained) {
+            this.exp = exp;
+            this.obtained = obtained;
+        }
+
+        /** */
+        boolean closeEnough() {
+            return new Double(exp).equals(obtained);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Metric{" + "expected=" + exp +
+                ", obtained=" + obtained +
+                '}';
+        }
     }
 }

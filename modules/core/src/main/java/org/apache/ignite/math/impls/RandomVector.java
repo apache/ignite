@@ -29,7 +29,7 @@ import java.util.*;
  * that by default, the value is determined by a relatively simple hash of the index.
  */
 public class RandomVector extends AbstractVector {
-    private boolean fastHash;
+    /** */ private boolean fastHash;
 
     /**
      * @param size Vector cardinality.
@@ -77,45 +77,32 @@ public class RandomVector extends AbstractVector {
         // No-op.
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
         return new RandomVector(size(), fastHash);
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int crd) {
         return new RandomVector(crd, fastHash);
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return new RandomMatrix(rows, cols);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeBoolean(fastHash);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         fastHash = in.readBoolean();
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        if (rowLike)
-            return new RandomMatrix(1, size());
-        else
-            return new RandomMatrix(size(), 1);
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        throw new UnsupportedOperationException();
     }
 }

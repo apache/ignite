@@ -26,7 +26,7 @@ import java.io.*;
  * Pivoted (index mapped) view over another vector.
  */
 public class PivotedVectorView extends AbstractVector {
-    private Vector vec;
+    /** */ private Vector vec;
 
     /**
      *
@@ -72,7 +72,7 @@ public class PivotedVectorView extends AbstractVector {
     }
 
     /**
-     * 
+     *
      * @return
      */
     public Vector getBaseVector() {
@@ -126,42 +126,32 @@ public class PivotedVectorView extends AbstractVector {
         };
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
         PivotedVectorStorage sto = storage();
 
         return new PivotedVectorView(vec, sto.pivot(), sto.unpivot());
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int crd) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeObject(vec);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         vec = (Vector)in.readObject();

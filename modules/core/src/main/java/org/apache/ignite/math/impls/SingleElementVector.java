@@ -69,52 +69,42 @@ public class SingleElementVector extends AbstractVector {
         return (SingleElementVectorStorage)getStorage();
     }
 
-    @Override
-    public Element minValue() {
+    /** {@inheritDoc} */
+    @Override public Element minValue() {
         return makeElement(storage().index());
     }
 
-    @Override
-    public Element maxValue() {
+    /** {@inheritDoc} */
+    @Override public Element maxValue() {
         return makeElement(storage().index());
     }
 
-    @Override
-    public double sum() {
+    /** {@inheritDoc} */
+    @Override public double sum() {
         return getX(storage().index());
     }
 
-    @Override
-    public int nonZeroElements() {
+    /** {@inheritDoc} */
+    @Override public int nonZeroElements() {
         return 1;
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
         int idx = storage().index();
 
         return new SingleElementVector(size(), idx, getX(idx));
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int crd) {
         int idx = storage().index();
 
         return new SingleElementVector(crd, idx, getX(idx));
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 }

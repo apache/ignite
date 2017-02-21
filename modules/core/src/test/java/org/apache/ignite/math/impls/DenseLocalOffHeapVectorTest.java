@@ -73,12 +73,4 @@ public class DenseLocalOffHeapVectorTest {
             like.destroy();
         }
     }
-
-    /** */
-    @Test
-    @Ignore("not yet implemented test case for likeMatrix method")
-    public void likeMatrix() throws Exception {
-        // TODO impl
-    }
-
 }

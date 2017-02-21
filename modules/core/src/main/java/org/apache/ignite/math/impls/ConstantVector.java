@@ -63,28 +63,18 @@ public class ConstantVector extends AbstractVector {
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
         return new ConstantVector(storage().size(), storage().constant());
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int crd) {
         return new ConstantVector(crd, storage().constant());
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
     }
 }
