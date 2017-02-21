@@ -167,8 +167,10 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = 1;
+
         result = result * 37 + Boolean.hashCode(noDefault);
         result = result * 37 + data.hashCode();
+        
         return result;
     }
 }

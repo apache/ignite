@@ -32,6 +32,7 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
      */
     public SequentialAccessSparseLocalOnHeapVector(int cardinality){
         super(cardinality);
+
         setStorage(new SequentialAccessSparseVectorStorage());
     }
 

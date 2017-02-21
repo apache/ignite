@@ -75,12 +75,12 @@ public class DiagonalMatrixStorage implements MatrixStorage {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+       out.writeObject(diagonal);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        diagonal = (Vector)in.readObject();
     }
 
     @Override
