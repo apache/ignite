@@ -15,31 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.database;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.IgniteEx;
-
-import javax.cache.expiry.CreatedExpiryPolicy;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
+import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
 
 /**
- *
+ * Page memory leaks tests using indexing.
  */
-public class IgniteDbMemoryLeakWithExpirationTest extends IgniteDbMemoryLeakTest {
-    /** */
-    private static final ExpiryPolicy EXPIRY = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 10L));
+public class IgniteDbMemoryLeakWithIndexingTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
 
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Object, Object> cache(IgniteEx ig) {
-        return ig.cache("non-primitive").withExpiryPolicy(EXPIRY);
-    }
+        suite.addTestSuite(IgniteDbMemoryLeakSqlQueryTest.class);
+        suite.addTestSuite(IgniteDbMemoryLeakIndexedTest.class);
 
-    /** {@inheritDoc} */
-    @Override protected long pagesMax() {
-        return 7000;
+        return suite;
     }
 }
