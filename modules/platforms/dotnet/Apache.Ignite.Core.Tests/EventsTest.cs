@@ -51,9 +51,6 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private IIgnite[] _grids;
         
-        /** */
-        public static int IdGen;
-
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -594,11 +591,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
                 Assert.IsTrue(jobEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
-
-                var spaceEvent = EventReader.Read<SwapSpaceEvent>(reader);
-                CheckEventBase(spaceEvent);
-                Assert.AreEqual("space", spaceEvent.Space);
-                Assert.IsTrue(spaceEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: Space=space"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
