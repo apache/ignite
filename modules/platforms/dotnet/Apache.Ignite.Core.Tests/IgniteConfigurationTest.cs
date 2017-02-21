@@ -459,7 +459,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 GridName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
+                IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
                 MetricsLogFrequency = TimeSpan.FromMinutes(8),

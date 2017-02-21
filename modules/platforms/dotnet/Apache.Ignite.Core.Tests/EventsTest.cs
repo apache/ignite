@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Tests
                     EventObjectType = typeof (CacheEvent),
                     GenerateEvent = g => g.GetCache<int, int>(null).Put(1, 1),
                     VerifyEvents = (e, g) => VerifyCacheEvents(e, g),
-                    EventCount = 2
+                    EventCount = 3
                 };
 
                 yield return new EventTestCase
@@ -530,7 +530,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, cacheEvent.SubjectId);
                 Assert.AreEqual("cloClsName", cacheEvent.ClosureClassName);
                 Assert.AreEqual("taskName", cacheEvent.TaskName);
-                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: IsNear="));
+                Assert.IsTrue(cacheEvent.ToShortString().StartsWith("NODE_FAILED: IsNear="));
 
                 var qryExecEvent = EventReader.Read<CacheQueryExecutedEvent>(reader);
                 CheckEventBase(qryExecEvent);
@@ -541,7 +541,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(expectedGuid, qryExecEvent.SubjectId);
                 Assert.AreEqual("taskName", qryExecEvent.TaskName);
                 Assert.AreEqual(
-                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
                     "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName", qryExecEvent.ToShortString());
 
                 var qryReadEvent = EventReader.Read<CacheQueryReadEvent>(reader);
@@ -557,7 +557,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(3, qryReadEvent.OldValue);
                 Assert.AreEqual(4, qryReadEvent.Row);
                 Assert.AreEqual(
-                    "SWAP_SPACE_CLEARED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
+                    "NODE_FAILED: QueryType=qryType, CacheName=cacheName, ClassName=clsName, Clause=clause, " +
                     "SubjectId=00000000-0000-0001-0000-000000000002, TaskName=taskName, Key=1, Value=2, " +
                     "OldValue=3, Row=4", qryReadEvent.ToShortString());
 
@@ -569,18 +569,18 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(2, cacheRebalancingEvent.DiscoveryEventType);
                 Assert.AreEqual(3, cacheRebalancingEvent.DiscoveryTimestamp);
                 Assert.IsTrue(cacheRebalancingEvent.ToShortString().StartsWith(
-                    "SWAP_SPACE_CLEARED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
+                    "NODE_FAILED: CacheName=cacheName, Partition=1, DiscoveryNode=GridNode"));
 
                 var checkpointEvent = EventReader.Read<CheckpointEvent>(reader);
                 CheckEventBase(checkpointEvent);
                 Assert.AreEqual("cpKey", checkpointEvent.Key);
-                Assert.AreEqual("SWAP_SPACE_CLEARED: Key=cpKey", checkpointEvent.ToShortString());
+                Assert.AreEqual("NODE_FAILED: Key=cpKey", checkpointEvent.ToShortString());
 
                 var discoEvent = EventReader.Read<DiscoveryEvent>(reader);
                 CheckEventBase(discoEvent);
                 Assert.AreEqual(grid.TopologyVersion, discoEvent.TopologyVersion);
                 Assert.AreEqual(grid.GetNodes(), discoEvent.TopologyNodes);
-                Assert.IsTrue(discoEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: EventNode=GridNode"));
+                Assert.IsTrue(discoEvent.ToShortString().StartsWith("NODE_FAILED: EventNode=GridNode"));
 
                 var jobEvent = EventReader.Read<JobEvent>(reader);
                 CheckEventBase(jobEvent);
@@ -590,7 +590,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(locNode, jobEvent.TaskNode);
                 Assert.AreEqual(expectedGridGuid, jobEvent.TaskSessionId);
                 Assert.AreEqual(expectedGuid, jobEvent.TaskSubjectId);
-                Assert.IsTrue(jobEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
+                Assert.IsTrue(jobEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
 
                 var taskEvent = EventReader.Read<TaskEvent>(reader);
                 CheckEventBase(taskEvent);
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("taskClsName", taskEvent.TaskClassName);
                 Assert.AreEqual("taskName", taskEvent.TaskName);
                 Assert.AreEqual(expectedGridGuid, taskEvent.TaskSessionId);
-                Assert.IsTrue(taskEvent.ToShortString().StartsWith("SWAP_SPACE_CLEARED: TaskName=taskName"));
+                Assert.IsTrue(taskEvent.ToShortString().StartsWith("NODE_FAILED: TaskName=taskName"));
             }
         }
 
@@ -613,7 +613,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(locNode, evt.Node);
             Assert.AreEqual("msg", evt.Message);
-            Assert.AreEqual(EventType.SwapSpaceCleared, evt.Type);
+            Assert.AreEqual(EventType.NodeFailed, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
             Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
@@ -621,8 +621,8 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.Greater(evt.LocalOrder, 0);
 
-            Assert.IsTrue(evt.ToString().Contains("[Name=SWAP_SPACE_CLEARED"));
-            Assert.IsTrue(evt.ToShortString().StartsWith("SWAP_SPACE_CLEARED"));
+            Assert.IsTrue(evt.ToString().Contains("[Name=NODE_FAILED"));
+            Assert.IsTrue(evt.ToShortString().StartsWith("NODE_FAILED"));
         }
 
         /// <summary>
@@ -738,6 +738,11 @@ namespace Apache.Ignite.Core.Tests
                 {
                     Assert.AreEqual(false, cacheEvent.HasNewValue);
                     Assert.AreEqual(null, cacheEvent.NewValue);
+                }
+                else if (cacheEvent.Type == EventType.CacheEntryDestroyed)
+                {
+                    Assert.IsFalse(cacheEvent.HasNewValue);
+                    Assert.IsFalse(cacheEvent.HasOldValue);
                 }
                 else
                 {

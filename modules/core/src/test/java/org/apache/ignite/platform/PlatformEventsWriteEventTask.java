@@ -129,8 +129,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 jobEvent.taskSubjectId(uuid);
                 ctx.writeEvent(writer, jobEvent);
 
-                ctx.writeEvent(writer, new SwapSpaceEvent(node, msg, evtType, "space"));
-
                 ctx.writeEvent(writer, new TaskEvent(node, msg, evtType, igniteUuid, "taskName", "taskClsName",
                     true, uuid));
 
