@@ -55,12 +55,37 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Indexing Spi query test
+ * Indexing Spi query only test
  */
 public class IndexingSpiQuerySelfTest extends TestCase {
+    public static final String CACHE_NAME = "test-cache";
+
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         Ignition.stopAll(true);
+    }
+
+    /**
+     * @return Configuration.
+     */
+    protected IgniteConfiguration configuration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        return cfg;
+    }
+
+    /** */
+    protected <K,V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+        return new CacheConfiguration<>(cacheName);
     }
 
     /**
@@ -73,9 +98,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
-
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -98,7 +121,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -121,9 +144,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>("test-binary-cache");
-
-        ccfg.setIndexedTypes(PersonKey.class, Person.class);
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
@@ -155,9 +176,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<PersonKey, Person> ccfg = new CacheConfiguration<>("test-binary-cache");
-
-        ccfg.setIndexedTypes(PersonKey.class, Person.class);
+        CacheConfiguration<PersonKey, Person> ccfg = cacheConfiguration(CACHE_NAME);
 
         IgniteCache<PersonKey, Person> cache = ignite.createCache(ccfg);
 
@@ -187,10 +206,9 @@ public class IndexingSpiQuerySelfTest extends TestCase {
 
         Ignite ignite = Ignition.start(cfg);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>("test-cache");
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
 
         final IgniteCache<Integer, Integer> cache = ignite.createCache(ccfg);
 
@@ -216,24 +234,6 @@ public class IndexingSpiQuerySelfTest extends TestCase {
                 }, IgniteTxHeuristicCheckedException.class);
             }
         }
-    }
-
-    /**
-     * @return Configuration.
-     */
-    private IgniteConfiguration configuration() {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
     }
 
     /**
@@ -328,8 +328,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
+        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
             assertTrue(key instanceof BinaryObject);
 
             assertTrue(val instanceof BinaryObject);
@@ -350,7 +349,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     /**
      *
      */
-    private static class PersonKey implements Serializable, Comparable<PersonKey> {
+     static class PersonKey implements Serializable, Comparable<PersonKey> {
         /** */
         private int id;
 
@@ -385,7 +384,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
     /**
      *
      */
-    private static class Person implements Serializable {
+    static class Person implements Serializable {
         /** */
         private String name;
 
