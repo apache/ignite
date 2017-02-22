@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
@@ -41,7 +42,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
@@ -51,6 +52,10 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected transient IgniteLogger log;
+
+    static {
+        IP_FINDER.setAddresses(Collections.singleton("127.0.0.1:47500..47501"));
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -75,6 +80,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(cache);
+        cfg.setLocalHost("127.0.0.1");
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -89,7 +95,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3);
+        startGrids(2);
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
@@ -135,7 +141,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
-        for (int i = 1; i <= 100000; i++) {
+        for (int i = 1; i <= 100; i++) {
             stmt.setInt(1, i);
             stmt.setInt(2, i);
 
@@ -143,7 +149,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         }
 
         // Data is not there yet.
-        assertNull(grid(0).cache(null).get(100000));
+        assertNull(grid(0).cache(null).get(100));
 
         // Closing connection makes it wait for streamer close
         // and thus for data load completion as well
@@ -151,7 +157,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         // Now let's check it's all there.
         assertEquals(1, grid(0).cache(null).get(1));
-        assertEquals(100000, grid(0).cache(null).get(100000));
+        assertEquals(100, grid(0).cache(null).get(100));
 
         // 5 should still point to 500.
         assertEquals(500, grid(0).cache(null).get(5));
@@ -167,7 +173,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
-        for (int i = 1; i <= 100000; i++) {
+        for (int i = 1; i <= 100; i++) {
             stmt.setInt(1, i);
             stmt.setInt(2, i);
 
@@ -175,7 +181,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         }
 
         // Data is not there yet.
-        assertNull(grid(0).cache(null).get(100000));
+        assertNull(grid(0).cache(null).get(100));
 
         // Closing connection makes it wait for streamer close
         // and thus for data load completion as well
@@ -183,7 +189,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
         // Now let's check it's all there.
         assertEquals(1, grid(0).cache(null).get(1));
-        assertEquals(100000, grid(0).cache(null).get(100000));
+        assertEquals(100, grid(0).cache(null).get(100));
 
         // 5 should now point to 5 as we've turned overwriting on.
         assertEquals(5, grid(0).cache(null).get(5));
