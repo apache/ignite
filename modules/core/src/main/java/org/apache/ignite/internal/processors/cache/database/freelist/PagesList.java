@@ -200,23 +200,17 @@ public abstract class PagesList extends DataStructure {
                     for (int i = 0; i < upd.length; i++) {
                         long tailId = upd[i];
 
-                        // TODO: just relase readlock.
-                        List<Page> locked = new ArrayList<>(2);
-                        List<Long> lockedAddrs = new ArrayList<>(2);
+                        long pageId = tailId;
+                        int count = 0;
 
-                        try {
-                            long pageId = tailId;
-                            int count = 0;
+                        while (pageId != 0L) {
 
-                            while (pageId != 0L) {
-                                try (Page page = page(pageId)) {
-                                    long pageAddr = readLock(page);
+                            try (Page page = page(pageId)) {
+                                long pageAddr = readLock(page);
 
-                                    assert pageAddr != 0L;
+                                assert pageAddr != 0L;
 
-                                    locked.add(page);
-                                    lockedAddrs.add(pageAddr);
-
+                                try {
                                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
                                     count += io.getCount(pageAddr);
@@ -226,19 +220,15 @@ public abstract class PagesList extends DataStructure {
                                     if (isReuseBucket(bucket) && pageId != 0L)
                                         count++;
                                 }
-                            }
-
-                            Stripe stripe = new Stripe(tailId, count == 0);
-
-                            tails[i] = stripe;
-
-                            bucketSize += count;
-                        }
-                        finally {
-                            for (int j = 0; j < locked.size(); j++) {
-                                readUnlock(locked.get(j), lockedAddrs.get(j));
+                                finally {
+                                    readUnlock(page, pageAddr);
+                                }
                             }
                         }
+
+                        Stripe stripe = new Stripe(tailId, count == 0);
+                        tails[i] = stripe;
+                        bucketSize += count;
                     }
 
                     boolean ok = casBucket(bucket, null, tails);
