@@ -301,6 +301,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         // Must be distinct objects, even if it is the same table.
         assertNotSame(tbl1, tbl2);
+        assertNotNull(tbl1.dataTable());
+        assertNotNull(tbl2.dataTable());
+        assertSame(tbl1.dataTable(), tbl2.dataTable());
 
         GridSqlColumn col1 = (GridSqlColumn)select.column(0);
         GridSqlColumn col2 = (GridSqlColumn)select.column(1);
