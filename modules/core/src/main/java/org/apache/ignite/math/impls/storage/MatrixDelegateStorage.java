@@ -52,6 +52,9 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
         this.rowOff = rowOff;
         this.colOff = colOff;
+
+        this.rows = rows;
+        this.cols = cols;
     }
 
     /**
