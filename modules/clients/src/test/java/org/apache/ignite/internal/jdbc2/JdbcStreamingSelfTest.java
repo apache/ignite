@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
@@ -28,7 +29,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -40,9 +40,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Data streaming test.
  */
 public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
 
@@ -75,10 +72,14 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(cache);
+        cfg.setLocalHost("127.0.0.1");
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(IP_FINDER);
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500..47501"));
+
+        disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
 
@@ -89,7 +90,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3);
+        startGrids(2);
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
@@ -131,29 +132,29 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     public void testStreamedInsert() throws Exception {
         conn = createConnection(false);
 
-        ignite(0).cache(null).put(5, 500);
+        for (int i = 10; i <= 100; i += 10)
+            ignite(0).cache(null).put(i, i * 100);
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
-        for (int i = 1; i <= 100000; i++) {
+        for (int i = 1; i <= 100; i++) {
             stmt.setInt(1, i);
             stmt.setInt(2, i);
 
             stmt.executeUpdate();
         }
 
-        // Data is not there yet.
-        assertNull(grid(0).cache(null).get(100000));
-
-        // Let the stream flush.
-        U.sleep(1500);
+        // Closing connection makes it wait for streamer close
+        // and thus for data load completion as well
+        conn.close();
 
         // Now let's check it's all there.
-        assertEquals(1, grid(0).cache(null).get(1));
-        assertEquals(100000, grid(0).cache(null).get(100000));
-
-        // 5 should still point to 500.
-        assertEquals(500, grid(0).cache(null).get(5));
+        for (int i = 1; i <= 100; i++) {
+            if (i % 10 != 0)
+                assertEquals(i, grid(0).cache(null).get(i));
+            else // All that divides by 10 evenly should point to numbers 100 times greater - see above
+                assertEquals(i * 100, grid(0).cache(null).get(i));
+        }
     }
 
     /**
@@ -162,28 +163,25 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
         conn = createConnection(true);
 
-        ignite(0).cache(null).put(5, 500);
+        for (int i = 10; i <= 100; i += 10)
+            ignite(0).cache(null).put(i, i * 100);
 
         PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
-        for (int i = 1; i <= 100000; i++) {
+        for (int i = 1; i <= 100; i++) {
             stmt.setInt(1, i);
             stmt.setInt(2, i);
 
             stmt.executeUpdate();
         }
 
-        // Data is not there yet.
-        assertNull(grid(0).cache(null).get(100000));
-
-        // Let the stream flush.
-        U.sleep(1500);
+        // Closing connection makes it wait for streamer close
+        // and thus for data load completion as well
+        conn.close();
 
         // Now let's check it's all there.
-        assertEquals(1, grid(0).cache(null).get(1));
-        assertEquals(100000, grid(0).cache(null).get(100000));
-
-        // 5 should now point to 5 as we've turned overwriting on.
-        assertEquals(5, grid(0).cache(null).get(5));
+        // i should point to i at all times as we've turned overwrites on above.
+        for (int i = 1; i <= 100; i++)
+            assertEquals(i, grid(0).cache(null).get(i));
     }
 }
