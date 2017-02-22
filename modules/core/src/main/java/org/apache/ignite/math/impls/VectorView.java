@@ -25,13 +25,13 @@ import java.io.*;
  * TODO: add description.
  */
 public class VectorView extends AbstractVector {
-    // Parent.
+    /** Parent. */
     private Vector parent;
 
-    // View offset.
+    /** View offset. */
     private int off;
 
-    // View length.
+    /** View length. */
     private int len;
 
     /**
@@ -56,26 +56,22 @@ public class VectorView extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector copy() {
+    @Override public Vector copy() {
         return new VectorView(parent, off, len);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector like(int crd) {
+    @Override public Vector like(int crd) {
         return parent.like(crd);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return parent.likeMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeObject(parent);
@@ -84,8 +80,7 @@ public class VectorView extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         parent = (Vector)in.readObject();
@@ -93,19 +88,6 @@ public class VectorView extends AbstractVector {
         len = in.readInt();
 
         setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
-    }
-
-    /** {@inheritDoc */
-    @Override public Matrix toMatrix(boolean rowLike) {
-        if (rowLike)
-            return parent.likeMatrix(1, size()).assignRow(0, this);
-        else
-            return parent.likeMatrix(size(), 1).assignColumn(0, this);
-    }
-
-    /** {@inheritDoc */
-    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return null; // TODO
     }
 
     /** {@inheritDoc} */

@@ -26,7 +26,7 @@ import java.util.function.*;
 
 import static org.junit.Assert.*;
 
-/** See also: {@link AbstractVectorTest}. */
+/** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
 public class VectorImplementationsTest {
     /** */ @Test
     public void vectorImplementationsFixturesTest() {
@@ -199,11 +199,6 @@ public class VectorImplementationsTest {
             assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
                 metric1.closeEnough());
         });
-    }
-
-    /** */ @Test
-    public void crossTest() { // TODO write tests for this and other Vector methods involving Matrix
-
     }
 
     /** */

@@ -28,11 +28,12 @@ import java.util.*;
 import java.util.function.*;
 
 /**
- * TODO: add description.
+ * This class provides a skeletal implementation of the {@link Vector}
+ * interface to minimize the effort required to implement this interface.
  */
 public abstract class AbstractVector implements Vector {
     /** Vector cardinality. */
-    private int cardinality;
+    private int size;
 
     /** Vector storage implementation. */
     private VectorStorage sto;
@@ -53,7 +54,7 @@ public abstract class AbstractVector implements Vector {
     private static final String RO_MSG = "Vector is read-only.";
 
     /**
-     * 
+     *
      */
     private void ensureReadOnly() {
         if (readOnly)
@@ -76,7 +77,7 @@ public abstract class AbstractVector implements Vector {
     public AbstractVector(boolean readOnly, VectorStorage sto, int cardinality) {
         this.readOnly = readOnly;
         this.sto = sto;
-        this.cardinality = cardinality;
+        this.size = cardinality;
     }
 
     /**
@@ -107,7 +108,7 @@ public abstract class AbstractVector implements Vector {
      * @param vector Other vector.
      */
     public AbstractVector(Vector vector){
-        this(vector.getStorage(), vector.getCardinality());
+        this(vector.getStorage(), vector.size());
     }
 
     /**
@@ -120,8 +121,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param i
-     * @param v
+     * @param i Index.
+     * @param v Value.
      */
     protected void storageSet(int i, double v) {
         ensureReadOnly();
@@ -133,8 +134,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param i
-     * @return
+     * @param i Index.
+     * @return Value.
      */
     protected double storageGet(int i) {
         return sto.get(i);
@@ -151,7 +152,7 @@ public abstract class AbstractVector implements Vector {
      * @param idx Index to check.
      */
     protected void checkIndex(int idx) {
-        if (idx < 0 || idx >= cardinality)
+        if (idx < 0 || idx >= size)
             throw new IndexException(idx);
     }
 
@@ -167,8 +168,8 @@ public abstract class AbstractVector implements Vector {
         return storageGet(idx);
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
 
@@ -213,8 +214,8 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @param idx
-     * @return
+     * @param idx Index.
+     * @return Value.
      */
     protected Element makeElement(int idx) {
         checkIndex(idx);
@@ -316,11 +317,6 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public IgniteUuid guid() {
         return guid;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCardinality() {
-        return cardinality;
     }
 
     /** {@inheritDoc} */
@@ -637,11 +633,46 @@ public abstract class AbstractVector implements Vector {
     @Override public Matrix cross(Vector vec) {
         Matrix res = likeMatrix(size(), vec.size());
 
+        if (res == null)
+            return null;
+
         for (Element e : nonZeroes()) {
             int row = e.index();
-            
+
             res.assignRow(row, vec.times(getX(row)));
         }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix toMatrix(boolean rowLike) {
+        Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+
+        if (res == null)
+            return null;
+
+        if (rowLike)
+            res.assignRow(0, this);
+        else
+            res.assignColumn(0, this);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+        Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+
+        if (res == null)
+            return null;
+
+        res.set(0, 0, zeroVal);
+
+        if (rowLike)
+            new MatrixView(res, 1, 0, size(), 1).assignRow(0, this);
+        else
+            new MatrixView(res, 0, 1, 1, size()).assignColumn(0, this);
 
         return res;
     }
@@ -749,10 +780,9 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     *
-     * @param power
-     * @param normLen
-     * @return
+     * @param power Power.
+     * @param normLen Normalized length.
+     * @return logNormalized value.
      */
     private Vector logNormalize(double power, double normLen) {
         assert !(Double.isInfinite(power) || power <= 1.0);
@@ -797,7 +827,7 @@ public abstract class AbstractVector implements Vector {
 
     /**
      *
-     * @return
+     * @return Result of dot with self.
      */
     protected double dotSelf() {
         double sum = 0.0;
@@ -823,7 +853,7 @@ public abstract class AbstractVector implements Vector {
         out.writeObject(meta);
         out.writeObject(guid);
         out.writeBoolean(readOnly);
-        out.writeInt(cardinality);
+        out.writeInt(size);
     }
 
     /** {@inheritDoc} */
@@ -833,6 +863,6 @@ public abstract class AbstractVector implements Vector {
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
         readOnly = in.readBoolean();
-        cardinality = in.readInt();
+        size = in.readInt();
     }
 }

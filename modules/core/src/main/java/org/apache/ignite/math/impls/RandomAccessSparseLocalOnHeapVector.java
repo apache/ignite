@@ -7,27 +7,23 @@ import org.apache.ignite.math.Vector;
  * TODO: add description.
  */
 public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
+    /** */
     public RandomAccessSparseLocalOnHeapVector(Vector vector) {
         super(vector);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector copy() {
         return new RandomAccessSparseLocalOnHeapVector(this);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null;
-    }
-
-    @Override public Matrix toMatrix(boolean rowLike) {
-        return null;
-    }
-
-    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         return null;
     }
 }

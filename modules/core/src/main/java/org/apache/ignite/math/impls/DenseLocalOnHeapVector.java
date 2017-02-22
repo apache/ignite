@@ -27,7 +27,7 @@ import java.util.*;
  * Basic implementation for vector.
  * <p>
  * This is a trivial implementation for vector assuming dense logic, local on-heap JVM storage
- * based on <code>double[]</code> array. It is only suitable for data sets where
+ * based on {@code double[]} array. It is only suitable for data sets where
  * local, non-distributed execution is satisfactory and on-heap JVM storage is enough
  * to keep the entire data set.
  */
@@ -40,15 +40,15 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /**
-     * @param arr
-     * @param cp
+     * @param arr Source array.
+     * @param cp {@code true} to clone array, reuse it otherwise.
      */
     private VectorStorage mkStorage(double[] arr, boolean cp) {
         return new VectorArrayStorage(!cp ? arr : (arr == null ? null : arr.clone()));
     }
 
     /**
-     * @param args
+     * @param args Parameters for new Vector.
      */
     public DenseLocalOnHeapVector(Map<String, Object> args) {
         assert args != null;
@@ -75,8 +75,8 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /**
-     * @param arr
-     * @param shallowCp
+     * @param arr Source array.
+     * @param shallowCp {@code true} to use shallow copy.
      */
     public DenseLocalOnHeapVector(double[] arr, boolean shallowCp) {
         super(arr == null ? 0 : arr.length);
@@ -84,18 +84,17 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     }
 
     /**
-     * @param arr
+     * @param arr Source array.
      */
     public DenseLocalOnHeapVector(double[] arr) {
         this(arr, false);
     }
 
     /**
-     *
-     * @param orig
+     * @param orig Source Vector.
      */
     private DenseLocalOnHeapVector(DenseLocalOnHeapVector orig) {
-        super(orig.getCardinality());
+        super(orig.size());
 
         setStorage(mkStorage(orig.size()));
 
@@ -115,15 +114,5 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     /** {@inheritDoc */
     @Override public Vector like(int crd) {
         return new DenseLocalOnHeapVector(crd);
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return null; // TODO
     }
 }

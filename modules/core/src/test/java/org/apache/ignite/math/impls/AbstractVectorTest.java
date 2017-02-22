@@ -769,16 +769,6 @@ public class AbstractVectorTest {
                 return false;
             }
 
-            @Override
-            public Matrix toMatrix(boolean rowLike) {
-                return null; // TODO
-            }
-
-            @Override
-            public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-                return null; // TODO
-            }
-
             /** */
             @Override public boolean isSequentialAccess() {
                 return false;
@@ -821,11 +811,6 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector viewPart(int off, int len) {
-                return null;
-            }
-
-            /** */
-            @Override public Matrix cross(Vector vec) {
                 return null;
             }
 
@@ -853,16 +838,6 @@ public class AbstractVectorTest {
                 return false;
             }
 
-            @Override
-            public Matrix toMatrix(boolean rowLike) {
-                return null; // TODO
-            }
-
-            @Override
-            public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-                return null; // TODO
-            }
-
             /** */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
@@ -905,11 +880,6 @@ public class AbstractVectorTest {
 
             /** */
             @Override public Vector viewPart(int off, int len) {
-                return null;
-            }
-
-            /** */
-            @Override public Matrix cross(Vector vec) {
                 return null;
             }
 

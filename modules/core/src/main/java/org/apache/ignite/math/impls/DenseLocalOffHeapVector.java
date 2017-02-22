@@ -34,7 +34,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     }
 
     /**
-     * @param args
+     * @param args Parameters for new Vector.
      */
     public DenseLocalOffHeapVector(Map<String, Object> args) {
         super(args == null || !args.containsKey("size") ? 0 : (int) args.get("size"));
@@ -71,8 +71,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     }
 
     /**
-     *
-     * @param size
+     * @param size Vector cardinality.
      */
     public DenseLocalOffHeapVector(int size){
         super(size);
@@ -114,15 +113,5 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o != null && getClass().equals(o.getClass()) && (getStorage().equals(((Vector)o).getStorage()));
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return null; // TODO
     }
 }

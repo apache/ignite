@@ -25,10 +25,11 @@ import java.io.*;
  * Row or column vector view off the matrix.
  */
 public class MatrixVectorView extends AbstractVector {
-    private Matrix parent;
-
-    private int row, col;
-    private int rowStride, colStride;
+    /** */ private Matrix parent;
+    /** */ private int row;
+    /** */ private int col;
+    /** */ private int rowStride;
+    /** */ private int colStride;
 
     /**
      *
@@ -38,7 +39,7 @@ public class MatrixVectorView extends AbstractVector {
     }
 
     /**
-     * 
+     *
      * @param parent
      * @param row
      * @param col
@@ -62,23 +63,23 @@ public class MatrixVectorView extends AbstractVector {
         setStorage(new MatrixVectorStorage(parent, row, col, rowStride, colStride));
     }
 
-    @Override
-    public Vector copy() {
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
         return new MatrixVectorView(parent, row, col, rowStride, colStride);
     }
 
-    @Override
-    public Vector like(int crd) {
+    /** {@inheritDoc} */
+    @Override public Vector like(int crd) {
         return parent.likeVector(crd);
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    /** {@inheritDoc} */
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return parent.like(rows, cols);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeObject(parent);
@@ -88,8 +89,8 @@ public class MatrixVectorView extends AbstractVector {
         out.writeInt(colStride);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         parent = (Matrix)in.readObject();
@@ -97,15 +98,5 @@ public class MatrixVectorView extends AbstractVector {
         col = in.readInt();
         rowStride = in.readInt();
         colStride = in.readInt();
-    }
-
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
-        return null; // TODO
-    }
-
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return null; // TODO
     }
 }

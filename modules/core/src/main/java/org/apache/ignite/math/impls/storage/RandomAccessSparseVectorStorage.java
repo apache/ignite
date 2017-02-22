@@ -50,12 +50,18 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
      */
     public RandomAccessSparseVectorStorage(int size, int initCap) {
         this.size = size;
-        this.data = new Int2DoubleOpenHashMap(initCap, .5f);
+
+        data = new Int2DoubleOpenHashMap(initCap, .5f);
     }
 
-    private RandomAccessSparseVectorStorage(int size, Int2DoubleOpenHashMap values) {
+    /**
+     * 
+     * @param size
+     * @param data
+     */
+    private RandomAccessSparseVectorStorage(int size, Int2DoubleOpenHashMap data) {
         this.size = size;
-        this.data = values;
+        this.data = data;
     }
 
     /** {@inheritDoc} */

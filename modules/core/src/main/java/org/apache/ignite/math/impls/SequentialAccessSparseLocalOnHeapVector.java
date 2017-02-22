@@ -32,6 +32,7 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
      */
     public SequentialAccessSparseLocalOnHeapVector(int cardinality){
         super(cardinality);
+
         setStorage(new SequentialAccessSparseVectorStorage());
     }
 
@@ -56,16 +57,6 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrix(boolean rowLike) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         return null;
     }
 }

@@ -22,85 +22,120 @@ import org.apache.ignite.math.UnsupportedOperationException;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Read-only or read-write function-based matrix storage.
  */
-public class DiagonalMatrixStorage implements MatrixStorage {
-    private Vector diagonal;
+public class FunctionMatrixStorage implements MatrixStorage {
+    private int rows, cols;
+
+    private IntIntToDoubleFunction getFunc;
+    private IntIntDoubleToVoidFunction setFunc;
 
     /**
      *
      */
-    public DiagonalMatrixStorage() {
+    public FunctionMatrixStorage() {
         // No-op.
     }
 
     /**
      *
-     * @param diagonal
+     * @param rows
+     * @param cols
+     * @param getFunc
+     * @param setFunc
      */
-    public DiagonalMatrixStorage(Vector diagonal) {
-        this.diagonal = diagonal;
+    public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc, IntIntDoubleToVoidFunction setFunc) {
+        assert getFunc != null;
+
+        this.rows = rows;
+        this.cols = cols;
+        this.getFunc = getFunc;
+        this.setFunc = setFunc;
+    }
+
+    /**
+     *
+     * @param rows
+     * @param cols
+     * @param getFunc
+     */
+    public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc) {
+        this(rows, cols, getFunc, null);
+    }
+
+    @Override
+    public double get(int x, int y) {
+        return getFunc.apply(x, y);
+    }
+
+    @Override
+    public void set(int x, int y, double v) {
+        if (setFunc != null)
+            setFunc.apply(x, y, v);
+        else
+            throw new UnsupportedOperationException("Cannot set into read-only matrix.");
     }
 
     /**
      * 
      * @return
      */
-    public Vector diagonal() {
-        return diagonal;
+    public IntIntToDoubleFunction getFunction() {
+        return getFunc;
     }
 
-    @Override
-    public double get(int x, int y) {
-        return x == y ? diagonal.get(x) : 0.0;
-    }
-
-    @Override
-    public void set(int x, int y, double v) {
-        if (x == y)
-            diagonal.set(x, v);
-        else
-            throw new UnsupportedOperationException("Can't set off-diagonal element.");
+    /**
+     *
+     * @return
+     */
+    public IntIntDoubleToVoidFunction setFunction() {
+        return setFunc;
     }
 
     @Override
     public int columnSize() {
-        return diagonal.size();
+        return cols;
     }
 
     @Override
     public int rowSize() {
-        return diagonal.size();
+        return rows;
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-       out.writeObject(diagonal);
+        out.writeObject(setFunc);
+        out.writeObject(getFunc);
+        out.writeInt(rows);
+        out.writeInt(cols);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        diagonal = (Vector)in.readObject();
+        setFunc = (IntIntDoubleToVoidFunction)in.readObject();
+        getFunc = (IntIntToDoubleFunction)in.readObject();
+        rows = in.readInt();
+        cols = in.readInt();
     }
 
     @Override
     public boolean isSequentialAccess() {
-        return diagonal.isSequentialAccess();
+        return false;
     }
 
     @Override
     public boolean isDense() {
-        return diagonal.isDense();
+        return false;
     }
 
     @Override
     public double getLookupCost() {
-        return diagonal.getLookupCost();
+        return 0;
     }
 
     @Override
     public boolean isAddConstantTime() {
-        return diagonal.isAddConstantTime();
+        return false;
     }
 
     @Override
