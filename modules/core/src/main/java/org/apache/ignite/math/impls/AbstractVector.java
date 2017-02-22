@@ -28,8 +28,10 @@ import java.util.*;
 import java.util.function.*;
 
 /**
- * This class provides a skeletal implementation of the {@link Vector}
- * interface to minimize the effort required to implement this interface.
+ * This class provides a helper implementation of the {@link Vector}
+ * interface to minimize the effort required to implement it.
+ * Subclasses may override some of the implemented methods if a more
+ * specific or optimized implementation is desirable.
  */
 public abstract class AbstractVector implements Vector {
     /** Vector cardinality. */
