@@ -90,6 +90,11 @@ public class DefaultMathProvider implements MathProvider {
 
                 return Optional.of(new RandomVector(args));
 
+            case "function":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new FunctionVector(args));
+
             case "constant":
                 ensureClusterGroupIsNull(flavorNorm, grp);
 

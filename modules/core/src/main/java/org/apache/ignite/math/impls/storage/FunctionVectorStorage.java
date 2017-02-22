@@ -53,6 +53,22 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     /**
+     *
+     * @return
+     */
+    public IntToDoubleFunction getFunction() {
+        return getFunc;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public IntDoubleToVoidFunction setFunction() {
+        return setFunc;
+    }
+
+    /**
      * Creates read-only storage.
      *
      * @param size Cardinality of this vector storage.
