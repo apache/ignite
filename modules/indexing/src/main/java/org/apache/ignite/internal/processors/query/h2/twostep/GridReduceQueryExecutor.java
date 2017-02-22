@@ -62,9 +62,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
@@ -100,6 +100,7 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.REDUCE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.mergeTableIdentifier;
 
@@ -295,6 +296,7 @@ public class GridReduceQueryExecutor {
     private void onNextPage(final ClusterNode node, GridQueryNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
+        final int seg = msg.segmentId();
 
         final QueryRun r = runs.get(qryReqId);
 
@@ -327,7 +329,7 @@ public class GridReduceQueryExecutor {
                     }
 
                     try {
-                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
+                        GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize);
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg0);
@@ -515,29 +517,33 @@ public class GridReduceQueryExecutor {
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
 
-            if (isPreloadingActive(cctx, extraSpaces)) {
-                if (cctx.isReplicated())
-                    nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
-                else {
-                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
+            if (qry.isLocal())
+                nodes = Collections.singleton(ctx.discovery().localNode());
+            else {
+                if (isPreloadingActive(cctx, extraSpaces)) {
+                    if (cctx.isReplicated())
+                        nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
+                    else {
+                        partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
 
-                    nodes = partsMap == null ? null : partsMap.keySet();
+                        nodes = partsMap == null ? null : partsMap.keySet();
+                    }
                 }
-            }
-            else
-                nodes = stableDataNodes(topVer, cctx, extraSpaces);
+                else
+                    nodes = stableDataNodes(topVer, cctx, extraSpaces);
 
-            if (nodes == null)
-                continue; // Retry.
+                if (nodes == null)
+                    continue; // Retry.
 
-            assert !nodes.isEmpty();
+                assert !nodes.isEmpty();
 
-            if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
-                    "We must be on a client node.";
+                if (cctx.isReplicated() || qry.explain()) {
+                    assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                        "We must be on a client node.";
 
-                // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                nodes = Collections.singleton(F.rand(nodes));
+                    // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+                    nodes = Collections.singleton(F.rand(nodes));
+                }
             }
 
             final Collection<ClusterNode> finalNodes = nodes;
@@ -545,6 +551,8 @@ public class GridReduceQueryExecutor {
             int tblIdx = 0;
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
+
+            final int segmentsPerIndex = cctx.config().getQueryParallelism();
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
@@ -566,12 +574,12 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes);
+                idx.setSources(nodes, segmentsPerIndex);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * segmentsPerIndex);
 
             runs.put(qryReqId, r);
 
@@ -616,6 +624,9 @@ public class GridReduceQueryExecutor {
                 if (distributedJoins)
                     flags |= GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS;
 
+                if (qry.isLocal())
+                    flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
+
                 if (send(nodes,
                     oldStyle ?
                         new GridQueryRequest(qryReqId,
@@ -637,11 +648,9 @@ public class GridReduceQueryExecutor {
                             .flags(flags)
                             .timeout(timeoutMillis),
                     oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
-                    distributedJoins)
-                    ) {
-                    awaitAllReplies(r, nodes);
+                    false)) {
 
-                    cancel.checkCancelled();
+                    awaitAllReplies(r, nodes, cancel);
 
                     Object state = r.state.get();
 
@@ -703,7 +712,7 @@ public class GridReduceQueryExecutor {
                         setupConnection(r.conn, false, enforceJoinOrder);
 
                         GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize).distributedJoins(false));
+                            .pageSize(r.pageSize).distributedJoinMode(OFF));
 
                         try {
                             if (qry.explain())
@@ -824,11 +833,15 @@ public class GridReduceQueryExecutor {
     /**
      * @param r Query run.
      * @param nodes Nodes to check periodically if they alive.
+     * @param cancel Query cancel.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    private void awaitAllReplies(QueryRun r, Collection<ClusterNode> nodes)
-        throws IgniteInterruptedCheckedException {
+    private void awaitAllReplies(QueryRun r, Collection<ClusterNode> nodes, GridQueryCancel cancel)
+        throws IgniteInterruptedCheckedException, QueryCancelledException {
         while (!U.await(r.latch, 500, TimeUnit.MILLISECONDS)) {
+
+            cancel.checkCancelled();
+
             for (ClusterNode node : nodes) {
                 if (!ctx.discovery().alive(node)) {
                     handleNodeLeft(r, node.id());

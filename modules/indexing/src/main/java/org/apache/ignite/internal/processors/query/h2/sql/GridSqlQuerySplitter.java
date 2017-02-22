@@ -1642,7 +1642,7 @@ public class GridSqlQuerySplitter {
             findParams(((GridSqlSubquery)el).subquery(), params, target, paramIdxs);
         else {
             for (int i = 0; i < el.size(); i++)
-                findParams(el.child(i), params, target, paramIdxs);
+                findParams((GridSqlAst)el.child(i), params, target, paramIdxs);
         }
     }
 
