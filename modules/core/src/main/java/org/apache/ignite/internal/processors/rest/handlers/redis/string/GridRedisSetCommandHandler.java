@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.redis.string;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -92,8 +91,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         if (l != null) {
             try {
                 l.close();
-            }
-            catch (IgniteException ignored) {
+            } catch (IgniteException ignored) {
                 U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
             }
         }
@@ -132,38 +130,13 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
      * @throws GridRedisGenericException When parameters are not valid.
      */
     private void setExpire(GridRestCacheRequest restReq, List<String> params) throws GridRedisGenericException {
-        Iterator<String> it = params.iterator();
+        Long px = longValue("px", params);
+        Long ex = longValue("ex", params);
 
-        while (it.hasNext()) {
-            String opt = it.next();
-
-            if ("px".equalsIgnoreCase(opt)) {
-                if (it.hasNext()) {
-                    try {
-                        restReq.ttl(Long.valueOf(it.next()));
-                    }
-                    catch (NumberFormatException e) {
-                        throw new GridRedisGenericException("Value is not an integer or out of range");
-                    }
-                    break;
-                }
-                else
-                    throw new GridRedisGenericException("Syntax error");
-            }
-            else if ("ex".equalsIgnoreCase(opt)) {
-                if (it.hasNext()) {
-                    try {
-                        restReq.ttl(Long.valueOf(it.next()) * 1000L);
-                    }
-                    catch (NumberFormatException e) {
-                        throw new GridRedisGenericException("Value is not an integer or out of range");
-                    }
-                    break;
-                }
-                else
-                    throw new GridRedisGenericException("Syntax error");
-            }
-        }
+        if (px != null)
+            restReq.ttl(px);
+        else if (ex != null)
+            restReq.ttl(ex * 1000L);
     }
 
     /** {@inheritDoc} */
@@ -173,6 +146,6 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         if (resp == null)
             return GridRedisProtocolParser.nil();
 
-        return (!(boolean)resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.oKString());
+        return (!(boolean) resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.oKString());
     }
 }
