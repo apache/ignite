@@ -79,7 +79,6 @@ public class VectorToMatrixTest {
     }
 
     /** */ @Test
-    @Ignore("not yet implemented test case for toMatrixPlus method")
     public void testToMatrixPlusOne() {
         consumeSampleVectors((v, desc) -> {
             if (!availableForTesting(v))
@@ -109,6 +108,7 @@ public class VectorToMatrixTest {
     }
 
     /** */ @Test
+    @Ignore("not yet implemented test case for cross method")
     public void testCross() {
         //todo write code
     }
