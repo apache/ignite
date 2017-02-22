@@ -74,7 +74,8 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
                         return msg;
                     }
                 });
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             if (e instanceof GridRedisTypeException)
                 msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
             else
@@ -104,10 +105,12 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
                     try {
                         return Long.valueOf(val);
-                    } catch (NumberFormatException ignore) {
+                    }
+                    catch (NumberFormatException ignore) {
                         throw new GridRedisGenericException("Failed to parse parameter of Long type [" + name + "=" + val + "]");
                     }
-                } else
+                }
+                else
                     throw new GridRedisGenericException("Syntax error. Missing value for parameter: " + name);
             }
         }

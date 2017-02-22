@@ -91,7 +91,8 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         if (l != null) {
             try {
                 l.close();
-            } catch (IgniteException ignored) {
+            }
+            catch (IgniteException ignored) {
                 U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
             }
         }
@@ -146,6 +147,6 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         if (resp == null)
             return GridRedisProtocolParser.nil();
 
-        return (!(boolean) resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.oKString());
+        return (!(boolean)resp ? GridRedisProtocolParser.nil() : GridRedisProtocolParser.oKString());
     }
 }
