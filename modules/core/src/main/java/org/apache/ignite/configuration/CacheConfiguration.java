@@ -223,8 +223,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
 
-    /** Default SQL query parallelism level */
-    public static final int DFLT_SQL_QUERY_PARALLELISM_LVL = 1;
+    /** Default query parallelism. */
+    public static final int DFLT_QUERY_PARALLELISM = 1;
 
     /** Cache name. */
     private String name;
@@ -414,7 +414,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Collection<QueryEntity> qryEntities;
 
     /** */
-    private int qryParallelism = DFLT_SQL_QUERY_PARALLELISM_LVL;
+    private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -2121,32 +2121,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
      * <ul>
-     *     <li>Hint cannot be used for {@code REPLICATED} cache, exception is thrown otherwise</li>
      *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
      *     otherwise</li>
+     *     <li>All queries on the given cache will follow provided degree of parallelism</li>
      * </ul>
      * These restrictions will be removed in future versions of Apache Ignite.
      * <p>
-     * Defaults to {@code 1}.
+     * Defaults to {@link #DFLT_QUERY_PARALLELISM}.
+     *
+     * @return Query parallelism.
      */
     public int getQueryParallelism() {
         return qryParallelism;
     }
 
     /**
-     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
-     * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
-     * certain restrictions on parallelism depending on query type and/or cache type.
-     * <p>
-     * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
-     * <ul>
-     *     <li>Hint cannot be used for {@code REPLICATED} cache, exception is thrown otherwise</li>
-     *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
-     *     otherwise</li>
-     * </ul>
-     * These restrictions will be removed in future versions of Apache Ignite.
+     * Sets query parallelism.
      *
-     * @param qryParallelism Query parallelizm level.
+     * @param qryParallelism Query parallelism.
+     * @see #getQueryParallelism()
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
