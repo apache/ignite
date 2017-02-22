@@ -102,7 +102,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return new DenseLocalOffHeapMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */

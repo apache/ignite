@@ -155,8 +155,8 @@ public class VectorToMatrixTest {
     private static Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap() {
         return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>> () {{
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
-            put(DenseLocalOffHeapVector.class, null); // todo fill non-nulls for all vectors that are ready to test
-            put(RandomVector.class, null);
+            put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
+            put(RandomVector.class, null); // todo fill non-nulls for all vectors that are ready to test
             put(ConstantVector.class, null);
             put(RandomAccessSparseLocalOnHeapVector.class, null);
             put(SequentialAccessSparseLocalOnHeapVector.class, null);
