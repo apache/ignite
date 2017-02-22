@@ -111,7 +111,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
     @Override
     public boolean isArrayBased() {
-        return sto.isArrayBased();
+        return sto.isArrayBased() && rowOff == 0 && colOff == 0;
     }
 
     @Override

@@ -93,12 +93,12 @@ public class VectorToMatrixTest {
 
                 final Metric metricRow0 = new Metric(zeroVal, matrixRow.get(0, 0));
 
-                assertTrue("Not close enough row like " + metricRow0 + " at index " + 0 + " in " + desc,
+                assertTrue("Not close enough row like " + metricRow0 + " at index 0 in " + desc,
                     metricRow0.closeEnough());
 
                 final Metric metricCol0 = new Metric(zeroVal, matrixCol.get(0, 0));
 
-                assertTrue("Not close enough cols like " + metricCol0 + " at index " + 0 + " in " + desc,
+                assertTrue("Not close enough cols like " + metricCol0 + " at index 0 in " + desc,
                     metricCol0.closeEnough());
 
                 for (Vector.Element e : v.all())
