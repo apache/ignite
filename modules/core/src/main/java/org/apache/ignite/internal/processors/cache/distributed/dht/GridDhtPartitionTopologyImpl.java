@@ -823,14 +823,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         List<ClusterNode> affNodes = affAssignment.get(p);
 
-        GridDhtPartitionFullMap node2part0 = node2part;
-
-        assert checkNode2PartValid(node2part0) : "Invalid node-to-partitions map [topVer1=" + topVer +
-            ", topVer2=" + this.topVer +
-            ", node=" + cctx.gridName() +
-            ", cache=" + cctx.name() +
-            ", node2part=" + node2part0 + ']';
-
         List<ClusterNode> nodes = null;
 
         Collection<ClusterNode> partNodes = part2node[p];
@@ -870,13 +862,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
 
-        GridDhtPartitionFullMap node2part0 = node2part;
-
-        assert checkNode2PartValid(node2part0) : "Invalid node-to-partitions map [topVer=" + topVer +
-            ", allIds=" + allIds +
-            ", node2part=" + node2part0 +
-            ", cache=" + cctx.name() + ']';
-
         Collection<ClusterNode> partNodes = part2node[p];
 
         // Node IDs can be null if both, primary and backup, nodes disappear.
@@ -899,17 +884,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
 
         return nodes;
-    }
-
-    /** Validates node2part */
-    private boolean checkNode2PartValid(GridDhtPartitionFullMap node2part) {
-        lock.readLock().lock();
-        try {
-            return node2part != null && node2part.valid();
-        }
-        finally {
-            lock.readLock().unlock();
-        }
     }
 
     /** {@inheritDoc} */
