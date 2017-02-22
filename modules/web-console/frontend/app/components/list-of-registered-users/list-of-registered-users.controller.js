@@ -44,9 +44,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             startDate: new Date()
         };
 
-        $ctrl.params.startDate.setDate(1);
-        $ctrl.params.startDate.setHours(0, 0, 0, 0);
-
         const columnCompany = _.find(columnDefs, { displayName: 'Company' });
         const columnCountry = _.find(columnDefs, { displayName: 'Country' });
 
@@ -96,6 +93,18 @@ export default class IgniteListOfRegisteredUsersCtrl {
             return new ActivitiesUserDialog({ user });
         };
 
+        const companiesExcludeFilter = (renderableRows) => {
+            if (_.isNil($ctrl.params.companiesExclude))
+                return renderableRows;
+
+            _.forEach(renderableRows, (row) => {
+                row.visible = _.isEmpty($ctrl.params.companiesExclude) ||
+                    row.entity.company.toLowerCase().indexOf($ctrl.params.companiesExclude.toLowerCase()) === -1;
+            });
+
+            return renderableRows;
+        };
+
         $ctrl.gridOptions = {
             data: [],
             columnVirtualizationThreshold: 30,
@@ -120,6 +129,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 api.removeUser = removeUser;
                 api.toggleAdmin = toggleAdmin;
                 api.showActivities = showActivities;
+
+                api.grid.registerRowsProcessor(companiesExcludeFilter, 50);
             }
         };
 
@@ -137,7 +148,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
         };
 
         /**
-         * @param {{startDate: Date, endDate: Date}} params
+         * @param {{startDate: number, endDate: number}} params
          */
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
@@ -153,14 +164,17 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 .then((data) => $ctrl.adjustHeight(data.length));
         };
 
+        $scope.$watch(() => $ctrl.params.companiesExclude, () => {
+            $ctrl.gridApi.grid.refreshRows();
+        });
+
         $scope.$watch(() => $ctrl.params.startDate, (dt) => {
             $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(dt, 'yyyy_MM')}.csv`;
 
-            const endDate = new Date(dt);
+            const startDate = Date.UTC(dt.getFullYear(), dt.getMonth(), 1);
+            const endDate = Date.UTC(dt.getFullYear(), dt.getMonth() + 1, 1);
 
-            endDate.setMonth(endDate.getMonth() + 1);
-
-            reloadUsers({startDate: dtFilter(dt, 'yyyy-MM-dd'), endDate: dtFilter(endDate, 'yyyy-MM-dd')});
+            reloadUsers({ startDate, endDate });
         });
     }
 
@@ -216,6 +230,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
     }
 
     exportCsv() {
-        this.gridApi.exporter.csvExport('all', 'visible');
+        this.gridApi.exporter.csvExport('visible', 'visible');
     }
 }
