@@ -85,8 +85,8 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Collection<ClusterNode> nodes) {
-        super.setSources(nodes);
+    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+        super.setSources(nodes, segmentsCnt);
 
         streamsMap = U.newHashMap(nodes.size());
         streams = new RowStream[nodes.size()];

@@ -88,7 +88,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     private final AtomicInteger expRowsCnt = new AtomicInteger(0);
 
     /** Remaining rows per source node ID. */
-    private Map<UUID, Counter> remainingRows;
+    private Map<UUID, Counter[]> remainingRows;
 
     /** */
     private final AtomicBoolean lastSubmitted = new AtomicBoolean();
@@ -186,15 +186,22 @@ public abstract class GridMergeIndex extends BaseIndex {
      * Set source nodes.
      *
      * @param nodes Nodes.
+     * @param segmentsCnt Index segments per table.
      */
-    public void setSources(Collection<ClusterNode> nodes) {
+    public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
         assert remainingRows == null;
 
         remainingRows = U.newHashMap(nodes.size());
 
         for (ClusterNode node : nodes) {
-            if (remainingRows.put(node.id(), new Counter()) != null)
+            Counter[] counters = new Counter[segmentsCnt];
+
+            for (int i = 0; i < segmentsCnt; i++)
+                counters[i] = new Counter();
+
+            if (remainingRows.put(node.id(), counters) != null)
                 throw new IllegalStateException("Duplicate node id: " + node.id());
+
         }
     }
 
@@ -283,7 +290,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     public final void addPage(GridResultPage page) {
         int pageRowsCnt = page.rowsInPage();
 
-        Counter cnt = remainingRows.get(page.source());
+        Counter cnt = remainingRows.get(page.source())[page.res.segmentId()];
 
         // RemainingRowsCount should be updated before page adding to avoid race
         // in GridMergeIndexUnsorted cursor iterator
@@ -320,13 +327,14 @@ public abstract class GridMergeIndex extends BaseIndex {
             // Guarantee that finished state possible only if counter is zero and all pages was added
             cnt.state = State.FINISHED;
 
-            for (Counter c : remainingRows.values()) { // Check all the sources.
-                if (c.state != State.FINISHED)
-                    return;
+            for (Counter[] cntrs : remainingRows.values()) { // Check all the sources.
+                for(int i = 0; i < cntrs.length; i++) {
+                    if (cntrs[i].state != State.FINISHED)
+                        return;
+                }
             }
 
             if (lastSubmitted.compareAndSet(false, true)) {
-                // Add page-marker that last page was added
                 addPage0(new GridResultPage(null, page.source(), null) {
                     @Override public boolean isLast() {
                         return true;
@@ -345,7 +353,20 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     protected void fetchNextPage(GridResultPage page) {
-        if (remainingRows.get(page.source()).get() != 0)
+        assert !page.isLast();
+
+        if(page.isFail())
+            page.fetchNextPage(); //rethrow exceptions
+
+        assert page.res != null;
+
+        Counter[] counters = remainingRows.get(page.source());
+
+        int segId = page.res.segmentId();
+
+        Counter counter = counters[segId];
+
+        if (counter.get() != 0)
             page.fetchNextPage();
     }
 
