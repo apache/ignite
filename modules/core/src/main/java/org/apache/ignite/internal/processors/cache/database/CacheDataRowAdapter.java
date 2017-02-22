@@ -73,6 +73,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
+     * @param key Key.
+     * @param val Value.
+     * @param expireTime Expire time.
+     * @param ver Version.
+     */
+    public CacheDataRowAdapter(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime) {
+        this.key = key;
+        this.val = val;
+        this.ver = ver;
+        this.expireTime = expireTime;
+    }
+
+    /**
      * Read row from data pages.
      *
      * @param cctx Cache context.
