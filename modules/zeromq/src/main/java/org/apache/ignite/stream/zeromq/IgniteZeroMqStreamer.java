@@ -17,7 +17,6 @@
 
 package org.apache.ignite.stream.zeromq;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.stream.StreamAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.zeromq.ZMQ;
+import org.zeromq.ZMQException;
 
 /**
  * This streamer uses https://github.com/zeromq/jeromq/.
@@ -44,24 +44,21 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
     /** ZeroMQ context. */
     private ZMQ.Context ctx;
 
-    /** ZeroMQ socket. */
-    private ZMQ.Socket socket;
-
     /** ZeroMQ context threads. */
     private int ioThreads;
 
     /** ZeroMQ socket type. */
     private int socketType;
 
-    /** ZeroMQ socket address.*/
+    /** ZeroMQ socket address. */
     private String addr;
 
     /** ZeroMQ topic name. */
     private byte[] topic;
 
     /** Maximum time to wait. */
-    private long timeout = 3_000;
-    
+    private long timeout = 5_000;
+
     /**
      * @param ioThreads Threads on context.
      * @param socketType Socket type.
@@ -94,39 +91,56 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
 
         isStarted = true;
 
-        ctx = ZMQ.context(ioThreads);
-        socket = ctx.socket(socketType);
-        socket.connect(addr);
-
-        if (ZeroMqTypeSocket.SUB.getType() == socketType)
-            socket.subscribe(topic);
-
         zeroMqExSrv = Executors.newSingleThreadExecutor();
 
-        Callable<Boolean> task = new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                while (true) {
-                    if (ZeroMqTypeSocket.SUB.getType() == socketType)
-                        socket.recv();
-                    addMessage(socket.recv());
-                }
-            }
-        };
+        ctx = ZMQ.context(ioThreads);
 
-        zeroMqExSrv.submit(task);
+        zeroMqExSrv.execute(new Runnable() {
+            @Override public void run() {
+                ZMQ.Socket socket = ctx.socket(socketType);
+                socket.connect(addr);
+
+                if (ZeroMqTypeSocket.SUB.getType() == socketType)
+                    socket.subscribe(topic);
+
+                while (isStarted) {
+                    try {
+                        if (ZeroMqTypeSocket.SUB.getType() == socketType)
+                            socket.recv(0);
+                        addMessage(socket.recv(0));
+                    }
+                    catch (ZMQException e) {
+                        if (e.getErrorCode () == ZMQ.Error.ETERM.getCode ()) {
+                            break;
+                        }
+                    }
+                }
+
+                socket.close();
+            }
+        });
     }
 
     /**
      * Stop ZeroMQ streamer.
      */
     @Override public void close() throws Exception {
-        socket.close();
-        ctx.close();
-
-        zeroMqExSrv.shutdown();
-        zeroMqExSrv.awaitTermination(timeout, TimeUnit.MILLISECONDS);
-
         isStarted = false;
+
+        if (ctx != null)
+            ctx.close();
+
+        if (zeroMqExSrv != null) {
+            zeroMqExSrv.shutdown();
+
+            try {
+                if (!zeroMqExSrv.awaitTermination(timeout, TimeUnit.MILLISECONDS))
+                    log.warning("Timed out waiting for consumer threads to shut down, exiting uncleanly.");
+            }
+            catch (InterruptedException ignored) {
+                zeroMqExSrv.shutdownNow();
+                log.error("Interrupted during shutdown, exiting uncleanly.");
+            }
+        }
     }
 }

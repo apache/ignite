@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.zeromq;
 
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -164,7 +165,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
      * @param clientSocket ZeroMQ socket type.
      * @param topic Topic name for PUB-SUB.
      */
-    private void startZeroMqClient(int clientSocket, byte[] topic) throws InterruptedException {
+    private void startZeroMqClient(int clientSocket, byte[] topic) throws InterruptedException, UnsupportedEncodingException {
         try (ZMQ.Context context = ZMQ.context(1);
              ZMQ.Socket socket = context.socket(clientSocket)) {
 
@@ -176,7 +177,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
                 if (ZMQ.PUB == clientSocket)
                     socket.sendMore(topic);
-                socket.send(String.valueOf(i).getBytes());
+                socket.send(String.valueOf(i).getBytes("UTF-8"));
             }
         }
     }
