@@ -336,6 +336,34 @@
 
             // Swap space
             SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+
+            // Plugins
+            if (PluginConfigurations != null)
+            {
+                var pos = writer.Stream.Position;
+
+                writer.WriteInt(0); // reserve count
+
+                var cnt = 0;
+
+                foreach (var cfg in PluginConfigurations)
+                {
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
+
+                        cfg.WriteBinary(writer);
+
+                        cnt++;
+                    }
+                }
+
+                writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /// <summary>

@@ -76,8 +76,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
-
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
@@ -86,8 +84,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(META_CACHE_NAME));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(DATA_CACHE_NAME));
         igfsCfg.setName("igfs");
 
         cfg.setFileSystemConfiguration(igfsCfg);

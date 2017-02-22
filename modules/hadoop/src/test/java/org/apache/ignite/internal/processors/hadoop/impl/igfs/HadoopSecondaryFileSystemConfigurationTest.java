@@ -267,29 +267,28 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     private void startSecondary() {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs_secondary");
         igfsCfg.setIpcEndpointConfiguration(SECONDARY_ENDPOINT_CFG);
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setPrefetchBlocks(1);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -300,7 +299,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -338,7 +336,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(fsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setCommunicationSpi(communicationSpi());
@@ -349,27 +346,36 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     /**
      * Gets cache configuration.
      *
-     * @return Cache configuration.
+     * @return Meta cache configuration.
      */
-    protected CacheConfiguration[] cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration metaCacheConfiguration() {
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        ccfg.setName("replicated");
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+        return ccfg;
+    }
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+    /**
+     * @return Data cache configuration.
+     */
+    protected CacheConfiguration dataCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
+
+        ccfg.setName("partitioned");
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setNearConfiguration(null);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+
+        return ccfg;
     }
 
     /**
@@ -381,8 +387,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     protected FileSystemConfiguration fsConfiguration(String gridName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setDataCacheName("partitioned");
-        cfg.setMetaCacheName("replicated");
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
@@ -395,6 +399,9 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
+
+        cfg.setDataCacheConfiguration(dataCacheConfiguration());
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration());
 
         return cfg;
     }

@@ -473,6 +473,8 @@ public class OdbcRequestHandler {
                 return GridBinaryMarshaller.SHORT;
 
             case Types.TIME:
+                return GridBinaryMarshaller.TIME;
+
             case Types.TIMESTAMP:
                 return GridBinaryMarshaller.TIMESTAMP;
 

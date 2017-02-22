@@ -78,9 +78,10 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         AffinityTopologyVersion topVer
     ) {
         this.ctx = ctx;
-        this.key = new T2<>(CU.cacheId(cacheName), topVer);
+        int cacheId = CU.cacheId(cacheName);
+        this.key = new T2<>(cacheId, topVer);
 
-        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheId, topVer);
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
