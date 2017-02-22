@@ -114,11 +114,27 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Set storage.
      *
-     * @param sto
+     * @param sto Storage.
      */
     protected void setStorage(VectorStorage sto) {
         this.sto = sto == null ? new VectorNullStorage() : sto;
+
+        if(this.sto.size() > size)
+            size = this.sto.size();
+    }
+
+    /**
+     * Set storage with max size. Make sense for non-fixed storages.
+     *
+     * @param sto Storage.
+     * @param maxSize Max storage size.
+     */
+    protected void setStorage(VectorStorage sto, int maxSize) {
+        this.sto = sto == null ? new VectorNullStorage() : sto;
+
+        this.size = maxSize;
     }
 
     /**

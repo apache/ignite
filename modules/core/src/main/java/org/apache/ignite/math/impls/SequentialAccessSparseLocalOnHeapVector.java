@@ -17,7 +17,9 @@
 
 package org.apache.ignite.math.impls;
 
+import java.util.Map;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorage;
 
@@ -43,6 +45,22 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
      */
     public SequentialAccessSparseLocalOnHeapVector(Vector vector) {
         super(vector);
+    }
+
+    /**
+     * Create new SequentialAccessSparseLocalOnHeapVector from args.
+     *
+     * @param args Args.
+     */
+    public SequentialAccessSparseLocalOnHeapVector(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("size"))
+            setStorage(new SequentialAccessSparseVectorStorage(), (int) args.get("size"));
+        else if (args.containsKey("arr") && args.containsKey("copy"))
+            setStorage(new SequentialAccessSparseVectorStorage((double[])args.get("arr"), false));
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /** {@inheritDoc} */
