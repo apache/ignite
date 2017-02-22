@@ -75,7 +75,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     @Override protected void configure(MemoryConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
 
-        long size = 1024 * pagesMax() * (isLargePage() ? 16 : 1);
+        long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
 
         mCfg.setPageCacheSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
     }
@@ -92,7 +92,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      */
     @SuppressWarnings("WeakerAccess")
     protected int warmUp() {
-        return 300;
+        return 450;
     }
 
     /** {@inheritDoc} */
@@ -172,6 +172,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
         final IgniteEx ignite = grid(0);
         final IgniteCache<Object, Object> cache = cache(ignite);
 
+
+
         Runnable target = new Runnable() {
             @Override public void run() {
                 while (ex == null && System.nanoTime() < endTime) {
@@ -196,11 +198,15 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
             threads[i].start();
         }
 
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(warmUpEndTime - System.nanoTime()));
+        while (ex == null && System.nanoTime() < warmUpEndTime)
+            Thread.sleep(100);
+
+        if (ex != null)
+            throw ex;
 
         info("Warming up is ended.");
 
-        while (System.nanoTime() < endTime) {
+        while (ex == null && System.nanoTime() < endTime) {
             try {
                 check(ignite);
             }
@@ -212,9 +218,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
             Thread.sleep(TimeUnit.SECONDS.toMillis(5));
         }
-
-        for (Thread thread : threads)
-            thread.join();
 
         if (ex != null)
             throw ex;
@@ -228,11 +231,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      */
     protected void check(IgniteEx ig) throws Exception {
         long pagesActual = ig.context().cache().context().database().pageMemory().loadedPages();
-        long pagesMax = pagesMax();
-
-        assertTrue(
-            "Maximal allowed pages number is exceeded [allowed=" + pagesMax + ", actual= " + pagesActual + "]",
-            pagesActual <= pagesMax);
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;
