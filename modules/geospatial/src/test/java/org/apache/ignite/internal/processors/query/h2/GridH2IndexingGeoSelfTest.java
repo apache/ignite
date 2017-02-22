@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Geo-indexing test.
@@ -90,7 +89,8 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testPrimitiveGeometry() throws Exception {
-        IgniteCache<Long, Geometry> cache = grid(0).getOrCreateCache(cacheConfig("geom", true, Long.class, Geometry.class));
+        IgniteCache<Long, Geometry> cache = grid(0).getOrCreateCache(
+            this.<Long, Geometry>cacheConfig("geom", true, Long.class, Geometry.class));
 
         try {
             WKTReader r = new WKTReader();
@@ -114,7 +114,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("unchecked")
     public void testGeo() throws Exception {
         IgniteCache<Integer, EnemyCamp> cache = grid(0).getOrCreateCache(
-            cacheConfig("camp", true, Integer.class, EnemyCamp.class));
+            this.<Integer, EnemyCamp>cacheConfig("camp", true, Integer.class, EnemyCamp.class));
 
         try {
             WKTReader r = new WKTReader();
@@ -301,8 +301,10 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception if fails.
      */
     public void testSegmentedGeoIndexJoin() throws Exception {
-        IgniteCache<Integer, Enemy> c1 = ignite(0).getOrCreateCache(cacheConfig("enemy", true, Integer.class, Enemy.class));
-        IgniteCache<Integer, EnemyCamp> c2 = ignite(0).getOrCreateCache(cacheConfig("camp", true, Integer.class, EnemyCamp.class));
+        IgniteCache<Integer, Enemy> c1 = ignite(0).getOrCreateCache(
+            this.<Integer, Enemy>cacheConfig("enemy", true, Integer.class, Enemy.class));
+        IgniteCache<Integer, EnemyCamp> c2 = ignite(0).getOrCreateCache(
+            this.<Integer, EnemyCamp>cacheConfig("camp", true, Integer.class, EnemyCamp.class));
 
         try {
             fillCache();
@@ -321,8 +323,10 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception if fails.
      */
     public void testSegmentedGeoIndexJoin2() throws Exception {
-        IgniteCache<Integer, Enemy> c1 = ignite(0).getOrCreateCache(cacheConfig("enemy", true, Integer.class, Enemy.class));
-        IgniteCache<Integer, EnemyCamp> c2 = ignite(0).getOrCreateCache(cacheConfig("camp", false, Integer.class, EnemyCamp.class));
+        IgniteCache<Integer, Enemy> c1 = ignite(0).getOrCreateCache(
+            this.<Integer, Enemy>cacheConfig("enemy", true, Integer.class, Enemy.class));
+        IgniteCache<Integer, EnemyCamp> c2 = ignite(0).getOrCreateCache(
+            this.<Integer, EnemyCamp>cacheConfig("camp", false, Integer.class, EnemyCamp.class));
 
         try {
             fillCache();
