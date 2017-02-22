@@ -43,17 +43,138 @@ import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 /**
  * API to extract database metadata.
  */
-public class DatabaseHandler {
+public class DatabaseListener {
     /** */
-    private static final Logger log = Logger.getLogger(DatabaseHandler.class.getName());
+    private static final Logger log = Logger.getLogger(DatabaseListener.class.getName());
 
     /** */
     private final File driversFolder;
 
+    /** */
+    private final AbstractListener schemasLsnr = new AbstractListener() {
+        @Override public Object execute(Map<String, Object> args) throws Exception {
+            String driverPath = null;
+
+            if (args.containsKey("driverPath"))
+                driverPath = args.get("driverPath").toString();
+
+            if (!args.containsKey("driverClass"))
+                throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
+
+            String driverCls = args.get("driverClass").toString();
+
+            if (!args.containsKey("url"))
+                throw new IllegalArgumentException("Missing url in arguments: " + args);
+
+            String url = args.get("url").toString();
+
+            if (!args.containsKey("info"))
+                throw new IllegalArgumentException("Missing info in arguments: " + args);
+
+            Properties info = new Properties();
+
+            info.putAll((Map)args.get("info"));
+
+            return schemas(driverPath, driverCls, url, info);
+        }
+    };
+
+    private final AbstractListener metadataLsnr = new AbstractListener() {
+        @SuppressWarnings("unchecked")
+        @Override public Object execute(Map<String, Object> args) throws Exception {
+            String driverPath = null;
+
+            if (args.containsKey("driverPath"))
+                driverPath = args.get("driverPath").toString();
+
+            if (!args.containsKey("driverClass"))
+                throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
+
+            String driverCls = args.get("driverClass").toString();
+
+            if (!args.containsKey("url"))
+                throw new IllegalArgumentException("Missing url in arguments: " + args);
+
+            String url = args.get("url").toString();
+
+            if (!args.containsKey("info"))
+                throw new IllegalArgumentException("Missing info in arguments: " + args);
+
+            Properties info = new Properties();
+
+            info.putAll((Map)args.get("info"));
+
+            if (!args.containsKey("schemas"))
+                throw new IllegalArgumentException("Missing schemas in arguments: " + args);
+
+            List<String> schemas = (List<String>)args.get("schemas");
+
+            if (!args.containsKey("tablesOnly"))
+                throw new IllegalArgumentException("Missing tablesOnly in arguments: " + args);
+
+            boolean tblsOnly = (boolean)args.get("tablesOnly");
+
+            return metadata(driverPath, driverCls, url, info, schemas, tblsOnly);
+        }
+    };
+
+    private final AbstractListener availableDriversLsnr = new AbstractListener() {
+        @Override public Object execute(Map<String, Object> args) throws Exception {
+            if (driversFolder == null) {
+                log.info("JDBC drivers folder not specified, returning empty list");
+
+                return Collections.emptyList();
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Collecting JDBC drivers in folder: " + driversFolder.getPath());
+
+            File[] list = driversFolder.listFiles(new FilenameFilter() {
+                @Override public boolean accept(File dir, String name) {
+                    return name.endsWith(".jar");
+                }
+            });
+
+            if (list == null) {
+                log.info("JDBC drivers folder has no files, returning empty list");
+
+                return Collections.emptyList();
+            }
+
+            List<JdbcDriver> res = new ArrayList<>();
+
+            for (File file : list) {
+                try {
+                    boolean win = System.getProperty("os.name").contains("win");
+
+                    URL url = new URL("jar", null,
+                        "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
+
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                        String jdbcDriverCls = reader.readLine();
+
+                        res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
+
+                        if (log.isDebugEnabled())
+                            log.debug("Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
+                    }
+                }
+                catch (IOException e) {
+                    res.add(new JdbcDriver(file.getName(), null));
+
+                    log.info("Found: [driver=" + file + "]");
+                    log.info("Failed to detect driver class: " + e.getMessage());
+                }
+            }
+
+            return res;
+        }
+    };
+
     /**
      * @param cfg Config.
      */
-    public DatabaseHandler(AgentConfiguration cfg) {
+    public DatabaseListener(AgentConfiguration cfg) {
         driversFolder = resolvePath(cfg.driversFolder() == null ? "jdbc-drivers" : cfg.driversFolder());
     }
 
@@ -106,38 +227,22 @@ public class DatabaseHandler {
     }
 
     /**
+     * Listener for drivers.
+     *
+     * @return Drivers in drivers folder
+     * @see AgentConfiguration#driversFolder
+     */
+    public Emitter.Listener availableDriversListener() {
+        return availableDriversLsnr;
+    }
+
+    /**
      * Listener for schema names.
      *
      * @return Collection of schema names.
      */
     public Emitter.Listener schemasListener() {
-        return new AbstractHandler() {
-            @Override public Object execute(Map<String, Object> args) throws Exception {
-                String driverPath = null;
-
-                if (args.containsKey("driverPath"))
-                    driverPath = args.get("driverPath").toString();
-
-                if (!args.containsKey("driverClass"))
-                    throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
-
-                String driverCls = args.get("driverClass").toString();
-
-                if (!args.containsKey("url"))
-                    throw new IllegalArgumentException("Missing url in arguments: " + args);
-
-                String url = args.get("url").toString();
-
-                if (!args.containsKey("info"))
-                    throw new IllegalArgumentException("Missing info in arguments: " + args);
-
-                Properties info = new Properties();
-
-                info.putAll((Map)args.get("info"));
-
-                return schemas(driverPath, driverCls, url, info);
-            }
-        };
+        return schemasLsnr;
     }
 
     /**
@@ -176,105 +281,18 @@ public class DatabaseHandler {
      * @return Collection of tables.
      */
     public Emitter.Listener metadataListener() {
-        return new AbstractHandler() {
-            @SuppressWarnings("unchecked")
-            @Override public Object execute(Map<String, Object> args) throws Exception {
-                String driverPath = null;
-
-                if (args.containsKey("driverPath"))
-                    driverPath = args.get("driverPath").toString();
-
-                if (!args.containsKey("driverClass"))
-                    throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
-
-                String driverCls = args.get("driverClass").toString();
-
-                if (!args.containsKey("url"))
-                    throw new IllegalArgumentException("Missing url in arguments: " + args);
-
-                String url = args.get("url").toString();
-
-                if (!args.containsKey("info"))
-                    throw new IllegalArgumentException("Missing info in arguments: " + args);
-
-                Properties info = new Properties();
-
-                info.putAll((Map)args.get("info"));
-
-                if (!args.containsKey("schemas"))
-                    throw new IllegalArgumentException("Missing schemas in arguments: " + args);
-
-                List<String> schemas = (List<String>)args.get("schemas");
-
-                if (!args.containsKey("tablesOnly"))
-                    throw new IllegalArgumentException("Missing tablesOnly in arguments: " + args);
-
-                boolean tblsOnly = (boolean)args.get("tablesOnly");
-
-                return metadata(driverPath, driverCls, url, info, schemas, tblsOnly);
-            }
-        };
+        return metadataLsnr;
     }
 
     /**
-     * Listener for drivers.
-     *
-     * @return Drivers in drivers folder
-     * @see AgentConfiguration#driversFolder
+     * Stop handler.
      */
-    public Emitter.Listener availableDriversListener() {
-        return new AbstractHandler() {
-            @Override public Object execute(Map<String, Object> args) throws Exception {
-                if (driversFolder == null) {
-                    log.info("JDBC drivers folder not specified, returning empty list");
+    public void stop() {
+        availableDriversLsnr.stop();
 
-                    return Collections.emptyList();
-                }
+        schemasLsnr.stop();
 
-                if (log.isDebugEnabled())
-                    log.debug("Collecting JDBC drivers in folder: " + driversFolder.getPath());
-
-                File[] list = driversFolder.listFiles(new FilenameFilter() {
-                    @Override public boolean accept(File dir, String name) {
-                        return name.endsWith(".jar");
-                    }
-                });
-
-                if (list == null) {
-                    log.info("JDBC drivers folder has no files, returning empty list");
-
-                    return Collections.emptyList();
-                }
-
-                List<JdbcDriver> res = new ArrayList<>();
-
-                for (File file : list) {
-                    try {
-                        boolean win = System.getProperty("os.name").contains("win");
-
-                        URL url = new URL("jar", null,
-                            "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
-
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-                            String jdbcDriverCls = reader.readLine();
-
-                            res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
-
-                            if (log.isDebugEnabled())
-                                log.debug("Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
-                        }
-                    }
-                    catch (IOException e) {
-                        res.add(new JdbcDriver(file.getName(), null));
-
-                        log.info("Found: [driver=" + file + "]");
-                        log.info("Failed to detect driver class: " + e.getMessage());
-                    }
-                }
-
-                return res;
-            }
-        };
+        metadataLsnr.stop();
     }
 
     /**

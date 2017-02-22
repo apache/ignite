@@ -36,6 +36,40 @@
         cursor: pointer;
     }
 
+    .btn {
+        float: right;
+
+        line-height: 20px;
+        margin-right: 0;
+    }
+
+    &-filter {
+        float: right;
+
+        .ignite-form-field {
+            width: 280px;
+            margin-right: 10px;
+
+            &__label {
+            }
+
+            &__control {
+            }
+
+            &:nth-child(1) {
+                float: left;
+
+                .ignite-form-field__label {
+                    width: 30%;
+                }
+
+                .ignite-form-field__control {
+                    width: 70%;
+                }
+            }
+        }
+    }
+
     &-dateperiod {
         float: right;
 
@@ -60,11 +94,6 @@
                     width: 60%;
                 }
             }
-        }
-
-        .btn {
-            line-height: 20px;
-            margin-right: 0;
         }
     }
 }

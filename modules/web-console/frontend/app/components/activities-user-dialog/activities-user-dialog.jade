@@ -24,7 +24,7 @@
             .modal-body.modal-body-with-scroll(id='activities-user-dialog')
                 table.table.table-striped.table-bordered.table-hover(scrollable-container='#activities-user-dialog' st-table='displayedRows' st-safe-src='ctrl.data')
                     thead
-                        th.text-center(st-sort='title') Description
+                        th.text-center(st-sort='action | translate') Description
                         th.text-center(st-sort='action') Action
                         th.text-center(st-sort='amount') Visited
                     tbody

@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.CacheException;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -69,8 +70,10 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
+import org.apache.ignite.yardstick.IgniteNode;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeansException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -135,14 +138,60 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        if (args.additionalCachesNumber() > 0)
+            createAdditionalCaches();
+
         searchCache();
 
         preLoading();
     }
 
+    /**
+     * Creates additional caches.
+     *
+     * @throws Exception If failed.
+     */
+    private void createAdditionalCaches() throws Exception {
+        Map<String, CacheConfiguration> cfgMap;
+
+        try {
+            // Loading spring application context and getting all of the caches configurations in the map.
+            cfgMap = IgniteNode.loadConfiguration(args.configuration()).get2().getBeansOfType(CacheConfiguration.class);
+        }
+        catch (BeansException e) {
+            throw new Exception("Failed to instantiate bean [type=" + CacheConfiguration.class + ", err=" +
+                e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new Exception("Failed to find cache configurations in: " + args.configuration());
+
+        // Getting cache configuration from the map using name specified in property file.
+        CacheConfiguration<Object, Object> ccfg = cfgMap.get(args.additionalCachesName());
+
+        if (ccfg == null)
+            throw new Exception("Failed to find cache configuration [cache=" + args.additionalCachesName() +
+                ", cfg=" + args.configuration() + ']');
+
+        for (int i = 0; i < args.additionalCachesNumber(); i++) {
+            CacheConfiguration<Object, Object> newCfg = new CacheConfiguration<>(ccfg);
+
+            newCfg.setName("additional_" + args.additionalCachesName() + "_cache_" + i);
+
+            try {
+                ignite().createCache(newCfg);
+            }
+            catch (CacheException e) {
+                BenchmarkUtils.error("Failed to create additional cache [ name = " + args.additionalCachesName() +
+                    ", err" + e.getMessage() + ']', e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onException(Throwable e) {
         BenchmarkUtils.error("The benchmark of random operation failed.", e);
+
         super.onException(e);
     }
 

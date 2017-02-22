@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.commons.codec.Charsets;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -36,6 +38,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.log4j.Logger;
@@ -45,9 +48,9 @@ import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_NODE_PORT;
 /**
  * API to translate REST requests to Ignite cluster.
  */
-public class RestHandler extends AbstractHandler {
+public class RestListener extends AbstractListener {
     /** */
-    private static final Logger log = Logger.getLogger(RestHandler.class.getName());
+    private static final Logger log = Logger.getLogger(RestListener.class.getName());
 
     /** */
     private final AgentConfiguration cfg;
@@ -58,21 +61,24 @@ public class RestHandler extends AbstractHandler {
     /**
      * @param cfg Config.
      */
-    public RestHandler(AgentConfiguration cfg) {
+    public RestListener(AgentConfiguration cfg) {
+        super();
+
         this.cfg = cfg;
+
+        // Create a connection manager with custom configuration.
+        PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
+
+        connMgr.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+        connMgr.setMaxTotal(Integer.MAX_VALUE);
+
+        httpClient = HttpClientBuilder.create().setConnectionManager(connMgr).build();
     }
 
-    /**
-     * Start HTTP client for communication with node via REST.
-     */
-    public void start() {
-        httpClient = HttpClientBuilder.create().build();
-    }
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        super.stop();
 
-    /**
-     * Stop HTTP client.
-     */
-    public void stop() {
         if (httpClient != null) {
             try {
                 httpClient.close();
@@ -81,6 +87,11 @@ public class RestHandler extends AbstractHandler {
                 // No-op.
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ExecutorService newThreadPool() {
+        return Executors.newCachedThreadPool();
     }
 
     /** {@inheritDoc} */
