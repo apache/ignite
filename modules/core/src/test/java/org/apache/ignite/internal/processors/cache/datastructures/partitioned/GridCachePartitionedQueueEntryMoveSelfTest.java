@@ -90,7 +90,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
      * @throws Exception If failed.
      */
     public void testQueue() throws Exception {
-        final String queueName = "q";
+        final String queueName = "qq";
 
         System.out.println(U.filler(20, '\n'));
 
