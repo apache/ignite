@@ -145,8 +145,9 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Data is not there yet.
         assertNull(grid(0).cache(null).get(100000));
 
-        // Let the stream flush.
-        U.sleep(1500);
+        // Closing connection makes it wait for streamer close
+        // and thus for data load completion as well
+        conn.close();
 
         // Now let's check it's all there.
         assertEquals(1, grid(0).cache(null).get(1));
@@ -176,8 +177,9 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Data is not there yet.
         assertNull(grid(0).cache(null).get(100000));
 
-        // Let the stream flush.
-        U.sleep(1500);
+        // Closing connection makes it wait for streamer close
+        // and thus for data load completion as well
+        conn.close();
 
         // Now let's check it's all there.
         assertEquals(1, grid(0).cache(null).get(1));
