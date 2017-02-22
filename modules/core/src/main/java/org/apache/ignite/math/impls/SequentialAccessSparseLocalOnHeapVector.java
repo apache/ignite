@@ -17,18 +17,18 @@
 
 package org.apache.ignite.math.impls;
 
-import java.util.Map;
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorage;
+import org.apache.ignite.math.impls.storage.*;
+import java.util.*;
 
 /**
  * TODO: add description.
  */
 public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
     /**
-     * Create new SequentialAccessSparseLocalOnHeapVector.
+     *
      *
      * @param cardinality Cardinality.
      */
@@ -39,7 +39,7 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
     }
 
     /**
-     * Create SequentialAccessSparseLocalOnHeapVector from other vector
+     *
      *
      * @param vector Vector.
      */
@@ -48,7 +48,7 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
     }
 
     /**
-     * Create new SequentialAccessSparseLocalOnHeapVector from args.
+     *
      *
      * @param args Args.
      */

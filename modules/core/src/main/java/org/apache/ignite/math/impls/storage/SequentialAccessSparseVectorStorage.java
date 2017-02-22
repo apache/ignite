@@ -18,9 +18,9 @@
 package org.apache.ignite.math.impls.storage;
 
 import it.unimi.dsi.fastutil.ints.*;
-import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.stream.*;
 
 /**
  * Sequential access optimized sparse on-heap vector storage.
@@ -88,10 +88,17 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         this.data = data;
     }
 
+    /**
+     *
+     * @param arrs
+     * @param noDefault
+     */
     public SequentialAccessSparseVectorStorage(double[] arrs, boolean noDefault) {
-        this.data = new Int2DoubleRBTreeMap();
-        IntStream.range(0,arrs.length).forEachOrdered(i -> data.put(i, arrs[i]));
         this.noDefault = noDefault;
+
+        data = new Int2DoubleRBTreeMap();
+
+        IntStream.range(0,arrs.length).forEachOrdered(i -> data.put(i, arrs[i]));
     }
 
     /** {@inheritDoc} */
@@ -144,6 +151,11 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         return Math.max(1, Math.round(Functions.LOG2.apply(data.values().stream().filter(this::nonDefault).count())));
     }
 
+    /**
+     * 
+     * @param x
+     * @return
+     */
     private boolean nonDefault(double x) {
         return Double.compare(x, DEFAULT_VALUE) != 0 || !noDefault;
     }

@@ -10,6 +10,12 @@ import org.apache.ignite.math.impls.storage.RandomAccessSparseVectorStorage;
  * TODO: add description.
  */
 public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
+
+    /** For serialization */
+    public RandomAccessSparseLocalOnHeapVector(){
+        // No-op.
+    }
+
     /** */
     public RandomAccessSparseLocalOnHeapVector(Vector vector) {
         super(vector);
@@ -33,7 +39,7 @@ public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
      */
     public RandomAccessSparseLocalOnHeapVector(int cols) {
         super(cols);
-        setStorage(new RandomAccessSparseVectorStorage());
+        setStorage(new RandomAccessSparseVectorStorage(cols));
     }
 
     /** {@inheritDoc} */
