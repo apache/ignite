@@ -5,7 +5,6 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.RandomAccessSparseVectorStorage;
-import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorage;
 
 /**
  * TODO: add description.
@@ -25,6 +24,16 @@ public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
             setStorage(new RandomAccessSparseVectorStorage((double[])args.get("arr"), (boolean)args.get("copy")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    }
+
+    /**
+     * Create empty vector with given cardinality(size).
+     *
+     * @param cols Vector cardinality.
+     */
+    public RandomAccessSparseLocalOnHeapVector(int cols) {
+        super(cols);
+        setStorage(new RandomAccessSparseVectorStorage());
     }
 
     /** {@inheritDoc} */
