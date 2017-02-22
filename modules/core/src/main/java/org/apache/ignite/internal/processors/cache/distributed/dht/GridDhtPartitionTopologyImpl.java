@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,7 +139,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             node2part = null;
 
-            Arrays.fill(part2node, null);
+            part2node = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
 
             lastExchangeId = null;
 
@@ -311,16 +310,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyVersionFuture() {
-        lock.readLock().lock();
+        assert topReadyFut != null;
 
-        try {
-            assert topReadyFut != null;
-
-            return topReadyFut;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return topReadyFut;
     }
 
     /** {@inheritDoc} */
@@ -751,6 +743,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             if (part != null)
                 list.add(part);
         }
+
         return list;
     }
 
@@ -829,19 +822,21 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         AffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
         List<ClusterNode> affNodes = affAssignment.get(p);
-        assert checkNode2PartValid() : "Invalid node-to-partitions map [topVer1=" + topVer +
+
+        GridDhtPartitionFullMap node2part0 = node2part;
+
+        assert checkNode2PartValid(node2part0) : "Invalid node-to-partitions map [topVer1=" + topVer +
             ", topVer2=" + this.topVer +
             ", node=" + cctx.gridName() +
             ", cache=" + cctx.name() +
-            ", node2part=" + node2part + ']';
+            ", node2part=" + node2part0 + ']';
 
         List<ClusterNode> nodes = null;
 
-        List<ClusterNode>[] part2node0 = part2node;
-        Collection<ClusterNode> nodeIds = part2node0[p];
+        Collection<ClusterNode> partNodes = part2node[p];
 
-        if (!F.isEmpty(nodeIds)) {
-            for (ClusterNode node : nodeIds) {
+        if (!F.isEmpty(partNodes)) {
+            for (ClusterNode node : partNodes) {
                 HashSet<UUID> affIds = affAssignment.getIds(p);
 
                 if (!affIds.contains(node.id()) && hasState(p, node.id(), OWNING, MOVING, RENTING)) {
@@ -875,13 +870,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.affinityNodes(cctx, topVer)) : null;
 
-        assert checkNode2PartValid() : "Invalid node-to-partitions map [topVer=" + topVer +
+        GridDhtPartitionFullMap node2part0 = node2part;
+
+        assert checkNode2PartValid(node2part0) : "Invalid node-to-partitions map [topVer=" + topVer +
             ", allIds=" + allIds +
-            ", node2part=" + node2part +
+            ", node2part=" + node2part0 +
             ", cache=" + cctx.name() + ']';
 
-        List<ClusterNode>[] part2node0 = part2node;
-        Collection<ClusterNode> partNodes = part2node0[p];
+        Collection<ClusterNode> partNodes = part2node[p];
 
         // Node IDs can be null if both, primary and backup, nodes disappear.
         int size = partNodes == null ? 0 : partNodes.size();
@@ -906,7 +902,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** Validates node2part */
-    private boolean checkNode2PartValid() {
+    private boolean checkNode2PartValid(GridDhtPartitionFullMap node2part) {
         lock.readLock().lock();
         try {
             return node2part != null && node2part.valid();
@@ -1180,6 +1176,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             if (changed) {
                 node2part.put(parts.nodeId(), parts);
+                ClusterNode clusterNode = node(parts.nodeId());
 
                 List<ClusterNode>[] part2node0 = part2nodeCopy();
 
@@ -1194,8 +1191,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         part2node0[p] = partNodes;
                     }
 
-                    if (!partNodes.contains(node(parts.nodeId())))
-                        partNodes.add(node(parts.nodeId()));
+                    if (clusterNode != null && !partNodes.contains(clusterNode))
+                        partNodes.add(clusterNode);
                 }
 
                 // Remove obsolete mappings.
@@ -1206,8 +1203,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                         List<ClusterNode> partNodes = part2node0[p];
 
-                        if (partNodes != null)
-                            partNodes.remove(node(parts.nodeId()));
+                        if (partNodes != null && clusterNode != null)
+                            partNodes.remove(clusterNode);
                     }
                 }
 
@@ -1410,25 +1407,19 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         map.put(p, state);
 
-        lock.writeLock().lock();
-        try {
-            List<ClusterNode>[] part2node0 = part2nodeCopy();
+        List<ClusterNode>[] part2node0 = part2nodeCopy();
 
-            List<ClusterNode> ids = part2node0[p];
+        List<ClusterNode> ids = part2node0[p];
 
-            if (ids == null) {
-                ids = new ArrayList<>(3);
-                part2node0[p] = ids;
-            }
-
-            if (!ids.contains(cctx.localNode()))
-                ids.add(cctx.localNode());
-
-            part2node = part2node0;
+        if (ids == null) {
+            ids = new ArrayList<>(3);
+            part2node0[p] = ids;
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        if (!ids.contains(cctx.localNode()))
+            ids.add(cctx.localNode());
+
+        part2node = part2node0;
 
         return updateSeq;
     }
@@ -1458,24 +1449,20 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             GridDhtPartitionMap2 parts = node2part.remove(nodeId);
 
             if (parts != null) {
-                lock.writeLock().lock();
-                try {
-                    List<ClusterNode>[] part2node0 = part2nodeCopy();
-                    for (Integer p : parts.keySet()) {
-                        List<ClusterNode> partNodes = part2node0[p];
+                List<ClusterNode>[] part2node0 = part2nodeCopy();
 
-                        if (partNodes != null) {
-                            partNodes.remove(node(nodeId));
+                for (Integer p : parts.keySet()) {
+                    List<ClusterNode> partNodes = part2node0[p];
 
-                            if (partNodes.isEmpty())
-                                part2node0[p] = null;
-                        }
+                    if (partNodes != null) {
+                        partNodes.remove(node(nodeId));
+
+                        if (partNodes.isEmpty())
+                            part2node0[p] = null;
                     }
-                    part2node = part2node0;
                 }
-                finally {
-                    lock.writeLock().unlock();
-                }
+
+                part2node = part2node0;
             }
 
             consistencyCheck();
