@@ -25,6 +25,8 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
+
 /**
  * Base class for memory leaks tests.
  */
@@ -84,7 +86,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @return Test duration in seconds.
      */
     protected int duration() {
-        return 300;
+        return getInteger("IGNITE_MEMORY_LEAKS_TEST_DURATION", 300);
     }
 
     /**
@@ -92,7 +94,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      */
     @SuppressWarnings("WeakerAccess")
     protected int warmUp() {
-        return 450;
+        return getInteger("IGNITE_MEMORY_LEAKS_TEST_WARM_UP", 450);
     }
 
     /** {@inheritDoc} */
