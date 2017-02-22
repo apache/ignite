@@ -25,14 +25,14 @@
 
 #include <stdint.h>
 
-#include <ignite/impl/interop/interop.h>
-#include <ignite/impl/binary/binary_reader_impl.h>
 #include <ignite/impl/binary/binary_object_impl.h>
 
 namespace ignite
 {
     namespace binary
     {
+        class BinaryArrayIdentityResolver;
+
         /**
          * Binary object.
          *
@@ -41,6 +41,7 @@ namespace ignite
          */
         class IGNITE_IMPORT_EXPORT BinaryObject : private impl::binary::BinaryObjectImpl
         {
+            friend class BinaryArrayIdentityResolver;
         public:
             /// @cond INTERNAL
             /**

@@ -35,9 +35,6 @@ namespace ignite
 
             const int8_t* BinaryObjectImpl::GetData() const
             {
-                // Creating header here to validate object header layout.
-                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
-
                 return mem.Data() + start + BinaryObjectHeader::SIZE;
             }
 
@@ -46,6 +43,13 @@ namespace ignite
                 BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
 
                 return header.GetDataLength();
+            }
+
+            int32_t BinaryObjectImpl::GetHashCode() const
+            {
+                BinaryObjectHeader header = BinaryObjectHeader::FromMemory(mem, start);
+
+                return header.GetHashCode();
             }
         }
     }

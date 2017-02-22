@@ -180,7 +180,7 @@ public class GridDhtPartitionDemander {
         try {
             rebalanceFut.cancel();
         }
-        catch (Exception ex) {
+        catch (Exception ignored) {
             rebalanceFut.onDone(false);
         }
 
@@ -375,9 +375,9 @@ public class GridDhtPartitionDemander {
                                         if (f.get()) // Not cancelled.
                                             next.run(); // Starts next cache rebalancing (according to the order).
                                     }
-                                    catch (IgniteCheckedException ignored) {
+                                    catch (IgniteCheckedException e) {
                                         if (log.isDebugEnabled())
-                                            log.debug(ignored.getMessage());
+                                            log.debug(e.getMessage());
                                     }
                                 }
                             });
@@ -623,7 +623,7 @@ public class GridDhtPartitionDemander {
             for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
                 int p = e.getKey();
 
-                if (cctx.affinity().localNode(p, topVer)) {
+                if (cctx.affinity().partitionLocalNode(p, topVer)) {
                     GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                     assert part != null;
@@ -693,7 +693,7 @@ public class GridDhtPartitionDemander {
 
             // Only request partitions based on latest topology version.
             for (Integer miss : supply.missed()) {
-                if (cctx.affinity().localNode(miss, topVer))
+                if (cctx.affinity().partitionLocalNode(miss, topVer))
                     fut.partitionMissed(id, miss);
             }
 
@@ -1012,7 +1012,7 @@ public class GridDhtPartitionDemander {
                             d, cctx.ioPolicy(), cctx.config().getRebalanceTimeout());
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send failover context cleanup request to node");
                 }
@@ -1384,7 +1384,7 @@ public class GridDhtPartitionDemander {
                         for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
                             int p = e.getKey();
 
-                            if (cctx.affinity().localNode(p, topVer)) {
+                            if (cctx.affinity().partitionLocalNode(p, topVer)) {
                                 GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                                 assert part != null;
@@ -1461,7 +1461,7 @@ public class GridDhtPartitionDemander {
 
                         // Only request partitions based on latest topology version.
                         for (Integer miss : s.supply().missed()) {
-                            if (cctx.affinity().localNode(miss, topVer))
+                            if (cctx.affinity().partitionLocalNode(miss, topVer))
                                 fut.partitionMissed(node.id(), miss);
                         }
 

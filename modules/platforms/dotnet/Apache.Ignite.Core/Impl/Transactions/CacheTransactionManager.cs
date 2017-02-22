@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// Cache transaction enlistment manager, 
     /// allows using Ignite transactions via standard <see cref="TransactionScope"/>.
     /// </summary>
+    // ReSharper disable once ClassNeverInstantiated.Global
     internal class CacheTransactionManager : IEnlistmentNotification
     {
         /** */
