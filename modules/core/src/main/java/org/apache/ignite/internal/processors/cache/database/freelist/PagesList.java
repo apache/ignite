@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -201,6 +200,7 @@ public abstract class PagesList extends DataStructure {
                     for (int i = 0; i < upd.length; i++) {
                         long tailId = upd[i];
 
+                        // TODO: just relase readlock.
                         List<Page> locked = new ArrayList<>(2);
                         List<Long> lockedAddrs = new ArrayList<>(2);
 
@@ -222,14 +222,13 @@ public abstract class PagesList extends DataStructure {
                                     count += io.getCount(pageAddr);
                                     pageId = io.getPreviousId(pageAddr);
 
-                                    // In reuse bucket the page itself can be used as a free page
-                                    if(isReuseBucket(bucket) && pageId != 0L)
+                                    // In reuse bucket the page itself can be used as a free page.
+                                    if (isReuseBucket(bucket) && pageId != 0L)
                                         count++;
                                 }
                             }
 
-                            Stripe stripe = new Stripe(tailId);
-                            stripe.empty = count == 0;
+                            Stripe stripe = new Stripe(tailId, count == 0);
 
                             tails[i] = stripe;
 
@@ -405,8 +404,7 @@ public abstract class PagesList extends DataStructure {
             initPage(pageMem, page, this, PagesListNodeIO.VERSIONS.latest(), wal);
         }
 
-        Stripe stripe = new Stripe(pageId);
-        stripe.empty = true;
+        Stripe stripe = new Stripe(pageId, true);
 
         for (;;) {
             Stripe[] old = getBucket(bucket);
@@ -518,11 +516,43 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * !!! For tests only, does not provide any correctness guarantees for concurrent access.
+     *
      * @param bucket Bucket index.
      * @return Number of pages stored in this list.
+     * @throws IgniteCheckedException If failed.
      */
-    protected final long storedPagesCount(int bucket) {
-        return bucketsSize[bucket].get();
+    protected final long storedPagesCount(int bucket) throws IgniteCheckedException {
+        long res = 0;
+
+        Stripe[] tails = getBucket(bucket);
+
+        if (tails != null) {
+            for (Stripe tail : tails) {
+                long pageId = tail.tailId;
+
+                try (Page page = page(pageId)) {
+                    long pageAddr = readLock(page); // No correctness guaranties.
+
+                    try {
+                        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
+
+                        int cnt = io.getCount(pageAddr);
+
+                        assert cnt >= 0;
+
+                        res += cnt;
+                    }
+                    finally {
+                        readUnlock(page, pageAddr);
+                    }
+                }
+            }
+        }
+
+        assert res == bucketsSize[bucket].get();
+
+        return res;
     }
 
     /**
@@ -672,6 +702,7 @@ public abstract class PagesList extends DataStructure {
                     dataPageId,
                     pageId, 0L));
 
+            // In reuse bucket the page itself can be used as a free page.
             bucketsSize[bucket].incrementAndGet();
 
             updateTail(bucket, pageId, dataPageId);
@@ -791,7 +822,8 @@ public abstract class PagesList extends DataStructure {
                                 0L
                             ));
 
-                        if(isReuseBucket(bucket))
+                        // In reuse bucket the page itself can be used as a free page.
+                        if (isReuseBucket(bucket))
                             bucketsSize[bucket].incrementAndGet();
 
                         // Switch to this new page, which is now a part of our list
@@ -938,9 +970,10 @@ public abstract class PagesList extends DataStructure {
                 try {
                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(tailPageAddr);
 
-                    if (io.getNextId(tailPageAddr) != 0)
+                    if (io.getNextId(tailPageAddr) != 0) {
                         // It is not a tail anymore, retry.
                         continue;
+                    }
 
                     long pageId = io.takeAnyPage(tailPageAddr);
 
@@ -1356,9 +1389,11 @@ public abstract class PagesList extends DataStructure {
 
         /**
          * @param tailId Tail ID.
+         * @param empty Empty flag.
          */
-        Stripe(long tailId) {
+        Stripe(long tailId, boolean empty) {
             this.tailId = tailId;
+            this.empty = empty;
         }
     }
 }
