@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -751,6 +752,11 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         updateKey(cache, key, 1);
 
                         tx.commit();
+
+                        fail();
+                    }
+                    catch (TransactionOptimisticException e) {
+                        log.info("Expected exception: " + e);
                     }
 
                     checkValue(key, 1, cache.getName());
@@ -2917,7 +2923,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                                         sum += account.value();
                                     }
 
-                                    cache.put(putKey, new Account(sum));
+                                    if (ThreadLocalRandom.current().nextBoolean())
+                                        cache.put(putKey, new Account(sum));
 
                                     tx.commit();
                                 }
@@ -3207,14 +3214,21 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             cache0.put(key2, -1);
             cache0.put(key3, -1);
 
-            try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                cache.get(key1);
-                cache.get(key2);
-                cache.get(key3);
+            try {
+                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    cache.get(key1);
+                    cache.get(key2);
+                    cache.get(key3);
 
-                updateKey(near ? cache : cache0, key2, -2);
+                    updateKey(near ? cache : cache0, key2, -2);
 
-                tx.commit();
+                    tx.commit();
+                }
+
+                fail();
+            }
+            catch (TransactionOptimisticException e) {
+                log.info("Expected exception: " + e);
             }
 
             checkValue(key1, -1, cacheName);
@@ -3465,16 +3479,23 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 checkValue(key1, newVal, CACHE1);
                 checkValue(key2, newVal, CACHE2);
 
-                try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    Object val1 = cache1.get(key1);
-                    Object val2 = cache2.get(key2);
+                try {
+                    try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        Object val1 = cache1.get(key1);
+                        Object val2 = cache2.get(key2);
 
-                    assertEquals(newVal, val1);
-                    assertEquals(newVal, val2);
+                        assertEquals(newVal, val1);
+                        assertEquals(newVal, val2);
 
-                    updateKey(cache2, key2, newVal);
+                        updateKey(cache2, key2, newVal);
 
-                    tx.commit();
+                        tx.commit();
+                    }
+
+                    fail();
+                }
+                catch (TransactionOptimisticException e) {
+                    log.info("Expected exception: " + e);
                 }
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
@@ -4483,129 +4504,123 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Prepares multithreaded async transactional reads.
+     * Multithreaded transactional reads.
      *
      * @throws Exception If failed.
      */
     public void testMultipleOptimisticRead() throws Exception {
         final Ignite ignite = ignite(0);
         final Integer key = 1;
-        final Integer value = 1;
-        final int THREADS_COUNT = 50;
+        final Integer val = 1;
+        final int THREADS_CNT = 50;
 
         final String cacheName =
-                ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
+            ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
 
         try {
             final IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
             try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                cache.put(key, value);
+                cache.put(key, val);
 
                 tx.commit();
             }
 
-            assertTrue(cache.get(key).equals(value));
+            assertTrue(cache.get(key).equals(val));
 
-            for (int i = 0; i < THREADS_COUNT; i++) {
-
+            for (int i = 0; i < 10; i++) {
                 GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-
+                    @Override public Void call() throws Exception {
                         IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
                         try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-
-                            assertTrue(cache.get(key).equals(value));
+                            assertTrue(cache.get(key).equals(val));
 
                             tx.commit();
 
                         }
                         return null;
                     }
-                }, THREADS_COUNT, "multiple-reads-thread").get();
-            }
-        } finally {
-                destroyCache(cacheName);
+                }, THREADS_CNT, "multiple-reads-thread").get();
             }
         }
+        finally {
+                destroyCache(cacheName);
+        }
+    }
 
     /**
-     * Prepares transactional read in parallel with changing the same data transactional write.
+     * Transactional read in parallel with changing the same data.
      *
      * @throws Exception If failed.
      */
     public void testTxReadInParallerTxWrite() throws Exception {
         final Ignite ignite = ignite(0);
         final Integer key = 1;
-        final Integer value = 1;
+        final Integer val = 1;
 
-        final CountDownLatch lockRLatch = new CountDownLatch(1);
-        final AtomicBoolean lockW = new AtomicBoolean();
+        final CountDownLatch readLatch = new CountDownLatch(1);
+        final CountDownLatch writeLatch = new CountDownLatch(1);
 
         final Exception[] err = {null};
 
         final String cacheName =
-                ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
+            ignite.createCache(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false)).getName();
 
         final IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            cache.put(key, value);
+            cache.put(key, val);
 
             tx.commit();
         }
 
         try {
-            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-
                     IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
                     try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
+                        assertTrue(cache.get(key).equals(val));
 
-                        assertTrue(cache.get(key).equals(value));
+                        readLatch.countDown();
 
-                        lockW.compareAndSet(false, true);
-
-                        lockRLatch.await();
+                        writeLatch.await(10, TimeUnit.SECONDS);
 
                         try {
                             tx.commit();
-                        } catch (TransactionOptimisticException e) {
+                        }
+                        catch (TransactionOptimisticException e) {
                             log.info("Expected exception: " + e);
+
                             err[0] = e;
                         }
                     }
                     return null;
                 }
-            }, 1, "multiple-reads-thread");
+            }, "read-thread");
 
-            GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-
                     IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                    // cache.get - first
-                    while (!lockW.get())
-                        Thread.sleep(100);
+                    readLatch.await(10, TimeUnit.SECONDS);
 
                     try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        cache.put(key, value);
+                        cache.put(key, val);
 
                         tx.commit();
                     }
-                    lockRLatch.countDown();
+
+                    writeLatch.countDown();
 
                     return null;
                 }
-            }, 1, "multiple-reads-thread").get();
+            }, "write-thread").get();
 
             fut.get();
 
-            if (err[0] == null)
-                throw new IgniteException("No one expected exception found", err[0]);
+            assertNotNull("Expected exception was not thrown", err[0]);
         }
         finally {
             destroyCache(cacheName);
