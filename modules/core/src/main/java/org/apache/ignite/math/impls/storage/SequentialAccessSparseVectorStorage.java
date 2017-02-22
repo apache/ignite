@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.storage;
 
 import it.unimi.dsi.fastutil.ints.*;
+import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
 import java.io.*;
 
@@ -85,6 +86,12 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
     public SequentialAccessSparseVectorStorage(Int2DoubleRBTreeMap data, boolean noDefault){
         this.noDefault = noDefault;
         this.data = data;
+    }
+
+    public SequentialAccessSparseVectorStorage(double[] arrs, boolean noDefault) {
+        this.data = new Int2DoubleRBTreeMap();
+        IntStream.range(0,arrs.length).forEachOrdered(i -> data.put(i, arrs[i]));
+        this.noDefault = noDefault;
     }
 
     /** {@inheritDoc} */

@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.storage;
 
 import it.unimi.dsi.fastutil.ints.*;
+import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
 import java.io.*;
 
@@ -62,6 +63,16 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     private RandomAccessSparseVectorStorage(int size, Int2DoubleOpenHashMap data) {
         this.size = size;
         this.data = data;
+    }
+
+    /**
+     * Create new RandomAccessSparseVectorStorage from array.
+     *
+     * @param arrs Arrs.
+     * @param copy Copy.
+     */
+    public RandomAccessSparseVectorStorage(double[] arrs, boolean copy) {
+        data = new Int2DoubleOpenHashMap(IntStream.range(0, arrs.length).toArray(), copy ? arrs.clone() : arrs);
     }
 
     /** {@inheritDoc} */
