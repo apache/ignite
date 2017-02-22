@@ -114,6 +114,21 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
         return false;
     }
 
+    @Override public boolean equals(Object obj) {
+        return obj!=null && getClass() == obj.getClass() &&
+            (rows == ((SparseLocalMatrixStorage)obj).rows) &&
+            (cols == ((SparseLocalMatrixStorage)obj).cols) &&
+            (rows == 0 || cols == 0 || ((SparseLocalMatrixStorage)obj).rowVectors.equals(rowVectors));
+    }
+
+    @Override public int hashCode() {
+        int result = 1;
+        result = result * 37 + cols;
+        result = result * 37 + rows;
+        result = result * 37 + rowVectors.hashCode();
+        return result;
+    }
+
     /**
      * Init all row objects.
      */
