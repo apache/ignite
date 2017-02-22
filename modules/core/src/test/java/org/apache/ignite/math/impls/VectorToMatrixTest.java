@@ -73,34 +73,57 @@ public class VectorToMatrixTest {
 
             final Matrix matrixCol = v.toMatrix(false);
 
-            for (Vector.Element e : v.all()) {
-                final int idx = e.index();
-
-                final double exp = e.get();
-
-                final Metric metricRow = new Metric(exp, matrixRow.get(0, idx));
-
-                assertTrue("Not close enough row like " + metricRow + " at index " + idx + " in " + desc,
-                    metricRow.closeEnough());
-
-                final Metric metricCol = new Metric(exp, matrixCol.get(idx, 0));
-
-                assertTrue("Not close enough cols like " + matrixCol + " at index " + idx + " in " + desc,
-                    metricCol.closeEnough());
-            }
+            for (Vector.Element e : v.all())
+                assertToMatrixValue(desc, matrixRow, matrixCol, e.get(), e.index());
         });
     }
 
     /** */ @Test
-    @Ignore("not yet implemented test case for toMatrixPlus method")
     public void testToMatrixPlusOne() {
-        // todo write code
+        consumeSampleVectors((v, desc) -> {
+            if (!availableForTesting(v))
+                return;
+
+            fillWithNonZeroes(v);
+
+            for (double zeroVal : new double[] {-1, 0, 1, 2}) {
+                final Matrix matrixRow = v.toMatrixPlusOne(true, zeroVal);
+
+                final Matrix matrixCol = v.toMatrixPlusOne(false, zeroVal);
+
+                final Metric metricRow0 = new Metric(zeroVal, matrixRow.get(0, 0));
+
+                assertTrue("Not close enough row like " + metricRow0 + " at index " + 0 + " in " + desc,
+                    metricRow0.closeEnough());
+
+                final Metric metricCol0 = new Metric(zeroVal, matrixCol.get(0, 0));
+
+                assertTrue("Not close enough cols like " + metricCol0 + " at index " + 0 + " in " + desc,
+                    metricCol0.closeEnough());
+
+                for (Vector.Element e : v.all())
+                    assertToMatrixValue(desc, matrixRow, matrixCol, e.get(), e.index() + 1);
+            }
+        });
     }
 
     /** */ @Test
     @Ignore("not yet implemented test case for cross method")
     public void testCross() {
         //todo write code
+    }
+
+    /** */
+    private void assertToMatrixValue(String desc, Matrix matrixRow, Matrix matrixCol, double exp, int idx) {
+        final Metric metricRow = new Metric(exp, matrixRow.get(0, idx));
+
+        assertTrue("Not close enough row like " + metricRow + " at index " + idx + " in " + desc,
+            metricRow.closeEnough());
+
+        final Metric metricCol = new Metric(exp, matrixCol.get(idx, 0));
+
+        assertTrue("Not close enough cols like " + matrixCol + " at index " + idx + " in " + desc,
+            metricCol.closeEnough());
     }
 
     /** */
@@ -112,6 +135,13 @@ public class VectorToMatrixTest {
     /** */
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
+
+        final boolean availableForTesting = typesMap.get(v.getClass()) != null;
+
+        final Matrix actualLikeMatrix = v.likeMatrix(1, 1);
+
+        assertTrue("Need to enable matrix testing for vector type " + v.getClass().getSimpleName(),
+            availableForTesting || actualLikeMatrix == null);
 
         return typesMap.get(v.getClass()) != null;
     }

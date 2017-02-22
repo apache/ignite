@@ -680,17 +680,21 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        Matrix res = likeMatrix(rowLike ? 1 : size(), rowLike ? size() : 1);
+        Matrix res = likeMatrix(rowLike ? 1 : size() + 1, rowLike ? size() + 1 : 1);
 
         if (res == null)
             return null;
 
         res.set(0, 0, zeroVal);
 
-        if (rowLike)
-            new MatrixView(res, 1, 0, size(), 1).assignRow(0, this);
+        if (rowLike) {
+            // todo after fixing implementation or tests replace this to
+            // new MatrixView(res, 0, 1, 1, size()).assignRow(0, this);
+            for (Vector.Element e : all())
+                res.set(0, e.index() + 1, e.get());
+        }
         else
-            new MatrixView(res, 0, 1, 1, size()).assignColumn(0, this);
+            new MatrixView(res, 1, 0, size(), 1).assignColumn(0, this);
 
         return res;
     }
