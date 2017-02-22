@@ -60,9 +60,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         final int cnt = 100_000;
 
-        Random rnd = BPlusTree.rnd;
-
-        assert rnd != null;
+        Random rnd = new Random();
 
         Map<Integer, DbValue> map = new HashMap<>();
 
