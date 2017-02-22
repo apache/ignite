@@ -57,6 +57,11 @@ public class DefaultMathProvider implements MathProvider {
 
                 return Optional.of(new RandomMatrix(args));
 
+            case "function":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new FunctionMatrix(args));
+
             case "diagonal":
                 ensureClusterGroupIsNull(flavorNorm, grp);
 

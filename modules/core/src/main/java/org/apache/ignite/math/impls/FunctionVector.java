@@ -102,6 +102,6 @@ public class FunctionVector extends AbstractVector {
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 }
