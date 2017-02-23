@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -61,6 +63,55 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        try (Statement selStmt = conn.createStatement()) {
+            assertTrue(selStmt.execute(SQL_SELECT));
+
+            ResultSet rs = selStmt.getResultSet();
+
+            assert rs != null;
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+
+                switch (id) {
+                    case 1:
+                        assertEquals("p1", rs.getString("_key"));
+                        assertEquals("John", rs.getString("firstName"));
+                        assertEquals("White", rs.getString("lastName"));
+                        assertEquals(25, rs.getInt("age"));
+                        break;
+
+                    case 2:
+                        assertEquals("p2", rs.getString("_key"));
+                        assertEquals("Joe", rs.getString("firstName"));
+                        assertEquals("Black", rs.getString("lastName"));
+                        assertEquals(35, rs.getInt("age"));
+                        break;
+
+                    case 3:
+                        assertEquals("p3", rs.getString("_key"));
+                        assertEquals("Mike", rs.getString("firstName"));
+                        assertEquals("Green", rs.getString("lastName"));
+                        assertEquals(40, rs.getInt("age"));
+                        break;
+
+                    case 4:
+                        assertEquals("p4", rs.getString("_key"));
+                        assertEquals("Leah", rs.getString("firstName"));
+                        assertEquals("Grey", rs.getString("lastName"));
+                        assertEquals(22, rs.getInt("age"));
+                        break;
+
+                    default:
+                        assert false : "Invalid ID: " + id;
+                }
+            }
+        }
+
+        grid(0).cache(null).clear();
+
+        assertEquals(0, grid(0).cache(null).size(CachePeekMode.ALL));
+
         super.afterTest();
 
         if (stmt != null && !stmt.isClosed())
@@ -118,5 +169,40 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
         assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testBatch() throws SQLException {
+        prepStmt.setString(1, "p1");
+        prepStmt.setInt(2, 1);
+        prepStmt.setString(3, "John");
+        prepStmt.setString(4, "White");
+        prepStmt.setInt(5, 25);
+
+        prepStmt.setString(6, "p2");
+        prepStmt.setInt(7, 2);
+        prepStmt.setString(8, "Joe");
+        prepStmt.setString(9, "Black");
+        prepStmt.setInt(10, 35);
+        prepStmt.addBatch();
+
+        prepStmt.setString(1, "p3");
+        prepStmt.setInt(2, 3);
+        prepStmt.setString(3, "Mike");
+        prepStmt.setString(4, "Green");
+        prepStmt.setInt(5, 40);
+
+        prepStmt.setString(6, "p4");
+        prepStmt.setInt(7, 4);
+        prepStmt.setString(8, "Leah");
+        prepStmt.setString(9, "Grey");
+        prepStmt.setInt(10, 22);
+        prepStmt.addBatch();
+
+        int[] res = prepStmt.executeBatch();
+
+        assertTrue(Arrays.equals(new int[] {2, 2}, res));
     }
 }
