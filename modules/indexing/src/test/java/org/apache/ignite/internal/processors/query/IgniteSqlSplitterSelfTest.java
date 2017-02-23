@@ -36,13 +36,12 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -147,6 +146,61 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset ?", 1, 9));
             assertEqualsCollections(res.subList(10, 10), columnQuery(c, qry + "limit ? offset ?", 1, 10));
             assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset abs(-(4 + ?))", 1, 5));
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSortedMergeIndex() throws Exception {
+        IgniteCache<Integer,Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
+            Integer.class, Value.class));
+
+        try {
+            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 16);
+
+            Random rnd = new GridRandom();
+
+            for (int i = 0; i < 10_000; i++) {
+                c.put(i, new Value(
+                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(1000),
+                    rnd.nextInt(8) == 0 ? null: rnd.nextInt(2000)));
+            }
+
+            List<List<?>> plan = c.query(new SqlFieldsQuery(
+                "explain select snd from Value order by fst desc")).getAll();
+            String rdcPlan = (String)plan.get(1).get(0);
+
+            assertTrue(rdcPlan.contains("merge_sorted"));
+            assertTrue(rdcPlan.contains("/* index sorted */"));
+
+            plan = c.query(new SqlFieldsQuery(
+                "explain select snd from Value")).getAll();
+            rdcPlan = (String)plan.get(1).get(0);
+
+            assertTrue(rdcPlan.contains("merge_scan"));
+            assertFalse(rdcPlan.contains("/* index sorted */"));
+
+            List<List<?>> res = c.query(new SqlFieldsQuery(
+                "select fst from Value order by fst")).getAll();
+
+            assertEquals(10_000, res.size());
+
+            Integer prev = null;
+
+            for (List<?> row : res) {
+                Integer x = (Integer)row.get(0);
+
+                if (x != null) {
+                    if (prev != null)
+                        assertTrue(x >= prev);
+
+                    prev = x;
+                }
+            }
         }
         finally {
             c.destroy();

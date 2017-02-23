@@ -1304,6 +1304,7 @@ public class GridSqlQuerySplitter {
 
         setupParameters(map, mapQry, params);
         map.columns(collectColumns(mapExps));
+        map.sortColumns(mapQry.sort());
 
         mapSqlQrys.add(map);
     }

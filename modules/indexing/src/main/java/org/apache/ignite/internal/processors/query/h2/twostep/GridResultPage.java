@@ -153,6 +153,13 @@ public class GridResultPage {
     }
 
     /**
+     * @return Segment ID.
+     */
+    public int segmentId() {
+        return res.segmentId();
+    }
+
+    /**
      * @return Response.
      */
     public GridQueryNextPageResponse response() {

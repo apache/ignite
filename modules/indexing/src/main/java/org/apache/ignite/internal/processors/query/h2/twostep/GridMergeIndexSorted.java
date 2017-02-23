@@ -32,11 +32,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +50,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase
  * Sorted index.
  */
 public final class GridMergeIndexSorted extends GridMergeIndex {
+    /** */
+    private static final IndexType TYPE = IndexType.createNonUnique(false);
+
     /** */
     private final Comparator<RowStream> streamCmp = new Comparator<RowStream>() {
         @Override public int compare(RowStream o1, RowStream o2) {
@@ -62,7 +68,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     };
 
     /** */
-    private Map<UUID,RowStream> streamsMap;
+    private Map<UUID,RowStream[]> streamsMap;
 
     /** */
     private RowStream[] streams;
@@ -71,17 +77,15 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
      * @param ctx Kernal context.
      * @param tbl Table.
      * @param name Index name,
-     * @param type Index type.
      * @param cols Columns.
      */
     public GridMergeIndexSorted(
         GridKernalContext ctx,
         GridMergeTable tbl,
         String name,
-        IndexType type,
         IndexColumn[] cols
     ) {
-        super(ctx, tbl, name, type, cols);
+        super(ctx, tbl, name, TYPE, cols);
     }
 
     /** {@inheritDoc} */
@@ -89,16 +93,17 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         super.setSources(nodes, segmentsCnt);
 
         streamsMap = U.newHashMap(nodes.size());
-        streams = new RowStream[nodes.size()];
+        streams = new RowStream[nodes.size() * segmentsCnt];
 
         int i = 0;
 
         for (ClusterNode node : nodes) {
-            RowStream stream = new RowStream(node.id());
+            RowStream[] segments = new RowStream[segmentsCnt];
 
-            streams[i] = stream;
+            for (int s = 0; s < segmentsCnt; s++)
+                streams[i++] = segments[s] = new RowStream();
 
-            if (streamsMap.put(stream.src, stream) != null)
+            if (streamsMap.put(node.id(), segments) != null)
                 throw new IllegalStateException();
         }
     }
@@ -107,15 +112,21 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     @Override protected void addPage0(GridResultPage page) {
         if (page.isLast() || page.isFail()) {
             // Finish all the streams.
-            for (RowStream stream : streams)
+            for (int i = streams.length - 1; i >= 0; i--) {
+                RowStream stream = streams[i];
+
+                if (stream == null)
+                    break;
+
                 stream.addPage(page);
+            }
         }
         else {
             assert page.rowsInPage() > 0;
 
             UUID src = page.source();
 
-            streamsMap.get(src).addPage(page);
+            streamsMap.get(src)[page.segmentId()].addPage(page);
         }
     }
 
@@ -153,6 +164,11 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false);
+    }
+
+    /** {@inheritDoc} */
     @Override protected Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last) {
         return new FetchingCursor(first, last, new MergeStreamIterator());
     }
@@ -174,8 +190,14 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
          *
          */
         private void goFirst() {
+            assert first;
+
+            first = false;
+
             for (int i = 0; i < streams.length; i++) {
-                if (!streams[i].next()) {
+                RowStream s = streams[i];
+
+                if (!s.next()) {
                     streams[i] = null;
                     off++; // Move left bound.
                 }
@@ -183,8 +205,6 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
             if (off < streams.length)
                 Arrays.sort(streams, streamCmp);
-
-            first = false;
         }
 
         /**
@@ -231,9 +251,6 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
      */
     private final class RowStream {
         /** */
-        final UUID src;
-
-        /** */
         final BlockingQueue<GridResultPage> queue = new ArrayBlockingQueue<>(8);
 
         /** */
@@ -241,13 +258,6 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
         /** */
         Row cur;
-
-        /**
-         * @param src Source.
-         */
-        private RowStream(UUID src) {
-            this.src = src;
-        }
 
         /**
          * @param page Page.

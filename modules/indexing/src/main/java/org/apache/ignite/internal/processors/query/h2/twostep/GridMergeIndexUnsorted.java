@@ -25,17 +25,23 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
 /**
  * Unsorted merge index.
  */
 public final class GridMergeIndexUnsorted extends GridMergeIndex {
+    /** */
+    private static final IndexType TYPE = IndexType.createScan(false);
+
     /** */
     private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
@@ -45,7 +51,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
      * @param name Index name.
      */
     public GridMergeIndexUnsorted(GridKernalContext ctx, GridMergeTable tbl, String name) {
-        super(ctx, tbl, name, IndexType.createScan(false), IndexColumn.wrap(tbl.getColumns()));
+        super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()));
     }
 
     /**
@@ -68,6 +74,11 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
         queue.add(page);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
     }
 
     /** {@inheritDoc} */

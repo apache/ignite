@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -73,6 +74,11 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
 
     /** Field kept for backward compatibility. */
     private String alias;
+
+    /** Sort columns. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private transient List<?> sort;
 
     /**
      * For {@link Message}.
@@ -303,5 +309,19 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
         }
 
         return cp;
+    }
+
+    /**
+     * @param sort Sort columns.
+     */
+    public void sortColumns(List<?> sort) {
+        this.sort = sort;
+    }
+
+    /**
+     * @return Sort columns.
+     */
+    public List<?> sortColumns() {
+        return sort;
     }
 }
