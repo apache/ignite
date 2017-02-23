@@ -298,7 +298,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     tbls.getObject(i + 1);
             }
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             fail();
         }
     }

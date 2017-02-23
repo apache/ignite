@@ -379,11 +379,10 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
     /** {@inheritDoc} */
     @Override protected void mapOnTopology() {
-        cache.topology().readLock();
-
         AffinityTopologyVersion topVer;
-
         GridCacheVersion futVer;
+
+        cache.topology().readLock();
 
         try {
             if (cache.topology().stopping()) {
@@ -454,7 +453,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             updVer = this.updVer;
 
             if (updVer == null) {
-                updVer = cctx.versions().next(topVer);
+                updVer = futVer;
 
                 if (log.isDebugEnabled())
                     log.debug("Assigned fast-map version for update on near node: " + updVer);
@@ -543,7 +542,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         else
             val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
-        ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(cacheKey, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +

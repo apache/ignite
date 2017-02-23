@@ -189,17 +189,6 @@ namespace ignite
             }
 
             /**
-             * Get binary object hash code.
-             *
-             * @param obj Binary object.
-             * @return Hash code.
-             */
-            int32_t GetHashCode(const T& obj)
-            {
-                return 0;
-            }
-
-            /**
              * Write binary object.
              *
              * @param writer Writer.
@@ -273,11 +262,6 @@ namespace ignite
             int32_t GetFieldId(const char* name)
             {
                 return typ.GetFieldId(name);
-            }
-
-            int32_t GetHashCode(T* const& obj)
-            {
-                return typ.GetHashCode(*obj);
             }
 
             void Write(BinaryWriter& writer, T* const& obj)

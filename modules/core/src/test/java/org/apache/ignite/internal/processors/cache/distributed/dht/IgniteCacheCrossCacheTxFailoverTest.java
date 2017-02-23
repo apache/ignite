@@ -348,7 +348,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                     if (affFut != null)
                         affFut.get(30_000);
                 }
-                catch (IgniteFutureTimeoutCheckedException e) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     log.error("Failed to wait for affinity future after start: " + topVer);
 
                     failed = true;
@@ -371,7 +371,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                     if (affFut != null)
                         affFut.get(30_000);
                 }
-                catch (IgniteFutureTimeoutCheckedException e) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     log.error("Failed to wait for affinity future after stop: " + topVer);
 
                     failed = true;

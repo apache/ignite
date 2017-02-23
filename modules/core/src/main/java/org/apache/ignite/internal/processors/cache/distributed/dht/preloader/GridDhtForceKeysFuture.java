@@ -183,8 +183,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED) {
                     if (mini.node().id().equals(evt.eventNode().id())) {
-                        mini.onResult(new ClusterTopologyCheckedException("Node left grid (will retry): " +
-                            evt.eventNode().id()));
+                        mini.onResult();
 
                         break;
                     }
@@ -288,7 +287,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyCheckedException)
-                            fut.onResult((ClusterTopologyCheckedException)e);
+                            fut.onResult();
                         else if (!cctx.kernalContext().isStopping())
                             fut.onResult(e);
                     }
@@ -488,9 +487,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         }
 
         /**
-         * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult() {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 

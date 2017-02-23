@@ -234,9 +234,12 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param gridName Grid name.
      */
     public static void kill(String gridName) {
+        A.notNull(gridName, "gridName");
+
         IgniteProcessProxy proxy = gridProxies.get(gridName);
 
-        A.notNull(gridName, "gridName");
+        if (proxy == null)
+            return;
 
         try {
             proxy.getProcess().kill();

@@ -959,7 +959,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && (optimistic() || readMap().isEmpty());
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
     }
 
     /**
@@ -1167,7 +1167,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param keys Keys.
      * @param retval Return value flag.
      * @param read Read flag.
-     * @param accessTtl Create ttl.
+     * @param createTtl Create ttl.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
      * @param skipStore Skip store flag.

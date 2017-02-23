@@ -134,7 +134,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr
+        long updateCntr
     );
 
     /**

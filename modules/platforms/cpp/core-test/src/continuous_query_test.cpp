@@ -28,6 +28,7 @@
 
 #include "ignite/ignition.h"
 #include "ignite/cache/cache.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -241,38 +242,10 @@ struct ContinuousQueryTestSuiteFixture
     Cache<int, TestEntry> cache;
 
     /*
-     * Get configuration for nodes.
-     */
-    IgniteConfiguration GetConfiguration()
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-query-continuous.xml");
-
-        return cfg;
-    }
-
-    /*
      * Constructor.
      */
     ContinuousQueryTestSuiteFixture() :
-        grid(Ignition::Start(GetConfiguration(), "node-01")),
+        grid(ignite_test::StartNode("cache-query-continuous.xml", "node-01")),
         cache(grid.GetCache<int, TestEntry>("transactional_no_backup"))
     {
         // No-op.
