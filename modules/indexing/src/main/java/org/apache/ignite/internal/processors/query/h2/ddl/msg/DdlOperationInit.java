@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlOperationArguments;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,11 +37,13 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Arguments. */
-    private DdlOperationArguments args;
+    private DdlCommandArguments args;
 
     /**
      * Map {@code node id} -> {@code init exception, if any}.
      * If this field is null, then this message is being processed by coordinator.
+     * Note that this map not just helps to track errors but also contains node ids eligible for the operation
+     * filtered at coordinator, so its key set is important.
      */
     private Map<UUID, IgniteCheckedException> nodesState;
 
@@ -65,8 +67,8 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
             IgniteCheckedException resEx;
 
             if (errors.size() > 1) {
-                resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" +
-                    args.opId + ']');
+                resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" + args.getOperationArguments()
+                    .opId + ']');
 
                 for (IgniteCheckedException e : errors.values())
                     resEx.addSuppressed(e);
@@ -76,16 +78,16 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
 
             DdlOperationCancel cancel = new DdlOperationCancel();
 
-            cancel.setOperationId(args.opId);
+            cancel.setOperationId(args.getOperationArguments().opId);
             cancel.setError(resEx);
 
-            // Coordinator will notify the client about cancellation upon receiving this message
+            // Coordinator will notify the client about cancellation upon processing this message
             return cancel;
         }
         else {
             DdlOperationAck ackMsg = new DdlOperationAck();
 
-            ackMsg.setOperationId(args.opId);
+            ackMsg.setOperationId(args.getOperationArguments().opId);
 
             return ackMsg;
         }
@@ -99,14 +101,14 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
     /**
      * @return Operation arguments.
      */
-    public DdlOperationArguments getArguments() {
+    public DdlCommandArguments getArguments() {
         return args;
     }
 
     /**
      * @param args Operation arguments.
      */
-    public void setArguments(DdlOperationArguments args) {
+    public void setArguments(DdlCommandArguments args) {
         this.args = args;
     }
 

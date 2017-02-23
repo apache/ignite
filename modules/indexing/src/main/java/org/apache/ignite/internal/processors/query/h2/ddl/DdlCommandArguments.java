@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.Serializable;
 
 /**
- * Operation run context on the <b>coordinator</b>.
+ * Base interface for all command args classes.
  */
-public class DdlOperationRunContext {
-    /** Latch replacement to expect all nodes to finish their local jobs for this operation. */
-    public final AtomicInteger nodesCnt;
-
+public interface DdlCommandArguments extends Serializable {
     /**
-     * @param nodesCnt Nodes count to initialize latch with.
+     * @return Overall operation arguments.
      */
-    public DdlOperationRunContext(int nodesCnt) {
-        this.nodesCnt = new AtomicInteger(nodesCnt);
-    }
+    public DdlOperationArguments getOperationArguments();
 }

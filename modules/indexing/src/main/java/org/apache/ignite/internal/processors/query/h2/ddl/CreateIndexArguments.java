@@ -17,29 +17,63 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class CreateIndexArguments extends DdlOperationArguments {
-    /** Index. */
-    public final QueryIndex idx;
+public class CreateIndexArguments implements DdlCommandArguments {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Overall operation arguments. */
+    private final DdlOperationArguments opArgs;
+
+    /** Index params. */
+    private final QueryIndex idx;
+
+    /** Cache name. */
+    private final String cacheName;
 
     /** Ignore operation if index exists. */
-    public final boolean ifNotExists;
+    private final boolean ifNotExists;
 
     /**
-     * @param sndNodeId ID of node that initiated this operation.
-     * @param cacheName Cache name.
+     * @param opArgs Overall operation arguments.
      * @param idx Index params.
-     * @param ifNotExists Ignore operation  if index exists.
+     * @param cacheName Cache name.
+     * @param ifNotExists Ignore operation if index exists.
      */
-    public CreateIndexArguments(UUID sndNodeId, IgniteUuid opId, String cacheName, QueryIndex idx, boolean ifNotExists) {
-        super(sndNodeId, opId, cacheName, DdlOperationType.CREATE_INDEX);
+    CreateIndexArguments(DdlOperationArguments opArgs, QueryIndex idx, String cacheName, boolean ifNotExists) {
+        this.opArgs = opArgs;
         this.idx = idx;
+        this.cacheName = cacheName;
         this.ifNotExists = ifNotExists;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DdlOperationArguments getOperationArguments() {
+        return opArgs;
+    }
+
+    /**
+     * @return Index params.
+     */
+    public QueryIndex index() {
+        return idx;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Ignore operation if index exists.
+     */
+    public boolean ifNotExists() {
+        return ifNotExists;
     }
 }

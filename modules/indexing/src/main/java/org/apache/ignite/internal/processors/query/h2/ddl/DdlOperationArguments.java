@@ -22,26 +22,25 @@ import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Base class for DDL operation arguments.
+ * Common DDL operation arguments.
  */
-public abstract class DdlOperationArguments implements Serializable {
+public final class DdlOperationArguments implements Serializable {
     /** ID of node that initiated this operation. */
     public final UUID sndNodeId;
 
-    /** Operation ID. */
+    /**
+     * Operation id.
+     * @see DdlStatementsProcessor#operations
+     */
     public final IgniteUuid opId;
-
-    /** Cache name. */
-    public final String cacheName;
 
     /** Operation type. */
     public final DdlOperationType opType;
 
     /** */
-    DdlOperationArguments(UUID sndNodeId, IgniteUuid opId, String cacheName, DdlOperationType opType) {
+    DdlOperationArguments(UUID sndNodeId, IgniteUuid opId, DdlOperationType opType) {
         this.sndNodeId = sndNodeId;
         this.opId = opId;
-        this.cacheName = cacheName;
         this.opType = opType;
     }
 }

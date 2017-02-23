@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -28,24 +27,9 @@ public class DdlOperationFuture extends GridFutureAdapter {
     /** Unique ID of this operation. */
     private final IgniteUuid id;
 
-    /** Processor. */
-    private final DdlStatementsProcessor proc;
-
     /** */
-    public DdlOperationFuture(IgniteUuid id, DdlStatementsProcessor proc) {
+    public DdlOperationFuture(IgniteUuid id) {
         this.id = id;
-        this.proc = proc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cancel() throws IgniteCheckedException {
-        if (onCancelled()) {
-            proc.cancel(id, null);
-
-            return true;
-        }
-
-        return false;
     }
 
     /**

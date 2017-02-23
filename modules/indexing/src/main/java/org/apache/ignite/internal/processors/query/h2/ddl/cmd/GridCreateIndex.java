@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl.cmd;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlOperationArguments;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.h2.ddl.CreateIndexArguments;
 
 /**
  * {@code CREATE INDEX} handler.
  */
-public class GridCreateIndex implements GridDdlCommand {
+public class GridCreateIndex implements GridDdlCommand<CreateIndexArguments> {
     /** Singleton. */
     public final static GridCreateIndex INSTANCE = new GridCreateIndex();
 
@@ -32,20 +36,24 @@ public class GridCreateIndex implements GridDdlCommand {
         // No-op.
     }
 
-    /** {@inheritDoc}
-     * @param args*/
-    @Override public void init(DdlOperationArguments args) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public Collection<ClusterNode> filterNodes(GridKernalContext kernalCtx, CreateIndexArguments args,
+        AffinityTopologyVersion topVer) {
+        return kernalCtx.discovery().cacheNodes(args.cacheName(), topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(CreateIndexArguments cmdArgs) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(DdlOperationArguments args) {
+    @Override public void execute(CreateIndexArguments cmdArgs) throws IgniteCheckedException {
         // No-op.
     }
 
-    /** {@inheritDoc}
-     * @param args*/
-    @Override public void cancel(DdlOperationArguments args) {
+    /** {@inheritDoc} */
+    @Override public void cancel(CreateIndexArguments cmdArgs) throws IgniteCheckedException {
         // No-op.
     }
 }

@@ -71,14 +71,14 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
     public void testInitFailure() {
         DdlProc.testName = GridTestUtils.getGridTestName();
 
-        assertCreateIndexThrowsWithMessage("Hello from DdlProc Init");
+        assertCreateIndexThrowsWithMessage("DDL operation has been cancelled at INIT stage");
     }
 
     /** Test behavior in case of ACK failure (cancel via {@link DdlStatementsProcessor#onAck}). */
     public void testAckFailure() {
         DdlProc.testName = GridTestUtils.getGridTestName();
 
-        assertCreateIndexThrowsWithMessage("Hello from DdlProc Ack");
+        assertCreateIndexThrowsWithMessage("DDL operation execution has failed");
     }
 
     /**
@@ -169,7 +169,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         private static volatile String testName;
 
         /** {@inheritDoc} */
-        @Override void doInit(DdlOperationArguments args) {
+        @Override void doInit(DdlCommandArguments args) {
             // Let's throw an exception on a single node in the ring
             if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
                 throw new RuntimeException("Hello from DdlProc Init");
@@ -182,8 +182,9 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
                 }
         }
 
-        /** {@inheritDoc} */
-        @Override void doAck(DdlOperationArguments args) {
+        /** {@inheritDoc}
+         * @param args*/
+        @Override void doAck(DdlCommandArguments args) {
             if ("AckFailure".equals(testName))
                 throw new RuntimeException("Hello from DdlProc Ack");
             else

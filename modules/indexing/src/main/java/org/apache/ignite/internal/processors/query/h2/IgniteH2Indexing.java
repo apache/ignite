@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
@@ -1312,7 +1312,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                     try {
-                        return ddlProc.runDdlStatement(cctx, stmt);
+                        return ddlProc.runDdlStatement(stmt);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);

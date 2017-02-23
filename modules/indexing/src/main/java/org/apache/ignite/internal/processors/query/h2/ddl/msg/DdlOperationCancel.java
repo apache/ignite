@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message that initiates cancel of a DDL operation due to an irrecoverable error on a peer or on the coordinator,
- * or due to the operation's cancellation by the user.
+ * Message that initiates cancel of a DDL operation due to an irrecoverable error on a peer or on the coordinator.
  */
 public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** */
@@ -33,10 +33,13 @@ public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** Message id. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Operation id. */
+    /**
+     * Operation id.
+     * @see DdlStatementsProcessor#operations
+     */
     private IgniteUuid opId;
 
-    /** Error that has led to this cancellation, or {@code null} if it's user's cancel. */
+    /** Error that has led to this cancellation. */
     private IgniteCheckedException err;
 
     /** {@inheritDoc} */
@@ -69,14 +72,14 @@ public class DdlOperationCancel implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Error that has led to this cancellation, or {@code null} if it's user's cancel.
+     * @return Error that has led to this cancellation.
      */
     public IgniteCheckedException getError() {
         return err;
     }
 
     /**
-     * @param err Error that has led to this cancellation, or {@code null} if it's user's cancel.
+     * @param err Error that has led to this cancellation.
      */
     public void setError(IgniteCheckedException err) {
         this.err = err;
