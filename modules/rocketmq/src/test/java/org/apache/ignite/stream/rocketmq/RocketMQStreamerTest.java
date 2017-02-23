@@ -28,17 +28,20 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.namesrv.NamesrvController;
-import org.apache.rocketmq.test.base.IntegrationTestBase;
+import org.apache.rocketmq.test.util.MQAdmin;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.NAME_SERVER_PORT;
+import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.TEST_IP;
 
 /**
  * Test for {@link RocketMQStreamer}.
@@ -50,12 +53,11 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
     /** Test consumer group. */
     private static final String CONSUMER_GRP = "testConsumerGrp";
 
-    /** Test name server address. */
-    private static final String NAMESRV_ADDR = "127.0.0.1:";
+    /** Test cluster name. */
+    private static final String TEST_CLUSTER = "testCluster";
 
-    private static NamesrvController nameSrv;
-
-    private static BrokerController broker;
+    /** Test server. */
+    private static TestRocketMQServer testRocketMQServer;
 
     /** Number of events to handle. */
     private static final int EVT_NUM = 1000;
@@ -74,17 +76,13 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
-        nameSrv = IntegrationTestBase.createAndStartNamesrv();
-
-        broker = IntegrationTestBase.createAndStartBroker(
-            NAMESRV_ADDR + nameSrv.getNettyServerConfig().getListenPort());
+        testRocketMQServer = new TestRocketMQServer(log);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        broker.shutdown();
-
-        nameSrv.shutdown();
+        if (testRocketMQServer != null)
+            testRocketMQServer.shutdown();
     }
 
     /** Constructor. */
@@ -92,6 +90,11 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /**
+     * Tests data is properly injected into the grid.
+     *
+     * @throws Exception If fails.
+     */
     public void testStreamer() throws Exception {
         RocketMQStreamer<String, byte[]> streamer = null;
 
@@ -106,7 +109,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
             //configure.
             streamer.setIgnite(ignite);
             streamer.setStreamer(dataStreamer);
-            streamer.setNameSrvAddr(NAMESRV_ADDR + nameSrv.getNettyServerConfig().getListenPort());
+            streamer.setNameSrvAddr(TEST_IP + ":" + NAME_SERVER_PORT);
             streamer.setConsumerGrp(CONSUMER_GRP);
             streamer.setTopic(TOPIC_NAME);
             streamer.setMultipleTupleExtractor(new TestTupleExtractor());
@@ -143,26 +146,33 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test tuple extractor.
+     */
     public static class TestTupleExtractor implements StreamMultipleTupleExtractor<List<MessageExt>, String, byte[]> {
 
+        /** {@inheritDoc} */
         @Override public Map<String, byte[]> extract(List<MessageExt> msgs) {
             final Map<String, byte[]> map = new HashMap<>();
 
-            for (MessageExt msg : msgs) {
+            for (MessageExt msg : msgs)
                 map.put(msg.getMsgId(), msg.getBody());
-            }
 
             return map;
         }
     }
 
+    /**
+     * Adds data to RocketMQ.
+     *
+     * @throws Exception If fails.
+     */
     private void produceData() throws Exception {
-        IntegrationTestBase.initTopic(
-            TOPIC_NAME, NAMESRV_ADDR + nameSrv.getNettyServerConfig().getListenPort(),
-            broker.getBrokerConfig().getBrokerClusterName());
+        initTopic(TOPIC_NAME, TEST_IP + ":" + NAME_SERVER_PORT, TEST_CLUSTER);
 
         DefaultMQProducer producer = new DefaultMQProducer("testProducerGrp");
-        producer.setNamesrvAddr(NAMESRV_ADDR + nameSrv.getNettyServerConfig().getListenPort());
+
+        producer.setNamesrvAddr(TEST_IP + ":" + NAME_SERVER_PORT);
 
         try {
             producer.start();
@@ -176,5 +186,21 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
         finally {
             producer.shutdown();
         }
+    }
+
+    /**
+     * Initializes RocketMQ topic.
+     *
+     * @param topic Topic.
+     * @param nsAddr Nameserver address.
+     * @param clusterName Cluster name.
+     * @throws IgniteInterruptedCheckedException If fails.
+     */
+    private void initTopic(String topic, String nsAddr, String clusterName) throws IgniteInterruptedCheckedException {
+        assertFalse(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return MQAdmin.createTopic(nsAddr, clusterName, topic, 8, 10);
+            }
+        }, 10_000));
     }
 }

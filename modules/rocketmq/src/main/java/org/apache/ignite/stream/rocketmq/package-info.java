@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains implementation of RocketMQStreamer.
+ * Contains implementation of RocketMQStreamer tests.
  */
 package org.apache.ignite.stream.rocketmq;
