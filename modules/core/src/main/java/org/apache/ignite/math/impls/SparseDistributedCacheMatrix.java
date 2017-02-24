@@ -21,26 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 
 /**
- * Sparse distributes cache-based matrix.
+ * Sparse distributes matrix view over the existing arbitrary cache.
  */
-public class SparseDistributedCacheMatrix extends CacheAbstractMatrix {
+public class SparseDistributedCacheMatrix extends AbstractMatrix {
     /**
      *
      */
     public SparseDistributedCacheMatrix() {
         // No-op.
     }
-
-    /**
-     * Creates new matrix with distributed cache created automatically.
-     *
-     * @param rows
-     * @param cols
-     */
-    public SparseDistributedCacheMatrix(int rows, int cols) {
-
-    }
-
+    
     /**
      * Creates new matrix over existing cache.
      * 
