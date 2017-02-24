@@ -298,6 +298,7 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
         cp.cols = cols;
         cp.paramIdxs = paramIdxs;
         cp.paramsSize = paramsSize;
+        cp.sort = sort;
 
         if (F.isEmpty(args))
             cp.params = EMPTY_PARAMS;

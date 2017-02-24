@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -155,7 +154,6 @@ import org.h2.result.SortOrder;
 import org.h2.server.web.WebServer;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
@@ -1453,7 +1451,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
 
-                    Prepared prepared = GridSqlQueryParser.prepared((JdbcPreparedStatement) stmt);
+                    Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
                         throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",

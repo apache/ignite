@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -207,7 +206,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param queue Queue to poll.
      * @return Next page.
      */
-    private GridResultPage takeNextPage(BlockingQueue<GridResultPage> queue) {
+    private GridResultPage takeNextPage(Pollable<GridResultPage> queue) {
         GridResultPage page;
 
         for (;;) {
@@ -232,7 +231,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param iter Current iterator.
      * @return The same or new iterator.
      */
-    protected final Iterator<Value[]> pollNextIterator(BlockingQueue<GridResultPage> queue, Iterator<Value[]> iter) {
+    protected final Iterator<Value[]> pollNextIterator(Pollable<GridResultPage> queue, Iterator<Value[]> iter) {
         while (!iter.hasNext()) {
             GridResultPage page = takeNextPage(queue);
 
@@ -353,8 +352,8 @@ public abstract class GridMergeIndex extends BaseIndex {
     protected void fetchNextPage(GridResultPage page) {
         assert !page.isLast();
 
-        if(page.isFail())
-            page.fetchNextPage(); //rethrow exceptions
+        if (page.isFail())
+            page.fetchNextPage(); // Rethrow exceptions.
 
         assert page.res != null;
 
@@ -758,5 +757,18 @@ public abstract class GridMergeIndex extends BaseIndex {
 
             return res;
         }
+    }
+
+    /**
+     * Pollable.
+     */
+    protected static interface Pollable<E> {
+        /**
+         * @param timeout Timeout.
+         * @param unit Time unit.
+         * @return Polled value or {@code null} if none.
+         * @throws InterruptedException If interrupted.
+         */
+        E poll(long timeout, TimeUnit unit) throws InterruptedException;
     }
 }

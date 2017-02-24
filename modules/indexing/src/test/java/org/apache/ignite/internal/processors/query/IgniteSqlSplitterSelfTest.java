@@ -160,13 +160,15 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             Integer.class, Value.class));
 
         try {
-            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 16);
+            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 8);
 
             Random rnd = new GridRandom();
 
-            for (int i = 0; i < 10_000; i++) {
+            int cnt = 1000;
+
+            for (int i = 0; i < cnt; i++) {
                 c.put(i, new Value(
-                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(1000),
+                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(100),
                     rnd.nextInt(8) == 0 ? null: rnd.nextInt(2000)));
             }
 
@@ -184,21 +186,23 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertTrue(rdcPlan.contains("merge_scan"));
             assertFalse(rdcPlan.contains("/* index sorted */"));
 
-            List<List<?>> res = c.query(new SqlFieldsQuery(
-                "select fst from Value order by fst")).getAll();
+            for (int i = 0; i < 10; i++) {
+                List<List<?>> res = c.query(new SqlFieldsQuery(
+                    "select fst from Value order by fst")).getAll();
 
-            assertEquals(10_000, res.size());
+                assertEquals(cnt, res.size());
 
-            Integer prev = null;
+                Integer p = null;
 
-            for (List<?> row : res) {
-                Integer x = (Integer)row.get(0);
+                for (List<?> row : res) {
+                    Integer x = (Integer)row.get(0);
 
-                if (x != null) {
-                    if (prev != null)
-                        assertTrue(x >= prev);
+                    if (x != null) {
+                        if (p != null)
+                            assertTrue(x + " >= " + p,  x >= p);
 
-                    prev = x;
+                        p = x;
+                    }
                 }
             }
         }

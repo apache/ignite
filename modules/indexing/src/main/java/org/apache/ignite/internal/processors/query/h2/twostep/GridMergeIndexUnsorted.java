@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
@@ -43,7 +42,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     private static final IndexType TYPE = IndexType.createScan(false);
 
     /** */
-    private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
+    private final PollableQueue<GridResultPage> queue = new PollableQueue<>();
 
     /**
      * @param ctx Context.
@@ -108,5 +107,11 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
                 throw new UnsupportedOperationException();
             }
         });
+    }
+
+    /**
+     */
+    private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements Pollable<X> {
+        // No-op.
     }
 }

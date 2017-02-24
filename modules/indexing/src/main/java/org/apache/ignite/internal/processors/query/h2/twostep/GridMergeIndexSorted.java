@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
@@ -73,6 +75,15 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /** */
     private RowStream[] streams;
 
+    /** */
+    private final Lock lock = new ReentrantLock();
+
+    /** */
+    private final Condition notEmpty = lock.newCondition();
+
+    /** */
+    private GridResultPage terminator;
+
     /**
      * @param ctx Kernal context.
      * @param tbl Table.
@@ -112,13 +123,15 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     @Override protected void addPage0(GridResultPage page) {
         if (page.isLast() || page.isFail()) {
             // Finish all the streams.
-            for (int i = streams.length - 1; i >= 0; i--) {
-                RowStream stream = streams[i];
+            lock.lock();
 
-                if (stream == null)
-                    break;
+            try {
+                terminator = page;
 
-                stream.addPage(page);
+                notEmpty.signalAll();
+            }
+            finally {
+                lock.unlock();
             }
         }
         else {
@@ -249,21 +262,64 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /**
      * Row stream.
      */
-    private final class RowStream {
-        /** */
-        final BlockingQueue<GridResultPage> queue = new ArrayBlockingQueue<>(8);
-
+    private final class RowStream implements Pollable<GridResultPage> {
         /** */
         Iterator<Value[]> iter = emptyIterator();
 
         /** */
         Row cur;
 
+        /** */
+        GridResultPage nextPage;
+
         /**
          * @param page Page.
          */
         private void addPage(GridResultPage page) {
-            queue.offer(page);
+            assert page != null;
+
+            lock.lock();
+
+            try {
+                // We can fetch the next page only when we have polled the previous one.
+                if (nextPage != null)
+                    throw new IllegalStateException();
+
+                nextPage = page;
+
+                notEmpty.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridResultPage poll(long timeout, TimeUnit unit) throws InterruptedException {
+            long nanos = unit.toNanos(timeout);
+
+            lock.lock();
+
+            try {
+                for (;;) {
+                    GridResultPage page = nextPage;
+
+                    if (page != null) {
+                        nextPage = null;
+
+                        return page;
+                    }
+
+                    if (terminator != null)
+                        return terminator;
+
+                    if ((nanos = notEmpty.awaitNanos(nanos)) <= 0)
+                        return null;
+                }
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /**
@@ -272,7 +328,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         private boolean next() {
             cur = null;
 
-            iter = pollNextIterator(queue, iter);
+            iter = pollNextIterator(this, iter);
 
             if (!iter.hasNext())
                 return false;
