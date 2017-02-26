@@ -911,13 +911,26 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key";
 
-            final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
+            SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
             qry.setDistributedJoins(true);
 
             List<List<?>> results = c1.query(qry).getAll();
 
             assertEquals(2, results.size());
+
+            select0 += " order by n2 desc";
+
+            qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            results = c1.query(qry).getAll();
+
+            assertEquals(2, results.size());
+
+            assertEquals("p2", results.get(0).get(1));
+            assertEquals("p1", results.get(1).get(1));
         }
         finally {
             c1.destroy();
