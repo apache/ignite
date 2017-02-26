@@ -187,8 +187,11 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertFalse(rdcPlan.contains("/* index sorted */"));
 
             for (int i = 0; i < 10; i++) {
+                X.println(" --> " + i);
+
                 List<List<?>> res = c.query(new SqlFieldsQuery(
-                    "select fst from Value order by fst")).getAll();
+                    "select fst from Value order by fst").setPageSize(5)
+                ).getAll();
 
                 assertEquals(cnt, res.size());
 
@@ -207,6 +210,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
+            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 1024);
+
             c.destroy();
         }
     }

@@ -40,13 +40,16 @@ public class GridResultPage {
     private final UUID src;
 
     /** */
-    protected final GridQueryNextPageResponse res;
+    private final GridQueryNextPageResponse res;
 
     /** */
     private final int rowsInPage;
 
     /** */
     private Iterator<Value[]> rows;
+
+    /** */
+    private boolean last;
 
     /**
      * @param ctx Kernal context.
@@ -119,10 +122,21 @@ public class GridResultPage {
     }
 
     /**
-     * @return {@code true} If this is a dummy last page for all the sources.
+     * @return {@code true} If this is either a real last page for a source or
+     *      a dummy terminating page with no rows.
      */
     public boolean isLast() {
-        return false;
+        return last;
+    }
+
+    /**
+     * @param last Last page for a source.
+     * @return {@code this}.
+     */
+    public GridResultPage setLast(boolean last) {
+        this.last = last;
+
+        return this;
     }
 
     /**

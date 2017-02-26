@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
@@ -43,6 +46,12 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** */
     private final PollableQueue<GridResultPage> queue = new PollableQueue<>();
+
+    /** */
+    private final AtomicInteger activeSources = new AtomicInteger(-1);
+
+    /** */
+    private Iterator<Value[]> iter = Collections.emptyIterator();
 
     /**
      * @param ctx Context.
@@ -69,10 +78,39 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
+        super.setSources(nodes, segmentsCnt);
+
+        int x = nodes.size() * segmentsCnt;
+
+        assert x > 0: x;
+
+        activeSources.set(x);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fetchedAll() {
+        int x = activeSources.get();
+
+        assert x >= 0; // This method must not be called if the sources were not set.
+
+        return x == 0 && queue.isEmpty();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
         queue.add(page);
+
+        if (page.isLast()) {
+            int x = activeSources.decrementAndGet();
+
+            assert x >= 0: x;
+
+            if (x == 0)
+                queue.add(createDummyLastPage(page));
+        }
     }
 
     /** {@inheritDoc} */
@@ -90,9 +128,6 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     @Override protected Cursor findInStream(SearchRow first, SearchRow last) {
         // This index is unsorted: have to ignore bounds.
         return new FetchingCursor(null, null, new Iterator<Row>() {
-            /** */
-            Iterator<Value[]> iter = Collections.emptyIterator();
-
             @Override public boolean hasNext() {
                 iter = pollNextIterator(queue, iter);
 

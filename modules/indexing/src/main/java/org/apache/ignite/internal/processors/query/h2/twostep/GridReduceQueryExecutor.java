@@ -362,7 +362,7 @@ public class GridReduceQueryExecutor {
 
         if (msg.retry() != null)
             retry(r, msg.retry(), node.id());
-        else if (msg.allRows() != -1) // Only the first page contains row count.
+        else if (msg.page() == 0) // Do count down on each first page received.
             r.latch.countDown();
     }
 
@@ -583,6 +583,7 @@ public class GridReduceQueryExecutor {
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
                 idx.setSources(nodes, segmentsPerIndex);
+                idx.setPageSize(r.pageSize);
 
                 r.idxs.add(idx);
             }
@@ -732,7 +733,7 @@ public class GridReduceQueryExecutor {
                                 r.conn,
                                 rdc.query(),
                                 F.asList(rdc.parameters()),
-                                false,
+                                false, // The statement will cache some extra thread local objects.
                                 timeoutMillis,
                                 cancel);
 
@@ -788,19 +789,6 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
-    }
-
-    /**
-     * @param idxs Merge indexes.
-     * @return {@code true} If all remote data was fetched.
-     */
-    private static boolean allIndexesFetched(List<GridMergeIndex> idxs) {
-        for (int i = 0; i <  idxs.size(); i++) {
-            if (!idxs.get(i).fetchedAll())
-                return false;
-        }
-
-        return true;
     }
 
     /**

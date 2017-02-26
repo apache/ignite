@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -73,16 +74,16 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     private Map<UUID,RowStream[]> streamsMap;
 
     /** */
-    private RowStream[] streams;
-
-    /** */
     private final Lock lock = new ReentrantLock();
 
     /** */
     private final Condition notEmpty = lock.newCondition();
 
     /** */
-    private GridResultPage terminator;
+    private GridResultPage failPage;
+
+    /** */
+    private MergeStreamIterator it;
 
     /**
      * @param ctx Kernal context.
@@ -104,7 +105,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         super.setSources(nodes, segmentsCnt);
 
         streamsMap = U.newHashMap(nodes.size());
-        streams = new RowStream[nodes.size() * segmentsCnt];
+        RowStream[] streams = new RowStream[nodes.size() * segmentsCnt];
 
         int i = 0;
 
@@ -117,26 +118,31 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
             if (streamsMap.put(node.id(), segments) != null)
                 throw new IllegalStateException();
         }
+
+        it = new MergeStreamIterator(streams);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fetchedAll() {
+        return it.fetchedAll();
     }
 
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
-        if (page.isLast() || page.isFail()) {
-            // Finish all the streams.
+        if (page.isFail()) {
             lock.lock();
-
             try {
-                terminator = page;
+                if (failPage == null) {
+                    failPage = page;
 
-                notEmpty.signalAll();
+                    notEmpty.signalAll();
+                }
             }
             finally {
                 lock.unlock();
             }
         }
         else {
-            assert page.rowsInPage() > 0;
-
             UUID src = page.source();
 
             streamsMap.get(src)[page.segmentId()].addPage(page);
@@ -183,7 +189,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override protected Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last) {
-        return new FetchingCursor(first, last, new MergeStreamIterator());
+        return new FetchingCursor(first, last, it);
     }
 
     /**
@@ -194,10 +200,29 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         private boolean first = true;
 
         /** */
-        private int off;
+        private volatile int off;
 
         /** */
         private boolean hasNext;
+
+        /** */
+        private final RowStream[] streams;
+
+        /**
+         * @param streams Streams.
+         */
+        MergeStreamIterator(RowStream[] streams) {
+            assert !F.isEmpty(streams);
+
+            this.streams = streams;
+        }
+
+        /**
+         * @return {@code true} If fetched all.
+         */
+        private boolean fetchedAll() {
+            return off == streams.length;
+        }
 
         /**
          *
@@ -282,8 +307,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
             try {
                 // We can fetch the next page only when we have polled the previous one.
-                if (nextPage != null)
-                    throw new IllegalStateException();
+                assert nextPage == null;
 
                 nextPage = page;
 
@@ -302,16 +326,17 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
             try {
                 for (;;) {
+                    if (failPage != null)
+                        return failPage;
+
                     GridResultPage page = nextPage;
 
                     if (page != null) {
-                        nextPage = null;
+                        nextPage = page.isLast() && page.response() != null
+                            ? createDummyLastPage(page) : null;
 
                         return page;
                     }
-
-                    if (terminator != null)
-                        return terminator;
 
                     if ((nanos = notEmpty.awaitNanos(nanos)) <= 0)
                         return null;
