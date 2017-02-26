@@ -101,7 +101,9 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     @Override protected void addPage0(GridResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
-        queue.add(page);
+        // Do not add empty page to avoid premature stream termination.
+        if (page.rowsInPage() != 0)
+            queue.add(page);
 
         if (page.isLast()) {
             int x = activeSources.decrementAndGet();
