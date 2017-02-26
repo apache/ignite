@@ -131,6 +131,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     @Override protected void addPage0(GridResultPage page) {
         if (page.isFail()) {
             lock.lock();
+
             try {
                 if (failPage == null) {
                     failPage = page;
@@ -301,7 +302,10 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
          * @param page Page.
          */
         private void addPage(GridResultPage page) {
-            assert page != null;
+            assert !page.isFail();
+
+            if (page.isLast() && page.rowsInPage() == 0)
+                page = createDummyLastPage(page); // Terminate.
 
             lock.lock();
 
@@ -332,8 +336,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
                     GridResultPage page = nextPage;
 
                     if (page != null) {
+                        // isLast && !isDummyLast
                         nextPage = page.isLast() && page.response() != null
-                            ? createDummyLastPage(page) : null;
+                            ? createDummyLastPage(page) : null; // Terminate with empty iterator.
 
                         return page;
                     }

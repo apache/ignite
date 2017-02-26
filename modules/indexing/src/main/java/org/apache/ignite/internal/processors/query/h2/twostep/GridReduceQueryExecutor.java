@@ -1428,22 +1428,17 @@ public class GridReduceQueryExecutor {
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
 
+            CacheException e = o instanceof CacheException ? (CacheException) o : null;
+
             for (GridMergeIndex idx : idxs) // Fail all merge indexes.
-                idx.fail(nodeId, o instanceof CacheException ? (CacheException) o : null);
+                idx.fail(nodeId, e);
         }
 
         /**
          * @param e Error.
          */
         void disconnected(CacheException e) {
-            if (!state.compareAndSet(null, e))
-                return;
-
-            while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
-                latch.countDown();
-
-            for (GridMergeIndex idx : idxs) // Fail all merge indexes.
-                idx.fail(e);
+            state(e, null);
         }
     }
 

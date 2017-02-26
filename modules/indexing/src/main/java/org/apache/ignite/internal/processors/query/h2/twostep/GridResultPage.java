@@ -130,6 +130,13 @@ public class GridResultPage {
     }
 
     /**
+     * @return {@code true} If it is a dummy last page.
+     */
+    public boolean isDummyLast() {
+        return last && res == null;
+    }
+
+    /**
      * @param last Last page for a source.
      * @return {@code this}.
      */

@@ -102,7 +102,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
         // Do not add empty page to avoid premature stream termination.
-        if (page.rowsInPage() != 0)
+        if (page.rowsInPage() != 0 || page.isFail())
             queue.add(page);
 
         if (page.isLast()) {
@@ -110,7 +110,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
 
             assert x >= 0: x;
 
-            if (x == 0)
+            if (x == 0) // Always terminate with empty iterator.
                 queue.add(createDummyLastPage(page));
         }
     }

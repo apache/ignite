@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -251,7 +252,10 @@ public abstract class GridMergeIndex extends BaseIndex {
             if (!page.isLast())
                 page.fetchNextPage(); // Failed will throw an exception here.
 
-            iter = page.rows(); // The received iterator can be empty in the last page.
+            iter = page.rows();
+
+            // The received iterator must be empty in the dummy last page or on failure.
+            assert iter.hasNext() || page.isDummyLast() || page.isFail();
         }
 
         return iter;
@@ -267,8 +271,12 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /**
      * @param nodeId Node ID.
+     * @param e Exception.
      */
     public void fail(UUID nodeId, final CacheException e) {
+        if (nodeId == null)
+            nodeId = F.first(sources);
+
         addPage0(new GridResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
@@ -356,7 +364,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @return Created dummy page.
      */
     protected final GridResultPage createDummyLastPage(GridResultPage lastPage) {
-        assert lastPage.isLast() && lastPage.response() != null; // It must be a real last page.
+        assert !lastPage.isDummyLast(); // It must be a real last page.
 
         return new GridResultPage(ctx, lastPage.source(), null).setLast(true);
     }
