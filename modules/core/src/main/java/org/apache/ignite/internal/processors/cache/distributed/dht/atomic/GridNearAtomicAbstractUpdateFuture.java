@@ -112,9 +112,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     /** Current topology version. */
     protected AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
-    /** */
-    protected GridCacheVersion updVer;
-
     /** Topology version when got mapping error. */
     protected AffinityTopologyVersion mapErrTopVer;
 

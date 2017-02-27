@@ -374,8 +374,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                             for (Object key : failedKeys)
                                 remapKeys.add(cctx.toCacheKeyObject(key));
-
-                            updVer = null;
                         }
                     }
                 }
@@ -629,13 +627,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (size == 1 && !fastMap) {
                 assert remapKeys == null || remapKeys.size() == 1;
 
-                singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
+                singleReq0 = mapSingleUpdate(topVer, futVer);
             }
             else {
                 Map<UUID, GridNearAtomicFullUpdateRequest> pendingMappings = mapUpdate(topNodes,
                     topVer,
                     futVer,
-                    updVer,
                     remapKeys);
 
                 if (pendingMappings.size() == 1)
@@ -659,8 +656,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             synchronized (mux) {
                 assert this.futVer == futVer || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
-
-                this.updVer = updVer;
 
                 resCnt = 0;
 
@@ -721,7 +716,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param topNodes Cache nodes.
      * @param topVer Topology version.
      * @param futVer Future version.
-     * @param updVer Update version.
      * @param remapKeys Keys to remap.
      * @return Mapping.
      * @throws Exception If failed.
@@ -730,7 +724,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     private Map<UUID, GridNearAtomicFullUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
         GridCacheVersion futVer,
-        @Nullable GridCacheVersion updVer,
         @Nullable Collection<KeyCacheObject> remapKeys) throws Exception {
         Iterator<?> it = null;
 
@@ -827,7 +820,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         nodeId,
                         futVer,
                         fastMap,
-                        updVer,
+                        null,
                         topVer,
                         topLocked,
                         syncMode,
@@ -859,13 +852,11 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @param topVer Topology version.
      * @param futVer Future version.
-     * @param updVer Update version.
      * @return Request.
      * @throws Exception If failed.
      */
     private GridNearAtomicFullUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
-        @Nullable GridCacheVersion updVer) throws Exception {
+        GridCacheVersion futVer) throws Exception {
         Object key = F.first(keys);
 
         Object val;
@@ -929,7 +920,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             primary.id(),
             futVer,
             fastMap,
-            updVer,
+            null,
             topVer,
             topLocked,
             syncMode,

@@ -281,7 +281,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                             new AffinityTopologyVersion(cause.topologyVersion().topologyVersion() + 1);
 
                         err = null;
-                        updVer = null;
                     }
                 }
             }
@@ -449,13 +448,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         GridNearAtomicAbstractUpdateRequest singleReq0 = null;
 
         try {
-            singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
+            singleReq0 = mapSingleUpdate(topVer, futVer);
 
             synchronized (mux) {
                 assert this.futVer == futVer || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
-
-                this.updVer = updVer;
 
                 resCnt = 0;
 
@@ -503,13 +500,11 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     /**
      * @param topVer Topology version.
      * @param futVer Future version.
-     * @param updVer Update version.
      * @return Request.
      * @throws Exception If failed.
      */
     private GridNearAtomicAbstractUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
-        @Nullable GridCacheVersion updVer) throws Exception {
+        GridCacheVersion futVer) throws Exception {
         if (key == null)
             throw new NullPointerException("Null key.");
 
@@ -540,7 +535,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                     primary.id(),
                     futVer,
                     false,
-                    updVer,
+                    null,
                     topVer,
                     topLocked,
                     syncMode,
@@ -561,7 +556,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         primary.id(),
                         futVer,
                         false,
-                        updVer,
+                        null,
                         topVer,
                         topLocked,
                         syncMode,
@@ -580,7 +575,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                         primary.id(),
                         futVer,
                         false,
-                        updVer,
+                        null,
                         topVer,
                         topLocked,
                         syncMode,
@@ -602,7 +597,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 primary.id(),
                 futVer,
                 false,
-                updVer,
+                null,
                 topVer,
                 topLocked,
                 syncMode,
