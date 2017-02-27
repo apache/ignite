@@ -18,16 +18,17 @@ include /app/helpers/jade/mixins.jade
 
 -var credentialsModel = 'model.S3.awsCredentials'
 -var clientCfgModel = 'model.S3.clientConfiguration'
--var checkpointS3Path = 'model.S3.awsCredentials.kind === "Properties"'
--var checkpointS3Custom = 'model.S3.awsCredentials.kind === "Custom"'
+-var checkpointS3 = 'model.kind === "S3"'
+-var checkpointS3Path = checkpointS3 + ' && model.S3.awsCredentials.kind === "Properties"'
+-var checkpointS3Custom = checkpointS3 + ' && model.S3.awsCredentials.kind === "Custom"'
 
 -var clientRetryModel = clientCfgModel + '.retryPolicy'
--var checkpointS3DefaultMaxRetry = clientRetryModel + '.kind === "DefaultMaxRetries"'
--var checkpointS3DynamoDbMaxRetry = clientRetryModel + '.kind === "DynamoDBMaxRetries"'
--var checkpointS3CustomRetry = clientRetryModel + '.kind === "Custom"'
+-var checkpointS3DefaultMaxRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "DefaultMaxRetries"'
+-var checkpointS3DynamoDbMaxRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "DynamoDBMaxRetries"'
+-var checkpointS3CustomRetry = checkpointS3 + ' && ' + clientRetryModel + '.kind === "Custom"'
 
 .settings-row
-    +dropdown-required('AWS credentials:', 'model.S3.awsCredentials.kind', '"checkpointS3AwsCredentials"', 'true', 'model.kind === "S3"', 'Custom', '[\
+    +dropdown-required('AWS credentials:', 'model.S3.awsCredentials.kind', '"checkpointS3AwsCredentials"', 'true', checkpointS3, 'Custom', '[\
         {value: "Basic", label: "Basic"},\
         {value: "Properties", label: "Properties"},\
         {value: "Anonymous", label: "Anonymous"},\
@@ -51,12 +52,12 @@ include /app/helpers/jade/mixins.jade
 .panel-details(ng-show=checkpointS3Custom)
     .details-row
         +java-class('Class name:', credentialsModel + '.Custom.className', '"checkpointS3CustomClassName" + $index', 'true', checkpointS3Custom,
-        'Custom AWS credentials provider implementation class')
+        'Custom AWS credentials provider implementation class', checkpointS3Custom)
 .settings-row
     +text('Bucket name suffix:', 'model.S3.bucketNameSuffix', '"checkpointS3BucketNameSuffix"', 'false', 'default-bucket', 'Bucket name suffix')
 .settings-row
     +java-class('Listener:', 'model.S3.checkpointListener', '"checkpointS3Listener" + $index', 'true', 'false',
-        'Checkpoint listener implementation class name')
+        'Checkpoint listener implementation class name', checkpointS3)
 +showHideLink('s3Expanded', 'client configuration')
     .details-row
         +dropdown('Protocol:', clientCfgModel + '.protocol', '"checkpointS3Protocol"', 'true', 'HTTPS', '[\
@@ -121,10 +122,10 @@ include /app/helpers/jade/mixins.jade
     .panel-details(ng-show=checkpointS3CustomRetry)
         .details-row
             +java-class('Retry condition:', clientRetryModel + '.Custom.retryCondition', '"checkpointS3CustomRetryPolicy" + $index', 'true', checkpointS3CustomRetry,
-            'Retry condition on whether a specific request and exception should be retried')
+            'Retry condition on whether a specific request and exception should be retried', checkpointS3CustomRetry)
         .details-row
             +java-class('Backoff strategy:', clientRetryModel + '.Custom.backoffStrategy', '"checkpointS3CustomBackoffStrategy" + $index', 'true', checkpointS3CustomRetry,
-            'Back-off strategy for controlling how long the next retry should wait')
+            'Back-off strategy for controlling how long the next retry should wait', checkpointS3CustomRetry)
         .details-row
             +number-required('Maximum retry attempts:', clientRetryModel + '.Custom.maxErrorRetry', '"checkpointS3CustomMaxErrorRetry"', 'true', checkpointS3CustomRetry, '-1', '1',
             'Maximum number of retry attempts for failed requests')
@@ -159,13 +160,13 @@ include /app/helpers/jade/mixins.jade
         'Maximum amount of time that an idle connection may sit in the connection pool and still be eligible for reuse')
     .details-row
         +java-class('DNS resolver:', clientCfgModel + '.dnsResolver', '"checkpointS3DnsResolver" + $index', 'true', 'false',
-        'DNS Resolver that should be used to for resolving AWS IP addresses')
+        'DNS Resolver that should be used to for resolving AWS IP addresses', checkpointS3)
     .details-row
         +number('Response metadata cache size:', clientCfgModel + '.responseMetadataCacheSize', '"checkpointS3ResponseMetadataCacheSize"', 'true', '50', '0',
         'Response metadata cache size')
     .details-row
         +java-class('SecureRandom class name:', clientCfgModel + '.secureRandom', '"checkpointS3SecureRandom" + $index', 'true', 'false',
-        'SecureRandom to be used by the SDK class name')
+        'SecureRandom to be used by the SDK class name', checkpointS3)
     .details-row
         +checkbox('Use reaper', clientCfgModel + '.useReaper', '"checkpointS3UseReaper"', 'Checks if the IdleConnectionReaper is to be started')
     .details-row

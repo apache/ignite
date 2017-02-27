@@ -44,6 +44,7 @@ include /app/helpers/jade/mixins.jade
                         +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
+                            include /app/modules/states/configuration/caches/affinity.jade
                             include /app/modules/states/configuration/caches/concurrency.jade
                             include /app/modules/states/configuration/caches/near-cache-client.jade
                             include /app/modules/states/configuration/caches/near-cache-server.jade

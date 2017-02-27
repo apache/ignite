@@ -161,7 +161,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr
+        long updateCntr
     ) {
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
@@ -177,8 +177,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         if (addPrevVal)
             this.prevVal = prevVal;
 
-        if (updateCntr != null)
-            this.updateCntr = updateCntr;
+        this.updateCntr = updateCntr;
     }
 
     /**
@@ -232,6 +231,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert idx == 0 : idx;
 
         return near() ? null : key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
     }
 
     /** {@inheritDoc} */

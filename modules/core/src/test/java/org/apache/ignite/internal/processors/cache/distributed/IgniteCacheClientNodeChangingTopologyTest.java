@@ -502,7 +502,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 
@@ -635,7 +635,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block2.");
 
@@ -817,13 +817,13 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         GridCacheAffinityManager aff = ignite0.context().cache().internalCache(null).context().affinity();
 
-        List<ClusterNode> nodes1 = aff.nodes(key1, topVer1);
-        List<ClusterNode> nodes2 = aff.nodes(key1, topVer2);
+        List<ClusterNode> nodes1 = aff.nodesByKey(key1, topVer1);
+        List<ClusterNode> nodes2 = aff.nodesByKey(key1, topVer2);
 
         assertEquals(nodes1, nodes2);
 
-        nodes1 = aff.nodes(key2, topVer1);
-        nodes2 = aff.nodes(key2, topVer2);
+        nodes1 = aff.nodesByKey(key2, topVer1);
+        nodes2 = aff.nodesByKey(key2, topVer2);
 
         assertFalse(nodes1.get(0).equals(nodes2.get(0)));
 
@@ -1062,7 +1062,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -1172,7 +1172,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 
@@ -1850,7 +1850,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
@@ -1890,7 +1890,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())

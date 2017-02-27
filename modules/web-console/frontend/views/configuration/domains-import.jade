@@ -62,7 +62,10 @@ mixin td-ellipses-lbl(w, lbl)
                             +ignite-form-field-dropdown('Driver JAR:', 'ui.selectedJdbcDriverJar', '"jdbcDriverJar"', false, true, false,
                                 'Choose JDBC driver', '', 'jdbcDriverJars',
                                 'Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information'
-                            )(data-container='.modal-domain-import')
+                            )(
+                                data-container='.modal-domain-import'
+                                data-ignite-form-field-input-autofocus='true'
+                            )
                         .settings-row.settings-row_small-label
                             +java-class('JDBC driver:', 'selectedPreset.jdbcDriverClass', '"jdbcDriverClass"', true, true, 'Fully qualified class name of JDBC driver that will be used to connect to database')
                         .settings-row.settings-row_small-label

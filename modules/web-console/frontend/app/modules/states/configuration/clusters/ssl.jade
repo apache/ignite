@@ -72,7 +72,7 @@ include /app/helpers/jade/mixins.jade
                                     label.col-xs-12.col-sm-12.col-md-12
                                         .indexField
                                             | {{ $index+1 }})
-                                        +table-remove-conditional-button(trust, enabled, 'Remove trust manager')
+                                        +table-remove-conditional-button(trust, enabled, 'Remove trust manager', 'model')
                                         span(ng-hide='field.edit')
                                             a.labelFormField(ng-click='#{enabled} && (field.edit = true) && (#{model} = model)') {{ model }}
                                         span(ng-if='field.edit')

@@ -220,7 +220,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget cache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy cache(@Nullable String name) throws IgniteCheckedException {
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().cache(name);
 
         if (cache == null)
@@ -230,7 +230,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget createCache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy createCache(@Nullable String name) throws IgniteCheckedException {
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(name);
 
         assert cache != null;
@@ -239,7 +239,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(name);
 
         assert cache != null;
@@ -248,7 +248,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy createCacheFromConfig(long memPtr) throws IgniteCheckedException {
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
@@ -260,7 +260,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+    @Override public PlatformTargetProxy getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
@@ -278,60 +278,60 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
-        return new PlatformAffinity(platformCtx, ctx, name);
+    @Override public PlatformTargetProxy affinity(@Nullable String name) throws IgniteCheckedException {
+        return proxy(new PlatformAffinity(platformCtx, ctx, name));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary)
+    @Override public PlatformTargetProxy dataStreamer(@Nullable String cacheName, boolean keepBinary)
         throws IgniteCheckedException {
         IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
 
         ldr.keepBinary(true);
 
-        return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
+        return proxy(new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget transactions() {
-        return new PlatformTransactions(platformCtx);
+    @Override public PlatformTargetProxy transactions() {
+        return proxy(new PlatformTransactions(platformCtx));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget projection() throws IgniteCheckedException {
-        return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
+    @Override public PlatformTargetProxy projection() throws IgniteCheckedException {
+        return proxy(new PlatformClusterGroup(platformCtx, ctx.grid().cluster()));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget compute(PlatformTarget grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+    @Override public PlatformTargetProxy compute(PlatformTargetProxy grp) {
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
-        return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
+        return proxy(new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget message(PlatformTarget grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+    @Override public PlatformTargetProxy message(PlatformTargetProxy grp) {
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
-        return new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection()));
+        return proxy(new PlatformMessaging(platformCtx, grp0.projection().ignite().message(grp0.projection())));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget events(PlatformTarget grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+    @Override public PlatformTargetProxy events(PlatformTargetProxy grp) {
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
-        return new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection()));
+        return proxy(new PlatformEvents(platformCtx, grp0.projection().ignite().events(grp0.projection())));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget services(PlatformTarget grp) {
-        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
+    @Override public PlatformTargetProxy services(PlatformTargetProxy grp) {
+        PlatformClusterGroup grp0 = (PlatformClusterGroup)grp.unwrap();
 
-        return new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false);
+        return proxy(new PlatformServices(platformCtx, grp0.projection().ignite().services(grp0.projection()), false));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget extensions() {
+    @Override public PlatformTargetProxy extensions() {
         return null;
     }
 
@@ -356,28 +356,32 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+    @Override public PlatformTargetProxy atomicLong(String name, long initVal, boolean create) throws IgniteException {
         GridCacheAtomicLongImpl atomicLong = (GridCacheAtomicLongImpl)ignite().atomicLong(name, initVal, create);
 
         if (atomicLong == null)
             return null;
 
-        return new PlatformAtomicLong(platformCtx, atomicLong);
+        return proxy(new PlatformAtomicLong(platformCtx, atomicLong));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+    @Override public PlatformTargetProxy atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException {
         IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
 
         if (atomicSeq == null)
             return null;
 
-        return new PlatformAtomicSequence(platformCtx, atomicSeq);
+        return proxy(new PlatformAtomicSequence(platformCtx, atomicSeq));
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
-        return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+    @Override public PlatformTargetProxy atomicReference(String name, long memPtr, boolean create)
+        throws IgniteException {
+        PlatformAtomicReference ref = PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+
+        return ref != null ? proxy(ref) : null;
     }
 
     /** {@inheritDoc} */
@@ -427,7 +431,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+    @Override public PlatformTargetProxy createNearCache(@Nullable String cacheName, long memPtr) {
         NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
@@ -436,7 +440,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+    @Override public PlatformTargetProxy getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
         NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
@@ -447,8 +451,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /**
      * Creates new platform cache.
      */
-    private PlatformTarget createPlatformCache(IgniteCacheProxy cache) {
-        return new PlatformCache(platformCtx, cache, false, cacheExts);
+    private PlatformTargetProxy createPlatformCache(IgniteCacheProxy cache) {
+        return proxy(new PlatformCache(platformCtx, cache, false, cacheExts));
     }
 
     /** {@inheritDoc} */
@@ -504,8 +508,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget binaryProcessor() {
-        return new PlatformBinaryProcessor(platformCtx);
+    @Override public PlatformTargetProxy binaryProcessor() {
+        return proxy(new PlatformBinaryProcessor(platformCtx));
     }
 
     /**
@@ -577,6 +581,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         else
             //noinspection ZeroLengthArrayAllocation
             return new PlatformCacheExtension[0];
+    }
+
+    /**
+     * Wraps target in a proxy.
+     */
+    private PlatformTargetProxy proxy(PlatformTarget target) {
+        return new PlatformTargetProxyImpl(target, platformCtx);
     }
 
     /**

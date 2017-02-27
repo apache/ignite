@@ -41,29 +41,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Handles. */
         private BinaryReaderHandleDictionary _hnds;
 
-        /** Current position. */
-        private int _curPos;
-
-        /** Current raw flag. */
-        private bool _curRaw;
-
         /** Detach flag. */
         private bool _detach;
 
         /** Binary read mode. */
         private BinaryMode _mode;
 
-        /** Current type structure tracker. */
-        private BinaryStructureTracker _curStruct;
-
-        /** Current schema. */
-        private int[] _curSchema;
-
-        /** Current schema with positions. */
-        private Dictionary<int, int> _curSchemaMap;
-
-        /** Current header. */
-        private BinaryObjectHeader _curHdr;
+        /** Current frame. */
+        private Frame _frame;
 
         /// <summary>
         /// Constructor.
@@ -81,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _marsh = marsh;
             _mode = mode;
             _builder = builder;
-            _curPos = stream.Position;
+            _frame.Pos = stream.Position;
 
             Stream = stream;
         }
@@ -438,7 +423,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadObject<T>(string fieldName)
         {
-            if (_curRaw)
+            if (_frame.Raw)
                 throw new BinaryObjectException("Cannot read named fields after raw data is read.");
 
             if (SeekField(fieldName))
@@ -697,41 +682,37 @@ namespace Apache.Ignite.Core.Impl.Binary
                     if (desc.Type == null)
                     {
                         if (desc is BinarySurrogateTypeDescriptor)
-                            throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
+                        {
+                            throw new BinaryObjectException(string.Format(
+                                "Unknown type ID: {0}. " +
+                                "This usually indicates missing BinaryConfiguration." +
+                                "Make sure that all nodes have the same BinaryConfiguration.", hdr.TypeId));
+                        }
 
-                        throw new BinaryObjectException("No matching type found for object [typeId=" +
-                                                        desc.TypeId + ", typeName=" + desc.TypeName + ']');
+                        throw new BinaryObjectException(string.Format(
+                            "No matching type found for object [typeId={0}, typeName={1}]." +
+                            "This usually indicates that assembly with specified type is not loaded on a node." +
+                            "When using Apache.Ignite.exe, make sure to load assemblies with -assembly parameter.",
+                            desc.TypeId, desc.TypeName));
                     }
 
                     // Preserve old frame.
-                    var oldHdr = _curHdr;
-                    int oldPos = _curPos;
-                    var oldStruct = _curStruct;
-                    bool oldRaw = _curRaw;
-                    var oldSchema = _curSchema;
-                    var oldSchemaMap = _curSchemaMap;
+                    var oldFrame = _frame;
 
                     // Set new frame.
-                    _curHdr = hdr;
-                    _curPos = pos;
+                    _frame.Hdr = hdr;
+                    _frame.Pos = pos;
                     SetCurSchema(desc);
-                    _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
-                    _curRaw = false;
+                    _frame.Struct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
+                    _frame.Raw = false;
 
                     // Read object.
-                    Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
-
                     var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
-                    _curStruct.UpdateReaderStructure();
+                    _frame.Struct.UpdateReaderStructure();
 
                     // Restore old frame.
-                    _curHdr = oldHdr;
-                    _curPos = oldPos;
-                    _curStruct = oldStruct;
-                    _curRaw = oldRaw;
-                    _curSchema = oldSchema;
-                    _curSchemaMap = oldSchemaMap;
+                    _frame = oldFrame;
 
                     return obj;
                 }
@@ -748,41 +729,53 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void SetCurSchema(IBinaryTypeDescriptor desc)
         {
-            if (_curHdr.HasSchema)
+            _frame.SchemaMap = null;
+
+            if (_frame.Hdr.HasSchema)
             {
-                _curSchema = desc.Schema.Get(_curHdr.SchemaId);
+                _frame.Schema = desc.Schema.Get(_frame.Hdr.SchemaId);
 
-                if (_curSchema == null)
+                if (_frame.Schema == null)
                 {
-                    _curSchema = ReadSchema();
+                    _frame.Schema = ReadSchema(desc.TypeId);
 
-                    desc.Schema.Add(_curHdr.SchemaId, _curSchema);
+                    desc.Schema.Add(_frame.Hdr.SchemaId, _frame.Schema);
                 }
+            }
+            else
+            {
+                _frame.Schema = null;
             }
         }
 
         /// <summary>
         /// Reads the schema.
         /// </summary>
-        private int[] ReadSchema()
+        private int[] ReadSchema(int typeId)
         {
-            if (_curHdr.IsCompactFooter)
+            if (_frame.Hdr.IsCompactFooter)
             {
                 // Get schema from Java
-                var schema = Marshaller.Ignite.BinaryProcessor.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
+                var ignite = Marshaller.Ignite;
+
+                var schema = ignite == null 
+                    ? null 
+                    : ignite.BinaryProcessor.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
 
                 if (schema == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + _curHdr.TypeId + ", schemaId=" + _curHdr.SchemaId + ']');
+                        "typeId=" + typeId + ", schemaId=" + _frame.Hdr.SchemaId + ']');
 
                 return schema;
             }
 
-            Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
+            var pos = Stream.Position;
 
-            var count = _curHdr.SchemaFieldCount;
+            Stream.Seek(_frame.Pos + _frame.Hdr.SchemaOffset, SeekOrigin.Begin);
 
-            var offsetSize = _curHdr.SchemaFieldOffsetSize;
+            var count = _frame.Hdr.SchemaFieldCount;
+
+            var offsetSize = _frame.Hdr.SchemaFieldOffsetSize;
 
             var res = new int[count];
 
@@ -791,6 +784,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 res[i] = Stream.ReadInt();
                 Stream.Seek(offsetSize, SeekOrigin.Current);
             }
+
+            Stream.Seek(pos, SeekOrigin.Begin);
 
             return res;
         }
@@ -859,11 +854,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void MarkRaw()
         {
-            if (!_curRaw)
+            if (!_frame.Raw)
             {
-                _curRaw = true;
+                _frame.Raw = true;
 
-                Stream.Seek(_curPos + _curHdr.GetRawOffset(Stream, _curPos), SeekOrigin.Begin);
+                Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
             }
         }
 
@@ -872,29 +867,29 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private bool SeekField(string fieldName)
         {
-            if (_curRaw)
+            if (_frame.Raw)
                 throw new BinaryObjectException("Cannot read named fields after raw data is read.");
 
-            if (!_curHdr.HasSchema)
+            if (!_frame.Hdr.HasSchema)
                 return false;
 
-            var actionId = _curStruct.CurStructAction;
+            var actionId = _frame.Struct.CurStructAction;
 
-            var fieldId = _curStruct.GetFieldId(fieldName);
+            var fieldId = _frame.Struct.GetFieldId(fieldName);
 
-            if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
+            if (_frame.Schema == null || actionId >= _frame.Schema.Length || fieldId != _frame.Schema[actionId])
             {
-                _curSchemaMap = _curSchemaMap ?? BinaryObjectSchemaSerializer.ReadSchema(Stream, _curPos, _curHdr,
-                                    () => _curSchema).ToDictionary();
+                _frame.SchemaMap = _frame.SchemaMap ?? BinaryObjectSchemaSerializer.ReadSchema(Stream, _frame.Pos,
+                    _frame.Hdr, () => _frame.Schema).ToDictionary();
 
-                _curSchema = null; // read order is different, ignore schema for future reads
+                _frame.Schema = null; // read order is different, ignore schema for future reads
 
                 int pos;
 
-                if (!_curSchemaMap.TryGetValue(fieldId, out pos))
+                if (!_frame.SchemaMap.TryGetValue(fieldId, out pos))
                     return false;
 
-                Stream.Seek(pos + _curPos, SeekOrigin.Begin);
+                Stream.Seek(pos + _frame.Pos, SeekOrigin.Begin);
             }
 
             return true;
@@ -973,6 +968,30 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
 
             return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
+        }
+
+        /// <summary>
+        /// Stores current reader stack frame.
+        /// </summary>
+        private struct Frame
+        {
+            /** Current position. */
+            public int Pos;
+
+            /** Current raw flag. */
+            public bool Raw;
+
+            /** Current type structure tracker. */
+            public BinaryStructureTracker Struct;
+
+            /** Current schema. */
+            public int[] Schema;
+
+            /** Current schema with positions. */
+            public Dictionary<int, int> SchemaMap;
+
+            /** Current header. */
+            public BinaryObjectHeader Hdr;
         }
     }
 }

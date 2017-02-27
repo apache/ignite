@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -88,6 +88,8 @@
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
         <module>modules/flink</module>
+        <module>modules/kubernetes</module>
+        <module>modules/zeromq</module>
     </modules>
 
     <profiles>
@@ -458,10 +460,107 @@
         </profile>
 
         <profile>
+            <id>yardstick</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>release-yardstick</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>prepare-package</phase>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/">
+                                            <fileset dir="${basedir}/modules/yardstick/target/assembly/"/>
+                                        </copy>
+
+                                        <!--todo: only required jars should be exported to /benchmarks/libs during compilation-->
+                                        <delete>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/libs/">
+                                                <include name="junit-*.jar" />
+                                                <include name="ignite-apache-license-gen-*.jar" />
+                                                <include name="hamcrest-core-*.jar" />
+                                                <include name="tools-*.jar" />
+                                            </fileset>
+                                        </delete>
+
+                                        <!--todo: config structure should be refactored to be the same at "sources" and "released sources"-->
+                                        <delete>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config/">
+                                                <include name="*.*" />
+                                                <exclude name="benchmark.properties"/>
+                                                <exclude name="benchmark-remote.properties"/>
+                                                <exclude name="benchmark-sample.properties"/>
+                                                <exclude name="benchmark-remote-sample.properties"/>
+                                                <exclude name="benchmark-multicast.properties"/>
+                                                <exclude name="ignite-base-config.xml"/>
+                                                <exclude name="ignite-localhost-config.xml"/>
+                                                <exclude name="ignite-remote-config.xml"/>
+                                                <exclude name="ignite-multicast-config.xml"/>
+                                            </fileset>
+                                        </delete>
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/src" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/src/">
+                                            <fileset dir="${basedir}/modules/yardstick/src"/>
+                                        </copy>
+
+                                        <mkdir dir="${basedir}/target/release-package/benchmarks/sources/config" />
+
+                                        <copy todir="${basedir}/target/release-package/benchmarks/sources/config/">
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/config"/>
+                                        </copy>
+
+                                        <copy file="${basedir}/modules/yardstick/pom-standalone.xml"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/pom.xml"/>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version"/>
+                                            <substitution expression="${project.version}"/>
+                                            <fileset dir="${basedir}/target/release-package/benchmarks/sources/" >
+                                                <include name="pom.xml"/>
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <copy file="${basedir}/modules/yardstick/README.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/README.txt" overwrite="true">
+                                        </copy>
+
+                                        <copy file="${basedir}/modules/yardstick/DEVNOTES-standalone.txt"
+                                              tofile="${basedir}/target/release-package/benchmarks/sources/DEVNOTES.txt"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
-                <module>modules/yardstick</module>
             </modules>
         </profile>
 

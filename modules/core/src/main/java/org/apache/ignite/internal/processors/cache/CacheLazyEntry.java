@@ -36,11 +36,11 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     protected CacheObject valObj;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected K key;
 
     /** Value. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     protected V val;
 
     /** Keep binary flag. */

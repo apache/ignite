@@ -133,8 +133,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = 0; i < size; i++) {
                 MiniFuture mini = (MiniFuture) future(i);
 
                 if (mini.futureId().equals(miniId)) {
@@ -194,7 +196,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             GridCacheContext cacheCtx = txEntry.context();
 
             List<ClusterNode> nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodes(txEntry.key(), topVer) :
+                cacheCtx.affinity().nodesByKey(txEntry.key(), topVer) :
                 cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 
             ClusterNode primary = F.first(nodes);

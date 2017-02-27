@@ -88,7 +88,7 @@ namespace ignite
 
             private:
                 /** Current snapshots. */
-                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap>> snapshots;
+                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap> > snapshots;
 
                 /** Pending snapshots. */
                 std::vector<SPSnap>* pending;

@@ -23,16 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -158,8 +153,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
             stopTempNodes();
 
             latch.await();
-
-            validateAlives();
         }
     }
 
@@ -196,55 +189,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
-        }
-    }
-
-    /**
-     * Validates that all node collections contain actual information.
-     */
-    @SuppressWarnings("SuspiciousMethodCalls")
-    private void validateAlives() {
-        for (Ignite g : alive) {
-            log.info("Validate node: " + g.name());
-
-            assertEquals("Unexpected nodes number for node: " + g.name(), PERM_NODES_CNT, g.cluster().nodes().size());
-        }
-
-        for (final Ignite g : alive) {
-            IgniteKernal k = (IgniteKernal)g;
-
-            GridDiscoveryManager discoMgr = k.context().discovery();
-
-            final Collection<ClusterNode> currTop = g.cluster().nodes();
-
-            long currVer = discoMgr.topologyVersion();
-
-            long startVer = discoMgr.localNode().order();
-
-            for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v >= startVer; v--) {
-                F.forAll(discoMgr.aliveCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e);
-                        }
-                    });
-
-                F.forAll(discoMgr.aliveRemoteCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e) || g.cluster().localNode().equals(e);
-                        }
-                    });
-
-                GridCacheSharedContext<?, ?> ctx = k.context().cache().context();
-
-                ClusterNode oldest =
-                    GridCacheUtils.oldestAliveCacheServerNode(ctx, new AffinityTopologyVersion(currVer));
-
-                assertNotNull(oldest);
-
-                assertTrue(currTop.contains(oldest));
-            }
         }
     }
 

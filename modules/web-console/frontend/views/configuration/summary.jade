@@ -21,7 +21,7 @@ mixin hard-link(ref, txt)
 
 .docs-header
     h1 Configurations Summary
-.docs-body
+.docs-body.summary
     ignite-information
         ul
             li Preview XML configurations for #[a(href='https://apacheignite.readme.io/docs/clients-vs-servers' target='_blank') server and client] nodes
@@ -29,7 +29,6 @@ mixin hard-link(ref, txt)
             li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Docker file]
             li Preview POM dependencies
             li Download ready-to-use Maven project
-
     hr
     .padding-dflt(ng-if='ui.ready && (!clusters || clusters.length == 0)')
         | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
@@ -37,13 +36,21 @@ mixin hard-link(ref, txt)
     div(ng-show='clusters && clusters.length > 0' ignite-loading='summaryPage' ignite-loading-text='Loading summary screen...' ignite-loading-position='top')
         +main-table('clusters', 'clustersView', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
         div(ng-show='selectedItem && contentVisible(displayedRows, selectedItem)')
-            .padding-top-dflt(bs-affix)
-                button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip='' data-title='Download project' data-placement='bottom') Download project
-                .btn.btn-primary(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
-                    div(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true')
-                        i.fa.fa-sitemap
-                        label.tipLabel Project structure
-                button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
+            .actions.padding-top-dflt(bs-affix)
+                div
+                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip='' data-title='Download project' data-placement='bottom' ng-disabled='isPrepareDownloading')
+                        div
+                            i.fa.fa-fw.fa-download(ng-hide='isPrepareDownloading')
+                            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='isPrepareDownloading')
+                            span.tipLabel Download project
+                    button.btn.btn-primary(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
+                        div(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true')
+                            i.fa.fa-sitemap
+                            label.tipLabel Project structure
+                    button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
+                .actions-note(ng-show='ui.isSafari')
+                    i.icon-note
+                    label "Download project" is not fully supported in Safari. Please rename downloaded file from "Unknown" to "&lt;project-name&gt;.zip"
                 hr
             .bs-affix-fix
             .panel-group(bs-collapse ng-init='ui.activePanels=[0,1]' ng-model='ui.activePanels' data-allow-multiple='true')

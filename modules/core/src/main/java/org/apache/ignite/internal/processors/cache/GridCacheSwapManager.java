@@ -187,7 +187,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         }
                     }
                 }
-                catch (GridDhtInvalidPartitionException e) {
+                catch (GridDhtInvalidPartitionException ignored) {
                     // Skip entry.
                 }
                 catch (IgniteCheckedException e) {

@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-manager',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'services/activities']
 };
 
 /**
@@ -35,9 +35,10 @@ module.exports = {
  * @param socketio
  * @param settings
  * @param mongo
+ * @param {ActivitiesService} activitiesService
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo) {
+module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, activitiesService) {
     /**
      *
      */
@@ -314,6 +315,21 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @returns {Promise}
+         */
+        queryResetDetailMetrics(demo, nids) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetQueryDetailMetricsTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} cacheName Cache name.
          * @returns {Promise}
          */
@@ -565,6 +581,40 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
 
             return this.executeRest(cmd);
         }
+
+        /**
+         * Collect service information.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node ID.
+         * @returns {Promise}
+         */
+        services(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.service.VisorServiceTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Cancel service with specified name.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node ID.
+         * @param {String} name Name of service to cancel.
+         * @returns {Promise}
+         */
+        serviceCancel(demo, nid, name) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.service.VisorCancelServiceTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', name);
+
+            return this.executeRest(cmd);
+        }
     }
 
     /**
@@ -635,14 +685,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                         const bParts = b.split('.');
 
                         for (let i = 0; i < aParts.length; ++i) {
-                            if (bParts.length === i)
-                                return 1;
-
-                            if (aParts[i] === aParts[i])
-                                continue;
-
-                            return aParts[i] > bParts[i] ? 1 : -1;
+                            if (aParts[i] !== bParts[i])
+                                return aParts[i] < bParts[i] ? 1 : -1;
                         }
+
+                        if (aParts.length === bParts.length)
+                            return 0;
+
+                        return aParts.length < bParts.length ? 1 : -1;
                     }));
 
                     // Latest version of agent distribution.
@@ -808,6 +858,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo)
                 const sockets = this._browsers[accountId];
 
                 _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+
+                activitiesService.merge(accountId, {
+                    group: 'agent',
+                    action: '/agent/start'
+                });
             });
         }
 

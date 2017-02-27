@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform.utils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -71,7 +71,7 @@ public class PlatformFutureUtils {
      * @return Resulting listenable.
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
-        final int typ, PlatformAbstractTarget target) {
+        final int typ, PlatformTarget target) {
         PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, null, target);
@@ -88,7 +88,7 @@ public class PlatformFutureUtils {
      * @return Resulting listenable.
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr,
-        final int typ, PlatformAbstractTarget target) {
+        final int typ, PlatformTarget target) {
         PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, null, target);
@@ -107,7 +107,7 @@ public class PlatformFutureUtils {
      * @return Resulting listenable.
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
-        final int typ, Writer writer, PlatformAbstractTarget target) {
+        final int typ, Writer writer, PlatformTarget target) {
         PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, writer, target);
@@ -126,7 +126,7 @@ public class PlatformFutureUtils {
      * @return Resulting listenable.
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteFuture fut, final long futPtr,
-        final int typ, Writer writer, PlatformAbstractTarget target) {
+        final int typ, Writer writer, PlatformTarget target) {
         PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, typ, writer, target);
@@ -144,7 +144,7 @@ public class PlatformFutureUtils {
      * @return Resulting listenable.
      */
     public static PlatformListenable listen(final PlatformContext ctx, IgniteInternalFuture fut, final long futPtr,
-        Writer writer, PlatformAbstractTarget target) {
+        Writer writer, PlatformTarget target) {
         PlatformListenable listenable = getListenable(fut);
 
         listen(ctx, listenable, futPtr, TYP_OBJ, writer, target);
@@ -183,7 +183,7 @@ public class PlatformFutureUtils {
      */
     @SuppressWarnings("unchecked")
     public static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
-        int typ, @Nullable final Writer writer, final PlatformAbstractTarget target) {
+        int typ, @Nullable final Writer writer, final PlatformTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 
         listenable.listen(new IgniteBiInClosure<Object, Throwable>() {
@@ -250,7 +250,7 @@ public class PlatformFutureUtils {
                                 break;
 
                             case TYP_FLOAT:
-                                gate.futureFloatResult(futPtr, (float) res);
+                                gate.futureFloatResult(futPtr, Float.floatToIntBits((float) res));
 
                                 break;
 
@@ -260,7 +260,7 @@ public class PlatformFutureUtils {
                                 break;
 
                             case TYP_DOUBLE:
-                                gate.futureDoubleResult(futPtr, (double) res);
+                                gate.futureDoubleResult(futPtr, Double.doubleToLongBits((double)res));
 
                                 break;
 

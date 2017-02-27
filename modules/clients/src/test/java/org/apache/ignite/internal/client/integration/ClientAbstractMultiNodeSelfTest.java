@@ -269,12 +269,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         final GridClientNode second = iter.next();
 
-        final GridClientPredicate<GridClientNode> noneFilter = new GridClientPredicate<GridClientNode>() {
-            @Override public boolean apply(GridClientNode node) {
-                return false;
-            }
-        };
-
         final GridClientPredicate<GridClientNode> targetFilter = new GridClientPredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode node) {
                 return node.nodeId().equals(second.nodeId());

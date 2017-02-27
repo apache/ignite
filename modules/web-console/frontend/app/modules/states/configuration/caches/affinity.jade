@@ -1,0 +1,82 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var form = 'affinity'
+-var model = 'backupItem'
+-var affModel = model + '.affinity'
+-var affMapModel = model + '.affinityMapper'
+-var rendezvousAff = affModel + '.kind === "Rendezvous"'
+-var fairAff = affModel + '.kind === "Fair"'
+-var customAff = affModel + '.kind === "Custom"'
+-var customAffMapper = affMapModel + '.kind === "Custom"'
+-var rendPartitionsRequired = rendezvousAff + ' && ' + affModel + '.Rendezvous.affinityBackupFilter'
+-var fairPartitionsRequired = fairAff + ' && ' + affModel + '.Fair.affinityBackupFilter'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Affinity Collocation
+        ignite-form-field-tooltip.tipLabel
+            | Collocate data with data to improve performance and scalability of your application#[br]
+            | #[a(href="http://apacheignite.gridgain.org/docs/affinity-collocation" target="_blank") More info]
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +dropdown('Function:', affModel + '.kind', '"AffinityKind"', 'true', 'Default',
+                        '[\
+                            {value: "Rendezvous", label: "Rendezvous"},\
+                            {value: "Fair", label: "Fair"},\
+                            {value: "Custom", label: "Custom"},\
+                            {value: undefined, label: "Default"}\
+                        ]',
+                        'Key topology resolver to provide mapping from keys to nodes\
+                        <ul>\
+                            <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
+                            <li>Fair - Tries to ensure that all nodes get equal number of partitions with minimum amount of reassignments between existing nodes<br/></li>\
+                            <li>Custom - Custom implementation of key affinity fynction<br/></li>\
+                            <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
+                        </ul>')
+                .panel-details(ng-if=rendezvousAff)
+                    .details-row
+                        +number-required('Partitions', affModel + '.Rendezvous.partitions', '"RendPartitions"', 'true', rendPartitionsRequired, '1024', '1', 'Number of partitions')
+                    .details-row
+                        +java-class('Backup filter', affModel + '.Rendezvous.affinityBackupFilter', '"RendAffinityBackupFilter"', 'true', 'false',
+                            'Backups will be selected from all nodes that pass this filter')
+                    .details-row
+                        +checkbox('Exclude neighbors', affModel + '.Rendezvous.excludeNeighbors', '"RendExcludeNeighbors"',
+                            'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                .panel-details(ng-if=fairAff)
+                    .details-row
+                        +number-required('Partitions', affModel + '.Fair.partitions', '"FairPartitions"', 'true', fairPartitionsRequired, '256', '1', 'Number of partitions')
+                    .details-row
+                        +java-class('Backup filter', affModel + '.Fair.affinityBackupFilter', '"FairAffinityBackupFilter"', 'true', 'false',
+                            'Backups will be selected from all nodes that pass this filter')
+                    .details-row
+                        +checkbox('Exclude neighbors', affModel + '.Fair.excludeNeighbors', '"FairExcludeNeighbors"',
+                            'Exclude same - host - neighbors from being backups of each other and specified number of backups')
+                .panel-details(ng-if=customAff)
+                    .details-row
+                        +java-class('Class name:', affModel + '.Custom.className', '"AffCustomClassName"', 'true', customAff,
+                            'Custom key affinity function implementation class name')
+                .settings-row
+                    +java-class('Mapper:', model + '.affinityMapper', '"AffMapCustomClassName"', 'true', 'false',
+                        'Provide custom affinity key for any given key')
+            .col-sm-6
+                +preview-xml-java(model, 'cacheAffinity')

@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -120,6 +119,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private volatile boolean stopping;
+
+    /** */
+    private boolean stopped;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -223,18 +225,25 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // Acquire write busy lock.
         busyLock.writeLock().lock();
 
-        if (supplier != null)
-            supplier.stop();
+        try {
+            if (supplier != null)
+                supplier.stop();
 
-        if (demander != null)
-            demander.stop();
+            if (demander != null)
+                demander.stop();
 
-        IgniteCheckedException err = stopError();
+            IgniteCheckedException err = stopError();
 
-        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-            fut.onDone(err);
+            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+                fut.onDone(err);
 
-        top = null;
+            top = null;
+
+            stopped = true;
+        }
+        finally {
+            busyLock.writeLock().unlock();
+        }
     }
     /**
      * @return Node stop exception.
@@ -255,7 +264,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         supplier.onTopologyChanged(lastFut.topologyVersion());
 
-        demander.updateLastExchangeFuture(lastFut);
+        demander.onTopologyChanged(lastFut);
     }
 
     /** {@inheritDoc} */
@@ -290,7 +299,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
 
             // If partition belongs to local node.
-            if (cctx.affinity().localNode(p, topVer)) {
+            if (cctx.affinity().partitionLocalNode(p, topVer)) {
                 GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                 assert part != null;
@@ -350,7 +359,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Picked owners.
      */
     private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+        Collection<ClusterNode> affNodes = cctx.affinity().nodesByPartition(p, topVer);
 
         int affCnt = affNodes.size();
 
@@ -413,9 +422,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload, Collection<String> caches, int cnt) {
-        return demander.addAssignments(assignments, forcePreload, caches, cnt);
+    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+        boolean forceRebalance,
+        int cnt,
+        Runnable next,
+        @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
+        return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
     }
 
     /**
@@ -439,13 +451,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
-        if (busyLock.readLock().tryLock())
-            return true;
+        if (!busyLock.readLock().tryLock())
+            return false;
 
-        if (log.isDebugEnabled())
-            log.debug("Failed to enter busy state on node (exchanger is stopping): " + cctx.nodeId());
+        if (stopped) {
+            busyLock.readLock().unlock();
 
-        return false;
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -729,8 +744,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void forcePreload() {
-        demander.forcePreload();
+    @Override public IgniteInternalFuture<Boolean> forceRebalance() {
+        return demander.forceRebalance();
     }
 
     /** {@inheritDoc} */
