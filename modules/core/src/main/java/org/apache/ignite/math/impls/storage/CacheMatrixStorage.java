@@ -73,7 +73,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      *
      * @return
      */
-    public DoubleMapper valueMapper() {
+    public DoubleMapper<V> valueMapper() {
         return valMapper;
     }
 
@@ -99,12 +99,21 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeInt(rows);
+        out.writeInt(cols);
+        out.writeUTF(cache.getName());
+        out.writeObject(keyFunc);
+        out.writeObject(valMapper);
     }
 
+    @SuppressWarnings({"unchecked"})
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        rows = in.readInt();
+        cols = in.readInt();
+        cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
+        keyFunc = (IntIntToKFunction<K>)in.readObject();
+        valMapper = (DoubleMapper<V>)in.readObject();
     }
 
     @Override

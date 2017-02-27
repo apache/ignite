@@ -56,6 +56,14 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      *
      * @return
      */
+    public IgniteCache<K, V> cache() {
+        return cache;
+    }
+
+    /**
+     *
+     * @return
+     */
     public IntFunction<K> keyFunction() {
         return keyFunc;
     }
@@ -64,7 +72,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      *
      * @return
      */
-    public DoubleMapper valueMapper() {
+    public DoubleMapper<V> valueMapper() {
         return valMapper;
     }
 
