@@ -49,7 +49,7 @@ public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        return null;
+        return new RandomAccessSparseLocalOnHeapVector(crd);
     }
 
     /** {@inheritDoc} */

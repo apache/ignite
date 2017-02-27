@@ -56,7 +56,7 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     }
 
     /**
-     * 
+     *
      * @param size
      * @param data
      */
@@ -66,13 +66,14 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     }
 
     /**
-     * 
-     *
-     * @param arrs
-     * @param copy Copy.
+     * @param arr
+     * @param cp
      */
-    public RandomAccessSparseVectorStorage(double[] arrs, boolean copy) {
-        data = new Int2DoubleOpenHashMap(IntStream.range(0, arrs.length).toArray(), copy ? arrs.clone() : arrs);
+    public RandomAccessSparseVectorStorage(double[] arr, boolean cp) {
+        this.size = arr == null ? 0 : arr.length;
+
+        data = arr == null ? null
+            : new Int2DoubleOpenHashMap(IntStream.range(0, arr.length).toArray(), cp ? arr.clone() : arr);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +145,7 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     @Override public boolean isArrayBased() {
         return false;
     }
-    
+
     /** {@inheritDoc} */
     @Override protected Object clone() throws CloneNotSupportedException {
         return new RandomAccessSparseVectorStorage(size, data.clone());
@@ -164,7 +165,7 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
 
         result = 37 * result + size;
         result = 37 * result + data.hashCode();
-        
+
         return result;
     }
 }
