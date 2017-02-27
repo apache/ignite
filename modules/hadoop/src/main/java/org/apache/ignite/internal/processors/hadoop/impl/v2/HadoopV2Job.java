@@ -323,8 +323,12 @@ public class HadoopV2Job extends HadoopJobEx {
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
 
-            if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true))
+            if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true)) {
+                rsrcMgr.log().warning("The property " + JOB_SHARED_CLASSLOADER.propertyName() + " is set to true. " +
+                    "Please note that Hadoop job may misbehave if its tasks use mutable static context.");
+
                 sharedClsLdr = createClassLoader(HadoopClassLoader.nameForJob(jobId));
+            }
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
