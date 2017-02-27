@@ -833,7 +833,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                 if (!affIds.contains(node.id()) && hasState(p, node.id(), OWNING, MOVING, RENTING)) {
 
-                    if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion())) {
+                    if (cctx.discovery().alive(node)
+                        && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion())) {
                         if (nodes == null) {
                             nodes = new ArrayList<>(affNodes.size() + 2);
 
@@ -878,7 +879,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             if (hasState(p, node.id(), state, states)) {
 
-                if (node != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
+                if (cctx.discovery().alive(node) && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
                     nodes.add(node);
             }
         }
