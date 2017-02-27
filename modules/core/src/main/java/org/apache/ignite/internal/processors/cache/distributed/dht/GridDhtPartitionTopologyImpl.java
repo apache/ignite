@@ -1048,8 +1048,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         part2node0[p] = partNodes;
                     }
 
-                    if (!partNodes.contains(node(e.getKey())))
-                        partNodes.add(node(e.getKey()));
+                    ClusterNode node = node(e.getKey());
+                    if (node != null && !partNodes.contains(node))
+                        partNodes.add(node);
                 }
             }
 
