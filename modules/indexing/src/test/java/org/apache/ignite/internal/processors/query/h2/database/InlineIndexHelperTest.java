@@ -86,7 +86,6 @@ public class InlineIndexHelperTest extends TestCase {
 
     /** Test on String values compare */
     public void testRelyOnCompare() {
-
         InlineIndexHelper ha = new InlineIndexHelper(Value.STRING, 0, SortOrder.ASCENDING);
 
         // same size
@@ -104,6 +103,27 @@ public class InlineIndexHelperTest extends TestCase {
         assertTrue(getRes(ha, "a", null));
         assertTrue(getRes(ha, null, "a"));
         assertTrue(getRes(ha, null, null));
+    }
+
+    /** Test on String values compare */
+    public void testRelyOnCompareBytes() {
+        InlineIndexHelper ha = new InlineIndexHelper(Value.BYTES, 0, SortOrder.ASCENDING);
+
+        // same size
+        assertFalse(getResBytes(ha, new byte[] {1, 2, 3, 4}, new byte[] {1, 2, 3, 4}));
+
+        // second aray is shorter
+        assertTrue(getResBytes(ha, new byte[] {1, 2, 2, 2}, new byte[] {1, 1, 2}));
+        assertTrue(getResBytes(ha, new byte[] {1, 1, 1, 2}, new byte[] {1, 1, 2}));
+
+        // second array is longer
+        assertTrue(getResBytes(ha, new byte[] {1, 2}, new byte[] {1, 1, 1}));
+        assertFalse(getResBytes(ha, new byte[] {1, 1}, new byte[] {1, 1, 2}));
+
+        // one is null
+        assertTrue(getResBytes(ha, new byte[] {1, 2, 3, 4}, null));
+        assertTrue(getResBytes(ha, null, new byte[] {1, 2, 3, 4}));
+        assertTrue(getResBytes(ha, null, null));
     }
 
     /** */
@@ -315,6 +335,15 @@ public class InlineIndexHelperTest extends TestCase {
     private boolean getRes(InlineIndexHelper ha, String s1, String s2) {
         Value v1 = s1 == null ? ValueNull.INSTANCE : ValueString.get(s1);
         Value v2 = s2 == null ? ValueNull.INSTANCE : ValueString.get(s2);
+
+        int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
+        return ha.canRelyOnCompare(c, v1, v2);
+    }
+
+    /** */
+    private boolean getResBytes(InlineIndexHelper ha, byte[] b1, byte[] b2) {
+        Value v1 = b1 == null ? ValueNull.INSTANCE : ValueBytes.get(b1);
+        Value v2 = b2 == null ? ValueNull.INSTANCE : ValueBytes.get(b2);
 
         int c = v1.compareTypeSafe(v2, CompareMode.getInstance(CompareMode.DEFAULT, 0));
         return ha.canRelyOnCompare(c, v1, v2);
