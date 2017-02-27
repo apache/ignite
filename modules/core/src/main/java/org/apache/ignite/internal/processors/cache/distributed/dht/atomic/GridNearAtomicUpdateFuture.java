@@ -149,7 +149,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         this.conflictPutVals = conflictPutVals;
         this.conflictRmvVals = conflictRmvVals;
 
-        fastMap = cache.isFastMap(filter, op);
+        fastMap = false;
     }
 
     /** {@inheritDoc} */

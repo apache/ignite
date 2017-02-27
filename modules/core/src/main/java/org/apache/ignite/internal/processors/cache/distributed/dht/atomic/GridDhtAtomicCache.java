@@ -1332,8 +1332,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CacheEntryPredicate[] filters = CU.filterArray(filter);
 
         if (conflictPutVal == null &&
-            conflictRmvVer == null &&
-            !isFastMap(filters, op)) {
+            conflictRmvVer == null) {
             return new GridNearAtomicSingleUpdateFuture(
                 ctx,
                 this,
@@ -1376,17 +1375,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
                 waitTopFut);
         }
-    }
-
-    /**
-     * Whether this is fast-map operation.
-     *
-     * @param filters Filters.
-     * @param op Operation.
-     * @return {@code True} if fast-map.
-     */
-    public boolean isFastMap(CacheEntryPredicate[] filters, GridCacheOperation op) {
-        return false;
     }
 
     /**
