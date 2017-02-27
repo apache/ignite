@@ -17,86 +17,74 @@
 
 package org.apache.ignite.math.impls.storage;
 
+import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Cached-based matrix storage.
  */
-public class MatrixDelegateStorage implements MatrixStorage {
-    private MatrixStorage sto;
-
-    private int rowOff;
-    private int colOff;
-
-    private int rows;
-    private int cols;
+public class CacheMatrixStorage<K, V> implements MatrixStorage {
+    private int rows, cols;
+    private IgniteCache<K, V> cache;
+    private IntIntToKFunction<K> keyFunc;
+    private DoubleMapper<V> valMapper;
 
     /**
      *
      */
-    public MatrixDelegateStorage() {
+    public CacheMatrixStorage() {
         // No-op.
     }
 
     /**
-     *
-     * @param sto
-     * @param rowOff
-     * @param colOff
+     * 
      * @param rows
      * @param cols
+     * @param cache
+     * @param keyFunc
+     * @param valMapper
      */
-    public MatrixDelegateStorage(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
-        this.sto = sto;
-
-        this.rowOff = rowOff;
-        this.colOff = colOff;
-
+    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, IntIntToKFunction<K> keyFunc, DoubleMapper<V> valMapper) {
         this.rows = rows;
         this.cols = cols;
+        this.cache = cache;
+        this.keyFunc = keyFunc;
+        this.valMapper = valMapper;
     }
 
     /**
      *
      * @return
      */
-    public int rowOffset() {
-        return rowOff;
+    public IgniteCache<K, V> cache() {
+        return cache;
     }
 
     /**
      *
      * @return
      */
-    public int columnOffset() {
-        return colOff;
+    public IntIntToKFunction<K> keyFunction() {
+        return keyFunc;
     }
 
     /**
      *
      * @return
      */
-    public int rowsLength() {
-        return rows;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public int columnsLength() {
-        return cols;
+    public DoubleMapper valueMapper() {
+        return valMapper;
     }
 
     @Override
     public double get(int x, int y) {
-        return sto.get(rowOff + x, colOff + y);
+        return valMapper.toDouble(cache.get(keyFunc.apply(x, y)));
     }
 
     @Override
     public void set(int x, int y, double v) {
-        sto.set(rowOff + x, colOff + y, v);
+        cache.put(keyFunc.apply(x, y), valMapper.fromDouble(v));
     }
 
     @Override
@@ -110,54 +98,37 @@ public class MatrixDelegateStorage implements MatrixStorage {
     }
 
     @Override
-    public boolean isArrayBased() {
-        return sto.isArrayBased() && rowOff == 0 && colOff == 0;
-    }
-
-    @Override
-    public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    @Override
-    public boolean isDense() {
-        return sto.isDense();
-    }
-
-    @Override
-    public double getLookupCost() {
-        return sto.getLookupCost();
-    }
-
-    @Override
-    public boolean isAddConstantTime() {
-        return sto.isAddConstantTime();
-    }
-
-    @Override
-    public double[][] data() {
-        return sto.data();
-    }
-
-    @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(sto);
-
-        out.writeInt(rowOff);
-        out.writeInt(colOff);
-
-        out.writeInt(rows);
-        out.writeInt(cols);
+        // TODO
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sto = (MatrixStorage)in.readObject();
+        // TODO
+    }
 
-        rowOff = in.readInt();
-        colOff = in.readInt();
+    @Override
+    public boolean isSequentialAccess() {
+        return false;
+    }
 
-        rows = in.readInt();
-        cols = in.readInt();
+    @Override
+    public boolean isDense() {
+        return false;
+    }
+
+    @Override
+    public double getLookupCost() {
+        return 0;
+    }
+
+    @Override
+    public boolean isAddConstantTime() {
+        return false;
+    }
+
+    @Override
+    public boolean isArrayBased() {
+        return false;
     }
 }

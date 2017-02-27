@@ -687,12 +687,8 @@ public abstract class AbstractVector implements Vector {
 
         res.set(0, 0, zeroVal);
 
-        if (rowLike) {
-            // todo after fixing implementation or tests replace this to
-            // new MatrixView(res, 0, 1, 1, size()).assignRow(0, this);
-            for (Vector.Element e : all())
-                res.set(0, e.index() + 1, e.get());
-        }
+        if (rowLike)
+            new MatrixView(res, 0, 1, 1, size()).assignRow(0, this);
         else
             new MatrixView(res, 1, 0, size(), 1).assignColumn(0, this);
 

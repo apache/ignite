@@ -18,9 +18,9 @@
 package org.apache.ignite.math.impls.storage;
 
 import it.unimi.dsi.fastutil.ints.*;
-import java.util.stream.IntStream;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.stream.*;
 
 /**
  * Implements vector that only stores non-zero doubles.
@@ -66,9 +66,9 @@ public class RandomAccessSparseVectorStorage implements VectorStorage{
     }
 
     /**
-     * Create new RandomAccessSparseVectorStorage from array.
+     * 
      *
-     * @param arrs Arrs.
+     * @param arrs
      * @param copy Copy.
      */
     public RandomAccessSparseVectorStorage(double[] arrs, boolean copy) {
