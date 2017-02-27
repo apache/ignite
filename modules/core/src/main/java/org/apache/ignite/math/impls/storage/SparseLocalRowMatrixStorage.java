@@ -63,7 +63,7 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
         for (int i = 0; i < rows; i++)
 
             if (vectors[i] == null)
-                vectors[i] = randomAccess
+                this.rowVectors[i] = randomAccess
                     ? new RandomAccessSparseLocalOnHeapVector(columns)
                     : new SequentialAccessSparseLocalOnHeapVector(columns);
 

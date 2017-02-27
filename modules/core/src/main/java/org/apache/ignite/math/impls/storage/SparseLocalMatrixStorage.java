@@ -85,7 +85,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
 
         rowVectors = new Int2ObjectOpenHashMap<>();
 
-        for (int i = 0; i < cols; i++)
+        for (int i = 0; i < rows; i++)
             rowVectors.put(i, (Vector)in.readObject());
     }
 
@@ -114,13 +114,18 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj!=null && getClass() == obj.getClass() &&
-            (rows == ((SparseLocalMatrixStorage)obj).rows) &&
-            (cols == ((SparseLocalMatrixStorage)obj).cols) &&
-            (rows == 0 || cols == 0 || ((SparseLocalMatrixStorage)obj).rowVectors.equals(rowVectors));
+        return obj != null && getClass() == obj.getClass() && compareStorage((SparseLocalMatrixStorage)obj);
     }
 
+    private boolean compareStorage(SparseLocalMatrixStorage obj) {
+        return  (rows == obj.rows) &&
+                (cols == obj.cols) &&
+                (obj.rowVectors.equals(rowVectors));
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = 1;
         result = result * 37 + cols;

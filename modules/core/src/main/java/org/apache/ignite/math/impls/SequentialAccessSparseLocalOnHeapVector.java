@@ -27,9 +27,12 @@ import java.util.*;
  * TODO: add description.
  */
 public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
+    /** */
+    public SequentialAccessSparseLocalOnHeapVector(){
+        // No-op.
+    }
+
     /**
-     *
-     *
      * @param cardinality Cardinality.
      */
     public SequentialAccessSparseLocalOnHeapVector(int cardinality){
