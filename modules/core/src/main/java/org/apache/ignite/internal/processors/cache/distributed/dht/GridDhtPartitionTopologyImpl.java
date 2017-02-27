@@ -1035,7 +1035,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part = partMap;
 
-            List<ClusterNode>[] part2node0 = part2nodeCopy();
+            List<ClusterNode>[] part2node0 = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : partMap.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
