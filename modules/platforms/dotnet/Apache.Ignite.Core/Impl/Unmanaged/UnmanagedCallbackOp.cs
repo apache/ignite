@@ -87,6 +87,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         CachePluginCreate = 64,
         CachePluginDestroy = 65,
         CachePluginIgniteStart = 66,
-        CachePluginIgniteStop = 67
+        CachePluginIgniteStop = 67,
+        PluginCallbackInLongLongOutLong = 68
     }
 }

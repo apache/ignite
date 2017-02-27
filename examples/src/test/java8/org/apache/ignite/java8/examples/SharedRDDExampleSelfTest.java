@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+package org.apache.ignite.java8.examples;
 
-import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import org.apache.ignite.examples.java8.spark.SharedRDDExample;
+import org.junit.Test;
 
 /**
- * IGFS Hadoop file system IPC shmem self test in PRIMARY mode.
+ * SharedRDD  examples self test.
  */
-public class IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
+public class SharedRDDExampleSelfTest {
+    static final String[] EMPTY_ARGS = new String[0];
     /**
-     * Constructor.
+     * @throws Exception If failed.
      */
-    public IgniteHadoopFileSystemShmemEmbeddedPrimarySelfTest() {
-        super(PRIMARY, false);
+    @Test
+    public void testSharedRDDExample() throws Exception {
+        SharedRDDExample.main(EMPTY_ARGS);
     }
+
 }

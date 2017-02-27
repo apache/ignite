@@ -200,6 +200,11 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         return accessTtl;
     }
 
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
     /**
      * @return Read through flag.
      */
