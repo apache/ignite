@@ -136,6 +136,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
+    /** Default maximum payload size for offheap indexes. */
+    public static final int DFLT_MAX_PAYLOAD_SIZE = -1;
+
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
 
@@ -321,6 +324,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
+    /** Maximum inline payload size for offheap indexes. */
+    private int maxPayloadSize = DFLT_MAX_PAYLOAD_SIZE;
+
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
@@ -461,6 +467,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
+        maxPayloadSize = cc.getMaxPayloadSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -1283,6 +1290,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
 
         return this;
+    }
+
+    /**
+     * Gets maximum payload size for offheap indexes. If -1 returned then
+     * {@code IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE} system property is used.
+     * <p>
+     * If not set, default value is {@link #DFLT_MAX_PAYLOAD_SIZE}.
+     *
+     * @return Maximum payload size for offheap indexes.
+     */
+    public int getMaxPayloadSize() {
+        return maxPayloadSize;
+    }
+
+    /**
+     * Sets maximum payload size for offheap indexes.
+     *
+     * @param maxPayloadSize Maximum payload size for offheap indexes.
+     */
+    public void setMaxPayloadSize(int maxPayloadSize) {
+        this.maxPayloadSize = maxPayloadSize;
     }
 
     /**

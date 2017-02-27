@@ -324,9 +324,9 @@ public class H2TreeIndex extends GridH2IndexBase {
      */
     private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
         int maxSize = PageIO.MAX_PAYLOAD_SIZE;
-
-        int propSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
-            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
+        int confSize = cctx.config().getMaxPayloadSize();
+        int propSize = confSize == -1 ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
+            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT) : confSize;
 
         if (cfgInlineSize == 0)
             return 0;
