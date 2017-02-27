@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
