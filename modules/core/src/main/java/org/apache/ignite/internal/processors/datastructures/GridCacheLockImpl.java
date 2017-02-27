@@ -105,6 +105,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     /** Flag indicating that every operation on this lock should be interrupted. */
     private volatile boolean interruptAll;
 
+    /** Create flag. */
+    private volatile boolean create;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -522,7 +525,11 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
-                                    throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+                                    if (create){
+                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
+                                        lockView.put(key, val);
+                                    } else
+                                        throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
 
                                 final long newThreadID = newThread.getId();
 
@@ -1048,12 +1055,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
+     * @param create If {@code true} reentrant lock will be created in case it is not in cache.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
-        GridCacheContext ctx) {
+        GridCacheContext ctx,
+        boolean create) {
         assert name != null;
         assert key != null;
         assert ctx != null;
@@ -1063,6 +1072,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         this.key = key;
         this.lockView = lockView;
         this.ctx = ctx;
+        this.create = create;
 
         log = ctx.logger(getClass());
     }
