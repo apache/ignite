@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,6 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -52,14 +54,20 @@ import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VER_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.escapeName;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VER_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -96,6 +104,9 @@ public class GridH2Table extends TableBase {
     /** */
     private final boolean snapshotEnabled;
 
+    /** */
+    private final Column[] systemColumns;
+
     /**
      * Creates table.
      *
@@ -112,6 +123,13 @@ public class GridH2Table extends TableBase {
 
         this.desc = desc;
         this.spaceName = spaceName;
+        this.systemColumns = buildSystemColumns();
+
+        for (Column col: this.columns) {
+            String colName = col.getName();
+            int colId = desc.getColumnId(colName);
+            col.setColumnId(colId);
+        }
 
         if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -219,7 +237,7 @@ public class GridH2Table extends TableBase {
 
         assert desc != null;
 
-        GridH2Row searchRow = desc.createRow(key, null, 0);
+        GridH2Row searchRow = desc.createRow(key, null, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -477,19 +495,20 @@ public class GridH2Table extends TableBase {
      *
      * @param key Key.
      * @param val Value.
+     * @param ver Version.
      * @param expirationTime Expiration time.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+    public boolean update(CacheObject key, CacheObject val, @Nullable byte[] ver, long expirationTime, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, val, expirationTime);
+        GridH2Row row = desc.createRow(key, val, ver, expirationTime);
 
         if (!rmv)
-            ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);
+            ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[columnIdCount]);
 
         try {
             return doUpdate(row, rmv);
@@ -773,11 +792,103 @@ public class GridH2Table extends TableBase {
     public IndexColumn indexColumn(int col, int sorting) {
         IndexColumn res = new IndexColumn();
 
-        res.column = getColumn(col);
+        for (Column column : getColumns()) {
+            if (column.getColumnId() == col) {
+                res.column = column;
+                break;
+            }
+        }
+
+        if (res.column == null) {
+            for (Column column : getSystemColumns()) {
+                if (column.getColumnId() == col) {
+                    res.column = column;
+                    break;
+                }
+            }
+        }
+
         res.columnName = res.column.getName();
         res.sortType = sorting;
 
         return res;
+    }
+
+    /**
+     * Builds system columns.
+     * @return result.
+     * */
+    private Column[] buildSystemColumns() {
+
+        List<Column> sysColumns = new ArrayList<>();
+        GridQueryTypeDescriptor qryTypeDesc = desc.type();
+
+        int keyTypeId = DataType.getTypeFromClass(qryTypeDesc.keyClass());
+        int valueTypeId = DataType.getTypeFromClass(qryTypeDesc.valueClass());
+
+        //_key
+        Column col = new Column(KEY_FIELD_NAME, keyTypeId);
+        col.setTable(this, -1, KEY_COL);
+        sysColumns.add(col);
+
+        //_val
+        col = new Column(VAL_FIELD_NAME, valueTypeId);
+        col.setTable(this, -1, VAL_COL);
+        sysColumns.add(col);
+
+        //_ver
+        col = new Column(VER_FIELD_NAME, Value.BYTES);
+        col.setTable(this, -1, VER_COL);
+        sysColumns.add(col);
+
+        //keyFieldName
+        if (qryTypeDesc.keyFieldName() != null && (qryTypeDesc.fields().isEmpty() || !qryTypeDesc.fields().containsKey(qryTypeDesc.keyFieldName()))) {
+
+            String colName = escapeName(qryTypeDesc.keyFieldName(), false).toUpperCase();
+            col = new Column(colName, keyTypeId);
+            col.setTable(this, -1, KEY_COL);
+            sysColumns.add(col);
+        }
+
+        //valFieldName
+        if (qryTypeDesc.valueFieldName() != null && (qryTypeDesc.fields().isEmpty() || !qryTypeDesc.fields().containsKey(qryTypeDesc.valueFieldName()))) {
+            String colName = escapeName(qryTypeDesc.valueFieldName(), false).toUpperCase();
+            col = new Column(colName, valueTypeId);
+            col.setTable(this, -1, VAL_COL);
+            sysColumns.add(col);
+        }
+
+        //verFieldName
+        if (qryTypeDesc.versionFieldName() != null && (qryTypeDesc.fields().isEmpty() || !qryTypeDesc.fields().containsKey(qryTypeDesc.versionFieldName()))) {
+            String colName = escapeName(qryTypeDesc.versionFieldName(), false).toUpperCase();
+            col = new Column(colName, Value.BYTES);
+            col.setTable(this, -1, VER_COL);
+            sysColumns.add(col);
+        }
+
+        return sysColumns.toArray(new Column[sysColumns.size()]);
+    }
+
+    /**
+     * Get system columns.
+     * @return system columns.
+     * */
+    public Column[] getSystemColumns() {
+        return systemColumns;
+    }
+
+    /**
+     * Find column (both visible and system).
+     * @param name Name of the column.
+     * @return result.
+     */
+    public Column findColumn(String name) {
+        if (systemColumns != null) {
+            for (Column column: systemColumns)
+                if (column.getName().equals(name))
+                    return column;
+        }
+        return getColumn(name);
     }
 
     /**
@@ -799,6 +910,7 @@ public class GridH2Table extends TableBase {
 
         /** {@inheritDoc} */
         @Override public TableBase createTable(CreateTableData createTblData) {
+            createTblData.columnIdCount = rowDesc.getColumnIdCount();
             resTbl = new GridH2Table(createTblData, rowDesc, idxsFactory, spaceName);
 
             return resTbl;

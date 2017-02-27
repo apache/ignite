@@ -535,6 +535,21 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public String keyFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String versionFieldName() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public String name() {
             return name;
         }

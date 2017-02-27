@@ -133,7 +133,8 @@ public final class UpdatePlanBuilder {
             // not for updates, and hence will allow putting new pairs only.
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
-            if (keys.length != 1 || !IgniteH2Indexing.KEY_FIELD_NAME.equals(keys[0].columnName()))
+
+            if (keys.length != 1 || (0 != desc.getColumnId(keys[0].columnName())))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -173,12 +174,13 @@ public final class UpdatePlanBuilder {
 
             colTypes[i] = col.resultType().type();
 
-            if (KEY_FIELD_NAME.equals(colName)) {
+            int colId = desc.getColumnId(colName);
+            if (colId == 0) {
                 keyColIdx = i;
                 continue;
             }
 
-            if (VAL_FIELD_NAME.equals(colName)) {
+            if (colId == 1) {
                 valColIdx = i;
                 continue;
             }
@@ -485,16 +487,16 @@ public final class UpdatePlanBuilder {
     private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
         GridH2RowDescriptor desc = gridTbl.rowDescriptor();
 
-        Column[] cols = gridTbl.getColumns();
-
-        // Check "_key" column itself - always has index of 0.
-        if (affectedColNames.contains(cols[0].getName()))
-            return true;
-
-        // Start off from i = 2 to skip indices of 0 an 1 corresponding to key and value respectively.
-        for (int i = 2; i < cols.length; i++)
-            if (affectedColNames.contains(cols[i].getName()) && desc.isColumnKeyProperty(i - 2))
+        for (String colName : affectedColNames) {
+            int colId = desc.getColumnId(colName);
+            if (colId == 0)
                 return true;
+
+            if (colId > 2) {
+                if (desc.isColumnKeyProperty(colId))
+                    return true;
+            }
+        }
 
         return false;
     }

@@ -492,6 +492,10 @@ public class PlatformConfigurationUtils {
             res.setIndexes(indexes);
         }
 
+        res.setKeyFieldName(in.readString());
+        res.setValueFieldName(in.readString());
+        res.setVersionFieldName(in.readString());
+
         return res;
     }
 
@@ -915,6 +919,10 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeInt(0);
+
+        writer.writeString(queryEntity.getKeyFieldName());
+        writer.writeString(queryEntity.getValueFieldName());
+        writer.writeString(queryEntity.getVersionFieldName());
     }
 
     /**

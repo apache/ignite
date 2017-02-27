@@ -287,6 +287,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.keyTypeName(qryEntity.getKeyType());
                     desc.valueTypeName(qryEntity.getValueType());
 
+                    desc.keyFieldName(qryEntity.getKeyFieldName());
+                    desc.valueFieldName(qryEntity.getValueFieldName());
+                    desc.versionFieldName(qryEntity.getVersionFieldName());
+
                     if (binaryEnabled && keyOrValMustDeserialize) {
                         if (mustDeserializeClss == null)
                             mustDeserializeClss = new ArrayList<>();
@@ -1566,6 +1570,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
+
+            if (entry.getKey().equals(d.keyFieldName())) {
+                d.addProperty(buildValueProperty(true,
+                        d.keyClass(),
+                        d.valueClass(),
+                        entry.getKey(),
+                        U.classForName(entry.getValue(), Object.class),
+                        aliases,
+                        coCtx), false);
+                continue;
+            }
+
+            if (entry.getKey().equals(d.valueFieldName())) {
+                d.addProperty(buildValueProperty(false,
+                        d.keyClass(),
+                        d.valueClass(),
+                        entry.getKey(),
+                        U.classForName(entry.getValue(), Object.class),
+                        aliases,
+                        coCtx), false);
+                continue;
+            }
+
             ClassProperty prop = buildClassProperty(
                 d.keyClass(),
                 d.valueClass(),
@@ -1665,6 +1692,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /** */
+    private static GridQueryProperty buildValueProperty(boolean key, Class<?> keyCls, Class<?> valCls,
+                                                        String pathStr, Class<?> resType,
+                                                        Map<String,String> aliases, CacheObjectContext coCtx) {
+        return new ValueProperty(key, pathStr, key ? keyCls : valCls);
     }
 
     /**
@@ -2271,6 +2305,49 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** */
+    private static class ValueProperty implements GridQueryProperty {
+        final boolean isKey;
+        final String name;
+        final Class<?> cls;
+
+        public ValueProperty(boolean isKey, String name, Class<?> cls) {
+            this.isKey = isKey;
+            this.name = name;
+            this.cls = cls;
+        }
+
+        @Override
+        public Object value(Object key, Object val) throws IgniteCheckedException {
+            return isKey?key:val;
+        }
+
+        @Override
+        public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
+            //no-op
+        }
+
+        @Override
+        public String name() {
+            return this.name;
+        }
+
+        @Override
+        public Class<?> type() {
+            return cls;
+        }
+
+        @Override
+        public boolean key() {
+            return isKey;
+        }
+
+        @Override
+        public GridQueryProperty parent() {
+            return null;
+        }
+    }
+
     /**
      * Descriptor of type.
      */
@@ -2313,6 +2390,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** */
         private String affKey;
+
+        /** */
+        private String keyFieldName;
+
+        /** */
+        private String valFieldName;
+
+        /** */
+        private String verFieldName;
 
         /** SPI can decide not to register this type. */
         private boolean registered;
@@ -2548,6 +2634,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TypeDescriptor.class, this);
+        }
+
+        /**
+         * Sets key field name.
+         * @param keyFieldName Key field name.
+         */
+        public void keyFieldName(String keyFieldName) {
+            this.keyFieldName = keyFieldName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String keyFieldName() {
+            return keyFieldName;
+        }
+
+        /**
+         * Sets value field name.
+         * @param valueFieldName value field name.
+         */
+        public void valueFieldName(String valueFieldName) {
+            this.valFieldName = valueFieldName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String valueFieldName() {
+            return valFieldName;
+        }
+
+        /**
+         * Sets version field name.
+         * @param versionFieldName version field name.
+         */
+        public void versionFieldName(String versionFieldName) {
+            this.verFieldName = versionFieldName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String versionFieldName() {
+            return verFieldName;
         }
     }
 

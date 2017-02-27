@@ -562,7 +562,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     /** @throws Exception If failed. */
     public void testSelectAllJoined() throws Exception {
         QueryCursor<List<?>> qry = grid(0).cache(null)
-            .query(new SqlFieldsQuery("select * from Person p, Organization o where p.orgId = o.id"));
+            .query(new SqlFieldsQuery("select p._key, p._val, p.*, o._key, o._val, o.*"+
+                    "from Person p, Organization o where p.orgId = o.id"));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 
@@ -634,7 +635,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
-        QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery("select * from String"));
+        QueryCursor<List<?>> qry = grid(0).cache(null).query(new SqlFieldsQuery("select _key, _val from String"));
 
         Collection<List<?>> res = qry.getAll();
 
@@ -675,7 +676,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     public void testPagination() throws Exception {
         // Query with page size 20.
         QueryCursor<List<?>> qry = grid(0).cache(null)
-                .query(new SqlFieldsQuery("select * from Integer").setPageSize(20));
+                .query(new SqlFieldsQuery("select _key,_val from Integer").setPageSize(20));
 
         List<List<?>> res = new ArrayList<>(qry.getAll());
 
@@ -732,7 +733,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         cache.put(key, val);
 
-        Collection<List<?>> res = cache.query(new SqlFieldsQuery("select * from Person")).getAll();
+        Collection<List<?>> res = cache.query(new SqlFieldsQuery("select _key,_val,* from Person")).getAll();
 
         assertEquals(1, res.size());
 

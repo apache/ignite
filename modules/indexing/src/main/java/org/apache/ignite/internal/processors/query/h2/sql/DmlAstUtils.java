@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -48,6 +47,9 @@ import org.h2.value.ValueTimestampUtc;
 import org.jetbrains.annotations.Nullable;
 
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArgument;
+
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.VAL_COL;
 
 /**
  * AST utils for DML
@@ -142,9 +144,8 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for DELETE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
-
-        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+        Column h2KeyCol = getKeyColumn(gridTbl);
+        Column h2ValCol = getValueColumn(gridTbl);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -325,9 +326,8 @@ public final class DmlAstUtils {
 
         assert gridTbl != null : "Failed to determine target grid table for UPDATE";
 
-        Column h2KeyCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.KEY_COL);
-
-        Column h2ValCol = gridTbl.getColumn(GridH2AbstractKeyValueRow.VAL_COL);
+        Column h2KeyCol = getKeyColumn(gridTbl);
+        Column h2ValCol = getValueColumn(gridTbl);
 
         GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName(), h2KeyCol.getSQL());
         keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
@@ -576,6 +576,38 @@ public final class DmlAstUtils {
                 return false;
             }
         });
+    }
+
+    /**
+     *
+     * @param tbl
+     * @return
+     */
+    private static Column getKeyColumn(GridH2Table tbl) {
+        Column[] sysColumns = tbl.getSystemColumns();
+        int colId = KEY_COL;
+        if (sysColumns != null)
+            for(Column col: sysColumns) {
+                if (col.getColumnId() == colId)
+                    return col;
+            }
+        return null;
+    }
+
+    /**
+     *
+     * @param tbl
+     * @return
+     */
+    private static Column getValueColumn(GridH2Table tbl) {
+        Column[] sysColumns = tbl.getSystemColumns();
+        int colId = VAL_COL;
+        if (sysColumns != null)
+            for(Column col: sysColumns) {
+                if (col.getColumnId() == colId)
+                    return col;
+            }
+        return null;
     }
 
     /** Simple constant value based operand. */

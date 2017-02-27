@@ -40,13 +40,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */
-    private static final int DEFAULT_COLUMNS_COUNT = 2;
+    public static final int DEFAULT_COLUMNS_COUNT = 3;
 
     /** Key column. */
     public static final int KEY_COL = 0;
 
     /** Value column. */
     public static final int VAL_COL = 1;
+
+    /** Version column. */
+    public static final int VER_COL = 2;
 
     /** */
     protected final GridH2RowDescriptor desc;
@@ -64,6 +67,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /** */
     private Value[] valCache;
 
+    /** */
+    private Value version;
+
     /**
      * Constructor.
      *
@@ -72,18 +78,23 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param keyType Key type.
      * @param val Value.
      * @param valType Value type.
+     * @param ver Version.
      * @param expirationTime Expiration time.
      * @throws IgniteCheckedException If failed.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
-        int valType, long expirationTime) throws IgniteCheckedException {
+        int valType, @Nullable byte[] ver, long expirationTime) throws IgniteCheckedException {
+
+        this.desc = desc;
+        this.expirationTime = expirationTime;
+
         setValue(KEY_COL, desc.wrap(key, keyType));
 
         if (val != null) // We remove by key only, so value can be null here.
             setValue(VAL_COL, desc.wrap(val, valType));
 
-        this.desc = desc;
-        this.expirationTime = expirationTime;
+        if (ver != null)
+            version = desc.wrap(ver, Value.BYTES);
     }
 
     /** {@inheritDoc} */
@@ -109,7 +120,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() {
-        return DEFAULT_COLUMNS_COUNT + desc.fieldsCount();
+        return desc.fieldsCount();
     }
 
     /**
@@ -273,7 +284,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                             ". This can happen due to a long GC pause.");
                 }
             }
-            else {
+            else if (col == KEY_COL) {
                 assert col == KEY_COL : col;
 
                 v = peekValue(KEY_COL);
@@ -288,14 +299,13 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                     if (peekValue(VAL_COL) == null)
                         cache();
                 }
-            }
+            } else
+                return version;
 
             assert !(v instanceof WeakValue) : v;
 
             return v;
         }
-
-        col -= DEFAULT_COLUMNS_COUNT;
 
         assert col >= 0;
 
@@ -304,7 +314,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
         assert key != null;
         assert val != null;
-
         Object res = desc.columnValue(key.getObject(), val.getObject(), col);
 
         Value v;
@@ -321,7 +330,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
         }
 
         if (vCache != null)
-            vCache[col + DEFAULT_COLUMNS_COUNT] = v;
+            vCache[col] = v;
 
         return v;
     }

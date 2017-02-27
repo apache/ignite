@@ -68,7 +68,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
+    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, @Nullable byte[] ver, long expirationTime)
         throws IgniteCheckedException;
 
     /**
@@ -168,4 +168,17 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Escape all identifiers.
      */
     public boolean quoteAllIdentifiers();
+
+    /**
+     * Gets column id given its name
+     * @param name Name of the column
+     * @return column identifier
+     */
+    public int getColumnId(String name);
+
+    /**
+     * Gets effective number of columns
+     * @return number of columns
+     */
+    public int getColumnIdCount();
 }

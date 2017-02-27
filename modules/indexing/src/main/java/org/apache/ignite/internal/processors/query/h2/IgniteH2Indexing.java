@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -132,6 +133,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
+import org.h2.api.SystemColumnsHandler;
 import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
@@ -218,6 +220,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** Version field name. */
+    public static final String VER_FIELD_NAME = "_VER";
 
     /** */
     private static final Field COMMAND_FIELD;
@@ -538,7 +543,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (TableDescriptor tbl : tbls) {
                 if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, null, 0, true)) {
+                    if (tbl.tbl.update(key, null, null, 0, true)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
 
@@ -602,7 +607,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, expirationTime, false);
+        tbl.tbl.update(k, v, ver, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
@@ -665,7 +670,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
-                if (tbl.tbl.update(key, val, 0, true)) {
+                if (tbl.tbl.update(key, val, null, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
@@ -1392,7 +1397,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
 
-        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+        final String keyFieldName = (tbl.type().keyFieldName() == null) ? KEY_FIELD_NAME : escapeName(tbl.type().keyFieldName(), tbl.schema.escapeAll());
+        final String valFieldName = (tbl.type().valueFieldName() == null) ? VAL_FIELD_NAME : escapeName(tbl.type().valueFieldName(), tbl.schema.escapeAll());
+
+        qry = "SELECT " + t + "." + keyFieldName + ", " + t + "." + valFieldName + from + qry;
 
         return qry;
     }
@@ -1532,13 +1540,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SB sql = new SB();
 
-        sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (")
-            .a(KEY_FIELD_NAME).a(' ').a(keyType).a(" NOT NULL");
+        sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (");
+        int colId = 0;
+        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
+           if (colId > 0)
+               sql.a(',');
+           sql.a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
+           colId++;
+        }
 
-        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
+        if (tbl.type().fields().isEmpty()) {
+            String keyFieldName = (tbl.type().keyFieldName() == null) ? KEY_FIELD_NAME : escapeName(tbl.type().keyFieldName(), escapeAll);
+            String valFieldName = (tbl.type().valueFieldName() == null) ? VAL_FIELD_NAME : escapeName(tbl.type().valueFieldName(), escapeAll);
 
-        for (Map.Entry<String, Class<?>> e: tbl.type().fields().entrySet())
-            sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
+            sql.a(keyFieldName).a(' ').a(keyType).a(" NOT NULL")
+               .a(',').a(valFieldName).a(' ').a(valTypeStr);
+        }
 
         sql.a(')');
 
@@ -1746,6 +1763,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
+        if (JdbcUtils.systemColumnsHandler != null)
+            U.warn(log, "Custom H2 system columns handler is already configured, will override");
+
+        JdbcUtils.systemColumnsHandler = h2SystemColumnsHandler();
+
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
@@ -1903,6 +1925,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     return U.unmarshal(marshaller, bytes, clsLdr);
                 }
             };
+    }
+
+    /**
+     * Gets System columns handler.
+     * @return system columns handler.
+     */
+    private SystemColumnsHandler h2SystemColumnsHandler() {
+        return new SystemColumnsHandler() {
+            @Override
+            public Column[] getSystemColumns(Table table) {
+                if (!(table instanceof GridH2Table))
+                    return null;
+                GridH2Table gridH2Table = (GridH2Table)table;
+                return gridH2Table.getSystemColumns();
+            }
+
+            @Override
+            public Column getSystemColumn(Table table, String name) {
+                Column[] columns = getSystemColumns(table);
+                if (columns != null) {
+                    for(Column column: columns) {
+                        if (column.getName().equals(name))
+                            return column;
+                    }
+                }
+                return null;
+            }
+        };
     }
 
     /**
@@ -2531,7 +2581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     for (String field : idx.fields()) {
                         String fieldName = escapeAll ? field : escapeName(field, false).toUpperCase();
 
-                        Column col = tbl.getColumn(fieldName);
+                        Column col = tbl.findColumn(fieldName);
 
                         cols.add(tbl.indexColumn(col.getColumnId(),
                             idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
@@ -2844,6 +2894,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final GridQueryProperty[] props;
 
+        /** */
+        private Map<String, Integer> colMap;
+
+        /** */
+        private int columnIdCount;
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -2854,6 +2910,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             this.type = type;
             this.schema = schema;
+            this.colMap = new HashMap<>();
 
             guard = schema.offheap == null ? null : new GridUnsafeGuard();
 
@@ -2861,24 +2918,61 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             allFields.putAll(type.fields());
 
-            fields = allFields.keySet().toArray(new String[allFields.size()]);
-
-            fieldTypes = new int[fields.length];
-
-            Class[] classes = allFields.values().toArray(new Class[fields.length]);
-
-            for (int i = 0; i < fieldTypes.length; i++)
-                fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
-
             keyType = DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+
+            boolean escapeAll = schema.escapeAll();
+            final int size = type.fields().size() +
+                    ((type.keyFieldName() != null && type.fields().containsKey(type.keyFieldName()))? 0 : 1) +
+                    ((type.valueFieldName() != null && type.fields().containsKey(type.valueFieldName()))? 0 : 1) +
+                    ((type.versionFieldName() != null && type.fields().containsKey(type.versionFieldName()))? 0 : 1);
+
+            fields = new String[size];
+            fieldTypes = new int[size];
+
+            //KEY_COL
+            fields[0] = type.keyFieldName() == null ? KEY_FIELD_NAME : type.keyFieldName();
+            fieldTypes[0] = keyType;
+            colMap.put(KEY_FIELD_NAME, 0);
+            if (type.keyFieldName() != null)
+                colMap.put(escapeAll ? type.keyFieldName() : escapeName(type.keyFieldName(), false).toUpperCase(), 0);
+
+            //VAL_COL
+            fields[1] = type.valueFieldName() == null ? VAL_FIELD_NAME : type.valueFieldName();
+            fieldTypes[1] = valType;
+            colMap.put(VAL_FIELD_NAME, 1);
+            if (type.valueFieldName() != null)
+                colMap.put(escapeAll ? type.valueFieldName() : escapeName(type.valueFieldName(), false).toUpperCase(), 1);
+
+            //VER_COL
+            fields[2] = type.versionFieldName() == null ? VER_FIELD_NAME : type.versionFieldName();
+            fieldTypes[2] = Value.BYTES;
+            colMap.put(VER_FIELD_NAME, 2);
+            if (type.versionFieldName() != null)
+                colMap.put(escapeAll ? type.versionFieldName() : escapeName(type.versionFieldName(), false).toUpperCase(), 2);
+
+            int id = 3;
+            for (Map.Entry<String, Class<?>> e: type.fields().entrySet()) {
+                if (type.keyFieldName() != null && type.keyFieldName().equals(e.getKey()) )
+                    continue;
+                if (type.valueFieldName() != null && type.valueFieldName().equals(e.getKey()) )
+                    continue;
+                if (type.versionFieldName() != null && type.versionFieldName().equals(e.getKey()) )
+                    continue;
+
+                fields[id] = e.getKey();
+                fieldTypes[id] = DataType.getTypeFromClass(e.getValue());
+
+                colMap.put(escapeAll ? e.getKey() : escapeName(e.getKey(), false).toUpperCase(), id);
+                ++id;
+            }
+
+            columnIdCount = fields.length;
 
             props = new GridQueryProperty[fields.length];
 
             for (int i = 0; i < fields.length; i++) {
                 GridQueryProperty p = type.property(fields[i]);
-
-                assert p != null : fields[i];
 
                 props[i] = p;
             }
@@ -3000,15 +3094,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
+        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, @Nullable byte[] ver, long expirationTime)
             throws IgniteCheckedException {
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
                     return GridH2RowFactory.create(wrap(key, keyType));
 
                 return schema.offheap == null ?
-                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
-                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
+                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime) :
+                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, ver, expirationTime);
             }
             catch (ClassCastException e) {
                 throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -3101,6 +3195,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public boolean quoteAllIdentifiers() {
             return schema.escapeAll();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getColumnIdCount() {
+            return columnIdCount;
+        }
+
+        /** {@inheritDoc} */
+        public int getColumnId(String name) {
+            Integer result = colMap.get(name);
+            if (result == null)
+                return -1;
+            return result;
         }
     }
 

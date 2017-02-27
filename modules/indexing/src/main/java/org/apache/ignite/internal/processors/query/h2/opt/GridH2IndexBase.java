@@ -660,7 +660,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         GridKernalContext ctx = kernalContext();
 
-        Value[] vals = new Value[getTable().getColumns().length];
+        Value[] vals = new Value[getTable().getColumnIdCount()];
 
         assert vals.length > 0;
 

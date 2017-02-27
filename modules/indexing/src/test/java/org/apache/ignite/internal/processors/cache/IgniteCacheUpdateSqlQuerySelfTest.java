@@ -72,7 +72,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by _key, id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -102,7 +102,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id, _key"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -132,7 +132,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by _key, id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -162,7 +162,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by _key, id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by _key, id"));
 
         List<List<?>> leftovers = c.getAll();
 
