@@ -105,7 +105,7 @@ public class InlineIndexHelperTest extends TestCase {
         assertTrue(getRes(ha, null, null));
     }
 
-    /** Test on String values compare */
+    /** Test on Bytes values compare */
     public void testRelyOnCompareBytes() {
         InlineIndexHelper ha = new InlineIndexHelper(Value.BYTES, 0, SortOrder.ASCENDING);
 
