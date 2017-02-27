@@ -62,7 +62,9 @@ public class VectorImplementationsTest {
     /** */ @Test
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            consumeSampleVectors((v, desc) -> assertEquals("Expect size equal to cardinality.", card, v.like(card).size()));
+            consumeSampleVectors((v, desc) -> assertEquals("Expect size equal to cardinality or 0 at " + desc,
+                (v instanceof SequentialAccessSparseLocalOnHeapVector ? 0 : card),
+                v.like(card).size()));
     }
 
     /** */ @Test

@@ -38,6 +38,7 @@ import org.junit.runners.Suite;
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOffHeapVectorConstructorTest.class,
     RandomAccessSparseLocalOnHeapVectorConstructorTest.class,
+    SequentialAccessSparseLocalOnHeapVectorConstructorTest.class,
     VectorIterableTest.class,
     VectorImplementationsTest.class,
     VectorAttributesTest.class,
