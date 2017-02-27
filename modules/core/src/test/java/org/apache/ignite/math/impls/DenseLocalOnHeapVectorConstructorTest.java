@@ -42,8 +42,8 @@ public class DenseLocalOnHeapVectorConstructorTest {
             put("shallowCopyMissing", "whatever");
         }};
 
-        assertEquals("Expect exception due to missing args.",
-            -1, new DenseLocalOnHeapVector(test).size());
+        assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
+            new DenseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)

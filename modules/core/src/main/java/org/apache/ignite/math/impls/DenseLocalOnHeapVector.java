@@ -101,11 +101,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
         assign(orig);
     }
 
-    /** {@inheritDoc */
-    @Override public Vector copy() {
-        return new DenseLocalOnHeapVector(this);
-    }
-
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return new DenseLocalOnHeapMatrix(rows, cols);

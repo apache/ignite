@@ -22,6 +22,7 @@ import org.apache.ignite.math.Vector;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
@@ -41,6 +42,12 @@ class VectorImplementationsFixtures {
             /** {@inheritDoc} */
             @Override public Iterable<Vector> get() {
                 return new DenseLocalOffHeapVectorFixture();
+            }
+        },
+        new Supplier<Iterable<Vector>>() {
+            /** {@inheritDoc} */
+            @Override public Iterable<Vector> get() {
+                return new RandomAccessSparseLocalOnHeapVectorFixture();
             }
         }
     );
@@ -63,6 +70,7 @@ class VectorImplementationsFixtures {
     void selfTest() {
         new DenseLocalOnHeapVectorFixture().selfTest();
 
+        // IMPL NOTE below covers all fixtures derived from VectorSizesFixture
         new DenseLocalOffHeapVectorFixture().selfTest();
     }
 
@@ -186,14 +194,41 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class DenseLocalOffHeapVectorFixture implements Iterable<Vector> {
+    private static class DenseLocalOffHeapVectorFixture extends VectorSizesFixture {
+        /** */
+        DenseLocalOffHeapVectorFixture() {
+            super("DenseLocalOffHeapVector", DenseLocalOffHeapVector::new);
+        }
+    }
+
+    /** */
+    private static class RandomAccessSparseLocalOnHeapVectorFixture extends VectorSizesFixture {
+        /** */
+        RandomAccessSparseLocalOnHeapVectorFixture() {
+            super("RandomAccessSparseLocalOnHeapVector", RandomAccessSparseLocalOnHeapVector::new);
+        }
+    }
+
+    /** */
+    private static abstract class VectorSizesFixture implements Iterable<Vector> {
         /** */ private static final Integer sizes[] = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, null};
 
         /** */ private static final Integer deltas[] = new Integer[] {-1, 0, 1, null};
 
+        /** */ private final String vectorKind;
+
+        /** */ private final Function<Integer, Vector> ctor;
+
         /** */ private int sizeIdx = 0;
 
         /** */ private int deltaIdx = 0;
+
+        /** */
+        VectorSizesFixture(String vectorKind, Function<Integer, Vector> ctor) {
+            this.vectorKind = vectorKind;
+
+            this.ctor = ctor;
+        }
 
         /** {@inheritDoc} */
         @Override public Iterator<Vector> iterator() {
@@ -207,12 +242,12 @@ class VectorImplementationsFixtures {
                 /** {@inheritDoc} */
                 @Override public Vector next() {
                     if (!hasNext())
-                        throw new NoSuchElementException(DenseLocalOffHeapVectorFixture.this.toString());
+                        throw new NoSuchElementException(VectorSizesFixture.this.toString());
 
                     assert sizes[sizeIdx] != null && deltas[deltaIdx] != null
-                        : "Index(es) out of bound at " + DenseLocalOffHeapVectorFixture.this;
+                        : "Index(es) out of bound at " + VectorSizesFixture.this;
 
-                    Vector res = new DenseLocalOffHeapVector(sizes[sizeIdx] + deltas[deltaIdx]);
+                    Vector res = ctor.apply(sizes[sizeIdx] + deltas[deltaIdx]);
 
                     nextIdx();
 
@@ -236,7 +271,7 @@ class VectorImplementationsFixtures {
         /** {@inheritDoc} */
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return "DenseLocalOffHeapVectorFixture{" + "size=" + sizes[sizeIdx] +
+            return vectorKind + "{" + "size=" + sizes[sizeIdx] +
                 ", size delta=" + deltas[deltaIdx] +
                 '}';
         }

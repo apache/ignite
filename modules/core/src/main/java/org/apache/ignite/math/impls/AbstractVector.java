@@ -110,7 +110,7 @@ public abstract class AbstractVector implements Vector {
      * @param vector Other vector.
      */
     public AbstractVector(Vector vector){
-        this(vector.getStorage(), vector.size());
+        this(vector == null ? null : vector.getStorage(), vector == null ? 0 : vector.size());
     }
 
     /**
@@ -841,6 +841,11 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Vector normalize(double power) {
         return divide(kNorm(power));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
+        return like(size()).assign(this);
     }
 
     /**

@@ -79,12 +79,12 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
-        DenseLocalOffHeapVector cp = new DenseLocalOffHeapVector(size());
+    @Override public Vector assign(Vector vec) {
+        checkCardinality(vec);
 
-        IntStream.range(0, size()).parallel().forEach(idx -> cp.set(idx, get(idx)));
+        IntStream.range(0, size()).parallel().forEach(idx -> set(idx, vec.get(idx)));
 
-        return cp;
+        return this;
     }
 
     /** {@inheritDoc */

@@ -87,13 +87,6 @@ public class FunctionVector extends AbstractVector {
     }
 
     @Override
-    public Vector copy() {
-        FunctionVectorStorage sto = storage();
-
-        return new FunctionVector(sto.size(), sto.getFunction(), sto.setFunction());
-    }
-
-    @Override
     public Vector like(int crd) {
         FunctionVectorStorage sto = storage();
 
