@@ -1677,6 +1677,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             for (int p = 0; p < part2node0.length; p++) {
                 List<ClusterNode> partNodes = part2node0[p];
+
                 if (F.isEmpty(partNodes))
                     continue;
 
