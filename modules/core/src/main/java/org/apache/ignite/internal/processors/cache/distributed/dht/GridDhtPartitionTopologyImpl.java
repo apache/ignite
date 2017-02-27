@@ -1430,7 +1430,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     List<ClusterNode> partNodes = part2node0[p];
 
                     if (partNodes != null) {
-                        partNodes.remove(node(nodeId));
+                        int ri = -1;
+
+                        for (int i = 0; i < partNodes.size(); i++)
+                            if (partNodes.get(i).id().equals(nodeId)) {
+                                ri = i;
+                                break;
+                            }
+
+                        if (ri > -1)
+                            partNodes.remove(ri);
 
                         if (partNodes.isEmpty())
                             part2node0[p] = null;
