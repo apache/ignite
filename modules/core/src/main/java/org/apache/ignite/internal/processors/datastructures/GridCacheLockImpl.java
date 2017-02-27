@@ -525,7 +525,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
-                                    if (create){
+                                    if (create) {
                                         val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
                                         lockView.put(key, val);
                                     } else
