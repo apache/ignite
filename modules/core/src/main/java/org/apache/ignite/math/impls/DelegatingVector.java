@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
@@ -338,11 +337,6 @@ public class DelegatingVector implements Vector {
     @Override
     public boolean isAddConstantTime() {
         return dlg.isAddConstantTime();
-    }
-
-    @Override
-    public Optional<ClusterGroup> clusterGroup() {
-        return dlg.clusterGroup();
     }
 
     @Override

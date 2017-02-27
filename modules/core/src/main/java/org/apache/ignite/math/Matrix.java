@@ -17,10 +17,8 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import java.io.*;
-import java.util.*;
 import java.util.function.*;
 
 /**
@@ -420,14 +418,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return New view.
      */
     Vector viewDiagonal();
-
-    /**
-     * Gets optional cluster group this matrix is stored on. In case of local JVM storage it may
-     * return an empty option or a cluster group consisting of only the local Ignite node.
-     *
-     * @return Optional cluster group for this matrix to be stored on.
-     */
-    Optional<ClusterGroup> clusterGroup();
 
     /**
      * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.

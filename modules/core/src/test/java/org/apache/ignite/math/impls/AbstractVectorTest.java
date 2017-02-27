@@ -378,14 +378,6 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void clusterGroup() {
-
-        assertNull(NOT_NULL_VALUE, testVector.clusterGroup());
-
-    }
-
-    /** */
-    @Test
     public void foldMapWithSecondVector() {
         double[] data0 = initVector();
 

@@ -380,11 +380,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<ClusterGroup> clusterGroup() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
         int len = sto.size();

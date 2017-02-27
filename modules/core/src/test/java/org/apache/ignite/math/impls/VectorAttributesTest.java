@@ -57,11 +57,6 @@ public class VectorAttributesTest {
     }
 
     /** */ @Test
-    public void clusterGroupTest() {
-        alwaysTrueAttributeTest(v -> v.clusterGroup() == null);
-    }
-
-    /** */ @Test
     public void guidTest() {
         alwaysTrueAttributeTest(v -> v.guid() != null);
     }
@@ -181,8 +176,6 @@ public class VectorAttributesTest {
         }
 
         assertTrue("Expect exception at add constant time check.", expECaught);
-
-        assertNull("Expect null cluster group.", v.clusterGroup());
 
         assertNotNull("Expect non null guid.", v.guid());
     }

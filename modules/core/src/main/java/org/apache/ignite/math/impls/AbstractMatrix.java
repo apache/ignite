@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
@@ -702,10 +701,5 @@ public abstract class AbstractMatrix implements Matrix {
     @Override
     public Vector viewDiagonal() {
         return new MatrixVectorView(this, 0, 0, 1, 1);
-    }
-
-    @Override
-    public Optional<ClusterGroup> clusterGroup() {
-        return null;
     }
 }

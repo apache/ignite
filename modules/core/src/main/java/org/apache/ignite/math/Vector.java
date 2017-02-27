@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import java.io.*;
 import java.util.*;
@@ -466,14 +465,6 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
     double getDistanceSquared(Vector vec);
-
-    /**
-     * Gets optional cluster group this vector is stored on. In case of local JVM storage it may
-     * return an empty option or a cluster group consisting of only the local Ignite node.
-     *
-     * @return Optional cluster group for this vector to be stored on.
-     */
-    Optional<ClusterGroup> clusterGroup();
 
     /**
      * Auto-generated globally unique vector ID.
