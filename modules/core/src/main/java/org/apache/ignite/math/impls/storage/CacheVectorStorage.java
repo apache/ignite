@@ -20,34 +20,33 @@ package org.apache.ignite.math.impls.storage;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.function.*;
 
 /**
- * Matrix storage based on arbitrary cache and key and value mapping functions.
+ * Vector storage based on arbitrary cache and index and value mapping functions.
  */
-public class CacheMatrixStorage<K, V> implements MatrixStorage {
-    private int rows, cols;
-    private IgniteCache<K, V> cache;
-    private IntIntToKFunction<K> keyFunc;
+public class CacheVectorStorage<K, V> implements VectorStorage {
+    private int size;
+    private IntFunction<K> keyFunc;
     private DoubleMapper<V> valMapper;
+    private IgniteCache<K, V> cache;
 
     /**
      *
      */
-    public CacheMatrixStorage() {
+    public CacheVectorStorage() {
         // No-op.
     }
 
     /**
      * 
-     * @param rows
-     * @param cols
+     * @param size
      * @param cache
-     * @param keyFunc
+     * @param idxFunc
      * @param valMapper
      */
-    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, IntIntToKFunction<K> keyFunc, DoubleMapper<V> valMapper) {
-        this.rows = rows;
-        this.cols = cols;
+    public CacheVectorStorage(int size, IgniteCache<K, V> cache, IntFunction<K> idxFunc, DoubleMapper<V> valMapper) {
+        this.size = size;
         this.cache = cache;
         this.keyFunc = keyFunc;
         this.valMapper = valMapper;
@@ -57,15 +56,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      *
      * @return
      */
-    public IgniteCache<K, V> cache() {
-        return cache;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public IntIntToKFunction<K> keyFunction() {
+    public IntFunction<K> keyFunction() {
         return keyFunc;
     }
 
@@ -78,23 +69,18 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     @Override
-    public double get(int x, int y) {
-        return valMapper.toDouble(cache.get(keyFunc.apply(x, y)));
+    public int size() {
+        return size;
     }
 
     @Override
-    public void set(int x, int y, double v) {
-        cache.put(keyFunc.apply(x, y), valMapper.fromDouble(v));
+    public double get(int i) {
+        return valMapper.toDouble(cache.get(keyFunc.apply(i)));
     }
 
     @Override
-    public int columnSize() {
-        return cols;
-    }
-
-    @Override
-    public int rowSize() {
-        return rows;
+    public void set(int i, double v) {
+        cache.put(keyFunc.apply(i), valMapper.fromDouble(v));
     }
 
     @Override
