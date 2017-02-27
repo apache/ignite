@@ -53,8 +53,8 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     /** */
     private UUID id;
 
-    /** */
-    private Object consistentId = consistentIdCtr.incrementAndGet();
+    /** String objects as a consistent Id is closer to real case then Integer */
+    private Object consistentId = "Node_" + consistentIdCtr.incrementAndGet();
 
     /** */
     private ClusterMetrics metrics;

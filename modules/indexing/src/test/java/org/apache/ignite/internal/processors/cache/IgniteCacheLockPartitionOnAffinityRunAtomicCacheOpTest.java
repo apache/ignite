@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -157,10 +158,17 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     for (int i = 0; i < PARTS_CNT; ++i) {
-                        grid(0).compute().affinityRun(
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            new Integer(i),
-                            new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
+                        try {
+                            grid(0).compute().affinityRun(
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                new Integer(i),
+                                new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
+                        }
+                        catch (IgniteException e) {
+                            // No-op.
+                            // Test checks deadlock on partition reservation & rebalance.
+                            // So, the test hangs if failed. Skip ClusterTopologyException.
+                        }
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -204,10 +212,17 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                         if (System.currentTimeMillis() >= endTime)
                             break;
 
-                        grid(0).compute().affinityRun(
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            new Integer(i),
-                            new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
+                        try {
+                            grid(0).compute().affinityRun(
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                new Integer(i),
+                                new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
+                        }
+                        catch (IgniteException e) {
+                            // No-op.
+                            // Test checks deadlock on partition reservation & rebalance.
+                            // So, the test hangs if failed. Skip ClusterTopologyException.
+                        }
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
