@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -34,6 +35,7 @@ import org.h2.value.CompareMode;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
+import org.h2.value.ValueBytes;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueFloat;
@@ -130,16 +132,59 @@ public class InlineIndexHelperTest extends TestCase {
             InlineIndexHelper ih = new InlineIndexHelper(Value.STRING, 1, 0);
             ih.put(pageAddr, off, ValueString.get("aaaaaaa"), 3 + 5);
 
-            assertFalse(ih.isStrungFull(pageAddr, off));
+            assertFalse(ih.isValueFull(pageAddr, off));
 
             assertEquals("aaaaa", ih.get(pageAddr, off, 3 + 5).getString());
 
             ih.put(pageAddr, off, ValueString.get("aaa"), 3 + 5);
 
-            assertTrue(ih.isStrungFull(pageAddr, off));
+            assertTrue(ih.isValueFull(pageAddr, off));
 
             assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
+        }
+        finally {
+            if (page != null)
+                pageMem.releasePage(page);
+            pageMem.stop();
+        }
+    }
 
+    /** */
+    public void testBytes() throws Exception {
+        long[] sizes = new long[CPUS];
+
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 1024 * MB / CPUS;
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(new JavaLogger(),
+            new UnsafeMemoryProvider(sizes),
+            null,
+            PAGE_SIZE,
+            false);
+
+        pageMem.start();
+        Page page = null;
+
+        try {
+            FullPageId fullId = new FullPageId(pageMem.allocatePage(CACHE_ID, 1, PageIdAllocator.FLAG_DATA), CACHE_ID);
+            page = pageMem.page(fullId.cacheId(), fullId.pageId());
+            long pageAddr = page.getForReadPointer();
+
+            int off = 0;
+
+            InlineIndexHelper ih = new InlineIndexHelper(Value.BYTES, 1, 0);
+
+            ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), 3 + 3);
+
+            assertFalse(ih.isValueFull(pageAddr, off));
+
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, 3 + 5).getBytes()));
+
+            ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), 3 + 5);
+
+            assertTrue(ih.isValueFull(pageAddr, off));
+
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, 3 + 5).getBytes()));
         }
         finally {
             if (page != null)

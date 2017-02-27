@@ -177,16 +177,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 if (c == -2)
                     break;
 
-//                Value v1 = inlineIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
-//
-//                if (v1 == null)
-//                    break;
-//
-//                int c = compareValues(v1, v2, inlineIdx.sortType());
-//
-//                if (!canRelyOnCompare(c, v1, v2, inlineIdx))
-//                    break;
-
                 lastIdxUsed++;
 
                 if (c != 0)

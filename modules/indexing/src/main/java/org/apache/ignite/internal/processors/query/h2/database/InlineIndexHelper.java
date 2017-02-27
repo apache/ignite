@@ -29,6 +29,7 @@ import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
+import org.h2.value.ValueBytes;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueDouble;
 import org.h2.value.ValueFloat;
@@ -70,7 +71,8 @@ public class InlineIndexHelper {
         Value.UUID,
         Value.STRING,
         Value.STRING_FIXED,
-        Value.STRING_IGNORECASE
+        Value.STRING_IGNORECASE,
+        Value.BYTES
     );
 
     /** */
@@ -177,6 +179,7 @@ public class InlineIndexHelper {
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
+            case Value.BYTES:
                 return -1;
 
             default:
@@ -279,6 +282,11 @@ public class InlineIndexHelper {
                 return ValueStringIgnoreCase.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
             }
 
+            case Value.BYTES: {
+                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
+                return ValueBytes.get(PageUtils.getBytes(pageAddr, off + 3, size));
+            }
+
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
@@ -289,7 +297,7 @@ public class InlineIndexHelper {
      * @param off Offset.
      * @return {@code True} if string is not truncated on save.
      */
-    protected boolean isStrungFull(long pageAddr, int off) {
+    protected boolean isValueFull(long pageAddr, int off) {
         switch (type) {
             case Value.BOOLEAN:
             case Value.BYTE:
@@ -301,6 +309,7 @@ public class InlineIndexHelper {
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
+            case Value.BYTES:
                 return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
 
             default:
@@ -328,7 +337,7 @@ public class InlineIndexHelper {
         if (size() < 0)
             return sortType() == SortOrder.DESCENDING ? -c : c;
         else {
-            if (isStrungFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
+            if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
                 return sortType() == SortOrder.DESCENDING ? -c : c;
             else
                 return -2;
@@ -424,7 +433,7 @@ public class InlineIndexHelper {
 
             case Value.STRING:
             case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
+            case Value.STRING_IGNORECASE: {
                 byte[] s;
                 short size;
 
@@ -448,6 +457,26 @@ public class InlineIndexHelper {
                     PageUtils.putBytes(pageAddr, off + 3, s);
                     return s.length + 3;
                 }
+            }
+
+            case Value.BYTES: {
+                byte[] s;
+                short size;
+
+                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+
+                if (val.getBytes().length + 3 <= maxSize) {
+                    size = (short)val.getBytes().length;
+                    PageUtils.putShort(pageAddr, off + 1, size);
+                    PageUtils.putBytes(pageAddr, off + 3, val.getBytes());
+                }
+                else {
+                    size = (short)((maxSize - 3) | 0x8000);
+                    PageUtils.putShort(pageAddr, off + 1, size);
+                    PageUtils.putBytes(pageAddr, off + 3, Arrays.copyOfRange(val.getBytes(), 0, maxSize - 3));
+                }
+                return size + 3;
+            }
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
@@ -484,19 +513,37 @@ public class InlineIndexHelper {
      * @return {@code true} if we can rely on compare result.
      */
     protected boolean canRelyOnCompare(int c, Value shortVal, Value v2) {
-        if (size() < 0) {
-            if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
-                return false;
+        switch (type) {
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                    return false;
 
-            if (shortVal.getType() != Value.NULL
-                && v2.getType() != Value.NULL
-                && c < 0
-                && shortVal.getString().length() <= v2.getString().length()) {
-                // Can't rely on compare, should use full string.
-                return false;
-            }
+                if (shortVal.getType() != Value.NULL
+                    && v2.getType() != Value.NULL
+                    && c < 0
+                    && shortVal.getString().length() <= v2.getString().length()) {
+                    // Can't rely on compare, should use full string.
+                    return false;
+                }
+                return true;
+
+            case Value.BYTES:
+                if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                    return false;
+
+                if (shortVal.getType() != Value.NULL
+                    && v2.getType() != Value.NULL
+                    && c < 0
+                    && shortVal.getBytes().length <= v2.getBytes().length) {
+                    // Can't rely on compare, should use full array.
+                    return false;
+                }
+                return true;
+
+            default:
+                return true;
         }
-
-        return true;
     }
 }
