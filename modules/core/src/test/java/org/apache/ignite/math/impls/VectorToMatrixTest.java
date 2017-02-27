@@ -2,7 +2,6 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -108,8 +107,49 @@ public class VectorToMatrixTest {
     }
 
     /** */ @Test
-    @Ignore("not yet implemented test case for cross method")
     public void testCross() {
+        consumeSampleVectors((v, desc) -> {
+            if (!availableForTesting(v))
+                return;
+
+            fillWithNonZeroes(v);
+
+            for (int delta : new int[] {-1, 0, 1}) {
+                final int size2 = v.size() + delta;
+
+                if (size2 < 0)
+                    return;
+
+                final Vector v2 = new DenseLocalOnHeapVector(size2);
+
+                for (Vector.Element e : v2.all())
+                    e.set(size2 - e.index());
+
+                assertCross(v, v2, desc);
+            }
+        });
+    }
+
+    /** */
+    private void assertCross(Vector v1, Vector v2, String desc) {
+        assertNotNull(v1);
+        assertNotNull(v2);
+
+        final Matrix res = v1.cross(v2);
+
+        assertNotNull("Cross matrix is expected to be not null in " + desc, res);
+
+        assertEquals("Unexpected number of rows in cross Matrix in " + desc, v1.size(), res.rowSize());
+
+        assertEquals("Unexpected number of cols in cross Matrix in " + desc, v2.size(), res.columnSize());
+
+        for (int row = 0; row < v1.size(); row++)
+            for (int col = 0; col < v2.size(); col++) {
+                final Metric metric = new Metric(v1.get(row) * v2.get(col), res.get(row, col));
+
+                assertTrue("Not close enough cross " + metric + " at row " + row + " at col " + col
+                    + " in " + desc, metric.closeEnough());
+            }
         //todo write code
     }
 
@@ -156,7 +196,7 @@ public class VectorToMatrixTest {
         return new LinkedHashMap<Class<? extends Vector>, Class<? extends Matrix>> () {{
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
-            put(RandomVector.class, null); // todo fill non-nulls for all vectors that are ready to test
+            put(RandomVector.class, RandomMatrix.class);
             put(ConstantVector.class, null);
             put(RandomAccessSparseLocalOnHeapVector.class, null);
             put(SequentialAccessSparseLocalOnHeapVector.class, null);
