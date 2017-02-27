@@ -3,7 +3,6 @@ package org.apache.ignite.math.impls.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;

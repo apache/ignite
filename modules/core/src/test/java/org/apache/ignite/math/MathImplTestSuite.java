@@ -21,6 +21,7 @@ import org.apache.ignite.math.impls.*;
 import org.apache.ignite.math.impls.storage.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.storage.MatrixNullStorageTest;
 import org.apache.ignite.math.impls.storage.MatrixOffHeapStorageTest;
+import org.apache.ignite.math.impls.storage.MatrixStorageImplementationTest;
 import org.apache.ignite.math.impls.storage.RandomAccessSparseVectorStorageTest;
 import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorageTest;
 import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
@@ -49,7 +50,8 @@ import org.junit.runners.Suite;
     MatrixArrayStorageTest.class,
     DenseLocalOffHeapMatrixTest.class,
     MatrixNullStorageTest.class,
-    VectorToMatrixTest.class
+    VectorToMatrixTest.class,
+    MatrixStorageImplementationTest.class
 })
 public class MathImplTestSuite {
 }
