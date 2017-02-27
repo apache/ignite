@@ -64,11 +64,6 @@ public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
-        return new SequentialAccessSparseLocalOnHeapVector(this);
-    }
-
-    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new SequentialAccessSparseLocalOnHeapVector(crd);
     }

@@ -90,13 +90,6 @@ public class SingleElementVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
-        int idx = storage().index();
-
-        return new SingleElementVector(size(), idx, getX(idx));
-    }
-
-    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         int idx = storage().index();
 

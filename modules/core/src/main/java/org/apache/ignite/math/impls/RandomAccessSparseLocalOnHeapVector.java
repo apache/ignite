@@ -37,16 +37,6 @@ public class RandomAccessSparseLocalOnHeapVector extends AbstractVector {
         setStorage(new RandomAccessSparseVectorStorage(cols));
     }
 
-    /** */
-    private RandomAccessSparseLocalOnHeapVector(RandomAccessSparseLocalOnHeapVector vector) {
-        super(vector);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector copy() {
-        return new RandomAccessSparseLocalOnHeapVector(this);
-    }
-
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new RandomAccessSparseLocalOnHeapVector(crd);

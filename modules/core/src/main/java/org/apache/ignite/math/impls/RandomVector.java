@@ -78,11 +78,6 @@ public class RandomVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector copy() {
-        return new RandomVector(size(), fastHash);
-    }
-
-    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new RandomVector(crd, fastHash);
     }

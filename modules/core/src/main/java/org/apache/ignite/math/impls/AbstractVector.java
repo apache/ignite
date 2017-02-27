@@ -843,6 +843,11 @@ public abstract class AbstractVector implements Vector {
         return divide(kNorm(power));
     }
 
+    /** {@inheritDoc} */
+    @Override public Vector copy() {
+        return like(size()).assign(this);
+    }
+
     /**
      *
      * @return Result of dot with self.
