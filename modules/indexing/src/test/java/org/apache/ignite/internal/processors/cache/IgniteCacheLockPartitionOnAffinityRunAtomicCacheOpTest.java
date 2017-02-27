@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -165,9 +166,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                                 new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
                         }
                         catch (IgniteException e) {
-                            // No-op.
-                            // Test checks deadlock on partition reservation & rebalance.
-                            // So, the test hangs if failed. Skip ClusterTopologyException.
+                            checkException(e, ClusterTopologyException.class);
                         }
                     }
                 }
@@ -219,9 +218,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                                 new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
                         }
                         catch (IgniteException e) {
-                            // No-op.
-                            // Test checks deadlock on partition reservation & rebalance.
-                            // So, the test hangs if failed. Skip ClusterTopologyException.
+                            checkException(e, ClusterTopologyException.class);
                         }
                     }
                 }
@@ -242,6 +239,24 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
             cache.clear();
         }
+    }
+
+
+    /**
+     *
+     * @param e Exception to check.
+     * @param exCls Expected exception cause class.
+     */
+    private void checkException(IgniteException e, Class<? extends Exception> exCls) {
+        for (Throwable t = e; t.getCause() != null; t = t.getCause()) {
+            if (t.getCause().getClass().isAssignableFrom(exCls)) {
+                log.info("Expected exception: " + e);
+
+                return;
+            }
+        }
+
+        throw e;
     }
 
     /** */
