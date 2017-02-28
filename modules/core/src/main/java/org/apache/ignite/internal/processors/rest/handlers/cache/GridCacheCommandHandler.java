@@ -35,7 +35,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -452,7 +451,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                 case CACHE_PUT_IF_ABSENT: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
-                        new PutIfAbsentCommand(key, getValue(req0)));
+                        new PutIfAbsentCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
@@ -1148,20 +1147,38 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** */
-    private static class PutIfAbsentCommand extends GetAndPutCommand {
+    private static class PutIfAbsentCommand extends CacheProjectionCommand {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private final Object key;
+
+        /** */
+        private final Long ttl;
+
+        /** */
+        private final Object val;
+
         /**
          * @param key Key.
+         * @param ttl TTL.
          * @param val Value.
          */
-        PutIfAbsentCommand(Object key, Object val) {
-            super(key, val);
+        PutIfAbsentCommand(Object key, Long ttl, Object val) {
+            this.val = val;
+            this.ttl = ttl;
+            this.key = key;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
+            if (ttl != null && ttl > 0) {
+                Duration duration = new Duration(MILLISECONDS, ttl);
+
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+            }
+
             return c.putIfAbsentAsync(key, val);
         }
     }
