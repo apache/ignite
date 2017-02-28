@@ -70,9 +70,6 @@ public class GridClientTopology {
      */
     private final Set<InetSocketAddress> routerAddrs;
 
-    /** List of all known local MACs */
-    private final Collection<String> macsCache;
-
     /** Protocol. */
     private final GridClientProtocol prot;
 
@@ -131,8 +128,6 @@ public class GridClientTopology {
 
             routerAddrs = Collections.emptySet();
         }
-
-        macsCache = U.allLocalMACs();
     }
 
     /**
@@ -169,12 +164,14 @@ public class GridClientTopology {
      * @return Node in topology.
      */
     public GridClientNode updateNode(GridClientNodeImpl node) {
+        final String macs = F.concat(U.allLocalMACs(), ", ");
+
         lock.writeLock().lock();
 
         try {
             boolean newNode = !nodes.containsKey(node.nodeId());
 
-            GridClientNodeImpl preparedNode = prepareNode(node);
+            GridClientNodeImpl preparedNode = prepareNode(macs, node);
 
             // We update the whole topology if node was not in topology or we cache metrics.
             if (newNode || metricsCache || attrCache) {
@@ -207,6 +204,8 @@ public class GridClientTopology {
     public Collection<? extends GridClientNode> updateTopology(Collection<GridClientNodeImpl> nodeList) {
         Collection<TopologyEvent> evts = new LinkedList<>();
 
+        final String locMacs = F.concat(U.allLocalMACs(), ", ");
+
         lock.writeLock().lock();
 
         try {
@@ -215,7 +214,7 @@ public class GridClientTopology {
             Collection<GridClientNodeImpl> preparedNodes = F.transform(nodeList,
                 new C1<GridClientNodeImpl, GridClientNodeImpl>() {
                     @Override public GridClientNodeImpl apply(GridClientNodeImpl e) {
-                        return prepareNode(e);
+                        return prepareNode(locMacs, e);
                     }
                 });
 
@@ -402,11 +401,12 @@ public class GridClientTopology {
      * Updates node properties according to current topology settings.
      * Particularly attributes and metrics caching policies.
      *
+     * @param locMacs List of all known local MACs.
      * @param node Node to be processed.
      * @return The same node if cache is enabled or node contains no attributes and metrics,
      *      otherwise will return new node without attributes and metrics.
      */
-    private GridClientNodeImpl prepareNode(final GridClientNodeImpl node) {
+    private GridClientNodeImpl prepareNode(String locMacs, GridClientNodeImpl node) {
         final boolean noAttrsAndMetrics =
             (metricsCache && attrCache) || (node.attributes().isEmpty() && node.metrics() == null);
 
@@ -422,8 +422,7 @@ public class GridClientTopology {
 
             String nodeMacs = node.attribute(ATTR_MACS);
 
-            boolean reachable = nodeMacs == null || !addr.getAddress().isLoopbackAddress() ||
-                F.containsAny(macsCache, nodeMacs.split(", "));
+            boolean reachable = nodeMacs == null || !addr.getAddress().isLoopbackAddress() || locMacs.equals(nodeMacs);
 
             if (router && reachable) {
                 nodeBuilder.connectable(true);

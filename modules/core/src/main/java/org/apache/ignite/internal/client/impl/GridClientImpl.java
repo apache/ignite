@@ -464,6 +464,8 @@ public class GridClientImpl implements GridClient {
         final Collection<InetSocketAddress> connSrvs = (hasSrvs) ? new LinkedHashSet<>(srvs) : routers;
 
         if (hasSrvs) {
+            String locMacs = F.concat(U.allLocalMACs(), ", ");
+
             // Add REST endpoints for all nodes from previous topology snapshot.
             try {
                 for (GridClientNodeImpl node : top.nodes()) {
@@ -475,8 +477,7 @@ public class GridClientImpl implements GridClient {
                         if (!endpoint.isUnresolved())
                             resolvedEndpoints.add(endpoint);
 
-                    boolean sameHost = node.attributes().isEmpty() ||
-                        F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
+                    boolean sameHost = node.attributes().isEmpty() || locMacs.equals(node.<String>attribute(ATTR_MACS));
 
                     if (sameHost) {
                         Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
