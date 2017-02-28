@@ -36,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Data pages IO.
  */
 public class DataPageIO extends PageIO {
+    /* TODO IGNITE-4534: only for test purposes, will be removed */
     public static volatile int testPageIdx;
 
     /** */
