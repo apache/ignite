@@ -75,7 +75,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** Sensitive patterns: including */
     private static final Pattern[] INCLUDE_PATTERNS;
     /** Excluding logger categories */
-    private static final Pattern EXCLUDE_CATEGORY_P = Pattern.compile("Test($|\\$)|\\.tests?\\.");
+    private static final Pattern EXCLUDE_CATEGORY_P = Pattern.compile("Test(Task|Job)?($|\\$)|\\.tests?\\.");
     /** */
     private static ThreadLocal<IgniteBiTuple<String, Object>> stash = new ThreadLocal<IgniteBiTuple<String, Object>>() {
         @Override protected IgniteBiTuple<String, Object> initialValue() {
