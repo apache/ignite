@@ -1717,8 +1717,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         for (int i = 0; i < part2node.length; i++) {
             if (part2node[i] != null)
                 part2node0[i] = new ArrayList<>(part2node[i]);
-
         }
+
         return part2node0;
     }
 
