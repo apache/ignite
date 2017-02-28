@@ -124,6 +124,9 @@ public class HadoopV2Job extends HadoopJobEx {
     /** File system cache map. */
     private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Shared class loader. */
     private volatile HadoopClassLoader sharedClsLdr;
 
@@ -151,6 +154,7 @@ public class HadoopV2Job extends HadoopJobEx {
         this.jobInfo = jobInfo;
         this.libNames = libNames;
         this.helper = helper;
+        this.log = log;
 
         ClassLoader oldLdr = HadoopCommonUtils.setContextClassLoader(getClass().getClassLoader());
 
@@ -323,8 +327,12 @@ public class HadoopV2Job extends HadoopJobEx {
         try {
             rsrcMgr.prepareJobEnvironment(!external, jobLocalDir(igniteWorkDirectory(), locNodeId, jobId));
 
-            if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true))
+            if (HadoopJobProperty.get(jobInfo, JOB_SHARED_CLASSLOADER, true)) {
+                U.warn(log, JOB_SHARED_CLASSLOADER.propertyName() + " job property is set to true; please disable " +
+                    "it if job tasks rely on mutable static state.");
+
                 sharedClsLdr = createClassLoader(HadoopClassLoader.nameForJob(jobId));
+            }
         }
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
