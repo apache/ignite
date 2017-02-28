@@ -42,7 +42,7 @@ public class VectorToMatrixTest {
 
             assertTrue("Expected matrix type " + expMatrixType.getSimpleName()
                 + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
-                expMatrixType.isAssignableFrom(matrix.getClass()));
+                expMatrixType.isAssignableFrom(actualMatrixType));
 
             for (int rows : new int[] {0, 1, 2})
                 for (int cols : new int[] {0, 1, 2}) {
