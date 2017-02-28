@@ -1,4 +1,4 @@
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.Matrix;
 
@@ -66,7 +66,7 @@ public class MatrixImplementationFixtures {
         }
 
         @Override public String toString() {
-            return "SparseLocalMatrixFixture{ " + "rows=" + rows[sizeIdx] + " ,cols=" + cols[sizeIdx] + "}";
+            return "SparseLocalMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
         }
 
         private boolean hasNextRow(int idx){
@@ -116,7 +116,7 @@ public class MatrixImplementationFixtures {
         }
 
         @Override public String toString() {
-            return "SparseLocalRowMatrixFixture{ " + "rows=" + rows[sizeIdx] + " ,cols=" + cols[sizeIdx] +
+            return "SparseLocalRowMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] +
                     " ,mode=" + randomAccess[modeIdx] + "}";
         }
 

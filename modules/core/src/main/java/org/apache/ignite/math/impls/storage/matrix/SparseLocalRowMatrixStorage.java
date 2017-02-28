@@ -29,10 +29,10 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
      *
      * @param rows Rows.
      * @param cols Columns.
-     * @param randomAccess Random access.
+     * @param sequentialAccess Sequential access.
      */
-    public SparseLocalRowMatrixStorage(int rows, int cols, boolean randomAccess){
-        this(rows, cols, randomAccess ? new RandomAccessSparseLocalOnHeapVector[rows] : new SequentialAccessSparseLocalOnHeapVector[rows]);
+    public SparseLocalRowMatrixStorage(int rows, int cols, boolean sequentialAccess){
+        this(rows, cols, sequentialAccess ? new RandomAccessSparseLocalOnHeapVector[rows] : new SequentialAccessSparseLocalOnHeapVector[rows]);
     }
 
     /**
@@ -43,7 +43,7 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
      * @param vectors Vectors.
      */
     public SparseLocalRowMatrixStorage(int rows, int cols, Vector[] vectors){
-        this(rows, cols, vectors, vectors instanceof RandomAccessSparseLocalOnHeapVector[]);
+        this(rows, cols, vectors, vectors instanceof SequentialAccessSparseLocalOnHeapVector[]);
     }
 
     /**
@@ -52,20 +52,20 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
      * @param rows Rows.
      * @param columns Columns.
      * @param vectors Vectors.
-     * @param randomAccess Random access.
+     * @param sequentialAccess Sequential access.
      */
-    public SparseLocalRowMatrixStorage(int rows, int columns, Vector[] vectors, boolean randomAccess){
+    public SparseLocalRowMatrixStorage(int rows, int columns, Vector[] vectors, boolean sequentialAccess){
         this.rows = rows;
         this.columns = columns;
-        this.randomAccessRows = randomAccess;
+        this.randomAccessRows = sequentialAccess;
         this.rowVectors = vectors.clone();
 
         for (int i = 0; i < rows; i++)
 
             if (vectors[i] == null)
-                this.rowVectors[i] = randomAccess
-                    ? new RandomAccessSparseLocalOnHeapVector(columns)
-                    : new SequentialAccessSparseLocalOnHeapVector(columns);
+                this.rowVectors[i] = sequentialAccess
+                    ? new SequentialAccessSparseLocalOnHeapVector(columns)
+                    : new RandomAccessSparseLocalOnHeapVector(columns);
 
             else
                 this.rowVectors[i] = vectors[i];
@@ -79,8 +79,8 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
 
         for (int i = 0; i < rows; i++) {
             this.rowVectors[i] = accessMode
-                    ? new RandomAccessSparseLocalOnHeapVector(columns)
-                    : new SequentialAccessSparseLocalOnHeapVector(columns);
+                    ? new SequentialAccessSparseLocalOnHeapVector(columns)
+                    : new RandomAccessSparseLocalOnHeapVector(columns);
 
             this.rowVectors[i].assign(arrs[i]);
         }

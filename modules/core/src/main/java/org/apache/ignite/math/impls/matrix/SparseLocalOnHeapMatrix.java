@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls;
+package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.AbstractMatrix;
+import org.apache.ignite.math.impls.RandomAccessSparseLocalOnHeapVector;
 import org.apache.ignite.math.impls.storage.matrix.SparseLocalMatrixStorage;
 
 import java.util.Map;
@@ -28,6 +30,10 @@ import java.util.Map;
  * Sparse local onheap matrix with {@link RandomAccessSparseLocalOnHeapVector} as rows.
  */
 public class SparseLocalOnHeapMatrix extends AbstractMatrix {
+    /** */
+    public SparseLocalOnHeapMatrix(){
+        // No-op
+    }
 
     /** */
     SparseLocalOnHeapMatrix(int rows, int cols){

@@ -703,4 +703,25 @@ public abstract class AbstractMatrix implements Matrix {
     public Vector viewDiagonal() {
         return new MatrixVectorView(this, 0, 0, 1, 1);
     }
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode() {
+        int result = 1;
+        result = result * 37 + guid.hashCode();
+        result = result * 37 + sto.hashCode();
+        result = result * 37 + meta.hashCode();
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals(Object obj) {
+        return obj != null && obj.getClass() == this.getClass() && compareMatrix((AbstractMatrix) obj);
+    }
+
+    /** We ignore guid's for comparisons. */
+    private boolean compareMatrix(AbstractMatrix obj) {
+        return /**obj.guid.equals(guid) && */ sto.equals(obj.getStorage()) && obj.meta.equals(meta);
+    }
 }
