@@ -844,10 +844,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            try {
+                return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qry + ", params=" +
+                    Arrays.deepToString(fldsQry.getArgs()) + "]", e);
+            }
         }
         else if (DdlStatementsProcessor.isDdlStatement(p)) {
-            QueryCursor<List<?>> res = ddlProc.runDdlStatement(stmt, true);
+            QueryCursor<List<?>> res;
+
+            try {
+                res = ddlProc.runDdlStatement(stmt, true);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry + ']', e);
+            }
 
             return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
                 new IgniteSingletonIterator(res.getAll().get(0)));

@@ -217,7 +217,7 @@ public class DdlStatementsProcessor {
      * @param opId DDL operation ID.
      * @param err Exception that occurred on the <b>peer</b>, or null if the local operation has been successful.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "SynchronizationOnLocalVariableOrMethodParameter"})
+    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "SynchronizationOnLocalVariableOrMethodParameter", "ForLoopReplaceableByForEach"})
     private void onNodeResult(IgniteUuid opId, IgniteCheckedException err) {
         DdlOperationRunContext runCtx = operationRuns.get(opId);
 
@@ -419,7 +419,7 @@ public class DdlStatementsProcessor {
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
-        if (loc)
+        if (!loc)
             executeDistributed(args);
         else
             executeLocal(args);
@@ -461,27 +461,24 @@ public class DdlStatementsProcessor {
     @SuppressWarnings("unchecked")
     private void executeLocal(DdlCommandArguments args) throws IgniteCheckedException {
         try {
-            Throwable ex = null;
+            doInit(args);
+        }
+        catch (Throwable e) {
+            Throwable ex = e;
 
             try {
-                doInit(args);
+                args.getOperationArguments().opType.command().cancel(args);
             }
-            catch (Throwable e) {
-                ex = e;
+            catch (Throwable e1) {
+                e1.addSuppressed(e);
 
-                try {
-                    args.getOperationArguments().opType.command().cancel(args);
-                }
-                catch (Throwable e1) {
-                    e1.addSuppressed(e);
-
-                    ex = e1;
-                }
+                ex = e1;
             }
 
-            if (ex != null)
-                throw ex;
+            throw new IgniteCheckedException("DDL operation has been cancelled at INIT stage", ex);
+        }
 
+        try {
             doAck(args);
         }
         catch (Throwable e) {
