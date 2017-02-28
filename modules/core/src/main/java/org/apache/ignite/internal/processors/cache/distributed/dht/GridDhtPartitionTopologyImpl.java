@@ -1219,7 +1219,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         GridDhtLocalPartition locPart = locParts.get(p);
 
                         if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null &&
-                            locPart != null && locPart.updateCounter() > 0) {
+                            locPart != null && locPart.updateCounter() > 0 && !locPart.shouldBeMoving()) {
                             locPart.rent(true);
 
                             changed = true;
