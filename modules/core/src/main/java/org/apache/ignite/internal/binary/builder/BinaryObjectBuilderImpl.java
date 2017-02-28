@@ -262,22 +262,20 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         Object assignedVal = assignedFldsById.remove(fieldId);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
-                            writer.writeFieldId(fieldId);
+                            int off = serializer.writeValue(writer, assignedVal);
 
-                            serializer.writeValue(writer, assignedVal);
+                            writer.writeFieldId(fieldId, off);
                         }
                     }
                     else {
                         int type = fieldLen != 0 ? reader.readByte(0) : 0;
 
                         if (fieldLen != 0 && !BinaryUtils.isPlainArrayType(type) && BinaryUtils.isPlainType(type)) {
-                            writer.writeFieldId(fieldId);
+                            writer.writeFieldId(fieldId, writer.currentOffset());
 
                             writer.write(reader.array(), reader.position(), fieldLen);
                         }
                         else {
-                            writer.writeFieldId(fieldId);
-
                             Object val;
 
                             if (fieldLen == 0)
@@ -290,7 +288,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                             else
                                 val = readCache.get(fieldId);
 
-                            serializer.writeValue(writer, val);
+                            int off = serializer.writeValue(writer, val);
+
+                            writer.writeFieldId(fieldId, off);
                         }
                     }
 
@@ -312,9 +312,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    writer.writeFieldId(fieldId);
+                    int off = serializer.writeValue(writer, val);
 
-                    serializer.writeValue(writer, val);
+                    writer.writeFieldId(fieldId, off);
 
                     if (reader == null)
                         // Metadata has already been checked.
@@ -455,8 +455,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     private IgniteBiTuple<Integer, Integer> fieldPositionAndLength(int footerPos, int footerEnd, int rawPos,
         int fieldIdLen, int fieldOffsetLen) {
         // Get field offset first.
-        int fieldOffset = BinaryUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
-        int fieldPos = start + fieldOffset;
+        int fieldOff = BinaryUtils.fieldOffsetRelative(reader, footerPos + fieldIdLen, fieldOffsetLen);
+
+        if (BinaryUtils.isNullOffset(fieldOff, fieldOffsetLen))
+            return F.t(BinaryUtils.NULL_4, 0);
+
+        int fieldPos = start + fieldOff;
 
         // Get field length.
         int fieldLen;
@@ -465,11 +469,19 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             // This is the last field, compare to raw offset.
             fieldLen = rawPos - fieldPos;
         else {
-            // Field is somewhere in the middle, get difference with the next offset.
-            int nextFieldOffset = BinaryUtils.fieldOffsetRelative(reader,
-                footerPos + fieldIdLen + fieldOffsetLen + fieldIdLen, fieldOffsetLen);
+            // In case the field is the last not null field.
+            fieldLen = footerPos - fieldOff;
 
-            fieldLen = nextFieldOffset - fieldOffset;
+            for (int offPos = footerPos + fieldIdLen + fieldOffsetLen + fieldIdLen;
+                offPos < footerEnd; offPos += fieldIdLen + fieldOffsetLen) {
+
+                int nextFieldOff = BinaryUtils.fieldOffsetRelative(reader, offPos, fieldOffsetLen);
+
+                if (!BinaryUtils.isNullOffset(nextFieldOff, fieldOffsetLen)) {
+                    fieldLen = nextFieldOff - fieldOff;
+                    break;
+                }
+            }
         }
 
         return F.t(fieldPos, fieldLen);
@@ -504,7 +516,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 IgniteBiTuple<Integer, Integer> posAndLen =
                     fieldPositionAndLength(footerPos, footerEnd, rawPos, fieldIdLen, fieldOffsetLen);
 
-                Object val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
+                Object val = null;
+
+                if (!BinaryUtils.isNullOffset(posAndLen.get1(), fieldOffsetLen))
+                    val = reader.getValueQuickly(posAndLen.get1(), posAndLen.get2());
 
                 readCache.put(fieldId, val);
 

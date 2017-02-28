@@ -209,6 +209,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public BytePrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_BYTE);
@@ -216,9 +217,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             byte val = GridUnsafe.getByteField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeByteFieldPrimitive(val);
         }
@@ -239,6 +240,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public BooleanPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_BOOLEAN);
@@ -246,9 +248,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             boolean val = GridUnsafe.getBooleanField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeBooleanFieldPrimitive(val);
         }
@@ -269,6 +271,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public ShortPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_SHORT);
@@ -276,9 +279,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             short val = GridUnsafe.getShortField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeShortFieldPrimitive(val);
         }
@@ -299,6 +302,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public CharPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_CHAR);
@@ -306,9 +310,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             char val = GridUnsafe.getCharField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeCharFieldPrimitive(val);
         }
@@ -329,6 +333,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public IntPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_INT);
@@ -336,9 +341,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             int val = GridUnsafe.getIntField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeIntFieldPrimitive(val);
         }
@@ -359,6 +364,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public LongPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_LONG);
@@ -366,9 +372,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             long val = GridUnsafe.getLongField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeLongFieldPrimitive(val);
         }
@@ -389,6 +395,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public FloatPrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_FLOAT);
@@ -396,9 +403,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             float val = GridUnsafe.getFloatField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeFloatFieldPrimitive(val);
         }
@@ -419,6 +426,7 @@ public abstract class BinaryFieldAccessor {
          * Constructor.
          *
          * @param field Field.
+         * @param id Field ID.
          */
         public DoublePrimitiveAccessor(Field field, int id) {
             super(field, id, BinaryWriteMode.P_DOUBLE);
@@ -426,9 +434,9 @@ public abstract class BinaryFieldAccessor {
 
         /** {@inheritDoc} */
         @Override public void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-            writer.writeFieldIdNoSchemaUpdate(id);
-
             double val = GridUnsafe.getDoubleField(obj, offset);
+
+            writer.writeFieldIdNoSchemaUpdate(id, writer.currentOffset());
 
             writer.writeDoubleFieldPrimitive(val);
         }
@@ -457,6 +465,7 @@ public abstract class BinaryFieldAccessor {
          * @param field Field.
          * @param id Field ID.
          * @param mode Mode.
+         * @param dynamic Dynamic accessor flag.
          */
         DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
             super(field, id, mode);
@@ -470,7 +479,7 @@ public abstract class BinaryFieldAccessor {
             assert obj != null;
             assert writer != null;
 
-            writer.writeFieldIdNoSchemaUpdate(id);
+            int off = writer.currentOffset();
 
             Object val;
 
@@ -481,159 +490,165 @@ public abstract class BinaryFieldAccessor {
                 throw new BinaryObjectException("Failed to get value for field: " + field, e);
             }
 
+            if (val == null) {
+                writer.writeFieldIdNoSchemaUpdate(id, BinaryUtils.NULL_4);
+
+                return;
+            }
+
             switch (mode(val)) {
                 case BYTE:
-                    writer.writeByteField((Byte) val);
+                    off = writer.writeByteField((Byte) val);
 
                     break;
 
                 case SHORT:
-                    writer.writeShortField((Short) val);
+                    off = writer.writeShortField((Short) val);
 
                     break;
 
                 case INT:
-                    writer.writeIntField((Integer) val);
+                    off = writer.writeIntField((Integer) val);
 
                     break;
 
                 case LONG:
-                    writer.writeLongField((Long)val);
+                    off = writer.writeLongField((Long)val);
 
                     break;
 
                 case FLOAT:
-                    writer.writeFloatField((Float)val);
+                    off = writer.writeFloatField((Float)val);
 
                     break;
 
                 case DOUBLE:
-                    writer.writeDoubleField((Double)val);
+                    off = writer.writeDoubleField((Double)val);
 
                     break;
 
                 case CHAR:
-                    writer.writeCharField((Character)val);
+                    off = writer.writeCharField((Character)val);
 
                     break;
 
                 case BOOLEAN:
-                    writer.writeBooleanField((Boolean)val);
+                    off = writer.writeBooleanField((Boolean)val);
 
                     break;
 
                 case DECIMAL:
-                    writer.writeDecimalField((BigDecimal)val);
+                    off = writer.writeDecimalField((BigDecimal)val);
 
                     break;
 
                 case STRING:
-                    writer.writeStringField((String)val);
+                    off = writer.writeStringField((String)val);
 
                     break;
 
                 case UUID:
-                    writer.writeUuidField((UUID)val);
+                    off = writer.writeUuidField((UUID)val);
 
                     break;
 
                 case DATE:
-                    writer.writeDateField((Date)val);
+                    off = writer.writeDateField((Date)val);
 
                     break;
 
                 case TIMESTAMP:
-                    writer.writeTimestampField((Timestamp)val);
+                    off = writer.writeTimestampField((Timestamp)val);
 
                     break;
 
                 case TIME:
-                    writer.writeTimeField((Time)val);
+                    off = writer.writeTimeField((Time)val);
 
                     break;
 
                 case BYTE_ARR:
-                    writer.writeByteArrayField((byte[])val);
+                    off = writer.writeByteArrayField((byte[])val);
 
                     break;
 
                 case SHORT_ARR:
-                    writer.writeShortArrayField((short[])val);
+                    off = writer.writeShortArrayField((short[])val);
 
                     break;
 
                 case INT_ARR:
-                    writer.writeIntArrayField((int[])val);
+                    off = writer.writeIntArrayField((int[])val);
 
                     break;
 
                 case LONG_ARR:
-                    writer.writeLongArrayField((long[])val);
+                    off = writer.writeLongArrayField((long[])val);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.writeFloatArrayField((float[])val);
+                    off = writer.writeFloatArrayField((float[])val);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.writeDoubleArrayField((double[])val);
+                    off = writer.writeDoubleArrayField((double[])val);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.writeCharArrayField((char[])val);
+                    off = writer.writeCharArrayField((char[])val);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.writeBooleanArrayField((boolean[])val);
+                    off = writer.writeBooleanArrayField((boolean[])val);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.writeDecimalArrayField((BigDecimal[])val);
+                    off = writer.writeDecimalArrayField((BigDecimal[])val);
 
                     break;
 
                 case STRING_ARR:
-                    writer.writeStringArrayField((String[])val);
+                    off = writer.writeStringArrayField((String[])val);
 
                     break;
 
                 case UUID_ARR:
-                    writer.writeUuidArrayField((UUID[])val);
+                    off = writer.writeUuidArrayField((UUID[])val);
 
                     break;
 
                 case DATE_ARR:
-                    writer.writeDateArrayField((Date[])val);
+                    off = writer.writeDateArrayField((Date[])val);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.writeTimestampArrayField((Timestamp[])val);
+                    off = writer.writeTimestampArrayField((Timestamp[])val);
 
                     break;
 
                 case TIME_ARR:
-                    writer.writeTimeArrayField((Time[])val);
+                    off = writer.writeTimeArrayField((Time[])val);
 
                     break;
 
                 case OBJECT_ARR:
-                    writer.writeObjectArrayField((Object[])val);
+                    off = writer.writeObjectArrayField((Object[])val);
 
                     break;
 
                 case COL:
-                    writer.writeCollectionField((Collection<?>)val);
+                    off = writer.writeCollectionField((Collection<?>)val);
 
                     break;
 
                 case MAP:
-                    writer.writeMapField((Map<?, ?>)val);
+                    off = writer.writeMapField((Map<?, ?>)val);
 
                     break;
 
@@ -643,19 +658,19 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case ENUM:
-                    writer.writeEnumField((Enum<?>)val);
+                    off = writer.writeEnumField((Enum<?>)val);
 
                     break;
 
                 case ENUM_ARR:
-                    writer.writeEnumArrayField((Object[])val);
+                    off = writer.writeEnumArrayField((Object[])val);
 
                     break;
 
                 case BINARY:
                 case OBJECT:
                 case PROXY:
-                    writer.writeObjectField(val);
+                    off = writer.writeObjectField(val);
 
                     break;
 
@@ -667,6 +682,8 @@ public abstract class BinaryFieldAccessor {
                 default:
                     assert false : "Invalid mode: " + mode;
             }
+
+            writer.writeFieldIdNoSchemaUpdate(id, off);
         }
 
         /** {@inheritDoc} */

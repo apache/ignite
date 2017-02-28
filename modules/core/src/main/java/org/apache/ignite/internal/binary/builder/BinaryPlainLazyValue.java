@@ -43,7 +43,11 @@ class BinaryPlainLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         writer.write(reader.array(), valOff, len);
+
+        return writeOff;
     }
 }

@@ -43,10 +43,14 @@ public class BinaryModifiableLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+        int writeOff = writer.currentOffset();
+
         if (val == null)
             writer.write(reader.array(), valOff, len);
         else
             writer.writeObject(val);
+
+        return writeOff;
     }
 }

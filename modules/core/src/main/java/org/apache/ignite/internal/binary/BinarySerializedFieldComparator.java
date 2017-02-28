@@ -28,7 +28,7 @@ import java.util.Arrays;
  */
 public class BinarySerializedFieldComparator {
     /** Position: not found. */
-    private static final int POS_NOT_FOUND = -1;
+    private static final int POS_NOT_FOUND_OR_NULL_VAL = -1;
 
     /** Original object. */
     private final BinaryObjectExImpl obj;
@@ -90,25 +90,18 @@ public class BinarySerializedFieldComparator {
         curFieldOrder = order;
 
         if (order == BinarySchema.ORDER_NOT_FOUND)
-            curFieldPos = POS_NOT_FOUND;
+            curFieldPos = POS_NOT_FOUND_OR_NULL_VAL;
         else {
             int pos = orderBase + order * orderMultiplier;
 
-            if (fieldOffLen == BinaryUtils.OFFSET_1) {
-                byte val = offheap() ? BinaryPrimitives.readByte(ptr, pos) : BinaryPrimitives.readByte(arr, pos);
+            int fieldOff = offheap() ?
+                BinaryUtils.fieldOffsetRelativeOffheap(ptr, pos, fieldOffLen)
+                : BinaryUtils.fieldOffsetRelativeHeap(arr, pos, fieldOffLen);
 
-                curFieldPos = startOff + ((int)val & 0xFF);
-            }
-            else if (fieldOffLen == BinaryUtils.OFFSET_2) {
-                short val = offheap() ? BinaryPrimitives.readShort(ptr, pos) : BinaryPrimitives.readShort(arr, pos);
-
-                curFieldPos = startOff + ((int)val & 0xFFFF);
-            }
-            else {
-                int val = offheap() ? BinaryPrimitives.readInt(ptr, pos) : BinaryPrimitives.readInt(arr, pos);
-
-                curFieldPos = startOff + val;
-            }
+            if (!BinaryUtils.isNullOffset(fieldOff, fieldOffLen))
+                curFieldPos = startOff + fieldOff;
+            else
+                curFieldPos = POS_NOT_FOUND_OR_NULL_VAL;
         }
     }
 
@@ -118,7 +111,7 @@ public class BinarySerializedFieldComparator {
      * @return Field type.
      */
     private byte fieldType() {
-        if (curFieldPos == POS_NOT_FOUND)
+        if (curFieldPos == POS_NOT_FOUND_OR_NULL_VAL)
             return GridBinaryMarshaller.NULL;
         else
             return offheap() ?
