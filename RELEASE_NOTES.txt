@@ -7,7 +7,6 @@ Ignite:
 * Added Data streamer mode for DML
 * Added Discovery SPI Implementation for Ignite Kubernetes Pods
 * SQL: Query can utilize multiple threads
-* SQL: Sorted merge index supported
 * SQL: Improved distributed SQL support
 * Benchmarking simplified and automated
 * Fixed licenses generation during build
