@@ -1163,7 +1163,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (partNodes == null) {
                         // Initialize HashSet to size 3 in anticipation that there won't be
                         // more than 3 nodes per partition.
-                        partNodes = new ArrayList(3);
+                        partNodes = new ArrayList<>(3);
                         part2node0[p] = partNodes;
                     }
 
