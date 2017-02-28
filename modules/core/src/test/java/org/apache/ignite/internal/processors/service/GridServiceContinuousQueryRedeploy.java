@@ -104,6 +104,8 @@ public class GridServiceContinuousQueryRedeploy extends GridCommonAbstractTest {
             fut1.get();
             fut2.get();
 
+            U.sleep(100);
+
             assert evts.size() <= 1 : evts.size();
 
             ignite.services().cancel("service1");
@@ -155,8 +157,6 @@ public class GridServiceContinuousQueryRedeploy extends GridCommonAbstractTest {
             System.out.println(name + " initializing.");
 
             ignite.cache(CACHE_NAME).put(TEST_KEY, name + " init");
-
-            U.sleep(50);
         }
 
         /** {@inheritDoc} */
