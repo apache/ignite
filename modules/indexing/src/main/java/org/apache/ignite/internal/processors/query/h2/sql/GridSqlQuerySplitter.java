@@ -1066,7 +1066,7 @@ public class GridSqlQuerySplitter {
         else if (qrym.type == Type.UNION) {
             // If it is not a UNION ALL, then we have to split because otherwise we can produce duplicates or
             // wrong results for UNION DISTINCT, EXCEPT, INTERSECT queries.
-            if (!qrym.needSplitChild && !qrym.unionAll)
+            if (!qrym.needSplitChild && (!qrym.unionAll || hasOffsetLimit(qrym.<GridSqlUnion>ast())))
                 qrym.needSplitChild = true;
 
             // If we have to split some child SELECT in this UNION, then we have to enforce split
@@ -1151,11 +1151,22 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param qry Query.
+     * @return {@code true} If we have OFFSET LIMIT.
+     */
+    private static boolean hasOffsetLimit(GridSqlQuery qry) {
+        return qry.limit() != null || qry.offset() != null;
+    }
+
+    /**
      * @param select Select to check.
      * @return {@code true} If we need to split this select.
      */
     private boolean needSplitSelect(GridSqlSelect select) {
         if (select.distinct())
+            return true;
+
+        if (hasOffsetLimit(select))
             return true;
 
         if (collocatedGrpBy)
