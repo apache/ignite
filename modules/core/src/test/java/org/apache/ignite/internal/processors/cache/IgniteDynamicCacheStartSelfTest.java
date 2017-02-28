@@ -56,6 +56,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 /**
  * Test for dynamic cache start.
@@ -1348,13 +1349,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cacheConfiguration.setName("brokenCache");
         cacheConfiguration.setCacheStoreFactory(new BrokenStoreFactory());
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                grid(0).createCache(cacheConfiguration);
-
-                return null;
-            }
-        }, CacheException.class, null);
+        Assert.assertNull(grid(0).createCache(cacheConfiguration));
     }
 
     /**
