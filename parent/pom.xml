@@ -937,7 +937,7 @@
                 <jdk>[1.8,)</jdk>
             </activation>
             <properties>
-                <javadoc.opts>-Xdoclint:none</javadoc.opts>
+                <javadoc.opts>-Xdoclint:none --allow-script-in-comments</javadoc.opts>
             </properties>
             <build>
                 <plugins>
