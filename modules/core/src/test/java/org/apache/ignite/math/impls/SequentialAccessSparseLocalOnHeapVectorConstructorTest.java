@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -72,13 +73,14 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
+        //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new SequentialAccessSparseLocalOnHeapVector((Map<String, Object>)null).size());
     }
 
     /** */ @Test
     public void mapTest() {
-        assertEquals("Size from args.", 0,
+        assertEquals("Size from args.", 99,
             new SequentialAccessSparseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
 
         final double[] test = new double[99];
@@ -96,7 +98,7 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
             }}).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */ @Test
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new SequentialAccessSparseLocalOnHeapVector(-1).size());
@@ -107,7 +109,22 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
         assertEquals("0 size.", 0,
             new SequentialAccessSparseLocalOnHeapVector(0).size());
 
-        assertEquals("1 size.", 0,
+        assertEquals("1 size.", 1,
             new SequentialAccessSparseLocalOnHeapVector(1).size());
+    }
+
+    /** */ @Test
+    public void vectorNullTest() {
+        assertEquals("Null Vector expected size 0.", 0,
+            new SequentialAccessSparseLocalOnHeapVector((Vector)null).size());
+    }
+
+    /** */ @Test
+    public void vectorTest() {
+        assertEquals("Vector expected size 0.", 0,
+            new SequentialAccessSparseLocalOnHeapVector(new DenseLocalOnHeapVector(0)).size());
+
+        assertEquals("Vector expected size 1.", 1,
+            new SequentialAccessSparseLocalOnHeapVector(new DenseLocalOnHeapVector(1)).size());
     }
 }

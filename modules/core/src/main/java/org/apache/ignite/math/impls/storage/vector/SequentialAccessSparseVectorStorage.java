@@ -113,8 +113,10 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public void set(int i, double v) {
-        if (!(noDefault && Double.compare(v, DEFAULT_VALUE) == 0))
-            data.put(i, v);
+        if (noDefault && isDefaultValue(v) && isDefaultValue(get(i)))
+            return;
+
+        data.put(i, v);
     }
 
     /** {@inheritDoc} */
@@ -151,13 +153,14 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
         return Math.max(1, Math.round(Functions.LOG2.apply(data.values().stream().filter(this::nonDefault).count())));
     }
 
-    /**
-     * 
-     * @param x
-     * @return
-     */
+    /** */
     private boolean nonDefault(double x) {
-        return Double.compare(x, DEFAULT_VALUE) != 0 || !noDefault;
+        return !isDefaultValue(x) || !noDefault;
+    }
+
+    /** */
+    private boolean isDefaultValue(double x) {
+        return Double.compare(x, DEFAULT_VALUE) == 0;
     }
 
     /** {@inheritDoc} */
@@ -189,7 +192,7 @@ public class SequentialAccessSparseVectorStorage implements VectorStorage {
 
         result = result * 37 + Boolean.hashCode(noDefault);
         result = result * 37 + data.hashCode();
-        
+
         return result;
     }
 }

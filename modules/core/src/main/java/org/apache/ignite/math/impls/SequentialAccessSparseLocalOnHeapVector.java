@@ -21,50 +21,58 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.SequentialAccessSparseVectorStorage;
-
 import java.util.*;
 
 /**
  * TODO: add description.
  */
 public class SequentialAccessSparseLocalOnHeapVector extends AbstractVector  {
+    /** */ private int cardinality;
+
     /** */
     public SequentialAccessSparseLocalOnHeapVector(){
         // No-op.
     }
 
-    /**
-     * @param cardinality Cardinality.
-     */
+    /** */
     public SequentialAccessSparseLocalOnHeapVector(int cardinality){
         super(cardinality);
+
+        this.cardinality = cardinality;
 
         setStorage(new SequentialAccessSparseVectorStorage());
     }
 
-    /**
-     *
-     *
-     * @param vector Vector.
-     */
+    /** */
     public SequentialAccessSparseLocalOnHeapVector(Vector vector) {
         super(vector);
+
+        this.cardinality = vector == null ? 0 : vector.size();
     }
 
-    /**
-     *
-     *
-     * @param args Args.
-     */
+    /** */
     public SequentialAccessSparseLocalOnHeapVector(Map<String, Object> args) {
         assert args != null;
 
-        if (args.containsKey("size"))
-            setStorage(new SequentialAccessSparseVectorStorage(), (int) args.get("size"));
-        else if (args.containsKey("arr") && args.containsKey("copy"))
-            setStorage(new SequentialAccessSparseVectorStorage((double[])args.get("arr"), false));
+        if (args.containsKey("size")) {
+            cardinality = (int) args.get("size");
+
+            setStorage(new SequentialAccessSparseVectorStorage(), cardinality);
+        }
+        else if (args.containsKey("arr") && args.containsKey("copy")) {
+            double[] arr = (double[])args.get("arr");
+
+            cardinality = arr == null ? 0 : arr.length;
+
+            setStorage(new SequentialAccessSparseVectorStorage(arr, false));
+        }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return cardinality;
     }
 
     /** {@inheritDoc} */
