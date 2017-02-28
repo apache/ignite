@@ -1,15 +1,12 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.math.MatrixStorage;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
+import it.unimi.dsi.fastutil.ints.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.vector.*;
+import java.io.*;
 
 /**
- * Storage for sparse local matrix. Based on RandomAccessSparseVector as rows.
+ * Storage for sparse local matrix. 
  */
 public class SparseLocalMatrixStorage implements MatrixStorage {
     private Int2ObjectOpenHashMap<Vector> rowVectors;
@@ -32,6 +29,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
     public SparseLocalMatrixStorage(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
+
         initDataStorage();
     }
 

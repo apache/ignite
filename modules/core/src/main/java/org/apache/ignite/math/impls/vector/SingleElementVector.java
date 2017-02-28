@@ -99,6 +99,6 @@ public class SingleElementVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 }
