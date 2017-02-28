@@ -6,8 +6,8 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.RandomAccessSparseLocalOnHeapVector;
-import org.apache.ignite.math.impls.SequentialAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.SequentialAccessSparseLocalOnHeapVector;
 
 /**
  * TODO: add description

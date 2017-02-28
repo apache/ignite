@@ -6,7 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.RandomAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
 
 /**
  * Storage for sparse local matrix. Based on RandomAccessSparseVector as rows.

@@ -20,8 +20,8 @@ package org.apache.ignite.math.benchmark;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.DenseLocalOffHeapVector;
-import org.apache.ignite.math.impls.DenseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

@@ -3,9 +3,8 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.AbstractMatrix;
-import org.apache.ignite.math.impls.RandomAccessSparseLocalOnHeapVector;
-import org.apache.ignite.math.impls.SequentialAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.SequentialAccessSparseLocalOnHeapVector;
 import org.apache.ignite.math.impls.storage.matrix.SparseLocalRowMatrixStorage;
 
 import java.util.Map;

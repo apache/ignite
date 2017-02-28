@@ -17,47 +17,56 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
-import org.apache.ignite.math.impls.storage.matrix.SparseLocalMatrixStorage;
+import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorage;
+import org.apache.ignite.math.impls.storage.matrix.MatrixOffHeapStorage;
 
-import java.util.Map;
+import java.util.*;
 
 /**
- * Sparse local onheap matrix with {@link RandomAccessSparseLocalOnHeapVector} as rows.
+ * TODO add description
  */
-public class SparseLocalOnHeapMatrix extends AbstractMatrix {
-    /** */
-    public SparseLocalOnHeapMatrix(){
-        // No-op
+public class DenseLocalOffHeapMatrix extends AbstractMatrix {
+    /**
+     *
+     * @param data
+     */
+    public DenseLocalOffHeapMatrix(double[][] data){
+        setStorage(new MatrixOffHeapStorage(data));
     }
 
-    /** */
-    SparseLocalOnHeapMatrix(int rows, int cols){
-        setStorage(new SparseLocalMatrixStorage(rows, cols));
+    /**
+     *
+     * @param rows
+     * @param cols
+     */
+    public DenseLocalOffHeapMatrix(int rows, int cols){
+        setStorage(new MatrixOffHeapStorage(rows, cols));
     }
 
-    /** */
-    public SparseLocalOnHeapMatrix(Map<String, Object> args) {
+    /**
+     *
+     * @param args
+     */
+    public DenseLocalOffHeapMatrix(Map<String, Object> args) {
         assert args != null;
 
         if (args.containsKey("rows") && args.containsKey("cols"))
-            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
+            setStorage(new MatrixArrayStorage((int)args.get("rows"), (int)args.get("cols")));
         else if (args.containsKey("arr"))
-            setStorage(new SparseLocalMatrixStorage((double[][])args.get("arr")));
+            setStorage(new MatrixArrayStorage((double[][])args.get("arr")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
-    }
-
-    public SparseLocalOnHeapMatrix(int row, int col, boolean randomAcces) {
     }
 
     /** {@inheritDoc} */
     @Override
     public Matrix copy() {
-        Matrix copy = like(rowSize(), columnSize());
+        DenseLocalOffHeapMatrix copy = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().rowSize());
+
         copy.assign(this);
 
         return copy;
@@ -66,12 +75,18 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     /** {@inheritDoc} */
     @Override
     public Matrix like(int rows, int cols) {
-        return new SparseLocalOnHeapMatrix(rows, cols);
+        return new DenseLocalOffHeapMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */
     @Override
     public Vector likeVector(int crd) {
-        return new RandomAccessSparseLocalOnHeapVector(crd);
+        return new DenseLocalOffHeapVector(crd);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void destroy() {
+        getStorage().destroy();
     }
 }

@@ -15,48 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
-
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.*;
-import java.io.*;
+package org.apache.ignite.math.impls.matrix;
 
 /**
  * TODO: add description.
  */
-public class TracerTest {
-    /**
-     *
-     * @param size
-     * @return
-     */
-    private Vector makeRandomVector(int size) {
-        DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
-
-        vec.assign((idx) -> Math.random());
-
-        return vec;
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testAsciiVectorTracer() {
-        Vector vec = makeRandomVector(20);
-
-        Tracer.showAscii(vec);
-        Tracer.showAscii(vec, "%2f");
-        Tracer.showAscii(vec, "%.3g");
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testHtmlVectorTracer() throws IOException {
-        Vector vec1 = makeRandomVector(1000);
-
-        Tracer.showHtml(vec1);
-    }
+public class SparseLocalOffHeapMatrix {
 }
