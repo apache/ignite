@@ -55,6 +55,13 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
     private final int[] columnIds;
 
+    /** */
+    private final Comparator<Value> comp = new Comparator<Value>() {
+        @Override public int compare(Value o1, Value o2) {
+            return compareValues(o1, o2);
+        }
+    };
+
     /**
      * @param name Tree name.
      * @param reuseList Reuse list.
@@ -96,6 +103,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         this.cols = cols;
 
         this.columnIds = new int[cols.length];
+
         for (int i = 0; i < cols.length; i++)
             columnIds[i] = cols[i].column.getColumnId();
 
@@ -157,12 +165,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             int fieldOff = 0;
 
             int lastIdxUsed = 0;
-
-            Comparator<Value> comp = new Comparator<Value>() {
-                @Override public int compare(Value o1, Value o2) {
-                    return compareValues(o1, o2);
-                }
-            };
 
             for (int i = 0; i < inlineIdxs.size(); i++) {
                 InlineIndexHelper inlineIdx = inlineIdxs.get(i);
@@ -240,7 +242,6 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         return 0;
     }
 
+    /** Compares two Values. */
     public abstract int compareValues(Value v1, Value v2);
 }
-
-

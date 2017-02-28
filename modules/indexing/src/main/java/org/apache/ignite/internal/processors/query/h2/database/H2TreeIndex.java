@@ -88,7 +88,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = tbl.rowDescriptor() == null ? "?_" + name : tbl.rowDescriptor().type().typeId() + "_" + name;
+        name = tbl.rowDescriptor() == null ? "_" + name : tbl.rowDescriptor().type().typeId() + "_" + name;
 
         name = BPlusTree.treeName(name, "H2Tree");
 
@@ -103,10 +103,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                 dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                 tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), cols, inlineIdxs, computeInlineSize(inlineIdxs, inlineSize)) {
                 @Override public int compareValues(Value v1, Value v2) {
-                    if (v1 == v2)
-                        return 0;
-
-                    return table.compareTypeSafe(v1, v2);
+                    return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                 }
             };
         }
@@ -124,14 +121,12 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return List of {@link InlineIndexHelper} objects.
      */
     private List<InlineIndexHelper> getAvailableInlineColumns(IndexColumn[] cols) {
-
-        // todo: null
         List<InlineIndexHelper> res = new ArrayList<>();
 
         for (int i = 0; i < cols.length; i++) {
             IndexColumn col = cols[i];
 
-            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
+            if (col == null || !InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
 
             InlineIndexHelper idx = new InlineIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
@@ -238,7 +233,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
-
     }
 
     /** {@inheritDoc} */
@@ -323,8 +317,8 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return Inline size.
      */
     private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
-        int maxSize = PageIO.MAX_PAYLOAD_SIZE;
-        int confSize = cctx.config().getMaxPayloadSize();
+        int confSize = cctx.config().getSqlIndexMaxInlineSize();
+
         int propSize = confSize == -1 ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
             IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT) : confSize;
 
@@ -350,10 +344,10 @@ public class H2TreeIndex extends GridH2IndexBase {
                 size += idxHelper.size() + 1;
             }
 
-            return Math.min(maxSize, size);
+            return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
         }
         else
-            return Math.min(maxSize, cfgInlineSize);
+            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
     }
 
     /**
@@ -364,5 +358,4 @@ public class H2TreeIndex extends GridH2IndexBase {
     private RootPage getMetaPage(String name) throws IgniteCheckedException {
         return cctx.offheap().rootPageForIndex(name);
     }
-
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -84,6 +83,9 @@ public class InlineIndexHelper {
     /** */
     private final int sortType;
 
+    /** */
+    private final short size;
+
     /**
      * @param type Index type (see {@link Value}).
      * @param colIdx Index column index.
@@ -93,6 +95,63 @@ public class InlineIndexHelper {
         this.type = type;
         this.colIdx = colIdx;
         this.sortType = sortType;
+
+        switch (type) {
+            case Value.BOOLEAN:
+            case Value.BYTE:
+                this.size = 1;
+                break;
+
+            case Value.SHORT:
+                this.size = 2;
+                break;
+
+            case Value.INT:
+                this.size = 4;
+                break;
+
+            case Value.LONG:
+                this.size = 8;
+                break;
+
+            case Value.FLOAT:
+                this.size = 4;
+                break;
+
+            case Value.DOUBLE:
+                this.size = 8;
+                break;
+
+            case Value.DATE:
+                this.size = 8;
+                break;
+
+            case Value.TIME:
+                this.size = 8;
+                break;
+
+            case Value.TIMESTAMP:
+                this.size = 16;
+                break;
+
+            case Value.TIMESTAMP_UTC:
+                this.size = 8;
+                break;
+
+            case Value.UUID:
+                this.size = 16;
+                break;
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+            case Value.BYTES:
+                this.size = -1;
+                break;
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
     }
 
     /**
@@ -141,50 +200,7 @@ public class InlineIndexHelper {
      * @return Value size.
      */
     public short size() {
-        switch (type) {
-            case Value.BOOLEAN:
-            case Value.BYTE:
-                return 1;
-
-            case Value.SHORT:
-                return 2;
-
-            case Value.INT:
-                return 4;
-
-            case Value.LONG:
-                return 8;
-
-            case Value.FLOAT:
-                return Float.SIZE;
-
-            case Value.DOUBLE:
-                return Float.SIZE;
-
-            case Value.DATE:
-                return 8;
-
-            case Value.TIME:
-                return 8;
-
-            case Value.TIMESTAMP:
-                return 16;
-
-            case Value.TIMESTAMP_UTC:
-                return 8;
-
-            case Value.UUID:
-                return 16;
-
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-            case Value.BYTES:
-                return -1;
-
-            default:
-                throw new UnsupportedOperationException("no get operation for fast index type " + type);
-        }
+        return size;
     }
 
     /**
@@ -198,8 +214,8 @@ public class InlineIndexHelper {
         if (type == Value.NULL)
             return 1;
 
-        if (size() > 0)
-            return size() + 1;
+        if (size > 0)
+            return size + 1;
         else
             return PageUtils.getShort(pageAddr, off + 1) + 3;
     }
@@ -210,7 +226,7 @@ public class InlineIndexHelper {
      * @return Value.
      */
     public Value get(long pageAddr, int off, int maxSize) {
-        if (size() > 0 && size() + 1 > maxSize)
+        if (size > 0 && size + 1 > maxSize)
             return null;
 
         int type = PageUtils.getByte(pageAddr, off);
@@ -241,15 +257,11 @@ public class InlineIndexHelper {
                 return ValueLong.get(PageUtils.getLong(pageAddr, off + 1));
 
             case Value.FLOAT: {
-                byte[] bytes = PageUtils.getBytes(pageAddr, off + 1, size());
-                ByteBuffer buf = ByteBuffer.wrap(bytes);
-                return ValueFloat.get(buf.getFloat());
+                return ValueFloat.get(Float.intBitsToFloat(PageUtils.getInt(pageAddr, off + 1)));
             }
 
             case Value.DOUBLE: {
-                byte[] bytes = PageUtils.getBytes(pageAddr, off + 1, size());
-                ByteBuffer buf = ByteBuffer.wrap(bytes);
-                return ValueDouble.get(buf.getDouble());
+                return ValueDouble.get(Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1)));
             }
 
             case Value.TIME:
@@ -267,29 +279,27 @@ public class InlineIndexHelper {
             case Value.UUID:
                 return ValueUuid.get(PageUtils.getLong(pageAddr, off + 1), PageUtils.getLong(pageAddr, off + 9));
 
-            case Value.STRING: {
-                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
-                return ValueString.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
-            }
+            case Value.STRING:
+                return ValueString.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.STRING_FIXED: {
-                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
-                return ValueStringFixed.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
-            }
+            case Value.STRING_FIXED:
+                return ValueStringFixed.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.STRING_IGNORECASE: {
-                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
-                return ValueStringIgnoreCase.get(new String(PageUtils.getBytes(pageAddr, off + 3, size), CHARSET));
-            }
+            case Value.STRING_IGNORECASE:
+                return ValueStringIgnoreCase.get(new String(readBytes(pageAddr, off), CHARSET));
 
-            case Value.BYTES: {
-                int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
-                return ValueBytes.get(PageUtils.getBytes(pageAddr, off + 3, size));
-            }
+            case Value.BYTES:
+                return ValueBytes.get(readBytes(pageAddr, off));
 
             default:
                 throw new UnsupportedOperationException("no get operation for fast index type " + type);
         }
+    }
+
+    /** Read variable length bytearray */
+    private static byte[] readBytes(long pageAddr, int off) {
+        int size = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
+        return PageUtils.getBytes(pageAddr, off + 3, size);
     }
 
     /**
@@ -323,7 +333,7 @@ public class InlineIndexHelper {
      * @param maxSize Maximum size to read.
      * @param v Value to compare.
      * @param comp Comparator.
-     * @return Compare result
+     * @return Compare result (-2 means we can't compare).
      */
     public int compare(long pageAddr, int off, int maxSize, Value v, Comparator<Value> comp) {
         Value v1 = get(pageAddr, off, maxSize);
@@ -334,14 +344,13 @@ public class InlineIndexHelper {
         int c = comp.compare(v1, v);
         assert c > -2;
 
-        if (size() < 0)
+        if (size > 0)
             return sortType() == SortOrder.DESCENDING ? -c : c;
-        else {
-            if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
-                return sortType() == SortOrder.DESCENDING ? -c : c;
-            else
-                return -2;
-        }
+
+        if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
+            return sortType() == SortOrder.DESCENDING ? -c : c;
+
+        return -2;
     }
 
     /**
@@ -351,8 +360,14 @@ public class InlineIndexHelper {
      * @return NUmber of bytes saved.
      */
     public int put(long pageAddr, int off, Value val, int maxSize) {
-        if (size() > 0 && size() + 1 > maxSize)
+        if (size > 0 && size + 1 > maxSize)
             return 0;
+
+        if (size < 0 && maxSize < 4) {
+            // can't fit vartype field
+            PageUtils.putByte(pageAddr, off, (byte)Value.UNKNOWN);
+            return 0;
+        }
 
         if (val.getType() == Value.NULL) {
             PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
@@ -366,83 +381,77 @@ public class InlineIndexHelper {
             case Value.BOOLEAN:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putByte(pageAddr, off + 1, (byte)(val.getBoolean() ? 1 : 0));
-                return size() + 1;
+                return size + 1;
 
             case Value.BYTE:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putByte(pageAddr, off + 1, val.getByte());
-                return size() + 1;
+                return size + 1;
 
             case Value.SHORT:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putShort(pageAddr, off + 1, val.getShort());
-                return size() + 1;
+                return size + 1;
 
             case Value.INT:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putInt(pageAddr, off + 1, val.getInt());
-                return size() + 1;
+                return size + 1;
 
             case Value.LONG:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, val.getLong());
-                return size() + 1;
+                return size + 1;
 
             case Value.FLOAT: {
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
-                byte[] bytes = new byte[size()];
-                ByteBuffer.wrap(bytes).putFloat(val.getFloat());
-                PageUtils.putBytes(pageAddr, off + 1, bytes);
-                return size() + 1;
+                PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits(val.getFloat()));
+                return size + 1;
             }
 
             case Value.DOUBLE: {
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
-                byte[] bytes = new byte[size()];
-                ByteBuffer.wrap(bytes).putDouble(val.getDouble());
-                PageUtils.putBytes(pageAddr, off + 1, bytes);
-                return size() + 1;
+                PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits(val.getDouble()));
+                return size + 1;
             }
 
             case Value.TIME:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTime)val).getNanos());
-                return size() + 1;
+                return size + 1;
 
             case Value.DATE:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueDate)val).getDateValue());
-                return size() + 1;
+                return size + 1;
 
             case Value.TIMESTAMP:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTimestamp)val).getDateValue());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueTimestamp)val).getTimeNanos());
-                return size() + 1;
+                return size + 1;
 
             case Value.TIMESTAMP_UTC:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTimestampUtc)val).getUtcDateTimeNanos());
-                return size() + 1;
+                return size + 1;
 
             case Value.UUID:
                 PageUtils.putByte(pageAddr, off, (byte)val.getType());
                 PageUtils.putLong(pageAddr, off + 1, ((ValueUuid)val).getHigh());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueUuid)val).getLow());
-                return size() + 1;
+                return size + 1;
 
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE: {
-                byte[] s;
                 short size;
 
-                if (val.getString().getBytes(CHARSET).length + 3 <= maxSize) {
-                    s = val.getString().getBytes(CHARSET);
+                byte[] s = val.getString().getBytes(CHARSET);
+                if (s.length + 3 <= maxSize)
                     size = (short)s.length;
-                }
                 else {
-                    s = toBytes(val.getString(), maxSize - 3);
+                    s = trimUTF8(s, maxSize - 3);
                     size = (short)(s.length | 0x8000);
                 }
 
@@ -486,17 +495,16 @@ public class InlineIndexHelper {
     /**
      * Convert String to byte[] with size limit, according to UTF-8 encoding.
      *
-     * @param s String.
+     * @param bytes byte[].
      * @param limit Size limit.
      * @return byte[].
      */
-    public static byte[] toBytes(String s, int limit) {
-        byte[] bytes = s.getBytes(CHARSET);
+    public static byte[] trimUTF8(byte[] bytes, int limit) {
         if (bytes.length <= limit)
             return bytes;
 
-        for (int i = bytes.length - 1; i > 0; i--) {
-            if ((bytes[i] & 0xc0) != 0x80 && i <= limit) {
+        for (int i = limit; i > 0; i--) {
+            if ((bytes[i] & 0xc0) != 0x80) {
                 byte[] res = new byte[i];
                 System.arraycopy(bytes, 0, res, 0, i);
                 return res;
@@ -517,29 +525,30 @@ public class InlineIndexHelper {
             case Value.STRING:
             case Value.STRING_FIXED:
             case Value.STRING_IGNORECASE:
-                if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
-                    return false;
-
-                if (shortVal.getType() != Value.NULL
-                    && v2.getType() != Value.NULL
-                    && c < 0
-                    && shortVal.getString().length() <= v2.getString().length()) {
-                    // Can't rely on compare, should use full string.
-                    return false;
-                }
-                return true;
-
             case Value.BYTES:
+                if (shortVal.getType() == Value.NULL || v2.getType() == Value.NULL)
+                    return true;
+
                 if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
                     return false;
 
-                if (shortVal.getType() != Value.NULL
-                    && v2.getType() != Value.NULL
-                    && c < 0
-                    && shortVal.getBytes().length <= v2.getBytes().length) {
-                    // Can't rely on compare, should use full array.
+                int l1;
+                int l2;
+
+                if (type == Value.BYTES) {
+                    l1 = shortVal.getBytes().length;
+                    l2 = v2.getBytes().length;
+                }
+                else {
+                    l1 = shortVal.getString().length();
+                    l2 = v2.getString().length();
+                }
+
+                if (c < 0 && l1 <= l2) {
+                    // Can't rely on compare, should use full value.
                     return false;
                 }
+
                 return true;
 
             default:
