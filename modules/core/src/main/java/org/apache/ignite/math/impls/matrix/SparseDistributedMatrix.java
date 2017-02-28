@@ -27,14 +27,23 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.matrix.AbstractMatrix;
+import java.io.*;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
  */
 public class SparseDistributedMatrix extends AbstractMatrix {
+    /** Row-optimized storage mode. */
+    public static final int ROW_STORAGE_MODE = 1;
+    /** Column-optimized storage mode. */
+    public static final int COLUMN_STORAGE_MODE = 2;
+    /** Random-optimized access mode. */
+    public static final int RANDOM_ACCESS_MODE = 3;
+    /** Sequential-optimized access mode. */
+    public static final int SEQUENTIAL_ACCESS_MODE = 4;
+
     private int rows, cols;
-    private boolean rowWise, rndAccess;
+    private int stoMode, acsMode;
 
     /**
      *
@@ -47,48 +56,33 @@ public class SparseDistributedMatrix extends AbstractMatrix {
      *
      * @param rows
      * @param cols
-     * @param rowWise Optimized for row or column operations. In other words, the matrix will be stored in
-     *      a cache of rows or a cache of columns where each row or column will be represented as
-     *      sparse local on-heap vector.
-     * @param rdnAccess Sequential or random access optimization for row or column vectors.
+     * @param stoMode
+     * @param acsMode
      */
-    public SparseDistributedMatrix(int rows, int cols, boolean rowWise, boolean rdnAccess) {
+    public SparseDistributedMatrix(int rows, int cols, int stoMode, int acsMode) {
+        assert rows > 0;
+        assert cols > 0;
+        assert stoMode == ROW_STORAGE_MODE || stoMode == COLUMN_STORAGE_MODE;
+        assert acsMode == RANDOM_ACCESS_MODE || acsMode == SEQUENTIAL_ACCESS_MODE;
+
         this.rows = rows;
         this.cols = cols;
-        this.rowWise = rowWise;
-        this.rndAccess = rndAccess;
+        this.stoMode = stoMode;
+        this.acsMode = acsMode;
     }
 
-    /**
-     *
-     * @return
-     */
-    public boolean isRowWise() {
-        return rowWise;
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        // TODO
     }
 
-    /**
-     *
-     * @return
-     */
-    public boolean isColumnWise() {
-        return !rowWise;
-    }
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
 
-    /**
-     *
-     * @return
-     */
-    public boolean isRandomAccess() {
-        return rndAccess;
-    }
-
-    /**
-     * 
-     * @return
-     */
-    public boolean isColumnAccess() {
-        return !rndAccess;
+        // TODO
     }
 
     @Override
