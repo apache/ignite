@@ -17,12 +17,12 @@
 
 package org.apache.ignite.math.impls;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.*;
+import org.apache.ignite.math.impls.storage.vector.VectorNullStorage;
+
 import java.io.*;
 import java.util.*;
 import java.util.function.*;

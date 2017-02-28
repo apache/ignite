@@ -3,8 +3,7 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.SparseLocalMatrixStorage;
-import org.apache.ignite.math.impls.storage.SparseLocalRowMatrixStorage;
+import org.apache.ignite.math.impls.storage.matrix.SparseLocalRowMatrixStorage;
 
 import java.util.Map;
 

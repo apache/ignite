@@ -4,7 +4,7 @@ import java.util.Map;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.RandomAccessSparseVectorStorage;
+import org.apache.ignite.math.impls.storage.vector.RandomAccessSparseVectorStorage;
 
 /**
  * TODO: add description.

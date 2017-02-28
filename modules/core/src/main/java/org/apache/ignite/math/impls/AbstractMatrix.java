@@ -20,7 +20,8 @@ package org.apache.ignite.math.impls;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.*;
+import org.apache.ignite.math.impls.storage.matrix.MatrixNullStorage;
+
 import java.io.*;
 import java.util.*;
 import java.util.function.*;

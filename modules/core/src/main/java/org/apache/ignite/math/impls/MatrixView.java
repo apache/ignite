@@ -18,7 +18,8 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.storage.*;
+import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
+
 import java.io.*;
 
 /**

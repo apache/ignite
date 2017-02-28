@@ -21,7 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.*;
+import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
+
 import java.util.*;
 import java.util.function.*;
 

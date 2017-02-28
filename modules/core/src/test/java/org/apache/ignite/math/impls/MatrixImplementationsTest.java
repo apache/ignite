@@ -1,7 +1,7 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.impls.storage.ExternalizeTest;
+import org.apache.ignite.math.ExternalizeTest;
 
 import java.util.function.BiConsumer;
 

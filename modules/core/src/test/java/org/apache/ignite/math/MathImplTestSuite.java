@@ -18,14 +18,14 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.*;
-import org.apache.ignite.math.impls.storage.MatrixArrayStorageTest;
-import org.apache.ignite.math.impls.storage.MatrixNullStorageTest;
-import org.apache.ignite.math.impls.storage.MatrixOffHeapStorageTest;
-import org.apache.ignite.math.impls.storage.MatrixStorageImplementationTest;
-import org.apache.ignite.math.impls.storage.RandomAccessSparseVectorStorageTest;
-import org.apache.ignite.math.impls.storage.SequentialAccessSparseVectorStorageTest;
-import org.apache.ignite.math.impls.storage.VectorArrayStorageTest;
-import org.apache.ignite.math.impls.storage.VectorOffheapStorageTest;
+import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
+import org.apache.ignite.math.impls.storage.matrix.MatrixNullStorageTest;
+import org.apache.ignite.math.impls.storage.matrix.MatrixOffHeapStorageTest;
+import org.apache.ignite.math.impls.storage.matrix.MatrixStorageImplementationTest;
+import org.apache.ignite.math.impls.storage.vector.RandomAccessSparseVectorStorageTest;
+import org.apache.ignite.math.impls.storage.vector.SequentialAccessSparseVectorStorageTest;
+import org.apache.ignite.math.impls.storage.vector.VectorArrayStorageTest;
+import org.apache.ignite.math.impls.storage.vector.VectorOffheapStorageTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
