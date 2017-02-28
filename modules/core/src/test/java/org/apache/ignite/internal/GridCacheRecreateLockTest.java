@@ -6,10 +6,12 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Create lock after owner node left topology test
  */
+@GridCommonTest(group = "Kernal Self")
 public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
 
     /**
