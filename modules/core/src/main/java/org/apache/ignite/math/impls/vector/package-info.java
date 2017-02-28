@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains specific implementations for matrix models.
+ * Contains specific implementations for vectors.
  */
 package org.apache.ignite.math.impls.vector;
