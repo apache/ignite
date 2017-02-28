@@ -100,6 +100,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Events of these types should be recorded. */
     private volatile int[] inclEvtTypes;
 
+    /** */
+    private boolean stopped;
+
     /**
      * Maps event type to boolean ({@code true} for recordable events).
      * This array is used for listeners notification. It may be wider,
@@ -212,7 +215,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
-        return busyLock.readLock().tryLock();
+        if (!busyLock.readLock().tryLock())
+            return false;
+
+        if (stopped) {
+            busyLock.readLock().unlock();
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -225,15 +237,23 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop0(boolean cancel) {
-        // Acquire write lock so that any new thread could not be started.
         busyLock.writeLock().lock();
 
-        if (msgLsnr != null)
-            ctx.io().removeMessageListener(TOPIC_EVENT, msgLsnr);
+        try {
+            if (msgLsnr != null)
+                ctx.io().removeMessageListener(
+                    TOPIC_EVENT,
+                    msgLsnr);
 
-        msgLsnr = null;
+            msgLsnr = null;
 
-        lsnrs.clear();
+            lsnrs.clear();
+
+            stopped = true;
+        }
+        finally {
+            busyLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */

@@ -20,21 +20,29 @@ import headerTemplate from 'app/components/ui-grid-header/ui-grid-header.jade';
 import columnDefs from './list-of-registered-users.column-defs';
 import categories from './list-of-registered-users.categories';
 
-export default class IgniteListOfRegisteredUsersCtrl {
-    static $inject = ['$scope', '$state', '$templateCache', 'User', 'uiGridConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+const rowTemplate = `<div
+  ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.uid"
+  ng-mouseover="grid.api.selection.selectRow(row.entity);"
+  ui-grid-one-bind-id-grid="rowRenderIndex + '-' + col.uid + '-cell'"
+  class="ui-grid-cell"
+  ng-class="{ 'ui-grid-row-header-cell': col.isRowHeader }"
+  role="{{col.isRowHeader ? 'rowheader' : 'gridcell'}}"
+  ui-grid-cell/>`;
 
-    constructor($scope, $state, $templateCache, User, uiGridConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
+export default class IgniteListOfRegisteredUsersCtrl {
+    static $inject = ['$scope', '$state', '$filter', '$templateCache', 'User', 'uiGridConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+
+    constructor($scope, $state, $filter, $templateCache, User, uiGridConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
         const $ctrl = this;
 
         const companySelectOptions = [];
         const countrySelectOptions = [];
 
+        const dtFilter = $filter('date');
+
         $ctrl.params = {
             startDate: new Date()
         };
-
-        $ctrl.params.startDate.setDate(1);
-        $ctrl.params.startDate.setHours(0, 0, 0, 0);
 
         const columnCompany = _.find(columnDefs, { displayName: 'Company' });
         const columnCountry = _.find(columnDefs, { displayName: 'Country' });
@@ -82,7 +90,19 @@ export default class IgniteListOfRegisteredUsersCtrl {
         };
 
         const showActivities = (user) => {
-            return new ActivitiesUserDialog({ user, params: $ctrl.params });
+            return new ActivitiesUserDialog({ user });
+        };
+
+        const companiesExcludeFilter = (renderableRows) => {
+            if (_.isNil($ctrl.params.companiesExclude))
+                return renderableRows;
+
+            _.forEach(renderableRows, (row) => {
+                row.visible = _.isEmpty($ctrl.params.companiesExclude) ||
+                    row.entity.company.toLowerCase().indexOf($ctrl.params.companiesExclude.toLowerCase()) === -1;
+            });
+
+            return renderableRows;
         };
 
         $ctrl.gridOptions = {
@@ -91,14 +111,17 @@ export default class IgniteListOfRegisteredUsersCtrl {
             columnDefs,
             categories,
             headerTemplate: $templateCache.get(headerTemplate),
+            rowTemplate,
             enableFiltering: true,
-            enableRowSelection: false,
+            enableRowSelection: true,
             enableRowHeaderSelection: false,
             enableColumnMenus: false,
             multiSelect: false,
             modifierKeysToMultiSelect: true,
             noUnselect: true,
             fastWatch: true,
+            exporterSuppressColumns: ['actions'],
+            exporterCsvColumnSeparator: ';',
             onRegisterApi: (api) => {
                 $ctrl.gridApi = api;
 
@@ -106,6 +129,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 api.removeUser = removeUser;
                 api.toggleAdmin = toggleAdmin;
                 api.showActivities = showActivities;
+
+                api.grid.registerRowsProcessor(companiesExcludeFilter, 50);
             }
         };
 
@@ -123,7 +148,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
         };
 
         /**
-         * @param {{startDate: Date, endDate: Date}} params
+         * @param {{startDate: number, endDate: number}} params
          */
         const reloadUsers = (params) => {
             AdminData.loadUsers(params)
@@ -139,14 +164,17 @@ export default class IgniteListOfRegisteredUsersCtrl {
                 .then((data) => $ctrl.adjustHeight(data.length));
         };
 
-        $scope.$watch(() => $ctrl.params.startDate, () => {
-            const endDate = new Date($ctrl.params.startDate);
+        $scope.$watch(() => $ctrl.params.companiesExclude, () => {
+            $ctrl.gridApi.grid.refreshRows();
+        });
 
-            endDate.setMonth(endDate.getMonth() + 1);
+        $scope.$watch(() => $ctrl.params.startDate, (dt) => {
+            $ctrl.gridOptions.exporterCsvFilename = `web_console_users_${dtFilter(dt, 'yyyy_MM')}.csv`;
 
-            $ctrl.params.endDate = endDate;
+            const startDate = Date.UTC(dt.getFullYear(), dt.getMonth(), 1);
+            const endDate = Date.UTC(dt.getFullYear(), dt.getMonth() + 1, 1);
 
-            reloadUsers($ctrl.params);
+            reloadUsers({ startDate, endDate });
         });
     }
 
@@ -202,6 +230,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
     }
 
     exportCsv() {
-        this.gridApi.exporter.csvExport('all', 'visible');
+        this.gridApi.exporter.csvExport('visible', 'visible');
     }
 }

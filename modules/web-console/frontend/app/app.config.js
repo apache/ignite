@@ -103,3 +103,7 @@ igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
         iconRight: 'icon-datepicker-right'
     });
 }]);
+
+igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
+    $translateProvider.useSanitizeValueStrategy('sanitize');
+}]);
