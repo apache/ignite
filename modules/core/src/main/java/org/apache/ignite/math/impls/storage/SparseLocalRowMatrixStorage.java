@@ -71,6 +71,21 @@ public class SparseLocalRowMatrixStorage implements MatrixStorage {
                 this.rowVectors[i] = vectors[i];
     }
 
+    /** */
+    public SparseLocalRowMatrixStorage(double[][] arrs, boolean accessMode) {
+        this.rows = arrs.length;
+        this.columns = arrs[0].length;
+        this.randomAccessRows = accessMode;
+
+        for (int i = 0; i < rows; i++) {
+            this.rowVectors[i] = accessMode
+                    ? new RandomAccessSparseLocalOnHeapVector(columns)
+                    : new SequentialAccessSparseLocalOnHeapVector(columns);
+
+            this.rowVectors[i].assign(arrs[i]);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return rowVectors[x].get(y);

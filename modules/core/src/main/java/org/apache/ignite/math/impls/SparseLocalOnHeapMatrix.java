@@ -17,8 +17,57 @@
 
 package org.apache.ignite.math.impls;
 
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.MatrixStorage;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.SparseLocalMatrixStorage;
+
+import java.util.Map;
+
 /**
- * TODO: add description.
+ * Sparse local onheap matrix with {@link RandomAccessSparseLocalOnHeapVector} as rows.
  */
-public class SparseLocalOnHeapMatrix {
+public class SparseLocalOnHeapMatrix extends AbstractMatrix {
+
+    /** */
+    SparseLocalOnHeapMatrix(int rows, int cols){
+        setStorage(new SparseLocalMatrixStorage(rows, cols));
+    }
+
+    /** */
+    public SparseLocalOnHeapMatrix(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("rows") && args.containsKey("cols"))
+            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
+        else if (args.containsKey("arr"))
+            setStorage(new SparseLocalMatrixStorage((double[][])args.get("arr")));
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    }
+
+    public SparseLocalOnHeapMatrix(int row, int col, boolean randomAcces) {
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Matrix copy() {
+        Matrix copy = like(rowSize(), columnSize());
+        copy.assign(this);
+
+        return copy;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Matrix like(int rows, int cols) {
+        return new SparseLocalOnHeapMatrix(rows, cols);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Vector likeVector(int crd) {
+        return new RandomAccessSparseLocalOnHeapVector(crd);
+    }
 }

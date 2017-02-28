@@ -35,7 +35,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetrics {
+public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetrics, Destroyable {
     /**
      * Swaps two rows in this matrix.
      *
