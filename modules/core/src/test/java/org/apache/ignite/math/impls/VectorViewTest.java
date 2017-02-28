@@ -25,11 +25,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
+
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
@@ -40,22 +42,22 @@ import static org.junit.Assert.*;
  */
 public class VectorViewTest {
     /** */
-    public static final int OFFSET = 10;
+    private static final int OFFSET = 10;
 
     /** */
-    public static final int VIEW_LENGTH = 80;
+    private static final int VIEW_LENGTH = 80;
 
     /** */
     private static final String EXTERNALIZE_TEST_FILE_NAME = "externalizeTest";
 
     /** */
-    VectorView testVector;
+    private VectorView testVector;
 
     /** */
-    DenseLocalOnHeapVector parentVector;
+    private DenseLocalOnHeapVector parentVector;
 
     /** */
-    double[] parentData;
+    private double[] parentData;
 
     /** */
     @Before
@@ -77,7 +79,7 @@ public class VectorViewTest {
 
     /** */
     @Test
-    public void copy() throws Exception {
+    public void testCopy() throws Exception {
         Vector cp = testVector.copy();
 
         assertTrue(VALUE_NOT_EQUALS, cp.equals(testVector));
@@ -85,20 +87,64 @@ public class VectorViewTest {
 
     /** */
     @Test
-    @Ignore("not yet implemented test case for like() method")
-    public void like() throws Exception {
-        // TODO
+    public void testLike() throws Exception {
+        for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
+            consumeSampleVectors((v, desc) -> {
+                Vector vLike = new VectorView(v, 0, 0).like(card);
+
+                Class<? extends Vector> expType = v.getClass();
+
+                assertNotNull("Expect non-null like vector for " + expType.getSimpleName() + " in " + desc, vLike);
+
+                assertEquals("Expect size equal to cardinality at " + desc, card, vLike.size());
+
+                Class<? extends Vector> actualType = vLike.getClass();
+
+                assertTrue("Expected matrix type " + expType.getSimpleName()
+                        + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
+                    expType.isAssignableFrom(actualType));
+
+            });
+    }
+
+    /** See also {@link VectorToMatrixTest#testLikeMatrix()}. */
+    @Test
+    public void testLikeMatrix() throws Exception {
+        consumeSampleVectors((v, desc) -> {
+            final Matrix matrix = new VectorView(v, 0, 0).likeMatrix(1, 1);
+
+            if (matrix == null) // IMPL NOTE likeMatrix is not yet ready to test
+                return;
+
+            Class<? extends Matrix> expMatrixType = v.likeMatrix(1, 1).getClass();
+
+            Class<? extends Matrix> actualMatrixType = matrix.getClass();
+
+            assertTrue("Expected matrix type " + expMatrixType.getSimpleName()
+                    + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
+                expMatrixType.isAssignableFrom(actualMatrixType));
+
+            for (int rows : new int[] {0, 1, 2})
+                for (int cols : new int[] {0, 1, 2}) {
+                    final Matrix actualMatrix = new VectorView(v, 0, 0).likeMatrix(rows, cols);
+
+                    String details = "rows " + rows + " cols " + cols;
+
+                    assertNotNull("Expect non-null matrix for " + details + " in " + desc,
+                        actualMatrix);
+
+                    assertEquals("Unexpected number of rows in " + desc, rows, actualMatrix.rowSize());
+
+                    assertEquals("Unexpected number of cols in " + desc, cols, actualMatrix.columnSize());
+                }
+        });
     }
 
     /** */
     @Test
-    public void likeMatrix() throws Exception {
+    public void testWriteReadExternal() throws Exception {
+        assertNotNull("Unexpected null parent data", parentData);
 
-    }
-
-    /** */
-    @Test
-    public void writeReadExternal() throws Exception {
         File f = new File(EXTERNALIZE_TEST_FILE_NAME);
 
         try {
@@ -118,6 +164,11 @@ public class VectorViewTest {
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         }
+    }
+
+    /** */
+    private void consumeSampleVectors(BiConsumer<Vector, String> consumer) {
+        new VectorImplementationsFixtures().consumeSampleVectors(null, consumer);
     }
 
 }

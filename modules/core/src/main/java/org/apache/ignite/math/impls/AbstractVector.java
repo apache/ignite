@@ -199,7 +199,7 @@ public abstract class AbstractVector implements Vector {
             Arrays.setAll(data, (idx) -> fun.apply(data[idx]));
         }
         else {
-            int len = sto.size();
+            int len = size();
 
             for (int i = 0; i < len; i++)
                 storageSet(i, fun.apply(storageGet(i)));
@@ -212,7 +212,7 @@ public abstract class AbstractVector implements Vector {
     @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
         checkCardinality(vec);
 
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), vec.get(i)));
@@ -222,7 +222,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             storageSet(i, fun.apply(storageGet(i), y));
@@ -259,7 +259,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Element minValue() {
         int minIdx = 0;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             if (storageGet(i) < storageGet(minIdx))
@@ -271,7 +271,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Element maxValue() {
         int maxIdx = 0;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             if (storageGet(i) > storageGet(maxIdx))
@@ -324,7 +324,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public double sum() {
         double sum = 0;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             sum += storageGet(i);
@@ -382,7 +382,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             res = foldFun.apply(res, mapFun.apply(storageGet(i)));
@@ -395,7 +395,7 @@ public abstract class AbstractVector implements Vector {
         checkCardinality(vec);
 
         T res = zeroVal;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             res = foldFun.apply(res, combFun.apply(storageGet(i), vec.getX(i)));
@@ -468,7 +468,7 @@ public abstract class AbstractVector implements Vector {
             Arrays.fill(sto.data(), val);
         }
         else {
-            int len = sto.size();
+            int len = size();
 
             for (int i = 0; i < len; i++)
                 storageSet(i, val);
@@ -489,7 +489,7 @@ public abstract class AbstractVector implements Vector {
             lenSq = 0.0;
         }
         else {
-            int len = sto.size();
+            int len = size();
 
             for (int i = 0; i < len; i++)
                 storageSet(i, vals[i]);
@@ -518,7 +518,7 @@ public abstract class AbstractVector implements Vector {
             Arrays.setAll(sto.data(), fun);
         }
         else {
-            int len = sto.size();
+            int len = size();
 
             for (int i = 0; i < len; i++)
                 storageSet(i, fun.applyAsDouble(i));
@@ -532,7 +532,7 @@ public abstract class AbstractVector implements Vector {
         return new Spliterator<Double>() {
             /** {@inheritDoc} */
             @Override public boolean tryAdvance(Consumer<? super Double> act) {
-                int len = sto.size();
+                int len = size();
 
                 for (int i = 0; i < len; i++)
                     act.accept(storageGet(i));
@@ -547,7 +547,7 @@ public abstract class AbstractVector implements Vector {
 
             /** {@inheritDoc} */
             @Override public long estimateSize() {
-                return sto.size();
+                return size();
             }
 
             /** {@inheritDoc} */
@@ -562,7 +562,7 @@ public abstract class AbstractVector implements Vector {
         return new Spliterator<Double>() {
             /** {@inheritDoc} */
             @Override public boolean tryAdvance(Consumer<? super Double> act) {
-                int len = sto.size();
+                int len = size();
 
                 for (int i = 0; i < len; i++) {
                     double val = storageGet(i);
@@ -596,7 +596,7 @@ public abstract class AbstractVector implements Vector {
         checkCardinality(vec);
 
         double sum = 0.0;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++)
             sum += storageGet(i) * vec.getX(i);
@@ -708,19 +708,19 @@ public abstract class AbstractVector implements Vector {
 
     /** */
     protected void checkCardinality(Vector vec) {
-        if (vec.size() != sto.size())
+        if (vec.size() != size())
             throw new CardinalityException(size(), vec.size());
     }
 
     /** */
     protected void checkCardinality(double[] vec) {
-        if (vec.length != sto.size())
+        if (vec.length != size())
             throw new CardinalityException(size(), vec.length);
     }
 
     /** */
     protected void checkCardinality(int[] arr) {
-        if (arr.length != sto.size())
+        if (arr.length != size())
             throw new CardinalityException(size(), arr.length);
     }
 
@@ -849,7 +849,7 @@ public abstract class AbstractVector implements Vector {
      */
     protected double dotSelf() {
         double sum = 0.0;
-        int len = sto.size();
+        int len = size();
 
         for (int i = 0; i < len; i++) {
             double v = storageGet(i);

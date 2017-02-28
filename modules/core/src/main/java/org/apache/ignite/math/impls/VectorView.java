@@ -42,14 +42,9 @@ public class VectorView extends AbstractVector {
         // No-op.
     }
 
-    /**
-     *
-     * @param parent
-     * @param off
-     * @param len
-     */
+    /** */
     public VectorView(Vector parent, int off, int len) {
-        super(new VectorDelegateStorage(parent.getStorage(), off, len), len);
+        super(new VectorDelegateStorage(parent == null ? null : parent.getStorage(), off, len), len);
 
         this.parent = parent;
         this.off = off;
@@ -63,12 +58,12 @@ public class VectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        return parent.like(crd);
+        return parent == null ? null : parent.like(crd);
     }
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return parent.likeMatrix(rows, cols);
+        return parent == null ? null : parent.likeMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */
@@ -88,7 +83,7 @@ public class VectorView extends AbstractVector {
         off = in.readInt();
         len = in.readInt();
 
-        setStorage(new VectorDelegateStorage(parent.getStorage(), off, len));
+        setStorage(new VectorDelegateStorage(parent == null ? null : parent.getStorage(), off, len));
     }
 
     /** {@inheritDoc} */

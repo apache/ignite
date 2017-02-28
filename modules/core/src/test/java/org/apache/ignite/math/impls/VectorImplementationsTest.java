@@ -34,6 +34,21 @@ public class VectorImplementationsTest {
     }
 
     /** */ @Test
+    public void setGetTest() {
+        consumeSampleVectors((v, desc) -> {
+            for (double val : new double[] {0, -1, 0, 1})
+                for (int idx = 0; idx < v.size(); idx++) {
+                    v.set(idx, val);
+
+                    final Metric metric = new Metric(val, v.get(idx));
+
+                    assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
+                        + ", " + desc, metric.closeEnough());
+                }
+        });
+    }
+
+    /** */ @Test
     public void sizeTest() {
         final AtomicReference<Integer> expSize = new AtomicReference<>(0);
 
@@ -62,9 +77,22 @@ public class VectorImplementationsTest {
     /** */ @Test
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
-            consumeSampleVectors((v, desc) -> assertEquals("Expect size equal to cardinality or 0 at " + desc,
-                (v instanceof SequentialAccessSparseLocalOnHeapVector ? 0 : card),
-                v.like(card).size()));
+            consumeSampleVectors((v, desc) -> {
+                Vector vLike = v.like(card);
+
+                Class<? extends Vector> expType = v.getClass();
+
+                assertNotNull("Expect non-null like vector for " + expType.getSimpleName() + " in " + desc, vLike);
+
+                assertEquals("Expect size equal to cardinality at " + desc, card, vLike.size());
+
+                Class<? extends Vector> actualType = vLike.getClass();
+
+                assertTrue("Expected matrix type " + expType.getSimpleName()
+                        + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
+                    expType.isAssignableFrom(actualType));
+
+        });
     }
 
     /** */ @Test
@@ -382,7 +410,7 @@ public class VectorImplementationsTest {
 
                 final Metric metric = new Metric(exp == null ? i : exp[i], e.get());
 
-                assertEquals("Vector index.", i, e.index());
+                assertEquals("Unexpected vector index at " + fixtureDesc, i, e.index());
 
                 assertTrue("Not close enough at index " + i + ", size " + size + ", " + metric
                     + ", " + fixtureDesc, metric.closeEnough());

@@ -47,94 +47,86 @@ public class VectorDelegateStorage implements VectorStorage {
      * @param len
      */
     public VectorDelegateStorage(VectorStorage sto, int off, int len) {
-        this.sto = sto;
+        this.sto = sto == null ? new VectorNullStorage() : sto;
         this.off = off;
         this.len = len;
     }
 
-    /**
-     *
-     * @return
-     */
+    /** */
     public VectorStorage delegate() {
         return sto;
     }
 
-    /**
-     *
-     * @return
-     */
+    /** */
     public int offset() {
         return off;
     }
 
-    /**
-     * 
-     * @return
-     */
+    /** */
     public int length() {
         return len;
     }
 
-    @Override
-    public int size() {
+    /** {@inheritDoc} */
+    @Override public int size() {
         return len;
     }
 
-    @Override
-    public double get(int i) {
+    /** {@inheritDoc} */
+    @Override public double get(int i) {
         return sto.get(off + i);
     }
 
-    @Override
-    public void set(int i, double v) {
+    /** {@inheritDoc} */
+    @Override public void set(int i, double v) {
         sto.set(off + i, v);
     }
 
-    @Override
-    public double[] data() {
+    /** {@inheritDoc} */
+    @Override public double[] data() {
         return sto.data();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    /** {@inheritDoc} */
+    @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    /** {@inheritDoc} */
+    @Override public boolean isDense() {
         return sto.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    /** {@inheritDoc} */
+    @Override public double getLookupCost() {
         return sto.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    /** {@inheritDoc} */
+    @Override public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeInt(off);
         out.writeInt(len);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
         off = in.readInt();
         len = in.readInt();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         return this == obj ||
             ((obj != null)
@@ -145,14 +137,13 @@ public class VectorDelegateStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
-        int result = 1;
+    @Override public int hashCode() {
+        int res = 1;
 
-        result = result * 37 + off;
-        result = result * 37 + len;
-        result = result * 37 + sto.hashCode();
+        res = res * 37 + off;
+        res = res * 37 + len;
+        res = res * 37 + sto.hashCode();
 
-        return result;
+        return res;
     }
 }
