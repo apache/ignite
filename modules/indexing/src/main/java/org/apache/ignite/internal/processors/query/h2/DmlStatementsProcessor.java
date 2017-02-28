@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -105,10 +104,6 @@ public class DmlStatementsProcessor {
 
     /** Update plans cache. */
     private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
-
-    /** Dummy metadata for update result. */
-    private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
 
     /**
      * @param idx indexing.
@@ -208,7 +203,7 @@ public class DmlStatementsProcessor {
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         long res = updateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
 
-        return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
+        return new GridQueryFieldsResultAdapter(IgniteH2Indexing.UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res)));
     }
 
@@ -1015,7 +1010,7 @@ public class DmlStatementsProcessor {
         QueryCursorImpl<List<?>> res =
             new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
 
-        res.fieldsMeta(UPDATE_RESULT_META);
+        res.fieldsMeta(IgniteH2Indexing.UPDATE_RESULT_META);
 
         return res;
     }

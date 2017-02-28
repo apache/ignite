@@ -115,6 +115,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -212,6 +213,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ";RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0;NESTED_JOINS=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + GridH2RowFactory.class.getName() + "\"" +
         ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
+
+    /** Dummy metadata for update result. */
+    static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
+        singletonList(new SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
 
     /** */
     private static final int PREPARED_STMT_CACHE_SIZE = 256;
@@ -821,8 +826,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
         setupConnection(conn, false, enforceJoinOrder);
@@ -831,7 +835,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
-        if (!p.isQuery()) {
+        if (DmlStatementsProcessor.isDmlStatement(p)) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
             if (params != null)
@@ -841,6 +845,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
             return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+        }
+        else if (DdlStatementsProcessor.isDdlStatement(p)) {
+            QueryCursor<List<?>> res = ddlProc.runDdlStatement(stmt, true);
+
+            return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
+                new IgniteSingletonIterator(res.getAll().get(0)));
         }
 
         List<GridQueryFieldMetadata> meta;
@@ -1312,7 +1322,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                     try {
-                        return ddlProc.runDdlStatement(stmt);
+                        return ddlProc.runDdlStatement(stmt, false);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);

@@ -252,8 +252,8 @@ public class DdlStatementsProcessor {
         IgniteCheckedException resEx = null;
 
         if (errs != null) {
-            resEx = new IgniteCheckedException("DDL operation execution has failed [opId=" + args.getOperationArguments()
-                .opId + ']');
+            resEx = new IgniteCheckedException("DDL operation execution has failed [opId=" +
+                args.getOperationArguments().opId + ']');
 
             for (int i = 0; i < errs.size(); i++)
                 resEx.addSuppressed(errs.get(i));
@@ -390,7 +390,7 @@ public class DdlStatementsProcessor {
      *
      * @param stmt H2 statement to parse and execute.
      */
-    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
+    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt, boolean loc)
         throws IgniteCheckedException {
         if (isStopped)
             throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped"));
@@ -402,22 +402,27 @@ public class DdlStatementsProcessor {
 
         IgniteUuid opId = IgniteUuid.randomUuid();
 
+        DdlCommandArguments args;
+
         if (gridStmt instanceof GridSqlCreateIndex) {
             GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
 
             DdlOperationArguments opArgs = new DdlOperationArguments(ctx.localNodeId(), opId,
                 DdlOperationType.CREATE_INDEX);
 
-            CreateIndexArguments args = new CreateIndexArguments(opArgs, createIdx.index(), createIdx.cacheName(),
+            args = new CreateIndexArguments(opArgs, createIdx.index(), createIdx.cacheName(),
                 createIdx.ifNotExists());
-
-            execute(args);
         }
         else if (gridStmt instanceof GridSqlDropIndex)
             throw new UnsupportedOperationException("DROP INDEX");
         else
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+
+        if (loc)
+            executeDistributed(args);
+        else
+            executeLocal(args);
 
         return DmlStatementsProcessor.cursorForUpdateResult(0L);
     }
@@ -428,7 +433,7 @@ public class DdlStatementsProcessor {
      * @param args Operation arguments.
      * @throws IgniteCheckedException if failed.
      */
-    private void execute(DdlCommandArguments args) throws IgniteCheckedException {
+    private void executeDistributed(DdlCommandArguments args) throws IgniteCheckedException {
         DdlOperationFuture op = new DdlOperationFuture(args.getOperationArguments().opId);
 
         operations.put(args.getOperationArguments().opId, op);
@@ -444,6 +449,44 @@ public class DdlStatementsProcessor {
         }
         finally {
             operations.remove(args.getOperationArguments().opId);
+        }
+    }
+
+    /**
+     * Run a DDL operation locally.
+     *
+     * @param args Operation arguments.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void executeLocal(DdlCommandArguments args) throws IgniteCheckedException {
+        try {
+            Throwable ex = null;
+
+            try {
+                doInit(args);
+            }
+            catch (Throwable e) {
+                ex = e;
+
+                try {
+                    args.getOperationArguments().opType.command().cancel(args);
+                }
+                catch (Throwable e1) {
+                    e1.addSuppressed(e);
+
+                    ex = e1;
+                }
+            }
+
+            if (ex != null)
+                throw ex;
+
+            doAck(args);
+        }
+        catch (Throwable e) {
+            throw new IgniteCheckedException("DDL operation execution has failed [opId=" +
+                args.getOperationArguments().opId + ']', e);
         }
     }
 
