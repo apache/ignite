@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Bool.DONE;
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.Bool.FALSE;
@@ -1795,6 +1796,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     public final long destroy() throws IgniteCheckedException {
+        return destroy(null);
+    }
+
+    /**
+     * Destroys tree. This method is allowed to be invoked only when the tree is out of use (no concurrent operations
+     * are trying to read or update the tree after destroy beginning).
+     *
+     * @param c Visitor closure. Visits only leaf pages.
+     * @return Number of pages recycled from this tree. If the tree was destroyed by someone else concurrently returns
+     *     {@code 0}, otherwise it should return at least {@code 2} (for meta page and root page), unless this tree is
+     *     used as metadata storage, or {@code -1} if we don't have a reuse list and did not do recycling at all.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final long destroy(IgniteInClosure<L> c) throws IgniteCheckedException {
         if (!markDestroyed())
             return 0;
 
@@ -1818,6 +1833,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                             try {
                                 BPlusIO<L> io = io(pageAddr);
+
+                                if (c != null && io.isLeaf())
+                                    io.visit(pageAddr, c);
 
                                 long fwdPageId = io.getForward(pageAddr);
 

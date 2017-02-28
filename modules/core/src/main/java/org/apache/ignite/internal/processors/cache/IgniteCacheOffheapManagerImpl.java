@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -1071,7 +1073,28 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
-            dataTree.destroy();
+            final AtomicReference<IgniteCheckedException> exception = new AtomicReference<>();
+
+            dataTree.destroy(new IgniteInClosure<CacheSearchRow>() {
+                @Override public void apply(CacheSearchRow row) {
+                    try {
+                        rowStore.removeRow(row.link());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Fail remove row [link=" + row.link() + "]");
+
+                        IgniteCheckedException ex = exception.get();
+
+                        if (ex == null)
+                            exception.set(e);
+                        else
+                            ex.addSuppressed(e);
+                    }
+                }
+            });
+
+            if (exception.get() != null)
+                throw new IgniteCheckedException("Fail destroy store", exception.get());
         }
 
         /** {@inheritDoc} */
@@ -1594,6 +1617,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         @Override public int getHash(long pageAddr, int idx) {
             return PageUtils.getInt(pageAddr, offset(idx) + 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void visit(long pageAddr, IgniteInClosure<CacheSearchRow> c) {
+            int cnt = getCount(pageAddr);
+
+            for (int i = 0; i < cnt; i++)
+                c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
         }
     }
 
