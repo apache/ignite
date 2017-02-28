@@ -3305,6 +3305,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         // Nullify value after swap.
                         value(null);
 
+                        removeValue();
+
                         marked = true;
 
                         return true;
@@ -3344,6 +3346,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                             // Nullify value after swap.
                             value(null);
+
+                            removeValue();
 
                             marked = true;
 

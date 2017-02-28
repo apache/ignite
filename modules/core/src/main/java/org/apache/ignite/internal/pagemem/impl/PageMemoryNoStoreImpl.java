@@ -20,6 +20,8 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,10 +34,16 @@ import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
@@ -129,6 +137,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private final boolean trackAcquiredPages;
 
+    private final GridCacheSharedContext<?, ?> sharedCtx;
+
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -146,6 +156,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert log != null || sharedCtx != null;
         assert pageSize % 8 == 0;
 
+        this.sharedCtx = sharedCtx;
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
@@ -347,6 +358,51 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         return total;
+    }
+
+    /**
+     * @param pageIdx Page index.
+     */
+    public void evictDataPage(int pageIdx) throws IgniteCheckedException {
+        long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
+
+        fakePageId = PageIdUtils.withTag(fakePageId, -1); // To ensure lock regardless of real page tag.
+
+        List<IgniteBiTuple<GridCacheEntryEx, GridCacheVersion>> evictEntriesAndVersions = new ArrayList<>();
+
+        try (Page page = page(0, fakePageId)) {
+            long pageAddr = page.getForReadPointer();
+
+            try {
+                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+                int dataItemsCnt = io.getDirectCount(pageAddr);
+
+                for (int i = 0; i < dataItemsCnt; i++) {
+                    long link = PageIdUtils.link(fakePageId, i);
+
+                    CacheDataRowAdapter row = new CacheDataRowAdapter(link);
+
+                    row.readRowData(this, CacheDataRowAdapter.RowData.FULL);
+
+                    int cacheId = row.cacheId();
+
+                    assert cacheId != 0 : "Cache ID should be stored in rows of evictable page";
+
+                    GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
+
+                    GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(row.key());
+
+                    evictEntriesAndVersions.add(new IgniteBiTuple<>(entryEx, row.version()));
+                }
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+
+        for (IgniteBiTuple<GridCacheEntryEx, GridCacheVersion> tuple : evictEntriesAndVersions)
+            tuple.get1().evictInternal(tuple.get2(), null);
     }
 
     /**

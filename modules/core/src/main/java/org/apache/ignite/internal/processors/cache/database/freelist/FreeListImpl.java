@@ -517,7 +517,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int keyLen = row.key().valueBytesLength(null);
         int valLen = row.value().valueBytesLength(null);
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8;
+        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
+        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + 4;
     }
 
     /** {@inheritDoc} */

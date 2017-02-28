@@ -36,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * Data pages IO.
  */
 public class DataPageIO extends PageIO {
+    public static volatile int testPageIdx;
+
     /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
         new DataPageIO(1)
@@ -248,7 +250,7 @@ public class DataPageIO extends PageIO {
      * @param pageAddr Page address.
      * @return Direct count.
      */
-    private int getDirectCount(long pageAddr) {
+    public int getDirectCount(long pageAddr) {
         return PageUtils.getByte(pageAddr, DIRECT_CNT_OFF) & 0xFF;
     }
 
@@ -460,6 +462,8 @@ public class DataPageIO extends PageIO {
      * @return {@link DataPagePayload} object.
      */
     public DataPagePayload readPayload(final long pageAddr, final int itemId, final int pageSize) {
+        testPageIdx = PageIdUtils.pageIndex(getPageId(pageAddr));
+
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         boolean fragmented = isFragmented(pageAddr, dataOff);
@@ -1009,6 +1013,7 @@ public class DataPageIO extends PageIO {
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.KEY, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
+        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.CACHE_ID, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
 
@@ -1052,15 +1057,22 @@ public class DataPageIO extends PageIO {
 
                 break;
 
-            case VALUE:
+            case CACHE_ID:
                 prevLen = keySize + 8;
-                curLen = keySize + valSize + 8;
+                curLen = keySize + 8 + 4;
+                /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
+
+                break;
+
+            case VALUE:
+                prevLen = keySize + 8 + 4;
+                curLen = keySize + valSize + 8 + 4;
 
                 break;
 
             case VERSION:
-                prevLen = keySize + valSize + 8;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8;
+                prevLen = keySize + valSize + 8 + 4;
+                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8 + 4;
 
                 break;
 
@@ -1075,6 +1087,8 @@ public class DataPageIO extends PageIO {
 
         if (type == EntryPart.EXPIRE_TIME)
             writeExpireTimeFragment(buf, row.expireTime(), rowOff, len, prevLen);
+        else if (type == EntryPart.CACHE_ID)
+            writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
         else if (type != EntryPart.VERSION) {
             // Write key or value.
             final CacheObject co = type == EntryPart.KEY ? row.key() : row.value();
@@ -1139,6 +1153,30 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * @param buf Buffer.
+     * @param cacheId Cache ID.
+     * @param rowOff Row offset.
+     * @param len Length.
+     * @param prevLen Prev length.
+     */
+    private void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
+        int size = 4;
+        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
+
+        if (size <= len)
+            buf.putInt(cacheId);
+        else {
+            ByteBuffer cacheIdBuf = ByteBuffer.allocate(size);
+
+            cacheIdBuf.order(buf.order());
+
+            cacheIdBuf.putInt(cacheId);
+
+            buf.put(cacheIdBuf.array(), rowOff - prevLen, len);
+        }
+    }
+
+    /**
      *
      */
     private enum EntryPart {
@@ -1152,7 +1190,10 @@ public class DataPageIO extends PageIO {
         VERSION,
 
         /** */
-        EXPIRE_TIME
+        EXPIRE_TIME,
+
+        /** */
+        CACHE_ID
     }
 
     /**
@@ -1341,6 +1382,10 @@ public class DataPageIO extends PageIO {
         addr += CacheVersionIO.size(row.version(), false);
 
         PageUtils.putLong(addr, 0, row.expireTime());
+        addr += 8;
+
+        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
+        PageUtils.putInt(addr, 0, row.cacheId());
     }
 
     /**

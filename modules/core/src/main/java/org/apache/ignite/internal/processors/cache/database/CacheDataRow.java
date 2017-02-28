@@ -36,6 +36,11 @@ public interface CacheDataRow extends CacheSearchRow {
     public GridCacheVersion version();
 
     /**
+     *
+     */
+    public int cacheId();
+
+    /**
      * @return Expire time.
      */
     public long expireTime();

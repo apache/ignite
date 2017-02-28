@@ -181,6 +181,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param buf Buffer to read from.
      * @return Cache object.
      */
+    @Deprecated // TODO IGNITE-4534: remove
     public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
@@ -200,6 +201,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Incomplete cache object.
      * @throws IgniteCheckedException If fail.
      */
+    @Deprecated // TODO IGNITE-4534: remove
     public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 

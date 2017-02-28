@@ -406,6 +406,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public int hash() {
             throw new UnsupportedOperationException();
         }
+
+        /** {@inheritDoc} */
+        @Override public int cacheId() {
+            return 0;
+        }
     }
 
     /**

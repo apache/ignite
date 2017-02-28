@@ -971,7 +971,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException
         {
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cctx.cacheId());
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -1002,7 +1002,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime);
+                int cacheId = /*TODO IGNITE-4534: cctx.memoryPolicy().pageEvictionEnabled() ? cctx.cacheId() : 0*/
+                    cctx.cacheId();
+
+                DataRow dataRow = new DataRow(key, val, ver, p, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1331,7 +1334,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param part Partition.
          * @param expireTime Expire time.
          */
-        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime) {
+        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
             super(0);
 
             this.hash = key.hashCode();
@@ -1340,6 +1343,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.ver = ver;
             this.part = part;
             this.expireTime = expireTime;
+            this.cacheId = cacheId;
         }
 
         /** {@inheritDoc} */
