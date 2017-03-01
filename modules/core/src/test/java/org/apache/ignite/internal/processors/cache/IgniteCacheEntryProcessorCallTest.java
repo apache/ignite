@@ -35,7 +35,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -113,7 +112,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ccfg.setBackups(1);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(ATOMIC);
-            ccfg.setAtomicWriteOrderMode(PRIMARY);
 
             checkEntryProcessorCallCount(ccfg, 1);
         }
@@ -123,7 +121,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
             ccfg.setBackups(0);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setAtomicityMode(ATOMIC);
-            ccfg.setAtomicWriteOrderMode(PRIMARY);
 
             checkEntryProcessorCallCount(ccfg, 1);
         }

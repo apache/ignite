@@ -43,7 +43,6 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
@@ -284,16 +283,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
 
         assert cfg.getWriteSynchronizationMode() != null;
-
-        if (cfg.getAtomicityMode() == ATOMIC) {
-            if (cfg.getAtomicWriteOrderMode() == null) {
-                cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
-
-                U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +
-                    "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +
-                    "cacheName=" + U.maskName(cfg.getName()) + ']');
-            }
-        }
 
         if (cfg.getCacheStoreFactory() == null) {
             Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();

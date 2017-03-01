@@ -16,17 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 
 /**
  *
  */
 public class IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest extends IgniteCachePutRetryAtomicSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return PRIMARY;
-    }
 }

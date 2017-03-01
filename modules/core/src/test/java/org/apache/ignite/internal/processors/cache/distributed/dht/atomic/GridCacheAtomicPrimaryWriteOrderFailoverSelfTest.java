@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  *
  */
@@ -28,8 +26,6 @@ public class GridCacheAtomicPrimaryWriteOrderFailoverSelfTest extends GridCacheA
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         return ccfg;
     }

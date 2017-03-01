@@ -37,7 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -87,8 +86,7 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
             .setName("testCache")
             .setAtomicityMode(ATOMIC)
             .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setAtomicWriteOrderMode(PRIMARY));
+            .setWriteSynchronizationMode(FULL_SYNC));
 
         latch = new CountDownLatch(1);
 

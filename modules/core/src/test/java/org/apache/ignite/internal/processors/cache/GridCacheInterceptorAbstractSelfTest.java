@@ -29,7 +29,6 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
@@ -47,7 +46,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -116,12 +114,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         ccfg.setInterceptor(interceptor);
 
-        if (ccfg.getAtomicityMode() == ATOMIC) {
-            assertNotNull(writeOrderMode());
-
-            ccfg.setAtomicWriteOrderMode(writeOrderMode());
-        }
-
         if (!storeEnabled()) {
             ccfg.setCacheStoreFactory(null);
             ccfg.setReadThrough(false);
@@ -134,13 +126,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /**
-     * @return Atomic cache write order mode.
-     */
-    @Nullable protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return null;
     }
 
     /**
@@ -465,7 +450,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
-            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 1 : dataNodes;
+            return op == Operation.TRANSFORM ? 1 : dataNodes;
         }
     }
 
@@ -480,7 +465,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             // Update + after update + one call before store is updated.
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
         else
-            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 2 : dataNodes * 2;
+            return op == Operation.TRANSFORM ? 2 : dataNodes * 2;
     }
 
     /**

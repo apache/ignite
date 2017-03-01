@@ -23,7 +23,6 @@ import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
@@ -136,7 +135,6 @@ public class PlatformConfigurationUtils {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(in.readInt()));
-        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.fromOrdinal((byte)in.readInt()));
         ccfg.setBackups(in.readInt());
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
@@ -761,7 +759,6 @@ public class PlatformConfigurationUtils {
         assert ccfg != null;
 
         writeEnumInt(writer, ccfg.getAtomicityMode(), CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
-        writeEnumInt(writer, ccfg.getAtomicWriteOrderMode());
         writer.writeInt(ccfg.getBackups());
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());

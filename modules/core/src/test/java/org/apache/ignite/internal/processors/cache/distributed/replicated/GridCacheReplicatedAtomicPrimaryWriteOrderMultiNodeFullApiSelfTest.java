@@ -17,17 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  * Multi-node tests for replicated atomic cache with primary write order.
  */
 public class GridCacheReplicatedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest extends
         GridCacheReplicatedAtomicMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 }

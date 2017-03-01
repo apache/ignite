@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -42,7 +41,6 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicityMode(ATOMIC);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }

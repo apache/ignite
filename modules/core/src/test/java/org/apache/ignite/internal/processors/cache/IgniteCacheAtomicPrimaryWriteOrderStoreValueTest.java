@@ -17,16 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderStoreValueTest extends IgniteCacheAtomicStoreValueTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 }

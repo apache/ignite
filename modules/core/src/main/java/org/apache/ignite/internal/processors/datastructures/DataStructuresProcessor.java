@@ -84,7 +84,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -919,7 +918,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
         ccfg.setNodeFilter(cfg.getNodeFilter());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setRebalanceMode(SYNC);
 
         return ccfg;

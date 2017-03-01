@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -150,13 +149,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     protected abstract NearCacheConfiguration nearCache();
 
     /**
-     * @return Atomic cache write order mode.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return null;
-    }
-
-    /**
      * @return {@code True} if test updates from client node.
      */
     protected boolean testClientNode() {
@@ -229,7 +221,6 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
             ccfg.setBackups(1);
 
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
         ccfg.setNearConfiguration(nearCache());
 
         GridTestUtils.setMemoryMode(null, ccfg, memMode, 100, 1024);

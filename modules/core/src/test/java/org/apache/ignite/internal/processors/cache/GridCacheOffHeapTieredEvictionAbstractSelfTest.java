@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 
@@ -64,8 +63,6 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
         ccfg.setNearConfiguration(null);

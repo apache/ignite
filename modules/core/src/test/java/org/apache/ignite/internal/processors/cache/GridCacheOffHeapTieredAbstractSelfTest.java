@@ -37,7 +37,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -73,8 +72,6 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
         ccfg.setOffHeapMaxMemory(1024 * 1024);

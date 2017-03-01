@@ -59,7 +59,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -878,7 +877,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node.
@@ -886,7 +885,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -901,7 +900,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.
@@ -930,7 +929,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 60_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         IgniteCache<Integer, Integer> cache1 = jcache(1);
@@ -941,7 +940,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         for (Integer key : vals.keySet())
             checkTtl(key, 61_000L);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from another node with provided TTL.
@@ -955,7 +954,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         // Try create again.
         cache0.putAll(vals);
 
-        if (atomicityMode() == ATOMIC && atomicWriteOrderMode() == PRIMARY)
+        if (atomicityMode() == ATOMIC)
             Thread.sleep(100);
 
         // Update from near node with provided TTL.

@@ -17,17 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  * Tests partitioned cache with values being stored off-heap and with primary write order.
  */
 public class GridCacheAtomicPrimaryWrityOrderOffHeapMultiNodeFullApiSelfTest extends
         GridCacheAtomicOffHeapMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 }

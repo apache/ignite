@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -37,7 +36,6 @@ public class GridCacheAtomicReplicatedMetricsSelfTest extends GridCacheAbstractM
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(ATOMIC);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }

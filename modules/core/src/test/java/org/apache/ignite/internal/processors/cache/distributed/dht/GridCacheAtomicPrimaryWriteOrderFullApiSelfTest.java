@@ -17,16 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  * Test for atomic cache with primary write order mode.
  */
 public class GridCacheAtomicPrimaryWriteOrderFullApiSelfTest extends GridCacheAtomicFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 }

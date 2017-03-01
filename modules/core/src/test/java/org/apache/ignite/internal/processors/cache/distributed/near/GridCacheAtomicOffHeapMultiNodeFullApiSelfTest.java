@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
@@ -30,13 +28,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  */
 public class GridCacheAtomicOffHeapMultiNodeFullApiSelfTest extends
     GridCachePartitionedOffHeapMultiNodeFullApiSelfTest {
-    /**
-     * @return Write order mode for atomic cache.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
-
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -60,8 +51,6 @@ public class GridCacheAtomicOffHeapMultiNodeFullApiSelfTest extends
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
 
         return ccfg;
     }

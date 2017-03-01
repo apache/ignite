@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,7 +31,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,9 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /** */
     private CacheAtomicityMode atomicityMode;
-
-    /** */
-    private CacheAtomicWriteOrderMode atomicWriteOrder;
 
     /** */
     private boolean near;
@@ -65,12 +60,6 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
         assert atomicityMode != null;
 
         ccfg.setAtomicityMode(atomicityMode);
-
-        if (atomicityMode == null) {
-            assert atomicWriteOrder != null;
-
-            ccfg.setAtomicWriteOrderMode(atomicWriteOrder);
-        }
 
         ccfg.setNearConfiguration(near ? new NearCacheConfiguration() : null);
 
@@ -123,8 +112,6 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     public void testVersionAtomicPrimary() throws Exception {
         atomicityMode = ATOMIC;
 
-        atomicWriteOrder = PRIMARY;
-
         checkVersion();
     }
 
@@ -133,8 +120,6 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
      */
     public void testVersionAtomicPrimaryNearEnabled() throws Exception {
         atomicityMode = ATOMIC;
-
-        atomicWriteOrder = PRIMARY;
 
         near = true;
 

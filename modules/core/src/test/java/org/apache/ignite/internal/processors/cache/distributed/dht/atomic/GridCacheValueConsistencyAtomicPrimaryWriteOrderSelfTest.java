@@ -17,16 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  *
  */
 public class GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest extends GridCacheValueConsistencyAtomicSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return PRIMARY;
-    }
 }

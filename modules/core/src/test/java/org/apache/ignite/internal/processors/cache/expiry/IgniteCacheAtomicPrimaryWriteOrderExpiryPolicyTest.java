@@ -17,16 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-
 /**
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
 }

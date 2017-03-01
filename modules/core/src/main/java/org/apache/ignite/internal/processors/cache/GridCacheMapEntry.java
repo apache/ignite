@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
@@ -2157,7 +2156,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     assert conflictCtx != null;
 
-                    boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+                    boolean ignoreTime = true;
 
                     // Use old value?
                     if (conflictCtx.isUseOld()) {
@@ -2213,7 +2212,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     conflictVer = null;
             }
 
-            boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+            boolean ignoreTime = true;
 
             // Perform version check only in case there was no explicit conflict resolution.
             if (conflictCtx == null) {
