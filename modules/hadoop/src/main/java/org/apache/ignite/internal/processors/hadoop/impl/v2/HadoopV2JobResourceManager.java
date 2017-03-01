@@ -318,4 +318,13 @@ class HadoopV2JobResourceManager {
     @Nullable public URL[] classPath() {
         return clsPath;
     }
+
+    /**
+     * Gets the logger.
+     *
+     * @return The logger.
+     */
+    IgniteLogger log() {
+        return log;
+    }
 }

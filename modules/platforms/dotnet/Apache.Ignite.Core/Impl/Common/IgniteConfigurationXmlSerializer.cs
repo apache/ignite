@@ -84,6 +84,9 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
+            if (property != null && !property.CanWrite)
+                return;
+
             if (valueType == typeof(IgniteConfiguration))
                 writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
             else
@@ -340,6 +343,13 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var type = target.GetType();
             var property = GetPropertyOrThrow(propName, propVal, type);
+
+            if (!property.CanWrite)
+            {
+                throw new ConfigurationErrorsException(string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                        propName, propVal, type, property.Name));
+            }
 
             var converter = GetConverter(property, property.PropertyType);
 

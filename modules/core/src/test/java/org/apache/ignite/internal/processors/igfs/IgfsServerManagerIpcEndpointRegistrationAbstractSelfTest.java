@@ -240,10 +240,23 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
-        igfsConfiguration.setDataCacheName(dataCacheName);
-        igfsConfiguration.setMetaCacheName(metaCacheName);
         igfsConfiguration.setName("igfs" + UUID.randomUUID());
         igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+
+        dataCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+
+        metaCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsConfiguration.setMetaCacheConfiguration(metaCacheCfg);
+        igfsConfiguration.setDataCacheConfiguration(dataCacheCfg);
 
         if (endPntCfg != null)
             igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);

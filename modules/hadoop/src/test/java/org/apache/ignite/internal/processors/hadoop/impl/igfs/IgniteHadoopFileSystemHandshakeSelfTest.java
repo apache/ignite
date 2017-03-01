@@ -110,7 +110,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid(IGFS_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
-        checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid(":" + GRID_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
@@ -129,17 +129,17 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = true;
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(IGFS_NAME + ":" + GRID_NAME + "@");
+        checkValid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
+        checkValid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(":" + GRID_NAME + "@");
+        checkValid(":" + GRID_NAME + "@127.0.0.1");
+        checkValid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -147,13 +147,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = false; // Embedded mode:
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(IGFS_NAME + ":" + GRID_NAME + "@");
+        checkValid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(":" + GRID_NAME + "@");
+        checkValid(":" + GRID_NAME + "@");
         checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@"); // Embedded mode fails, but remote tcp succeeds.
@@ -198,7 +198,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@"); // NB: in embedded mode this fails, but remote TCP still succeeds.
-        checkInvalid("@" + HOST_PORT_UNUSED);
+        checkValid("@" + HOST_PORT_UNUSED);
     }
 
     /**
@@ -219,9 +219,9 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkInvalid(IGFS_NAME + "@127.0.0.1");
         checkInvalid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(":" + GRID_NAME + "@");
+        checkValid(":" + GRID_NAME + "@127.0.0.1");
+        checkValid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -235,8 +235,8 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkInvalid(IGFS_NAME + "@");
         checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(":" + GRID_NAME + "@");
+        checkValid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@");
         checkValid("@" + HOST_PORT_UNUSED);
@@ -285,14 +285,12 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("partitioned");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -300,15 +298,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName(dfltIgfsName ? null : IGFS_NAME);
         igfsCfg.setPrefetchBlocks(1);
         igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 

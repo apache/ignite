@@ -88,9 +88,9 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("data");
-        igfsCfg.setMetaCacheName("meta");
         igfsCfg.setName("igfs");
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(gridName, "data"));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(gridName, "meta"));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -102,8 +102,6 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         cfg.setFileSystemConfiguration(igfsCfg);
-
-        cfg.setCacheConfiguration(cacheConfiguration(gridName, "data"), cacheConfiguration(gridName, "meta"));
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
