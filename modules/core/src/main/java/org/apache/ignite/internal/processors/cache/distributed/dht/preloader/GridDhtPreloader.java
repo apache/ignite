@@ -120,6 +120,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private volatile boolean stopping;
 
+    /** */
+    private boolean stopped;
+
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -222,18 +225,25 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // Acquire write busy lock.
         busyLock.writeLock().lock();
 
-        if (supplier != null)
-            supplier.stop();
+        try {
+            if (supplier != null)
+                supplier.stop();
 
-        if (demander != null)
-            demander.stop();
+            if (demander != null)
+                demander.stop();
 
-        IgniteCheckedException err = stopError();
+            IgniteCheckedException err = stopError();
 
-        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-            fut.onDone(err);
+            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+                fut.onDone(err);
 
-        top = null;
+            top = null;
+
+            stopped = true;
+        }
+        finally {
+            busyLock.writeLock().unlock();
+        }
     }
     /**
      * @return Node stop exception.
@@ -441,13 +451,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
-        if (busyLock.readLock().tryLock())
-            return true;
+        if (!busyLock.readLock().tryLock())
+            return false;
 
-        if (log.isDebugEnabled())
-            log.debug("Failed to enter busy state on node (exchanger is stopping): " + cctx.nodeId());
+        if (stopped) {
+            busyLock.readLock().unlock();
 
-        return false;
+            return false;
+        }
+
+        return true;
     }
 
     /**

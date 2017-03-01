@@ -80,8 +80,8 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
+        igfsCfg.setDataCacheConfiguration(dataCacheConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaCacheConfiguration());
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
 
@@ -92,7 +92,6 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration());
         cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
@@ -103,27 +102,36 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
      *
      * @return Cache configuration.
      */
-    protected CacheConfiguration[] cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration dataCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setName("partitioned");
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setNearConfiguration(null);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        return ccfg;
+    }
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        metaCacheCfg.setEvictionPolicy(null);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * Gets cache configuration.
+     *
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration metaCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+        ccfg.setName("replicated");
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+        return ccfg;
     }
 
     /**
