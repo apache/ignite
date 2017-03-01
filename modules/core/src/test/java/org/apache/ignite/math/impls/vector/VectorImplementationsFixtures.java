@@ -95,30 +95,6 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class DenseLocalOffHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        DenseLocalOffHeapVectorFixture() {
-            super("DenseLocalOffHeapVector", DenseLocalOffHeapVector::new);
-        }
-    }
-
-    /** */
-    private static class RandomAccessSparseLocalOnHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        RandomAccessSparseLocalOnHeapVectorFixture() {
-            super("RandomAccessSparseLocalOnHeapVector", RandomAccessSparseLocalOnHeapVector::new);
-        }
-    }
-
-    /** */
-    private static class SequentialAccessSparseLocalOnHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        SequentialAccessSparseLocalOnHeapVectorFixture() {
-            super("SequentialAccessSparseLocalOnHeapVector", SequentialAccessSparseLocalOnHeapVector::new);
-        }
-    }
-
-    /** */
     private static abstract class VectorSizesFixture implements Iterable<Vector> {
         /** */ private final Supplier<VectorSizesIterator> iter;
 
