@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
-    private static final boolean CONSISTENCY_CHECK = false;
+    private static final boolean CONSISTENCY_CHECK = true;
 
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
@@ -832,8 +832,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 HashSet<UUID> affIds = affAssignment.getIds(p);
 
                 if (!affIds.contains(node.id()) && hasState(p, node.id(), OWNING, MOVING, RENTING)) {
-
-                    if (cctx.discovery().alive(node)
+                    if (cctx.discovery().node(node.id()) != null
                         && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion())) {
                         if (nodes == null) {
                             nodes = new ArrayList<>(affNodes.size() + 2);
@@ -878,8 +877,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 continue;
 
             if (hasState(p, node.id(), state, states)) {
-
-                if (cctx.discovery().alive(node) && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
+                if (cctx.discovery().node(node.id()) != null && (topVer.topologyVersion() < 0 || node.order() <= topVer.topologyVersion()))
                     nodes.add(node);
             }
         }
@@ -1036,17 +1034,17 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             node2part = partMap;
 
-            List<ClusterNode>[] part2node0 = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
+            List<ClusterNode>[] p2n = (List<ClusterNode>[])new List[cctx.config().getAffinity().partitions()];
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : partMap.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
-                    List<ClusterNode> partNodes = part2node0[p];
+                    List<ClusterNode> partNodes = p2n[p];
 
                     if (partNodes == null) {
-                        // Initialize HashSet to size 3 in anticipation that there won't be
+                        // Initialize List to size 3 in anticipation that there won't be
                         // more than 3 nodes per partitions.
                         partNodes = new ArrayList<>(3);
-                        part2node0[p] = partNodes;
+                        p2n[p] = partNodes;
                     }
 
                     ClusterNode node = node(e.getKey());
@@ -1055,7 +1053,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
             }
 
-            part2node = part2node0;
+            part2node = p2n;
 
             boolean changed = false;
 
@@ -1679,7 +1677,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     List<ClusterNode> partNodes = part2node[p];
 
                     assert partNodes != null : "Failed consistency check [part=" + p + ", nodeId=" + e.getKey() + ']';
-                    assert partNodes.contains(node(e.getKey())) : "Failed consistency check [part=" + p + ", nodeId=" +
+                    boolean found = false;
+
+                    for (int i = 0; i < partNodes.size(); i++)
+                        if (partNodes.get(i).id().equals(e.getKey())) {
+                            found = true;
+                            break;
+                        }
+
+                    assert found : "Failed consistency check [part=" + p + ", nodeId=" +
                         e.getKey() + ", nodeIds=" + partNodes + ']';
                 }
             }
