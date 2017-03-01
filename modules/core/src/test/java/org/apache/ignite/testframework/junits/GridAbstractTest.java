@@ -1263,7 +1263,7 @@ public abstract class GridAbstractTest extends TestCase {
     public String getTestGridName() {
         String[] parts = getClass().getName().split("\\.");
 
-        return parts[parts.length - 2] + '.' + parts[parts.length - 1];
+        return "tg1";
     }
 
     /**
