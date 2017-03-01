@@ -388,7 +388,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = KEYS; i < KEYS + 100; i++)
             assertEquals(i, ignite2.cache(name).get(i));
 
-        awaitPartitionMapExchange(false, true, null);
+        awaitPartitionMapExchange(true, true, null);
+
         assertEquals(102, ignite2.cache(name).size());
 
         assertEquals(102, LOCAL_STORE_1.map.size());
@@ -412,7 +413,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = KEYS; i < KEYS + 100; i++)
             assertEquals(i, ignite2.cache(name).get(i));
 
-        awaitPartitionMapExchange(false, true, null);
+        awaitPartitionMapExchange(true, true, null);
+
         assertEquals(102, ignite2.cache(name).size());
 
         assertEquals(102, LOCAL_STORE_1.map.size());
