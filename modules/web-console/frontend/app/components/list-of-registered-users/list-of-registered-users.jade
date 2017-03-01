@@ -39,16 +39,20 @@ mixin grid-settings()
         +grid-settings
         label Total users: 
             strong {{ $ctrl.gridOptions.data.length }}&nbsp;&nbsp;&nbsp;
-        label Showing users: 
+        label Showing users:
             strong {{ $ctrl.gridApi.grid.getVisibleRows().length }}
             sub(ng-show='users.length === $ctrl.gridApi.grid.getVisibleRows().length') all
-        div.ui-grid-settings-dateperiod
-            form(ng-form=form novalidate)
-                -var form = 'admin'
 
+        form.pull-right(ng-form=form novalidate)
+            -var form = 'admin'
+
+            button.btn.btn-primary(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv') Export
+
+            .ui-grid-settings-dateperiod
                 +ignite-form-field-datepicker('Period:', '$ctrl.params.startDate', '"period"')
-                
-                button.btn.btn-primary(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv') Export
+
+            .ui-grid-settings-filter
+                +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
 
     .panel-collapse
         .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning)

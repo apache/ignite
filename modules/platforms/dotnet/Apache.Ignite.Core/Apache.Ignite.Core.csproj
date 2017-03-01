@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
@@ -491,6 +492,7 @@
     <Compile Include="Plugin\IPluginConfiguration.cs" />
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />
+    <Compile Include="Plugin\PluginCallback.cs" />
     <Compile Include="Plugin\PluginNotFoundException.cs" />
     <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />

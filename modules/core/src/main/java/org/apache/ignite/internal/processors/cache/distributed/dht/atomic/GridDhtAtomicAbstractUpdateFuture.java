@@ -111,10 +111,13 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicAbstractUpdateRequest updateReq,
-        GridNearAtomicUpdateResponse updateRes) {
+        GridNearAtomicUpdateResponse updateRes
+    ) {
         this.cctx = cctx;
 
-        futVer = cctx.versions().next(updateReq.topologyVersion());
+        this.futVer = cctx.isLocalNode(updateRes.nodeId()) ?
+            cctx.versions().next(updateReq.topologyVersion()) : // Generate new if request mapped to local.
+            updateReq.futureVersion();
         this.updateReq = updateReq;
         this.completionCb = completionCb;
         this.updateRes = updateRes;

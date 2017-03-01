@@ -69,6 +69,9 @@ public class QueryEntity implements Serializable {
     /** Collection of query indexes. */
     private Map<String, QueryIndex> idxs = new HashMap<>();
 
+    /** Table name. */
+    private String tableName;
+
     /**
      * Creates an empty query entity.
      */
@@ -252,12 +255,32 @@ public class QueryEntity implements Serializable {
                 if (idx.getName() == null)
                     idx.setName(defaultIndexName(idx));
 
+                if (idx.getIndexType() == null)
+                    throw new IllegalArgumentException("Index type is not set " + idx.getName());
+
                 if (!this.idxs.containsKey(idx.getName()))
                     this.idxs.put(idx.getName(), idx);
                 else
                     throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
             }
         }
+    }
+
+    /**
+     * Gets table name for this query entity.
+     *
+     * @return table name
+     */
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * Sets table name for this query entity.
+     * @param tableName table name
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     /**

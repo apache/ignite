@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Plugin.Cache
 {
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
@@ -45,6 +46,21 @@ namespace Apache.Ignite.Core.Plugin.Cache
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ICachePluginConfiguration
     {
-        // No-op.
+        /// <summary>
+        /// Gets the id to locate PlatformCachePluginConfigurationClosureFactory on Java side
+        /// and read the data written by <see cref="WriteBinary"/> method.
+        /// <para />
+        /// When this property is not null, all cache plugin functionality is delegated to Java part.
+        /// <see cref="ICachePluginProvider{TConfig}"/> won't be invoked.
+        /// </summary>
+        int? CachePluginConfigurationClosureFactoryId { get; }
+
+        /// <summary>
+        /// Writes this instance to a raw writer.
+        /// This method will be called when <see cref="CachePluginConfigurationClosureFactoryId"/> 
+        /// is not null to propagate configuration to the Java side.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void WriteBinary(IBinaryRawWriter writer);
     }
 }

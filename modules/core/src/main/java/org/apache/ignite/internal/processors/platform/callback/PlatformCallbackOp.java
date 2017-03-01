@@ -221,4 +221,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int CachePluginIgniteStop = 67;
+
+    /** */
+    public static final int PluginCallbackInLongLongOutLong = 68;
 }
