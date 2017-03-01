@@ -162,6 +162,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 qry.setPageSize(arg.pageSize());
                 qry.setLocal(arg.local());
                 qry.setDistributedJoins(arg.distributedJoins());
+                qry.setEnforceJoinOrder(arg.enforceJoinOrder());
 
                 long start = U.currentTimeMillis();
 
