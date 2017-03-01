@@ -86,7 +86,7 @@ public class SparseLocalOnHeapVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return new SparseLocalOnHeapMatrix();
+        return new SparseLocalOnHeapMatrix(rows, cols);
     }
 
     /** */

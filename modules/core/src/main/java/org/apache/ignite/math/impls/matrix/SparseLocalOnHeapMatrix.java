@@ -39,7 +39,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     }
 
     /** */
-    SparseLocalOnHeapMatrix(int rows, int cols){
+    public SparseLocalOnHeapMatrix(int rows, int cols){
         this(rows, cols, 1);
     }
 
