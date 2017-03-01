@@ -153,7 +153,6 @@ public class VectorToMatrixTest {
                 assertTrue("Not close enough cross " + metric + " at row " + row + " at col " + col
                     + " in " + desc, metric.closeEnough());
             }
-        //todo write code
     }
 
     /** */
