@@ -84,6 +84,11 @@ public class DefaultMathProvider implements MathProvider {
 
                 return Optional.of(new DenseLocalOffHeapMatrix(args));
 
+            case "sparse.local.onheap":
+                ensureClusterGroupIsNull(flavorNorm, grp);
+
+                return Optional.of(new SparseLocalOnHeapMatrix(args));
+
             default:
                 return Optional.empty();
         }
@@ -137,15 +142,10 @@ public class DefaultMathProvider implements MathProvider {
 
                 return Optional.of(new DenseLocalOffHeapVector(args));
 
-            case "sparse.local.onheap.sequential.access":
+            case "sparse.local.onheap":
                 ensureClusterGroupIsNull(flavorNorm, grp);
 
-                return Optional.of(new SequentialAccessSparseLocalOnHeapVector(args));
-
-            case "sparse.local.onheap.random.access":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new RandomAccessSparseLocalOnHeapVector(args));
+                return Optional.of(new SparseLocalOnHeapVector(args));
 
             default:
                 return Optional.empty();

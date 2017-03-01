@@ -47,13 +47,7 @@ class VectorImplementationsFixtures {
         new Supplier<Iterable<Vector>>() {
             /** {@inheritDoc} */
             @Override public Iterable<Vector> get() {
-                return new RandomAccessSparseLocalOnHeapVectorFixture();
-            }
-        },
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new SequentialAccessSparseLocalOnHeapVectorFixture();
+                return new SparseLocalOnHeapVectorFixture();
             }
         }
     );
@@ -208,18 +202,10 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class RandomAccessSparseLocalOnHeapVectorFixture extends VectorSizesFixture {
+    private static class SparseLocalOnHeapVectorFixture extends VectorSizesFixture {
         /** */
-        RandomAccessSparseLocalOnHeapVectorFixture() {
-            super("RandomAccessSparseLocalOnHeapVector", RandomAccessSparseLocalOnHeapVector::new);
-        }
-    }
-
-    /** */
-    private static class SequentialAccessSparseLocalOnHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        SequentialAccessSparseLocalOnHeapVectorFixture() {
-            super("SequentialAccessSparseLocalOnHeapVector", SequentialAccessSparseLocalOnHeapVector::new);
+        SparseLocalOnHeapVectorFixture() {
+            super("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new);
         }
     }
 

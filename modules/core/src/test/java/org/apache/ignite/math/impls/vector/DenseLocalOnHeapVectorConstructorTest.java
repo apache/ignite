@@ -97,7 +97,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
             }}).size());
     }
 
-    /** */ @Test(expected = NegativeArraySizeException.class)
+    /** */ @Test(expected = IllegalArgumentException.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new DenseLocalOnHeapVector(-1).size());

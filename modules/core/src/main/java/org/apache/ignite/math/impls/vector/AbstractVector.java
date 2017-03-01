@@ -81,6 +81,9 @@ public abstract class AbstractVector implements Vector {
         this.readOnly = readOnly;
         this.sto = sto;
         this.size = cardinality;
+
+        if (size < 0 )
+            throw new IllegalArgumentException("Size can't be negative");
     }
 
     /**
@@ -162,7 +165,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return sto.size();
+        return size;
     }
 
     /**

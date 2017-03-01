@@ -17,9 +17,6 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.math.impls.vector.SequentialAccessSparseLocalOnHeapVector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -28,13 +25,13 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 /** */
-public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
+public class SparseLocalOnHeapVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new SequentialAccessSparseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -45,8 +42,8 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
             put("shallowCopyMissing", "whatever");
         }};
 
-        assertEquals("Expect exception due to missing args.",
-            -1, new SequentialAccessSparseLocalOnHeapVector(test).size());
+        assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
+            new SparseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -58,7 +55,7 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
-            new SequentialAccessSparseLocalOnHeapVector(test).size());
+            new SparseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -70,63 +67,47 @@ public class SequentialAccessSparseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("Expect exception due to invalid copy type.", IMPOSSIBLE_SIZE,
-            new SequentialAccessSparseLocalOnHeapVector(test).size());
+            new SparseLocalOnHeapVector(test).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
-        //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new SequentialAccessSparseLocalOnHeapVector((Map<String, Object>)null).size());
+            new SparseLocalOnHeapVector(null).size());
     }
 
     /** */ @Test
     public void mapTest() {
         assertEquals("Size from args.", 99,
-            new SequentialAccessSparseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
+            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
 
         final double[] test = new double[99];
 
         assertEquals("Size from array in args.", test.length,
-            new SequentialAccessSparseLocalOnHeapVector(new HashMap<String, Object>(){{
+            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{
                 put("arr", test);
                 put("copy", false);
             }}).size());
 
         assertEquals("Size from array in args, shallow copy.", test.length,
-            new SequentialAccessSparseLocalOnHeapVector(new HashMap<String, Object>(){{
+            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{
                 put("arr", test);
                 put("copy", true);
             }}).size());
     }
 
-    /** */ @Test
+    /** */ @Test(expected = IllegalArgumentException.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
-            new SequentialAccessSparseLocalOnHeapVector(-1).size());
+            new SparseLocalOnHeapVector(-1, 1).size());
     }
 
     /** */ @Test
     public void primitiveTest() {
         assertEquals("0 size.", 0,
-            new SequentialAccessSparseLocalOnHeapVector(0).size());
+            new SparseLocalOnHeapVector(0, 1).size());
 
         assertEquals("1 size.", 1,
-            new SequentialAccessSparseLocalOnHeapVector(1).size());
-    }
-
-    /** */ @Test
-    public void vectorNullTest() {
-        assertEquals("Null Vector expected size 0.", 0,
-            new SequentialAccessSparseLocalOnHeapVector((Vector)null).size());
-    }
-
-    /** */ @Test
-    public void vectorTest() {
-        assertEquals("Vector expected size 0.", 0,
-            new SequentialAccessSparseLocalOnHeapVector(new DenseLocalOnHeapVector(0)).size());
-
-        assertEquals("Vector expected size 1.", 1,
-            new SequentialAccessSparseLocalOnHeapVector(new DenseLocalOnHeapVector(1)).size());
+            new SparseLocalOnHeapVector(1, 1).size());
     }
 }

@@ -20,15 +20,19 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.RandomAccessSparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.SparseLocalOnHeapVector;
 import org.apache.ignite.math.impls.storage.matrix.SparseLocalMatrixStorage;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Map;
 
 /**
- * Sparse local onheap matrix with {@link RandomAccessSparseLocalOnHeapVector} as rows.
+ * Sparse local onheap matrix with {@link SparseLocalOnHeapVector} as rows.
  */
 public class SparseLocalOnHeapMatrix extends AbstractMatrix {
+    private int mode = 1;
     /** */
     public SparseLocalOnHeapMatrix(){
         // No-op
@@ -36,22 +40,28 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
 
     /** */
     SparseLocalOnHeapMatrix(int rows, int cols){
-        setStorage(new SparseLocalMatrixStorage(rows, cols));
+        this(rows, cols, 1);
     }
 
     /** */
     public SparseLocalOnHeapMatrix(Map<String, Object> args) {
         assert args != null;
 
+        if (args.containsKey("accessMode"))
+            mode = (int) args.get("accessMode");
+
         if (args.containsKey("rows") && args.containsKey("cols"))
-            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
+            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols"), mode));
         else if (args.containsKey("arr"))
             setStorage(new SparseLocalMatrixStorage((double[][])args.get("arr")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
-    public SparseLocalOnHeapMatrix(int row, int col, boolean randomAcces) {
+    public SparseLocalOnHeapMatrix(int row, int col, int accessMode) {
+        setStorage(new SparseLocalMatrixStorage(row, col, accessMode));
+
+        mode = accessMode;
     }
 
     /** {@inheritDoc} */
@@ -66,12 +76,26 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     /** {@inheritDoc} */
     @Override
     public Matrix like(int rows, int cols) {
-        return new SparseLocalOnHeapMatrix(rows, cols);
+        return new SparseLocalOnHeapMatrix(rows, cols, mode);
     }
 
     /** {@inheritDoc} */
     @Override
     public Vector likeVector(int crd) {
-        return new RandomAccessSparseLocalOnHeapVector(crd);
+        return new SparseLocalOnHeapVector(crd, mode);
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeInt(mode);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        mode = in.readInt();
     }
 }

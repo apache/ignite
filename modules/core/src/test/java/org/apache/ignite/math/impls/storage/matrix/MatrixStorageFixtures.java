@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.math.impls.storage.matrix;
 
 import java.util.Arrays;
@@ -7,8 +24,6 @@ import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.ignite.math.MatrixStorage;
-import org.apache.ignite.math.impls.storage.matrix.SparseLocalMatrixStorage;
-import org.apache.ignite.math.impls.storage.matrix.SparseLocalRowMatrixStorage;
 
 /**
  *
@@ -18,11 +33,6 @@ class MatrixStorageFixtures {
         new Supplier<Iterable<MatrixStorage>>() {
             @Override public Iterable<MatrixStorage> get() {
                 return new SparseLocalMatrixStorageFixture();
-            }
-        },
-        new Supplier<Iterable<MatrixStorage>>() {
-            @Override public Iterable<MatrixStorage> get() {
-                return new SparseLocalRowMatrixStorageFixture();
             }
         }
     );
@@ -43,48 +53,7 @@ class MatrixStorageFixtures {
     private static class SparseLocalMatrixStorageFixture implements Iterable<MatrixStorage>{
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private int sizeIdx = 0;
-
-        @Override public Iterator<MatrixStorage> iterator() {
-            return new Iterator<MatrixStorage>() {
-                @Override public boolean hasNext() {
-                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
-                }
-
-                @Override public MatrixStorage next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(SparseLocalMatrixStorageFixture.this.toString());
-
-                    MatrixStorage storage = new SparseLocalMatrixStorage(rows[sizeIdx], cols[sizeIdx]);
-
-                    nextIdx();
-
-                    return storage;
-                }
-
-                private void nextIdx(){
-                    sizeIdx++;
-                }
-            };
-        }
-
-        @Override public String toString() {
-            return "SparseLocalMatrixStorageFixture{ " + "rows=" + rows[sizeIdx] + " ,cols=" + cols[sizeIdx] + "}";
-        }
-
-        private boolean hasNextRow(int idx){
-            return rows[idx] != null;
-        }
-
-        private boolean hasNextCol(int idx){
-            return cols[idx] != null;
-        }
-    }
-
-    private static class SparseLocalRowMatrixStorageFixture implements Iterable<MatrixStorage>{
-        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
-        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private final Boolean[] randomAccess = new Boolean[] {true, false, null};
+        private final Integer[] randomAccess = new Integer[] {0, 1, null};
         private int sizeIdx = 0;
         private int modeIdx = 0;
 
@@ -96,9 +65,9 @@ class MatrixStorageFixtures {
 
                 @Override public MatrixStorage next() {
                     if (!hasNext())
-                        throw new NoSuchElementException(SparseLocalRowMatrixStorageFixture.this.toString());
+                        throw new NoSuchElementException(SparseLocalMatrixStorageFixture.this.toString());
 
-                    MatrixStorage storage = new SparseLocalRowMatrixStorage(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
+                    MatrixStorage storage = new SparseLocalMatrixStorage(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
 
                     nextIdx();
 

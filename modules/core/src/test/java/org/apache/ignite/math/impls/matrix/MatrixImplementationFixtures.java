@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.Matrix;
@@ -15,11 +32,6 @@ public class MatrixImplementationFixtures {
             new Supplier<Iterable<Matrix>>() {
                 @Override public Iterable<Matrix> get() {
                     return new MatrixImplementationFixtures.SparseLocalMatrixFixture();
-                }
-            },
-            new Supplier<Iterable<Matrix>>() {
-                @Override public Iterable<Matrix> get() {
-                    return new MatrixImplementationFixtures.SparseLocalRowMatrixFixture();
                 }
             }
     );
@@ -40,48 +52,7 @@ public class MatrixImplementationFixtures {
     private static class SparseLocalMatrixFixture implements Iterable<Matrix>{
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private int sizeIdx = 0;
-
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                @Override public boolean hasNext() {
-                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
-                }
-
-                @Override public Matrix next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalMatrixFixture.this.toString());
-
-                    Matrix storage = new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
-
-                    nextIdx();
-
-                    return storage;
-                }
-
-                private void nextIdx(){
-                    sizeIdx++;
-                }
-            };
-        }
-
-        @Override public String toString() {
-            return "SparseLocalMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
-        }
-
-        private boolean hasNextRow(int idx){
-            return rows[idx] != null;
-        }
-
-        private boolean hasNextCol(int idx){
-            return cols[idx] != null;
-        }
-    }
-
-    private static class SparseLocalRowMatrixFixture implements Iterable<Matrix>{
-        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
-        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private final Boolean[] randomAccess = new Boolean[] {true, false, null};
+        private final Integer[] randomAccess = new Integer[] {0, 1, null};
         private int sizeIdx = 0;
         private int modeIdx = 0;
 
@@ -93,9 +64,9 @@ public class MatrixImplementationFixtures {
 
                 @Override public Matrix next() {
                     if (!hasNext())
-                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalRowMatrixFixture.this.toString());
+                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalMatrixFixture.this.toString());
 
-                    Matrix storage = new SparseLocalOnHeapRowMatrix(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
+                    Matrix storage = new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
 
                     nextIdx();
 
