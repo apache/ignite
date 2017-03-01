@@ -39,8 +39,7 @@ namespace ignite
             class BinaryTypeSnapshot
             {
             public:
-                typedef std::map<std::string, int32_t> FieldIdMap;
-                typedef std::map<std::string, int32_t> FieldTypeMap;
+                typedef std::map<std::string, BinaryFieldMeta> FieldMap;
                 typedef std::set<int32_t> FieldIdSet;
 
                 /**
@@ -100,23 +99,13 @@ namespace ignite
                 }
 
                 /**
-                 * Get field type map.
+                 * Get field map.
                  *
                  * @return Fields.
                  */
-                FieldTypeMap& GetFieldTypeMap()
+                const FieldMap& GetFieldMap() const
                 {
-                    return fieldTypeMap;
-                }
-                
-                /**
-                 * Get field type map.
-                 *
-                 * @return Fields.
-                 */
-                const FieldTypeMap& GetFieldTypeMap() const
-                {
-                    return fieldTypeMap;
+                    return fields;
                 }
 
                 /**
@@ -143,9 +132,9 @@ namespace ignite
                  */
                 int32_t GetFieldId(const std::string& fieldName)
                 {
-                    const FieldIdMap::const_iterator it = fieldIdMap.find(fieldName);
+                    const FieldMap::const_iterator it = fields.find(fieldName);
 
-                    return it == fieldIdMap.end() ? 0 : it->second;
+                    return it == fields.end() ? 0 : it->second.GetFieldId();
                 }
 
             private:
@@ -158,11 +147,8 @@ namespace ignite
                 /** Known field IDs. */
                 FieldIdSet fieldIds;
 
-                /** Field name-id mappings. */
-                FieldIdMap fieldIdMap;
-
-                /** Field name-type mappings. */
-                FieldTypeMap fieldTypeMap;
+                /** Fields metadata. */
+                FieldMap fields;
             };
 
             typedef BinaryTypeSnapshot Snap;

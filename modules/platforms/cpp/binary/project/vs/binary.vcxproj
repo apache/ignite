@@ -216,6 +216,7 @@
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_type.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_field_meta.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_object_header.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_object_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />

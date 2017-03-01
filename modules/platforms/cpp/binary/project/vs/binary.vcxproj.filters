@@ -168,5 +168,8 @@
     <ClCompile Include="..\..\src\binary\binary_array_identity_resolver.cpp">
       <Filter>Code\binary</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_field_meta.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

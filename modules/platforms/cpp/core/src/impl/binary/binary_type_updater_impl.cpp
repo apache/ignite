@@ -76,14 +76,16 @@ namespace ignite
                 
                 if (snap.HasFields())
                 {
-                    const Snap::FieldTypeMap& fields = snap.GetFieldTypeMap();
+                    const Snap::FieldMap& fields = snap.GetFieldMap();
 
                     rawWriter.WriteInt32(static_cast<int32_t>(fields.size()));
 
-                    for (Snap::FieldTypeMap::const_iterator it = fields.begin(); it != fields.end(); ++it)
+                    for (Snap::FieldMap::const_iterator it = fields.begin(); it != fields.end(); ++it)
                     {
+                        const BinaryFieldMeta& fieldMeta = it->second;
+
                         rawWriter.WriteString(it->first);
-                        rawWriter.WriteInt32(it->second);
+                        fieldMeta.Write(rawWriter);
                     }
                 }
                 else
@@ -137,18 +139,16 @@ namespace ignite
                 // Skipping affinity key field name.
                 rawReader.ReadString();
 
-                BinaryMapReader<std::string, int32_t> mapReader = rawReader.ReadMap<std::string, int32_t>();
+                BinaryMapReader<std::string, BinaryFieldMeta> mapReader = rawReader.ReadMap<std::string, BinaryFieldMeta>();
 
                 while (mapReader.HasNext())
                 {
                     std::string fieldName;
-                    int32_t fieldId;
+                    BinaryFieldMeta fieldMeta;
 
-                    mapReader.GetNext(&fieldName, &fieldId);
+                    mapReader.GetNext(&fieldName, &fieldMeta);
 
-                    std::cout << "fieldName: " << fieldName << ", fieldId: " << fieldId << std::endl;
-
-                    res.Get()->AddField(fieldId, fieldName, 0);
+                    res.Get()->AddField(fieldMeta.GetFieldId(), fieldName, fieldMeta.GetTypeId());
                 }
 
                 // Skipping isEnum info.
