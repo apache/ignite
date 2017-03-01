@@ -98,7 +98,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoBackupsPrimaryWriteOrder() throws Exception {
+    public void testNoBackups() throws Exception {
         startGridsLocal(0);
 
         checkNearCache();
@@ -107,7 +107,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithBackupsPrimaryWriteOrder() throws Exception {
+    public void testWithBackups() throws Exception {
         startGridsLocal(2);
 
         checkNearCache();

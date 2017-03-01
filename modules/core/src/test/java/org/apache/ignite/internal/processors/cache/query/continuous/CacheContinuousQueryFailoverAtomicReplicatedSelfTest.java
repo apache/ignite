@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class CacheContinuousQueryFailoverAtomicReplicatedSelfTest
-    extends CacheContinuousQueryFailoverAtomicPrimaryWriteOrderSelfTest {
+    extends CacheContinuousQueryFailoverAtomicSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;

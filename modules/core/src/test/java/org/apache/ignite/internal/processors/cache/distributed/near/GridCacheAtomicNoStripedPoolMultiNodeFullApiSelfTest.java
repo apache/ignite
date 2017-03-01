@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiNodeFullApiSelfTest;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Multi-JVM tests.
+ *
  */
-public class GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiJvmFullApiSelfTest
-    extends GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiNodeFullApiSelfTest {
+public class GridCacheAtomicNoStripedPoolMultiNodeFullApiSelfTest extends
+    GridCacheAtomicMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
-        return true;
-    }
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-    /** {@inheritDoc} */
-    @Override public void testLocalClearKeys() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1107");
+        cfg.setStripedPoolSize(-1);
+
+        return cfg;
     }
 }

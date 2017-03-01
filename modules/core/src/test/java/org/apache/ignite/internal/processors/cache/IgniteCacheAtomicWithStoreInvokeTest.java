@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.cache.store.CacheStore;
 
 /**
  *
  */
-public class IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest
-    extends IgniteCacheAtomicPrimaryWriteOrderStoreValueTest {
+public class IgniteCacheAtomicWithStoreInvokeTest extends
+    IgniteCacheAtomicInvokeTest {
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 }

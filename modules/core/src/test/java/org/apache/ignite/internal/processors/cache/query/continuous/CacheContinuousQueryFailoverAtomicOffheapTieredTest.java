@@ -15,10 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.expiry;
+package org.apache.ignite.internal.processors.cache.query.continuous;
+
+import org.apache.ignite.cache.CacheMemoryMode;
+
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 
 /**
  *
  */
-public class IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
+public class CacheContinuousQueryFailoverAtomicOffheapTieredTest
+    extends CacheContinuousQueryFailoverAtomicSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode memoryMode() {
+        return OFFHEAP_TIERED;
+    }
 }

@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  *
  */
-public class GridCacheAtomicPrimaryWriteOrderFairAffinityMultiNodeFullApiSelfTest
-    extends GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest {
+public class CacheContinuousQueryFailoverAtomicSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
 
-        cfg.setAffinity(new FairAffinityFunction());
-
-        return cfg;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

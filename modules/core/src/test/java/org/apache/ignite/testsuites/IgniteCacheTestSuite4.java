@@ -60,8 +60,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalStoreVa
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearEnabledStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPrimaryWriteOrderStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
@@ -244,8 +242,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
         suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
-        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
         suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
         suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
