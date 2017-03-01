@@ -189,6 +189,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return Collections.emptyMap();
     }
 
+    /**
+     *
+     */
     public Map<UUID, Map<T2<Integer, Integer>, Long>> partitionHistorySuppliers() {
         if (partHistSuppliers == null)
             return Collections.emptyMap();

@@ -51,9 +51,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -380,13 +377,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         map.removeEntry(entry);
 
         // Attempt to evict.
-//        try {
-//            tryEvict();
-//        }
-//        catch (NodeStoppingException ignore) {
-//            // No-op.
-//        }
-
         tryEvictAsync(false);
     }
 
@@ -522,13 +512,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (state.compareAndSet(reservations, --reservations)) {
                 if ((reservations & 0xFFFF) == 0 && shouldBeRenting)
                     rent(true);
-
-//                try {
-//                    tryEvict();
-//                }
-//                catch (NodeStoppingException ignore) {
-//                    // No-op.
-//                }
 
                 tryEvictAsync(false);
 
@@ -688,8 +671,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
-//        assert cctx.kernalContext().state().active();
-
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);
@@ -842,13 +823,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     void onUnlock() {
-//        try {
-//            tryEvict();
-//        }
-//        catch (NodeStoppingException ignore) {
-//            // No-op.
-//        }
-
         tryEvictAsync(false);
     }
 

@@ -50,11 +50,11 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     @GridDirectCollection(int.class)
     private Collection<Integer> parts;
 
-    /** Partition. */
+    /** Partitions that must be restored from history. */
     @GridDirectCollection(int.class)
     private Collection<Integer> historicalParts;
 
-    /** Partition. */
+    /** Partition counters. */
     @GridDirectMap(keyType = int.class, valueType = long.class)
     private Map<Integer, Long> partsCntrs;
 

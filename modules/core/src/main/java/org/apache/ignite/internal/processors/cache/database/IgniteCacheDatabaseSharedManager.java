@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -214,7 +213,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Snapshot creation init future or {@code null} if snapshot is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(StartSnapshotOperationAckDiscoveryMessage snapshotMsg)
+    @Nullable public IgniteInternalFuture startLocalSnapshotOperation(
+        StartSnapshotOperationAckDiscoveryMessage snapshotMsg)
         throws IgniteCheckedException {
         return null;
     }
@@ -227,7 +227,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Reserve update history.
+     * Reserve update history for exchange.
      *
      * @return Reserved update counters per cache and partition.
      */
@@ -242,10 +242,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op
     }
 
+    /**
+     * Reserve update history for preloading.
+     * @param cacheId Cache ID.
+     * @param partId Partition Id.
+     * @param cntr Update counter.
+     * @return True if successfully reserved.
+     */
     public boolean reserveHistoryForPreloading(int cacheId, int partId, long cntr) {
         return false;
     }
 
+    /**
+     * Release reserved update history.
+     */
     public void releaseHistoryForPreloading() {
         // No-op
     }

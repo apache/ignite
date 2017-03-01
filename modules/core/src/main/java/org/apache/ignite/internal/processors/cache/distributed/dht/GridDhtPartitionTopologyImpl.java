@@ -188,96 +188,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         return map == null ? "null" : FULL_MAP_DEBUG ? map.toFullString() : map.toString();
     }
 
-    /**
-     * Waits for renting partitions.
-     *
-     * @return {@code True} if mapping was changed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean waitForRent() throws IgniteCheckedException {
-        if (1 == 1)
-            return false;
-
-        final long longOpDumpTimeout =
-            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
-
-        int dumpCnt = 0;
-
-        GridDhtLocalPartition part;
-
-        for (int i = 0; i < locParts.length(); i++) {
-            part = locParts.get(i);
-
-            if (part == null)
-                continue;
-
-            GridDhtPartitionState state = part.state();
-
-            if (state == RENTING || state == EVICTED) {
-                if (log.isDebugEnabled())
-                    log.debug("Waiting for renting partition: " + part);
-
-                part.tryEvictAsync(false);
-
-                // Wait for partition to empty out.
-                if (longOpDumpTimeout > 0) {
-                    while (true) {
-                        try {
-                            part.rent(true).get(longOpDumpTimeout);
-
-                            break;
-                        }
-                        catch (IgniteFutureTimeoutCheckedException e) {
-                            if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
-                                U.warn(log, "Failed to wait for partition eviction [" +
-                                    "topVer=" + topVer +
-                                    ", cache=" + cctx.name() +
-                                    ", part=" + part.id() +
-                                    ", partState=" + part.state() +
-                                    ", size=" + part.size() +
-                                    ", reservations=" + part.reservations() +
-                                    ", grpReservations=" + part.groupReserved() +
-                                    ", node=" + cctx.localNodeId() + "]");
-
-                                if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
-                                    U.dumpThreads(log);
-                            }
-                        }
-                    }
-                }
-                else
-                    part.rent(true).get();
-
-                if (log.isDebugEnabled())
-                    log.debug("Finished waiting for renting partition: " + part);
-            }
-        }
-
-        // Remove evicted partition.
-        lock.writeLock().lock();
-
-        try {
-            boolean changed = false;
-
-            for (int i = 0; i < locParts.length(); i++) {
-                part = locParts.get(i);
-
-                if (part == null)
-                    continue;
-
-                if (part.state() == EVICTED) {
-                    locParts.set(i, null);
-                    changed = true;
-                }
-            }
-
-            return changed;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void readLock() {
@@ -500,9 +410,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             && !cctx.kernalContext().clientNode()
         );
 
-        // Wait for rent outside of checkpoint lock.
-        waitForRent();
-
         ClusterNode loc = cctx.localNode();
 
         cctx.shared().database().checkpointReadLock();
@@ -582,16 +489,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         finally {
             cctx.shared().database().checkpointReadUnlock();
         }
-
-        // Wait for evictions.
-        waitForRent();
     }
 
     /** {@inheritDoc} */
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         treatAllPartAsLoc = false;
 
-        boolean changed = waitForRent();
+        boolean changed = false;
 
         int num = cctx.affinity().partitions();
 
@@ -1906,9 +1810,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros) {
         lock.readLock().lock();
-
-        // TODO
-        skipZeros = false;
 
         try {
             Map<Integer, T2<Long, Long>> res;

@@ -372,6 +372,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         return (dummy() || forcePreload()) && reassign();
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @return ID of history supplier node or null if it doesn't exist.
+     */
     @Nullable public UUID partitionHistorySupplier(int cacheId, int partId) {
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : partHistSuppliers.entrySet()) {
             if (e.getValue().containsKey(new T2<>(cacheId, partId)))
