@@ -72,10 +72,9 @@ class VectorImplementationsFixtures {
 
     /** */
     void selfTest() {
-        new DenseLocalOnHeapVectorFixture().selfTest();
+        new VectorSizesCpIterator("VectorSizesCpIterator test", DenseLocalOnHeapVector::new, null).selfTest();
 
-        // IMPL NOTE below covers all fixtures derived from VectorSizesFixture
-        new DenseLocalOffHeapVectorFixture().selfTest();
+        new VectorSizesIterator("VectorSizesIterator test", DenseLocalOffHeapVector::new, null).selfTest();
     }
 
     /** */
@@ -98,11 +97,6 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
-        }
-
-        /** */
-        void selfTest() {
-            iter.get().selfTest();
         }
     }
 
@@ -150,11 +144,6 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
-        }
-
-        /** */
-        void selfTest() {
-            iter.get().selfTest();
         }
     }
 
@@ -270,7 +259,8 @@ class VectorImplementationsFixtures {
             if (!hasNext())
                 throw new NoSuchElementException(VectorSizesIterator.this.toString());
 
-            ctxDescrConsumer.accept(toString());
+            if (ctxDescrConsumer != null)
+                ctxDescrConsumer.accept(toString());
 
             Vector res = ctor().apply(sizes[sizeIdx] + deltas[deltaIdx]);
 
