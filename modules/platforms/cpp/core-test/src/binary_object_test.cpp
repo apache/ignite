@@ -369,37 +369,53 @@ BOOST_AUTO_TEST_CASE(ExceptionSafety)
     BOOST_CHECK(restored == some);
 }
 
-BOOST_AUTO_TEST_CASE(DefaultFieldNameHashing)
+BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
 {
-    BOOST_CHECKPOINT("Node1 startup");
-    Ignite node = ignite_test::StartNode("cache-test.xml");
+    try
+    {
+        BOOST_CHECKPOINT("Node1 startup");
+        Ignite node1 = ignite_test::StartNode("cache-test.xml", "node1");
 
-    BinaryFields some(25675472, 67461, 457542, 87073456);
+        BOOST_CHECKPOINT("Creating cache");
+        cache::Cache<int32_t, BinaryFields> cache = node1.GetOrCreateCache<int32_t, BinaryFields>("cache");
 
-    impl::IgniteImpl* nodeImpl = impl::IgniteImpl::GetFromProxy(node);
-    impl::IgniteEnvironment* env = nodeImpl->GetEnvironment();
+        BinaryFields some(25675472, 67461, 457542, 87073456);
 
-    InteropUnpooledMemory mem(1024);
-    FillMem<BinaryFields>(mem, some);
+        BOOST_CHECKPOINT("Putting value");
+        cache.Put(42, some);
 
-    BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
+        BOOST_CHECKPOINT("Node2 startup");
+        Ignite node2 = ignite_test::StartNode("cache-test.xml", "node2");
 
-    BOOST_REQUIRE(binObj.HasField("val1"));
-    BOOST_REQUIRE(binObj.HasField("val2"));
+        impl::IgniteImpl* nodeImpl = impl::IgniteImpl::GetFromProxy(node2);
+        impl::IgniteEnvironment* env = nodeImpl->GetEnvironment();
 
-    int32_t val1 = binObj.GetField<int32_t>("val1");
-    int32_t val2 = binObj.GetField<int32_t>("val2");
+        InteropUnpooledMemory mem(1024);
+        FillMem<BinaryFields>(mem, some);
 
-    BOOST_CHECK_EQUAL(val1, some.val1);
-    BOOST_CHECK_EQUAL(val2, some.val2);
+        BOOST_CHECKPOINT("Creating BinaryObject");
+        BinaryObject binObj(mem, 0, 0, env->GetBinaryContext());
 
-    BOOST_REQUIRE(!binObj.HasField("rawVal1"));
-    BOOST_REQUIRE(!binObj.HasField("rawVal2"));
-    BOOST_REQUIRE(!binObj.HasField("some"));
-    BOOST_REQUIRE(!binObj.HasField("unknown"));
-    BOOST_REQUIRE(!binObj.HasField(""));
+        BOOST_REQUIRE(binObj.HasField("val1"));
+        BOOST_REQUIRE(binObj.HasField("val2"));
 
-    Ignition::StopAll(true);
+        int32_t val1 = binObj.GetField<int32_t>("val1");
+        int32_t val2 = binObj.GetField<int32_t>("val2");
+
+        BOOST_CHECK_EQUAL(val1, some.val1);
+        BOOST_CHECK_EQUAL(val2, some.val2);
+
+        BOOST_REQUIRE(!binObj.HasField("rawVal1"));
+        BOOST_REQUIRE(!binObj.HasField("rawVal2"));
+        BOOST_REQUIRE(!binObj.HasField("some"));
+        BOOST_REQUIRE(!binObj.HasField("unknown"));
+        BOOST_REQUIRE(!binObj.HasField(""));
+    }
+    catch (...)
+    {
+        Ignition::StopAll(true);
+        throw;
+    }
 }
 
 BOOST_AUTO_TEST_CASE(GetEnumValueInvalid)
