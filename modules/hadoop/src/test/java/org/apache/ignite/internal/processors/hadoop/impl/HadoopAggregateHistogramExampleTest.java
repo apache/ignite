@@ -1,16 +1,13 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.AggregateWordHistogram;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorJob;
-import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 
 /**
  *
@@ -32,12 +29,10 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
         @Override public int run(String[] args) throws Exception {
             final Configuration conf = getConf();
 
-            String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
-            HadoopGenericExampleTest.setAggregatorDescriptors(conf,
+            HadoopGenericExampleTest.setAggregatorDescriptors_CORRECT(conf,
                 new Class[] { AggregateWordHistogram.AggregateWordHistogramPlugin.class } );
 
-            Job job = ValueAggregatorJob.createValueAggregatorJob(conf, otherArgs);
+            Job job = ValueAggregatorJob.createValueAggregatorJob(conf, args);
 
             job.setJarByClass(AggregateWordHistogram.class);
 
@@ -67,18 +62,25 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
         }
 
         @Override void verify(String[] parameters) throws Exception {
-            Path path = new Path(parameters[1] + "/part-r-00000");
+            new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
+                @Override void checkFirstLine(String line) {
+                    assertTrue(line.startsWith("WORD_HISTOGRAM\t1000\t9\t22\t38\t22.0\t4.78"));
+                }
 
-            try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(getFileSystem().open(path)))) {
-                assertTrue(br.readLine().startsWith("WORD_HISTOGRAM\t1000\t9\t22\t38\t22.0\t4.78"));
-
-                assertNull(br.readLine());
-            }
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(1, cnt);
+                }
+            }.check();
         }
-
-
     };
+
+    /** {@inheritDoc} */
+    @Override protected void prepareConf(Configuration conf) {
+        super.prepareConf(conf);
+
+        // See https://issues.apache.org/jira/browse/IGNITE-4720:
+        conf.set(HadoopJobProperty.JOB_SHARED_CLASSLOADER.propertyName(), "false");
+    }
 
     /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {

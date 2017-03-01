@@ -1,6 +1,8 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -55,16 +57,16 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      */
     static class FrameworkParameters {
         /** */
-        int maps;
+        private final int maps;
 
         /** */
-        int reduces = 1;
+        private final int reduces;
 
         /** */
-        String workDir;
+        private final String workDir;
 
         /** */
-        String user;
+        private final String user;
 
         /**
          * The constructor.
@@ -302,10 +304,11 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         //            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
 
 //        // Set the Ignite framework and the address:
-//        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
-//        conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
+        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
+        conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
 
-        conf.set(MRConfig.FRAMEWORK_NAME,  "local");
+//        conf.set(MRConfig.FRAMEWORK_NAME, "local");
+//        conf.unset(MRConfig.MASTER_ADDRESS);
     }
 
     /**
@@ -336,7 +339,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         String[] args = ex.parameters(fp);
 
-        X.println("Running example [" + ex.name() + "] with " + args.length + " parameters: " + Arrays.toString(args));
+        X.println("### Running example [" + ex.name() + "] with " + args.length + " parameters: " + Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 
@@ -346,20 +349,34 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     }
 
     /**
+     * Original version of method org.apache.hadoop.mapreduce.lib.aggregate
+     *     .ValueAggregatorJob#setAggregatorDescriptors(java.lang.Class[]): it adds correct "." to the property name.
+     *
+     * @param conf The configuration.
+     * @param descriptors The descriptors.
+     */
+    public static void setAggregatorDescriptors_WRONG(Configuration conf,
+            Class<? extends ValueAggregatorDescriptor>[] descriptors) {
+        conf.setInt(ValueAggregatorJobBase.DESCRIPTOR_NUM, descriptors.length);
+
+        for(int i = 0; i < descriptors.length; ++i)
+            conf.set(ValueAggregatorJobBase.DESCRIPTOR + i, "UserDefined," + descriptors[i].getName());
+    }
+
+    /**
      * Fixed version of method org.apache.hadoop.mapreduce.lib.aggregate
      *     .ValueAggregatorJob#setAggregatorDescriptors(java.lang.Class[]): it adds correct "." to the property name.
      *
      * @param conf The configuration.
      * @param descriptors The descriptors.
      */
-    static void setAggregatorDescriptors(Configuration conf,
+    public static void setAggregatorDescriptors_CORRECT(Configuration conf,
         Class<? extends ValueAggregatorDescriptor>[] descriptors) {
         conf.setInt(ValueAggregatorJobBase.DESCRIPTOR_NUM, descriptors.length);
+
         //specify the aggregator descriptors
-        for(int i=0; i< descriptors.length; i++) {
-            conf.set(ValueAggregatorJobBase.DESCRIPTOR + "." + i,
-                "UserDefined," + descriptors[i].getName());
-        }
+        for(int i=0; i< descriptors.length; i++)
+            conf.set(ValueAggregatorJobBase.DESCRIPTOR + "." + i, "UserDefined," + descriptors[i].getName());
     }
 
     /**
@@ -403,5 +420,48 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         hadoopCfg.setMaxTaskQueueSize(30_000);
 
         return hadoopCfg;
+    }
+
+    /**
+     *
+     */
+    public static class OutputFileChecker {
+        private final FileSystem fs;
+        private final String file;
+
+        public OutputFileChecker(FileSystem fs, String file) {
+            this.fs = fs;
+            this.file = file;
+        }
+
+        public final void check() throws Exception {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(new Path(file))))) {
+                int wc = 0;
+                String line = null;
+
+                while (true) {
+                    String line0 = br.readLine();
+
+                    if (line0 == null)
+                        break;
+
+                    line = line0;
+
+                    wc++;
+
+                    if (wc == 1)
+                        checkFirstLine(line); // first line
+                }
+
+                checkLastLine(line); // last line
+                checkLineCount(wc);
+            }
+        }
+
+        void checkFirstLine(String line) {}
+
+        void checkLastLine(String line) {}
+
+        void checkLineCount(int cnt) {}
     }
 }

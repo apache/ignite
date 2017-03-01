@@ -55,6 +55,7 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistBbpExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedPentominoExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopQuasiMonteCarloTest.class.getName())));
+
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJoinTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDBCountPageViewExampleTest.class.getName())));

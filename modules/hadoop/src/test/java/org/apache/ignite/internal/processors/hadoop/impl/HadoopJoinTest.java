@@ -20,7 +20,7 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.Tool;
 
 /**
- * Runs Hadoop Quasi Monte Carlo Pi estimation example.
+ * Runs Join test.
  */
 public class HadoopJoinTest extends HadoopGenericExampleTest {
     /**
@@ -127,9 +127,36 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
             conf.unset(FileOutputFormat.OUTDIR);
         }
 
-        @Override void verify(String[] parameters) {
-            // TODO: implement.
-            //assertEquals(Math.PI, estimatedPi.doubleValue(), PRECISION);
+        @Override void verify(String[] parameters) throws Exception {
+            String outDir = parameters[11];
+
+            new OutputFileChecker(getFileSystem(), outDir + "/part-r-" + nullifyToLen(5, 0)) {
+                @Override void checkFirstLine(String line) {
+                    assertEquals("0\t[0]", line);
+                }
+
+                @Override void checkLastLine(String line) {
+                    assertEquals("99\t[99]", line);
+                }
+
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(34, cnt);
+                }
+            }.check();
+
+            new OutputFileChecker(getFileSystem(), outDir + "/part-r-" + nullifyToLen(5, 2)) {
+                @Override void checkFirstLine(String line) {
+                    assertEquals("2\t[2]", line);
+                }
+
+                @Override void checkLastLine(String line) {
+                    assertEquals("98\t[98]", line);
+                }
+
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(33, cnt);
+                }
+            }.check();
         }
     };
 

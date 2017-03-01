@@ -22,7 +22,7 @@ public class HadoopDBCountPageViewExampleTest extends HadoopGenericExampleTest {
         }
 
         @Override void verify(String[] parameters) {
-            // TODO
+            // Noop, this test is self-verifying, see org.apache.hadoop.examples.DBCountPageView.verify().
         }
     };
 

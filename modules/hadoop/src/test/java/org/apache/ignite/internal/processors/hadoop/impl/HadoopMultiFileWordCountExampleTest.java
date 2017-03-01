@@ -1,10 +1,7 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import org.apache.hadoop.examples.MultiFileWordCount;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
 
@@ -36,30 +33,19 @@ public class HadoopMultiFileWordCountExampleTest extends HadoopGenericExampleTes
         }
 
         @Override void verify(String[] parameters) throws Exception {
-            Path path = new Path(parameters[1] + "/part-r-00000");
-
-            try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(getFileSystem().open(path)))) {
-                int wc = 0;
-                String line = null;
-
-                while (true) {
-                    String line0 = br.readLine();
-
-                    if (line0 == null)
-                        break;
-
-                    line = line0;
-
-                    wc++;
-
-                    if (wc == 1)
-                        assertEquals("Aktistetae\t15", line); // first line
+            new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
+                @Override void checkFirstLine(String line) {
+                    assertEquals("Aktistetae\t15", line);
                 }
 
-                assertEquals("zoonitic\t22", line); // last line
-                assertEquals(1000, wc);
-            }
+                @Override void checkLastLine(String line) {
+                    assertEquals("zoonitic\t22", line);
+                }
+
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(1000, cnt);
+                }
+            }.check();
         }
     };
 

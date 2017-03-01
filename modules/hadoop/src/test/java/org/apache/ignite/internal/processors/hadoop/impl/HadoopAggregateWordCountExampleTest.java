@@ -1,16 +1,13 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.examples.AggregateWordCount;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.aggregate.ValueAggregatorJob;
-import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 
 /**
  *
@@ -30,14 +27,19 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
 
         @SuppressWarnings("unchecked")
         @Override public int run(String[] args) throws Exception {
+            // Original example code looks like the following:
+            // ----------------
+            //     Job job = ValueAggregatorJob.createValueAggregatorJob(args, new Class[] {WordCountPlugInClass.class});
+            //     job.setJarByClass(AggregateWordCount.class);
+            //     int ret = job.waitForCompletion(true) ? 0 : 1;
+            // ----------------
+
             final Configuration conf = getConf();
 
-            String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+            //setAggregatorDescriptors_WRONG(conf, new Class[] {AggregateWordCount.WordCountPlugInClass.class});
+            setAggregatorDescriptors_CORRECT(conf, new Class[] {AggregateWordCount.WordCountPlugInClass.class});
 
-            HadoopGenericExampleTest.setAggregatorDescriptors(conf,
-                new Class[] { AggregateWordCount.WordCountPlugInClass.class } );
-
-            Job job = ValueAggregatorJob.createValueAggregatorJob(conf, otherArgs);
+            Job job = ValueAggregatorJob.createValueAggregatorJob(conf, args);
 
             job.setJarByClass(AggregateWordCount.class);
 
@@ -67,32 +69,29 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
         }
 
         @Override void verify(String[] parameters) throws Exception {
-            Path path = new Path(parameters[1] + "/part-r-00000");
-
-            try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(getFileSystem().open(path)))) {
-                int wc = 0;
-                String line = null;
-
-                while (true) {
-                    String line0 = br.readLine();
-
-                    if (line0 == null)
-                        break;
-
-                    line = line0;
-
-                    wc++;
-
-                    if (wc == 1)
-                        assertEquals("Aktistetae\t15", line); // first line
+            new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
+                @Override void checkFirstLine(String line) {
+                    assertEquals("Aktistetae\t15", line);
                 }
 
-                assertEquals("zoonitic\t22", line); // last line
-                assertEquals(1000, wc);
-            }
+                @Override void checkLastLine(String line) {
+                    assertEquals("zoonitic\t22", line);
+                }
+
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(1000, cnt);
+                }
+            }.check();
         }
     };
+
+    /** {@inheritDoc} */
+    @Override protected void prepareConf(Configuration conf) {
+        super.prepareConf(conf);
+
+        // See https://issues.apache.org/jira/browse/IGNITE-4720:
+        conf.set(HadoopJobProperty.JOB_SHARED_CLASSLOADER.propertyName(), "false");
+    }
 
     /** {@inheritDoc} */
     @Override protected GenericHadoopExample example() {

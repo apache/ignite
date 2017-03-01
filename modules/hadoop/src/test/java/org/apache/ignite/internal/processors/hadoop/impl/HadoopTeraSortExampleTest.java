@@ -1,7 +1,5 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import org.apache.hadoop.examples.terasort.TeraGen;
 import org.apache.hadoop.examples.terasort.TeraSort;
 import org.apache.hadoop.examples.terasort.TeraValidate;
@@ -93,18 +91,16 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
-            Path path = new Path(parameters[1] + "/part-r-00000");
+            new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
+                @Override void checkFirstLine(String line) {
+                    assertTrue(line.length() < 50);
+                    assertTrue(line.startsWith("checksum"));
+                }
 
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(getFileSystem().open(path)))) {
-                String line1 = br.readLine();
-
-                assertNotNull(line1);
-                assertTrue(line1.length() < 50);
-                assertTrue(line1.startsWith("checksum"));
-
-                assertNull(br.readLine());
-            }
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(1, cnt);
+                }
+            }.check();
         }
     };
 
@@ -130,7 +126,7 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
     @Override protected FrameworkParameters frameworkParameters() {
         return new FrameworkParameters(numMaps(), gridCount(), getFsBase(), getUser()) {
             @Override public String getWorkDir(String exampleName) {
-                return workDir + "/" + user + "/tera";
+                return  getFsBase() + "/" + getUser() + "/tera";
             }
         };
     }

@@ -1,11 +1,8 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import org.apache.hadoop.examples.Grep;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
 import org.apache.ignite.IgniteException;
@@ -55,14 +52,19 @@ public class HadoopGrepExampleTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
-            // Verify the grep result:
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                getFileSystem().open(new Path(parameters[1] + "/part-r-00000"))))) {
-                assertEquals("1\tzoonitic", br.readLine());
-                assertEquals("1\tzenick", br.readLine());
+            new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
+                @Override void checkFirstLine(String line) {
+                    assertEquals("1\tzoonitic", line);
+                }
 
-                assertNull(br.readLine()); // EOF
-            }
+                @Override void checkLastLine(String line) {
+                    assertEquals("1\tzenick", line);
+                }
+
+                @Override void checkLineCount(int cnt) {
+                    assertEquals(2, cnt);
+                }
+            }.check();
         }
     };
 
