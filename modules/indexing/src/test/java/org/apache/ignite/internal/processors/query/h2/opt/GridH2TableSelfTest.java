@@ -91,10 +91,10 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
             @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
                 ArrayList<Index> idxs = new ArrayList<>();
 
-                IndexColumn id = tbl.indexColumn(0+2, SortOrder.ASCENDING);
-                IndexColumn t = tbl.indexColumn(1+2, SortOrder.ASCENDING);
-                IndexColumn str = tbl.indexColumn(2+2, SortOrder.DESCENDING);
-                IndexColumn x = tbl.indexColumn(3+2, SortOrder.DESCENDING);
+                IndexColumn id = tbl.indexColumn(0, SortOrder.ASCENDING);
+                IndexColumn t = tbl.indexColumn(1, SortOrder.ASCENDING);
+                IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
+                IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));

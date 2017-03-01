@@ -125,11 +125,12 @@ public class GridH2Table extends TableBase {
         this.spaceName = spaceName;
         this.systemColumns = buildSystemColumns();
 
-        for (Column col: this.columns) {
-            String colName = col.getName();
-            int colId = desc.getColumnId(colName);
-            col.setColumnId(colId);
-        }
+        if (desc != null)
+            for (Column col: this.columns) {
+                String colName = col.getName();
+                int colId = desc.getColumnId(colName);
+                col.setColumnId(colId);
+            }
 
         if (desc != null && desc.context() != null && !desc.context().customAffinityMapper()) {
             boolean affinityColExists = true;
@@ -819,6 +820,8 @@ public class GridH2Table extends TableBase {
      * @return result.
      * */
     private Column[] buildSystemColumns() {
+        if (desc == null)
+            return null;
 
         List<Column> sysColumns = new ArrayList<>();
         GridQueryTypeDescriptor qryTypeDesc = desc.type();
@@ -910,7 +913,7 @@ public class GridH2Table extends TableBase {
 
         /** {@inheritDoc} */
         @Override public TableBase createTable(CreateTableData createTblData) {
-            createTblData.columnIdCount = rowDesc.getColumnIdCount();
+            createTblData.columnIdCount = rowDesc==null?0:rowDesc.getColumnIdCount();
             resTbl = new GridH2Table(createTblData, rowDesc, idxsFactory, spaceName);
 
             return resTbl;
@@ -947,7 +950,7 @@ public class GridH2Table extends TableBase {
                 rowDesc = null;
             }
         }
-    }
+    };
 
     /**
      * Type which can create indexes list for given table.
