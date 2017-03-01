@@ -105,8 +105,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     /** Flag indicating that every operation on this lock should be interrupted. */
     private volatile boolean interruptAll;
 
-    /** Create flag. */
-    private volatile boolean create;
+    /** Re-create flag. */
+    private volatile boolean reCreate;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -525,7 +525,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
-                                    if (create) {
+                                    if (reCreate) {
                                         val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
                                         lockView.put(key, val);
                                     } else
@@ -1055,14 +1055,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
-     * @param create If {@code true} reentrant lock will be created in case it is not in cache.
+     * @param reCreate If {@code true} reentrant lock will be re-created in case it is not in cache.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
         GridCacheContext ctx,
-        boolean create) {
+        boolean reCreate) {
         assert name != null;
         assert key != null;
         assert ctx != null;
@@ -1072,7 +1072,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         this.key = key;
         this.lockView = lockView;
         this.ctx = ctx;
-        this.create = create;
+        this.reCreate = reCreate;
 
         log = ctx.logger(getClass());
     }
