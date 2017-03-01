@@ -235,7 +235,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         internal CacheConfiguration(IBinaryRawReader reader)
         {
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
-            AtomicWriteOrderMode = (CacheAtomicWriteOrderMode) reader.ReadInt();
             Backups = reader.ReadInt();
             CacheMode = (CacheMode) reader.ReadInt();
             CopyOnRead = reader.ReadBoolean();
@@ -292,7 +291,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         internal void Write(IBinaryRawWriter writer)
         {
             writer.WriteInt((int) AtomicityMode);
-            writer.WriteInt((int) AtomicWriteOrderMode);
             writer.WriteInt(Backups);
             writer.WriteInt((int) CacheMode);
             writer.WriteBoolean(CopyOnRead);
@@ -473,11 +471,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultAtomicityMode)]
         public CacheAtomicityMode AtomicityMode { get; set; }
-
-        /// <summary>
-        /// Gets or sets cache write ordering mode.
-        /// </summary>
-        public CacheAtomicWriteOrderMode AtomicWriteOrderMode { get; set; }
 
         /// <summary>
         /// Gets or sets number of nodes used to back up single partition for 
