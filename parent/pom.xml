@@ -798,7 +798,7 @@
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>**/DEVNOTES.txt</exclude>
+                                        <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
@@ -937,7 +937,7 @@
                 <jdk>[1.8,)</jdk>
             </activation>
             <properties>
-                <javadoc.opts>-Xdoclint:none</javadoc.opts>
+                <javadoc.opts>-Xdoclint:none --allow-script-in-comments</javadoc.opts>
             </properties>
             <build>
                 <plugins>

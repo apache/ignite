@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.sql;
+package org.apache.ignite.yardstick.cache;
+
+import org.apache.ignite.IgniteCache;
 
 /**
- * Marker interface for a simple value.
+ *
  */
-public interface GridSqlValue {
-    // No-op.
+public class IgnitePutAllOffHeapBenchmark extends IgnitePutAllBenchmark {
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("atomic-offheap");
+    }
 }

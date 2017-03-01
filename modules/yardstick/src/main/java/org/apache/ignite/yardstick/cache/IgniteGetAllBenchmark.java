@@ -15,11 +15,28 @@
  * limitations under the License.
  */
 
-#pragma once
+package org.apache.ignite.yardstick.cache;
 
-// Including SDKDDKVer.h defines the highest available Windows platform.
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-// If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
-// set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
+/**
+ * Ignite benchmark that performs getAll operations.
+ */
+public class IgniteGetAllBenchmark extends IgniteGetBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        Set<Integer> keys = U.newHashSet(args.batch());
 
-#include <SDKDDKVer.h>
+        while (keys.size() < args.batch()) {
+            int key = nextRandom(args.range());
+
+            keys.add(key);
+        }
+
+        cache.getAll(keys);
+
+        return true;
+    }
+}

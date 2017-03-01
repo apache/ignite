@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-#pragma once
+package org.apache.ignite.yardstick.cache;
 
-// Including SDKDDKVer.h defines the highest available Windows platform.
+import org.apache.ignite.IgniteCache;
 
-// If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
-// set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
-
-#include <SDKDDKVer.h>
+/**
+ *
+ */
+public class IgnitePutAllTxOffHeapBenchmark extends IgnitePutAllTxBenchmark {
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("tx-offheap");
+    }
+}
