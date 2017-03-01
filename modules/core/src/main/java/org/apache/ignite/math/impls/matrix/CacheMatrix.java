@@ -114,11 +114,11 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         // Gets these values assigned to a local vars so that
         // they will be available in the closure.
         String cacheName = sto.cache().getName();
-        int partsCnt = ignite().affinity(cacheName).partitions();
+        int partsCnt = partitions(cacheName);
         KeyMapper<K> keyMapper = sto.keyMapper();
         V newVal = sto.valueMapper().fromDouble(val);
 
-        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(() -> {
+        broadcastForCache(cacheName, () -> {
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
 
             // Iterate over all partitions. Some of them will be stored on that local node.

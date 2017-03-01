@@ -18,6 +18,8 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
+import java.util.*;
 
 /**
  * Distribution-related misc. support.
@@ -28,5 +30,34 @@ public class DistributionSupport {
      */
     protected Ignite ignite() {
         return Ignition.localIgnite();
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @param run
+     */
+    protected void broadcastForCache(String cacheName, IgniteRunnable run) {
+        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @return
+     */
+    protected int partitions(String cacheName) {
+        return ignite().affinity(cacheName).partitions();
+    }
+
+    /**
+     * 
+     * @param cacheName
+     * @param call
+     * @param <A>
+     * @return
+     */
+    protected <A> Collection<A> broadcastForCache(String cacheName, IgniteCallable<A> call) {
+        return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
     }
 }
