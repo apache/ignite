@@ -379,6 +379,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         assertEquals(102, LOCAL_STORE_2.map.size());
 
         stopGrid(1);
+        awaitPartitionMapExchange();
 
         assertEquals(1, G.allGrids().size());
 
@@ -394,6 +395,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         assertEquals(102, LOCAL_STORE_2.map.size());
 
         stopGrid(2);
+        awaitPartitionMapExchange();
 
         assertEquals(0, G.allGrids().size());
 
@@ -604,9 +606,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 try (Transaction tx = grid(i).transactions().txStart()) {
                     Map<Integer, Integer> m = new HashMap<>(3);
 
-                    for (int j = 0; j < 50; j++) {
+                    for (int j = 0; j < 50; j++)
                         m.put(rn.nextInt(1000), 1000);
-                    }
 
                     grid(i).cache(BACKUP_CACHE_1).withSkipStore().putAll(m);
 
