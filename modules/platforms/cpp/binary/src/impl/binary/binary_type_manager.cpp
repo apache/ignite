@@ -165,11 +165,13 @@ namespace ignite
                         return snap;
                 }
 
-//                SPSnap snap = SPSnap(new Snap());
-//
-//                updater->GetMeta(typeId, *snap.Get());
-                // TODO: make request to Java here.
-                return SPSnap();
+                IgniteError err;
+
+                SPSnap snap = updater->GetMeta(typeId, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return snap;
             }
         }
     }

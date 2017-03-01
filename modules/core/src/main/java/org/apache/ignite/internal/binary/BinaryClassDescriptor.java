@@ -102,7 +102,7 @@ public class BinaryClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, Integer> stableFieldsMeta;
+    private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
     private final BinarySchema stableSchema;
@@ -285,12 +285,12 @@ public class BinaryClassDescriptor {
                 if (BinaryUtils.FIELDS_SORTED_ORDER) {
                     fields0 = new TreeMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
                 }
                 else {
                     fields0 = new LinkedHashMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
                 }
 
                 Set<String> duplicates = duplicateFields(cls);
@@ -322,7 +322,7 @@ public class BinaryClassDescriptor {
                             fields0.put(name, fieldInfo);
 
                             if (metaDataEnabled)
-                                stableFieldsMeta.put(name, fieldInfo.mode().typeId());
+                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
                         }
                     }
                 }
@@ -468,7 +468,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Fields meta data.
      */
-    Map<String, Integer> fieldsMeta() {
+    Map<String, BinaryFieldMetadata> fieldsMeta() {
         return stableFieldsMeta;
     }
 
