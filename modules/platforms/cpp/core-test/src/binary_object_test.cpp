@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         FillMem<BinaryFields>(mem, some);
 
         BOOST_CHECKPOINT("Creating BinaryObject");
-        BinaryObject binObj(mem, 0, 0, env->GetBinaryContext());
+        BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
 
         BOOST_REQUIRE(binObj.HasField("val1"));
         BOOST_REQUIRE(binObj.HasField("val2"));
