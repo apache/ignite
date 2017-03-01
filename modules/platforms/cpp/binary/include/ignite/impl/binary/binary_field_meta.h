@@ -20,8 +20,17 @@
 
 #include <stdint.h>
 
+#include <ignite/binary/binary_type.h>
+
 namespace ignite
 {
+    namespace binary
+    {
+        /* Forward declarations. */
+        class BinaryRawWriter;
+        class BinaryRawReader;
+    }
+
     namespace impl
     {
         namespace binary
@@ -75,6 +84,20 @@ namespace ignite
                     return fieldId;
                 }
 
+                /**
+                 * Write to data stream.
+                 *
+                 * @param writer Writer.
+                 */
+                void Write(ignite::binary::BinaryRawWriter& writer) const;
+
+                /**
+                 * Read from data stream.
+                 *
+                 * @param reader reader.
+                 */
+                void Read(ignite::binary::BinaryRawReader& reader);
+
             private:
                 /** Type ID. */
                 int32_t typeId;
@@ -83,6 +106,26 @@ namespace ignite
                 int32_t fieldId;
             };
         }
+    }
+
+    namespace binary
+    {
+        /**
+         * Templated binary type specification.
+         */
+        template <>
+        struct BinaryType<impl::binary::BinaryFieldMeta>
+        {
+            typedef impl::binary::BinaryFieldMeta BinaryFieldMeta;
+
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(BinaryFieldMeta)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(BinaryFieldMeta)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(BinaryFieldMeta)
+
+            void Write(BinaryWriter& writer, const BinaryFieldMeta& obj);
+
+            BinaryFieldMeta Read(BinaryReader& reader);
+        };
     }
 }
 

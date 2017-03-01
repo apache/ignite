@@ -27,8 +27,7 @@ namespace ignite
                 typeName(typeName),
                 typeId(typeId),
                 fieldIds(),
-                fieldIdMap(),
-                fieldTypeMap()
+                fields()
             {
                 // No-op.
             }
@@ -37,8 +36,7 @@ namespace ignite
                 typeName(another.typeName),
                 typeId(another.typeId),
                 fieldIds(another.fieldIds),
-                fieldIdMap(another.fieldIdMap),
-                fieldTypeMap(another.fieldTypeMap)
+                fields(another.fields)
             {
                 // No-op.
             }
@@ -46,8 +44,7 @@ namespace ignite
             void BinaryTypeSnapshot::AddField(int32_t fieldId, const std::string& fieldName, int32_t fieldTypeId)
             {
                 fieldIds.insert(fieldId);
-                fieldIdMap[fieldName] = fieldId;
-                fieldTypeMap[fieldName] = fieldTypeId;
+                fields[fieldName] = BinaryFieldMeta(fieldTypeId, fieldId);
             }
 
             void BinaryTypeSnapshot::CopyFieldsFrom(const BinaryTypeSnapshot* another)
@@ -55,8 +52,7 @@ namespace ignite
                 if (another && another->HasFields())
                 {
                     fieldIds.insert(another->fieldIds.begin(), another->fieldIds.end());
-                    fieldIdMap.insert(another->fieldIdMap.begin(), another->fieldIdMap.end());
-                    fieldTypeMap.insert(another->fieldTypeMap.begin(), another->fieldTypeMap.end());
+                    fields.insert(another->fields.begin(), another->fields.end());
                 }
             }
         }
