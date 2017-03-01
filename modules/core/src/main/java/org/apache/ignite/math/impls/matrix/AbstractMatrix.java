@@ -20,9 +20,9 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.MatrixVectorView;
-import org.apache.ignite.math.impls.storage.matrix.MatrixNullStorage;
-
+import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.impls.storage.matrix.*;
+import org.apache.ignite.math.impls.vector.*;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
@@ -30,12 +30,12 @@ import java.util.function.*;
 /**
  * TODO: add description.
  */
-public abstract class AbstractMatrix implements Matrix {
+public abstract class AbstractMatrix extends DistributionSupport implements Matrix {
     // Stochastic sparsity analysis.
-    private final double Z95 = 1.959964;
-    private final double Z80 = 1.281552;
-    private final int MAX_SAMPLES = 500;
-    private final int MIN_SAMPLES = 15;
+    private static final double Z95 = 1.959964;
+    private static final double Z80 = 1.281552;
+    private static final int MAX_SAMPLES = 500;
+    private static final int MIN_SAMPLES = 15;
 
     // Matrix storage implementation.
     private MatrixStorage sto;

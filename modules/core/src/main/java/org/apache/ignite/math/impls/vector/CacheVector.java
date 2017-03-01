@@ -49,7 +49,7 @@ public class CacheVector<K, V> extends AbstractVector {
         int size,
         IgniteCache<K, V> cache,
         IntFunction<K> keyFunc,
-        DoubleMapper<V> valMapper) {
+        ValueMapper<V> valMapper) {
         setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
     }
 
@@ -67,7 +67,7 @@ public class CacheVector<K, V> extends AbstractVector {
             int size = (int)args.get("size");
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
             IntFunction<K> keyFunc = (IntFunction<K>)args.get("keyFunc");
-            DoubleMapper<V> valMapper = (DoubleMapper<V>)args.get("valMapper");
+            ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
 
             setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
         }

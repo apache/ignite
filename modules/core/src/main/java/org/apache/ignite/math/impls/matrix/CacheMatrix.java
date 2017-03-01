@@ -18,11 +18,12 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.matrix.CacheMatrixStorage;
-
+import org.apache.ignite.math.impls.storage.matrix.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -42,16 +43,16 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param rows
      * @param cols
      * @param cache
-     * @param keyFunc
+     * @param keyMapper
      * @param valMapper
      */
     public CacheMatrix(
         int rows,
         int cols,
         IgniteCache<K, V> cache,
-        IntIntToKFunction<K> keyFunc,
-        DoubleMapper<V> valMapper) {
-        setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyFunc, valMapper));
+        KeyMapper<K> keyMapper,
+        ValueMapper<V> valMapper) {
+        setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
     }
 
     /**
@@ -63,16 +64,16 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
 
         if (args.containsKey("rows") &&
             args.containsKey("cols") &&
-            args.containsKey("keyFunc") &&
+            args.containsKey("keyMapper") &&
             args.containsKey("valMapper") &&
             args.containsKey("cacheName")) {
             int rows = (int)args.get("rows");
             int cols = (int)args.get("cols");
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
-            IntIntToKFunction<K> keyFunc = (IntIntToKFunction<K>)args.get("keyFunc");
-            DoubleMapper<V> valMapper = (DoubleMapper<V>)args.get("valMapper");
+            KeyMapper<K> keyMapper = (KeyMapper<K>)args.get("keyMapper");
+            ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
 
-            setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyFunc, valMapper));
+            setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
         }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
@@ -91,18 +92,48 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     public Matrix copy() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return new CacheMatrix<K, V>(rowSize(), columnSize(), sto.cache(), sto.keyFunction(), sto.valueMapper());
+        return new CacheMatrix<K, V>(rowSize(), columnSize(), sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
     @Override
     public Matrix like(int rows, int cols) {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return new CacheMatrix<K, V>(rows, cols, sto.cache(), sto.keyFunction(), sto.valueMapper());
+        return new CacheMatrix<K, V>(rows, cols, sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
     @Override
     public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Matrix assign(double val) {
+        CacheMatrixStorage<K, V> sto = storage();
+
+        // Gets these values assigned to a local vars so that
+        // they will be available in the closure.
+        String cacheName = sto.cache().getName();
+        int partsCnt = ignite().affinity(cacheName).partitions();
+        KeyMapper<K> keyMapper = sto.keyMapper();
+        V newVal = sto.valueMapper().fromDouble(val);
+
+        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(() -> {
+            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+
+            // Iterate over all partitions. Some of them will be stored on that local node.
+            for (int part = 0; part < partsCnt; part++)
+                // Iterate over given partition.
+                // Query returns an empty cursor if this partition is not stored on this node.
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part))) {
+                    K k = entry.getKey();
+
+                    if (keyMapper.isValid(k))
+                        // Actual assignment.
+                        cache.put(k, newVal);
+                }
+        });
+
+        return this;
     }
 }

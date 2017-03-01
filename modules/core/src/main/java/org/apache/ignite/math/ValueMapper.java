@@ -10,14 +10,20 @@
 package org.apache.ignite.math;
 
 /**
- * TODO: add description.
+ * Utility mapper that can be used to map arbitrary values types to and from double.
  */
-public interface IntIntToKFunction<K> {
+public interface ValueMapper<V> {
     /**
-     * 
-     * @param a
-     * @param b
+     *
+     * @param v
      * @return
      */
-    public K apply(int a, int b);
+    public V fromDouble(double v);
+
+    /**
+     *
+     * @param v
+     * @return
+     */
+    public double toDouble(V  v);
 }

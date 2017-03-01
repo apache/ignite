@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.impls;
+
+import org.apache.ignite.*;
 
 /**
- * Identity value mapper.
+ * Distribution-related misc. support.
  */
-public class IdentityDoubleMapper implements DoubleMapper<Double> {
-    @Override
-    public Double fromDouble(double v) {
-        return v;
-    }
-
-    @Override
-    public double toDouble(Double v) {
-        return v;
+public class DistributionSupport {
+    /**
+     * Gets local Ignite instance.
+     */
+    protected Ignite ignite() {
+        return Ignition.localIgnite();
     }
 }

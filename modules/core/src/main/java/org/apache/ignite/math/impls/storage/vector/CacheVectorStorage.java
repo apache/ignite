@@ -28,7 +28,7 @@ import java.util.function.*;
 public class CacheVectorStorage<K, V> implements VectorStorage {
     private int size;
     private IntFunction<K> keyFunc;
-    private DoubleMapper<V> valMapper;
+    private ValueMapper<V> valMapper;
     private IgniteCache<K, V> cache;
 
     /**
@@ -45,7 +45,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      * @param idxFunc
      * @param valMapper
      */
-    public CacheVectorStorage(int size, IgniteCache<K, V> cache, IntFunction<K> idxFunc, DoubleMapper<V> valMapper) {
+    public CacheVectorStorage(int size, IgniteCache<K, V> cache, IntFunction<K> idxFunc, ValueMapper<V> valMapper) {
         this.size = size;
         this.cache = cache;
         this.keyFunc = keyFunc;
@@ -72,7 +72,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      *
      * @return
      */
-    public DoubleMapper<V> valueMapper() {
+    public ValueMapper<V> valueMapper() {
         return valMapper;
     }
 

@@ -27,8 +27,8 @@ import java.io.*;
 public class CacheMatrixStorage<K, V> implements MatrixStorage {
     private int rows, cols;
     private IgniteCache<K, V> cache;
-    private IntIntToKFunction<K> keyFunc;
-    private DoubleMapper<V> valMapper;
+    private KeyMapper<K> keyMapper;
+    private ValueMapper<V> valMapper;
 
     /**
      *
@@ -42,14 +42,14 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      * @param rows
      * @param cols
      * @param cache
-     * @param keyFunc
+     * @param keyMapper
      * @param valMapper
      */
-    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, IntIntToKFunction<K> keyFunc, DoubleMapper<V> valMapper) {
+    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         this.rows = rows;
         this.cols = cols;
         this.cache = cache;
-        this.keyFunc = keyFunc;
+        this.keyMapper = keyMapper;
         this.valMapper = valMapper;
     }
 
@@ -65,26 +65,26 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      *
      * @return
      */
-    public IntIntToKFunction<K> keyFunction() {
-        return keyFunc;
+    public KeyMapper<K> keyMapper() {
+        return keyMapper;
     }
 
     /**
      *
      * @return
      */
-    public DoubleMapper<V> valueMapper() {
+    public ValueMapper<V> valueMapper() {
         return valMapper;
     }
 
     @Override
     public double get(int x, int y) {
-        return valMapper.toDouble(cache.get(keyFunc.apply(x, y)));
+        return valMapper.toDouble(cache.get(keyMapper.apply(x, y)));
     }
 
     @Override
     public void set(int x, int y, double v) {
-        cache.put(keyFunc.apply(x, y), valMapper.fromDouble(v));
+        cache.put(keyMapper.apply(x, y), valMapper.fromDouble(v));
     }
 
     @Override
@@ -102,7 +102,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         out.writeInt(rows);
         out.writeInt(cols);
         out.writeUTF(cache.getName());
-        out.writeObject(keyFunc);
+        out.writeObject(keyMapper);
         out.writeObject(valMapper);
     }
 
@@ -112,8 +112,8 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         rows = in.readInt();
         cols = in.readInt();
         cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
-        keyFunc = (IntIntToKFunction<K>)in.readObject();
-        valMapper = (DoubleMapper<V>)in.readObject();
+        keyMapper = (KeyMapper<K>)in.readObject();
+        valMapper = (ValueMapper<V>)in.readObject();
     }
 
     @Override
