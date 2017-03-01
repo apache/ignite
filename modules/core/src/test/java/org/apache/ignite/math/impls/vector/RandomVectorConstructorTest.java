@@ -99,7 +99,7 @@ public class RandomVectorConstructorTest {
 
     /** */ @Test
     public void negativeSizeTest() {
-        assertEquals("Negative size.", IMPOSSIBLE_SIZE,
+        assertEquals("Negative size.", 0,
             new RandomVector(-1).size());
     }
 }
