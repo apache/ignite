@@ -86,7 +86,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
 
-            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, isAsync());
+            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -111,7 +111,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             for (Object msg : msgs) {
                 A.notNull(msg, "msg");
 
-                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, isAsync());
+                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
             }
         }
         catch (IgniteCheckedException e) {
@@ -137,7 +137,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             if (timeout == 0)
                 timeout = ctx.config().getNetworkTimeout();
 
-            ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout, false);
+            ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
