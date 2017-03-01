@@ -923,8 +923,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             checkEvents(expEvts, lsnr, false);
 
             if (!asyncCallback()) {
-                assertEquals(1, lsnr.getCntPrimary());
-                assertTrue(lsnr.getCntBackup() > 1);
+                assertEquals(1, lsnr.getCntPrimary().get());
+                assertTrue(lsnr.getCntBackup().get() > 1);
             }
         }
 
@@ -2595,10 +2595,10 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         private final ConcurrentHashMap<Object, CacheEntryEvent<?, ?>> evts = new ConcurrentHashMap<>();
 
         /** Counter primary nodes. */
-        private int cntPrimary;
+        private AtomicInteger cntPrimary = new AtomicInteger(0);
 
         /** Counter backup nodes. */
-        private int cntBackup;
+        private AtomicInteger cntBackup = new AtomicInteger(0);
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
@@ -2610,9 +2610,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 assert this.evts.put(key, e) == null;
 
                 if (e.unwrap(CacheQueryEntryEvent.class).isPrimary())
-                    cntPrimary++;
+                    cntBackup.incrementAndGet();
                 else if (e.unwrap(CacheQueryEntryEvent.class).isBackup())
-                    cntBackup++;
+                    cntBackup.incrementAndGet();
             }
         }
 
@@ -2621,20 +2621,20 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             return (Integer)e.getValue() % 2 == 0;
         }
 
-        public int getCntPrimary() {
+        public AtomicInteger getCntPrimary() {
             return cntPrimary;
         }
 
         public void setCntPrimary(int cntPrimary) {
-            this.cntPrimary = cntPrimary;
+            this.cntPrimary.set(cntPrimary);
         }
 
-        public int getCntBackup() {
-            return cntBackup;
+        public AtomicInteger getCntBackup() {
+            return cntPrimary;
         }
 
         public void setCntBackup(int cntBackup) {
-            this.cntBackup = cntBackup;
+            this.cntBackup.set(cntBackup);
         }
     }
 
