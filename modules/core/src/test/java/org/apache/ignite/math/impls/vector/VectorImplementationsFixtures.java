@@ -20,10 +20,8 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.Vector;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -82,90 +80,100 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class DenseLocalOnHeapVectorFixture implements Iterable<Vector> {
-        /** */ private static final Integer sizes[] = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, null};
+        /** */ private final Supplier<VectorSizesCpIterator> iter;
 
-        /** */ private static final Integer deltas[] = new Integer[] {-1, 0, 1, null};
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
-        /** */ private static final Boolean shallowCps[] = new Boolean[] {false, true, null};
-
-        /** */ private int sizeIdx = 0;
-
-        /** */ private int deltaIdx = 0;
-
-        /** */ private int shallowCpIdx = 0;
+        /** */
+        DenseLocalOnHeapVectorFixture() {
+            iter = () -> new VectorSizesCpIterator("DenseLocalOnHeapVector", DenseLocalOnHeapVector::new, ctxDescrHolder::set);
+        }
 
         /** {@inheritDoc} */
         @Override public Iterator<Vector> iterator() {
-            return new Iterator<Vector>() {
-
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx) && hasNextShallowCp(shallowCpIdx);
-                }
-
-                /** {@inheritDoc} */
-                @Override public Vector next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(DenseLocalOnHeapVectorFixture.this.toString());
-
-                    assert sizes[sizeIdx] != null && deltas[deltaIdx] != null && shallowCps[shallowCpIdx] != null
-                        : "Index(es) out of bound at " + DenseLocalOnHeapVectorFixture.this;
-
-                    Vector res = new DenseLocalOnHeapVector(new double[sizes[sizeIdx] + deltas[deltaIdx]],
-                        shallowCps[shallowCpIdx]);
-
-                    nextIdx();
-
-                    return res;
-                }
-
-                private void nextIdx() {
-                    if (hasNextShallowCp(shallowCpIdx + 1)) {
-                        shallowCpIdx++;
-
-                        return;
-                    }
-
-                    if (hasNextDelta(deltaIdx + 1)) {
-                        shallowCpIdx = 0;
-
-                        deltaIdx++;
-
-                        return;
-                    }
-
-                    shallowCpIdx = 0;
-
-                    deltaIdx = 0;
-
-                    sizeIdx++;
-                }
-            };
+            return iter.get();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return "DenseLocalOnHeapVectorFixture{" + "size=" + sizes[sizeIdx] +
-                ", size delta=" + deltas[deltaIdx] +
-                ", shallowCopy=" + shallowCps[shallowCpIdx] +
-                '}';
+            return ctxDescrHolder.get();
         }
 
         /** */
         void selfTest() {
-            final Set<Integer> sizeIdxs = new HashSet<>(), deltaIdxs = new HashSet<>(), shallowCpIdxs = new HashSet<>();
+            iter.get().selfTest();
+        }
+    }
+
+    /** */
+    private static class VectorSizesCpIterator extends VectorSizesIterator {
+        /** */ private static final Boolean shallowCps[] = new Boolean[] {false, true, null};
+
+        /** */ private int shallowCpIdx = 0;
+
+        /** */ private final BiFunction<double[], Boolean, Vector> ctor;
+
+        /** */
+        VectorSizesCpIterator(String vectorKind, BiFunction<double[], Boolean, Vector> ctor,
+            Consumer<String> ctxDescrConsumer) {
+            super(vectorKind, null, ctxDescrConsumer);
+
+            this.ctor = ctor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return super.hasNext() && hasNextShallowCp(shallowCpIdx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Vector next() {
+            assert shallowCps[shallowCpIdx] != null
+                : "Index(es) out of bound at " + VectorSizesCpIterator.this;
+
+            return super.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override void nextIdx() {
+            if (hasNextShallowCp(shallowCpIdx + 1)) {
+                shallowCpIdx++;
+
+                return;
+            }
+
+            shallowCpIdx = 0;
+
+            super.nextIdx();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return "{" + super.toString() +
+                ", shallowCopy=" + shallowCps[shallowCpIdx] +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override Function<Integer, Vector> ctor() {
+            return (size) -> ctor.apply(new double[size], shallowCps[shallowCpIdx]);
+        }
+
+        /** */
+        void selfTest() {
+            final Set<Integer> shallowCpIdxs = new HashSet<>();
 
             int cnt = 0;
 
-            for (Vector v : this) {
+            for (Vector v : new Iterable<Vector>(){
+                /** {@inheritDoc} */
+                @Override public Iterator<Vector> iterator() {
+                    return VectorSizesCpIterator.this;
+                }
+            }) {
                 assertNotNull("Expect not null vector at " + this, v);
-
-                if (sizes[sizeIdx] != null)
-                    sizeIdxs.add(sizeIdx);
-
-                if (deltas[deltaIdx] != null)
-                    deltaIdxs.add(deltaIdx);
 
                 if (shallowCps[shallowCpIdx] != null)
                     shallowCpIdxs.add(shallowCpIdx);
@@ -173,24 +181,10 @@ class VectorImplementationsFixtures {
                 cnt++;
             }
 
-            assertEquals("Sizes tested mismatch.", sizeIdxs.size(), sizes.length - 1);
-
-            assertEquals("Deltas tested", deltaIdxs.size(), deltas.length - 1);
-
             assertEquals("ShallowCp tested", shallowCpIdxs.size(), shallowCps.length - 1);
 
             assertEquals("Combinations tested mismatch.",
-                (sizes.length - 1) * (deltas.length - 1) * (shallowCps.length - 1), cnt);
-        }
-
-        /** */
-        private boolean hasNextSize(int idx) {
-            return sizes[idx] != null;
-        }
-
-        /** */
-        private boolean hasNextDelta(int idx) {
-            return deltas[idx] != null;
+                8 * 3 * (shallowCps.length - 1), cnt);
         }
 
         /** */
@@ -225,6 +219,34 @@ class VectorImplementationsFixtures {
 
     /** */
     private static abstract class VectorSizesFixture implements Iterable<Vector> {
+        /** */ private final Supplier<VectorSizesIterator> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
+        /** */
+        VectorSizesFixture(String vectorKind, Function<Integer, Vector> ctor) {
+            iter = () -> new VectorSizesIterator(vectorKind, ctor, ctxDescrHolder::set);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
+        }
+
+        /** */
+        void selfTest() {
+            iter.get().selfTest();
+        }
+    }
+
+    /** */
+    private static class VectorSizesIterator implements Iterator<Vector> {
         /** */ private static final Integer sizes[] = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, null};
 
         /** */ private static final Integer deltas[] = new Integer[] {-1, 0, 1, null};
@@ -233,53 +255,54 @@ class VectorImplementationsFixtures {
 
         /** */ private final Function<Integer, Vector> ctor;
 
+        /** */ private final Consumer<String> ctxDescrConsumer;
+
         /** */ private int sizeIdx = 0;
 
         /** */ private int deltaIdx = 0;
 
         /** */
-        VectorSizesFixture(String vectorKind, Function<Integer, Vector> ctor) {
+        VectorSizesIterator(String vectorKind, Function<Integer, Vector> ctor, Consumer<String> ctxDescrConsumer) {
             this.vectorKind = vectorKind;
 
             this.ctor = ctor;
+
+            this.ctxDescrConsumer = ctxDescrConsumer;
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Vector> iterator() {
-            return new Iterator<Vector>() {
+        @Override public boolean hasNext() {
+            return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx);
+        }
 
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx);
-                }
+        /** {@inheritDoc} */
+        @Override public Vector next() {
+            if (!hasNext())
+                throw new NoSuchElementException(VectorSizesIterator.this.toString());
 
-                /** {@inheritDoc} */
-                @Override public Vector next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(VectorSizesFixture.this.toString());
+            assert sizes[sizeIdx] != null && deltas[deltaIdx] != null
+                : "Index(es) out of bound at " + VectorSizesIterator.this;
 
-                    assert sizes[sizeIdx] != null && deltas[deltaIdx] != null
-                        : "Index(es) out of bound at " + VectorSizesFixture.this;
+            ctxDescrConsumer.accept(toString());
 
-                    Vector res = ctor.apply(sizes[sizeIdx] + deltas[deltaIdx]);
+            Vector res = ctor().apply(sizes[sizeIdx] + deltas[deltaIdx]);
 
-                    nextIdx();
+            nextIdx();
 
-                    return res;
-                }
+            return res;
+        }
 
-                private void nextIdx() {
-                    if (hasNextDelta(deltaIdx + 1)) {
-                        deltaIdx++;
+        /** IMPL NOTE override in subclasses if needed */
+        void nextIdx() {
+            if (hasNextDelta(deltaIdx + 1)) {
+                deltaIdx++;
 
-                        return;
-                    }
+                return;
+            }
 
-                    deltaIdx = 0;
+            deltaIdx = 0;
 
-                    sizeIdx++;
-                }
-            };
+            sizeIdx++;
         }
 
         /** {@inheritDoc} */
@@ -290,13 +313,21 @@ class VectorImplementationsFixtures {
                 '}';
         }
 
+        /** IMPL NOTE override in subclasses if needed */
+        Function<Integer, Vector> ctor() { return ctor; }
+
         /** */
         void selfTest() {
             final Set<Integer> sizeIdxs = new HashSet<>(), deltaIdxs = new HashSet<>();
 
             int cnt = 0;
 
-            for (Vector v : this) {
+            for (Vector v : new Iterable<Vector>() {
+                /** {@inheritDoc} */
+                @Override public Iterator<Vector> iterator() {
+                    return VectorSizesIterator.this;
+                }
+            }) {
                 assertNotNull("Expect not null vector at " + this, v);
 
                 if (sizes[sizeIdx] != null)
