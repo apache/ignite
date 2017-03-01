@@ -1639,7 +1639,6 @@ export default class IgniteConfigurationGenerator {
     static cacheConcurrency(cache, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
             .intProperty('defaultLockTimeout')
-            .enumProperty('atomicWriteOrderMode')
             .enumProperty('writeSynchronizationMode');
 
         return ccfg;
