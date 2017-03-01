@@ -37,7 +37,7 @@ public class RandomVectorStorage implements VectorStorage {
     private boolean fastHash;
 
     /**
-     * 
+     *
      * @param size Size of the storage.
      * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
@@ -69,7 +69,7 @@ public class RandomVectorStorage implements VectorStorage {
 
     @Override
     public void set(int i, double v) {
-        throw new UnsupportedOperationException("ERR_MSG");
+        throw new UnsupportedOperationException(ERR_MSG);
     }
 
     @Override

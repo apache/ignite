@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.math;
+
 /**
- * <!-- Package description. -->
- * Contains specific implementations for vectors.
+ * Identity value mapper.
  */
-package org.apache.ignite.math.impls.vector;
+public class IdentityDoubleMapper implements DoubleMapper<Double> {
+    @Override
+    public Double fromDouble(double v) {
+        return v;
+    }
+
+    @Override
+    public double toDouble(Double v) {
+        return v;
+    }
+}

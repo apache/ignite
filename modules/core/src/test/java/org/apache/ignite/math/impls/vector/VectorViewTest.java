@@ -25,6 +25,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
@@ -111,11 +113,16 @@ public class VectorViewTest {
     /** See also {@link VectorToMatrixTest#testLikeMatrix()}. */
     @Test
     public void testLikeMatrix() throws Exception {
+        final Set<String> untested = new LinkedHashSet<>();
+
         consumeSampleVectors((v, desc) -> {
             final Matrix matrix = new VectorView(v, 0, 0).likeMatrix(1, 1);
 
-            if (matrix == null) // IMPL NOTE likeMatrix is not yet ready to test
+            if (matrix == null) {
+                untested.add(v.getClass().getSimpleName());
+
                 return;
+            }
 
             Class<? extends Matrix> expMatrixType = v.likeMatrix(1, 1).getClass();
 
@@ -139,6 +146,11 @@ public class VectorViewTest {
                     assertEquals("Unexpected number of cols in " + desc, cols, actualMatrix.columnSize());
                 }
         });
+
+        if (untested.isEmpty())
+            return;
+
+        System.out.println("Method likeMatrix() is not yet ready for testing in VectorViews based on " + untested);
     }
 
     /** */

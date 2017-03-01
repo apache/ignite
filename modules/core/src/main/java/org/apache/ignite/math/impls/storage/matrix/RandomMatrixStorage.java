@@ -38,7 +38,7 @@ public class RandomMatrixStorage implements MatrixStorage {
     private boolean fastHash;
 
     /**
-     * 
+     *
      * @param rows
      * @param cols
      * @param fastHash
@@ -65,7 +65,7 @@ public class RandomMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      * @return
      */
     public boolean isFastHash() {
@@ -74,7 +74,7 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     @Override
     public void set(int x, int y, double v) {
-        throw new UnsupportedOperationException("ERR_MSG");
+        throw new UnsupportedOperationException(ERR_MSG);
     }
 
     @Override
