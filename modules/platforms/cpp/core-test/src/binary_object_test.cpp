@@ -28,6 +28,7 @@
 #include "ignite/binary_test_defs.h"
 #include "ignite/test_type.h"
 #include "ignite/complex_type.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace ignite::binary;
@@ -53,7 +54,7 @@ void CheckSimple(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0));
+    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0, 0));
 
     T actual = obj.Deserialize<T>();
 
@@ -67,7 +68,7 @@ void CheckSimpleNP(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0));
+    BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0, 0));
 
     T actual = obj.Deserialize<T>();
 
@@ -100,7 +101,7 @@ void CheckData(const T& obj)
     InteropUnpooledMemory mem(1024);
     FillMem<T>(mem, obj);
 
-    BinaryObjectImpl binObj(BinaryObjectImpl::FromMemory(mem, 0));
+    BinaryObjectImpl binObj(BinaryObjectImpl::FromMemory(mem, 0, 0));
 
     BOOST_REQUIRE_EQUAL(binObj.GetLength(), objData.GetSize());
 
@@ -108,6 +109,34 @@ void CheckData(const T& obj)
 
     for (int32_t i = 0; i < objData.GetSize(); ++i)
         BOOST_CHECK_EQUAL(objData[i], binObjData[i]);
+}
+
+template<typename F, typename T>
+void CheckField(const T& obj, const char* field, const F& expected)
+{
+    InteropUnpooledMemory mem(1024);
+    FillMem<T>(mem, obj);
+
+    TemplatedBinaryIdResolver<T> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_REQUIRE(binObj.HasField(field));
+
+    F actual = binObj.GetField<F>(field);
+
+    BOOST_CHECK_EQUAL(actual, expected);
+}
+
+template<typename T>
+void CheckNoField(const T& obj, const char* field)
+{
+    InteropUnpooledMemory mem(1024);
+    FillMem<T>(mem, obj);
+
+    TemplatedBinaryIdResolver<T> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_REQUIRE(!binObj.HasField(field));
 }
 
 BOOST_AUTO_TEST_SUITE(BinaryObjectTestSuite)
@@ -277,6 +306,113 @@ BOOST_AUTO_TEST_CASE(UserBinaryFieldsGetData)
 {
     CheckData(BinaryFields());
     CheckData(BinaryFields(423425, 961851, 18946, 180269165));
+}
+
+BOOST_AUTO_TEST_CASE(UserBinaryFieldsGetField)
+{
+    BinaryFields dflt;
+
+    CheckField<int32_t>(dflt, "val1", dflt.val1);
+    CheckField<int32_t>(dflt, "val2", dflt.val2);
+
+    CheckNoField(dflt, "rawVal1");
+    CheckNoField(dflt, "rawVal2");
+    CheckNoField(dflt, "some");
+    CheckNoField(dflt, "unknown");
+    CheckNoField(dflt, "");
+
+    BinaryFields some(423425, 961851, 18946, 180269165);
+
+    CheckField<int32_t>(some, "val1", some.val1);
+    CheckField<int32_t>(some, "val2", some.val2);
+
+    CheckNoField(some, "rawVal1");
+    CheckNoField(some, "rawVal2");
+    CheckNoField(some, "some");
+    CheckNoField(some, "unknown");
+    CheckNoField(some, "");
+}
+
+BOOST_AUTO_TEST_CASE(UserBinaryOuterGetField)
+{
+    BinaryOuter some(1895298, 592856);
+
+    InteropUnpooledMemory mem(1024);
+    FillMem(mem, some);
+
+    TemplatedBinaryIdResolver<BinaryOuter> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_REQUIRE(binObj.HasField("val"));
+    BOOST_REQUIRE(binObj.HasField("inner"));
+
+    int32_t outer = binObj.GetField<int32_t>("val");
+    BinaryObject inner = binObj.GetField<BinaryObject>("inner");
+
+    BOOST_CHECK_EQUAL(outer, some.GetValue());
+}
+
+BOOST_AUTO_TEST_CASE(ExceptionSafety)
+{
+    BinaryFields some(43956293, 567894632, 253945, 107576622);
+
+    InteropUnpooledMemory mem(1024);
+    FillMem(mem, some);
+
+    TemplatedBinaryIdResolver<BinaryOuter> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_CHECK_THROW(binObj.Deserialize<TestType>(), IgniteError);
+
+    BinaryFields restored = binObj.Deserialize<BinaryFields>();
+
+    BOOST_CHECK(restored == some);
+}
+
+BOOST_AUTO_TEST_CASE(DefaultFieldNameHashing)
+{
+    BOOST_CHECKPOINT("Node1 startup");
+    Ignite node = ignite_test::StartNode("cache-test.xml");
+
+    BinaryFields some(25675472, 67461, 457542, 87073456);
+
+    impl::IgniteImpl* nodeImpl = impl::IgniteImpl::GetFromProxy(node);
+    impl::IgniteEnvironment* env = nodeImpl->GetEnvironment();
+
+    InteropUnpooledMemory mem(1024);
+    FillMem<BinaryFields>(mem, some);
+
+    BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
+
+    BOOST_REQUIRE(binObj.HasField("val1"));
+    BOOST_REQUIRE(binObj.HasField("val2"));
+
+    int32_t val1 = binObj.GetField<int32_t>("val1");
+    int32_t val2 = binObj.GetField<int32_t>("val2");
+
+    BOOST_CHECK_EQUAL(val1, some.val1);
+    BOOST_CHECK_EQUAL(val2, some.val2);
+
+    BOOST_REQUIRE(!binObj.HasField("rawVal1"));
+    BOOST_REQUIRE(!binObj.HasField("rawVal2"));
+    BOOST_REQUIRE(!binObj.HasField("some"));
+    BOOST_REQUIRE(!binObj.HasField("unknown"));
+    BOOST_REQUIRE(!binObj.HasField(""));
+
+    Ignition::StopAll(true);
+}
+
+BOOST_AUTO_TEST_CASE(GetEnumValueInvalid)
+{
+    BinaryFields some(43956293, 567894632, 253945, 107576622);
+
+    InteropUnpooledMemory mem(1024);
+    FillMem(mem, some);
+
+    TemplatedBinaryIdResolver<BinaryOuter> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_CHECK_THROW(binObj.GetEnumValue(), IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

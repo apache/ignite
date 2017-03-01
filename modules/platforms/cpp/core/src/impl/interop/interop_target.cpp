@@ -72,7 +72,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), &err))
+                    if (!metaMgr->ProcessPendingUpdates(err))
                         return 0;
                 }
 

@@ -18,7 +18,11 @@
 #ifndef _IGNITE_IMPL_BINARY_BINARY_ID_RESOLVER
 #define _IGNITE_IMPL_BINARY_BINARY_ID_RESOLVER
 
+#include <map>
+
+#include "ignite/common/concurrent.h"
 #include "ignite/binary/binary_type.h"
+#include "ignite/impl/binary/binary_type_handler.h"
 
 namespace ignite
 {
@@ -55,10 +59,17 @@ namespace ignite
                  * @return Field ID.
                  */
                 virtual int32_t GetFieldId(const int32_t typeId, const char* name) = 0;
+
+                /**
+                 * Get copy of the instance.
+                 *
+                 * @return Copy of the instance.
+                 */
+                virtual BinaryIdResolver* Clone() const = 0;
             };
 
             /**
-             * Templated binary type descriptor.
+             * Templated binary type resolver.
              */
             template<typename T>
             class TemplatedBinaryIdResolver : public BinaryIdResolver
@@ -67,9 +78,10 @@ namespace ignite
                 /**
                  * Constructor.
                  */
-                TemplatedBinaryIdResolver()
+                TemplatedBinaryIdResolver() : 
+                    type()
                 {
-                    type = ignite::binary::BinaryType<T>();
+                    // No-op.
                 }
 
                 /**
@@ -77,7 +89,8 @@ namespace ignite
                  *
                  * @param type Binary type.
                  */
-                TemplatedBinaryIdResolver(ignite::binary::BinaryType<T> type) : type(type)
+                TemplatedBinaryIdResolver(ignite::binary::BinaryType<T> type) :
+                    type(type)
                 {
                     // No-op.
                 }
@@ -91,11 +104,80 @@ namespace ignite
                     if (name)
                         return type.GetFieldId(name);
                     else
-                        IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Field name cannot be NULL.");
+                    {
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
+                            "Field name cannot be NULL.", "typeId", typeId);
+                    }
                 }
+
+                virtual BinaryIdResolver* Clone() const
+                {
+                    return new TemplatedBinaryIdResolver<T>(*this);
+                }
+
             private:
                 /** Actual type.  */
                 ignite::binary::BinaryType<T> type; 
+            };
+
+            /**
+             * Metadata binary type resolver.
+             */
+            class MetadataBinaryIdResolver : public BinaryIdResolver
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                MetadataBinaryIdResolver() :
+                    meta()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Constructor.
+                 *
+                 * @param meta Binary type metadata snapshot.
+                 */
+                MetadataBinaryIdResolver(SPSnap meta) :
+                    meta(meta)
+                {
+                    // No-op.
+                }
+
+                virtual int32_t GetTypeId()
+                {
+                    return meta.Get()->GetTypeId();
+                }
+
+                virtual int32_t GetFieldId(const int32_t typeId, const char* name)
+                {
+                    if (!name)
+                    {
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_BINARY,
+                            "Field name cannot be NULL.", "typeId", typeId);
+                    }
+
+                    int32_t res = meta.Get()->GetFieldId(name);
+
+                    if (!res)
+                    {
+                        IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_BINARY,
+                            "Field not found for type.", "typeId", typeId, "fieldName", name);
+                    }
+
+                    return res;
+                }
+
+                virtual BinaryIdResolver* Clone() const
+                {
+                    return new MetadataBinaryIdResolver(*this);
+                }
+
+            private:
+                /** Metadata snapshot. */
+                SPSnap meta;
             };
         }
     }

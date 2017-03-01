@@ -50,7 +50,7 @@ namespace ignite
                  * Internal out operation.
                  *
                  * @param opType Operation type.
-                 * @param inOp Input.
+                 * @param outOp Input.
                  * @param err Error.
                  * @return Result.
                  */
