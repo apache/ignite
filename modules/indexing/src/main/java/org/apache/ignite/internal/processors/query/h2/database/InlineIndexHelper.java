@@ -345,10 +345,10 @@ public class InlineIndexHelper {
         assert c > -2;
 
         if (size > 0)
-            return sortType() == SortOrder.DESCENDING ? -c : c;
+            return fixSort(c, sortType());
 
         if (isValueFull(pageAddr, off) || canRelyOnCompare(c, v1, v))
-            return sortType() == SortOrder.DESCENDING ? -c : c;
+            return fixSort(c, sortType());
 
         return -2;
     }
@@ -554,5 +554,16 @@ public class InlineIndexHelper {
             default:
                 return true;
         }
+    }
+
+    /**
+     * Perform sort order correction.
+     *
+     * @param c Compare result.
+     * @param sortType Sort type.
+     * @return Fixed compare result.
+     */
+    public static int fixSort(int c, int sortType) {
+        return sortType == SortOrder.ASCENDING ? c : -c;
     }
 }

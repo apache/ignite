@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 
@@ -209,7 +208,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
                 int c = compareValues(v1, v2);
                 if (c != 0)
-                    return col.sortType == SortOrder.ASCENDING ? c : -c;
+                    return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
             return 0;
@@ -237,7 +236,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             }
             int c = compareValues(v1, v2);
             if (c != 0)
-                return cols[i].sortType == SortOrder.ASCENDING ? c : -c;
+                return InlineIndexHelper.fixSort(c, cols[i].sortType);
         }
         return 0;
     }

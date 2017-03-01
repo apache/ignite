@@ -52,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2TreeIndex extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 0;
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
 
     /** */
     private final H2Tree tree;
@@ -126,7 +126,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         for (int i = 0; i < cols.length; i++) {
             IndexColumn col = cols[i];
 
-            if (col == null || !InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
+            if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType()))
                 break;
 
             InlineIndexHelper idx = new InlineIndexHelper(col.column.getType(), col.column.getColumnId(), col.sortType);
