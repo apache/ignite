@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
-    private static final boolean CONSISTENCY_CHECK = true;
+    private static final boolean CONSISTENCY_CHECK = false;
 
     /** Flag to control amount of output for full map. */
     private static final boolean FULL_MAP_DEBUG = false;
