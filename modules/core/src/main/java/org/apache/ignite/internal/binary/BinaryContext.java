@@ -1136,7 +1136,7 @@ public class BinaryContext {
 
         cls2Mappers.put(clsName, mapper);
 
-        Map<String, Integer> fieldsMeta = null;
+        Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
         if (cls != null) {
             if (serializer == null) {
