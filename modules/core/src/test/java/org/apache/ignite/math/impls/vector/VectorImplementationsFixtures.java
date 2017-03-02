@@ -66,20 +66,24 @@ class VectorImplementationsFixtures {
 
     /** */
     void selfTest() {
-        new VectorSizesCpIterator("VectorSizesCpIterator test", DenseLocalOnHeapVector::new, null).selfTest();
+        new VectorSizesExtraIterator<>("VectorSizesExtraIterator test",
+            (size, shallowCp) -> new DenseLocalOnHeapVector(new double[size], shallowCp),
+            null, new Boolean[] {false, true, null}).selfTest();
 
         new VectorSizesIterator("VectorSizesIterator test", DenseLocalOffHeapVector::new, null).selfTest();
     }
 
     /** */
     private static class DenseLocalOnHeapVectorFixture implements Iterable<Vector> {
-        /** */ private final Supplier<VectorSizesCpIterator> iter;
+        /** */ private final Supplier<VectorSizesExtraIterator<Boolean>> iter;
 
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
         DenseLocalOnHeapVectorFixture() {
-            iter = () -> new VectorSizesCpIterator("DenseLocalOnHeapVector", DenseLocalOnHeapVector::new, ctxDescrHolder::set);
+            iter = () -> new VectorSizesExtraIterator<>("DenseLocalOnHeapVector",
+                (size, shallowCp) -> new DenseLocalOnHeapVector(new double[size], shallowCp),
+                ctxDescrHolder::set, new Boolean[] {false, true, null});
         }
 
         /** {@inheritDoc} */
@@ -103,10 +107,26 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalOnHeapVectorFixture extends VectorSizesFixture {
+    private static class SparseLocalOnHeapVectorFixture implements Iterable<Vector> {
+        /** */ private final Supplier<VectorSizesExtraIterator<Integer>> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
         /** */
         SparseLocalOnHeapVectorFixture() {
-            super("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new);
+            iter = () -> new VectorSizesExtraIterator<>("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new,
+                ctxDescrHolder::set, new Integer[] {0, 1, null});
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 
@@ -142,38 +162,43 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class VectorSizesCpIterator extends VectorSizesIterator {
-        /** */ private static final Boolean shallowCps[] = new Boolean[] {false, true, null};
+    private static class VectorSizesExtraIterator<T> extends VectorSizesIterator {
+        /** */ private final T[] extras;
+        /** */ private int extraIdx = 0;
+        /** */ private final BiFunction<Integer, T, Vector> ctor;
 
-        /** */ private int shallowCpIdx = 0;
-
-        /** */ private final BiFunction<double[], Boolean, Vector> ctor;
-
-        /** */
-        VectorSizesCpIterator(String vectorKind, BiFunction<double[], Boolean, Vector> ctor,
-            Consumer<String> ctxDescrConsumer) {
+        /**
+         *
+         * @param vectorKind Descriptive name to use for context logging.
+         * @param ctor Constructor for objects to iterate over.
+         * @param ctxDescrConsumer Context logging consumer.
+         * @param extras Array of extra parameter values to iterate over.
+         */
+        VectorSizesExtraIterator(String vectorKind, BiFunction<Integer, T, Vector> ctor,
+            Consumer<String> ctxDescrConsumer, T[] extras) {
             super(vectorKind, null, ctxDescrConsumer);
 
             this.ctor = ctor;
+            this.extras = extras;
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return super.hasNext() && hasNextShallowCp(shallowCpIdx);
+            return super.hasNext() && hasNextExtra(extraIdx);
         }
 
         /** {@inheritDoc} */
         @Override void nextIdx() {
-            assert shallowCps[shallowCpIdx] != null
-                : "Index(es) out of bound at " + VectorSizesCpIterator.this;
+            assert extras[extraIdx] != null
+                : "Index(es) out of bound at " + VectorSizesExtraIterator.this;
 
-            if (hasNextShallowCp(shallowCpIdx + 1)) {
-                shallowCpIdx++;
+            if (hasNextExtra(extraIdx + 1)) {
+                extraIdx++;
 
                 return;
             }
 
-            shallowCpIdx = 0;
+            extraIdx = 0;
 
             super.nextIdx();
         }
@@ -182,39 +207,39 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return "{" + super.toString() +
-                ", shallowCopy=" + shallowCps[shallowCpIdx] +
+                ", extra param=" + extras[extraIdx] +
                 '}';
         }
 
         /** {@inheritDoc} */
         @Override Function<Integer, Vector> ctor() {
-            return (size) -> ctor.apply(new double[size], shallowCps[shallowCpIdx]);
+            return (size) -> ctor.apply(size, extras[extraIdx]);
         }
 
         /** */
         void selfTest() {
-            final Set<Integer> shallowCpIdxs = new HashSet<>();
+            final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;
 
             while (hasNext()) {
                 assertNotNull("Expect not null vector at " + this, next());
 
-                if (shallowCps[shallowCpIdx] != null)
-                    shallowCpIdxs.add(shallowCpIdx);
+                if (extras[extraIdx] != null)
+                    extraIdxs.add(extraIdx);
 
                 cnt++;
             }
 
-            assertEquals("ShallowCp tested", shallowCpIdxs.size(), shallowCps.length - 1);
+            assertEquals("Extra param tested", extraIdxs.size(), extras.length - 1);
 
             assertEquals("Combinations tested mismatch.",
-                8 * 3 * (shallowCps.length - 1), cnt);
+                8 * 3 * (extras.length - 1), cnt);
         }
 
         /** */
-        private boolean hasNextShallowCp(int idx) {
-            return shallowCps[idx] != null;
+        private boolean hasNextExtra(int idx) {
+            return extras[idx] != null;
         }
     }
 

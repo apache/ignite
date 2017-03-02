@@ -153,6 +153,8 @@ public class VectorIterableTest {
 
     /** */ @Test
     public void nonZeroesTest() {
+        // todo make RandomVector constructor that accepts a function and use it here
+        //  in order to *reliably* test non-zeroes in there
         consumeSampleVectors(
             (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
                 -> {
