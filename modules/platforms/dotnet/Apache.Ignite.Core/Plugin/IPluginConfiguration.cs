@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Plugin
 {
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Plugin configuration marker interface.
@@ -43,6 +44,18 @@ namespace Apache.Ignite.Core.Plugin
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IPluginConfiguration
     {
-        // No-op.
+        /// <summary>
+        /// Gets the id to locate PlatformPluginConfigurationClosureFactory on Java side
+        /// and read the data written by <see cref="WriteBinary"/> method.
+        /// </summary>
+        int? PluginConfigurationClosureFactoryId { get; }
+
+        /// <summary>
+        /// Writes this instance to a raw writer.
+        /// This method will be called when <see cref="PluginConfigurationClosureFactoryId"/> is not null to propagate
+        /// configuration to the Java side.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void WriteBinary(IBinaryRawWriter writer);
     }
 }

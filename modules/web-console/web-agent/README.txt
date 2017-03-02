@@ -32,7 +32,7 @@ Security tokens:
   3) One may specify several comma separated tokens using configuration file or command line arguments of web agent.
 
 Ignite Web agent requirements:
-  1) In order to communicate with web agent Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
+  1) In order to communicate with web agent Ignite node should be started with REST server (copy "ignite-rest-http" folder from "libs/optional/" to "libs/").
   2) Configure web agent serverURI property by Ignite node REST server URI.
 
 Options:

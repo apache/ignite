@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -52,6 +54,10 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         execSvc = Executors.newSingleThreadExecutor();
 
         ctx.setSystemExecutorService(execSvc);
+
+        ctx.add(new PoolProcessor(ctx));
+
+        ctx.add(new GridClosureProcessor(ctx));
     }
 
     /**
@@ -63,6 +69,8 @@ public class MarshallerContextSelfTest extends GridCommonAbstractTest {
         ctx.onMarshallerProcessorStarted(this.ctx, null);
 
         MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
+
+        ctx.onMappingProposed(item);
 
         ctx.onMappingAccepted(item);
 

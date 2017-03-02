@@ -67,6 +67,7 @@ libignite_la_SOURCES = \
     src/impl/interop/interop_target.cpp \
     src/impl/transactions/transaction_impl.cpp \
     src/impl/transactions/transactions_impl.cpp \
+    src/impl/cluster/cluster_group_impl.cpp \
     src/impl/ignite_impl.cpp \
     src/transactions/transaction.cpp \
     src/transactions/transactions.cpp
