@@ -558,7 +558,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // 3. Handle metadata.
                 if (metaHnd != null)
                 {
-                    IDictionary<string, BinaryField> meta = metaHnd.OnObjectWriteFinished();
+                    IDictionary<string, IBinaryField> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
                         _parent._ctx.Writer.SaveMetadata(desc, meta);

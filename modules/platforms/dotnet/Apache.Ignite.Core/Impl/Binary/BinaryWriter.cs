@@ -1468,7 +1468,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">The descriptor.</param>
         /// <param name="fields">Fields metadata.</param>
-        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields)
+        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, IBinaryField> fields)
         {
             Debug.Assert(desc != null);
 

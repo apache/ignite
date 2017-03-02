@@ -14,59 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
-    using Apache.Ignite.Core.Binary;
-
     /// <summary>
     /// Binary field metadata.
     /// </summary>
-    internal class BinaryField : IBinaryField
+    public interface IBinaryField
     {
-        /** Type ID. */
-        private readonly int _typeId;
-
-        /** Field ID. */
-        private readonly int _fieldId;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryField" /> class.
-        /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="fieldId">Field ID.</param>
-        public BinaryField(int typeId, int fieldId)
-        {
-            _typeId = typeId;
-            _fieldId = fieldId;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryField" /> class.
-        /// </summary>
-        /// <param name="reader">Reader.</param>
-        public BinaryField(IBinaryRawReader reader)
-        {
-            _typeId = reader.ReadInt();
-            _fieldId = reader.ReadInt();
-        }
-
         /// <summary>
         /// Type ID.
         /// </summary>
         /// <returns>Type ID</returns>
-        public int TypeId
+        int TypeId
         {
-            get { return _typeId; }
+            get;
         }
 
         /// <summary>
         /// Field ID.
         /// </summary>
         /// <returns>Field ID</returns>
-        public int FieldId
+        int FieldId
         {
-            get { return _fieldId; }
+            get;
         }
     }
 }
