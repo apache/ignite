@@ -30,12 +30,14 @@ import java.util.*;
  * TODO: add description.
  */
 public class SparseLocalOnHeapVector extends AbstractVector {
+    public static final int RANDOM_ACCESS_MODE = 1;
+    public static final int SEQUENTIAL_ACCESS_MODE = 0;
     /**
      * 0 - sequential access mode, 1 - random access mode.
      *
      * Random access mode is default mode.
      */
-    private int mode = 1;
+    private int mode = RANDOM_ACCESS_MODE;
 
     /** */
     public SparseLocalOnHeapVector(){
@@ -92,9 +94,9 @@ public class SparseLocalOnHeapVector extends AbstractVector {
     /** */
     private VectorStorage selectStorage(int newMode, int size){
         switch (newMode){
-            case 0:
+            case SEQUENTIAL_ACCESS_MODE:
                 return new SequentialAccessSparseVectorStorage();
-            case 1:
+            case RANDOM_ACCESS_MODE:
                 return new RandomAccessSparseVectorStorage(size);
             default:
                 throw new java.lang.UnsupportedOperationException("This access mode is unsupported.");
