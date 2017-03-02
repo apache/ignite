@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */
-        private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
+        private static readonly IDictionary<string, BinaryField> EmptyDict = new Dictionary<string, BinaryField>();
 
         /** Empty list. */
         private static readonly ICollection<string> EmptyList = new List<string>().AsReadOnly();
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         private static readonly string[] TypeNames = new string[byte.MaxValue];
 
         /** Fields. */
-        private readonly IDictionary<string, int> _fields;
+        private readonly IDictionary<string, BinaryField> _fields;
 
         /** Enum flag. */
         private readonly bool _isEnum;
@@ -121,7 +121,19 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             _typeId = reader.ReadInt();
             _typeName = reader.ReadString();
             _affinityKeyFieldName = reader.ReadString();
-            _fields = reader.ReadDictionaryAsGeneric<string, int>();
+
+            int fieldsNum = reader.ReadInt();
+
+            _fields = new Dictionary<string, BinaryField>(fieldsNum);
+
+            for (int i = 0; i < fieldsNum; ++i)
+            {
+                string name = reader.ReadString();
+                BinaryField field = new BinaryField(reader);
+
+                _fields[name] = field;
+            }
+            
             _isEnum = reader.ReadBoolean();
         }
 
@@ -130,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <param name="fields">Fields.</param>
-        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
+        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields = null) 
             : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
             _descriptor = desc;
@@ -144,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
+        public BinaryType(int typeId, string typeName, IDictionary<string, BinaryField> fields,
             string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
@@ -190,11 +202,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         {
             if (_fields != null)
             {
-                int typeId;
+                BinaryField fieldMeta;
 
-                _fields.TryGetValue(fieldName, out typeId);
+                _fields.TryGetValue(fieldName, out fieldMeta);
 
-                return GetTypeName(typeId);
+                return GetTypeName(fieldMeta == null ? 0 : fieldMeta.TypeId);
             }
             
             return null;
@@ -226,7 +238,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Gets fields map.
         /// </summary>
         /// <returns>Fields map.</returns>
-        public IDictionary<string, int> GetFieldsMap()
+        public IDictionary<string, BinaryField> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
         }
@@ -234,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Updates the fields.
         /// </summary>
-        public void UpdateFields(IDictionary<string, int> fields)
+        public void UpdateFields(IDictionary<string, BinaryField> fields)
         {
             if (fields == null || fields.Count == 0)
                 return;
