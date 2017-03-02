@@ -11,8 +11,10 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
+        /** */
         private final Tool impl = new DistBbp();
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
 //            Usage: java org.apache.hadoop.examples.pi.DistBbp <b> <nThreads> <nJobs> <type> <nPart> <remoteDir> <localDir>
 //            <b> The number of bits to skip, i.e. compute the (b+1)th position.
@@ -28,10 +30,12 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
                 fp.getWorkDir(name()) + "/local" };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return impl;
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) {
             // The example writes actual result to Util.out stream, so it's difficult to
             // catch it to check.

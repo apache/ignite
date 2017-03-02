@@ -2,11 +2,13 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.util.regex.Pattern;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.dancing.DistributedPentomino;
+import org.apache.hadoop.examples.dancing.Pentomino;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.Tool;
 
 /**
- * Pertomino example in form of test.
+ * Pentomino example in form of test.
  */
 public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleTest {
     /**
@@ -34,12 +36,13 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
      * @return The pentomino class.
      */
     protected Class<?> pentominoClass() {
-        return Pentomino2.class;
+        return Pentomino.class;
     }
 
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
-        private final DistributedPentomino2 impl = new DistributedPentomino2();
+        /** */
+        private final DistributedPentomino impl = new DistributedPentomino();
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
@@ -72,8 +75,8 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
                 }
 
                 /** {@inheritDoc} */
-                @Override void checkLineCount(int cnt) {
-                    assertEquals(expectedSolutionCount()/* Expected answer. */, solutionCnt);
+                @Override void onFileEnd(int cnt) {
+                    assertEquals(expectedSolutionCount(), solutionCnt);
                 }
             }.check();
         }
@@ -83,11 +86,7 @@ public class HadoopDistributedPentominoExampleTest extends HadoopGenericExampleT
     @Override protected void prepareConf(Configuration conf) {
         super.prepareConf(conf);
 
-//        conf.set(MRConfig.FRAMEWORK_NAME, "local");
-//        conf.unset(MRConfig.MASTER_ADDRESS);
-
-        conf.set(Pentomino2.CLASS, pentominoClass().getName());
-
+        conf.set(Pentomino.CLASS, pentominoClass().getName());
         conf.set(MRJobConfig.NUM_MAPS, String.valueOf(numMaps()));
     }
 

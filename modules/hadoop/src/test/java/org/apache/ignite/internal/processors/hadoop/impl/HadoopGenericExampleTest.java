@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.multijvm2.HadoopAbstract2Test;
 import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
 
 /**
- * Runs Hadoop Quasi Monte Carlo Pi estimation example.
+ * Provides generic framework to run a generic Hadoop example.
  */
 public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     /**
@@ -276,8 +276,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         IgniteNodeProxy2.stopAll();
 
         // Delete the files used:
-        // TODO: uncomment to enable the deletion.
-        //getFileSystem().delete(new Path(getFsBase()), true);
+        getFileSystem().delete(new Path(getFsBase()), true);
     }
 
     /**
@@ -293,22 +292,15 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @param conf The configuration object.
      */
     protected void prepareConf(Configuration conf) {
-        conf.set("fs.defaultFS", "file:///"//getFsBase()
-        );
+        conf.set("fs.defaultFS", "file:///");
 
-        //        // Ignite specific job properties:
-        //        conf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
-        //        conf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
-        //
-        //        if (gzip)
-        //            conf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
-
-//        // Set the Ignite framework and the address:
+        // Set the Ignite framework and the address:
         conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
 
-//        conf.set(MRConfig.FRAMEWORK_NAME, "local");
-//        conf.unset(MRConfig.MASTER_ADDRESS);
+        // To execute the sample on local MR engine, uncomment this:
+        //conf.set(MRConfig.FRAMEWORK_NAME, "local");
+        //conf.unset(MRConfig.MASTER_ADDRESS);
     }
 
     /**
@@ -355,6 +347,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @param conf The configuration.
      * @param descriptors The descriptors.
      */
+    @SuppressWarnings("unused")
     public static void setAggregatorDescriptors_WRONG(Configuration conf,
             Class<? extends ValueAggregatorDescriptor>[] descriptors) {
         conf.setInt(ValueAggregatorJobBase.DESCRIPTOR_NUM, descriptors.length);
@@ -423,17 +416,32 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
     }
 
     /**
-     *
+     * A generic walker with callbacks to analyse the output files.
      */
     public static class OutputFileChecker {
+        /** */
         private final FileSystem fs;
+
+        /** */
         private final String file;
 
+        /**
+         * Constructor.
+         *
+         * @param fs The file system.
+         * @param file The file.
+         */
         public OutputFileChecker(FileSystem fs, String file) {
             this.fs = fs;
+
             this.file = file;
         }
 
+        /**
+         * Template method to check the file.
+         *
+         * @throws Exception On error.
+         */
         public final void check() throws Exception {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(new Path(file))))) {
                 int cnt = 0;
@@ -451,23 +459,44 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
                     cnt++;
 
                     if (cnt == 1)
-                        checkFirstLine(line); // first line
+                        onFirstLine(line); // The first line
 
                     onLine(line, cnt);
                 }
 
-                checkLastLine(line); // last line
+                onLastLine(line); // The last line
 
-                checkLineCount(cnt); // Finish.
+                onFileEnd(cnt); // EOF.
             }
         }
 
+        /**
+         * Line callback. invoked on each line, including the 1st and the last one.
+         *
+         * @param line The line.
+         * @param cnt The 0-based count.
+         */
         void onLine(String line, int cnt) {}
 
-        void checkFirstLine(String line) {}
+        /**
+         * First line callback. Invoked on the 1st line.
+         *
+         * @param line The line.
+         */
+        void onFirstLine(String line) {}
 
-        void checkLastLine(String line) {}
+        /**
+         * The last line callback.
+         *
+         * @param line The line.
+         */
+        void onLastLine(String line) {}
 
-        void checkLineCount(int cnt) {}
+        /**
+         * File finish callback,
+         *
+         * @param lineCnt The total file line count.
+         */
+        void onFileEnd(int lineCnt) {}
     }
 }

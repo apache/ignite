@@ -721,7 +721,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /**
      *
      */
-    public static class NodeTask implements IgniteCallable<ClusterNode> {
+    private static class NodeTask implements IgniteCallable<ClusterNode> {
         /** Ignite. */
         @IgniteInstanceResource
         private Ignite ignite;

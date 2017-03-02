@@ -53,15 +53,15 @@ public class HadoopGrepExampleTest extends HadoopGenericExampleTest {
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                @Override void onFirstLine(String line) {
                     assertEquals("1\tzoonitic", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                @Override void onLastLine(String line) {
                     assertEquals("1\tzenick", line);
                 }
 
-                @Override void checkLineCount(int cnt) {
+                @Override void onFileEnd(int cnt) {
                     assertEquals(2, cnt);
                 }
             }.check();

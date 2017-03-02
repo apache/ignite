@@ -44,13 +44,13 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         private final Join tool = new Join();
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
             String in = fp.getWorkDir(name()) + "/in" ;
 
-            System.out.println("############### In: " + in);
-
-            // "Usage: "+getClass().getName()+" <nMaps> <nSamples>");
-            return new String[] { "-r", String.valueOf(fp.reduces()),
+            // Parameters: <nMaps> <nSamples>"
+            return new String[] {
+                "-r", String.valueOf(fp.reduces()),
                 "-inFormat", SequenceFileInputFormat.class.getName(),
                 "-outFormat", TextOutputFormat.class.getName(),
                 "-outKey",  org.apache.hadoop.io.LongWritable.class.getName(),
@@ -60,15 +60,14 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
             };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return tool;
         }
 
+        /** {@inheritDoc} */
         @Override void prepare(JobConf conf, FrameworkParameters fp) throws Exception {
             conf.set(FileOutputFormat.OUTDIR, new Path(fp.getWorkDir(name()) + "/in").toString());
-
-            //FileOutputFormat.setOutputPath(conf, new Path(fp.getWorkDir(name()) + "/in"));
-            //FileOutputFormat.setWorkOutputPath(conf, new Path(fp.getWorkDir(name()) + "/in"));
 
             try (FileSystem fs = FileSystem.get(conf)) {
                 SequenceFileOutputFormat of = new SequenceFileOutputFormat();
@@ -84,6 +83,7 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
 
                     for (int i=0; i<100; i++) {
                         lw.set(i);
+
                         t.set("" + i);
 
                         rw.write(lw, t);
@@ -114,10 +114,6 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                     assert lfs.getLen() > 0;
                 }
 
-//                for (FileStatus s: fs.listStatus(p)) {
-//                    System.out.println("#### " + s);
-//                }
-
                 // TODO: Local MR execution works okay, but manual setting of this
                 // TODO: id for some reason is required for Ignite.
                 // TODO: investigate, why this happens.
@@ -127,33 +123,40 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
             conf.unset(FileOutputFormat.OUTDIR);
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             String outDir = parameters[11];
 
             new OutputFileChecker(getFileSystem(), outDir + "/part-r-" + nullifyToLen(5, 0)) {
-                @Override void checkFirstLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onFirstLine(String line) {
                     assertEquals("0\t[0]", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onLastLine(String line) {
                     assertEquals("99\t[99]", line);
                 }
 
-                @Override void checkLineCount(int cnt) {
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int cnt) {
                     assertEquals(34, cnt);
                 }
             }.check();
 
             new OutputFileChecker(getFileSystem(), outDir + "/part-r-" + nullifyToLen(5, 2)) {
-                @Override void checkFirstLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onFirstLine(String line) {
                     assertEquals("2\t[2]", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onLastLine(String line) {
                     assertEquals("98\t[98]", line);
                 }
 
-                @Override void checkLineCount(int cnt) {
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int cnt) {
                     assertEquals(33, cnt);
                 }
             }.check();

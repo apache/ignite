@@ -24,10 +24,7 @@ public class HadoopWordDeviationExampleTest extends HadoopGenericExampleTest {
         }
 
         @Override String[] parameters(FrameworkParameters fp) {
-            // wordmean <in> <out>
-            return new String[] {
-                inDir(fp),
-                outDir(fp) };
+            return new String[] { inDir(fp), outDir(fp) };
         }
 
         @Override Tool tool() {

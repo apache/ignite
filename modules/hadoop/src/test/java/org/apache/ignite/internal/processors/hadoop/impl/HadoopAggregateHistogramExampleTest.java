@@ -15,16 +15,20 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTest {
     /** */
     final Tool tool = new Tool() {
+        /** */
         private Configuration conf;
 
+        /** {@inheritDoc} */
         @Override public void setConf(Configuration conf) {
             this.conf = conf;
         }
 
+        /** {@inheritDoc} */
         @Override public Configuration getConf() {
             return conf;
         }
 
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public int run(String[] args) throws Exception {
             final Configuration conf = getConf();
@@ -46,28 +50,31 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
             generateTextInput(11, conf, params);
         }
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
 //            System.out.println("usage: inputDirs outDir "
 //                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
-            return new String[] {
-                inDir(fp),
-                outDir(fp),
+            return new String[] { inDir(fp), outDir(fp),
                 "1", // Numper of reduces other than 1 does not make sense there.
                 "textinputformat"
               };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return tool;
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onFirstLine(String line) {
                     assertTrue(line.startsWith("WORD_HISTOGRAM\t1000\t9\t22\t38\t22.0\t4.78"));
                 }
 
-                @Override void checkLineCount(int cnt) {
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int cnt) {
                     assertEquals(1, cnt);
                 }
             }.check();

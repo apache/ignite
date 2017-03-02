@@ -1,7 +1,9 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import org.apache.hadoop.examples.dancing.OneSidedPentomino;
+
 /**
- * Pertomino example in form of test.
+ * One-sided pentomino example in form of test.
  */
 public class HadoopDistributedOneSidedPentominoExampleTest extends HadoopDistributedPentominoExampleTest {
     /** {@inheritDoc} */
@@ -21,6 +23,6 @@ public class HadoopDistributedOneSidedPentominoExampleTest extends HadoopDistrib
 
     /** {@inheritDoc} */
     @Override protected Class<?> pentominoClass() {
-        return OneSidedPentomino2.class;
+        return OneSidedPentomino.class;
     }
 }

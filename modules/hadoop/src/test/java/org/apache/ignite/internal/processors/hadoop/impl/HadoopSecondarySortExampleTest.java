@@ -44,6 +44,7 @@ public class HadoopSecondarySortExampleTest extends HadoopGenericExampleTest {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("deprecation")
         @Override public int run(String[] args) throws Exception {
             // SecondarySort does not implement tool
             Configuration conf = getConf();
@@ -91,6 +92,7 @@ public class HadoopSecondarySortExampleTest extends HadoopGenericExampleTest {
         /** */
         private String inDir;
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
             // No mandatory parameters.
             return new String[] { inDir, fp.getWorkDir(name()) + "/out" };
@@ -158,6 +160,10 @@ public class HadoopSecondarySortExampleTest extends HadoopGenericExampleTest {
             generateInput(inDir + "/in00");
         }
 
+        /**
+         * @param path The output file path.
+         * @throws Exception On error.
+         */
         private void generateInput(String path) throws Exception {
             try (OutputStream os = getFileSystem().create(new Path(path), true)) {
                 for (int i=0; i<numberOrRows; i++) {

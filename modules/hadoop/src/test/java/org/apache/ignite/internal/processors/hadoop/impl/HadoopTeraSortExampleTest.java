@@ -17,13 +17,12 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
 
     /** */
     private final GenericHadoopExample teragenEx = new GenericHadoopExample() {
+        /** */
         private final Tool teraGenTool = new TeraGen();
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-            return new String[] {
-                String.valueOf(linesToGenerate),
-                inDir(fp) };
+            return new String[] { String.valueOf(linesToGenerate), inDir(fp) };
         }
 
         /** {@inheritDoc} */
@@ -53,6 +52,7 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
 
     /** */
     private final GenericHadoopExample teraSortEx = new GenericHadoopExample() {
+        /** */
         private final Tool teraSortTool = new TeraSort();
 
         /** {@inheritDoc} */
@@ -73,8 +73,13 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
 
     /** */
     private final GenericHadoopExample teraValidateEx = new GenericHadoopExample() {
+        /** */
         private final Tool teraValidateTool = new TeraValidate();
 
+        /**
+         * @param fp The parameters.
+         * @return The report dir path.
+         */
         private String reportDir(FrameworkParameters fp) {
             return fp.getWorkDir(name()) + "/report";
         }
@@ -92,12 +97,12 @@ public class HadoopTeraSortExampleTest extends HadoopGenericExampleTest {
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                @Override void onFirstLine(String line) {
                     assertTrue(line.length() < 50);
                     assertTrue(line.startsWith("checksum"));
                 }
 
-                @Override void checkLineCount(int cnt) {
+                @Override void onFileEnd(int cnt) {
                     assertEquals(1, cnt);
                 }
             }.check();

@@ -12,17 +12,21 @@ import org.apache.hadoop.util.Tool;
 public class HadoopDistBbpExampleTest extends HadoopGenericExampleTest {
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
+        /** */
         private final BaileyBorweinPlouffe impl = new BaileyBorweinPlouffe();
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
             // <startDigit> <nDigits> <nMaps> <workingDir> :
             return new String[] { "1", "120", String.valueOf(fp.numMaps()), fp.getWorkDir(name()) };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return impl;
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             final String dir = parameters[3];
 

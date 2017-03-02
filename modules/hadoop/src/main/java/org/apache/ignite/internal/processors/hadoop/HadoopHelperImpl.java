@@ -96,7 +96,7 @@ public class HadoopHelperImpl implements HadoopHelper {
             throw new RuntimeException(e);
         }
 
-        ClassWriter w = new ClassWriter(/*Opcodes.ASM4*/0);
+        ClassWriter w = new ClassWriter(Opcodes.ASM4);
 
         rdr.accept(new RemappingClassAdapter(w, new Remapper() {
             /** */

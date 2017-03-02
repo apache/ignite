@@ -110,7 +110,8 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     jvmArgs,
                     null,
                     null,
-                    null
+                    null,
+                    true
                 );
 
                 IgniteInClosure<String> c2 = new CI1<String>() {
@@ -131,7 +132,8 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     jvmArgs,
                     null,
                     null,
-                    null
+                    null,
+                    true
                 );
 
                 assertTrue(srvsReadyLatch.await(60, SECONDS));
@@ -156,7 +158,8 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
                     jvmArgs,
                     cp,
                     null,
-                    null
+                    null,
+                    true
                 );
 
                 assertTrue(clientReadyLatch.await(60, SECONDS));

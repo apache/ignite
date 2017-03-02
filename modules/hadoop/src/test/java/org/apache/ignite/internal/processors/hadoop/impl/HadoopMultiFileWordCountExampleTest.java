@@ -16,33 +16,41 @@ public class HadoopMultiFileWordCountExampleTest extends HadoopGenericExampleTes
 
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
+        /** */
         private final Tool impl = new MultiFileWordCount();
 
+        /** {@inheritDoc} */
         @Override void prepare(JobConf conf, FrameworkParameters params) throws IOException {
             generateTextInput(11, conf, params);
         }
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
             return new String[] {
                 inDir(fp),
                 outDir(fp) };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return impl;
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onFirstLine(String line) {
                     assertEquals("Aktistetae\t15", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onLastLine(String line) {
                     assertEquals("zoonitic\t22", line);
                 }
 
-                @Override void checkLineCount(int cnt) {
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int cnt) {
                     assertEquals(1000, cnt);
                 }
             }.check();

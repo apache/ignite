@@ -198,7 +198,7 @@ public class HadoopJobTracker extends HadoopComponent {
                         ExpiryPolicy finishedJobPlc = new ModifiedExpiryPolicy(
                             new Duration(MILLISECONDS, ctx.configuration().getFinishedJobInfoTtl()));
 
-                        finishedJobMetaPrj = prj.withExpiryPolicy(finishedJobPlc); // ******* NPE there
+                        finishedJobMetaPrj = prj.withExpiryPolicy(finishedJobPlc);
                     }
                     else
                         finishedJobMetaPrj = jobMetaPrj;

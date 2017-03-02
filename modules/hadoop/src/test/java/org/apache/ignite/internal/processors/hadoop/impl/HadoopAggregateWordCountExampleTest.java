@@ -70,15 +70,15 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
 
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                @Override void onFirstLine(String line) {
                     assertEquals("Aktistetae\t15", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                @Override void onLastLine(String line) {
                     assertEquals("zoonitic\t22", line);
                 }
 
-                @Override void checkLineCount(int cnt) {
+                @Override void onFileEnd(int cnt) {
                     assertEquals(1000, cnt);
                 }
             }.check();

@@ -14,21 +14,25 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
 /**
- *
+ * Classic word count Hadoop example.
  */
 public class HadoopWordCountExampleTest extends HadoopGenericExampleTest {
     /** */
     final Tool tool = new Tool() {
+        /** */
         private Configuration conf;
 
+        /** {@inheritDoc} */
         @Override public void setConf(Configuration conf) {
             this.conf = conf;
         }
 
+        /** {@inheritDoc} */
         @Override public Configuration getConf() {
             return conf;
         }
 
+        /** {@inheritDoc} */
         @SuppressWarnings("deprecation")
         @Override public int run(String[] args) throws Exception {
             Configuration conf = getConf();
@@ -55,29 +59,37 @@ public class HadoopWordCountExampleTest extends HadoopGenericExampleTest {
 
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
-
+        /** {@inheritDoc} */
         @Override void prepare(JobConf conf, FrameworkParameters params) throws IOException {
             generateTextInput(1, conf, params);
         }
 
+        /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-            return new String[] {
-                inDir(fp),
-                outDir(fp) };
+            return new String[] { inDir(fp), outDir(fp) };
         }
 
+        /** {@inheritDoc} */
         @Override Tool tool() {
             return tool;
         }
 
+        /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
             new OutputFileChecker(getFileSystem(), parameters[1] + "/part-r-00000") {
-                @Override void checkFirstLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onFirstLine(String line) {
                     assertEquals("Alethea\t2", line);
                 }
 
-                @Override void checkLastLine(String line) {
+                /** {@inheritDoc} */
+                @Override void onLastLine(String line) {
                     assertEquals("zoonitic\t3", line);
+                }
+
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int lineCnt) {
+                    assertEquals(863, lineCnt);
                 }
             }.check();
         }
