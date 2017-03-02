@@ -115,7 +115,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -859,19 +858,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     Arrays.deepToString(fldsQry.getArgs()) + "]", e);
             }
         }
-        else if (DdlStatementsProcessor.isDdlStatement(p)) {
-            QueryCursor<List<?>> res;
-
-            try {
-                res = ddlProc.runDdlStatement(stmt, true);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry + ']', e);
-            }
-
-            return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
-                new IgniteSingletonIterator(res.getAll().get(0)));
-        }
+        else if (DdlStatementsProcessor.isDdlStatement(p))
+            throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         List<GridQueryFieldMetadata> meta;
 
@@ -1342,7 +1331,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                     try {
-                        return ddlProc.runDdlStatement(stmt, false);
+                        return ddlProc.runDdlStatement(stmt);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);

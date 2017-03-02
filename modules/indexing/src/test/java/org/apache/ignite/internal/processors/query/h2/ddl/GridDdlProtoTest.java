@@ -81,25 +81,6 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         assertCreateIndexThrowsWithMessage("DDL operation execution has failed", false);
     }
 
-    /** "Normal" operation. */
-    public void testSuccessLocal() {
-        ignite(3).cache("S2P").query(new SqlFieldsQuery("create index idx on Person(id desc)").setLocal(true));
-    }
-
-    /** Test behavior in case of INIT failure (cancel via {@link DdlOperationInit#ackMessage}). */
-    public void testInitFailureLocal() {
-        DdlProc.testName = GridTestUtils.getGridTestName();
-
-        assertCreateIndexThrowsWithMessage("DDL operation has been cancelled at INIT stage", true);
-    }
-
-    /** Test behavior in case of ACK failure (cancel via {@link DdlStatementsProcessor#onAck}). */
-    public void testAckFailureLocal() {
-        DdlProc.testName = GridTestUtils.getGridTestName();
-
-        assertCreateIndexThrowsWithMessage("DDL operation execution has failed", true);
-    }
-
     /**
      * Test error handling.
      *
@@ -191,7 +172,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override void doInit(DdlCommandArguments args) {
             // Let's throw an exception on a single node in the ring
-            if (("InitFailure".equals(testName) && ctx.gridName().endsWith("2")) || ("InitFailureLocal".equals(testName)))
+            if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
                 throw new RuntimeException("Hello from DdlProc Init");
             else
                 try {
@@ -205,7 +186,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         /** {@inheritDoc}
          * @param args*/
         @Override void doAck(DdlCommandArguments args) {
-            if (("AckFailure".equals(testName) && ctx.gridName().endsWith("1")) || ("AckFailureLocal".equals(testName)))
+            if ("AckFailure".equals(testName) && ctx.gridName().endsWith("1"))
                 throw new RuntimeException("Hello from DdlProc Ack");
             else
                 try {

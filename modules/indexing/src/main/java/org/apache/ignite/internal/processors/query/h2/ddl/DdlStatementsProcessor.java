@@ -414,8 +414,7 @@ public class DdlStatementsProcessor {
      *
      * @param stmt H2 statement to parse and execute.
      */
-    // TODO: Remove local flag, it should always be distributed.
-    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt, boolean loc)
+    public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
         throws IgniteCheckedException {
         if (isStopped)
             throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped"));
@@ -444,10 +443,7 @@ public class DdlStatementsProcessor {
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
-        if (!loc)
-            executeDistributed(args);
-        else
-            executeLocal(args);
+        executeDistributed(args);
 
         return DmlStatementsProcessor.cursorForUpdateResult(0L);
     }
@@ -474,30 +470,6 @@ public class DdlStatementsProcessor {
         }
         finally {
             operations.remove(args.getOperationArguments().opId);
-        }
-    }
-
-    /**
-     * Run a DDL operation locally.
-     *
-     * @param args Operation arguments.
-     * @throws IgniteCheckedException if failed.
-     */
-    @SuppressWarnings("unchecked")
-    private void executeLocal(DdlCommandArguments args) throws IgniteCheckedException {
-        try {
-            doInit(args);
-        }
-        catch (Throwable e) {
-            throw new IgniteCheckedException("DDL operation has been cancelled at INIT stage", e);
-        }
-
-        try {
-            doAck(args);
-        }
-        catch (Throwable e) {
-            throw new IgniteCheckedException("DDL operation execution has failed [opId=" +
-                args.getOperationArguments().opId + ']', e);
         }
     }
 
