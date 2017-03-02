@@ -2763,6 +2763,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (isRmtAddrsExist) {
             List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
 
+            addrs0 = U.filterReachableAddresses(addrs0);
+
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
 
             Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
@@ -2775,6 +2777,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // Then on mapped external addresses.
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
+
+        if (log.isDebugEnabled())
+            log.debug("Addresses to connect for node: " +
+                "[rmtNode=" + node.id() + "]: " + addrs.toString());
 
         boolean conn = false;
         GridCommunicationClient client = null;
