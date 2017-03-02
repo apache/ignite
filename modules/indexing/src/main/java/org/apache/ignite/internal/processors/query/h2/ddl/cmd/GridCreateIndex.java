@@ -51,9 +51,4 @@ public class GridCreateIndex implements GridDdlCommand<CreateIndexArguments> {
     @Override public void execute(CreateIndexArguments cmdArgs) throws IgniteCheckedException {
         // No-op.
     }
-
-    /** {@inheritDoc} */
-    @Override public void cancel(CreateIndexArguments cmdArgs) throws IgniteCheckedException {
-        // No-op.
-    }
 }

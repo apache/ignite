@@ -24,7 +24,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationAck;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationCancel;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
 
 /**
@@ -57,14 +56,4 @@ public interface GridDdlCommand<A extends DdlCommandArguments> {
      * @throws IgniteCheckedException if failed.
      */
     public void execute(A args) throws IgniteCheckedException;
-
-    /**
-     * Revert effects of executing init or local part of DDL job on this node.
-     * May be called in the case of an error on one of the peer nodes, or user cancel.
-     * Is called from {@link DdlOperationCancel} message handler.
-     *
-     * @param args Command arguments.
-     * @throws IgniteCheckedException if failed.
-     */
-    public void cancel(A args) throws IgniteCheckedException;
 }
