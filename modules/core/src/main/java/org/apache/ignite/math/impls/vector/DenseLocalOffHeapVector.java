@@ -108,11 +108,6 @@ public class DenseLocalOffHeapVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy() {
-        getStorage().destroy();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o != null && getClass().equals(o.getClass()) && (getStorage().equals(((Vector)o).getStorage()));
     }

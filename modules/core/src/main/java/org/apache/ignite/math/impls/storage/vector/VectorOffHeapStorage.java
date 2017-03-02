@@ -98,9 +98,8 @@ public class VectorOffHeapStorage implements VectorStorage {
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++)
             out.writeDouble(get(i));
-        }
     }
 
     /** {@inheritDoc} */
@@ -110,9 +109,8 @@ public class VectorOffHeapStorage implements VectorStorage {
 
         allocateMemory(size);
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++)
             set(i, in.readDouble());
-        }
     }
 
     /** {@inheritDoc} */

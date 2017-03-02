@@ -17,8 +17,29 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+
 /**
  * TODO: add description.
  */
-public class SparseLocalOffHeapMatrix {
+public class SparseLocalOffHeapMatrix extends AbstractMatrix {
+    public SparseLocalOffHeapMatrix(int rows, int cols) {
+    }
+
+    @Override public Matrix copy() {
+        return null;
+    }
+
+    @Override public Matrix like(int rows, int cols) {
+        return null;
+    }
+
+    @Override public Vector likeVector(int crd) {
+        return null;
+    }
+
+    @Override public void destroy() {
+
+    }
 }

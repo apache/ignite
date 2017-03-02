@@ -474,9 +474,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     IgniteUuid guid();
 
     /**
-     * Destroys vector if managed outside of JVM. It's a no-op in all other cases.
+     * Destroys vector and it's storage if managed outside of JVM. It's do nothing in all other cases.
      */
-    default void destroy(){
-        // No-op.
-    }
+    void destroy();
 }

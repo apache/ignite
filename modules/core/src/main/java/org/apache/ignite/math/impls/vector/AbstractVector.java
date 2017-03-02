@@ -887,4 +887,9 @@ public abstract class AbstractVector implements Vector {
         readOnly = in.readBoolean();
         size = in.readInt();
     }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        sto.destroy();
+    }
 }
