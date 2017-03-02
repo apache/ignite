@@ -20,7 +20,6 @@ import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
 import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
 import showQueryTemplateUrl from 'views/templates/message.tpl.pug';
 
-
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
