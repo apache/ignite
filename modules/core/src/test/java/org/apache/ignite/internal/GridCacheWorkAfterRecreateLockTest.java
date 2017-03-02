@@ -93,7 +93,7 @@ public class GridCacheWorkAfterRecreateLockTest extends GridCommonAbstractTest {
             System.out.println("acquired lock");
             if (!"node1".equals(name)) {
                 System.out.println("unlock lock");
-
+                Thread.sleep(500);
                 lock.unlock();
 
                 latch.countDown();
