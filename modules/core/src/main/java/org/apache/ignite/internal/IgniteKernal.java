@@ -1138,7 +1138,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolQSize = exec.getQueue().size();
                             }
 
-                            PageMemory pageMem = ctx.cache().context().database().pageMemory();
+                            int loadedPages = 0;
+
+                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+                                PageMemory pageMem = cctx.memoryPolicy().pageMemory();
+
+                                loadedPages += pageMem != null ? pageMem.loadedPages() : 0;
+                            }
 
                             String id = U.id8(localNode().id());
 
@@ -1148,7 +1154,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                                "    ^-- PageMemory [pages=" + (pageMem != null ? pageMem.loadedPages() : 0) + "]" + NL +
+                                "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
                                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Non heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +

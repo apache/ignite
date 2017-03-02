@@ -47,6 +47,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -90,14 +91,24 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             dbCfg.setPageSize(16 * 1024);
 
-            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+            MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+            plc.setDefault(true);
+            plc.setSize(200 * 1024 * 1024);
+
+            dbCfg.setMemoryPolicies(plc);
         }
         else {
             dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
             dbCfg.setPageSize(1024);
 
-            dbCfg.setPageCacheSize(200 * 1024 * 1024);
+            MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+            plc.setDefault(true);
+            plc.setSize(200 * 1024 * 1024);
+
+            dbCfg.setMemoryPolicies(plc);
         }
 
         cfg.setMemoryConfiguration(dbCfg);
