@@ -746,16 +746,27 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             tx.systemInvalidate(true);
 
-                            fut = tx.rollbackAsync();
+                            try {
+                                fut = tx.rollbackAsync();
 
-                            fut.listen(resClo);
+                                fut.listen(resClo);
+                            }
+                            catch (Throwable e1) {
+                                e.addSuppressed(e1);
+                            }
 
                             throw e;
                         }
 
                     }
                     else if (!cctx.kernalContext().isStopping())
-                        fut = tx.rollbackAsync();
+                        try {
+                            fut = tx.rollbackAsync();
+                        }
+                        catch (Throwable e) {
+                            err.addSuppressed(e);
+                            fut = null;
+                        }
 
                     if (fut != null)
                         fut.listen(resClo);
@@ -1172,7 +1183,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (err0 != null) {
                     ERR_UPD.compareAndSet(this, null, err0);
 
-                    tx.rollbackAsync();
+                    try {
+                        tx.rollbackAsync();
+                    }
+                    catch (Throwable e) {
+                        err0.addSuppressed(e);
+                    }
 
                     final GridNearTxPrepareResponse res = createPrepareResponse(err);
 

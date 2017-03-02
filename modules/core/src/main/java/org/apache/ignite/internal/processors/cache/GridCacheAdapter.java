@@ -4128,7 +4128,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
                             U.error(log, "Failed to rollback transaction (cache may contain stale locks): " + tx, e1);
 
-                            U.addLastCause(e, e1, log);
+                            e.addSuppressed(e1);
                         }
                     }
 
@@ -4259,7 +4259,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         throw e;
                                     }
                                     catch (IgniteCheckedException e1) {
-                                        tx0.rollbackAsync();
+                                        try {
+                                            tx0.rollbackAsync();
+                                        }
+                                        catch (Throwable e2) {
+                                            e1.addSuppressed(e2);
+                                        }
 
                                         throw e1;
                                     }
@@ -4285,7 +4290,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         throw e;
                     }
                     catch (IgniteCheckedException e1) {
-                        tx0.rollbackAsync();
+                        try {
+                            tx0.rollbackAsync();
+                        }
+                        catch (Throwable e2) {
+                            e1.addSuppressed(e2);
+                        }
 
                         throw e1;
                     }
