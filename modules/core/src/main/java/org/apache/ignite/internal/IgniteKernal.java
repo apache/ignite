@@ -226,6 +226,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABL
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VIRTUAL_MACS;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -1375,11 +1376,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Add local network IPs and MACs.
         String ips = F.concat(U.allLocalIps(), ", "); // Exclude loopbacks.
         String macs = F.concat(U.allLocalMACs(), ", "); // Only enabled network interfaces.
+        String virtualMacs = F.concat(U.allLocalVirtualMACs(), ", "); // Only enabled virtual network interfaces.
 
         // Ack network context.
         if (log.isInfoEnabled()) {
             log.info("Non-loopback local IPs: " + (F.isEmpty(ips) ? "N/A" : ips));
             log.info("Enabled local MACs: " + (F.isEmpty(macs) ? "N/A" : macs));
+            log.info("Enabled local virtual MACs: " + (F.isEmpty(virtualMacs) ? "N/A" : virtualMacs));
         }
 
         // Warn about loopback.
@@ -1391,6 +1394,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
         add(ATTR_MACS, (macs.isEmpty() ? "" : macs));
+        add(ATTR_VIRTUAL_MACS, (virtualMacs.isEmpty() ? "" : virtualMacs));
 
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());

@@ -62,7 +62,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Client implementation.
@@ -478,8 +478,11 @@ public class GridClientImpl implements GridClient {
                     boolean sameHost = node.attributes().isEmpty() ||
                         F.containsAny(U.allLocalMACs(), node.attribute(ATTR_MACS).toString().split(", "));
 
+                    boolean sameContainer = node.attributes().isEmpty() ||
+                        F.containsAny(U.allLocalVirtualMACs(), node.attribute(ATTR_VIRTUAL_MACS).toString().split(", "));
+
                     if (sameHost) {
-                        Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true));
+                        Collections.sort(resolvedEndpoints, U.inetAddressesComparator(true, sameContainer));
 
                         connSrvs.addAll(resolvedEndpoints);
                     }

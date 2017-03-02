@@ -2115,6 +2115,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param loc Local node.
+     * @param rmt Remote node.
+     * @return Whether given nodes have the same virtual macs.
+     */
+    public static boolean sameVirtualMacs(ClusterNode loc, ClusterNode rmt) {
+        assert loc != null;
+        assert rmt != null;
+
+        String locVirtualMacs = loc.attribute(IgniteNodeAttributes.ATTR_VIRTUAL_MACS);
+        String rmtVirtualMacs = rmt.attribute(IgniteNodeAttributes.ATTR_VIRTUAL_MACS);
+
+        return !F.isEmpty(locVirtualMacs) && locVirtualMacs.equals(rmtVirtualMacs);
+    }
+
+    /**
      * Gets a list of all local non-loopback IPs known to this JVM.
      * Note that this will include both IPv4 and IPv6 addresses (even if one "resolves"
      * into another). Loopbacks will be skipped.
@@ -2182,6 +2197,52 @@ public abstract class IgniteUtils {
 
                         if (!macs.contains(mac))
                             macs.add(mac);
+                    }
+                }
+            }
+        }
+        catch (SocketException ignore) {
+            return Collections.emptyList();
+        }
+
+        Collections.sort(macs);
+
+        return macs;
+    }
+
+    /**
+     * Gets a list of all local enabled virtual MACs known to this JVM. It
+     * is using hardware address of the network interface.
+     * <p>
+     * Note that if network interface is disabled - its MAC won't be included.
+     * <p>
+     * Note that on linux getHardwareAddress() can return null from time to time
+     * if NetworkInterface.getHardwareAddress() method is called from many threads.
+     *
+     * @return List of all known enabled local virtual MACs or empty list
+     *      if no MACs could be found.
+     */
+    public static synchronized Collection<String> allLocalVirtualMACs() {
+        List<String> macs = new ArrayList<>(3);
+
+        try {
+            Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+
+            if (itfs != null) {
+                for (NetworkInterface itf : asIterable(itfs)) {
+                    Enumeration<NetworkInterface> subItfs = itf.getSubInterfaces();
+
+                    if (subItfs != null) {
+                        for (NetworkInterface subItf : asIterable(subItfs)) {
+                            byte[] hwAddr = subItf.getHardwareAddress();
+
+                            if (hwAddr != null && hwAddr.length > 0) {
+                                String mac = byteArray2HexString(hwAddr);
+
+                                if (!macs.contains(mac))
+                                    macs.add(mac);
+                            }
+                        }
                     }
                 }
             }
@@ -9442,6 +9503,18 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Returns comparator that sorts remote node addresses. If remote node resides on the same container, then put
+     * virtual addresses first, last otherwise, then use compare from {@link IgniteUtils#inetAddressesComparator(boolean)} .
+     *
+     * @param sameHost {@code True} if remote node resides on the same host, {@code false} otherwise.
+     * @param sameContainer {@code True} if remote node resides on the same virtual container, {@code false} otherwise.
+     * @return Comparator.
+     */
+    public static Comparator<InetSocketAddress> inetAddressesComparator(final boolean sameHost, final boolean sameContainer) {
+        return new InetSocketAddressComparator(sameHost, sameContainer);
+    }
+
+    /**
      * Finds a method in the class and it parents.
      *
      * Method.getMethod() does not return non-public method,
@@ -10045,6 +10118,48 @@ public abstract class IgniteUtils {
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    private static boolean isVirtual(NetworkInterface itf) {
+        return itf != null && itf.isVirtual();
+    }
+
+    static class InetSocketAddressComparator implements Comparator<InetSocketAddress> {
+
+        private boolean sameHost;
+
+        private boolean sameContainer;
+
+        public InetSocketAddressComparator(boolean sameHost, boolean sameContainer) {
+            this.sameHost = sameHost;
+            this.sameContainer = sameContainer;
+        }
+
+        @Override public int compare(InetSocketAddress addr1, InetSocketAddress addr2) {
+            int result = 0;
+            if (sameContainer) {
+                try {
+                    NetworkInterface ifc1 = addr1.getAddress() == null ?
+                        null : NetworkInterface.getByInetAddress(addr1.getAddress());
+                    NetworkInterface ifc2 = addr2.getAddress() == null ?
+                        null : NetworkInterface.getByInetAddress(addr2.getAddress());
+
+                    if (isVirtual(ifc1) && !isVirtual(ifc2))
+                        result = sameHost ? -1 : 1;
+                    else if (isVirtual(ifc2) && !isVirtual(ifc1))
+                        result = sameHost ? 1 : -1;
+                }
+                catch (SocketException ignored) {
+                    // No-op.
+                }
+            }
+
+            if (result == 0) {
+                result = inetAddressesComparator(sameHost).compare(addr1, addr2);
+            }
+
+            return result;
         }
     }
 }

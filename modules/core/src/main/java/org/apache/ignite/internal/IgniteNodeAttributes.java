@@ -113,6 +113,9 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
     /** Internal attribute name constant. */
+    public static final String ATTR_VIRTUAL_MACS = ATTR_PREFIX + ".virtual.macs";
+
+    /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */

@@ -558,7 +558,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return false;
         }
 
-        for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
+        for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node), U.sameVirtualMacs(locNode, node))) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId);
@@ -2737,10 +2737,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean nextNodeExists = sock != null;
 
                 final boolean sameHost = U.sameMacs(locNode, next);
+                final boolean sameContainer = U.sameVirtualMacs(locNode, next);
 
                 List<InetSocketAddress> locNodeAddrs = U.arrayList(locNode.socketAddresses());
 
-                addr: for (InetSocketAddress addr : spi.getNodeAddresses(next, sameHost)) {
+                addr: for (InetSocketAddress addr : spi.getNodeAddresses(next, sameHost, sameContainer)) {
                     long ackTimeout0 = spi.getAckTimeout();
 
                     if (locNodeAddrs.contains(addr)){
@@ -3826,7 +3827,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             IgniteSpiException ex = null;
 
-            for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
+            for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node), U.sameVirtualMacs(locNode, node))) {
                 try {
                     sendMessageDirectly(msg, addr);
 
