@@ -17,20 +17,16 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.math.MatrixStorage;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.math.*;
+import java.io.*;
 
 /**
  * Off heap storage for sparse matrix.
  */
 public class SparseOffHeapMatrixStorage implements MatrixStorage {
     /** */
-    private int rows;
-    /** */
-    private int cols;
+    private int rows, cols;
     /** */
     private long ptr;
 
@@ -153,14 +149,16 @@ public class SparseOffHeapMatrixStorage implements MatrixStorage {
     /** */
     private boolean isMemoryEquals(SparseOffHeapMatrixStorage otherStorage){
         boolean result = true;
-        for (int i = 0; i < otherStorage.rows; i++) {
+
+        for (int i = 0; i < otherStorage.rows; i++)
             for (int j = 0; j < otherStorage.cols; j++) {
                 if (Double.compare(get(i,j),otherStorage.get(i,j)) != 0){
                     result = false;
+                    
                     break;
                 }
             }
-        }
+
         return result;
     }
 

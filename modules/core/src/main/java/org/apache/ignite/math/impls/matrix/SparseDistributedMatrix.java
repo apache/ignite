@@ -37,6 +37,10 @@ public class SparseDistributedMatrix extends AbstractMatrix {
     public static final int RANDOM_ACCESS_MODE = 1;
     /** Sequential-optimized access mode. */
     public static final int SEQUENTIAL_ACCESS_MODE = 0;
+    /** Row-optimized storage mode. */
+    public static final int ROW_STORAGE_MODE = 3;
+    /** Column-optimized storage mode. */
+    public static final int COLUMN_STORAGE_MODE = 4;
 
     private int rows, cols;
     private int stoMode, acsMode;

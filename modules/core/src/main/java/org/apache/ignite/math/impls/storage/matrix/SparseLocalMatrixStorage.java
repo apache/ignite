@@ -17,25 +17,19 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.math.MatrixStorage;
-import org.apache.ignite.math.VectorStorage;
-import org.apache.ignite.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.math.impls.storage.vector.RandomAccessSparseVectorStorage;
-import org.apache.ignite.math.impls.storage.vector.SequentialAccessSparseVectorStorage;
+import it.unimi.dsi.fastutil.ints.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.impls.matrix.*;
+import org.apache.ignite.math.impls.storage.vector.*;
+import java.io.*;
 
 /**
  * Storage for sparse local matrix.
  */
 public class SparseLocalMatrixStorage implements MatrixStorage {
     private Int2ObjectOpenHashMap<VectorStorage> rowVectors;
-
-    private int rows;
-
-    private int cols;
+    private int rows, cols;
 
     /**
      * 0 - sequential access mode, 1 - random access mode.
@@ -179,7 +173,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
             case 1:
                 return new RandomAccessSparseVectorStorage(size);
             default:
-                throw new java.lang.UnsupportedOperationException("This access mode is unsupported.");
+                throw new UnsupportedOperationException("This access mode is unsupported.");
         }
     }
 }

@@ -26,8 +26,6 @@ import java.nio.*;
  *
  */
 public class RandomMatrixStorage implements MatrixStorage {
-    private final String ERR_MSG = "Random matrix storage is a read-only storage.";
-
     private static final int PRIME1 = 104047;
     private static final int PRIME2 = 101377;
     private static final int PRIME3 = 64661;
@@ -74,7 +72,7 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     @Override
     public void set(int x, int y, double v) {
-        throw new UnsupportedOperationException(ERR_MSG);
+        throw new UnsupportedOperationException("Random matrix storage is a read-only storage.");
     }
 
     @Override

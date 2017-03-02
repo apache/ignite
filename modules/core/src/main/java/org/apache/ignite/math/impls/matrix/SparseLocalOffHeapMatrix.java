@@ -22,7 +22,6 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.matrix.SparseOffHeapMatrixStorage;
-import org.apache.ignite.math.impls.vector.SparseLocalOffHeapVector;
 
 /**
  * TODO: add description.

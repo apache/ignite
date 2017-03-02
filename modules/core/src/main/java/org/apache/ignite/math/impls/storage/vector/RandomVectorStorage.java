@@ -27,8 +27,6 @@ import java.util.*;
  *
  */
 public class RandomVectorStorage implements VectorStorage {
-    private final String ERR_MSG = "Random vector storage is a read-only storage.";
-
     private static final long SCALE = 1L << 32;
     private static final int PRIME = 104047;
 
@@ -69,7 +67,7 @@ public class RandomVectorStorage implements VectorStorage {
 
     @Override
     public void set(int i, double v) {
-        throw new UnsupportedOperationException(ERR_MSG);
+        throw new UnsupportedOperationException("Random vector storage is a read-only storage.");
     }
 
     @Override
