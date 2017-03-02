@@ -70,9 +70,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  */
 public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
     /** */
-    public static final IgniteProductVersion SER_TX_SINCE = IgniteProductVersion.fromString("1.5.0");
-
-    /** */
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
 
@@ -542,13 +539,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             log.debug("Mapped key to primary node [key=" + entry.key() +
                 ", part=" + cacheCtx.affinity().partition(entry.key()) +
                 ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
-        }
-
-        if (primary.version().compareTo(SER_TX_SINCE) < 0) {
-            onDone(new IgniteCheckedException("Optimistic serializable transactions can be used only with node " +
-                "version starting from " + SER_TX_SINCE));
-
-            return;
         }
 
         // Must re-initialize cached entry while holding topology lock.
