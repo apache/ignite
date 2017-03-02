@@ -36,6 +36,9 @@ public class VectorImplementationsTest {
     /** */ @Test
     public void setGetTest() {
         consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
             for (double val : new double[] {0, -1, 0, 1})
                 for (int idx = 0; idx < v.size(); idx++) {
                     v.set(idx, val);
@@ -124,7 +127,7 @@ public class VectorImplementationsTest {
     /** */ @Test
     public void kNormTest() {
         for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            toDoubleTest(ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
+            toDoubleTest(pow, ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
     }
 
     /** */ @Test
@@ -163,7 +166,7 @@ public class VectorImplementationsTest {
 
     /** */ @Test
     public void sumTest() {
-        toDoubleTest(
+        toDoubleTest(null,
             ref -> {
                 double sum = 0;
 
@@ -178,7 +181,7 @@ public class VectorImplementationsTest {
     /** */
     @Test
     public void getLengthSquaredTest() {
-        toDoubleTest(ref -> new Norm(ref, 2).sumPowers(), Vector::getLengthSquared);
+        toDoubleTest(2.0, ref -> new Norm(ref, 2).sumPowers(), Vector::getLengthSquared);
     }
 
     /** */
@@ -223,7 +226,7 @@ public class VectorImplementationsTest {
     }
 
     /** */
-    private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
+    private void toDoubleTest(Double val, Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
@@ -234,8 +237,8 @@ public class VectorImplementationsTest {
             final double obtained = calcVec.apply(v);
             final Metric metric = new Metric(exp, obtained);
 
-            assertTrue("Not close enough at " + desc + ", " + metric,
-                metric.closeEnough());
+            assertTrue("Not close enough at " + desc
+                + (val == null ? "" : ", value " + val) + ", " + metric, metric.closeEnough());
         });
     }
 
@@ -246,7 +249,7 @@ public class VectorImplementationsTest {
             final int size = v.size();
             final double[] ref = new double[size];
 
-            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc + ", pow = " + pow);
             final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)
@@ -299,6 +302,11 @@ public class VectorImplementationsTest {
     /** */
     private void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
         new VectorImplementationsFixtures().consumeSampleVectors(paramsConsumer, consumer);
+    }
+
+    /** */
+    private static boolean readOnly(Vector v) {
+        return v instanceof RandomVector;
     }
 
     /** */
@@ -373,8 +381,14 @@ public class VectorImplementationsTest {
         private final String fixtureDesc;
 
         /** */
+        private final double[] refReadOnly;
+
+        /** */
         ElementsChecker(Vector v, double[] ref, String fixtureDesc) {
             this.fixtureDesc = fixtureDesc;
+
+            refReadOnly = readOnly(v) && ref == null ? new double[v.size()] : null;
+
             init(v, ref);
         }
 
@@ -389,6 +403,9 @@ public class VectorImplementationsTest {
 
             for (int i = 0; i < size; i++) {
                 final Vector.Element e = obtained.getElement(i);
+
+                if (refReadOnly != null && exp == null)
+                    exp = refReadOnly;
 
                 final Metric metric = new Metric(exp == null ? i : exp[i], e.get());
 
@@ -405,6 +422,12 @@ public class VectorImplementationsTest {
 
         /** */
         private void init(Vector v, double[] ref) {
+            if (readOnly(v)) {
+                initReadonly(v, ref);
+
+                return;
+            }
+
             for (Vector.Element e : v.all()) {
                 int idx = e.index();
 
@@ -413,6 +436,17 @@ public class VectorImplementationsTest {
                 if (ref != null)
                     ref[idx] = idx;
             }
+        }
+
+        /** */
+        private void initReadonly(Vector v, double[] ref) {
+            if (refReadOnly != null)
+                for (Vector.Element e : v.all())
+                    refReadOnly[e.index()] = e.get();
+
+            if (ref != null)
+                for (Vector.Element e : v.all())
+                    ref[e.index()] = e.get();
         }
     }
 
