@@ -33,14 +33,10 @@ import java.io.*;
  * Sparse distributed matrix implementation based on data grid.
  */
 public class SparseDistributedMatrix extends AbstractMatrix {
-    /** Row-optimized storage mode. */
-    public static final int ROW_STORAGE_MODE = 1;
-    /** Column-optimized storage mode. */
-    public static final int COLUMN_STORAGE_MODE = 2;
     /** Random-optimized access mode. */
-    public static final int RANDOM_ACCESS_MODE = 3;
+    public static final int RANDOM_ACCESS_MODE = 1;
     /** Sequential-optimized access mode. */
-    public static final int SEQUENTIAL_ACCESS_MODE = 4;
+    public static final int SEQUENTIAL_ACCESS_MODE = 0;
 
     private int rows, cols;
     private int stoMode, acsMode;

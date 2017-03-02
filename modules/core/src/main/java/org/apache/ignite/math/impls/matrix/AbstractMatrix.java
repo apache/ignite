@@ -29,8 +29,14 @@ import java.util.function.*;
 
 /**
  * TODO: add description.
+ *
+ * TODO: add row/column optimization.
  */
 public abstract class AbstractMatrix extends DistributionSupport implements Matrix {
+    /** Row-optimized storage mode. */
+    public static final int ROW_STORAGE_MODE = 1;
+    /** Column-optimized storage mode. */
+    public static final int COLUMN_STORAGE_MODE = 0;
     // Stochastic sparsity analysis.
     private static final double Z95 = 1.959964;
     private static final double Z80 = 1.281552;

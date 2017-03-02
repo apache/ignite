@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.math.MatrixStorage;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.math.impls.storage.vector.RandomAccessSparseVectorStorage;
 import org.apache.ignite.math.impls.storage.vector.SequentialAccessSparseVectorStorage;
 
@@ -42,7 +42,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
      *
      * Random access mode is default mode.
      */
-    private int accessMode = 1;
+    private int accessMode = SparseDistributedMatrix.RANDOM_ACCESS_MODE;
 
     /** For serialization. */
     public SparseLocalMatrixStorage(){
@@ -69,7 +69,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
      * @param data Data.
      */
     public SparseLocalMatrixStorage(double[][] data) {
-        this(data.length, data[0].length, 1);
+        this(data.length, data[0].length, SparseDistributedMatrix.RANDOM_ACCESS_MODE);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
@@ -101,6 +101,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
+        out.writeInt(accessMode);
 
         out.writeObject(rowVectors);
     }
@@ -109,6 +110,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
+        accessMode = in.readInt();
 
         rowVectors = (Int2ObjectOpenHashMap<VectorStorage>) in.readObject();
     }
@@ -153,6 +155,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
 
         result = result * 37 + cols;
         result = result * 37 + rows;
+        result = result * 37 + accessMode;
         result = result * 37 + rowVectors.hashCode();
 
         return result;
@@ -160,7 +163,6 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
 
     /**
      * Init all row objects.
-     * TODO: use storages.
      */
     private void initDataStorage(){
         rowVectors = new Int2ObjectOpenHashMap();

@@ -32,7 +32,8 @@ import java.util.Map;
  * Sparse local onheap matrix with {@link SparseLocalOnHeapVector} as rows.
  */
 public class SparseLocalOnHeapMatrix extends AbstractMatrix {
-    private int mode = 1;
+    private int accMode = SparseDistributedMatrix.RANDOM_ACCESS_MODE;
+    private int stoMode = AbstractMatrix.ROW_STORAGE_MODE;
     /** */
     public SparseLocalOnHeapMatrix(){
         // No-op
@@ -40,7 +41,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
 
     /** */
     public SparseLocalOnHeapMatrix(int rows, int cols){
-        this(rows, cols, 1);
+        this(rows, cols, SparseDistributedMatrix.RANDOM_ACCESS_MODE);
     }
 
     /** */
@@ -48,10 +49,10 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
         assert args != null;
 
         if (args.containsKey("accessMode"))
-            mode = (int) args.get("accessMode");
+            accMode = (int) args.get("accessMode");
 
         if (args.containsKey("rows") && args.containsKey("cols"))
-            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols"), mode));
+            setStorage(new SparseLocalMatrixStorage((int)args.get("rows"), (int)args.get("cols"), accMode));
         else if (args.containsKey("arr"))
             setStorage(new SparseLocalMatrixStorage((double[][])args.get("arr")));
         else
@@ -61,7 +62,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     public SparseLocalOnHeapMatrix(int row, int col, int accessMode) {
         setStorage(new SparseLocalMatrixStorage(row, col, accessMode));
 
-        mode = accessMode;
+        accMode = accessMode;
     }
 
     /** {@inheritDoc} */
@@ -76,26 +77,26 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     /** {@inheritDoc} */
     @Override
     public Matrix like(int rows, int cols) {
-        return new SparseLocalOnHeapMatrix(rows, cols, mode);
+        return new SparseLocalOnHeapMatrix(rows, cols, accMode);
     }
 
     /** {@inheritDoc} */
     @Override
     public Vector likeVector(int crd) {
-        return new SparseLocalOnHeapVector(crd, mode);
+        return new SparseLocalOnHeapVector(crd, accMode);
     }
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeInt(mode);
+        out.writeInt(accMode);
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        mode = in.readInt();
+        accMode = in.readInt();
     }
 }
