@@ -36,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
  * Data pages IO.
  */
 public class DataPageIO extends PageIO {
-    /* TODO IGNITE-4534: only for test purposes, will be removed */
-    public static volatile int testPageIdx;
-
     /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
         new DataPageIO(1)
@@ -463,8 +460,6 @@ public class DataPageIO extends PageIO {
      * @return {@link DataPagePayload} object.
      */
     public DataPagePayload readPayload(final long pageAddr, final int itemId, final int pageSize) {
-        testPageIdx = PageIdUtils.pageIndex(getPageId(pageAddr));
-
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         boolean fragmented = isFragmented(pageAddr, dataOff);

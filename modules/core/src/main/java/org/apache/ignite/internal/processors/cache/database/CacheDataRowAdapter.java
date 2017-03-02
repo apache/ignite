@@ -112,9 +112,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         CacheObjectContext cacheObjCtx = cctx.cacheObjectContext();
 
-        key = cacheObjCtx.processor().toKeyCacheObject(cacheObjCtx, keyType, marshalledKey);
+        initCacheObjects(rowData, cacheObjCtx);
+    }
 
-        val = cacheObjCtx.processor().toCacheObject(cacheObjCtx, valType, marshalledVal);
+    /**
+     * @param rowData Row data.
+     * @param cacheObjCtx Cache object context.
+     */
+    public void initCacheObjects(RowData rowData,
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        if (rowData != RowData.NO_KEY)
+            key = cacheObjCtx.processor().toKeyCacheObject(cacheObjCtx, keyType, marshalledKey);
+
+        if (rowData != RowData.KEY_ONLY)
+            val = cacheObjCtx.processor().toCacheObject(cacheObjCtx, valType, marshalledVal);
     }
 
     /**

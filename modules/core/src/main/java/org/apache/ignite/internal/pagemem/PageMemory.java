@@ -61,9 +61,4 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Total number of loaded pages in memory.
      */
     public long loadedPages();
-
-    /**
-     * @param pageIdx Page index.
-     */
-    public void evictDataPage(int pageIdx) throws IgniteCheckedException;
 }

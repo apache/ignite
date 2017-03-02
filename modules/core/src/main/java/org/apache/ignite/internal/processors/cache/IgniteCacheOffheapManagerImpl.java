@@ -1153,8 +1153,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             CacheDataRow row = dataTree.findOne(new SearchRow(key), CacheDataRowAdapter.RowData.NO_KEY);
 
-            if (row != null)
+            if (row != null) {
                 row.key(key);
+
+                cctx.shared().database().evictionTracker().touchPage(row.link());
+            }
 
             return row;
         }

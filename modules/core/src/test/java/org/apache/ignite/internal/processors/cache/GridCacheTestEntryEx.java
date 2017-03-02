@@ -371,7 +371,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) {
+        @Nullable CacheEntryPredicate[] filter, boolean evictOffheap) {
         assert false;
 
         return false;

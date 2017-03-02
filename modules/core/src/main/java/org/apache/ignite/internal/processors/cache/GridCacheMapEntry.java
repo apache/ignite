@@ -3281,8 +3281,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter)
-        throws IgniteCheckedException {
+    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
@@ -3305,7 +3305,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         // Nullify value after swap.
                         value(null);
 
-                        removeValue();
+                        if (evictOffheap)
+                            removeValue();
 
                         marked = true;
 
@@ -3347,7 +3348,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             // Nullify value after swap.
                             value(null);
 
-                            removeValue();
+                            if (evictOffheap)
+                                removeValue();
 
                             marked = true;
 

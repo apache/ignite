@@ -34,6 +34,8 @@ import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscovery
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.database.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
@@ -51,6 +53,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private FreeListImpl freeList;
+
+    /** */
+    private PageEvictionTracker evictionTracker;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -71,6 +76,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             pageMem = initMemory(dbCfg);
 
             pageMem.start();
+
+            evictionTracker = new RandomLruPageEvictionTracker(pageMem, cctx);
 
             initDataStructures();
         }
@@ -134,6 +141,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public PageMemory pageMemory() {
         return pageMem;
+    }
+
+    /**
+     *
+     */
+    public PageEvictionTracker evictionTracker() {
+        return evictionTracker;
     }
 
     /**

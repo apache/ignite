@@ -76,6 +76,14 @@ public class PageNoStoreImpl implements Page {
     }
 
     /** {@inheritDoc} */
+    @Override public long getForReadPointerForce() {
+        if (pageMem.readLockPage(absPtr, -1))
+            return pointer();
+
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
     @Override public void releaseRead() {
         pageMem.readUnlockPage(absPtr);
     }
