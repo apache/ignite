@@ -71,9 +71,11 @@ public class DdlStatementsProcessor {
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, DdlOperationFuture> operations = new ConcurrentHashMap8<>();
 
+    // TODO: Remove and duplicate args in DdlOperationAck message.
     /** Arguments of operations for which this node is a server. Are stored at {@code INIT} stage. */
     private Map<IgniteUuid, DdlCommandArguments> operationArgs = new ConcurrentHashMap8<>();
 
+    // TODO: Should be created after ack is received.
     /** Running operations <b>coordinated by</b> this node. */
     private Map<IgniteUuid, DdlOperationRunContext> operationRuns = new ConcurrentHashMap8<>();
 
@@ -413,6 +415,7 @@ public class DdlStatementsProcessor {
      *
      * @param stmt H2 statement to parse and execute.
      */
+    // TODO: Remove local flag, it should always be distributed.
     public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt, boolean loc)
         throws IgniteCheckedException {
         if (isStopped)

@@ -841,14 +841,18 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case -45:
-                return new DdlOperationResult();
+                msg = new DdlOperationResult();
+
+                break;
 
             case -46:
-                return new DdlOperationNodeResult();
+                msg = new DdlOperationNodeResult();
+
+                break;
 
             // [-3..119] [124..127] [-36..-44]- this
             // [120..123] - DR
-            // [-4..-22, -30..-35, -45..-46] - SQL
+            // [-4..-22, -30..-35] - SQL
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

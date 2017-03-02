@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Client side abstraction for DDL operation as a whole. Used <b>on the client</b>.
  */
+// TODO: Remove as cancel is not needed.
 public class DdlOperationFuture extends GridFutureAdapter {
     /** Unique ID of this operation. */
     private final IgniteUuid id;

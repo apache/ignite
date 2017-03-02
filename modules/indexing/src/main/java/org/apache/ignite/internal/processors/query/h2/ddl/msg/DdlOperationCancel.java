@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message that initiates cancel of a DDL operation due to an irrecoverable error on a peer or on the coordinator.
  */
+// TODO: Remove
 public class DdlOperationCancel implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;

@@ -26,12 +26,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Message sent from <b>peer node</b> to <b>coordinator</b> when local portion of work is done.
  */
+// TODO: Correct err marshal/unmarshal (see CacheMessage children classes)
 public class DdlOperationNodeResult implements Message {
     /**
      * Operation id.
      */
     private IgniteUuid opId;
 
+    // TODO: No map
     /** Map from node ID to its error, if any. */
     private byte[] err;
 

@@ -32,6 +32,7 @@ public class CreateIndexArguments implements DdlCommandArguments {
     /** Index params. */
     private final QueryIndex idx;
 
+    // TODO: Table + schema.
     /** Cache name. */
     private final String cacheName;
 

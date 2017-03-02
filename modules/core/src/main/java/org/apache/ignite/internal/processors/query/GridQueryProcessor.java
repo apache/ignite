@@ -804,15 +804,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            PreparedStatement stmt;
-
-            try {
-                stmt = prepareNativeStatement(cctx.name(), qry.getSql());
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException(e);
-            }
-
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
                     return idx.queryTwoStep(cctx, qry, null);
