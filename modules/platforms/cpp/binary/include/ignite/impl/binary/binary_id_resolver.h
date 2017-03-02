@@ -161,10 +161,14 @@ namespace ignite
 
                     int32_t res = meta.Get()->GetFieldId(name);
 
-                    if (!res)
+                    if (res == 0)
+                        res = ignite::binary::GetBinaryStringHashCode(name);
+
+                    if (res == 0)
                     {
                         IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_BINARY,
-                            "Field not found for type.", "typeId", typeId, "fieldName", name);
+                            "Field ID for the field name is zero. Please, redefine GetFieldId()"
+                            " method for the type or change field name", "typeId", typeId, "fieldName", name);
                     }
 
                     return res;

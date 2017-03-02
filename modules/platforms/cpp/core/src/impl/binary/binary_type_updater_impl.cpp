@@ -116,8 +116,15 @@ namespace ignite
 
                 writer.WriteInt32(typeId);
 
+                out.Synchronize();
+
                 env.Context()->TargetInStreamOutStream(javaRef, OP_GET_META,
                     outMem.Get()->PointerLong(), inMem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+                    return SPSnap();
 
                 InteropInputStream in(inMem.Get());
                 BinaryReaderImpl reader(&in);
@@ -138,15 +145,14 @@ namespace ignite
 
                 // Skipping affinity key field name.
                 rawReader.ReadString();
+                
+                int32_t fieldsNum = rawReader.ReadInt32();
 
-                BinaryMapReader<std::string, BinaryFieldMeta> mapReader = rawReader.ReadMap<std::string, BinaryFieldMeta>();
-
-                while (mapReader.HasNext())
+                for (int32_t i = 0; i < fieldsNum; ++i)
                 {
-                    std::string fieldName;
+                    std::string fieldName = rawReader.ReadString();
                     BinaryFieldMeta fieldMeta;
-
-                    mapReader.GetNext(&fieldName, &fieldMeta);
+                    fieldMeta.Read(rawReader);
 
                     res.Get()->AddField(fieldMeta.GetFieldId(), fieldName, fieldMeta.GetTypeId());
                 }

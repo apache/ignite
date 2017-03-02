@@ -456,7 +456,16 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
-            writer.writeMap(fields);
+
+            writer.writeInt(fields.size());
+
+            for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+                writer.writeString(e.getKey());
+
+                writer.writeInt(e.getValue().typeId());
+                writer.writeInt(e.getValue().fieldId());
+            }
+
             writer.writeBoolean(meta.isEnum());
         }
     }
