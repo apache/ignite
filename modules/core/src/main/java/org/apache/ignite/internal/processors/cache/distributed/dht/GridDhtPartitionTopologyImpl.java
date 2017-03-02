@@ -683,7 +683,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
             else if (loc != null && state == RENTING && !showRenting)
-                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted.");
+                throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted " +
+                    "[part=" + p + ", shouldBeMoving=" + loc.shouldBeMoving() + "]");
 
             if (loc == null) {
                 if (!treatAllPartAsLoc && !belongs)

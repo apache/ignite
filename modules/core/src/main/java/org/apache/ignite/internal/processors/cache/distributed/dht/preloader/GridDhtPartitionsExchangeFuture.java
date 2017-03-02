@@ -1563,8 +1563,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             int p = e.getKey();
             long minCntr = e.getValue();
 
+            CounterWithNodes maxCntrObj = maxCntrs.get(p);
+
+            long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
+
             // If minimal counter is zero, do clean preloading.
-            if (minCntr == 0 || minCntr == maxCntrs.get(p).cnt)
+            if (minCntr == 0 || minCntr == maxCntr)
                 continue;
 
             if (localReserved != null) {
