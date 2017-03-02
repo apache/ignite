@@ -36,27 +36,33 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    AbstractVectorTest.class,
+    // Vector constructors tests.
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOffHeapVectorConstructorTest.class,
     SparseLocalOnHeapVectorConstructorTest.class,
     RandomVectorConstructorTest.class,
-    VectorIterableTest.class,
+    // Common vectors tests.
+    AbstractVectorTest.class,
     VectorImplementationsTest.class,
-    VectorAttributesTest.class,
     DenseLocalOffHeapVectorTest.class,
+    VectorViewTest.class,
+    // Vector utils tests.
+    VectorIterableTest.class,
+    VectorAttributesTest.class,
+    VectorToMatrixTest.class,
+    // Vector storage tests
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,
     RandomAccessSparseVectorStorageTest.class,
     SequentialAccessSparseVectorStorageTest.class,
-    VectorViewTest.class,
+    // Matrix storage tests.
+    MatrixStorageImplementationTest.class,
     MatrixOffHeapStorageTest.class,
     MatrixArrayStorageTest.class,
-    DenseLocalOffHeapMatrixTest.class,
     MatrixNullStorageTest.class,
-    VectorToMatrixTest.class,
-    MatrixStorageImplementationTest.class,
-    MatrixImplementationsTest.class
+    // Matrix tests.
+    MatrixImplementationsTest.class,
+    DenseLocalOffHeapMatrixTest.class
 })
 public class MathImplTestSuite {
 }

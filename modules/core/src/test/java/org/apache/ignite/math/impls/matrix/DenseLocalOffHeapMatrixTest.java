@@ -30,7 +30,9 @@ import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link DenseLocalOffHeapMatrix}.
+ * TODO: move to {@link MatrixImplementationsTest}.
  */
+@Deprecated
 public class DenseLocalOffHeapMatrixTest {
     /** */ private DenseLocalOffHeapMatrix denseLocalOffHeapMatrix;
 
