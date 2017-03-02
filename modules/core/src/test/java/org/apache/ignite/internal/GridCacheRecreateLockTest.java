@@ -13,11 +13,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
-
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void test() throws Exception {
+    public void testLockOwnerLeavesGrid() throws Exception {
         final Ignite ignite = startNodeAndLock("node1");
 
         new Thread(new Runnable() {
@@ -36,27 +35,24 @@ public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
         startNodeAndLock("node2");
     }
 
-    private Ignite startNodeAndLock(String name) {
-        try {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-            cfg.setGridName(name);
+    /**
+     * @param name Grid name.
+     * @return Started Ignite instance.
+     */
+    private Ignite startNodeAndLock(String name) throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setGridName(name);
 
-            Ignite ignite = Ignition.start(cfg);
+        Ignite ignite = Ignition.start(cfg);
 
-            IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
+        IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
 
-            System.out.println("acquiring lock");
+        System.out.println("acquiring lock");
 
-            lock.lock();
+        lock.lock();
 
-            System.out.println("acquired lock");
+        System.out.println("acquired lock");
 
-            return ignite;
-        }
-        catch (Exception e) {
-            assertTrue(false);
-        }
-
-        return null;
+        return ignite;
     }
 }
