@@ -93,9 +93,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected final ConcurrentMap<Integer, CacheDataStore> partDataStores = new ConcurrentHashMap<>();
 
     /** */
-    protected final CacheDataStore rmvdStore = new CacheDataStoreImpl(-1, null, null, null);
-
-    /** */
     protected PendingEntriesTree pendingEntries;
 
     /** */
@@ -176,7 +173,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         super.stop0(cancel, destroy);
 
         if (destroy && cctx.affinityNode())
-            destroyCacheDataStructures(destroy);
+            destroyCacheDataStructures();
     }
 
     /** {@inheritDoc} */
@@ -189,7 +186,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    protected void destroyCacheDataStructures(boolean destroy) {
+    protected void destroyCacheDataStructures() {
         assert cctx.affinityNode();
 
         try {
@@ -199,16 +196,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (pendingEntries != null)
                 pendingEntries.destroy();
 
-            for (CacheDataStore store : partDataStores.values()) {
-                partStoreLock.lock(store.partId());
-
-                try {
-                    store.destroy();
-                }
-                finally {
-                    partStoreLock.unlock(store.partId());
-                }
-            }
+            for (CacheDataStore store : partDataStores.values())
+                destroyCacheDataStore(store);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);
@@ -290,7 +279,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public long entriesCount(int part) {
-        if (cctx.isLocal()){
+        if (cctx.isLocal()) {
             assert part == 0;
 
             return locCacheDataStore.size();
@@ -781,15 +770,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
+    @Override public final void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
+        int p = store.partId();
+
         partStoreLock.lock(p);
 
         try {
-            assert partDataStores.get(p) == store;
+            boolean removed = partDataStores.remove(p, store);
 
-            partDataStores.remove(p, store);
+            assert removed;
 
-            store.destroy();
+            destroyCacheDataStore0(store);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -797,6 +788,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         finally {
             partStoreLock.unlock(p);
         }
+    }
+
+    /**
+     * @param store Cache data store.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+        store.destroy();
     }
 
     /**
@@ -1180,7 +1179,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             KeyCacheObject key,
             CacheObject oldVal,
             CacheObject newVal
-            ) throws IgniteCheckedException {
+        ) throws IgniteCheckedException {
             // In case we deal with IGFS cache, count updated data
             if (cctx.cache().isIgfsDataCache() &&
                 !cctx.isNear() &&
