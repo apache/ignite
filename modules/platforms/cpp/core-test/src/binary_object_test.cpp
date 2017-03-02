@@ -396,8 +396,8 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         BOOST_CHECKPOINT("Creating BinaryObject");
         BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
 
-        BOOST_REQUIRE(binObj.HasField("val1"));
-        BOOST_REQUIRE(binObj.HasField("val2"));
+        BOOST_CHECK(binObj.HasField("val1"));
+        BOOST_CHECK(binObj.HasField("val2"));
 
         int32_t val1 = binObj.GetField<int32_t>("val1");
         int32_t val2 = binObj.GetField<int32_t>("val2");
@@ -405,17 +405,19 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         BOOST_CHECK_EQUAL(val1, some.val1);
         BOOST_CHECK_EQUAL(val2, some.val2);
 
-        BOOST_REQUIRE(!binObj.HasField("rawVal1"));
-        BOOST_REQUIRE(!binObj.HasField("rawVal2"));
-        BOOST_REQUIRE(!binObj.HasField("some"));
-        BOOST_REQUIRE(!binObj.HasField("unknown"));
-        BOOST_REQUIRE(!binObj.HasField(""));
+        BOOST_CHECK(!binObj.HasField("rawVal1"));
+        BOOST_CHECK(!binObj.HasField("rawVal2"));
+        BOOST_CHECK(!binObj.HasField("some"));
+        BOOST_CHECK(!binObj.HasField("unknown"));
+        BOOST_CHECK(!binObj.HasField("some_really_long_and_FancyName32047_20567934065286584067325693462"));
     }
     catch (...)
     {
         Ignition::StopAll(true);
         throw;
     }
+
+    Ignition::StopAll(true);
 }
 
 BOOST_AUTO_TEST_CASE(GetEnumValueInvalid)

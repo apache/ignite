@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
- #include <ignite/binary/binary_reader.h>
- #include <ignite/binary/binary_writer.h>
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
 
 #include <ignite/impl/binary/binary_field_meta.h>
 
@@ -37,34 +37,6 @@ namespace ignite
                 typeId = reader.ReadInt32();
                 fieldId = reader.ReadInt32();
             }
-        }
-    }
-
-    namespace binary
-    {
-        int32_t BinaryType<impl::binary::BinaryFieldMeta>::GetTypeId()
-        {
-            return GetBinaryStringHashCode("BinaryFieldMeta");
-        }
-
-        int32_t BinaryType<impl::binary::BinaryFieldMeta>::GetFieldId(const char* name)
-        {
-            return GetBinaryStringHashCode(name);
-        }
-
-        void BinaryType<impl::binary::BinaryFieldMeta>::Write(BinaryWriter& writer, const BinaryFieldMeta& obj)
-        {
-            BinaryRawWriter raw = writer.RawWriter();
-            obj.Write(raw);
-        }
-
-        impl::binary::BinaryFieldMeta BinaryType<impl::binary::BinaryFieldMeta>::Read(BinaryReader& reader)
-        {
-            BinaryFieldMeta obj;
-            BinaryRawReader raw = reader.RawReader();
-            obj.Read(raw);
-
-            return obj;
         }
     }
 }

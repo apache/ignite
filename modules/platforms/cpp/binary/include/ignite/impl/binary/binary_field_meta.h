@@ -105,44 +105,6 @@ namespace ignite
             };
         }
     }
-
-    namespace binary
-    {
-        class BinaryWriter;
-        class BinaryReader;
-
-        template <typename T>
-        struct IGNITE_IMPORT_EXPORT BinaryType;
-
-        template <>
-        struct BinaryType<impl::binary::BinaryFieldMeta>
-        {
-            typedef impl::binary::BinaryFieldMeta BinaryFieldMeta;
-
-            std::string GetTypeName()
-            {
-                return "BinaryFieldMeta";
-            }
-
-            BinaryFieldMeta GetNull()
-            {
-                return BinaryFieldMeta();
-            }
-
-            bool IsNull(const BinaryFieldMeta& obj)
-            {
-                return false;
-            }
-
-            int32_t GetTypeId();
-
-            int32_t GetFieldId(const char* name);
-
-            void Write(BinaryWriter& writer, const BinaryFieldMeta& obj);
-
-            BinaryFieldMeta Read(BinaryReader& reader);
-        };
-    }
 }
 
 #endif //_IGNITE_IMPL_BINARY_BINARY_FIELD_META
