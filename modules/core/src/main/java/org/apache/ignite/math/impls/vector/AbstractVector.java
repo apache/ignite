@@ -734,19 +734,14 @@ public abstract class AbstractVector implements Vector {
 
         Vector cp = copy();
 
-        cp.map(vec, Functions.MINUS);
-
-        return cp;
+        return cp.map(vec, Functions.MINUS);
     }
 
     /** {@inheritDoc} */
     @Override public Vector plus(double x) {
         Vector cp = copy();
 
-        if (x != 0.0)
-            cp.map(Functions.plus(x));
-
-        return cp;
+        return x != 0.0 ? cp.map(Functions.plus(x)) : cp;
     }
 
     /** {@inheritDoc} */
@@ -781,9 +776,7 @@ public abstract class AbstractVector implements Vector {
 
         Vector cp = copy();
 
-        cp.map(vec, Functions.PLUS);
-
-        return cp;
+        return cp.map(vec, Functions.PLUS);
     }
 
     /** {@inheritDoc} */

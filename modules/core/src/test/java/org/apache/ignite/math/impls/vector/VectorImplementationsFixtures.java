@@ -49,11 +49,17 @@ class VectorImplementationsFixtures {
             }
         },
         new Supplier<Iterable<Vector>>() {
-        /** {@inheritDoc} */
-        @Override public Iterable<Vector> get() {
-            return new SparseLocalOffHeapVectorFixture();
+            /** {@inheritDoc} */
+            @Override public Iterable<Vector> get() {
+                return new SparseLocalOffHeapVectorFixture();
+            }
+        },
+        new Supplier<Iterable<Vector>>() {
+            /** {@inheritDoc} */
+            @Override public Iterable<Vector> get() {
+                return new RandomVectorFixture();
+            }
         }
-    } // todo add Supplier for RandomVectorFixture after testing and bugfixes are completed
     );
 
     /** */
