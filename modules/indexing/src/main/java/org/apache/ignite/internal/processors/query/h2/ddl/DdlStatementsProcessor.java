@@ -339,7 +339,8 @@ public class DdlStatementsProcessor {
 
             msg.setNodesState(newNodesState);
         }
-        else if (!msg.getNodesState().containsKey(ctx.localNodeId()))
+
+        if (!msg.getNodesState().containsKey(ctx.localNodeId()))
             return;
 
         try {
