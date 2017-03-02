@@ -95,6 +95,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return sto.get(row, col);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix swapRows(int row1, int row2) {
         checkRowIndex(row1);
@@ -112,6 +113,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix swapColumns(int col1, int col2) {
         checkColumnIndex(col1);
@@ -129,31 +131,37 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public MatrixStorage getStorage() {
         return sto;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isDense() {
         return sto.isDense();
     }
 
+    /** {@inheritDoc} */
     @Override
     public double getLookupCost() {
         return sto.getLookupCost();
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isArrayBased() {
         return sto.isArrayBased();
@@ -190,6 +198,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         checkColumnIndex(col);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
@@ -197,11 +206,13 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         out.writeObject(guid);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Map<String, Object> getMetaStorage() {
         return meta;
     }
 
+    /** {@inheritDoc} */
     @Override
     @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -210,6 +221,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         guid = (IgniteUuid)in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix assign(double val) {
         if (sto.isArrayBased())
@@ -239,6 +251,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
             throw new CardinalityException(columnSize(), cols);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix assign(double[][] vals) {
         checkCardinality(vals.length, vals[0].length);
@@ -253,6 +266,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix assign(Matrix mtx) {
         checkCardinality(mtx);
@@ -267,6 +281,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix map(DoubleFunction<Double> fun) {
         int rows = sto.rowSize();
@@ -279,6 +294,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix map(Matrix mtx, BiFunction<Double, Double, Double> fun) {
         checkCardinality(mtx);
@@ -293,6 +309,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix assignColumn(int col, Vector vec) {
         checkColumnIndex(col);
@@ -305,6 +322,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix assignRow(int row, Vector vec) {
         checkRowIndex(row);
@@ -323,6 +341,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Vector foldRows(Function<Vector, Double> fun) {
         int rows = rowSize();
@@ -335,6 +354,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return vec;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Vector foldColumns(Function<Vector, Double> fun) {
         int cols = columnSize();
@@ -347,6 +367,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return vec;
     }
 
+    /** {@inheritDoc} */
     @Override
     public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
@@ -361,16 +382,19 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int columnSize() {
         return sto.columnSize();
     }
 
+    /** {@inheritDoc} */
     @Override
     public int rowSize() {
         return sto.rowSize();
     }
 
+    /** {@inheritDoc} */
     @Override
     public double determinant() {
         int rows = rowSize();
@@ -410,6 +434,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix divide(double d) {
         int rows = rowSize();
@@ -422,6 +447,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double get(int row, int col) {
         checkIndex(row, col);
@@ -429,11 +455,13 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return storageGet(row, col);
     }
 
+    /** {@inheritDoc} */
     @Override
     public double getX(int row, int col) {
         return storageGet(row, col);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix minus(Matrix mtx) {
         int rows = rowSize();
@@ -450,6 +478,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix plus(double x) {
         Matrix copy = copy();
@@ -459,6 +488,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return copy;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix plus(Matrix mtx) {
         int rows = rowSize();
@@ -476,11 +506,13 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     }
 
+    /** {@inheritDoc} */
     @Override
     public IgniteUuid guid() {
         return guid;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix set(int row, int col, double val) {
         checkIndex(row, col);
@@ -490,6 +522,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix setRow(int row, double[] data) {
         checkRowIndex(row);
@@ -508,6 +541,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix setColumn(int col, double[] data) {
         checkColumnIndex(col);
@@ -523,6 +557,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix setX(int row, int col, double val) {
         storageSet(row, col, val);
@@ -530,6 +565,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix times(double x) {
         Matrix copy = copy();
@@ -539,6 +575,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return copy;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double maxAbsRowSumNorm() {
         double max = 0.0;
@@ -559,6 +596,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return max;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Vector times(Vector vec) {
         int cols = columnSize();
@@ -576,6 +614,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix times(Matrix mtx) {
         int cols = columnSize();
@@ -603,6 +642,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override
     public double sum() {
         int rows = rowSize();
@@ -617,6 +657,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return sum;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Matrix transpose() {
         int rows = rowSize();
@@ -631,6 +672,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return mtx;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean density(double threshold) {
         assert threshold >= 0.0 && threshold <= 1.0;
@@ -686,34 +728,42 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return mean > threshold; // Dense if mean > threshold.
     }
 
-    @Override
-    public Matrix viewPart(int[] offset, int[] size) {
+    /** {@inheritDoc} */
+    @Override public Matrix viewPart(int[] offset, int[] size) {
         return new MatrixView(this, offset[0], offset[1], size[0], size[1]);
     }
 
-    @Override
-    public Matrix viewPart(int rowOff, int rows, int colOff, int cols) {
+    /** {@inheritDoc} */
+    @Override public Matrix viewPart(int rowOff, int rows, int colOff, int cols) {
         return viewPart(new int[] { rowOff, colOff}, new int[] {rows, cols});
     }
 
-    @Override
-    public Vector viewRow(int row) {
+    /** {@inheritDoc} */
+    @Override public Vector viewRow(int row) {
         return new MatrixVectorView(this, row, 0, 1, 0);
     }
 
-    @Override
-    public Vector viewColumn(int col) {
+    /** {@inheritDoc} */
+    @Override public Vector viewColumn(int col) {
         return new MatrixVectorView(this, 0, col, 0, 1);
     }
 
-    @Override
-    public Vector viewDiagonal() {
+    /** {@inheritDoc} */
+    @Override public Vector viewDiagonal() {
         return new MatrixVectorView(this, 0, 0, 1, 1);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
+    @Override public Matrix copy() {
+        Matrix copy = like(rowSize(), columnSize());
+
+        copy.assign(this);
+
+        return copy;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
         int result = 1;
         result = result * 37 + guid.hashCode();
         result = result * 37 + sto.hashCode();
@@ -722,8 +772,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         return obj != null && obj.getClass() == this.getClass() && compareMatrix((AbstractMatrix) obj);
     }
 

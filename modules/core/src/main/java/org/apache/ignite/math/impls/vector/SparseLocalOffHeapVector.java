@@ -71,7 +71,6 @@ public class SparseLocalOffHeapVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO: wait for matrix.
-        //return new SparseLocalOffHeapMatrix(rows, cols);
+        return new SparseLocalOffHeapMatrix(rows, cols);
     }
 }

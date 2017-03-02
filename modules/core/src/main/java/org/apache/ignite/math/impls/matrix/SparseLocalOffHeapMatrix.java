@@ -17,30 +17,46 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.Map;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.matrix.SparseOffHeapMatrixStorage;
+import org.apache.ignite.math.impls.vector.SparseLocalOffHeapVector;
 
 /**
  * TODO: add description.
  */
 public class SparseLocalOffHeapMatrix extends AbstractMatrix {
+    /** */
     public SparseLocalOffHeapMatrix(int rows, int cols) {
-
+        setStorage(new SparseOffHeapMatrixStorage(rows, cols));
     }
 
-    @Override public Matrix copy() {
-        return null;
+    /** */
+    public SparseLocalOffHeapMatrix(Map<String, Object> args) {
+        assert args != null;
+
+        if (args.containsKey("rows") && args.containsKey("cols"))
+            setStorage(new SparseOffHeapMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
+        else if (args.containsKey("arr"))
+            setStorage(new SparseOffHeapMatrixStorage((double[][])args.get("arr")));
+        else
+            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        return null;
+        return new SparseLocalOffHeapMatrix(rows, cols);
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        return null;
+        return new SparseLocalOffHeapVector(crd);
     }
 
+    /** {@inheritDoc} */
     @Override public void destroy() {
-
+        getStorage().destroy();
     }
 }
