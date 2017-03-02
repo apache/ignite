@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import headerTemplate from 'app/components/ui-grid-header/ui-grid-header.jade';
+import headerTemplate from 'app/components/ui-grid-header/ui-grid-header.tpl.pug';
 
 import columnDefs from './list-of-registered-users.column-defs';
 import categories from './list-of-registered-users.categories';
@@ -30,9 +30,9 @@ const rowTemplate = `<div
   ui-grid-cell/>`;
 
 export default class IgniteListOfRegisteredUsersCtrl {
-    static $inject = ['$scope', '$state', '$filter', '$templateCache', 'User', 'uiGridConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
+    static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
 
-    constructor($scope, $state, $filter, $templateCache, User, uiGridConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
+    constructor($scope, $state, $filter, User, uiGridConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
         const $ctrl = this;
 
         const companySelectOptions = [];
@@ -110,7 +110,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
             columnVirtualizationThreshold: 30,
             columnDefs,
             categories,
-            headerTemplate: $templateCache.get(headerTemplate),
+            headerTemplate,
             rowTemplate,
             enableFiltering: true,
             enableRowSelection: true,
@@ -154,6 +154,9 @@ export default class IgniteListOfRegisteredUsersCtrl {
             AdminData.loadUsers(params)
                 .then((data) => $ctrl.gridOptions.data = data)
                 .then((data) => {
+                    companySelectOptions.length = 0;
+                    countrySelectOptions.length = 0;
+
                     companySelectOptions.push(...usersToFilterOptions('company'));
                     countrySelectOptions.push(...usersToFilterOptions('countryCode'));
 

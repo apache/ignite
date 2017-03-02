@@ -18,6 +18,8 @@
 import angular from 'angular';
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
+import templateUrl from 'views/templates/agent-download.tpl.pug';
+
 const maskNull = (val) => _.isEmpty(val) ? 'null' : val;
 
 class IgniteAgentMonitor {
@@ -35,7 +37,7 @@ class IgniteAgentMonitor {
         // Pre-fetch modal dialogs.
         this._downloadAgentModal = $modal({
             scope: this._scope,
-            templateUrl: '/templates/agent-download.html',
+            templateUrl,
             show: false,
             backdrop: 'static',
             keyboard: false
