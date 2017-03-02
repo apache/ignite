@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -111,6 +112,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** */
     private int updateValSizeThreshold;
+
+    /** */
+    private GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -195,8 +199,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (pendingEntries != null)
                 pendingEntries.destroy();
 
-            for (CacheDataStore store : partDataStores.values())
-                store.destroy();
+            for (CacheDataStore store : partDataStores.values()) {
+                partStoreLock.lock(store.partId());
+
+                try {
+                    store.destroy();
+                }
+                finally {
+                    partStoreLock.unlock(store.partId());
+                }
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);
@@ -710,15 +722,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStore dataStore = null;
-        CacheDataStore oldStore = null;
+        CacheDataStore dataStore;
 
-        do {
+        partStoreLock.lock(p);
+
+        try {
+            assert !partDataStores.containsKey(p);
+
             dataStore = createCacheDataStore0(p);
 
-            oldStore = partDataStores.putIfAbsent(p, dataStore);
+            partDataStores.put(p, dataStore);
         }
-        while (oldStore != null);
+        finally {
+            partStoreLock.unlock(p);
+        }
 
         return dataStore;
     }
@@ -765,13 +782,20 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException {
+        partStoreLock.lock(p);
+
         try {
+            assert partDataStores.get(p) == store;
+
             partDataStores.remove(p, store);
 
             store.destroy();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+        finally {
+            partStoreLock.unlock(p);
         }
     }
 
