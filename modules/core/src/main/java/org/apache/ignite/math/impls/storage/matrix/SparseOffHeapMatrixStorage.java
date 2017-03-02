@@ -70,12 +70,12 @@ public class SparseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public int columnSize() {
-        return rows;
+        return cols;
     }
 
     /** {@inheritDoc} */
     @Override public int rowSize() {
-        return cols;
+        return rows;
     }
 
     /** {@inheritDoc} */
