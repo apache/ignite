@@ -20,8 +20,8 @@
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/impl/interop/interop_output_stream.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
-#include "ignite/binary/binary_raw_writer.h"
-#include "ignite/binary/binary_raw_reader.h"
+#include "ignite/binary/binary_writer.h"
+#include "ignite/binary/binary_reader.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;

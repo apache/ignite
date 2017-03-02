@@ -39,8 +39,19 @@ namespace ignite
             }
         }
     }
+
     namespace binary
     {
+        int32_t BinaryType<impl::binary::BinaryFieldMeta>::GetTypeId()
+        {
+            return GetBinaryStringHashCode("BinaryFieldMeta");
+        }
+
+        int32_t BinaryType<impl::binary::BinaryFieldMeta>::GetFieldId(const char* name)
+        {
+            return GetBinaryStringHashCode(name);
+        }
+
         void BinaryType<impl::binary::BinaryFieldMeta>::Write(BinaryWriter& writer, const BinaryFieldMeta& obj)
         {
             BinaryRawWriter raw = writer.RawWriter();

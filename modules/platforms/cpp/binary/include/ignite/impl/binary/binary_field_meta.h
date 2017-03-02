@@ -20,8 +20,6 @@
 
 #include <stdint.h>
 
-#include <ignite/binary/binary_type.h>
-
 namespace ignite
 {
     namespace binary
@@ -36,7 +34,7 @@ namespace ignite
         namespace binary
         {
             /**
-             * Field meta.
+             * Field metadata.
              */
             class BinaryFieldMeta
             {
@@ -110,17 +108,35 @@ namespace ignite
 
     namespace binary
     {
-        /**
-         * Templated binary type specification.
-         */
+        class BinaryWriter;
+        class BinaryReader;
+
+        template <typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryType;
+
         template <>
         struct BinaryType<impl::binary::BinaryFieldMeta>
         {
             typedef impl::binary::BinaryFieldMeta BinaryFieldMeta;
 
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(BinaryFieldMeta)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(BinaryFieldMeta)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(BinaryFieldMeta)
+            std::string GetTypeName()
+            {
+                return "BinaryFieldMeta";
+            }
+
+            BinaryFieldMeta GetNull()
+            {
+                return BinaryFieldMeta();
+            }
+
+            bool IsNull(const BinaryFieldMeta& obj)
+            {
+                return false;
+            }
+
+            int32_t GetTypeId();
+
+            int32_t GetFieldId(const char* name);
 
             void Write(BinaryWriter& writer, const BinaryFieldMeta& obj);
 
