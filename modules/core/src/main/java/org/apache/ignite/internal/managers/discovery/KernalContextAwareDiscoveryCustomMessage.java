@@ -20,10 +20,9 @@ package org.apache.ignite.internal.managers.discovery;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * A kind of {@link DiscoveryCustomMessage} that could use a {@link GridKernalContext} when building its
- * {@link DiscoveryCustomMessage#ackMessage()}.
+ * A kind of custom message that could use a {@link GridKernalContext} when building its ACK message.
  */
-public interface KernalContextAwareDiscoveryCustomMessage extends DiscoveryCustomMessage {
+public interface KernalContextAwareDiscoveryCustomMessage {
     /**
      * Provide this message with a kernal context.
      *

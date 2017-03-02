@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@code INIT} part of a distributed DDL operation.
  */
-public class DdlOperationInit implements KernalContextAwareDiscoveryCustomMessage {
+public class DdlOperationInit implements DiscoveryCustomMessage, KernalContextAwareDiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

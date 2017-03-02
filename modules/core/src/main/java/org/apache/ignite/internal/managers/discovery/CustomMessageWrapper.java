@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class CustomMessageWrapper implements KernalContextAwareDiscoverySpiCustomMessage {
+class CustomMessageWrapper implements DiscoverySpiCustomMessage, KernalContextAwareDiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
