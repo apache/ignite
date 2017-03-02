@@ -14,6 +14,13 @@ public class SparseOffHeapVectorStorage implements VectorStorage {
     private int size;
     private long ptr;
 
+    /**
+     * Externalization constructor.
+     */
+    public SparseOffHeapVectorStorage(){
+        // No-op.
+    }
+
     public SparseOffHeapVectorStorage(int size) {
         this.size = size;
 

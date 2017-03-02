@@ -29,6 +29,10 @@ import org.apache.ignite.math.impls.storage.vector.SparseOffHeapVectorStorage;
  */
 public class SparseLocalOffHeapVector extends AbstractVector {
 
+    public SparseLocalOffHeapVector(){
+        // No-op.
+    }
+
     public SparseLocalOffHeapVector(Map<String, Object> args) {
         super(args == null || !args.containsKey("size") ? 0 : (int) args.get("size"));
         assert args != null;
@@ -46,16 +50,28 @@ public class SparseLocalOffHeapVector extends AbstractVector {
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
+    /** {@inheritDoc */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return like(size()).assign(0);
+        else
+            return super.times(x);
+    }
+
+    /** */
     public SparseLocalOffHeapVector(int crd) {
         super(crd);
         setStorage(new SparseOffHeapVectorStorage(crd));
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return new SparseLocalOffHeapVector(crd);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return new SparseLocalOffHeapMatrix(rows, cols);
+        return null; // TODO: wait for matrix.
+        //return new SparseLocalOffHeapMatrix(rows, cols);
     }
 }

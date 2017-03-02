@@ -25,6 +25,7 @@ import org.apache.ignite.math.Vector;
  */
 public class SparseLocalOffHeapMatrix extends AbstractMatrix {
     public SparseLocalOffHeapMatrix(int rows, int cols) {
+
     }
 
     @Override public Matrix copy() {

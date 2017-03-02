@@ -5,6 +5,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.math.impls.matrix.SparseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 
@@ -204,6 +205,7 @@ public class VectorToMatrixTest {
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
             put(SparseLocalOnHeapVector.class, SparseLocalOnHeapMatrix.class);
+            put(SparseLocalOffHeapVector.class, null);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture

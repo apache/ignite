@@ -47,7 +47,13 @@ class VectorImplementationsFixtures {
             @Override public Iterable<Vector> get() {
                 return new SparseLocalOnHeapVectorFixture();
             }
-        } // todo add Supplier for RandomVectorFixture after testing and bugfixes are completed
+        },
+        new Supplier<Iterable<Vector>>() {
+        /** {@inheritDoc} */
+        @Override public Iterable<Vector> get() {
+            return new SparseLocalOffHeapVectorFixture();
+        }
+    } // todo add Supplier for RandomVectorFixture after testing and bugfixes are completed
     );
 
     /** */
@@ -127,6 +133,13 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** */
+    private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture{
+        SparseLocalOffHeapVectorFixture() {
+            super("SparseLocalOffHeapVector", SparseLocalOffHeapVector::new);
         }
     }
 
