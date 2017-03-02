@@ -29,12 +29,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message indicating that a snapshot has been started.
  */
-public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartSnapshotOperationDiscoveryMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private IgniteUuid id;
 
     /** Snapshot operation. */
     private SnapshotOperation snapshotOperation;
@@ -55,10 +55,12 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
      * @param snapshotOperation Snapshot operation
      * @param initiatorId initiator node id
      */
-    public StartFullSnapshotDiscoveryMessage(
+    public StartSnapshotOperationDiscoveryMessage(
+        IgniteUuid id,
         SnapshotOperation snapshotOperation,
         UUID initiatorId
     ) {
+        this.id = id;
         this.snapshotOperation = snapshotOperation;
         this.initiatorId = initiatorId;
     }
@@ -138,6 +140,7 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return new StartSnapshotOperationAckDiscoveryMessage(
+            id,
             snapshotOperation,
             lastFullSnapshotIdForCache,
             lastSnapshotIdForCache,
@@ -159,6 +162,6 @@ public class StartFullSnapshotDiscoveryMessage implements DiscoveryCustomMessage
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StartFullSnapshotDiscoveryMessage.class, this);
+        return S.toString(StartSnapshotOperationDiscoveryMessage.class, this);
     }
 }
