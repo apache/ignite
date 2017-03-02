@@ -186,6 +186,18 @@ public class VectorIterableTest {
     /** */
     private void consumeSampleVectorsWithZeroes(Vector sample,
         BiConsumer<Vector, Integer> consumer) {
+        if (sample instanceof RandomVector) {
+            int numZeroes = 0;
+
+            for (Vector.Element e : sample.all())
+                if (isZero(e.get()))
+                    numZeroes++;
+
+            consumer.accept(sample, numZeroes);
+
+            return;
+        }
+
         fillWithNonZeroes(sample);
 
         consumer.accept(sample, 0);

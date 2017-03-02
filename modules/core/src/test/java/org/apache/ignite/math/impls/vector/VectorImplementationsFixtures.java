@@ -47,7 +47,7 @@ class VectorImplementationsFixtures {
             @Override public Iterable<Vector> get() {
                 return new SparseLocalOnHeapVectorFixture();
             }
-        }
+        } // todo add Supplier for RandomVectorFixture after testing and bugfixes are completed
     );
 
     /** */
@@ -91,6 +91,30 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** */
+    private static class DenseLocalOffHeapVectorFixture extends VectorSizesFixture {
+        /** */
+        DenseLocalOffHeapVectorFixture() {
+            super("DenseLocalOffHeapVector", DenseLocalOffHeapVector::new);
+        }
+    }
+
+    /** */
+    private static class SparseLocalOnHeapVectorFixture extends VectorSizesFixture {
+        /** */
+        SparseLocalOnHeapVectorFixture() {
+            super("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new);
+        }
+    }
+
+    /** */
+    private static class RandomVectorFixture extends VectorSizesFixture {
+        /** */
+        RandomVectorFixture() {
+            super("RandomVector", RandomVector::new);
         }
     }
 
@@ -191,22 +215,6 @@ class VectorImplementationsFixtures {
         /** */
         private boolean hasNextShallowCp(int idx) {
             return shallowCps[idx] != null;
-        }
-    }
-
-    /** */
-    private static class DenseLocalOffHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        DenseLocalOffHeapVectorFixture() {
-            super("DenseLocalOffHeapVector", DenseLocalOffHeapVector::new);
-        }
-    }
-
-    /** */
-    private static class SparseLocalOnHeapVectorFixture extends VectorSizesFixture {
-        /** */
-        SparseLocalOnHeapVectorFixture() {
-            super("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new);
         }
     }
 

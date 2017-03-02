@@ -171,6 +171,9 @@ public class VectorToMatrixTest {
 
     /** */
     private void fillWithNonZeroes(Vector sample) {
+        if (sample instanceof RandomVector)
+            return;
+
         for (Vector.Element e : sample.all())
             e.set(1 + e.index());
     }
@@ -200,9 +203,9 @@ public class VectorToMatrixTest {
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
-            put(ConstantVector.class, null);
             put(SparseLocalOnHeapVector.class, SparseLocalOnHeapMatrix.class);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
+            put(ConstantVector.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }
