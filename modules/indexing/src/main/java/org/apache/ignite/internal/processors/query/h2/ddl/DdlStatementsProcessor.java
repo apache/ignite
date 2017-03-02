@@ -73,6 +73,7 @@ public class DdlStatementsProcessor {
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap8<>();
 
+    // TODO: Remove for now.
     /** Running operations <b>coordinated by</b> this node. */
     private Map<IgniteUuid, DdlOperationRunContext> operationRuns = new ConcurrentHashMap8<>();
 
@@ -403,6 +404,7 @@ public class DdlStatementsProcessor {
     /**
      * Do cleanup.
      */
+    // TODO: Not used
     public void stop() {
         isStopped = true;
 

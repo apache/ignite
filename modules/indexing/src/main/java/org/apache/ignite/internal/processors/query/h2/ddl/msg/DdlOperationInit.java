@@ -39,6 +39,7 @@ public class DdlOperationInit implements DiscoveryCustomMessage, KernalContextAw
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Arguments. */
+    // TODO: Flatten.
     private DdlCommandArguments args;
 
     /** Kernal context. */
