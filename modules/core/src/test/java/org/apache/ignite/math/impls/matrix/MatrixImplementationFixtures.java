@@ -28,14 +28,13 @@ import java.util.function.Supplier;
 
 /** */
 public class MatrixImplementationFixtures {
+    /** */
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
-            new Supplier<Iterable<Matrix>>() {
-                @Override public Iterable<Matrix> get() {
-                    return new MatrixImplementationFixtures.SparseLocalMatrixFixture();
-                }
-            }
+        (Supplier<Iterable<Matrix>>)SparseLocalMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)SparseLocalOffHeapMatrixFixture::new
     );
 
+    /** */
     void consumeSampleMatrix(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<Matrix, String> consumer){
         for (Supplier<Iterable<Matrix>> fixtureSupplier : suppliers) {
             final Iterable<Matrix> fixture = fixtureSupplier.get();
@@ -49,6 +48,7 @@ public class MatrixImplementationFixtures {
         }
     }
 
+    /** */
     private static class SparseLocalMatrixFixture implements Iterable<Matrix>{
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
@@ -104,4 +104,45 @@ public class MatrixImplementationFixtures {
         }
     }
 
+    /** */
+    private static class SparseLocalOffHeapMatrixFixture implements Iterable<Matrix>{
+        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
+        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
+        private int sizeIdx = 0;
+
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                @Override public boolean hasNext() {
+                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
+                }
+
+                @Override public Matrix next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalOffHeapMatrixFixture.this.toString());
+
+                    Matrix storage = new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
+
+                    nextIdx();
+
+                    return storage;
+                }
+
+                private void nextIdx(){
+                    sizeIdx++;
+                }
+            };
+        }
+
+        @Override public String toString() {
+            return "SparseLocalRowMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + "}";
+        }
+
+        private boolean hasNextRow(int idx){
+            return rows[idx] != null;
+        }
+
+        private boolean hasNextCol(int idx){
+            return cols[idx] != null;
+        }
+    }
 }

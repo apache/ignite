@@ -30,36 +30,11 @@ import static org.junit.Assert.assertNotNull;
 class VectorImplementationsFixtures {
     /** */
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new DenseLocalOnHeapVectorFixture();
-            }
-        },
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new DenseLocalOffHeapVectorFixture();
-            }
-        },
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new SparseLocalOnHeapVectorFixture();
-            }
-        },
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new SparseLocalOffHeapVectorFixture();
-            }
-        },
-        new Supplier<Iterable<Vector>>() {
-            /** {@inheritDoc} */
-            @Override public Iterable<Vector> get() {
-                return new RandomVectorFixture();
-            }
-        }
+        (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalOffHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) RandomVectorFixture::new
     );
 
     /** */
