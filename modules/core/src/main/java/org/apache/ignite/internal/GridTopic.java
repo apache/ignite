@@ -103,12 +103,7 @@ public enum GridTopic {
     TOPIC_MAPPING_MARSH,
 
     /** */
-    TOPIC_HADOOP_MSG,
-
-    /** */
-    TOPIC_DDL,
-
-    ;
+    TOPIC_HADOOP_MSG;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

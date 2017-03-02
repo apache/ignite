@@ -36,13 +36,13 @@ import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.ddl.DdlOperationNodeResult;
+import org.apache.ignite.internal.processors.query.ddl.DdlOperationResult;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationAck;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationCancel;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationNodeResult;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationResult;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -110,7 +110,7 @@ public class DdlStatementsProcessor {
             }
         });
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_DDL, new GridMessageListener() {
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             /** {@inheritDoc} */
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (msg instanceof DdlOperationResult) {
@@ -183,7 +183,7 @@ public class DdlStatementsProcessor {
             res.setOperationId(msg.getOperationId());
             res.setError(exceptionToBytes(ex));
 
-            ctx.io().send(snd, GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
+            ctx.io().send(snd, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (Throwable e) {
             idx.getLogger().error("Failed to notify coordinator about local DLL operation completion [opId=" +
@@ -269,7 +269,7 @@ public class DdlStatementsProcessor {
         res.setOperationId(args.opId);
 
         try {
-            ctx.io().send(args.sndNodeId, GridTopic.TOPIC_DDL, res, GridIoPolicy.IDX_POOL);
+            ctx.io().send(args.sndNodeId, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (IgniteCheckedException e) {
             idx.getLogger().error("Failed to notify client node about DDL operation failure " +

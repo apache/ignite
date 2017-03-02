@@ -67,7 +67,7 @@ public enum IgniteComponentType {
         null,
         "org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing",
         "ignite-indexing",
-        "org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory"
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory"
     ),
 
     /** Nodes starting using SSH. */

@@ -15,41 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationNodeResult;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Array;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Boolean;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Byte;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Bytes;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2CacheObject;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Date;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Decimal;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Double;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Float;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Geometry;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2JavaObject;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Long;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Short;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2String;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Time;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Timestamp;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Uuid;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.h2.value.Value;
@@ -58,13 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * H2 Value message factory.
  */
-public class GridH2IndexingMessageFactory implements MessageFactory {
-    /** Message sent from <b>coordinator</b> to <b>client</b> when operation is ultimately finished. */
-    public final static byte OPERATION_RESULT = -45;
-
-    /** Message sent from <b>peer node</b> to <b>coordinator</b> when local portion of work is done. */
-    public final static byte NODE_RESULT = -46;
-
+public class GridH2ValueMessageFactory implements MessageFactory {
     /** {@inheritDoc} */
     @Nullable @Override public Message create(byte type) {
         switch (type) {
@@ -142,12 +108,6 @@ public class GridH2IndexingMessageFactory implements MessageFactory {
 
             case -35:
                 return new GridH2RowRangeBounds();
-
-            case OPERATION_RESULT:
-                return new DdlOperationResult();
-
-            case NODE_RESULT:
-                return new DdlOperationNodeResult();
         }
 
         return null;

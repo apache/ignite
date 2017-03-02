@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessa
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -636,7 +636,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         for (int i = 0; i < cols; i++) {
             try {
-                vals.add(GridH2IndexingMessageFactory.toMessage(row.getValue(i)));
+                vals.add(GridH2ValueMessageFactory.toMessage(row.getValue(i)));
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);
@@ -698,7 +698,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 break;
 
             try {
-                vals.add(GridH2IndexingMessageFactory.toMessage(val));
+                vals.add(GridH2ValueMessageFactory.toMessage(val));
             }
             catch (IgniteCheckedException e) {
                 throw new CacheException(e);

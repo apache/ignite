@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.ddl.msg;
+package org.apache.ignite.internal.processors.query.ddl;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingMessageFactory;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -32,7 +30,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class DdlOperationResult implements Message {
     /**
      * Operation id.
-     * @see DdlStatementsProcessor#operations
      */
     private IgniteUuid opId;
 
@@ -97,7 +94,7 @@ public class DdlOperationResult implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return GridH2IndexingMessageFactory.OPERATION_RESULT;
+        return -45;
     }
 
     /** {@inheritDoc} */
