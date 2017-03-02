@@ -103,10 +103,25 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalOnHeapVectorFixture extends VectorSizesFixture {
+    private static class SparseLocalOnHeapVectorFixture implements Iterable<Vector> {
+        /** */ private final Supplier<VectorSizesModeIterator> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
         /** */
         SparseLocalOnHeapVectorFixture() {
-            super("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new);
+            iter = () -> new VectorSizesModeIterator("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new, ctxDescrHolder::set);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 
@@ -138,6 +153,83 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** */
+    private static class VectorSizesModeIterator extends VectorSizesIterator {
+        /** */ private static final Integer modes[] = new Integer[] {0, 1, null};
+
+        /** */ private int modeIdx = 0;
+
+        /** */ private final BiFunction<Integer, Integer, Vector> ctor;
+
+        /** */
+        VectorSizesModeIterator(String vectorKind, BiFunction<Integer, Integer, Vector> ctor,
+            Consumer<String> ctxDescrConsumer) {
+            super(vectorKind, null, ctxDescrConsumer);
+
+            this.ctor = ctor;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return super.hasNext() && hasNextMode(modeIdx);
+        }
+
+        /** {@inheritDoc} */
+        @Override void nextIdx() {
+            assert modes[modeIdx] != null
+                : "Index(es) out of bound at " + VectorSizesModeIterator.this;
+
+            if (hasNextMode(modeIdx + 1)) {
+                modeIdx++;
+
+                return;
+            }
+
+            modeIdx = 0;
+
+            super.nextIdx();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return "{" + super.toString() +
+                ", mode=" + modes[modeIdx] +
+                '}';
+        }
+
+        /** {@inheritDoc} */
+        @Override Function<Integer, Vector> ctor() {
+            return (size) -> ctor.apply(size, modes[modeIdx]);
+        }
+
+        /** */
+        void selfTest() {
+            final Set<Integer> modeIdxs = new HashSet<>();
+
+            int cnt = 0;
+
+            while (hasNext()) {
+                assertNotNull("Expect not null vector at " + this, next());
+
+                if (modes[modeIdx] != null)
+                    modeIdxs.add(modeIdx);
+
+                cnt++;
+            }
+
+            assertEquals("Mode tested", modeIdxs.size(), modes.length - 1);
+
+            assertEquals("Combinations tested mismatch.",
+                8 * 3 * (modes.length - 1), cnt);
+        }
+
+        /** */
+        private boolean hasNextMode(int idx) {
+            return modes[idx] != null;
         }
     }
 
