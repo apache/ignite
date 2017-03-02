@@ -958,7 +958,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && (optimistic() || readMap().isEmpty());
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
     }
 
     /**

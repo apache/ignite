@@ -347,16 +347,13 @@ public class BinaryUtils {
 
     /**
      * @param typeId Field type ID.
-     * @return Field type name.
+     * @return Field type name or {@code null} if unknown.
      */
     public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+            return null;
 
-        String typeName = FIELD_TYPE_NAMES[typeId];
-
-        assert typeName != null : typeId;
-
-        return typeName;
+        return FIELD_TYPE_NAMES[typeId];
     }
 
     /**
