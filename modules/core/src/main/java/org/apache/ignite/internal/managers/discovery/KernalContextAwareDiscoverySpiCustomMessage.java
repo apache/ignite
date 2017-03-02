@@ -15,34 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.ddl;
+package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
- * Client side abstraction for DDL operation as a whole. Used <b>on the client</b>.
+ * A kind of {@link DiscoverySpiCustomMessage} that could use a {@link GridKernalContext} when building its
+ * {@link DiscoverySpiCustomMessage#ackMessage()}.
  */
-// TODO: Remove as cancel is not needed.
-public class DdlOperationFuture extends GridFutureAdapter {
-    /** Unique ID of this operation. */
-    private final IgniteUuid id;
-
-    /** */
-    public DdlOperationFuture(IgniteUuid id) {
-        this.id = id;
-    }
-
+public interface KernalContextAwareDiscoverySpiCustomMessage extends DiscoverySpiCustomMessage {
     /**
-     * @return Id of this operation.
+     * Provide this message with a kernal context.
+     *
+     * @param ctx Kernal context.
      */
-    public IgniteUuid getId() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cancel() throws IgniteCheckedException {
-        return onCancelled();
-    }
+    public void setContext(GridKernalContext ctx);
 }

@@ -31,7 +31,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -680,11 +679,8 @@ public class GridSqlQueryParser {
 
         String tblName = CREATE_INDEX_TABLE_NAME.get(createIdx);
 
-        Table tbl = schema.getTableOrViewByName(tblName);
-
         res.schemaName(schema.getName());
         res.tableName(tblName);
-        res.cacheName(((GridH2Table) tbl).rowDescriptor().context().name());
         res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
 
         QueryIndex idx = new QueryIndex();

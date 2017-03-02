@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.KernalContextAwareDiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@code INIT} part of a distributed DDL operation.
  */
-public class DdlOperationInit implements DiscoveryCustomMessage {
+public class DdlOperationInit implements KernalContextAwareDiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,6 +40,9 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
 
     /** Arguments. */
     private DdlCommandArguments args;
+
+    /** Kernal context. */
+    private transient GridKernalContext ctx;
 
     /**
      * Map {@code node id} -> {@code init exception, if any}.
@@ -55,42 +60,7 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        assert nodesState != null;
-
-        Map<UUID, IgniteCheckedException> errors = new HashMap<>();
-
-        for (Map.Entry<UUID, IgniteCheckedException> e : nodesState.entrySet())
-            if (e.getValue() != null)
-                errors.put(e.getKey(), e.getValue());
-
-        if (!errors.isEmpty()) {
-            IgniteCheckedException resEx;
-
-            if (errors.size() > 1) {
-                resEx = new IgniteCheckedException("DDL operation INIT has failed [opId=" + args.getOperationArguments()
-                    .opId + ']');
-
-                for (IgniteCheckedException e : errors.values())
-                    resEx.addSuppressed(e);
-            }
-            else
-                resEx = errors.values().iterator().next(); // If there's a single exception - return just it
-
-            DdlOperationCancel cancel = new DdlOperationCancel();
-
-            cancel.setOperationId(args.getOperationArguments().opId);
-            cancel.setError(resEx);
-
-            // Coordinator will notify the client about cancellation upon processing this message
-            return cancel;
-        }
-        else {
-            DdlOperationAck ackMsg = new DdlOperationAck();
-
-            ackMsg.setOperationId(args.getOperationArguments().opId);
-
-            return ackMsg;
-        }
+        return ((IgniteH2Indexing)ctx.query().getIndexing()).getDdlStatementsProcessor().onInitFinished(this);
     }
 
     /** {@inheritDoc} */
@@ -124,5 +94,10 @@ public class DdlOperationInit implements DiscoveryCustomMessage {
      */
     public void setNodesState(Map<UUID, IgniteCheckedException> nodesState) {
         this.nodesState = nodesState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setContext(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 }

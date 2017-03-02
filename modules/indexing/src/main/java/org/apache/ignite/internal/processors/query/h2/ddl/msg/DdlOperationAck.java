@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +38,9 @@ public class DdlOperationAck implements DiscoveryCustomMessage {
      * @see DdlStatementsProcessor#operations
      */
     private IgniteUuid opId;
+
+    /** Arguments. */
+    private DdlCommandArguments args;
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
@@ -65,5 +69,19 @@ public class DdlOperationAck implements DiscoveryCustomMessage {
      */
     public void setOperationId(IgniteUuid opId) {
         this.opId = opId;
+    }
+
+    /**
+     * @return Operation arguments.
+     */
+    public DdlCommandArguments getArguments() {
+        return args;
+    }
+
+    /**
+     * @param args Operation arguments.
+     */
+    public void setArguments(DdlCommandArguments args) {
+        this.args = args;
     }
 }

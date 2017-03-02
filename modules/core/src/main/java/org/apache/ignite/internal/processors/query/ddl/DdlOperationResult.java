@@ -25,17 +25,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message sent from <b>coordinator</b> to <b>client</b> when operation is ultimately finished.
- * Empty map of errors means operation has been successful.
  */
-// TODO: Encapsulate error marshal/umarshal
 public class DdlOperationResult implements Message {
-    /**
-     * Operation id.
-     */
+    /** Operation id. */
     private IgniteUuid opId;
 
-    // TODO: No map
-    /** Map from node ID to its error, if any. */
+    /** Error bytes. */
     private byte[] err;
 
     /** {@inheritDoc} */

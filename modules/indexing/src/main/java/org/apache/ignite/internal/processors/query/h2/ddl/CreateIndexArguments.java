@@ -32,9 +32,11 @@ public class CreateIndexArguments implements DdlCommandArguments {
     /** Index params. */
     private final QueryIndex idx;
 
-    // TODO: Table + schema.
     /** Cache name. */
-    private final String cacheName;
+    private final String schemaName;
+
+    /** Table name. */
+    private final String tblName;
 
     /** Ignore operation if index exists. */
     private final boolean ifNotExists;
@@ -42,13 +44,16 @@ public class CreateIndexArguments implements DdlCommandArguments {
     /**
      * @param opArgs Overall operation arguments.
      * @param idx Index params.
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
+     * @param tblName Table name.
      * @param ifNotExists Ignore operation if index exists.
      */
-    CreateIndexArguments(DdlOperationArguments opArgs, QueryIndex idx, String cacheName, boolean ifNotExists) {
+    CreateIndexArguments(DdlOperationArguments opArgs, QueryIndex idx, String schemaName, String tblName,
+        boolean ifNotExists) {
         this.opArgs = opArgs;
         this.idx = idx;
-        this.cacheName = cacheName;
+        this.schemaName = schemaName;
+        this.tblName = tblName;
         this.ifNotExists = ifNotExists;
     }
 
@@ -65,10 +70,17 @@ public class CreateIndexArguments implements DdlCommandArguments {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
-    public String cacheName() {
-        return cacheName;
+    public String schemaName() {
+        return schemaName;
+    }
+
+    /**
+     * @return Table name.
+     */
+    public String tableName() {
+        return tblName;
     }
 
     /**

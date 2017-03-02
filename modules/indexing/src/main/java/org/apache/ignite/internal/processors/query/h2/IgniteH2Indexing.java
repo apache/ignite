@@ -389,6 +389,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @return DDL statements processor.
+     */
+    public DdlStatementsProcessor getDdlStatementsProcessor() {
+        return ddlProc;
+    }
+
+    /**
      * @param space Space.
      * @return Connection.
      */

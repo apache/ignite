@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-class CustomMessageWrapper implements DiscoverySpiCustomMessage {
+class CustomMessageWrapper implements KernalContextAwareDiscoverySpiCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,6 +55,12 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage {
      */
     public DiscoveryCustomMessage delegate() {
         return delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setContext(GridKernalContext ctx) {
+        if (delegate instanceof KernalContextAwareDiscoveryCustomMessage)
+            ((KernalContextAwareDiscoveryCustomMessage) delegate).setContext(ctx);
     }
 
     /** {@inheritDoc} */
