@@ -94,7 +94,8 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, null, null, null, null);
+        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, null, null, null, null,
+            true);
     }
 
     /**
@@ -113,7 +114,8 @@ public final class GridJavaProcess {
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable Collection<String> jvmArgs, @Nullable String cp, @Nullable File dir) throws Exception {
-        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, jvmArgs, cp, dir, null);
+        return exec(cls.getCanonicalName(), params, log, printC, printC, procKilledC, null, jvmArgs, cp, dir, null,
+            true);
     }
 
     /**
@@ -136,7 +138,7 @@ public final class GridJavaProcess {
         @Nullable IgniteInClosure<String> printErrC,
         @Nullable GridAbsClosure procKilledC,
         @Nullable String javaHome, @Nullable Collection<String> jvmArgs, @Nullable String cp,
-        @Nullable File dir, @Nullable Map<String, String> env) throws Exception {
+        @Nullable File dir, @Nullable Map<String, String> env, boolean redirectSysErr) throws Exception {
         GridJavaProcess gjProc = new GridJavaProcess();
 
         gjProc.log = log;
@@ -185,7 +187,7 @@ public final class GridJavaProcess {
             // Directory of the current process.
             gjProc.currDir = new File(".").getAbsoluteFile();
 
-        builder.redirectErrorStream(true);
+        builder.redirectErrorStream(redirectSysErr);
 
         Process proc = builder.start();
 

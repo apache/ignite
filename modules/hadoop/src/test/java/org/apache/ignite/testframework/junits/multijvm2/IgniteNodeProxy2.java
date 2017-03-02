@@ -20,6 +20,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
@@ -215,7 +216,7 @@ public class IgniteNodeProxy2 {
 
         cfg.setWorkDirectory(params.isUniqueWorkDir() ? createUniqueDir("work").getAbsolutePath() : null);
 
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id).setConsistentId(id));
+        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id).setConsistentId(id), true);
 
         Collection<String> filteredJvmArgs = new ArrayList<>();
 
@@ -224,7 +225,8 @@ public class IgniteNodeProxy2 {
             boolean marshAdded = false;
 
             for (String arg : U.jvmArgs()) {
-                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("-XX"))
+                if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") || arg.startsWith("-XX")
+                    || arg.equals("-ea"))
                     filteredJvmArgs.add(arg);
 
                 if (!marshAdded && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)) {
@@ -245,6 +247,8 @@ public class IgniteNodeProxy2 {
             // Use only the explicitly specified arguments:
             filteredJvmArgs.addAll(params.getJvmArguments());
 
+        X.println("Args: " +filteredJvmArgs);
+
         return GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),
             cfgFileName, // Params.
@@ -264,7 +268,8 @@ public class IgniteNodeProxy2 {
             filteredJvmArgs, // JVM Args.
             System.getProperty("surefire.test.class.path"),
             params.isUniqueProcDir() ? createUniqueDir("process") : null,
-            params.getProcEnv()
+            params.getProcEnv(),
+            false
         );
     }
 

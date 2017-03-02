@@ -436,7 +436,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         public final void check() throws Exception {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(new Path(file))))) {
-                int wc = 0;
+                int cnt = 0;
+
                 String line = null;
 
                 while (true) {
@@ -447,16 +448,21 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
                     line = line0;
 
-                    wc++;
+                    cnt++;
 
-                    if (wc == 1)
+                    if (cnt == 1)
                         checkFirstLine(line); // first line
+
+                    onLine(line, cnt);
                 }
 
                 checkLastLine(line); // last line
-                checkLineCount(wc);
+
+                checkLineCount(cnt); // Finish.
             }
         }
+
+        void onLine(String line, int cnt) {}
 
         void checkFirstLine(String line) {}
 

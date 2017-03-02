@@ -269,6 +269,14 @@ public class Pentomino2 {
         pieces.add(new Piece("n", "xx  / xxx", true, fourRotations));
         pieces.add(new Piece("y", "  x /xxxx", true, fourRotations));
         pieces.add(new Piece("l", "   x/xxxx", true, fourRotations));
+
+        // NB: these pieces cause the result to become empty:
+//        pieces.add(new Piece("F", "xx / xx/ x ", false, fourRotations));
+//        pieces.add(new Piece("P", "xx/xx/ x", false, fourRotations));
+//        pieces.add(new Piece("Z", " xx/ x /xx ", false, twoRotations));
+//        pieces.add(new Piece("N", "  xx/xxx ", false, fourRotations));
+//        pieces.add(new Piece("Y", " x  /xxxx", false, fourRotations));
+//        pieces.add(new Piece("L", "x   /xxxx", false, fourRotations));
     }
 
     /**
@@ -419,12 +427,22 @@ public class Pentomino2 {
 
     /**
      * Solve the 6x10 pentomino puzzle.
-     */
+     *
+     * 6x10, 1: 2339 solutions.
+     * 6x10, 2: 2339 solutions.
+     * 6x10, 3: 2339 solutions
+     * 6x10, 4: 2339 solutions.
+     * 6x10, 5: 2339  solutions.
+     * 6x10, 6: 2339  solutions.
+     * */
     public static void main(String[] args) {
         int width = 6;
         int height = 10;
         Pentomino2 model = new Pentomino2(width, height);
-        List splits = model.getSplits(2);
+        List<int[]> splits = model.getSplits(6); // depth
+
+        int totalSolutions = 0;
+
         for(Iterator splitItr=splits.iterator(); splitItr.hasNext(); ) {
             int[] choices = (int[]) splitItr.next();
             System.out.print("split:");
@@ -433,8 +451,14 @@ public class Pentomino2 {
             }
             System.out.println();
 
-            System.out.println(model.solve(choices) + " solutions found.");
+            int solutions = model.solve(choices);
+
+            System.out.println(solutions + " solutions found.");
+
+            totalSolutions += solutions;
         }
+
+        System.out.println("### total solutions: " + totalSolutions);
     }
 
 }

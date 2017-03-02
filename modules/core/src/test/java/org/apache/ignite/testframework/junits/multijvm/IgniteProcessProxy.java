@@ -170,7 +170,8 @@ public class IgniteProcessProxy implements IgniteEx {
             filteredJvmArgs, // JVM Args.
             System.getProperty("surefire.test.class.path"),
             null,
-            null
+            null,
+            true
         );
 
         if (locJvmGrid != null)

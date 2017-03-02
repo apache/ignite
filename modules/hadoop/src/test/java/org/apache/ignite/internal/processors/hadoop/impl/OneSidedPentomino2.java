@@ -1,8 +1,8 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 /**
- *
- */
+*
+*/
 public class OneSidedPentomino2 extends Pentomino2 {
 
     public OneSidedPentomino2() {}
@@ -28,6 +28,7 @@ public class OneSidedPentomino2 extends Pentomino2 {
         pieces.add(new Piece("n", "xx  / xxx", false, fourRotations));
         pieces.add(new Piece("y", "  x /xxxx", false, fourRotations));
         pieces.add(new Piece("l", "   x/xxxx", false, fourRotations));
+
         pieces.add(new Piece("F", "xx / xx/ x ", false, fourRotations));
         pieces.add(new Piece("P", "xx/xx/ x", false, fourRotations));
         pieces.add(new Piece("Z", " xx/ x /xx ", false, twoRotations));
@@ -45,5 +46,4 @@ public class OneSidedPentomino2 extends Pentomino2 {
         int solutions = model.solve();
         System.out.println(solutions + " solutions found.");
     }
-
 }

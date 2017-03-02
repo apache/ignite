@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopAggregateWordCoun
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopBbpExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDBCountPageViewExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistBbpExampleTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedOneSidedPentominoExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedPentominoExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopGrepExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
@@ -53,8 +54,11 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopBbpExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistBbpExampleTest.class.getName())));
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedPentominoExampleTest.class.getName())));
+
         suite.addTest(new TestSuite(ldr.loadClass(HadoopQuasiMonteCarloTest.class.getName())));
+
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedPentominoExampleTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedOneSidedPentominoExampleTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopJoinTest.class.getName())));
 

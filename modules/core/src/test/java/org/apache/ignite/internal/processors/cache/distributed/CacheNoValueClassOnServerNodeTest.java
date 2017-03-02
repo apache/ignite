@@ -117,7 +117,8 @@ public class CacheNoValueClassOnServerNodeTest extends GridCommonAbstractTest {
                     jvmArgs,
                     cp,
                     null,
-                    null
+                    null,
+                    true
                 );
 
                 assertTrue(clientReadyLatch.await(60, SECONDS));

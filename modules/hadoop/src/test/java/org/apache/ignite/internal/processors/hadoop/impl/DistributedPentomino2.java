@@ -62,7 +62,7 @@ import org.apache.hadoop.util.ToolRunner;
                 public void solution(List<List<Pentomino2.ColumnName>> answer) {
                     String board = Pentomino2.stringifySolution(width, height, answer);
 
-                    System.out.println("####: " + board);
+                    System.out.println("#### board: " + board);
 
                     try {
                         context.write(prefixString, new Text("\n" + board));
@@ -101,7 +101,7 @@ import org.apache.hadoop.util.ToolRunner;
                 width = conf.getInt(Pentomino2.WIDTH, PENT_WIDTH);
                 height = conf.getInt(Pentomino2.HEIGHT, PENT_HEIGHT);
                 pent = (Pentomino2)
-                    ReflectionUtils.newInstance(conf.getClass(Pentomino2.CLASS, OneSidedPentomino2.class), conf);
+                    ReflectionUtils.newInstance(conf.getClass(Pentomino2.CLASS, /*OneSidedPentomino2.class*/ null), conf);
                 pent.initialize(width, height);
                 pent.setPrinter(new SolutionCatcher());
             }
@@ -175,7 +175,8 @@ import org.apache.hadoop.util.ToolRunner;
             conf.setInt(Pentomino2.HEIGHT, height);
             conf.setInt(Pentomino2.DEPTH, depth);
             Class<? extends Pentomino2> pentClass = conf.getClass(Pentomino2.CLASS,
-                OneSidedPentomino2.class, Pentomino2.class);
+                null, //OneSidedPentomino2.class,
+                Pentomino2.class);
             int numMaps = conf.getInt(MRJobConfig.NUM_MAPS, DEFAULT_MAPS);
             Path output = new Path(args[0]);
             Path input = new Path(output + "_input");
@@ -191,7 +192,7 @@ import org.apache.hadoop.util.ToolRunner;
                 Pentomino2 pent = ReflectionUtils.newInstance(pentClass, conf);
                 pent.initialize(width, height);
 
-            //pent.setPrinter();
+                //pent.setPrinter();
 
                 long inputSize = createInputDirectory(fileSys, input, pent, depth);
                 // for forcing the number of maps
