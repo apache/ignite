@@ -54,7 +54,9 @@ public class SparseLocalOnHeapVector extends AbstractVector {
     public SparseLocalOnHeapVector(int cardinality, int mode){
         super(cardinality);
 
-        setStorage(new SequentialAccessSparseVectorStorage());
+        this.mode = mode;
+        setStorage(selectStorage(mode, cardinality));
+
     }
 
     /** */
