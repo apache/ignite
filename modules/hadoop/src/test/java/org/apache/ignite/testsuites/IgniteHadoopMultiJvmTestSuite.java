@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopDistributedPentom
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopGrepExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopJoinTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopMultiFileWordCountExampleTest;
-import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloTest;
+import org.apache.ignite.internal.processors.hadoop.impl.HadoopQuasiMonteCarloExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopSecondarySortExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopTeraSortExampleTest;
 import org.apache.ignite.internal.processors.hadoop.impl.HadoopWordCountExampleTest;
@@ -55,7 +55,7 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopBbpExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistBbpExampleTest.class.getName())));
 
-        suite.addTest(new TestSuite(ldr.loadClass(HadoopQuasiMonteCarloTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopQuasiMonteCarloExampleTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedPentominoExampleTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopDistributedOneSidedPentominoExampleTest.class.getName())));

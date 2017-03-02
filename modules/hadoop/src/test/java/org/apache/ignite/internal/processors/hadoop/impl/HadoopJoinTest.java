@@ -24,20 +24,11 @@ import org.apache.hadoop.util.Tool;
  */
 public class HadoopJoinTest extends HadoopGenericExampleTest {
     /**
-     * Gets base directory.
-     * Note that this directory will be completely deleted in the and of the test.
-     * @return The base directory.
-     */
-    protected String getFsBase() {
-        return "file:///tmp/" + getUser() + "/hadoop-join-test";
-    }
-
-    /**
      * Desired number of maps in TeraSort job.
      * @return The number of maps.
      */
     protected int numMaps() {
-        return gridCount() /* * 16 */;
+        return gridCount() * 3;
     }
 
     /** */
@@ -46,9 +37,6 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-            String in = fp.getWorkDir(name()) + "/in" ;
-
-            // Parameters: <nMaps> <nSamples>"
             return new String[] {
                 "-r", String.valueOf(fp.reduces()),
                 "-inFormat", SequenceFileInputFormat.class.getName(),
@@ -69,14 +57,16 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
         @Override void prepare(JobConf conf, FrameworkParameters fp) throws Exception {
             conf.set(FileOutputFormat.OUTDIR, new Path(fp.getWorkDir(name()) + "/in").toString());
 
+            // Create a sequence file:
             try (FileSystem fs = FileSystem.get(conf)) {
-                SequenceFileOutputFormat of = new SequenceFileOutputFormat();
+                SequenceFileOutputFormat<LongWritable, Text> of = new SequenceFileOutputFormat<>();
 
-                //final String val0 = conf.get(MRJobConfig.TASK_ATTEMPT_ID);
+                final String mapId = "00008";
+                final String id = "attempt_111111111111_2222_m_0" + mapId + "_0";
 
-                TaskAttemptContext tac = new TaskAttemptContextImpl(conf, TaskAttemptID.forName("attempt_200707121733_0003_m_000005_0"));
+                TaskAttemptContext tac = new TaskAttemptContextImpl(conf, TaskAttemptID.forName(id));
 
-                RecordWriter rw = of.getRecordWriter(tac);
+                RecordWriter<LongWritable, Text> rw = of.getRecordWriter(tac);
                 try {
                     LongWritable lw = new LongWritable();
                     Text t = new Text();
@@ -94,7 +84,7 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                 }
 
                 boolean ok = fs.rename(
-                    new Path(fp.getWorkDir(name() + "/in" + "/_temporary/0/_temporary/attempt_200707121733_0003_m_000005_0/part-m-00005")),
+                    new Path(fp.getWorkDir(name() + "/in" + "/_temporary/0/_temporary/" + id + "/part-m-" + mapId)),
                     new Path(fp.getWorkDir(name() + "/in/in00")) );
 
                 assert ok;
@@ -108,16 +98,14 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                 while (ri.hasNext()) {
                     lfs = ri.next();
 
-                    System.out.println("#### " + lfs);
-
                     assert lfs.isFile();
                     assert lfs.getLen() > 0;
                 }
 
-                // TODO: Local MR execution works okay, but manual setting of this
-                // TODO: id for some reason is required for Ignite.
-                // TODO: investigate, why this happens.
-                conf.set(MRJobConfig.TASK_ATTEMPT_ID, "attempt_200707121733_0003_m_000005_0");
+//                TODO: Local MR execution works okay, but manual setting of this
+//                TODO: id for some reason is required for Ignite.
+//                TODO: investigate, why this happens.
+                conf.set(MRJobConfig.TASK_ATTEMPT_ID, "attempt_000000000000_0000_m_000000_0");
             }
 
             conf.unset(FileOutputFormat.OUTDIR);

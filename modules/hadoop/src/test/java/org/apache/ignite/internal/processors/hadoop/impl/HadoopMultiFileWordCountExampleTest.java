@@ -26,9 +26,7 @@ public class HadoopMultiFileWordCountExampleTest extends HadoopGenericExampleTes
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-            return new String[] {
-                inDir(fp),
-                outDir(fp) };
+            return new String[] { inDir(fp), outDir(fp) };
         }
 
         /** {@inheritDoc} */

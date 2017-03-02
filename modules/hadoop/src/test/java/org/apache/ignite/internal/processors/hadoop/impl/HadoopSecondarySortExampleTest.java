@@ -1,8 +1,5 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Random;
@@ -105,24 +102,15 @@ public class HadoopSecondarySortExampleTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override void verify(String[] parameters) throws Exception {
-            // Read the file and verify the secondary sorting.
-            String outDir = parameters[parameters.length - 1];
+            // Read the file and verify the secondary sorting:
+            new OutputFileChecker(getFileSystem(), parameters[parameters.length - 1] + "/part-r-00000") {
+                boolean newSection = true;
 
-            boolean newSection = true;
+                int first = -1;
+                int minY = Integer.MIN_VALUE;
 
-            int first = -1;
-            int minY = Integer.MIN_VALUE;
-
-            try (InputStream is = getFileSystem().open(new Path(outDir + "/part-r-00000"));
-                   BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-                String line;
-
-                while (true) {
-                    line = br.readLine();
-
-                    if (line == null)
-                        break;
-
+                /** {@inheritDoc} */
+                @Override void onLine(String line, int cnt) {
                     if (line.startsWith("----"))
                         newSection = true; // Section separator.
                     else {
@@ -146,7 +134,12 @@ public class HadoopSecondarySortExampleTest extends HadoopGenericExampleTest {
                         }
                     }
                 }
-            }
+
+                /** {@inheritDoc} */
+                @Override void onFileEnd(int lineCnt) {
+                    assertTrue(lineCnt > 10);
+                }
+            }.check();
         }
 
         /** {@inheritDoc} */
