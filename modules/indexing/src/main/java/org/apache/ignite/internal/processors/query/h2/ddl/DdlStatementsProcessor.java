@@ -200,7 +200,15 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     void doAck(DdlCommandArguments args) throws IgniteCheckedException {
-        args.getOperationArguments().opType.command().execute(args);
+        switch (args.getOperationArguments().opType) {
+            case CREATE_INDEX:
+                // No-op.
+                break;
+
+            case DROP_INDEX:
+                // No-op.
+                break;
+        }
     }
 
     /**
@@ -312,8 +320,7 @@ public class DdlStatementsProcessor {
             // in accordance with topology version.
             // We take cache nodes and not just affinity nodes as long as we must create index on client
             // nodes as well to build query plans correctly.
-            Collection<ClusterNode> nodes = args.getOperationArguments().opType.command().filterNodes(ctx, args,
-                topVer);
+            Collection<ClusterNode> nodes = filterNodes(args, topVer);
 
             Map<UUID, IgniteCheckedException> newNodesState = new HashMap<>();
 
@@ -338,6 +345,22 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Filter nodes to run operation on in accordance with its type.
+     *
+     * @param args Command arguments.
+     * @param topVer Topology version.
+     * @return Filtered nodes.
+     */
+    private Collection<ClusterNode> filterNodes(DdlCommandArguments args, AffinityTopologyVersion topVer) {
+        switch (args.getOperationArguments().opType) {
+            case CREATE_INDEX:
+                return ctx.discovery().cacheNodes(((CreateIndexArguments) args).cacheName(), topVer);
+            default:
+                throw new UnsupportedOperationException(args.getOperationArguments().opType.name());
+        }
+    }
+
+    /**
      * Perform actual INIT actions.
      * Exists as a separate method to allow overriding it in tests to check behavior in case of errors.
      *
@@ -346,7 +369,15 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     void doInit(DdlCommandArguments args) throws IgniteCheckedException {
-        args.getOperationArguments().opType.command().init(args);
+        switch (args.getOperationArguments().opType) {
+            case CREATE_INDEX:
+                // No-op.
+                break;
+
+            case DROP_INDEX:
+                // No-op.
+                break;
+        }
     }
 
     /**

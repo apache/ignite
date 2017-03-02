@@ -17,33 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
-import org.apache.ignite.internal.processors.query.h2.ddl.cmd.GridCreateIndex;
-import org.apache.ignite.internal.processors.query.h2.ddl.cmd.GridDdlCommand;
-
 /**
  * DDL operation type.
  */
 public enum DdlOperationType {
     /** */
-    CREATE_INDEX {
-        /** {@inheritDoc} */
-        @Override GridDdlCommand command() {
-            return GridCreateIndex.INSTANCE;
-        }
-    },
+    CREATE_INDEX,
 
     /** */
-    DROP_INDEX {
-        /** {@inheritDoc} */
-        @Override GridDdlCommand command() {
-            throw new UnsupportedOperationException(name());
-        }
-    },
+    DROP_INDEX,
 
     ;
-
-    /**
-     * @return Handler for DDL protocol events containing actual logic.
-     */
-    abstract GridDdlCommand command();
 }
