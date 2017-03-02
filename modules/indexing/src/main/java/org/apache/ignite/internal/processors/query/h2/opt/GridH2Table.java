@@ -450,9 +450,9 @@ public class GridH2Table extends TableBase {
 
             //todo only for investigation
             if (!sessions.isEmpty()){
-                System.out.println(sessions);
-
                 U.dumpThreads(null);
+
+                assert sessions.isEmpty() : sessions;
             }
 
             destroyed = true;

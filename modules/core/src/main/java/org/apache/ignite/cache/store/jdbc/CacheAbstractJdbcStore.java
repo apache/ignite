@@ -424,13 +424,20 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param fetchSize Number of rows to fetch from DB.
      * @return Callable for pool submit.
      */
-    private Callable<Void> loadCacheRange(final EntryMapping em, final IgniteBiInClosure<K, V> clo,
-        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound, final int fetchSize) {
+    private Callable<Void> loadCacheRange(
+        final EntryMapping em,
+        final IgniteBiInClosure<K, V> clo,
+        @Nullable final Object[] lowerBound,
+        @Nullable final Object[] upperBound,
+        final int fetchSize
+    ) {
         return new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Connection conn = null;
 
                 PreparedStatement stmt = null;
+
+                ResultSet rs = null;
 
                 try {
                     conn = openConnection(true);
@@ -453,7 +460,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             for (int j = 0; j < i; j++)
                                 stmt.setObject(idx++, upperBound[j]);
 
-                    ResultSet rs = stmt.executeQuery();
+                    rs = stmt.executeQuery();
 
                     while (rs.next()) {
                         K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, em.loadColIdxs, rs);
@@ -468,7 +475,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                     e.printStackTrace();
 
-                    System.out.println("conn:" + conn + " stmt:" + stmt);
+                    System.out.println("thread:" + Thread.currentThread().getName() + " conn:" + conn + " stmt:" + stmt + " rs:" + rs);
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to load cache", e);
