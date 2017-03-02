@@ -11,6 +11,7 @@ import org.apache.hadoop.util.Tool;
 public class HadoopWordMedianExampleTest extends HadoopGenericExampleTest {
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
+        /** */
         private final WordMedian impl = new WordMedian();
 
         /** {@inheritDoc} */

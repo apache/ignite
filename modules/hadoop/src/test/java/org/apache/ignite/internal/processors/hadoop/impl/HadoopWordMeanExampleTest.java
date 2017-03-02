@@ -1,16 +1,9 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.lang.reflect.Field;
-import java.util.Random;
-import org.apache.hadoop.examples.RandomTextWriter;
 import org.apache.hadoop.examples.WordMean;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.Tool;
-import org.apache.ignite.IgniteException;
 
 /**
  *
@@ -18,6 +11,7 @@ import org.apache.ignite.IgniteException;
 public class HadoopWordMeanExampleTest extends HadoopGenericExampleTest {
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
+        /** */
         private final WordMean impl = new WordMean();
 
         /** {@inheritDoc} */
