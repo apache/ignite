@@ -207,7 +207,7 @@ public class DdlStatementsProcessor {
             return null;
         }
         else
-            return new DdlAckDiscoveryMessage(msg.operation());
+            return new DdlAckDiscoveryMessage(msg.operation(), msg.nodeState().keySet());
     }
 
     /**

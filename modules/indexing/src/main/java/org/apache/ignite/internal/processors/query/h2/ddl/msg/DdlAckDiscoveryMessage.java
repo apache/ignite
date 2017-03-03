@@ -22,6 +22,9 @@ import org.apache.ignite.internal.processors.query.h2.ddl.DdlAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * {@code ACK} message - triggers actual execution of local portion of DDL operation.
  */
@@ -29,13 +32,18 @@ public class DdlAckDiscoveryMessage extends DdlAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Ids of participating nodes. */
+    private final Set<UUID> nodeIds;
+
     /**
      * Constructor.
      *
      * @param op Operation.
+     * @param nodeIds Ids of participating nodes.
      */
-    public DdlAckDiscoveryMessage(DdlAbstractOperation op) {
+    public DdlAckDiscoveryMessage(DdlAbstractOperation op, Set<UUID> nodeIds) {
         super(op);
+        this.nodeIds = nodeIds;
     }
 
     /** {@inheritDoc} */
@@ -46,6 +54,13 @@ public class DdlAckDiscoveryMessage extends DdlAbstractDiscoveryMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * @return Ids of participating nodes.
+     */
+    public Set<UUID> nodeIds() {
+        return nodeIds;
     }
 
     /** {@inheritDoc} */
