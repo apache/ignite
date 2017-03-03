@@ -123,6 +123,10 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown", "unchecked"})
     private void onAck(ClusterNode snd, DdlAckDiscoveryMessage msg) {
+        // Don't do anything if we didn't choose to participate.
+        if (!msg.nodeIds().contains(ctx.localNodeId()))
+            return;
+
         IgniteCheckedException ex = null;
 
         DdlAbstractOperation args = msg.operation();
