@@ -394,9 +394,6 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         super.beforeTest();
 
         startNodes();
-
-        // TODO: experimental:
-        //U.sleep(3_000);
     }
 
     /**

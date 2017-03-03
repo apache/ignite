@@ -35,10 +35,12 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     }
 
     /**
-     *  TODO: in development
-     * @return
+     * Return {@code true} in subclass to run all the nodes on the test process.
+     * Note that this mechanism is not anyhow connected to {@link #isMultiJvm()} method.
+     *
+     * @return If all the nodes should be run on the test process, default is false.
      */
-    protected final boolean isOneJvm() {
+    protected boolean isOneJvm() {
         return false;
     }
 
@@ -68,6 +70,7 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
 
         final int requiredGridCnt = gridCount();
 
+        // Wait until all nodes see topology of the same required size:
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
