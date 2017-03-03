@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
@@ -73,10 +71,6 @@ public class DdlStatementsProcessor {
 
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap8<>();
-
-    // TODO: Remove for now.
-    /** Running operations <b>coordinated by</b> this node. */
-    private Map<IgniteUuid, DdlOperationRunContext> operationRuns = new ConcurrentHashMap8<>();
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
@@ -177,47 +171,7 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "SynchronizationOnLocalVariableOrMethodParameter", "ForLoopReplaceableByForEach"})
     private void onNodeResult(IgniteUuid opId, IgniteCheckedException err) {
-        DdlOperationRunContext runCtx = operationRuns.get(opId);
-
-        if (runCtx == null)
-            throw new IgniteSQLException("Run context not found on coordinator [opId=" +
-                opId + ']'); // Can't throw a checked ex from here
-
-        DdlCommandArguments args = runCtx.args;
-
-        assert args != null;
-
-        if (err != null) {
-            synchronized (runCtx) { // Let's synchronize for correct list mutation here
-                List<IgniteCheckedException> errs = runCtx.errs;
-
-                if (errs == null) {
-                    errs = new ArrayList<>();
-
-                    runCtx.errs = errs;
-                }
-
-                errs.add(err);
-            }
-        }
-
-        // Return if we expect more messages like this
-        if (runCtx.nodesCnt.decrementAndGet() > 0)
-            return;
-
-        List<IgniteCheckedException> errs = runCtx.errs;
-
-        IgniteCheckedException resEx = null;
-
-        if (errs != null) {
-            resEx = new IgniteCheckedException("DDL operation execution has failed [opId=" +
-                args.operationId() + ']');
-
-            for (int i = 0; i < errs.size(); i++)
-                resEx.addSuppressed(errs.get(i));
-        }
-
-        sendResult(args, resEx);
+        // No-op.
     }
 
     /**
@@ -256,7 +210,8 @@ public class DdlStatementsProcessor {
             return null;
         }
         else {
-            operationRuns.put(args.operationId(), new DdlOperationRunContext(args, nodesState.size()));
+            // We should prepare ourselves to getting status messages from workers here
+            /* operationRuns.put(args.operationId(), new DdlOperationRunContext(args, nodesState.size())); */
 
             DdlOperationAck ackMsg = new DdlOperationAck();
 
@@ -509,28 +464,5 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex;
-    }
-
-    /**
-     * Operation run context on the <b>coordinator</b>.
-     */
-    private static class DdlOperationRunContext {
-        /** Command arguments. */
-        final DdlCommandArguments args;
-
-        /** Latch replacement to expect all nodes to finish their local jobs for this operation. */
-        final AtomicInteger nodesCnt;
-
-        /** Errors from nodes, if any. */
-        volatile List<IgniteCheckedException> errs;
-
-        /**
-         * @param args Command arguments.
-         * @param nodesCnt Nodes count to initialize latch with.
-         */
-        DdlOperationRunContext(DdlCommandArguments args, int nodesCnt) {
-            this.args = args;
-            this.nodesCnt = new AtomicInteger(nodesCnt);
-        }
     }
 }
