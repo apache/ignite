@@ -35,7 +35,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     private static final int SAMPLE_SIZE = 5;
 
     /** Maximum sample search spin count */
-    private static final int SAMPLE_LIMIT = SAMPLE_SIZE * 20;
+    private static final int SAMPLE_SPIN_LIMIT = SAMPLE_SIZE * 1000;
 
     /** This number of least significant bits is dropped from timestamp. */
     private static final int COMPACT_TS_SHIFT = 8; // Enough if grid works for less than 17 years.
@@ -66,9 +66,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert memCfg.getPageCacheSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
-        trackingSize = (int)(memCfg.getPageCacheSize() / memCfg.getPageSize());
+        trackingSize = segmentPageCount << segBits;
 
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4);
+
+        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +103,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                int compactTs = GridUnsafe.getInt(trackingArrPtr + sampleTrackingIdx);
+                int compactTs = GridUnsafe.getInt(trackingArrPtr + sampleTrackingIdx * 4);
 
                 if (compactTs != 0) {
                     // We chose data page with at least one touch.
@@ -116,8 +118,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 sampleSpinCnt++;
 
-                if (sampleSpinCnt > SAMPLE_LIMIT)
-                    throw new IgniteCheckedException("Too many attempts to choose random data page: " + SAMPLE_LIMIT);
+                if (sampleSpinCnt > SAMPLE_SPIN_LIMIT)
+                    throw new IgniteCheckedException("Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
             }
 
             if (evictDataPage(pageIdx(lruTrackingIdx)))
@@ -144,9 +146,9 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     private int trackingIdx(int pageIdx) {
         int inSegmentPageIdx = inSegmentPageIdx(pageIdx);
 
-        assert inSegmentPageIdx < segSize;
+        assert inSegmentPageIdx < segmentPageCount;
 
-        int trackingIdx = (int)(segmentIdx(pageIdx) * segSize / pageSize + inSegmentPageIdx);
+        int trackingIdx = segmentIdx(pageIdx) * segmentPageCount + inSegmentPageIdx;
 
         assert trackingIdx < trackingSize;
 
@@ -163,13 +165,13 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         long res = 0;
         
-        long segIdx = trackingIdx / segSize;
-        long pageIdx = trackingIdx % segSize;
+        long segIdx = trackingIdx / segmentPageCount;
+        long pageIdx = trackingIdx % segmentPageCount;
 
         res = (res << segBits) | (segIdx & segMask);
         res = (res << idxBits) | (pageIdx & idxMask);
         
-        assert res >= 0 && res < Integer.MAX_VALUE;
+        assert (res & (-1L << 32)) == 0;
 
         return (int)res;
     }

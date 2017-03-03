@@ -44,10 +44,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /* Will be removed after segments refactoring >>>> */
     protected final int segBits;
     protected final int idxBits;
-    protected final long segSize;
-    protected final int pageSize;
     protected final int segMask;
     protected final int idxMask;
+    protected final int segmentPageCount;
     /* <<<< */
 
     /**
@@ -67,9 +66,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         if (concurrencyLevel < 1)
             concurrencyLevel = Runtime.getRuntime().availableProcessors();
 
-        pageSize = memCfg.getPageSize();
+        int pageSize = memCfg.getPageSize();
 
-        segSize = memCfg.getPageCacheSize() / concurrencyLevel;
+        long segSize = memCfg.getPageCacheSize() / concurrencyLevel;
+
+        if (segSize < 1024 * 1024)
+            segSize = 1024 * 1024;
+
+        segmentPageCount = (int)(segSize / pageSize);
 
         segBits = Integer.SIZE - Integer.numberOfLeadingZeros(concurrencyLevel - 1);
 
@@ -99,6 +103,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
                 DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
                 long realPageId = PageIO.getPageId(pageAddr);
+
+                System.out.println("@@@@@ real page id = " + realPageId);
 
                 int dataItemsCnt = io.getDirectCount(pageAddr);
 

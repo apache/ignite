@@ -1157,6 +1157,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 row.key(key);
 
                 cctx.shared().database().evictionTracker().touchPage(row.link());
+
+                System.out.println("@@@@@ touched link " + row.link() + ", pageId = " + PageIdUtils.pageId(row.link()) +
+                    ", pageIdx = " + PageIdUtils.pageIndex(row.link()));
             }
 
             return row;
