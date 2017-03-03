@@ -18,8 +18,11 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
+import javax.cache.*;
 import java.util.*;
+import java.util.function.*;
 
 /**
  * Distribution-related misc. support.
@@ -42,12 +45,27 @@ public class DistributionSupport {
     }
 
     /**
-     *
+     * 
      * @param cacheName
-     * @return
+     * @param clo
+     * @param <K>
+     * @param <V>
      */
-    protected int partitions(String cacheName) {
-        return ignite().affinity(cacheName).partitions();
+    protected <K, V> void iterateOverEntries(
+        String cacheName,
+        BiConsumer<Cache.Entry<K, V>, IgniteCache<K, V>> clo) {
+        int partsCnt = ignite().affinity(cacheName).partitions();
+
+        broadcastForCache(cacheName, () -> {
+            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+
+            // Iterate over all partitions. Some of them will be stored on that local node.
+            for (int part = 0; part < partsCnt; part++)
+                // Iterate over given partition.
+                // Query returns an empty cursor if this partition is not stored on this node.
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part))) 
+                    clo.accept(entry, cache);
+        });
     }
 
     /**

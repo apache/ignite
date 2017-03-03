@@ -18,7 +18,6 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
@@ -113,25 +112,15 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
 
         // Gets these values assigned to a local vars so that
         // they will be available in the closure.
-        String cacheName = sto.cache().getName();
-        int partsCnt = partitions(cacheName);
         KeyMapper<K> keyMapper = sto.keyMapper();
         V newVal = sto.valueMapper().fromDouble(val);
 
-        broadcastForCache(cacheName, () -> {
-            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+        iterateOverEntries(sto.cache().getName(), (Cache.Entry<K, V> entry, IgniteCache<K, V> cache) -> {
+            K k = entry.getKey();
 
-            // Iterate over all partitions. Some of them will be stored on that local node.
-            for (int part = 0; part < partsCnt; part++)
-                // Iterate over given partition.
-                // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part))) {
-                    K k = entry.getKey();
-
-                    if (keyMapper.isValid(k))
-                        // Actual assignment.
-                        cache.put(k, newVal);
-                }
+            if (keyMapper.isValid(k))
+                // Actual assignment.
+                cache.put(k, newVal);
         });
 
         return this;
