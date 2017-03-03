@@ -6,6 +6,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.apache.ignite.testframework.junits.multijvm.NodeProcessParameters;
@@ -64,8 +66,18 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
             }
         }
 
-        IgniteNodeProxy2.ensureTopology(gridCount(),
-            getConfiguration(gridCount(), "temporaryClientNode"));
+        final int requiredGridCnt = gridCount();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    return IgniteNodeProxy2.ensureTopology(requiredGridCnt,
+                        getConfiguration(requiredGridCnt, "temporaryClientNode"));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, 5_000));
     }
 
     /**

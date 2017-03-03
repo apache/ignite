@@ -113,21 +113,30 @@ public class IgniteNodeProxy2 {
      * @param requiredTopSize The desired topology size.
      * @return {@code true} if all nodes see exactly the required topology size.
      */
-    public static boolean ensureTopology(int requiredTopSize, IgniteConfiguration cfg) {
+    public static boolean ensureTopology(final int requiredTopSize, IgniteConfiguration cfg) {
         Ignition.setClientMode(true);
 
         try (Ignite tmpClientIgnite = Ignition.start(cfg)) {
             // First, check it from the client node viewpoint:
-            if (requiredTopSize != tmpClientIgnite.cluster().nodes().size() + 1)
+            int act = tmpClientIgnite.cluster().nodes().size() - 1;
+
+            X.println("    Topology size from the client's viewpoint: " + act);
+
+            if (requiredTopSize != act)
                 return false;
 
             // Second, check topology from each node viewpoint:
-            for (ClusterNode cn : tmpClientIgnite.cluster().nodes()) {
-                int s = topologySizeFromNodeViewpoint(tmpClientIgnite, cn);
+            for (ClusterNode cn: tmpClientIgnite.cluster().nodes()) {
+                act = -1 + topologySizeFromNodeViewpoint(tmpClientIgnite, cn);
 
-                if (requiredTopSize != s + 1)
+                X.println("    Topology size from " + cn + " viewpoint: " + act);
+
+                if (requiredTopSize != act)
                     return false;
             }
+        }
+        finally {
+            Ignition.setClientMode(false);
         }
 
         return true;
@@ -248,8 +257,6 @@ public class IgniteNodeProxy2 {
             // Use only the explicitly specified arguments:
             filteredJvmArgs.addAll(params.getJvmArguments());
 
-        X.println("Args: " +filteredJvmArgs);
-
         final String hhKey = "HADOOP_HOME";
 
         // Special treatment of HADOOP_HOME:
@@ -259,6 +266,8 @@ public class IgniteNodeProxy2 {
             throw new IgniteIllegalStateException("Please set " + hhKey);
 
         filteredJvmArgs.add("-D" + hhKey + "=" + hhVal);
+
+        X.println("Args: " +filteredJvmArgs);
 
         return GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),

@@ -23,7 +23,6 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.multijvm2.HadoopAbstract2Test;
 import org.apache.ignite.testframework.junits.multijvm2.IgniteNodeProxy2;
 
@@ -332,12 +331,14 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         String[] args = ex.parameters(fp);
 
-        X.println("Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: "
+        X.println("### Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: "
             + Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 
         assertEquals(0, res);
+
+        X.println("Verifying...");
 
         ex.verify(args);
     }
