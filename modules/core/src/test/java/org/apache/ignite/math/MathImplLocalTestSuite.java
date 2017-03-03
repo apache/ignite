@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all import tests located in org.apache.ignite.math.impls.* package.
+ * Test suite for all local tests located in org.apache.ignite.math.impls.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -66,5 +66,6 @@ import org.junit.runners.Suite;
     MatrixImplementationsTest.class,
     DenseLocalOffHeapMatrixTest.class
 })
-public class MathImplTestSuite {
+public class MathImplLocalTestSuite {
+    // No-op.
 }
