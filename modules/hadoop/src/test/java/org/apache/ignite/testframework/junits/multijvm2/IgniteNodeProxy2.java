@@ -14,6 +14,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -248,6 +249,16 @@ public class IgniteNodeProxy2 {
             filteredJvmArgs.addAll(params.getJvmArguments());
 
         X.println("Args: " +filteredJvmArgs);
+
+        final String hhKey = "HADOOP_HOME";
+
+        // Special treatment of HADOOP_HOME:
+        String hhVal = IgniteSystemProperties.getString(hhKey);
+
+        if (hhVal == null)
+            throw new IgniteIllegalStateException("Please set " + hhKey);
+
+        filteredJvmArgs.add("-D" + hhKey + "=" + hhVal);
 
         return GridJavaProcess.exec(
             IgniteNodeRunner.class.getCanonicalName(),

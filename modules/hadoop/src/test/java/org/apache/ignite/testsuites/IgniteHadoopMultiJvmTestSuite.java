@@ -46,6 +46,9 @@ public class IgniteHadoopMultiJvmTestSuite extends IgniteHadoopTestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        // We'd better use modern Hadoop version:
+        System.setProperty("hadoop.version", "2.7.2");
+
         downloadHadoop();
 
         final ClassLoader ldr = new HadoopTestClassLoader();
