@@ -908,7 +908,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             try {
                 cnt++;
 
-                cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);
+                cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
 
                 return;
             }
@@ -969,7 +969,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     }
                 });
 
-                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg, plc);
+                cctx.gridIO().sendToGridTopic(nodesView, TOPIC_CACHE, msg, plc);
 
                 boolean added = false;
 
@@ -1116,7 +1116,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc IO policy.
      * @throws IgniteCheckedException If send failed.
      */
-    public void sendNoRetry(ClusterNode node,
+    void sendNoRetry(ClusterNode node,
         GridCacheMessage msg,
         byte plc)
         throws IgniteCheckedException {
@@ -1127,7 +1127,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             return;
 
         try {
-            cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);
+            cctx.gridIO().sendToGridTopic(node, TOPIC_CACHE, msg, plc);
 
             if (log.isDebugEnabled())
                 log.debug("Sent cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');

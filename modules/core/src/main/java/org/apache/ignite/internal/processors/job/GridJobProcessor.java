@@ -518,7 +518,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             ctx.io().addMessageListener(topic, msgLsnr);
 
             // 3. Send message.
-            ctx.io().send(taskNode, TOPIC_JOB_SIBLINGS,
+            ctx.io().sendToGridTopic(taskNode, TOPIC_JOB_SIBLINGS,
                 new GridJobSiblingsRequest(ses.getId(),
                     loc ? topic : null,
                     loc ? null : U.marshal(marsh, topic)),
@@ -1379,7 +1379,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
+                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
