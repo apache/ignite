@@ -5142,8 +5142,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (msgObj != null) {
                         if (msgObj instanceof ContextAware)
-                            ((ContextAware) msgObj)
-                                .setContext(((IgniteEx)spi.ignite()).context());
+                            ((ContextAware)msgObj).setContext(((IgniteEx)spi.ignite()).context());
 
                         DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
 
