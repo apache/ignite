@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -212,6 +212,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public boolean moduleEnabled() {
         return idx != null;
+    }
+
+    /**
+     * @return Indexing.
+     * @throws IgniteException If module is not enabled.
+     */
+    public GridQueryIndexing getIndexing() throws IgniteException {
+        checkxEnabled();
+
+        return idx;
     }
 
     /**
@@ -966,14 +976,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      *
-     * @param schema Schema.
+     * @param space Space name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
-    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
+    public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
         checkxEnabled();
 
-        return idx.prepareNativeStatement(schema, sql);
+        return idx.prepareNativeStatement(space, sql);
     }
 
     /**
@@ -1802,7 +1812,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             throw (IgniteCheckedException)err;
         }
-        catch (CacheException e) {
+        catch (CacheException | IgniteException e) {
             err = e;
 
             throw e;

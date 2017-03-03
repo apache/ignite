@@ -15,57 +15,56 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
-import org.apache.ignite.internal.ContextAware;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlAbstractOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+import java.util.UUID;
+
 /**
- *
+ * {@code ACK} message - triggers actual execution of local portion of DDL operation.
  */
-class CustomMessageWrapper implements DiscoverySpiCustomMessage, ContextAware {
+public class DdlAckDiscoveryMessage extends DdlAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final DiscoveryCustomMessage delegate;
+    /** Ids of participating nodes. */
+    private final Set<UUID> nodeIds;
 
     /**
-     * @param delegate Delegate.
+     * Constructor.
+     *
+     * @param op Operation.
+     * @param nodeIds Ids of participating nodes.
      */
-    CustomMessageWrapper(DiscoveryCustomMessage delegate) {
-        this.delegate = delegate;
+    public DdlAckDiscoveryMessage(DdlAbstractOperation op, Set<UUID> nodeIds) {
+        super(op);
+        this.nodeIds = nodeIds;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
-        DiscoveryCustomMessage res = delegate.ackMessage();
-
-        return res == null ? null : new CustomMessageWrapper(res);
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return delegate.isMutable();
+        return false;
     }
 
     /**
-     * @return Delegate.
+     * @return Ids of participating nodes.
      */
-    public DiscoveryCustomMessage delegate() {
-        return delegate;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void context(GridKernalContext ctx) {
-        if (delegate instanceof ContextAware)
-            ((ContextAware) delegate).context(ctx);
+    public Set<UUID> nodeIds() {
+        return nodeIds;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return delegate.toString();
+        return S.toString(DdlAckDiscoveryMessage.class, this);
     }
 }

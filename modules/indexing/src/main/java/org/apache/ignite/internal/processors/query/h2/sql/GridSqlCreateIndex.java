@@ -25,7 +25,7 @@ import org.h2.command.Parser;
 /**
  * CREATE INDEX statement.
  */
-public class GridCreateIndex extends GridSqlStatement {
+public class GridSqlCreateIndex extends GridSqlStatement {
     /** Schema name. */
     private String schemaName;
 

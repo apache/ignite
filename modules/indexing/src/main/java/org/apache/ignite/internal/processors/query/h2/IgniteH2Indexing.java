@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -91,7 +90,9 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -212,6 +213,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ";ROW_FACTORY=\"" + GridH2RowFactory.class.getName() + "\"" +
         ";DEFAULT_TABLE_ENGINE=" + GridH2DefaultTableEngine.class.getName();
 
+    /** Dummy metadata for update result. */
+    static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
+        singletonList(new SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
+
     /** */
     private static final int PREPARED_STMT_CACHE_SIZE = 256;
 
@@ -261,6 +266,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IllegalStateException("Check H2 version in classpath.", e);
         }
     }
+
+    /** For tests. */
+    public static Class<? extends DdlStatementsProcessor> ddlProcCls;
 
     /** Logger. */
     @LoggerResource
@@ -345,10 +353,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private volatile GridKernalContext ctx;
 
     /** */
-    private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor(this);
+    private final DmlStatementsProcessor dmlProc = new DmlStatementsProcessor();
 
     /** */
-    private final DdlStatementsProcessor ddlProc = new DdlStatementsProcessor(this);
+    private DdlStatementsProcessor ddlProc;
 
     /** */
     private final ConcurrentMap<String, GridH2Table> dataTables = new ConcurrentHashMap8<>();
@@ -380,6 +388,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @return DDL statements processor.
+     */
+    public DdlStatementsProcessor getDdlStatementsProcessor() {
+        return ddlProc;
+    }
+
+    /**
      * @param space Space.
      * @return Connection.
      */
@@ -395,7 +410,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Logger.
      */
-    IgniteLogger getLogger() {
+    public IgniteLogger getLogger() {
         return log;
     }
 
@@ -442,8 +457,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException {
-        return prepareStatement(connectionForSpace(schema), sql, false);
+    @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
+        return prepareStatement(connectionForSpace(space), sql, true);
     }
 
     /**
@@ -817,8 +832,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public GridQueryFieldsResult queryLocalSqlFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters, boolean enforceJoinOrder,
-        final int timeout, final GridQueryCancel cancel)
-        throws IgniteCheckedException {
+        final int timeout, final GridQueryCancel cancel) throws IgniteCheckedException {
         final Connection conn = connectionForSpace(spaceName);
 
         setupConnection(conn, false, enforceJoinOrder);
@@ -827,7 +841,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
 
-        if (!p.isQuery()) {
+        if (DmlStatementsProcessor.isDmlStatement(p)) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
             if (params != null)
@@ -836,8 +850,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             fldsQry.setEnforceJoinOrder(enforceJoinOrder);
             fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
 
-            return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            try {
+                return dmlProc.updateLocalSqlFields(spaceName, stmt, fldsQry, filters, cancel);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qry + ", params=" +
+                    Arrays.deepToString(fldsQry.getArgs()) + "]", e);
+            }
         }
+        else if (DdlStatementsProcessor.isDdlStatement(p))
+            throw new IgniteSQLException("DDL statements are supported for the whole cluster only",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         List<GridQueryFieldMetadata> meta;
 
@@ -1296,7 +1319,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
 
             if (!prepared.isQuery()) {
-                if (dmlProc.isDmlStatement(prepared)) {
+                if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                     try {
                         return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
                     }
@@ -1305,13 +1328,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             Arrays.deepToString(qry.getArgs()) + "]", e);
                     }
                 }
-                else {
+
+                if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                     try {
-                        return ddlProc.runDdlStatement(cctx, prepared);
+                        return ddlProc.runDdlStatement(stmt);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ", params=" +
-                            Arrays.deepToString(qry.getArgs()) + "]", e);
+                        throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
                     }
                 }
             }
@@ -1855,6 +1878,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     cleanupStatementCache();
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
+
+            try {
+                ddlProc = ddlProcCls == null ? new DdlStatementsProcessor() : ddlProcCls.newInstance();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to initialize DDL statements processor", e);
+            }
+
+            dmlProc.start(this);
+            ddlProc.start(ctx, this);
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
@@ -2001,6 +2034,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Stopping cache query index...");
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
+
+        if (ddlProc != null)
+            ddlProc.stop();
 
         for (Schema schema : schemas.values())
             schema.onDrop();

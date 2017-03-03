@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -94,7 +93,7 @@ public class DmlStatementsProcessor {
     private final static int DFLT_DML_RERUN_ATTEMPTS = 4;
 
     /** Indexing. */
-    private final IgniteH2Indexing indexing;
+    private IgniteH2Indexing idx;
 
     /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
     private final static Set<Integer> WARNED_TYPES =
@@ -106,15 +105,11 @@ public class DmlStatementsProcessor {
     /** Update plans cache. */
     private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
 
-    /** Dummy metadata for update result. */
-    private final static List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
-        singletonList(new IgniteH2Indexing.SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
-
     /**
-     * @param indexing indexing.
+     * @param idx indexing.
      */
-    DmlStatementsProcessor(IgniteH2Indexing indexing) {
-        this.indexing = indexing;
+    public void start(IgniteH2Indexing idx) {
+        this.idx = idx;
     }
 
     /**
@@ -208,7 +203,7 @@ public class DmlStatementsProcessor {
         SqlFieldsQuery fieldsQry, IndexingQueryFilter filters, GridQueryCancel cancel) throws IgniteCheckedException {
         long res = updateSqlFields(spaceName, stmt, fieldsQry, true, filters, cancel);
 
-        return new GridQueryFieldsResultAdapter(UPDATE_RESULT_META,
+        return new GridQueryFieldsResultAdapter(IgniteH2Indexing.UPDATE_RESULT_META,
             new IgniteSingletonIterator(Collections.singletonList(res)));
     }
 
@@ -259,10 +254,10 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>) indexing.queryTwoStep(cctx, newFieldsQry, cancel);
+            cur = (QueryCursorImpl<List<?>>) idx.queryTwoStep(cctx, newFieldsQry, cancel);
         }
         else {
-            final GridQueryFieldsResult res = indexing.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(params),
+            final GridQueryFieldsResult res = idx.queryLocalSqlFields(cctx.name(), plan.selectQry, F.asList(params),
                 filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
@@ -399,7 +394,7 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             if (e.size() != 2) {
-                U.warn(indexing.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                U.warn(idx.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
                 continue;
             }
 
@@ -900,7 +895,7 @@ public class DmlStatementsProcessor {
     private BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
         if (U.isHashCodeEmpty(binObj)) {
             if (WARNED_TYPES.add(binObj.type().typeId()))
-                U.warn(indexing.getLogger(), "Binary object's type does not have identity resolver explicitly set, therefore " +
+                U.warn(idx.getLogger(), "Binary object's type does not have identity resolver explicitly set, therefore " +
                     "BinaryArrayIdentityResolver is used to generate hash codes for its instances, and therefore " +
                     "hash code of this binary object will most likely not match that of its non serialized form. " +
                     "For finer control over identity of this type, please update your BinaryConfiguration accordingly." +
@@ -1011,11 +1006,11 @@ public class DmlStatementsProcessor {
      * @return Resulting Iterable.
      */
     @SuppressWarnings("unchecked")
-    private static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
+    public static QueryCursorImpl<List<?>> cursorForUpdateResult(long itemsCnt) {
         QueryCursorImpl<List<?>> res =
             new QueryCursorImpl(Collections.singletonList(Collections.singletonList(itemsCnt)), null, false);
 
-        res.fieldsMeta(UPDATE_RESULT_META);
+        res.fieldsMeta(IgniteH2Indexing.UPDATE_RESULT_META);
 
         return res;
     }
