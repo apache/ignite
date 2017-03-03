@@ -821,8 +821,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             plc == GridIoPolicy.SYSTEM_POOL &&
             (msg.partition() != Integer.MIN_VALUE || msg.message() instanceof GridNearAtomicFullUpdateRequest)
             ) {
+
             if (msg.message() instanceof GridNearAtomicFullUpdateRequest && ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() != null) {
                 for (Integer stripe : ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap().keySet()) {
+                    assert stripe < ctx.getStripedExecutorService().stripes() : stripe;
+
                     ctx.getStripedExecutorService().execute(stripe, c);
                 }
             }

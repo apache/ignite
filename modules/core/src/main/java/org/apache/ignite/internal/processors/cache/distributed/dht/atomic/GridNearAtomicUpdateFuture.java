@@ -266,7 +266,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         GridCacheReturn opRes0 = null;
         CachePartialUpdateCheckedException err0 = null;
 
-        boolean rcvAll;
+        boolean rcvAll = false;
 
         GridFutureAdapter<?> fut0 = null;
 
@@ -290,10 +290,17 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 if (req != null && req.onResponse(res)) {
                     resCnt++;
 
+                    if (msgLog.isDebugEnabled())
+                        msgLog.debug("Process near atomic update response " +
+                            "got " + resCnt + " / " + mappings.size() + " nodes");
+
                     rcvAll = mappings.size() == resCnt;
                 }
-                else
-                    return;
+                else {
+                    if (msgLog.isDebugEnabled())
+                        msgLog.debug("Process near atomic update response (from stripe " + res.stripe() + ") " +
+                            "got " + resCnt + " / " + mappings.size() + " nodes");
+                }
             }
 
             assert req != null && req.topologyVersion().equals(topVer) : req;
@@ -412,7 +419,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                     if (res0 != null)
                         updateNear(req0, res0);
-
                     else {
                         Map<Integer, GridNearAtomicUpdateResponse> responces = req0.responses();
                         if (responces != null)
@@ -828,7 +834,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
             List<ClusterNode> affNodes = mapKey(cacheKey, topVer);
-            int part = cctx.affinity().partition(key);
 
             if (affNodes.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +

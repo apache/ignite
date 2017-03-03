@@ -60,8 +60,6 @@ public class GridNearAtomicFullUpdateRequestTest extends MarshallingAbstractTest
         req.addUpdateEntry(new KeyCacheObjectImpl(2, null, 1), new CacheObjectImpl(2, null), 0, 0, null, true);
         req.addUpdateEntry(new KeyCacheObjectImpl(3, null, 2), new CacheObjectImpl(2, null), 0, 0, null, true);
 
-        assertEquals(2, req.stripeMap().size());
-
         GridNearAtomicFullUpdateRequest req2 = marshalUnmarshal(req);
 
         assertEquals(2, req2.stripeMap().size());

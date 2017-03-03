@@ -115,9 +115,12 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     ) {
         this.cctx = cctx;
 
-        this.futVer = cctx.isLocalNode(updateRes.nodeId()) ?
-            cctx.versions().next(updateReq.topologyVersion()) : // Generate new if request mapped to local.
-            updateReq.futureVersion();
+//        this.futVer = cctx.isLocalNode(updateRes.nodeId()) ?
+//            cctx.versions().next(updateReq.topologyVersion()) : // Generate new if request mapped to local.
+//            updateReq.futureVersion();
+
+        this.futVer = cctx.versions().next(updateReq.topologyVersion());
+
         this.updateReq = updateReq;
         this.completionCb = completionCb;
         this.updateRes = updateRes;

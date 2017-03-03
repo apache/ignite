@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -135,7 +136,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     private Map<Integer, List<Integer>> stripeMap;
 
     /** Stripe to index mapping bytes. */
-    private byte[] stripeMapBytes;
+    @GridDirectMap(keyType = int.class, valueType = int[].class)
+    private Map<Integer, int[]> stripeMap0;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -339,12 +341,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             return false;
         }
         else {
-            // single response - usually error
+            // single response - error or local update result
             if (this.res == null) {
                 this.res = res;
                 this.resMap = null;
                 return true;
             }
+
             return false;
         }
     }
@@ -394,8 +397,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         int stripe = key.partition() >= maxStripes ? key.partition() % maxStripes : key.partition();
 
         List<Integer> idxs = stripeMap.get(stripe);
+
         if (idxs == null)
             stripeMap.put(stripe, idxs = new ArrayList<>());
+
         idxs.add(keys.size());
 
         keys.add(key);
@@ -590,8 +595,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /**
      * @return Stripe mapping.
      */
-    public Map<Integer, List<Integer>> stripeMap() {
-        return stripeMap;
+    public Map<Integer, int[]> stripeMap() {
+        return stripeMap0;
     }
 
     /** {@inheritDoc} */
@@ -603,8 +608,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
-        if (stripeMap != null && stripeMapBytes == null)
-            stripeMapBytes = CU.marshal(cctx, stripeMap);
+        if (stripeMap != null && stripeMap0 == null) {
+            stripeMap0 = new HashMap<>();
+
+            for (Integer stripe : stripeMap.keySet()) {
+                List<Integer> list = stripeMap.get(stripe);
+                int[] arr = new int[list.size()];
+
+                for (int i1 = 0; i1 < list.size(); i1++)
+                    arr[i1] = list.get(i1);
+
+                stripeMap0.put(stripe, arr);
+            }
+        }
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -646,9 +662,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = U.unmarshal(ctx, expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (stripeMapBytes != null && stripeMap == null)
-            stripeMap = U.unmarshal(ctx, stripeMapBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 
@@ -811,7 +824,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeByteArray("stripeMapBytes", stripeMapBytes))
+                if (!writer.writeMap("stripeMap0", stripeMap0, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
@@ -1023,7 +1036,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 21:
-                stripeMapBytes = reader.readByteArray("stripeMapBytes");
+                stripeMap0 = reader.readMap("stripeMap0", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -1103,7 +1116,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         invokeArgs = null;
         invokeArgsBytes = null;
 
-        if (clearKeys)
+        if (clearKeys && completed())
             keys = null;
     }
 

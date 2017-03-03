@@ -131,11 +131,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res
     ) {
         int keyNum;
-        List<Integer> stripeIdxs;
+        int[] stripeIdxs;
 
         if (res.stripe() > -1 && req instanceof GridNearAtomicFullUpdateRequest) {
             stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(res.stripe());
-            keyNum = stripeIdxs.size();
+            keyNum = stripeIdxs.length;
         }
         else {
             stripeIdxs = null;
@@ -166,7 +166,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < keyNum; i++) {
-            int idx = stripeIdxs == null ? i : stripeIdxs.get(i);
+            int idx = stripeIdxs == null ? i : stripeIdxs[i];
 
             if (F.contains(skipped, idx))
                 continue;
