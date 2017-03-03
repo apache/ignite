@@ -52,6 +52,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1919,6 +1920,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     boolean isSslEnabled() {
         return ignite().configuration().getSslContextFactory() != null;
+    }
+
+    /** {@inheritDoc} */
+    public IgniteInternalFuture<Object> rejoin() throws IgniteSpiException {
+        return impl.rejoin();
     }
 
     /**

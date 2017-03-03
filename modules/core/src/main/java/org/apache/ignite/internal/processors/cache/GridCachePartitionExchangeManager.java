@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCouldReconnectCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -87,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -447,6 +450,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else
                         U.warn(log, "Still waiting for initial partition map exchange [fut=" + fut + ']');
+                }
+                catch (Exception e) {
+                    if (cctx.localNode().isClient() && X.hasCause(e, IOException.class))
+                        throw new IgniteCouldReconnectCheckedException("Reconnect", e);
+
+                    throw e;
                 }
             }
 
@@ -1697,6 +1706,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         dumpedObjects++;
                                     }
                                 }
+                                catch (Exception e) {
+                                    if (cctx.localNode().isClient() && X.hasCause(e, IOException.class))
+                                        throw new IgniteCouldReconnectCheckedException("Reconnect", e);
+
+                                    throw e;
+                                }
                             }
 
 
@@ -1836,8 +1851,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException e) {
-                    return;
+                catch (IgniteClientDisconnectedCheckedException | IgniteCouldReconnectCheckedException e) {
+                    if (!cctx.localNode().isClient()) {
+                        U.error(log, "Ignore exception", e);
+
+                        return;
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +

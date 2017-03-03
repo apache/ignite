@@ -23,6 +23,7 @@ import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCouldReconnectCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -151,9 +152,16 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     @Override public GridFutureAdapter<?> onDisconnected() {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
+        IgniteFutureImpl reconnectFut0 = reconnectFut;
+
         reconnectFut = new IgniteFutureImpl<>(fut);
 
         if (!state.compareAndSet(GridKernalState.STARTED, GridKernalState.DISCONNECTED)) {
+            Throwable error = reconnectFut0.internalFuture().error();
+
+            if (error instanceof IgniteCouldReconnectCheckedException)
+                return fut;
+
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));
 
             return null;
@@ -166,6 +174,12 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     @Override public void onReconnected() {
         if (state.compareAndSet(GridKernalState.DISCONNECTED, GridKernalState.STARTED))
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnectFailed(Throwable t) {
+        if (state.get() == GridKernalState.DISCONNECTED)
+            ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(t);
     }
 
     /**

@@ -133,6 +133,8 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
             return null;
         }
 
+        @Override public void onReconnectFailed(Throwable t) {}
+
         @Override public void onReconnected() {
             // No-op.
         }

@@ -123,4 +123,11 @@ public interface GridKernalGateway {
      * Reconnected callback.
      */
     public void onReconnected();
+
+    /**
+     * Reconnect failed callback.
+     *
+     * @param t Cause.
+     */
+    public void onReconnectFailed(Throwable t);
 }

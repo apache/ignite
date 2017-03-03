@@ -1891,6 +1891,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Leave cluster and try to join again.
+     *
+     * @return Future will be completed with success when node joined cluster
+     * or throw exception if failed.
+     * @throws IgniteSpiException If failed.
+     */
+    public IgniteInternalFuture<Object> rejoin() {
+        return getSpi().rejoin();
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.

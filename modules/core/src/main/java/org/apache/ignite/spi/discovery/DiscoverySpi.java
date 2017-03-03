@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -126,6 +127,15 @@ public interface DiscoverySpi extends IgniteSpi {
      * @throws IgniteSpiException If any error occurs.
      */
     public void disconnect() throws IgniteSpiException;
+
+    /**
+     * Leave cluster and try to join again.
+     *
+     * @return Future will be completed with success when node joined cluster
+     * or throw exception if failed.
+     * @throws IgniteSpiException If failed.
+     */
+    public IgniteInternalFuture<Object> rejoin() throws IgniteSpiException;
 
     /**
      * Sets discovery SPI node authenticator. This method is called before SPI start() method.

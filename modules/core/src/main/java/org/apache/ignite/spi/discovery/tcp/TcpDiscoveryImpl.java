@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -257,6 +258,15 @@ abstract class TcpDiscoveryImpl {
 
         return t.isAlive() ? "alive" : "dead";
     }
+
+    /**
+     * Leave cluster and try to join again.
+     *
+     * @return Future will be completed with success when node joined cluster
+     * or throw exception if failed.
+     * @throws IgniteSpiException If failed.
+     */
+    public abstract IgniteInternalFuture<Object> rejoin() throws IgniteSpiException;
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>

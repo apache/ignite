@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCouldReconnectCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
@@ -780,6 +781,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders();
 
+        boolean recon = false;
+
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -946,8 +949,35 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                if (!skipDaemon(comp))
-                    comp.onKernalStart();
+                if (!skipDaemon(comp)) {
+                    try {
+                        comp.onKernalStart();
+                    }
+                    catch (IgniteCouldReconnectCheckedException e) {
+                        recon = true;
+                    }
+                }
+            }
+
+            while (recon) {
+                try {
+                    ctx.discovery().rejoin().get(); // TODO timeout?
+
+                    IgniteFuture<?> reconFut = ctx.cluster().clientReconnectFuture();
+
+                    reconFut.get();
+
+                    recon = false;
+                }
+                catch (IgniteException e) {
+                    if (X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedException.class)) {
+                        log.warning("Rejoin failed, retry. locNodeId=" + ctx.localNodeId() + ']');
+
+                        continue;
+                    }
+
+                    throw e;
+                }
             }
 
             // Register MBeans.
@@ -3393,9 +3423,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ctx.gateway().onReconnected();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to reconnect, will stop node", e);
+                        if (!X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedCheckedException.class)) {
+                            U.error(log, "Failed to reconnect, will stop node 2", e);
 
-                        close();
+                            close();
+                        }
+                        else {
+                            U.error(log, "Failed to reconnect, retry", e);
+
+                            ctx.gateway().onReconnectFailed(e);
+                        }
                     }
                 }
             });
