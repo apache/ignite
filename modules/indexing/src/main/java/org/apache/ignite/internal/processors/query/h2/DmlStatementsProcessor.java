@@ -41,10 +41,12 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -95,6 +97,9 @@ public class DmlStatementsProcessor {
     /** Indexing. */
     private IgniteH2Indexing idx;
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
     private final static Set<Integer> WARNED_TYPES =
         Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
@@ -106,10 +111,15 @@ public class DmlStatementsProcessor {
     private final ConcurrentMap<String, ConcurrentMap<String, UpdatePlan>> planCache = new ConcurrentHashMap<>();
 
     /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
      * @param idx indexing.
      */
-    public void start(IgniteH2Indexing idx) {
+    public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
         this.idx = idx;
+
+        log = ctx.log(DmlStatementsProcessor.class);
     }
 
     /**
@@ -394,7 +404,7 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             if (e.size() != 2) {
-                U.warn(idx.getLogger(), "Invalid row size on DELETE - expected 2, got " + e.size());
+                U.warn(log, "Invalid row size on DELETE - expected 2, got " + e.size());
                 continue;
             }
 
@@ -895,7 +905,7 @@ public class DmlStatementsProcessor {
     private BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
         if (U.isHashCodeEmpty(binObj)) {
             if (WARNED_TYPES.add(binObj.type().typeId()))
-                U.warn(idx.getLogger(), "Binary object's type does not have identity resolver explicitly set, therefore " +
+                U.warn(log, "Binary object's type does not have identity resolver explicitly set, therefore " +
                     "BinaryArrayIdentityResolver is used to generate hash codes for its instances, and therefore " +
                     "hash code of this binary object will most likely not match that of its non serialized form. " +
                     "For finer control over identity of this type, please update your BinaryConfiguration accordingly." +

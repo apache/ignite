@@ -408,13 +408,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Logger.
-     */
-    public IgniteLogger getLogger() {
-        return log;
-    }
-
-    /**
      * @param c Connection.
      * @param sql SQL.
      * @param useStmtCache If {@code true} uses statement cache.
@@ -1886,7 +1879,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteCheckedException("Failed to initialize DDL statements processor", e);
             }
 
-            dmlProc.start(this);
+            dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
         }
 

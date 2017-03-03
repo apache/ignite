@@ -22,13 +22,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -48,11 +52,14 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * DDL statements processor.<p>
@@ -62,14 +69,17 @@ public class DdlStatementsProcessor {
     /** Kernal context. */
     GridKernalContext ctx;
 
-    /** Indexing engine. */
-    private IgniteH2Indexing idx;
+    /** Logger. */
+    private IgniteLogger log;
 
     /** State flag. */
     private AtomicBoolean isStopped = new AtomicBoolean();
 
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap<>();
+
+    /** Worker. */
+    private volatile DdlWorker worker;
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
@@ -79,20 +89,37 @@ public class DdlStatementsProcessor {
      */
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
-        this.idx = idx;
 
-        ctx.discovery().setCustomEventListener(DdlInitDiscoveryMessage.class, new CustomEventListener<DdlInitDiscoveryMessage>() {
+        log = ctx.log(DdlStatementsProcessor.class);
+
+        worker = new DdlWorker(ctx.gridName(), log);
+
+        IgniteThread workerThread = new IgniteThread(worker);
+
+        workerThread.setDaemon(true);
+
+        workerThread.start();
+
+        ctx.discovery().setCustomEventListener(DdlInitDiscoveryMessage.class,
+            new CustomEventListener<DdlInitDiscoveryMessage>() {
             /** {@inheritDoc} */
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlInitDiscoveryMessage msg) {
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                DdlInitDiscoveryMessage msg) {
                 onInit(msg);
             }
         });
 
-        ctx.discovery().setCustomEventListener(DdlAckDiscoveryMessage.class, new CustomEventListener<DdlAckDiscoveryMessage>() {
+        ctx.discovery().setCustomEventListener(DdlAckDiscoveryMessage.class,
+            new CustomEventListener<DdlAckDiscoveryMessage>() {
             /** {@inheritDoc} */
-            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlAckDiscoveryMessage msg) {
-                onAck(snd, msg);
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, final ClusterNode snd,
+                final DdlAckDiscoveryMessage msg) {
+                submitTask(new DdlTask() {
+                    @Override public void run() {
+                        onAck(snd, msg);
+                    }
+                });
             }
         });
 
@@ -112,6 +139,20 @@ public class DdlStatementsProcessor {
                 }
             }
         });
+    }
+
+    /**
+     * Submit a task to {@link #worker} for async execution.
+     *
+     * @param task Task.
+     */
+    private void submitTask(DdlTask task) {
+        DdlWorker worker0 = worker;
+
+        if (worker0 != null)
+            worker0.submit(task);
+        else
+            log.debug("Cannot submit DDL task because worker is null (node is stopping): " + task);
     }
 
     /**
@@ -147,7 +188,7 @@ public class DdlStatementsProcessor {
             ctx.io().send(snd, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (Throwable e) {
-            idx.getLogger().error("Failed to notify coordinator about local DLL operation completion [opId=" +
+            U.error(log, "Failed to notify coordinator about local DLL operation completion [opId=" +
                 msg.operation().operationId() + ", clientNodeId=" + snd.id() + ']', e);
         }
     }
@@ -232,7 +273,7 @@ public class DdlStatementsProcessor {
             ctx.io().send(args.clientNodeId(), GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (IgniteCheckedException e) {
-            idx.getLogger().error("Failed to notify client node about DDL operation failure " +
+            U.error(log, "Failed to notify client node about DDL operation failure " +
                 "[opId=" + args.operationId() + ", clientNodeId=" + args.clientNodeId() + ']', e);
         }
     }
@@ -248,8 +289,7 @@ public class DdlStatementsProcessor {
         GridFutureAdapter fut = operations.get(opId);
 
         if (fut == null) {
-            idx.getLogger().warning("DDL operation not found at its client [opId=" + opId + ", nodeId=" +
-                ctx.localNodeId() + ']');
+            U.warn(log, "DDL operation not found at its client [opId=" + opId + ", nodeId=" + ctx.localNodeId() + ']');
 
             return;
         }
@@ -280,7 +320,6 @@ public class DdlStatementsProcessor {
      * Exists as a separate method to allow overriding it in tests to check behavior in case of errors.
      *
      * @param args Operation arguments.
-     * @return Whether this node participates in this operation, or not.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
@@ -311,6 +350,14 @@ public class DdlStatementsProcessor {
     public void stop() throws IgniteCheckedException {
         if (!isStopped.compareAndSet(false, true))
             throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped already"));
+
+        DdlWorker worker0 = worker;
+
+        if (worker0 != null) {
+            worker0.cancel();
+
+            worker = null;
+        }
 
         for (Map.Entry<IgniteUuid, GridFutureAdapter> e : operations.entrySet())
             e.getValue().onDone(new IgniteCheckedException("Operation has been cancelled [opId=" + e.getKey() +']'));
@@ -420,5 +467,54 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex;
+    }
+
+    /**
+     * DDL worker.
+     */
+    private class DdlWorker extends GridWorker {
+        /** Worker queue. */
+        private final BlockingQueue<DdlTask> queue = new LinkedBlockingDeque<>();
+
+        /**
+         * Constructor.
+         *
+         * @param gridName Gird name.
+         * @param log Logger.
+         */
+        public DdlWorker(@Nullable String gridName, IgniteLogger log) {
+            super(gridName, "indexing-ddl-worker", log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                DdlTask task = queue.take();
+
+                try {
+                    task.run();
+                }
+                catch (Exception e) {
+                    U.error(log, "Unexpected exception during DDL task processing [task=" + task + ']', e);
+                }
+                catch (Throwable t) {
+                    U.error(log, "Unexpected error during DDL task processing (worker will be stopped) [task=" +
+                        task + ']', t);
+
+                    throw t;
+                }
+            }
+        }
+
+        /**
+         * Submit task.
+         *
+         * @param task Task.
+         */
+        public void submit(DdlTask task) {
+            assert task != null;
+
+            queue.add(task);
+        }
     }
 }
