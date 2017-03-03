@@ -248,8 +248,9 @@ public class VectorImplementationsTest {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
+            final boolean nonNegative = pow != (int)pow;
 
-            final ElementsChecker checker = new ElementsChecker(v, ref, desc + ", pow = " + pow);
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
             final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)
@@ -342,7 +343,7 @@ public class VectorImplementationsTest {
             double norm = 0;
 
             for (double val : arr)
-                norm += Math.pow(val, pow);
+                norm += pow == 1 ? val : Math.pow(val, pow);
 
             return norm;
         }
@@ -384,12 +385,22 @@ public class VectorImplementationsTest {
         private final double[] refReadOnly;
 
         /** */
-        ElementsChecker(Vector v, double[] ref, String fixtureDesc) {
+        private final boolean nonNegative;
+
+        /** */
+        ElementsChecker(Vector v, double[] ref, String fixtureDesc, boolean nonNegative) {
             this.fixtureDesc = fixtureDesc;
+
+            this.nonNegative = nonNegative;
 
             refReadOnly = readOnly(v) && ref == null ? new double[v.size()] : null;
 
             init(v, ref);
+        }
+
+        /** */
+        ElementsChecker(Vector v, double[] ref, String fixtureDesc) {
+            this(v, ref, fixtureDesc, false);
         }
 
         /** */
@@ -407,7 +418,7 @@ public class VectorImplementationsTest {
                 if (refReadOnly != null && exp == null)
                     exp = refReadOnly;
 
-                final Metric metric = new Metric(exp == null ? i : exp[i], e.get());
+                final Metric metric = new Metric(exp == null ? generated(i) : exp[i], e.get());
 
                 assertEquals("Unexpected vector index at " + fixtureDesc, i, e.index());
                 assertTrue("Not close enough at index " + i + ", size " + size + ", " + metric
@@ -428,16 +439,17 @@ public class VectorImplementationsTest {
                 return;
             }
 
-            // todo change below to introduce negative values because their absence
-            //    blocked catching an ugly bug in AbstractVector#kNorm
-
             for (Vector.Element e : v.all()) {
                 int idx = e.index();
 
-                e.set(e.index());
+                // IMPL NOTE introduce negative values because their absence
+                //    blocked catching an ugly bug in AbstractVector#kNorm
+                int val = generated(idx);
+
+                e.set(val);
 
                 if (ref != null)
-                    ref[idx] = idx;
+                    ref[idx] = val;
             }
         }
 
@@ -450,6 +462,11 @@ public class VectorImplementationsTest {
             if (ref != null)
                 for (Vector.Element e : v.all())
                     ref[e.index()] = e.get();
+        }
+
+        /** */
+        private int generated(int idx) {
+            return nonNegative || (idx & 1) == 0 ? idx : -idx;
         }
     }
 
@@ -469,7 +486,7 @@ public class VectorImplementationsTest {
 
         /** */
         boolean closeEnough() {
-            return new Double(exp).equals(obtained);
+            return closeEnoughToZero() || new Double(exp).equals(obtained);
         }
 
         /** {@inheritDoc} */
@@ -477,6 +494,12 @@ public class VectorImplementationsTest {
             return "Metric{" + "expected=" + exp +
                 ", obtained=" + obtained +
                 '}';
+        }
+
+        /** */
+        private boolean closeEnoughToZero() {
+            return (new Double(exp).equals(0.0) && new Double(obtained).equals(-0.0))
+                || (new Double(exp).equals(-0.0) && new Double(obtained).equals(0.0));
         }
     }
 }

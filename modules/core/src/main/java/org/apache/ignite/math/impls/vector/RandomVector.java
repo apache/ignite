@@ -156,7 +156,7 @@ public class RandomVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector times(double x) {
-        return new FunctionVector(size(), (i) -> get(i) * x);
+        return x == 0 ? new ConstantVector(size(), 0) : new FunctionVector(size(), (i) -> get(i) * x);
     }
 
     /** {@inheritDoc} */
