@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Plugin
 {
     using System;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Plugin;
     using NUnit.Framework;
 
@@ -65,6 +66,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /** <inheritdoc /> */
         public void Start(IPluginContext<TestIgnitePluginConfiguration> context)
         {
+            context.RegisterExceptionMapping("org.apache.ignite.platform.plugin.PlatformTestPluginException",
+                (className, message, inner, ignite) =>
+                    new TestIgnitePluginException(className, message, ignite, inner));
+
+            context.RegisterCallback(1, (input, output) =>
+            {
+                CallbackResult = input.ReadString();
+                output.WriteString(CallbackResult.ToUpper());
+
+                return CallbackResult.Length;
+            });
+
+            var ex = Assert.Throws<IgniteException>(() => context.RegisterCallback(1, (input, output) => 0));
+            Assert.AreEqual("Plugin callback with id 1 is already registered", ex.Message);
+
             Context = context;
 
             EnsureIgniteWorks();
@@ -108,6 +124,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Gets or sets a value indicating whether this <see cref="TestIgnitePluginProvider"/> is stopped.
         /// </summary>
         public bool? IgniteStopped { get; set; }
+
+        public string CallbackResult { get; private set; }
 
         /// <summary>
         /// Gets the context.

@@ -38,6 +38,7 @@ import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
 import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
 import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteEx;
@@ -154,6 +155,9 @@ public class IgfsMetaManager extends IgfsManager {
     /** Compute facade for client tasks. */
     private IgniteCompute cliCompute;
 
+    /** Compute facade for client tasks. */
+    private String metaCacheName;
+
     /**
      * Constructor.
      *
@@ -188,16 +192,18 @@ public class IgfsMetaManager extends IgfsManager {
         sampling = new IgfsSamplingKey(cfg.getName());
 
         log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
+
+        metaCacheName = cfg.getMetaCacheConfiguration().getName();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
+        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(metaCacheName);
 
         assert metaCache != null;
 
-        igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
+        igfsCtx.kernalContext().cache().internalCache(metaCacheName).preloader().startFuture()
             .listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> f) {
                     metaCacheStartLatch.countDown();
@@ -266,7 +272,7 @@ public class IgfsMetaManager extends IgfsManager {
     <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().affinityCall(metaCacheName, affinityFileId, task) :
                 clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
@@ -287,7 +293,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (cliCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
-            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
+            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), metaCacheName);
 
             cliCompute0 = ignite.compute(cluster);
 
@@ -423,7 +429,8 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Get IDs.
         if (client) {
-            List<IgniteUuid> ids = runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
+            List<IgniteUuid> ids = runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(),
+                IgfsUserContext.currentUser(), path));
 
             return new IgfsPathIds(path, parts, ids.toArray(new IgniteUuid[ids.size()]));
         }
@@ -667,8 +674,8 @@ public class IgfsMetaManager extends IgfsManager {
         throws IgniteCheckedException {
 
         if(client) {
-            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
-                updateSpace, space, affRange));
+            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), IgfsUserContext.currentUser(), fileId,
+                lockId, modificationTime, updateSpace, space, affRange));
 
             return;
         }
@@ -2073,7 +2080,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(),
+            IgfsUserContext.currentUser(), path)) : info(fileId(path));
     }
 
     /**
@@ -2084,7 +2092,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(),
+            IgfsUserContext.currentUser(), path)) : fileIds(path);
     }
 
     /**

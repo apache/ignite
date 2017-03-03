@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop.impl.igfs;
+namespace Apache.Ignite.Core.Tests.Plugin.Cache
+{
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Plugin.Cache;
 
-import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+    /// <summary>
+    /// Configuration with a plugin with Java part.
+    /// </summary>
+    public class CacheJavaPluginConfiguration : ICachePluginConfiguration
+    {
+        /// <summary>
+        /// Gets or sets the custom property.
+        /// </summary>
+        public string Foo { get; set; }
 
-/**
- * IGFS Hadoop file system IPC shmem self test in DUAL_SYNC mode.
- */
-public class IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest
-    extends IgniteHadoopFileSystemShmemAbstractSelfTest {
-    /**
-     * Constructor.
-     */
-    public IgniteHadoopFileSystemShmemEmbeddedDualSyncSelfTest() {
-        super(DUAL_SYNC, false);
+        /** <inheritdoc /> */
+        public int? CachePluginConfigurationClosureFactoryId
+        {
+            get { return 0; }
+        }
+
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryRawWriter writer)
+        {
+            writer.WriteString(Foo);
+        }
     }
 }

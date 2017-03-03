@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactio
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -532,6 +533,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         prepare(cfg, cfg.getAffinityMapper(), false);
         prepare(cfg, cfg.getEvictionFilter(), false);
         prepare(cfg, cfg.getInterceptor(), false);
+        prepare(cfg, cfg.getTopologyValidator(), false);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -567,6 +569,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getEvictionPolicy(), false);
         cleanup(cfg, cfg.getAffinity(), false);
         cleanup(cfg, cfg.getAffinityMapper(), false);
+        cleanup(cfg, cfg.getEvictionFilter(), false);
+        cleanup(cfg, cfg.getInterceptor(), false);
+        cleanup(cfg, cfg.getTopologyValidator(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
         if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
@@ -722,8 +727,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (igfsCfgs != null) {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                internalCaches.add(maskNull(igfsCfg.getMetaCacheName()));
-                internalCaches.add(maskNull(igfsCfg.getDataCacheName()));
+                internalCaches.add(maskNull(igfsCfg.getMetaCacheConfiguration().getName()));
+                internalCaches.add(maskNull(igfsCfg.getDataCacheConfiguration().getName()));
             }
         }
 
@@ -3612,6 +3617,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ret.add(ccfg.getEvictionFilter());
         ret.add(ccfg.getEvictionPolicy());
         ret.add(ccfg.getInterceptor());
+        ret.add(ccfg.getTopologyValidator());
 
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
 

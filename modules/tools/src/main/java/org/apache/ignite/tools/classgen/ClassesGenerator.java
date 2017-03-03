@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TreeSet;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
@@ -212,7 +211,8 @@ public class ClassesGenerator {
         if (included) {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
-            if (Serializable.class.isAssignableFrom(cls) && !AbstractQueuedSynchronizer.class.isAssignableFrom(cls)) {
+            if (Serializable.class.isAssignableFrom(cls) &&
+                !(cls.getName().endsWith("Future") || cls.getName().endsWith("FutureAdapter"))) {
                 if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
                     !cls.getSimpleName().isEmpty()) {
                     try {

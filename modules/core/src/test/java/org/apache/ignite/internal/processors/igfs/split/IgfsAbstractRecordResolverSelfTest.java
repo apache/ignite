@@ -58,15 +58,12 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512);
         igfsCfg.setDefaultMode(PRIMARY);
 
         CacheConfiguration dataCacheCfg = new CacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setNearConfiguration(new NearCacheConfiguration());
@@ -76,10 +73,12 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -90,7 +89,6 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         Ignite g = G.start(cfg);

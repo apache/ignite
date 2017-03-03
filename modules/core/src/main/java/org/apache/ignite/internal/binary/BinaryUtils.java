@@ -354,16 +354,13 @@ public class BinaryUtils {
 
     /**
      * @param typeId Field type ID.
-     * @return Field type name.
+     * @return Field type name or {@code null} if unknown.
      */
     public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+            return null;
 
-        String typeName = FIELD_TYPE_NAMES[typeId];
-
-        assert typeName != null : typeId;
-
-        return typeName;
+        return FIELD_TYPE_NAMES[typeId];
     }
 
     /**
@@ -1474,11 +1471,36 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Value.
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
+        return doReadClass(in, ctx, ldr, true);
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
+     * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
+     * @throws BinaryObjectException If failed.
+     */
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+        throws BinaryObjectException {
         int typeId = in.readInt();
+
+        if (!deserialize) {
+            // Skip class name at the stream.
+            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doReadClassName(in);
+
+            return null;
+        }
 
         return doReadClass(in, ctx, ldr, typeId);
     }
@@ -1531,15 +1553,16 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
      * @param typeId Type id.
-     * @return Value.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
         Class cls;
-
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
@@ -1572,9 +1595,6 @@ public class BinaryUtils {
     public static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
         @Nullable ClassLoader ldr, boolean deserialize) {
         Class cls;
-
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize).describedClass();
@@ -1896,6 +1916,10 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
@@ -1904,7 +1928,7 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        Class compType = doReadClass(in, ctx, ldr);
+        Class compType = doReadClass(in, ctx, ldr, deserialize);
 
         int len = in.readInt();
 

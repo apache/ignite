@@ -86,6 +86,7 @@ import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -287,6 +288,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     public void testUuid() throws Exception {
         UUID uuid = UUID.randomUUID();
+
+        assertEquals(uuid, marshalUnmarshal(uuid));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteUuid() throws Exception {
+        IgniteUuid uuid = IgniteUuid.randomUuid();
 
         assertEquals(uuid, marshalUnmarshal(uuid));
     }
