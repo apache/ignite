@@ -111,26 +111,20 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
                 futs = new IgniteFuture[3];
 
             if (futs[0] == null || futs[1] == null || futs[2] == null) {
-                IgniteCache cache = ignite.cache(cacheName).withAsync();
+                IgniteCache cache = ignite.cache(cacheName);
 
                 if (futs[0] == null) {
-                    cache.size(CachePeekMode.PRIMARY);
-
-                    if (callAsync(cache.<Integer>future(), 0))
+                    if (callAsync(cache.sizeAsync(CachePeekMode.PRIMARY), 0))
                         return null;
                 }
 
                 if (futs[1] == null) {
-                    cache.clear();
-
-                    if (callAsync(cache.<Integer>future(), 1))
+                    if (callAsync(cache.clearAsync(), 1))
                         return null;
                 }
                 
                 if (futs[2] == null) {
-                    cache.size(CachePeekMode.PRIMARY);
-
-                    if (callAsync(cache.<Integer>future(), 2))
+                    if (callAsync(cache.sizeAsync(CachePeekMode.PRIMARY), 2))
                         return null;
                 }
             }
