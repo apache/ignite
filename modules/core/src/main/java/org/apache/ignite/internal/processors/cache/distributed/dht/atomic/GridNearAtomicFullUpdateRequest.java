@@ -1110,14 +1110,16 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKeys) {
-        vals = null;
-        entryProcessors = null;
-        entryProcessorsBytes = null;
-        invokeArgs = null;
-        invokeArgsBytes = null;
+        if (completed()) {
+            vals = null;
+            entryProcessors = null;
+            entryProcessorsBytes = null;
+            invokeArgs = null;
+            invokeArgsBytes = null;
 
-        if (clearKeys && completed())
-            keys = null;
+            if (clearKeys)
+                keys = null;
+        }
     }
 
     /** {@inheritDoc} */

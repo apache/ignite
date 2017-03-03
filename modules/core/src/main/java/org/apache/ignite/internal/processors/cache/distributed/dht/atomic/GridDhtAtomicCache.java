@@ -2106,7 +2106,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        int size = req.size();
+        int size = stripeIdxs == null ? req.size() : stripeIdxs.length;
 
         Map<KeyCacheObject, CacheObject> putMap = null;
 
