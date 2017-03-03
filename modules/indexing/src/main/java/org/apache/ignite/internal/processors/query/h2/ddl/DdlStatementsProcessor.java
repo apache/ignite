@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -52,7 +53,6 @@ import org.h2.command.Prepared;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * DDL statements processor.<p>
@@ -69,7 +69,7 @@ public class DdlStatementsProcessor {
     private AtomicBoolean isStopped = new AtomicBoolean();
 
     /** Running operations originating at this node as a client. */
-    private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap8<>();
+    private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap<>();
 
     /**
      * Initialize message handlers and this' fields needed for further operation.
