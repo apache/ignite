@@ -54,6 +54,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -818,9 +819,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (ctx.config().getStripedPoolSize() > 0 &&
             plc == GridIoPolicy.SYSTEM_POOL &&
-            msg.partition() != Integer.MIN_VALUE
+            (msg.partition() != Integer.MIN_VALUE || msg.message() instanceof GridNearAtomicFullUpdateRequest)
             ) {
-            ctx.getStripedExecutorService().execute(msg.partition(), c);
+            if (msg.message() instanceof GridNearAtomicFullUpdateRequest && ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() != null) {
+                for (Integer stripe : ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap().keySet()) {
+                    ctx.getStripedExecutorService().execute(stripe, c);
+                }
+            }
+            else
+                ctx.getStripedExecutorService().execute(msg.partition(), c);
 
             return;
         }

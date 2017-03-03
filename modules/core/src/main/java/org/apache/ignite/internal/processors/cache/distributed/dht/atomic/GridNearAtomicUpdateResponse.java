@@ -108,6 +108,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Partition ID. */
     private int partId = -1;
 
+    /** Partition ID. */
+    private int stripe = -1;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -445,6 +448,16 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return partId;
     }
 
+    /** */
+    public int stripe() {
+        return stripe;
+    }
+
+    /** */
+    public void stripe(int stripe) {
+        this.stripe = stripe;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
@@ -538,6 +551,12 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
             case 14:
                 if (!writer.writeMessage("ret", ret))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeInt("stripe", stripe))
                     return false;
 
                 writer.incrementState();
@@ -654,6 +673,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
+            case 15:
+                stripe = reader.readInt("stripe");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
@@ -666,7 +693,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 
     /** {@inheritDoc} */

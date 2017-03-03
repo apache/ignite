@@ -91,7 +91,6 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -100,6 +99,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.thread.IgniteStripeThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -334,9 +334,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     UUID nodeId,
                     GridNearAtomicAbstractUpdateRequest req
                 ) {
+                    int stripeIdx;
+
+                    if (req instanceof GridNearAtomicFullUpdateRequest && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null)
+                        stripeIdx = ((IgniteStripeThread)Thread.currentThread()).stripeIndex();
+                    else
+                        stripeIdx = IgniteStripeThread.GRP_IDX_UNASSIGNED;
+
                     processNearAtomicUpdateRequest(
                         nodeId,
-                        req);
+                        req,
+                        stripeIdx);
                 }
 
                 @Override public String toString() {
@@ -714,7 +722,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
-        return (V) update0(
+        return (V)update0(
             key,
             val,
             null,
@@ -900,8 +908,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException
-    {
+        Object... args) throws IgniteCheckedException {
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
 
@@ -1701,7 +1708,40 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicAbstractUpdateRequest req,
         final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
+        updateAllAsyncInternal(nodeId, req, IgniteStripeThread.GRP_IDX_UNASSIGNED, completionCb);
+    }
+
+    /**
+     * Executes local update.
+     *
+     * @param nodeId Node ID.
+     * @param req Update request.
+     * @param stripeIdx Stripe index.
+     * @param completionCb Completion callback.
+     */
+    public void updateAllAsyncInternal(
+        final UUID nodeId,
+        final GridNearAtomicAbstractUpdateRequest req,
+        final int stripeIdx,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
+    ) {
+        IgniteInternalFuture<Object> forceFut;
+
+        final List<Integer> stripeIdxs;
+
+        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED && req instanceof GridNearAtomicFullUpdateRequest) {
+            stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
+            List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.size());
+
+            for (int i = 0; i < stripeIdxs.size(); i++)
+                keys.add(req.key(stripeIdxs.get(i)));
+
+            forceFut = preldr.request(keys, req.topologyVersion());
+        }
+        else {
+            forceFut = preldr.request(req, req.topologyVersion());
+            stripeIdxs = null;
+        }
 
         if (forceFut == null || forceFut.isDone()) {
             try {
@@ -1717,7 +1757,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 return;
             }
 
-            updateAllAsyncInternal0(nodeId, req, completionCb);
+            updateAllAsyncInternal0(nodeId, req, stripeIdx, stripeIdxs, completionCb);
         }
         else {
             forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
@@ -1734,7 +1774,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return;
                     }
 
-                    updateAllAsyncInternal0(nodeId, req, completionCb);
+                    updateAllAsyncInternal0(nodeId, req, stripeIdx, stripeIdxs, completionCb);
                 }
             });
         }
@@ -1771,11 +1811,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void updateAllAsyncInternal0(
         UUID nodeId,
         GridNearAtomicAbstractUpdateRequest req,
+        int stripeIdx,
+        List<Integer> stripeIdxs,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
+        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED)
+            res.stripe(stripeIdx);
+
+        // todo: partition assignment
         res.partition(req.partition());
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
@@ -1791,7 +1837,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
-            List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion());
+            List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
@@ -1802,7 +1848,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     if (top.stopping()) {
-                        res.addFailedKeys(req.keys(), new IgniteCheckedException("Failed to perform cache operation " +
+                        addAllKeysAsFailed(req, res, stripeIdxs, new IgniteCheckedException("Failed to perform cache operation " +
                             "(cache is stopped): " + name()));
 
                         completionCb.apply(req, res);
@@ -1852,10 +1898,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (req.size() > 1 &&                    // Several keys ...
+                        if (req.size() > 1 &&                     // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
-                                                                  // (conflict resolver should be used for local store)
+                            // (conflict resolver should be used for local store)
                             !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
@@ -1870,7 +1916,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.isDrEnabled(),
                                 taskName,
                                 expiry,
-                                sndPrevVal);
+                                sndPrevVal,
+                                stripeIdxs);
 
                             deleted = updRes.deleted();
                             dhtFut = updRes.dhtFuture();
@@ -1890,7 +1937,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.isDrEnabled(),
                                 taskName,
                                 expiry,
-                                sndPrevVal);
+                                sndPrevVal,
+                                stripeIdxs);
 
                             retVal = updRes.returnValue();
                             deleted = updRes.deleted();
@@ -1948,7 +1996,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
 
-            res.addFailedKeys(req.keys(), e);
+            addAllKeysAsFailed(req, res, stripeIdxs, e);
 
             completionCb.apply(req, res);
 
@@ -1961,7 +2009,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (remap) {
             assert dhtFut == null;
 
-            res.remapKeys(req.keys());
+            if (stripeIdxs == null)
+                res.remapKeys(req.keys());
+            else {
+                List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.size());
+                for (int i = 0; i < stripeIdxs.size(); i++)
+                    keys.add(req.key(stripeIdxs.get(i)));
+                res.remapKeys(keys);
+            }
 
             completionCb.apply(req, res);
         }
@@ -1975,6 +2030,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         sendTtlUpdateRequest(expiry);
+    }
+
+    /**
+     * Adds all keys as failed to response.
+     *
+     * @param req Request.
+     * @param res Response.
+     * @param stripeIdx Stripe indexes.
+     * @param e Throwable.
+     */
+    private void addAllKeysAsFailed(GridNearAtomicAbstractUpdateRequest req,
+        GridNearAtomicUpdateResponse res,
+        List<Integer> stripeIdx,
+        Throwable e) {
+        if (stripeIdx == null)
+            res.addFailedKeys(req.keys(), e);
+        else {
+            for (int i = 0; i < stripeIdx.size(); i++)
+                res.addFailedKey(req.key(stripeIdx.get(i)), e);
+        }
     }
 
     /**
@@ -2008,7 +2083,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean replicate,
         final String taskName,
         @Nullable final IgniteCacheExpiryPolicy expiry,
-        final boolean sndPrevVal
+        final boolean sndPrevVal,
+        final List<Integer> stripeIdxs
     ) throws GridCacheEntryRemovedException {
         assert !ctx.dr().receiveEnabled(); // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue() || req.operation() == TRANSFORM; // Should not request return values for putAll.
@@ -2018,7 +2094,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 reloadIfNeeded(locked);
             }
             catch (IgniteCheckedException e) {
-                res.addFailedKeys(req.keys(), e);
+                addAllKeysAsFailed(req, res, stripeIdxs, e);
 
                 return new UpdateBatchResult();
             }
@@ -2048,6 +2124,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         for (int i = 0; i < locked.size(); i++) {
             GridDhtCacheEntry entry = locked.get(i);
+
+            int trueIdx = stripeIdxs == null ? i : stripeIdxs.get(i);
 
             if (entry == null)
                 continue;
@@ -2079,7 +2157,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 if (op == TRANSFORM) {
-                    EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
+                    EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(trueIdx);
 
                     CacheObject old = entry.innerGet(
                         ver,
@@ -2236,12 +2314,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     entryProcessorMap.put(entry.key(), entryProcessor);
                 }
                 else if (op == UPDATE) {
-                    CacheObject updated = req.value(i);
+                    CacheObject updated = req.value(trueIdx);
 
                     if (intercept) {
                         CacheObject old = entry.innerGet(
-                             null,
-                             null,
+                            null,
+                            null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
                             /*metrics*/true,
@@ -2431,7 +2509,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean replicate,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean sndPrevVal
+        boolean sndPrevVal,
+        List<Integer> stripeIdxs
     ) throws GridCacheEntryRemovedException {
         GridCacheReturn retVal = null;
         Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
@@ -2445,8 +2524,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean intercept = ctx.config().getInterceptor() != null;
 
         // Avoid iterator creation.
-        for (int i = 0; i < req.size(); i++) {
-            KeyCacheObject k = req.key(i);
+        int keyNum = stripeIdxs == null ? req.size() : stripeIdxs.size();
+
+        for (int i = 0; i < keyNum; i++) {
+            int trueIdx = stripeIdxs == null ? i : stripeIdxs.get(i);
+
+            KeyCacheObject k = req.key(trueIdx);
 
             GridCacheOperation op = req.operation();
 
@@ -2458,16 +2541,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (entry == null)
                     continue;
 
-                GridCacheVersion newConflictVer = req.conflictVersion(i);
-                long newConflictTtl = req.conflictTtl(i);
-                long newConflictExpireTime = req.conflictExpireTime(i);
+                GridCacheVersion newConflictVer = req.conflictVersion(trueIdx);
+                long newConflictTtl = req.conflictTtl(trueIdx);
+                long newConflictExpireTime = req.conflictExpireTime(trueIdx);
 
                 assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
 
                 boolean primary = !req.fastMap() || ctx.affinity().primaryByPartition(ctx.localNode(), entry.partition(),
                     req.topologyVersion());
 
-                Object writeVal = op == TRANSFORM ? req.entryProcessor(i) : req.writeValue(i);
+                Object writeVal = op == TRANSFORM ? req.entryProcessor(trueIdx) : req.writeValue(trueIdx);
 
                 Collection<UUID> readers = null;
                 Collection<UUID> filteredReaders = null;
@@ -2627,7 +2710,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /**
      * @param hasNear {@code True} if originating node has near cache.
-     * @param firstEntryIdx Index of the first entry in the request keys collection.
+     * @param firstEntryIdx Index of the first entry in the request keys collection or in the stripeIdxs.
      * @param entries Entries to update.
      * @param ver Version to set.
      * @param node Originating node.
@@ -2843,9 +2926,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     if (hasNear) {
+                        // it's index inside stripe keys in case of striped processing
+                        int idx = firstEntryIdx + i;
+
                         if (primary) {
                             if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
-                                int idx = firstEntryIdx + i;
 
                                 if (req.operation() == TRANSFORM) {
                                     res.addNearValue(idx,
@@ -2865,10 +2950,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             else if (readers.contains(node.id())) // Reader became primary or backup.
                                 entry.removeReader(node.id(), req.messageId());
                             else
-                                res.addSkippedIndex(firstEntryIdx + i);
+                                res.addSkippedIndex(idx);
                         }
                         else
-                            res.addSkippedIndex(firstEntryIdx + i);
+                            res.addSkippedIndex(idx);
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
@@ -2899,12 +2984,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      *
      * @param req Request with keys to lock.
      * @param topVer Topology version to lock on.
+     * @param stripeIdxs Stripe indexes.
      * @return Collection of locked entries.
-     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown,
-     *      locks are released.
+     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
+     * are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer)
+    private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req,
+        AffinityTopologyVersion topVer,
+        List<Integer> stripeIdxs)
         throws GridDhtInvalidPartitionException {
         if (req.size() == 1) {
             KeyCacheObject key = req.key(0);
@@ -2930,12 +3018,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         else {
-            List<GridDhtCacheEntry> locked = new ArrayList<>(req.size());
+            int keysNum = stripeIdxs == null ? req.size() : stripeIdxs.size();
+            List<GridDhtCacheEntry> locked = new ArrayList<>(keysNum);
 
             while (true) {
-                for (int i = 0; i < req.size(); i++) {
+                for (int i = 0; i < keysNum; i++) {
                     try {
-                        GridDhtCacheEntry entry = entryExx(req.key(i), topVer);
+                        int idx = stripeIdxs == null ? i : stripeIdxs.get(i);
+
+                        GridDhtCacheEntry entry = entryExx(req.key(idx), topVer);
 
                         locked.add(entry);
                     }
@@ -3036,8 +3127,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param entry Entry to check.
      * @param req Update request.
-     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method
-     *      will return false.
+     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method will return
+     * false.
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicAbstractUpdateRequest req,
@@ -3056,6 +3147,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param req Request to remap.
      */
     private void remapToNewPrimary(GridNearAtomicAbstractUpdateRequest req) {
+        // todo: stripes in remapToNewPrimary
         assert req.writeSynchronizationMode() == FULL_ASYNC : req;
 
         if (log.isDebugEnabled())
@@ -3170,16 +3262,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Sender node ID.
      * @param req Near atomic update request.
      */
-    private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
+    private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req, int stripeIdx) {
         if (msgLog.isDebugEnabled()) {
             msgLog.debug("Received near atomic update request [futId=" + req.futureVersion() +
                 ", writeVer=" + req.updateVersion() +
-                ", node=" + nodeId + ']');
+                ", node=" + nodeId +
+                ", stripe=" + stripeIdx + ']');
         }
 
         req.nodeId(ctx.localNodeId());
 
-        updateAllAsyncInternal(nodeId, req, updateReplyClos);
+        updateAllAsyncInternal(nodeId, req, stripeIdx, updateReplyClos);
     }
 
     /**
@@ -3190,7 +3283,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicUpdateResponse res) {
         if (msgLog.isDebugEnabled())
             msgLog.debug("Received near atomic update response " +
-                "[futId=" + res.futureVersion() + ", node=" + nodeId + ']');
+                "[futId=" + res.futureVersion() + ", node=" + nodeId + ", stripe=" + res.stripe() + ']');
 
         res.nodeId(ctx.localNodeId());
 
@@ -3337,7 +3430,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
         catch (IgniteCheckedException e) {
             U.error(msgLog, "Failed to send DHT atomic update response [futId=" + req.futureVersion() +
-                ", node=" + nodeId +  ", res=" + res + ']', e);
+                ", node=" + nodeId + ", res=" + res + ']', e);
         }
     }
 

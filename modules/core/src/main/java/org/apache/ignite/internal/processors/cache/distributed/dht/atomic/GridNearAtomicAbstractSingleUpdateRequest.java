@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteLogger;
@@ -259,11 +260,19 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         return false;
     }
 
-    /**
-     * @return Response.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public GridNearAtomicUpdateResponse response() {
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Map<Integer, GridNearAtomicUpdateResponse> responses() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean completed() {
+        return res != null;
     }
 
     /** {@inheritDoc} */

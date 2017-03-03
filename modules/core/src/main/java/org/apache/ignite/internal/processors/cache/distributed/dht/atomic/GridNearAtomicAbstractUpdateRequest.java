@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -138,6 +139,16 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @return Response.
      */
     @Nullable public abstract GridNearAtomicUpdateResponse response();
+
+    /**
+     * @return Map of responces
+     */
+    @Nullable public abstract Map<Integer, GridNearAtomicUpdateResponse> responses();
+
+    /**
+     * @return {@code true} if request is completed.
+     */
+    public abstract boolean completed();
 
     /**
      * @param key Key to add.

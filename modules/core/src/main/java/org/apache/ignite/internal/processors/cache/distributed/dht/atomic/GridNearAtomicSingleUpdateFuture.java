@@ -135,7 +135,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         synchronized (mux) {
             req = this.req != null && this.req.nodeId().equals(nodeId) ? this.req : null;
 
-            if (req != null && req.response() == null) {
+            if (req != null && !req.completed()) {
                 res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                     nodeId,
                     req.futureVersion(),
@@ -634,7 +634,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 keepBinary,
                 cctx.kernalContext().clientNode(),
                 cctx.deploymentEnabled(),
-                1);
+                1, 1);
         }
 
         req.addUpdateEntry(cacheKey,

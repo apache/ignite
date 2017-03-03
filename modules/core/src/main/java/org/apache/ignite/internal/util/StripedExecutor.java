@@ -38,7 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.IgniteStripeThread;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -435,7 +435,7 @@ public class StripedExecutor implements ExecutorService {
          * Starts the stripe.
          */
         void start() {
-            thread = new IgniteThread(gridName, poolName + "-stripe-" + idx, this);
+            thread = new IgniteStripeThread(gridName, poolName + "-stripe-" + idx, this, idx);
 
             thread.start();
         }

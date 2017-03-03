@@ -160,6 +160,9 @@ public final class IgniteNodeAttributes {
     /** Ignite services compatibility mode (can be {@code null}). */
     public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
 
+    /** Ignite cache stripe size. */
+    public static final String ATTR_STRIPE_SIZE = ATTR_PREFIX + ".cache.stripe.size";
+
     /**
      * Enforces singleton.
      */

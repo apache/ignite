@@ -61,6 +61,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_STRIPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
@@ -172,7 +173,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             else
                 req = mappings != null ? mappings.get(nodeId) : null;
 
-            if (req != null && req.response() == null) {
+            if (req != null && !req.completed()) {
                 res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                     nodeId,
                     req.futureVersion(),
@@ -409,9 +410,16 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 for (GridNearAtomicFullUpdateRequest req0 : mappings.values()) {
                     GridNearAtomicUpdateResponse res0 = req0.response();
 
-                    assert res0 != null : req0;
+                    if (res0 != null)
+                        updateNear(req0, res0);
 
-                    updateNear(req0, res0);
+                    else {
+                        Map<Integer, GridNearAtomicUpdateResponse> responces = req0.responses();
+                        if (responces != null)
+                            for (GridNearAtomicUpdateResponse res1 : responces.values()) {
+                                updateNear(req0, res1);
+                            }
+                    }
                 }
             }
             else if (!nodeErr)
@@ -820,6 +828,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
             List<ClusterNode> affNodes = mapKey(cacheKey, topVer);
+            int part = cctx.affinity().partition(key);
 
             if (affNodes.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
@@ -829,6 +838,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             for (int n = 0; n < affNodes.size(); n++) {
                 ClusterNode affNode = affNodes.get(n);
+                int stripes = affNode.attribute(ATTR_STRIPE_SIZE);
 
                 if (affNode == null)
                     throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
@@ -859,8 +869,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         keepBinary,
                         cctx.kernalContext().clientNode(),
                         cctx.deploymentEnabled(),
-                        keys.size());
+                        keys.size(),
+                        stripes);
 
+                    // todo: fix id generation
+                    int futId = futVer.hashCode() % stripes;
+                    mapped.partition(futId > 0 ? futId : -futId);
                     pendingMappings.put(nodeId, mapped);
                 }
 
@@ -961,6 +975,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             keepBinary,
             cctx.kernalContext().clientNode(),
             cctx.deploymentEnabled(),
+            1,
             1);
 
         req.addUpdateEntry(cacheKey,
