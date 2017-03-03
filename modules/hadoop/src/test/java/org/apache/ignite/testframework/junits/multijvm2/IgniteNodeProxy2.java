@@ -120,7 +120,7 @@ public class IgniteNodeProxy2 {
             // First, check it from the client node viewpoint:
             int act = tmpClientIgnite.cluster().nodes().size() - 1;
 
-            X.println("    Topology size from the client's viewpoint: " + act);
+            X.println("##### Topology size from the client's viewpoint: " + act);
 
             if (requiredTopSize != act)
                 return false;
@@ -129,7 +129,7 @@ public class IgniteNodeProxy2 {
             for (ClusterNode cn: tmpClientIgnite.cluster().nodes()) {
                 act = -1 + topologySizeFromNodeViewpoint(tmpClientIgnite, cn);
 
-                X.println("    Topology size from " + cn + " viewpoint: " + act);
+                X.println("##### Topology size from " + cn + " viewpoint: " + act);
 
                 if (requiredTopSize != act)
                     return false;

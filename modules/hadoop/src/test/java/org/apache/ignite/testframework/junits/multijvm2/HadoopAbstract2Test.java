@@ -77,7 +77,7 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
                     throw new RuntimeException(e);
                 }
             }
-        }, 5_000));
+        }, 10_000));
     }
 
     /**
