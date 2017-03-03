@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
@@ -319,6 +320,14 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
                 ts.setNanos(ts.getNanos() + nanos);
 
                 val = ts;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.TIME: {
+                long time = BinaryPrimitives.readLong(ptr, fieldPos + 1);
+
+                val = new Time(time);
 
                 break;
             }

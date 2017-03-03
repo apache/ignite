@@ -39,7 +39,7 @@ namespace ignite
          * This is a thin wrapper over the memory area that contains serialized
          * binary object. Provides method that allows deserialize object.
          */
-        class IGNITE_IMPORT_EXPORT BinaryObject : private impl::binary::BinaryObjectImpl
+        class IGNITE_IMPORT_EXPORT BinaryObject
         {
             friend class BinaryArrayIdentityResolver;
         public:
@@ -47,11 +47,22 @@ namespace ignite
             /**
              * Constructor.
              *
+             * @param impl Implementation.
+             */
+            BinaryObject(const impl::binary::BinaryObjectImpl& impl) :
+                impl(impl)
+            {
+                // No-op.
+            };
+
+            /**
+             * Constructor.
+             *
              * @param mem Binary object memory.
              * @param start Object starting position in memory.
              */
-            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) : 
-                BinaryObjectImpl(mem, start)
+            BinaryObject(impl::interop::InteropMemory& mem, int32_t start) :
+                impl(mem, start)
             {
                 // No-op.
             };
@@ -66,10 +77,13 @@ namespace ignite
             template<typename T>
             T Deserialize() const
             {
-                return impl::binary::BinaryObjectImpl::Deserialize<T>();
+                return impl.Deserialize<T>();
             }
 
         private:
+            /** Implementation. */
+            impl::binary::BinaryObjectImpl impl;
+
             IGNITE_NO_COPY_ASSIGNMENT(BinaryObject)
         };
     }

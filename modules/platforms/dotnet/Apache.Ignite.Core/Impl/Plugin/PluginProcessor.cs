@@ -21,7 +21,12 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin;
 
@@ -36,6 +41,14 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /** Plugin providers by name. */
         private readonly Dictionary<string, IPluginProviderProxy> _pluginProvidersByName
             = new Dictionary<string, IPluginProviderProxy>();
+
+        /** Plugin exception mappings. */
+        private readonly CopyOnWriteConcurrentDictionary<string, ExceptionFactory> _exceptionMappings
+            = new CopyOnWriteConcurrentDictionary<string, ExceptionFactory>();
+
+        /** Plugin callbacks. */
+        private readonly CopyOnWriteConcurrentDictionary<long, PluginCallback> _callbacks
+            = new CopyOnWriteConcurrentDictionary<long, PluginCallback>();
 
         /** */
         private readonly Ignite _ignite;
@@ -113,6 +126,109 @@ namespace Apache.Ignite.Core.Impl.Plugin
                                   name, GetType().Assembly.Location));
 
             return provider;
+        }
+
+        /// <summary>
+        /// Gets the exception factory.
+        /// </summary>
+        public ExceptionFactory GetExceptionMapping(string className)
+        {
+            Debug.Assert(className != null);
+
+            ExceptionFactory res;
+
+            return _exceptionMappings.TryGetValue(className, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Registers the exception mapping.
+        /// </summary>
+        public void RegisterExceptionMapping(string className, ExceptionFactory factory)
+        {
+            Debug.Assert(className != null);
+            Debug.Assert(factory != null);
+
+            _exceptionMappings.GetOrAdd(className, _ => factory);
+        }
+
+        /// <summary>
+        /// Registers the callback.
+        /// </summary>
+        /// <param name="callbackId">Calback id.</param>
+        /// <param name="callback">Callback delegate</param>
+        public void RegisterCallback(long callbackId, PluginCallback callback)
+        {
+            Debug.Assert(callback != null);
+
+            var res = _callbacks.GetOrAdd(callbackId, _ => callback);
+
+            if (res != callback)
+            {
+                throw new IgniteException(string.Format(
+                    "Plugin callback with id {0} is already registered", callbackId));
+            }
+        }
+
+        /// <summary>
+        /// Invokes the callback.
+        /// </summary>
+        public long InvokeCallback(long callbackId, long inPtr, long outPtr)
+        {
+            PluginCallback callback;
+
+            if (!_callbacks.TryGetValue(callbackId, out callback))
+            {
+                throw new IgniteException(string.Format(
+                    "Plugin callback with id {0} is not registered", callbackId));
+            }
+
+            using (var inStream = GetStream(inPtr))
+            using (var outStream = GetStream(outPtr))
+            {
+                var reader = GetReader(inStream);
+                var writer = GetWriter(outStream);
+
+                var res = callback(reader, writer);
+
+                if (writer != null)
+                {
+                    outStream.SynchronizeOutput();
+                    writer.Marshaller.FinishMarshal(writer);
+                }
+
+                return res;
+            }
+        }
+
+        /// <summary>
+        /// Gets the stream.
+        /// </summary>
+        private static PlatformMemoryStream GetStream(long ptr)
+        {
+            return ptr == 0 ? null : IgniteManager.Memory.Get(ptr).GetStream();
+        }
+
+        /// <summary>
+        /// Gets the reader.
+        /// </summary>
+        private IBinaryRawReader GetReader(IBinaryStream stream)
+        {
+            return stream == null ? null : Ignite.Marshaller.StartUnmarshal(stream).GetRawReader();
+        }
+
+        /// <summary>
+        /// Gets the writer.
+        /// </summary>
+        private BinaryWriter GetWriter(IBinaryStream stream)
+        {
+            if (stream == null)
+                return null;
+
+            var res = Ignite.Marshaller.StartMarshal(stream);
+
+            res.GetRawWriter();
+
+            return res;
         }
 
         /// <summary>

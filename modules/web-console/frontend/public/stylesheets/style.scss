@@ -2331,14 +2331,6 @@ html,body,.splash-screen {
     .ui-grid-cell-contents > i {
         line-height: $line-height-base;
     }
-
-    .ui-grid-row:nth-child(odd):hover .ui-grid-cell {
-        background: $ignite-row-hover;
-    }
-    
-    .ui-grid-row:nth-child(even):hover .ui-grid-cell {
-        background: $ignite-row-hover;
-    }
 }
 
 .datepicker.dropdown-menu {

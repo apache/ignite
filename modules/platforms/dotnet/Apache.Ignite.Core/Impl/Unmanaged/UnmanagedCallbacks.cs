@@ -246,6 +246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStop, CachePluginIgniteStop);
+            AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
         }
 
         /// <summary>
@@ -443,13 +444,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var marsh = grid.Marshaller;
 
-            var key = marsh.Unmarshal<object>(inOutStream);
-            var val = marsh.Unmarshal<object>(inOutStream);
             var isLocal = inOutStream.ReadBool();
 
             var holder = isLocal
                 ? _handleRegistry.Get<CacheEntryProcessorHolder>(inOutStream.ReadLong(), true)
                 : marsh.Unmarshal<CacheEntryProcessorHolder>(inOutStream);
+
+            var key = marsh.Unmarshal<object>(inOutStream);
+            var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
         }
@@ -1282,6 +1284,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             pluginProvider.OnIgniteStop(cancel != 0);
 
             return 0;
+        }
+
+        private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
+        {
+            return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
         }
 
         #endregion
