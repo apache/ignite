@@ -428,6 +428,9 @@ public class VectorImplementationsTest {
                 return;
             }
 
+            // todo change below to introduce negative values because their absence
+            //    blocked catching an ugly bug in AbstractVector#kNorm
+
             for (Vector.Element e : v.all()) {
                 int idx = e.index();
 
