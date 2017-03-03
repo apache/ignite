@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 import java.util.UUID;
@@ -25,20 +27,12 @@ import java.util.UUID;
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class CreateIndexArguments implements DdlCommandArguments {
+public class DdlCreateIndexOperation extends DdlAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Operation id.
-     * @see DdlStatementsProcessor#operations
-     */
-    private final IgniteUuid opId;
-
-    /** ID of node that initiated this operation. */
-    private final UUID clientNodeId;
-
     /** Index params. */
+    @GridToStringInclude
     private final QueryIndex idx;
 
     /** Cache name. */
@@ -51,31 +45,23 @@ public class CreateIndexArguments implements DdlCommandArguments {
     private final boolean ifNotExists;
 
     /**
+     * Constructor.
+     *
      * @param opId Operation id.
-     * @param clientNodeId Id of node that initiated this operation.
+     * @param cliNodeId Id of node that initiated this operation.
      * @param idx Index params.
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param ifNotExists Ignore operation if index exists.
      */
-    CreateIndexArguments(IgniteUuid opId, UUID clientNodeId, QueryIndex idx, String schemaName, String tblName,
-                         boolean ifNotExists) {
-        this.opId = opId;
-        this.clientNodeId = clientNodeId;
+    DdlCreateIndexOperation(IgniteUuid opId, UUID cliNodeId, QueryIndex idx, String schemaName, String tblName,
+        boolean ifNotExists) {
+        super(opId, cliNodeId);
+
         this.idx = idx;
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.ifNotExists = ifNotExists;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid operationId() {
-        return opId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID clientNodeId() {
-        return clientNodeId;
     }
 
     /**
@@ -104,5 +90,10 @@ public class CreateIndexArguments implements DdlCommandArguments {
      */
     public boolean ifNotExists() {
         return ifNotExists;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DdlCreateIndexOperation.class, this);
     }
 }

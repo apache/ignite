@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlInitDiscoveryMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -62,7 +62,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
     }
 
-    /** Test behavior in case of INIT failure (cancel via {@link DdlOperationInit#ackMessage}). */
+    /** Test behavior in case of INIT failure (cancel via {@link DdlInitDiscoveryMessage#ackMessage}). */
     public void testInitFailure() {
         DdlProc.testName = GridTestUtils.getGridTestName();
 
@@ -158,7 +158,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         private static volatile String testName;
 
         /** {@inheritDoc} */
-        @Override boolean doInit(DdlCommandArguments args) {
+        @Override boolean doInit(DdlAbstractOperation args) {
             // Let's throw an exception on a single node in the ring
             if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
                 throw new RuntimeException("Hello from DdlProc Init");
@@ -173,7 +173,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc}
          * @param args*/
-        @Override void doAck(DdlCommandArguments args) {
+        @Override void doAck(DdlAbstractOperation args) {
             if ("AckFailure".equals(testName) && ctx.gridName().endsWith("1"))
                 throw new RuntimeException("Hello from DdlProc Ack");
             else

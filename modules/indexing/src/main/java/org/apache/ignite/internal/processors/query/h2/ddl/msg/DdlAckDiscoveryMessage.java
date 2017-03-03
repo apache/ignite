@@ -18,33 +18,24 @@
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlAbstractOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * {@code ACK} message - triggers actual execution of local portion of DDL operation.
  */
-public class DdlOperationAck implements DiscoveryCustomMessage {
+public class DdlAckDiscoveryMessage extends DdlAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message id. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
     /**
-     * Operation id.
-     * @see DdlStatementsProcessor#operations
+     * Constructor.
+     *
+     * @param op Operation.
      */
-    private IgniteUuid opId;
-
-    /** Arguments. */
-    private DdlCommandArguments args;
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    public DdlAckDiscoveryMessage(DdlAbstractOperation op) {
+        super(op);
     }
 
     /** {@inheritDoc} */
@@ -57,31 +48,8 @@ public class DdlOperationAck implements DiscoveryCustomMessage {
         return false;
     }
 
-    /**
-     * @return operation id.
-     */
-    public IgniteUuid getOperationId() {
-        return opId;
-    }
-
-    /**
-     * @param opId operation id.
-     */
-    public void setOperationId(IgniteUuid opId) {
-        this.opId = opId;
-    }
-
-    /**
-     * @return Operation arguments.
-     */
-    public DdlCommandArguments getArguments() {
-        return args;
-    }
-
-    /**
-     * @param args Operation arguments.
-     */
-    public void setArguments(DdlCommandArguments args) {
-        this.args = args;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DdlAckDiscoveryMessage.class, this);
     }
 }

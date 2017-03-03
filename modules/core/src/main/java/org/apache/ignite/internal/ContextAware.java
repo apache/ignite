@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
-
-import org.apache.ignite.internal.GridKernalContext;
+package org.apache.ignite.internal;
 
 /**
- * A kind of custom message that could use a {@link GridKernalContext} when building its ACK message.
+ * Context aware entity.
  */
-public interface KernalContextAwareDiscoveryCustomMessage {
+public interface ContextAware {
     /**
      * Provide this message with a kernal context.
      *
      * @param ctx Kernal context.
      */
-    public void setContext(GridKernalContext ctx);
+    public void context(GridKernalContext ctx);
 }

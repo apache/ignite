@@ -1879,8 +1879,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
 
-            dmlProc.start(this);
-
             try {
                 ddlProc = ddlProcCls == null ? new DdlStatementsProcessor() : ddlProcCls.newInstance();
             }
@@ -1888,6 +1886,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteCheckedException("Failed to initialize DDL statements processor", e);
             }
 
+            dmlProc.start(this);
             ddlProc.start(ctx, this);
         }
 
@@ -2036,7 +2035,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
-        ddlProc.stop();
+        if (ddlProc != null)
+            ddlProc.stop();
 
         for (Schema schema : schemas.values())
             schema.onDrop();
