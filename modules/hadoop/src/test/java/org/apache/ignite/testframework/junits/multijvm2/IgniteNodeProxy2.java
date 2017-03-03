@@ -280,7 +280,7 @@ public class IgniteNodeProxy2 {
             System.getProperty("surefire.test.class.path"),
             params.isUniqueProcDir() ? createUniqueDir("process") : null,
             params.getProcEnv(),
-            false
+            true /* redirectStdErr */
         );
     }
 
