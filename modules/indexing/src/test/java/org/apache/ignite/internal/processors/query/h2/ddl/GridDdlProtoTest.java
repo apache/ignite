@@ -170,13 +170,13 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         private static volatile String testName;
 
         /** {@inheritDoc} */
-        @Override void doInit(DdlCommandArguments args) {
+        @Override boolean doInit(DdlCommandArguments args) {
             // Let's throw an exception on a single node in the ring
             if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
                 throw new RuntimeException("Hello from DdlProc Init");
             else
                 try {
-                    super.doInit(args);
+                    return super.doInit(args);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
