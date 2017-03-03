@@ -69,7 +69,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.KernalContextAwareDiscoveryCustomMessage;
+import org.apache.ignite.internal.ContextAware;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -5141,8 +5141,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msgObj != null) {
-                        if (msgObj instanceof KernalContextAwareDiscoveryCustomMessage)
-                            ((KernalContextAwareDiscoveryCustomMessage) msgObj)
+                        if (msgObj instanceof ContextAware)
+                            ((ContextAware) msgObj)
                                 .setContext(((IgniteEx)spi.ignite()).context());
 
                         DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();

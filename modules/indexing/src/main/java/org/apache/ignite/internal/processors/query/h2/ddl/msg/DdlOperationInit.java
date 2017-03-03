@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.KernalContextAwareDiscoveryCustomMessage;
+import org.apache.ignite.internal.ContextAware;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
 import org.apache.ignite.lang.IgniteUuid;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@code INIT} part of a distributed DDL operation.
  */
-public class DdlOperationInit implements DiscoveryCustomMessage, KernalContextAwareDiscoveryCustomMessage {
+public class DdlOperationInit implements DiscoveryCustomMessage, ContextAware {
     /** */
     private static final long serialVersionUID = 0L;
 
