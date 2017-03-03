@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.lang.IgniteUuid;
+
+import java.util.UUID;
 
 /**
  * Arguments for {@code CREATE INDEX}.
@@ -26,8 +29,14 @@ public class CreateIndexArguments implements DdlCommandArguments {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Overall operation arguments. */
-    private final DdlOperationArguments opArgs;
+    /**
+     * Operation id.
+     * @see DdlStatementsProcessor#operations
+     */
+    private final IgniteUuid opId;
+
+    /** ID of node that initiated this operation. */
+    private final UUID clientNodeId;
 
     /** Index params. */
     private final QueryIndex idx;
@@ -42,15 +51,17 @@ public class CreateIndexArguments implements DdlCommandArguments {
     private final boolean ifNotExists;
 
     /**
-     * @param opArgs Overall operation arguments.
+     * @param opId Operation id.
+     * @param clientNodeId Id of node that initiated this operation.
      * @param idx Index params.
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param ifNotExists Ignore operation if index exists.
      */
-    CreateIndexArguments(DdlOperationArguments opArgs, QueryIndex idx, String schemaName, String tblName,
-        boolean ifNotExists) {
-        this.opArgs = opArgs;
+    CreateIndexArguments(IgniteUuid opId, UUID clientNodeId, QueryIndex idx, String schemaName, String tblName,
+                         boolean ifNotExists) {
+        this.opId = opId;
+        this.clientNodeId = clientNodeId;
         this.idx = idx;
         this.schemaName = schemaName;
         this.tblName = tblName;
@@ -58,8 +69,13 @@ public class CreateIndexArguments implements DdlCommandArguments {
     }
 
     /** {@inheritDoc} */
-    @Override public DdlOperationArguments getOperationArguments() {
-        return opArgs;
+    @Override public IgniteUuid operationId() {
+        return opId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID clientNodeId() {
+        return clientNodeId;
     }
 
     /**

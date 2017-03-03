@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -68,7 +69,7 @@ public class DdlStatementsProcessor {
     private IgniteH2Indexing idx;
 
     /** State flag. */
-    private volatile boolean isStopped;
+    private AtomicBoolean isStopped = new AtomicBoolean();
 
     /** Running operations originating at this node as a client. */
     private Map<IgniteUuid, GridFutureAdapter> operations = new ConcurrentHashMap8<>();
@@ -150,7 +151,7 @@ public class DdlStatementsProcessor {
         }
         catch (Throwable e) {
             idx.getLogger().error("Failed to notify coordinator about local DLL operation completion [opId=" +
-                msg.getOperationId() + ", sndNodeId=" + snd.id() + ']', e);
+                msg.getOperationId() + ", clientNodeId=" + snd.id() + ']', e);
         }
     }
 
@@ -163,14 +164,8 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     void doAck(DdlCommandArguments args) throws IgniteCheckedException {
-        switch (args.getOperationArguments().opType) {
-            case CREATE_INDEX:
-                // No-op.
-                break;
-
-            case DROP_INDEX:
-                // No-op.
-                break;
+        if (args instanceof CreateIndexArguments) {
+            // No-op.
         }
     }
 
@@ -216,13 +211,13 @@ public class DdlStatementsProcessor {
 
         if (errs != null) {
             resEx = new IgniteCheckedException("DDL operation execution has failed [opId=" +
-                args.getOperationArguments().opId + ']');
+                args.operationId() + ']');
 
             for (int i = 0; i < errs.size(); i++)
                 resEx.addSuppressed(errs.get(i));
         }
 
-        sendResult(args.getOperationArguments(), resEx);
+        sendResult(args, resEx);
     }
 
     /**
@@ -256,16 +251,16 @@ public class DdlStatementsProcessor {
             else
                 resEx.initCause(errors.values().iterator().next());
 
-           sendResult(args.getOperationArguments(), resEx);
+            sendResult(args, resEx);
 
             return null;
         }
         else {
-            operationRuns.put(args.getOperationArguments().opId, new DdlOperationRunContext(args, nodesState.size()));
+            operationRuns.put(args.operationId(), new DdlOperationRunContext(args, nodesState.size()));
 
             DdlOperationAck ackMsg = new DdlOperationAck();
 
-            ackMsg.setOperationId(args.getOperationArguments().opId);
+            ackMsg.setOperationId(args.operationId());
 
             ackMsg.setArguments(args);
 
@@ -279,20 +274,20 @@ public class DdlStatementsProcessor {
      * @param args Operation arguments.
      * @param err Error, if any.
      */
-    private void sendResult(DdlOperationArguments args, IgniteCheckedException err) {
+    private void sendResult(DdlCommandArguments args, IgniteCheckedException err) {
         assert args != null;
 
         DdlOperationResult res = new DdlOperationResult();
 
         res.setError(exceptionToBytes(err));
-        res.setOperationId(args.opId);
+        res.setOperationId(args.operationId());
 
         try {
-            ctx.io().send(args.sndNodeId, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
+            ctx.io().send(args.clientNodeId(), GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (IgniteCheckedException e) {
             idx.getLogger().error("Failed to notify client node about DDL operation failure " +
-                "[opId=" + args.opId + ", sndNodeId=" + args.sndNodeId + ']', e);
+                "[opId=" + args.operationId() + ", clientNodeId=" + args.clientNodeId() + ']', e);
         }
     }
 
@@ -360,12 +355,10 @@ public class DdlStatementsProcessor {
      * @return Filtered nodes.
      */
     private Collection<ClusterNode> filterNodes(DdlCommandArguments args, AffinityTopologyVersion topVer) {
-        switch (args.getOperationArguments().opType) {
-            case CREATE_INDEX:
-                return ctx.discovery().cacheNodes(idx.space(((CreateIndexArguments) args).schemaName()), topVer);
-            default:
-                throw new UnsupportedOperationException(args.getOperationArguments().opType.name());
-        }
+        if (args instanceof CreateIndexArguments)
+            return ctx.discovery().cacheNodes(idx.space(((CreateIndexArguments) args).schemaName()), topVer);
+        else
+            throw new UnsupportedOperationException(args.getClass().getName());
     }
 
     /**
@@ -377,14 +370,8 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     void doInit(DdlCommandArguments args) throws IgniteCheckedException {
-        switch (args.getOperationArguments().opType) {
-            case CREATE_INDEX:
-                // No-op.
-                break;
-
-            case DROP_INDEX:
-                // No-op.
-                break;
+        if (args instanceof CreateIndexArguments) {
+            // No-op.
         }
     }
 
@@ -404,9 +391,9 @@ public class DdlStatementsProcessor {
     /**
      * Do cleanup.
      */
-    // TODO: Not used
-    public void stop() {
-        isStopped = true;
+    public void stop() throws IgniteCheckedException {
+        if (!isStopped.compareAndSet(false, true))
+            throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped already"));
 
         for (Map.Entry<IgniteUuid, GridFutureAdapter> e : operations.entrySet())
             e.getValue().onDone(new IgniteCheckedException("Operation has been cancelled [opId=" + e.getKey() +']'));
@@ -419,7 +406,7 @@ public class DdlStatementsProcessor {
      */
     public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
         throws IgniteCheckedException {
-        if (isStopped)
+        if (isStopped.get())
             throw new IgniteCheckedException(new IllegalStateException("DDL processor has been stopped"));
 
         assert stmt instanceof JdbcPreparedStatement;
@@ -434,10 +421,7 @@ public class DdlStatementsProcessor {
         if (gridStmt instanceof GridSqlCreateIndex) {
             GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
 
-            DdlOperationArguments opArgs = new DdlOperationArguments(ctx.localNodeId(), opId,
-                DdlOperationType.CREATE_INDEX);
-
-            args = new CreateIndexArguments(opArgs, createIdx.index(), createIdx.schemaName(),
+            args = new CreateIndexArguments(opId, ctx.localNodeId(), createIdx.index(), createIdx.schemaName(),
                 createIdx.tableName(), createIdx.ifNotExists());
         }
         else if (gridStmt instanceof GridSqlDropIndex)
@@ -446,21 +430,9 @@ public class DdlStatementsProcessor {
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
-        executeDistributed(args);
-
-        return DmlStatementsProcessor.cursorForUpdateResult(0L);
-    }
-
-    /**
-     * Start whole DDL operation and wait for its result.
-     *
-     * @param args Operation arguments.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void executeDistributed(DdlCommandArguments args) throws IgniteCheckedException {
         GridFutureAdapter op = new GridFutureAdapter();
 
-        operations.put(args.getOperationArguments().opId, op);
+        operations.put(args.operationId(), op);
 
         try {
             DdlOperationInit initMsg = new DdlOperationInit();
@@ -472,8 +444,10 @@ public class DdlStatementsProcessor {
             op.get();
         }
         finally {
-            operations.remove(args.getOperationArguments().opId);
+            operations.remove(args.operationId());
         }
+
+        return DmlStatementsProcessor.cursorForUpdateResult(0L);
     }
 
     /**

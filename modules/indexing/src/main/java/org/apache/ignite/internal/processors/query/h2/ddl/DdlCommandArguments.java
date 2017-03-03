@@ -17,14 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
+import org.apache.ignite.lang.IgniteUuid;
+
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
- * Base interface for all command args classes.
+ * Marker interface for all command args classes.
  */
 public interface DdlCommandArguments extends Serializable {
     /**
-     * @return Overall operation arguments.
+     * @return Operation id.
      */
-    public DdlOperationArguments getOperationArguments();
+    public IgniteUuid operationId();
+
+    /**
+     * @return id of client node for this operation.
+     */
+    public UUID clientNodeId();
 }

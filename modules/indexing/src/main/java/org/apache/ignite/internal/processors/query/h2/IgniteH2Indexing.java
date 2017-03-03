@@ -2036,6 +2036,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
 
+        ddlProc.stop();
+
         for (Schema schema : schemas.values())
             schema.onDrop();
 
