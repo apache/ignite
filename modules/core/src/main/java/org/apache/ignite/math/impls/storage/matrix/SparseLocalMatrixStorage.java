@@ -117,7 +117,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return accessMode == 0;
+        return accessMode == SparseDistributedMatrix.SEQUENTIAL_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */
@@ -145,6 +145,7 @@ public class SparseLocalMatrixStorage implements MatrixStorage {
         return obj != null && getClass() == obj.getClass() && compareStorage((SparseLocalMatrixStorage)obj);
     }
 
+    /** */
     private boolean compareStorage(SparseLocalMatrixStorage obj) {
         return  (rows == obj.rows) && (cols == obj.cols) && (obj.rowVectors.equals(rowVectors));
     }
