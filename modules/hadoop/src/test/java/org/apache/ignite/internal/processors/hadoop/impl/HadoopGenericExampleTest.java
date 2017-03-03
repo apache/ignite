@@ -307,6 +307,8 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * Runs the example.
      */
     protected final void runExampleTest() throws Exception {
+        X.println("####### Running the test.");
+
         final GenericHadoopExample ex = example();
 
         final JobConf conf = new JobConf();

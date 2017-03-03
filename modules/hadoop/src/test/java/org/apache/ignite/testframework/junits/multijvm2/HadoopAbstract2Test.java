@@ -7,6 +7,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
@@ -81,6 +82,10 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
                 }
             }
         }, 10_000));
+
+        // Steel need to wait until all nodes see client node leaving, otherwise
+        // the topology may change when the test is running:
+        U.sleep(3_000);
     }
 
     /**
