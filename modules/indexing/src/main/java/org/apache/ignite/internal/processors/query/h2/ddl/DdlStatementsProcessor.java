@@ -86,7 +86,7 @@ public class DdlStatementsProcessor {
             /** {@inheritDoc} */
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
             @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlOperationInit msg) {
-                onInit(topVer, msg);
+                onInit(msg);
             }
         });
 
@@ -269,51 +269,21 @@ public class DdlStatementsProcessor {
     /**
      * Perform preliminary actions and checks for {@code INIT} stage of DDL statement execution <b>on a peer node</b>.
      *
-     * @param topVer topology version.
      * @param msg {@code INIT} message.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    private void onInit(AffinityTopologyVersion topVer, DdlOperationInit msg) {
+    private void onInit(DdlOperationInit msg) {
         DdlCommandArguments args = msg.getArguments();
 
-        if (msg.getNodesState() == null) {
-            // Null state means we're at coordinator, so let's populate state with participating nodes
-            // in accordance with topology version.
-            // We take cache nodes and not just affinity nodes as long as we must create index on client
-            // nodes as well to build query plans correctly.
-            Collection<ClusterNode> nodes = filterNodes(args, topVer);
-
-            Map<UUID, IgniteCheckedException> newNodesState = new HashMap<>();
-
-            for (ClusterNode node : nodes)
-                newNodesState.put(node.id(), null);
-
-            msg.setNodesState(newNodesState);
-        }
-
-        if (!msg.getNodesState().containsKey(ctx.localNodeId()))
-            return;
-
         try {
-            doInit(args);
+            // Let's tell everyone that we're participating if our init is successful...
+            if (doInit(args))
+                msg.getNodesState().put(ctx.localNodeId(), null);
         }
         catch (Throwable e) {
+            // Or tell everyone about the error that occurred
             msg.getNodesState().put(ctx.localNodeId(), wrapThrowableIfNeeded(e));
         }
-    }
-
-    /**
-     * Filter nodes to run operation on in accordance with its type.
-     *
-     * @param args Command arguments.
-     * @param topVer Topology version.
-     * @return Filtered nodes.
-     */
-    private Collection<ClusterNode> filterNodes(DdlCommandArguments args, AffinityTopologyVersion topVer) {
-        if (args instanceof CreateIndexArguments)
-            return ctx.discovery().cacheNodes(idx.space(((CreateIndexArguments) args).schemaName()), topVer);
-        else
-            throw new UnsupportedOperationException(args.getClass().getName());
     }
 
     /**
@@ -321,13 +291,16 @@ public class DdlStatementsProcessor {
      * Exists as a separate method to allow overriding it in tests to check behavior in case of errors.
      *
      * @param args Operation arguments.
+     * @return Whether this node participates in this operation, or not.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    void doInit(DdlCommandArguments args) throws IgniteCheckedException {
+    boolean doInit(DdlCommandArguments args) throws IgniteCheckedException {
         if (args instanceof CreateIndexArguments) {
-            // No-op.
+            return true;
         }
+
+        return false;
     }
 
     /**

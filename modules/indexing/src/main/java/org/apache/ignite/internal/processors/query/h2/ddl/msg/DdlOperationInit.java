@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,7 +52,7 @@ public class DdlOperationInit implements DiscoveryCustomMessage, KernalContextAw
      * Note that this map not just helps to track errors but also contains node ids eligible for the operation
      * filtered at coordinator, so its key set is important.
      */
-    private Map<UUID, IgniteCheckedException> nodesState;
+    private Map<UUID, IgniteCheckedException> nodesState = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
