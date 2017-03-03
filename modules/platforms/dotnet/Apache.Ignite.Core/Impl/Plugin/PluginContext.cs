@@ -79,5 +79,13 @@ namespace Apache.Ignite.Core.Impl.Plugin
 
             _pluginProcessor.RegisterExceptionMapping(className, factory);
         }
+
+        /** <inheritdoc /> */
+        public void RegisterCallback(long callbackId, PluginCallback callback)
+        {
+            IgniteArgumentCheck.NotNull(callback, "callback");
+
+            _pluginProcessor.RegisterCallback(callbackId, callback);
+        }
     }
 }

@@ -98,12 +98,6 @@ public class FileSystemConfiguration {
     /** IGFS instance name. */
     private String name;
 
-    /** Cache name to store IGFS meta information. */
-    private String metaCacheName;
-
-    /** Cache name to store file's data blocks. */
-    private String dataCacheName;
-
     /** File's data block size (bytes). */
     private int blockSize = DFLT_BLOCK_SIZE;
 
@@ -185,6 +179,12 @@ public class FileSystemConfiguration {
     /** Update file length on flush flag. */
     private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
 
+    /** Meta cache config. */
+    private CacheConfiguration metaCacheCfg;
+
+    /** Data cache config. */
+    private CacheConfiguration dataCacheCfg;
+
     /**
      * Constructs default configuration.
      */
@@ -206,7 +206,7 @@ public class FileSystemConfiguration {
         blockSize = cfg.getBlockSize();
         bufSize = cfg.getStreamBufferSize();
         colocateMeta = cfg.isColocateMetadata();
-        dataCacheName = cfg.getDataCacheName();
+        dataCacheCfg = cfg.getDataCacheConfiguration();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
         dualModePutExec = cfg.getDualModePutExecutorService();
@@ -222,7 +222,7 @@ public class FileSystemConfiguration {
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
-        metaCacheName = cfg.getMetaCacheName();
+        metaCacheCfg = cfg.getMetaCacheConfiguration();
         mgmtPort = cfg.getManagementPort();
         name = cfg.getName();
         pathModes = cfg.getPathModes();
@@ -255,40 +255,55 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Cache name to store IGFS meta information. If {@code null}, then instance
-     * with default meta-cache name will be used.
+     * Cache config to store IGFS meta information.
      *
-     * @return Cache name to store IGFS meta information.
+     * @return Cache configuration object.
      */
-    @Nullable public String getMetaCacheName() {
-        return metaCacheName;
+    @Nullable public CacheConfiguration getMetaCacheConfiguration() {
+        return metaCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS meta information.
+     * Cache config to store IGFS meta information. If {@code null}, then default config for
+     * meta-cache will be used.
      *
-     * @param metaCacheName Cache name to store IGFS meta information.
+     * Default configuration for the meta cache is:
+     * <ul>
+     *     <li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 1</li>
+     * </ul>
+     *
+     * @param metaCacheCfg Cache configuration object.
      */
-    public void setMetaCacheName(String metaCacheName) {
-        this.metaCacheName = metaCacheName;
+    public void setMetaCacheConfiguration(CacheConfiguration metaCacheCfg) {
+        this.metaCacheCfg = metaCacheCfg;
     }
 
     /**
-     * Cache name to store IGFS data.
+     * Cache config to store IGFS data.
      *
-     * @return Cache name to store IGFS data.
+     * @return Cache configuration object.
      */
-    @Nullable public String getDataCacheName() {
-        return dataCacheName;
+    @Nullable public CacheConfiguration getDataCacheConfiguration() {
+        return dataCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS data.
+     * Cache config to store IGFS data. If {@code null}, then default config for
+     * data cache will be used.
      *
-     * @param dataCacheName Cache name to store IGFS data.
+     * Default configuration for the data cache is:
+     * <ul>
+     *     <<li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 0</li>
+     * </ul>
+     *
+     * @param dataCacheCfg Cache configuration object.
      */
-    public void setDataCacheName(String dataCacheName) {
-        this.dataCacheName = dataCacheName;
+    public void setDataCacheConfiguration(CacheConfiguration dataCacheCfg) {
+        this.dataCacheCfg = dataCacheCfg;
     }
 
     /**
@@ -878,11 +893,11 @@ public class FileSystemConfiguration {
      * transaction with keys owned only by a single node.
      * <p>
      * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
-     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
-     * internal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
-     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
-     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
-     * metadata and hence could improve performance.
+     * {@link #getMetaCacheConfiguration()} property. Metadata updates caused by operations on IGFS usually require
+     * several internal keys to be updated. As IGFS metadata cache usually operates
+     * in {@link CacheMode#REPLICATED} mode, meaning that all nodes have all metadata locally, it makes sense to give
+     * a hint to Ignite to co-locate ownership of all metadata keys on a single node.
+     * This will decrease amount of network trips required to update metadata and hence could improve performance.
      * <p>
      * This property should be disabled if you see excessive CPU and network load on a single node, which
      * degrades performance and cannot be explained by business logic of your application.

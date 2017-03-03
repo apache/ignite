@@ -56,6 +56,8 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosureFactory;
 import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
 import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -80,6 +82,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -214,12 +217,23 @@ public class PlatformConfigurationUtils {
         int pluginCnt = in.readInt();
 
         if (pluginCnt > 0) {
-            CachePluginConfiguration[] plugins = new CachePluginConfiguration[pluginCnt];
+            ArrayList<CachePluginConfiguration> plugins = new ArrayList<>();
 
-            for (int i = 0; i < pluginCnt; i++)
-                plugins[i] = new PlatformCachePluginConfiguration(in.readObjectDetached());
+            for (int i = 0; i < pluginCnt; i++) {
+                if (in.readBoolean()) {
+                    // Java cache plugin.
+                    readCachePluginConfiguration(ccfg, in);
+                } else {
+                    // Platform cache plugin.
+                    plugins.add(new PlatformCachePluginConfiguration(in.readObjectDetached()));
+                }
+            }
 
-            ccfg.setPluginConfigurations(plugins);
+            if (ccfg.getPluginConfigurations() != null) {
+                Collections.addAll(plugins, ccfg.getPluginConfigurations());
+            }
+
+            ccfg.setPluginConfigurations(plugins.toArray(new CachePluginConfiguration[plugins.size()]));
         }
 
         return ccfg;
@@ -1308,6 +1322,48 @@ public class PlatformConfigurationUtils {
                     @Override public PlatformPluginConfigurationClosureFactory run() {
                         for (PlatformPluginConfigurationClosureFactory factory :
                                 ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
+
+                        return null;
+                    }
+                });
+
+        if (factory == null) {
+            throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
+                    "(did you put into the classpath?): " + factoryId);
+        }
+
+        return factory.create();
+    }
+
+    /**
+     * Reads the plugin configuration.
+     *
+     * @param cfg Ignite configuration to update.
+     * @param in Reader.
+     */
+    private static void readCachePluginConfiguration(CacheConfiguration cfg, BinaryRawReader in) {
+        int plugCfgFactoryId = in.readInt();
+
+        PlatformCachePluginConfigurationClosure plugCfg = cachePluginConfiguration(plugCfgFactoryId);
+
+        plugCfg.apply(cfg, in);
+    }
+
+    /**
+     * Create PlatformCachePluginConfigurationClosure for the given factory ID.
+     *
+     * @param factoryId Factory ID.
+     * @return PlatformCachePluginConfigurationClosure.
+     */
+    private static PlatformCachePluginConfigurationClosure cachePluginConfiguration(final int factoryId) {
+        PlatformCachePluginConfigurationClosureFactory factory = AccessController.doPrivileged(
+                new PrivilegedAction<PlatformCachePluginConfigurationClosureFactory>() {
+                    @Override public PlatformCachePluginConfigurationClosureFactory run() {
+                        for (PlatformCachePluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)) {
                             if (factory.id() == factoryId)
                                 return factory;
                         }

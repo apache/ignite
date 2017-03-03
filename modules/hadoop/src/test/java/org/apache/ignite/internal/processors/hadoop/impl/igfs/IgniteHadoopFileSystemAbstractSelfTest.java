@@ -246,22 +246,20 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             // Start secondary IGFS.
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-            igfsCfg.setDataCacheName("partitioned");
-            igfsCfg.setMetaCacheName("replicated");
             igfsCfg.setName("igfs_secondary");
             igfsCfg.setIpcEndpointConfiguration(SECONDARY_ENDPOINT_CFG);
             igfsCfg.setBlockSize(512 * 1024);
             igfsCfg.setPrefetchBlocks(1);
 
-            CacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-            cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setNearConfiguration(null);
-            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-            cacheCfg.setBackups(0);
-            cacheCfg.setAtomicityMode(TRANSACTIONAL);
+            dataCacheCfg.setName("partitioned");
+            dataCacheCfg.setCacheMode(PARTITIONED);
+            dataCacheCfg.setNearConfiguration(null);
+            dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+            dataCacheCfg.setBackups(0);
+            dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
             CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -269,6 +267,9 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             metaCacheCfg.setCacheMode(REPLICATED);
             metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -281,7 +282,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             discoSpi.setIpFinder(finder);
 
             cfg.setDiscoverySpi(discoSpi);
-            cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
             cfg.setFileSystemConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -360,7 +360,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         cfg.setGridName(gridName);
         cfg.setMarshaller(new OptimizedMarshaller());
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
         cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -373,25 +372,35 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration[] cacheConfiguration(String gridName) {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration dataCacheConfiguration(String gridName) {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setName("partitioned");
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setNearConfiguration(null);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        return ccfg;
+    }
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * Gets cache configuration.
+     *
+     * @param gridName Grid name.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration metaCacheConfiguration(String gridName) {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+        ccfg.setName("replicated");
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+        return ccfg;
     }
 
     /**
@@ -403,8 +412,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setDataCacheName("partitioned");
-        cfg.setMetaCacheName("replicated");
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(gridName));
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(gridName));
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);

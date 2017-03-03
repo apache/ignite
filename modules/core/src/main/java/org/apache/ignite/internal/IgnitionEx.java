@@ -2126,17 +2126,20 @@ public class IgnitionEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
 
+                    if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
+                        throw new IgniteCheckedException(
+                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                                + "\" because it is reserved for IGFS internal purposes.");
+
                     cacheCfgs.add(ccfg);
                 }
             }
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
 
-            // Iterate over IGFS caches and prepare their configurations if needed.
             assert cfg.getCacheConfiguration() != null;
 
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
-                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
+            IgfsUtils.prepareCacheConfigurations(cfg);
         }
 
         /**

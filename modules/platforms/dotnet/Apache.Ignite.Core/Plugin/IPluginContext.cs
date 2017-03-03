@@ -57,5 +57,12 @@ namespace Apache.Ignite.Core.Plugin
         /// <param name="className">Name of the Java exception class to be mapped.</param>
         /// <param name="factory">Exception factory delegate.</param>
         void RegisterExceptionMapping(string className, ExceptionFactory factory);
+
+        /// <summary>
+        /// Registers Java->.NET callback.
+        /// </summary>
+        /// <param name="callbackId">Callback id.</param>
+        /// <param name="callback">Callback delegate.</param>
+        void RegisterCallback(long callbackId, PluginCallback callback);
     }
 }
