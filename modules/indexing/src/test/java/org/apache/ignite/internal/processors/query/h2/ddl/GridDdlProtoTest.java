@@ -62,11 +62,6 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         ignite(0).cache("S2P").put("f0u4thk3y", new Person(4, "Jane", "Silver"));
     }
 
-    /** "Normal" operation. */
-    public void testSuccess() {
-        ignite(3).cache("S2P").query(new SqlFieldsQuery("create index idx on Person(id desc)"));
-    }
-
     /** Test behavior in case of INIT failure (cancel via {@link DdlOperationInit#ackMessage}). */
     public void testInitFailure() {
         DdlProc.testName = GridTestUtils.getGridTestName();
