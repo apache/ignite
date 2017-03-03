@@ -40,8 +40,8 @@ import org.apache.ignite.internal.processors.query.ddl.DdlOperationNodeResult;
 import org.apache.ignite.internal.processors.query.ddl.DdlOperationResult;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationAck;
-import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlOperationInit;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlInitDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
@@ -82,17 +82,17 @@ public class DdlStatementsProcessor {
         this.ctx = ctx;
         this.idx = idx;
 
-        ctx.discovery().setCustomEventListener(DdlOperationInit.class, new CustomEventListener<DdlOperationInit>() {
+        ctx.discovery().setCustomEventListener(DdlInitDiscoveryMessage.class, new CustomEventListener<DdlInitDiscoveryMessage>() {
             /** {@inheritDoc} */
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlOperationInit msg) {
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlInitDiscoveryMessage msg) {
                 onInit(topVer, msg);
             }
         });
 
-        ctx.discovery().setCustomEventListener(DdlOperationAck.class, new CustomEventListener<DdlOperationAck>() {
+        ctx.discovery().setCustomEventListener(DdlAckDiscoveryMessage.class, new CustomEventListener<DdlAckDiscoveryMessage>() {
             /** {@inheritDoc} */
-            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlOperationAck msg) {
+            @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, DdlAckDiscoveryMessage msg) {
                 onAck(snd, msg);
             }
         });
@@ -123,10 +123,10 @@ public class DdlStatementsProcessor {
      * @param msg Message.
      */
     @SuppressWarnings({"ThrowableInstanceNeverThrown", "unchecked"})
-    private void onAck(ClusterNode snd, DdlOperationAck msg) {
+    private void onAck(ClusterNode snd, DdlAckDiscoveryMessage msg) {
         IgniteCheckedException ex = null;
 
-        DdlCommandArguments args = msg.getArguments();
+        DdlAbstractOperation args = msg.operation();
 
         try {
             doAck(args);
@@ -138,14 +138,14 @@ public class DdlStatementsProcessor {
         try {
             DdlOperationNodeResult res = new DdlOperationNodeResult();
 
-            res.setOperationId(msg.getOperationId());
+            res.setOperationId(msg.operation().operationId());
             res.setError(exceptionToBytes(ex));
 
             ctx.io().send(snd, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (Throwable e) {
             idx.getLogger().error("Failed to notify coordinator about local DLL operation completion [opId=" +
-                msg.getOperationId() + ", clientNodeId=" + snd.id() + ']', e);
+                msg.operation().operationId() + ", clientNodeId=" + snd.id() + ']', e);
         }
     }
 
@@ -157,8 +157,8 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    void doAck(DdlCommandArguments args) throws IgniteCheckedException {
-        if (args instanceof CreateIndexArguments) {
+    void doAck(DdlAbstractOperation args) throws IgniteCheckedException {
+        if (args instanceof DdlCreateIndexOperation) {
             // No-op.
         }
     }
@@ -175,15 +175,15 @@ public class DdlStatementsProcessor {
     }
 
     /**
-     * Process result of executing {@link DdlOperationInit} and react accordingly.
-     * Called from {@link DdlOperationInit#ackMessage()}.
+     * Process result of executing {@link DdlInitDiscoveryMessage} and react accordingly.
+     * Called from {@link DdlInitDiscoveryMessage#ackMessage()}.
      *
-     * @param msg {@link DdlOperationInit} message.
-     * @return {@link DiscoveryCustomMessage} to return from {@link DdlOperationInit#ackMessage()}.
+     * @param msg {@link DdlInitDiscoveryMessage} message.
+     * @return {@link DiscoveryCustomMessage} to return from {@link DdlInitDiscoveryMessage#ackMessage()}.
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "UnnecessaryInitCause"})
-    public DiscoveryCustomMessage onInitFinished(DdlOperationInit msg) {
-        Map<UUID, IgniteCheckedException> nodesState = msg.getNodesState();
+    public DiscoveryCustomMessage onInitFinished(DdlInitDiscoveryMessage msg) {
+        Map<UUID, IgniteCheckedException> nodesState = msg.nodeState();
 
         assert nodesState != null;
 
@@ -192,8 +192,6 @@ public class DdlStatementsProcessor {
         for (Map.Entry<UUID, IgniteCheckedException> e : nodesState.entrySet())
             if (e.getValue() != null)
                 errors.put(e.getKey(), e.getValue());
-
-        DdlCommandArguments args = msg.getArguments();
 
         if (!errors.isEmpty()) {
             IgniteCheckedException resEx = new IgniteCheckedException("DDL operation has been cancelled at INIT stage");
@@ -205,22 +203,12 @@ public class DdlStatementsProcessor {
             else
                 resEx.initCause(errors.values().iterator().next());
 
-            sendResult(args, resEx);
+            sendResult(msg.operation(), resEx);
 
             return null;
         }
-        else {
-            // We should prepare ourselves to getting status messages from workers here
-            /* operationRuns.put(args.operationId(), new DdlOperationRunContext(args, nodesState.size())); */
-
-            DdlOperationAck ackMsg = new DdlOperationAck();
-
-            ackMsg.setOperationId(args.operationId());
-
-            ackMsg.setArguments(args);
-
-            return ackMsg;
-        }
+        else
+            return new DdlAckDiscoveryMessage(msg.operation());
     }
 
     /**
@@ -229,7 +217,7 @@ public class DdlStatementsProcessor {
      * @param args Operation arguments.
      * @param err Error, if any.
      */
-    private void sendResult(DdlCommandArguments args, IgniteCheckedException err) {
+    private void sendResult(DdlAbstractOperation args, IgniteCheckedException err) {
         assert args != null;
 
         DdlOperationResult res = new DdlOperationResult();
@@ -273,10 +261,10 @@ public class DdlStatementsProcessor {
      * @param msg {@code INIT} message.
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-    private void onInit(AffinityTopologyVersion topVer, DdlOperationInit msg) {
-        DdlCommandArguments args = msg.getArguments();
+    private void onInit(AffinityTopologyVersion topVer, DdlInitDiscoveryMessage msg) {
+        DdlAbstractOperation args = msg.operation();
 
-        if (msg.getNodesState() == null) {
+        if (msg.nodeState() == null) {
             // Null state means we're at coordinator, so let's populate state with participating nodes
             // in accordance with topology version.
             // We take cache nodes and not just affinity nodes as long as we must create index on client
@@ -288,17 +276,17 @@ public class DdlStatementsProcessor {
             for (ClusterNode node : nodes)
                 newNodesState.put(node.id(), null);
 
-            msg.setNodesState(newNodesState);
+            msg.nodeState(newNodesState);
         }
 
-        if (!msg.getNodesState().containsKey(ctx.localNodeId()))
+        if (!msg.nodeState().containsKey(ctx.localNodeId()))
             return;
 
         try {
             doInit(args);
         }
         catch (Throwable e) {
-            msg.getNodesState().put(ctx.localNodeId(), wrapThrowableIfNeeded(e));
+            msg.nodeState().put(ctx.localNodeId(), wrapThrowableIfNeeded(e));
         }
     }
 
@@ -309,9 +297,9 @@ public class DdlStatementsProcessor {
      * @param topVer Topology version.
      * @return Filtered nodes.
      */
-    private Collection<ClusterNode> filterNodes(DdlCommandArguments args, AffinityTopologyVersion topVer) {
-        if (args instanceof CreateIndexArguments)
-            return ctx.discovery().cacheNodes(idx.space(((CreateIndexArguments) args).schemaName()), topVer);
+    private Collection<ClusterNode> filterNodes(DdlAbstractOperation args, AffinityTopologyVersion topVer) {
+        if (args instanceof DdlCreateIndexOperation)
+            return ctx.discovery().cacheNodes(idx.space(((DdlCreateIndexOperation) args).schemaName()), topVer);
         else
             throw new UnsupportedOperationException(args.getClass().getName());
     }
@@ -324,8 +312,8 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    void doInit(DdlCommandArguments args) throws IgniteCheckedException {
-        if (args instanceof CreateIndexArguments) {
+    void doInit(DdlAbstractOperation args) throws IgniteCheckedException {
+        if (args instanceof DdlCreateIndexOperation) {
             // No-op.
         }
     }
@@ -369,15 +357,13 @@ public class DdlStatementsProcessor {
         GridSqlStatement gridStmt = new GridSqlQueryParser().parse(GridSqlQueryParser
             .prepared((JdbcPreparedStatement) stmt));
 
-        IgniteUuid opId = IgniteUuid.randomUuid();
-
-        DdlCommandArguments args;
+        DdlAbstractOperation op;
 
         if (gridStmt instanceof GridSqlCreateIndex) {
             GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
 
-            args = new CreateIndexArguments(opId, ctx.localNodeId(), createIdx.index(), createIdx.schemaName(),
-                createIdx.tableName(), createIdx.ifNotExists());
+            op = new DdlCreateIndexOperation(IgniteUuid.randomUuid(), ctx.localNodeId(), createIdx.index(),
+                createIdx.schemaName(), createIdx.tableName(), createIdx.ifNotExists());
         }
         else if (gridStmt instanceof GridSqlDropIndex)
             throw new UnsupportedOperationException("DROP INDEX");
@@ -385,21 +371,17 @@ public class DdlStatementsProcessor {
             throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                 IgniteQueryErrorCode.UNEXPECTED_OPERATION);
 
-        GridFutureAdapter op = new GridFutureAdapter();
+        GridFutureAdapter opFut = new GridFutureAdapter();
 
-        operations.put(args.operationId(), op);
+        operations.put(op.operationId(), opFut);
 
         try {
-            DdlOperationInit initMsg = new DdlOperationInit();
+            ctx.discovery().sendCustomEvent(new DdlInitDiscoveryMessage(op));
 
-            initMsg.setArguments(args);
-
-            ctx.discovery().sendCustomEvent(initMsg);
-
-            op.get();
+            opFut.get();
         }
         finally {
-            operations.remove(args.operationId());
+            operations.remove(op.operationId());
         }
 
         return DmlStatementsProcessor.cursorForUpdateResult(0L);

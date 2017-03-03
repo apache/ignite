@@ -17,32 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.h2.ddl.msg;
 
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.ContextAware;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.ContextAware;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ddl.DdlCommandArguments;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.processors.query.h2.ddl.DdlAbstractOperation;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * {@code INIT} part of a distributed DDL operation.
  */
-public class DdlOperationInit implements DiscoveryCustomMessage, ContextAware {
+public class DdlInitDiscoveryMessage extends DdlAbstractDiscoveryMessage implements ContextAware {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Arguments. */
-    // TODO: Flatten.
-    private DdlCommandArguments args;
-
     /** Kernal context. */
+    @GridToStringExclude
     private transient GridKernalContext ctx;
 
     /**
@@ -53,9 +49,13 @@ public class DdlOperationInit implements DiscoveryCustomMessage, ContextAware {
      */
     private Map<UUID, IgniteCheckedException> nodesState;
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    /**
+     * Constructor.
+     *
+     * @param op Operation.
+     */
+    public DdlInitDiscoveryMessage(DdlAbstractOperation op) {
+        super(op);
     }
 
     /** {@inheritDoc} */
@@ -70,35 +70,26 @@ public class DdlOperationInit implements DiscoveryCustomMessage, ContextAware {
     }
 
     /**
-     * @return Operation arguments.
-     */
-    public DdlCommandArguments getArguments() {
-        return args;
-    }
-
-    /**
-     * @param args Operation arguments.
-     */
-    public void setArguments(DdlCommandArguments args) {
-        this.args = args;
-    }
-
-    /**
      * @return Nodes state.
      */
-    public Map<UUID, IgniteCheckedException> getNodesState() {
+    public Map<UUID, IgniteCheckedException> nodeState() {
         return nodesState;
     }
 
     /**
      * @param nodesState Nodes state.
      */
-    public void setNodesState(Map<UUID, IgniteCheckedException> nodesState) {
+    public void nodeState(Map<UUID, IgniteCheckedException> nodesState) {
         this.nodesState = nodesState;
     }
 
     /** {@inheritDoc} */
-    @Override public void setContext(GridKernalContext ctx) {
+    @Override public void context(GridKernalContext ctx) {
         this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DdlInitDiscoveryMessage.class, this);
     }
 }

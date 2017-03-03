@@ -59,9 +59,9 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage, ContextAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void setContext(GridKernalContext ctx) {
+    @Override public void context(GridKernalContext ctx) {
         if (delegate instanceof ContextAware)
-            ((ContextAware) delegate).setContext(ctx);
+            ((ContextAware) delegate).context(ctx);
     }
 
     /** {@inheritDoc} */

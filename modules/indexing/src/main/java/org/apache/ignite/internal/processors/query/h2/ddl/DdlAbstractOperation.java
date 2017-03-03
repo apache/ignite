@@ -23,16 +23,40 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * Marker interface for all command args classes.
+ * DDL operation.
  */
-public interface DdlCommandArguments extends Serializable {
+public abstract class DdlAbstractOperation implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Operation ID. */
+    private final IgniteUuid opId;
+
+    /** ID of node that initiated this operation. */
+    private final UUID cliNodeId;
+
+    /**
+     * Constructor.
+     *
+     * @param opId Operation ID.
+     * @param cliNodeId Client node ID.
+     */
+    public DdlAbstractOperation(IgniteUuid opId, UUID cliNodeId) {
+        this.opId = opId;
+        this.cliNodeId = cliNodeId;
+    }
+
     /**
      * @return Operation id.
      */
-    public IgniteUuid operationId();
+    public IgniteUuid operationId() {
+        return opId;
+    }
 
     /**
-     * @return id of client node for this operation.
+     * @return Client node ID.
      */
-    public UUID clientNodeId();
+    public UUID clientNodeId() {
+        return cliNodeId;
+    }
 }

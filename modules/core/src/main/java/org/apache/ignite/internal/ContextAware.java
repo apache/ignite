@@ -26,5 +26,5 @@ public interface ContextAware {
      *
      * @param ctx Kernal context.
      */
-    public void setContext(GridKernalContext ctx);
+    public void context(GridKernalContext ctx);
 }
