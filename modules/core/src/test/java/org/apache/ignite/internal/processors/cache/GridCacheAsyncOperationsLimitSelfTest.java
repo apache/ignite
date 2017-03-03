@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.internal.util.typedef.CI1;

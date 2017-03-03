@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
