@@ -742,7 +742,7 @@ public class BinaryClassDescriptor {
                         else
                             ((Binarylizable)obj).writeBinary(writer);
 
-                        postWrite(writer, obj);
+                        postWrite(writer);
 
                         // Check whether we need to update metadata.
                         if (obj.getClass() != BinaryMetadata.class) {
@@ -798,7 +798,7 @@ public class BinaryClassDescriptor {
 
                         writer.schemaId(stableSchema.schemaId());
 
-                        postWrite(writer, obj);
+                        postWrite(writer);
                         postWriteHashCode(writer, obj);
                     }
                     finally {
@@ -893,18 +893,9 @@ public class BinaryClassDescriptor {
      * Post-write phase.
      *
      * @param writer Writer.
-     * @param obj Object.
      */
-    private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        if (obj instanceof CacheObjectImpl)
-            writer.postWrite(userType, registered, 0, false);
-        else if (obj instanceof BinaryObjectEx) {
-            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
-
-            writer.postWrite(userType, registered, 0, !flagSet);
-        }
-        else
-            writer.postWrite(userType, registered, 0, overridesHashCode);
+    private void postWrite(BinaryWriterExImpl writer) {
+            writer.postWrite(userType, registered);
     }
 
     /**

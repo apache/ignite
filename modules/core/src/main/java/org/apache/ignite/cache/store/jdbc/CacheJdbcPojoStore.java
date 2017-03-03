@@ -259,9 +259,6 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     hashValues.add(colVal);
             }
 
-            if (calcHash)
-                builder.hashCode(hasher.hashCode(hashValues));
-
             return builder.build();
         }
         catch (SQLException e) {
