@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Plugin
 {
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
@@ -67,6 +69,23 @@ namespace Apache.Ignite.Core.Impl.Plugin
             var ext = UnmanagedUtils.ProcessorExtension(ignite.InteropProcessor, id);
 
             return new PlatformTarget(ext, ignite.Marshaller);
+        }
+
+        /** <inheritdoc /> */
+        public void RegisterExceptionMapping(string className, ExceptionFactory factory)
+        {
+            IgniteArgumentCheck.NotNull(className, "className");
+            IgniteArgumentCheck.NotNull(factory, "factory");
+
+            _pluginProcessor.RegisterExceptionMapping(className, factory);
+        }
+
+        /** <inheritdoc /> */
+        public void RegisterCallback(long callbackId, PluginCallback callback)
+        {
+            IgniteArgumentCheck.NotNull(callback, "callback");
+
+            _pluginProcessor.RegisterCallback(callbackId, callback);
         }
     }
 }

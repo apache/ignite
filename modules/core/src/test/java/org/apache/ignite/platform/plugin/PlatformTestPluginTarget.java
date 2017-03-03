@@ -18,16 +18,21 @@
 package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.plugin.PluginConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Test target.
  */
+@SuppressWarnings("ConstantConditions")
 class PlatformTestPluginTarget extends PlatformAbstractTarget {
     /** */
     private final String name;
@@ -40,11 +45,23 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
     PlatformTestPluginTarget(PlatformContext platformCtx, String name) {
         super(platformCtx);
 
+        if (name == null) {
+            // Initialize from configuration.
+            PlatformTestPluginConfiguration cfg = configuration(platformCtx.kernalContext().config());
+
+            assert cfg != null;
+
+            name = cfg.pluginProperty();
+        }
+
         this.name = name;
     }
 
     /** {@inheritDoc} */
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        if (type == -1)
+            throw new PlatformTestPluginException("Baz");
+
         return val + 1;
     }
 
@@ -73,9 +90,33 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
             throws IgniteCheckedException {
         PlatformTestPluginTarget t = (PlatformTestPluginTarget)arg;
 
-        writer.writeString(t.name);
+        writer.writeString(invokeCallback(t.name));
 
         return new PlatformTestPluginTarget(platformCtx, t.name + reader.readString());
+    }
+
+    /**
+     * Invokes the platform callback.
+     *
+     * @param val Value to send.
+     * @return Result.
+     */
+    private String invokeCallback(String val) {
+        PlatformMemory outMem = platformCtx.memory().allocate();
+        PlatformMemory inMem = platformCtx.memory().allocate();
+
+        PlatformOutputStream outStream = outMem.output();
+        BinaryRawWriterEx writer = platformCtx.writer(outStream);
+
+        writer.writeString(val);
+
+        outStream.synchronize();
+
+        platformCtx.gateway().pluginCallback(1, outMem, inMem);
+
+        BinaryRawReaderEx reader = platformCtx.reader(inMem);
+
+        return reader.readString();
     }
 
     /** {@inheritDoc} */
@@ -86,5 +127,24 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return new PlatformTestPluginTarget(platformCtx, name);
+    }
+
+    /**
+     * Gets the plugin config.
+     *
+     * @param igniteCfg Ignite config.
+     *
+     * @return Plugin config.
+     */
+    private PlatformTestPluginConfiguration configuration(IgniteConfiguration igniteCfg) {
+        if (igniteCfg.getPluginConfigurations() != null) {
+            for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
+                if (pluginCfg instanceof PlatformTestPluginConfiguration) {
+                    return (PlatformTestPluginConfiguration) pluginCfg;
+                }
+            }
+        }
+
+        return null;
     }
 }
