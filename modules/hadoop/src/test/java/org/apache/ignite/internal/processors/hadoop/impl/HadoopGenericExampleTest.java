@@ -333,14 +333,16 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         String[] args = ex.parameters(fp);
 
-        X.println("### Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: "
-            + Arrays.toString(args));
+        System.out.println("### Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: " +
+            Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 
+        System.out.println("####### return status = " + res);
+
         assertEquals(0, res);
 
-        X.println("Verifying...");
+        System.out.println("Verifying...");
 
         ex.verify(args);
     }
