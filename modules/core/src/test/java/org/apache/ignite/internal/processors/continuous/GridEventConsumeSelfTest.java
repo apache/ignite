@@ -251,6 +251,175 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testApiAsyncOld() throws Exception {
+        IgniteEvents evtAsync = grid(0).events().withAsync();
+
+        try {
+            evtAsync.stopRemoteListen(null);
+            evtAsync.future().get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evtAsync.stopRemoteListen(UUID.randomUUID());
+        evtAsync.future().get();
+
+        UUID consumeId = null;
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testApiAsync() throws Exception {
+        IgniteEvents evt = grid(0).events();
+
+        try {
+            evt.stopRemoteListenAsync(null).get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evt.stopRemoteListenAsync(UUID.randomUUID()).get();
+
+        UUID consumeId = null;
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAllEvents() throws Exception {
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
