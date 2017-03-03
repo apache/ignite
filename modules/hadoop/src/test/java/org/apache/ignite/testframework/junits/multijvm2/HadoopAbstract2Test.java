@@ -46,7 +46,7 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     protected final void startNodes() throws Exception {
-        assert !isMultiJvm(); // This mecahnism is unused.
+        assert !isMultiJvm(); // This mechanism is unused.
 
         for (int idx = 0; idx<gridCount(); idx++) {
             final String nodeName = "node-" + idx;
