@@ -26,15 +26,6 @@ import java.io.*;
  * TODO: add description.
  */
 public class VectorView extends AbstractVector {
-    /** Parent. */
-    private Vector parent;
-
-    /** View offset. */
-    private int off;
-
-    /** View length. */
-    private int len;
-
     /**
      * Constructor for {@link Externalizable} interface.
      */
@@ -44,11 +35,7 @@ public class VectorView extends AbstractVector {
 
     /** */
     public VectorView(Vector parent, int off, int len) {
-        super(new VectorDelegateStorage(parent == null ? null : parent.getStorage(), off, len), len);
-
-        this.parent = parent;
-        this.off = off;
-        this.len = len;
+        super(new VectorDelegateStorage(parent.getStorage(), off, len));
     }
 
     /** {@inheritDoc} */
@@ -63,27 +50,7 @@ public class VectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return parent == null ? null : parent.likeMatrix(rows, cols);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(parent);
-        out.writeInt(off);
-        out.writeInt(len);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        parent = (Vector)in.readObject();
-        off = in.readInt();
-        len = in.readInt();
-
-        setStorage(new VectorDelegateStorage(parent == null ? null : parent.getStorage(), off, len));
+        return parent.likeMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */

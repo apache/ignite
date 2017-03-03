@@ -40,7 +40,7 @@ import org.junit.runners.Suite;
     // Vector constructors tests.
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOffHeapVectorConstructorTest.class,
-    SparseLocalOnHeapVectorConstructorTest.class,
+    SparseLocalVectorConstructorTest.class,
     RandomVectorConstructorTest.class,
     // Common vectors tests.
     AbstractVectorTest.class,

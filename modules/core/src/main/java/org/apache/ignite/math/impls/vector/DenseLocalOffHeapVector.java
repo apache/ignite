@@ -60,12 +60,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
      * @param arr Array to copy to offheap storage.
      */
     public DenseLocalOffHeapVector(double[] arr){
-        super(arr == null ? 0 : arr.length);
-        if (arr == null) {
-            setStorage(null);
-
-            return;
-        }
+        super(arr.length);
 
         makeOffheapStorage(arr.length);
 
@@ -77,6 +72,7 @@ public class DenseLocalOffHeapVector extends AbstractVector {
      */
     public DenseLocalOffHeapVector(int size){
         super(size);
+
         makeOffheapStorage(size);
     }
 

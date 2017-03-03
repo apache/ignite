@@ -101,7 +101,7 @@ class VectorImplementationsFixtures {
 
         /** */
         SparseLocalOnHeapVectorFixture() {
-            iter = () -> new VectorSizesExtraIterator<>("SparseLocalOnHeapVector", SparseLocalOnHeapVector::new,
+            iter = () -> new VectorSizesExtraIterator<>("SparseLocalOnHeapVector", SparseLocalVector::new,
                 ctxDescrHolder::set, new Integer[] {0, 1, null});
         }
 

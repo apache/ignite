@@ -41,7 +41,7 @@ public class ConstantVector extends AbstractVector {
      * @param val
      */
     public ConstantVector(int size, double val) {
-        super(true, new ConstantVectorStorage(size, val), size);
+        super(true, new ConstantVectorStorage(size, val));
     }
 
     /**
@@ -66,7 +66,9 @@ public class ConstantVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
-        return new ConstantVector(storage().size(), storage().constant());
+        ConstantVectorStorage sto = storage();
+
+        return new ConstantVector(sto.size(), sto.constant());
     }
 
     /** {@inheritDoc} */

@@ -35,9 +35,6 @@ import java.util.function.*;
  * specific or optimized implementation is desirable.
  */
 public abstract class AbstractVector implements Vector {
-    /** Vector cardinality. */
-    private int size;
-
     /** Vector storage implementation. */
     private VectorStorage sto;
 
@@ -68,53 +65,24 @@ public abstract class AbstractVector implements Vector {
      *
      * @param sto Storage.
      */
-    public AbstractVector(VectorStorage sto, int cardinality) {
-        this(false, sto, cardinality);
+    public AbstractVector(VectorStorage sto) {
+        this(false, sto);
     }
 
     /**
      * @param readOnly Is read only.
      * @param sto Storage.
-     * @param cardinality Cardinality.
      */
-    public AbstractVector(boolean readOnly, VectorStorage sto, int cardinality) {
+    public AbstractVector(boolean readOnly, VectorStorage sto) {
         this.readOnly = readOnly;
         this.sto = sto;
-        this.size = cardinality;
-
-        if (size < 0 )
-            throw new IllegalArgumentException("Size can't be negative");
-    }
-
-    /**
-     * @param readOnly Is read only.
-     * @param cardinality Cardinality.
-     */
-    public AbstractVector(boolean readOnly, int cardinality) {
-        this(readOnly, null, cardinality);
     }
 
     /**
      *
      */
     public AbstractVector() {
-        this(false, new VectorNullStorage(), 0);
-    }
-
-    /**
-     * @param cardinality Cardinality.
-     */
-    public AbstractVector(int cardinality) {
-        this(false, new VectorNullStorage(), cardinality);
-    }
-
-    /**
-     * Create new vector from other vector.
-     *
-     * @param vector Other vector.
-     */
-    public AbstractVector(Vector vector){
-        this(vector == null ? null : vector.getStorage(), vector == null ? 0 : vector.size());
+        this(false, new VectorNullStorage());
     }
 
     /**
@@ -123,22 +91,7 @@ public abstract class AbstractVector implements Vector {
      * @param sto Storage.
      */
     protected void setStorage(VectorStorage sto) {
-        this.sto = sto == null ? new VectorNullStorage() : sto;
-
-        if(this.sto.size() > size)
-            size = this.sto.size();
-    }
-
-    /**
-     * Set storage with max size. Make sense for non-fixed storages.
-     *
-     * @param sto Storage.
-     * @param maxSize Max storage size.
-     */
-    protected void setStorage(VectorStorage sto, int maxSize) {
-        this.sto = sto == null ? new VectorNullStorage() : sto;
-
-        this.size = maxSize;
+        this.sto = sto;
     }
 
     /**
@@ -165,7 +118,7 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return size;
+        return sto.size();
     }
 
     /**
@@ -174,7 +127,7 @@ public abstract class AbstractVector implements Vector {
      * @param idx Index to check.
      */
     protected void checkIndex(int idx) {
-        if (idx < 0 || idx >= size)
+        if (idx < 0 || idx >= sto.size())
             throw new IndexException(idx);
     }
 
@@ -868,7 +821,6 @@ public abstract class AbstractVector implements Vector {
         out.writeObject(meta);
         out.writeObject(guid);
         out.writeBoolean(readOnly);
-        out.writeInt(size);
     }
 
     /** {@inheritDoc} */
@@ -878,7 +830,6 @@ public abstract class AbstractVector implements Vector {
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
         readOnly = in.readBoolean();
-        size = in.readInt();
     }
 
     /** {@inheritDoc} */

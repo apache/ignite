@@ -24,14 +24,8 @@ import java.io.*;
  * TODO: add description.
  */
 public class VectorDelegateStorage implements VectorStorage {
-    /** */
     private VectorStorage sto;
-
-    /** */
-    private int off;
-
-    /** */
-    private int len;
+    private int off, len;
 
     /**
      *
@@ -47,7 +41,7 @@ public class VectorDelegateStorage implements VectorStorage {
      * @param len
      */
     public VectorDelegateStorage(VectorStorage sto, int off, int len) {
-        this.sto = sto == null ? new VectorNullStorage() : sto;
+        this.sto = sto;
         this.off = off;
         this.len = len;
     }

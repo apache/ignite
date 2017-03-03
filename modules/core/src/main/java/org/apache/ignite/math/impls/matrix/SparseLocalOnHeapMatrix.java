@@ -20,7 +20,7 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.SparseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.SparseLocalVector;
 import org.apache.ignite.math.impls.storage.matrix.SparseLocalMatrixStorage;
 
 import java.io.IOException;
@@ -29,7 +29,7 @@ import java.io.ObjectOutput;
 import java.util.Map;
 
 /**
- * Sparse local onheap matrix with {@link SparseLocalOnHeapVector} as rows.
+ * Sparse local onheap matrix with {@link SparseLocalVector} as rows.
  */
 public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     private int accMode = SparseDistributedMatrix.RANDOM_ACCESS_MODE;
@@ -83,7 +83,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix {
     /** {@inheritDoc} */
     @Override
     public Vector likeVector(int crd) {
-        return new SparseLocalOnHeapVector(crd, accMode);
+        return new SparseLocalVector(crd, accMode);
     }
 
     @Override

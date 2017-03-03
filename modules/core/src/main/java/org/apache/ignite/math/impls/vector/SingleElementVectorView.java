@@ -38,7 +38,7 @@ public class SingleElementVectorView extends AbstractVector {
      * @param idx
      */
     public SingleElementVectorView(Vector vec, int idx) {
-        super(new SingleElementVectorDelegateStorage(vec, idx), 1);
+        super(new SingleElementVectorDelegateStorage(vec, idx));
     }
 
     /**
@@ -47,14 +47,6 @@ public class SingleElementVectorView extends AbstractVector {
      */
     private SingleElementVectorDelegateStorage storage() {
         return (SingleElementVectorDelegateStorage)getStorage();
-    }
-
-    /**
-     *
-     * @param sto
-     */
-    protected SingleElementVectorView(SingleElementVectorDelegateStorage sto) {
-        super(sto, 1);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +71,9 @@ public class SingleElementVectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
-        return new SingleElementVectorView(storage());
+        SingleElementVectorDelegateStorage sto = storage();
+
+        return new SingleElementVectorView(sto.delegate(), sto.index());
     }
 
     /** {@inheritDoc} */
@@ -89,6 +83,6 @@ public class SingleElementVectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 }

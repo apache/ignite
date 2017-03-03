@@ -27,7 +27,7 @@ import java.io.*;
  * Pivoted (index mapped) view over another vector.
  */
 public class PivotedVectorView extends AbstractVector {
-    /** */ private Vector vec;
+    private Vector vec;
 
     /**
      *

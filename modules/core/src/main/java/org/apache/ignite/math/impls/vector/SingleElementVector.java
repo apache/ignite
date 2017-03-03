@@ -42,7 +42,7 @@ public class SingleElementVector extends AbstractVector {
      * @param val
      */
     public SingleElementVector(int size, int idx, double val) {
-        super(new SingleElementVectorStorage(size, idx, val), 1);
+        super(new SingleElementVectorStorage(size, idx, val));
     }
 
     /**

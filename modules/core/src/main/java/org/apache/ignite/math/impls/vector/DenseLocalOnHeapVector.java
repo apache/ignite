@@ -73,6 +73,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      */
     public DenseLocalOnHeapVector(int size) {
         super(size);
+
         setStorage(mkStorage(size));
     }
 
@@ -82,6 +83,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      */
     public DenseLocalOnHeapVector(double[] arr, boolean shallowCp) {
         super(arr == null ? 0 : arr.length);
+        
         setStorage(mkStorage(arr, shallowCp));
     }
 

@@ -34,7 +34,7 @@ import java.util.function.DoubleFunction;
  * that by default, the value is determined by a relatively simple hash of the index.
  */
 public class RandomVector extends AbstractVector {
-    /** */ private boolean fastHash;
+    private boolean fastHash;
 
     /**
      * @param size Vector cardinality.

@@ -25,13 +25,13 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 /** */
-public class SparseLocalOnHeapVectorConstructorTest {
+public class SparseLocalVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new SparseLocalVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -43,7 +43,7 @@ public class SparseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(test).size());
+            new SparseLocalVector(test).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -55,7 +55,7 @@ public class SparseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(test).size());
+            new SparseLocalVector(test).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
@@ -67,30 +67,30 @@ public class SparseLocalOnHeapVectorConstructorTest {
         }};
 
         assertEquals("Expect exception due to invalid copy type.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(test).size());
+            new SparseLocalVector(test).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(null).size());
+            new SparseLocalVector(null).size());
     }
 
     /** */ @Test
     public void mapTest() {
         assertEquals("Size from args.", 99,
-            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
+            new SparseLocalVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
 
         final double[] test = new double[99];
 
         assertEquals("Size from array in args.", test.length,
-            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{
+            new SparseLocalVector(new HashMap<String, Object>(){{
                 put("arr", test);
                 put("copy", false);
             }}).size());
 
         assertEquals("Size from array in args, shallow copy.", test.length,
-            new SparseLocalOnHeapVector(new HashMap<String, Object>(){{
+            new SparseLocalVector(new HashMap<String, Object>(){{
                 put("arr", test);
                 put("copy", true);
             }}).size());
@@ -99,15 +99,15 @@ public class SparseLocalOnHeapVectorConstructorTest {
     /** */ @Test(expected = IllegalArgumentException.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
-            new SparseLocalOnHeapVector(-1, 1).size());
+            new SparseLocalVector(-1, 1).size());
     }
 
     /** */ @Test
     public void primitiveTest() {
         assertEquals("0 size.", 0,
-            new SparseLocalOnHeapVector(0, 1).size());
+            new SparseLocalVector(0, 1).size());
 
         assertEquals("1 size.", 1,
-            new SparseLocalOnHeapVector(1, 1).size());
+            new SparseLocalVector(1, 1).size());
     }
 }

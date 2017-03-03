@@ -17,10 +17,8 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.vector.*;
-
 import java.io.*;
 import java.util.*;
 
@@ -35,59 +33,21 @@ public class DefaultMathProvider implements MathProvider {
         // No-op.
     }
 
-    /**
-     *
-     * @param grp
-     */
-    private void ensureClusterGroupIsNull(String flavor, ClusterGroup grp) {
-        if (grp != null)
-            throw new UnsupportedOperationException(
-                String.format("Flavor '%s' does not support clustering (pass 'null' instead).", flavor)
-            );
-    }
-
     @Override
-    public Optional<Matrix> matrix(String flavor, Map<String, Object> args, ClusterGroup grp) {
+    public Optional<Matrix> matrix(String flavor, Map<String, Object> args) {
         assert flavor != null;
         assert args != null;
 
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
-            case "random":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new RandomMatrix(args));
-
-            case "function":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new FunctionMatrix(args));
-
-            case "diagonal":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DiagonalMatrix(args));
-
-            case "cache.matrix":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new CacheMatrix(args));
-
-            case "dense.local.onheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DenseLocalOnHeapMatrix(args));
-
-            case "dense.local.offheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DenseLocalOffHeapMatrix(args));
-
-            case "sparse.local.onheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new SparseLocalOnHeapMatrix(args));
+            case "random": return Optional.of(new RandomMatrix(args));
+            case "function": return Optional.of(new FunctionMatrix(args));
+            case "diagonal":return Optional.of(new DiagonalMatrix(args));
+            case "cache.matrix": return Optional.of(new CacheMatrix(args));
+            case "dense.local.onheap": return Optional.of(new DenseLocalOnHeapMatrix(args));
+            case "dense.local.offheap": return Optional.of(new DenseLocalOffHeapMatrix(args));
+            case "sparse.local.onheap": return Optional.of(new SparseLocalOnHeapMatrix(args));
 
             default:
                 return Optional.empty();
@@ -95,57 +55,22 @@ public class DefaultMathProvider implements MathProvider {
     }
 
     @Override
-    public Optional<Vector> vector(String flavor, Map<String, Object> args, ClusterGroup grp) {
+    public Optional<Vector> vector(String flavor, Map<String, Object> args) {
         assert flavor != null;
         assert args != null;
 
         String flavorNorm = flavor.trim().toLowerCase();
 
         switch (flavorNorm) {
-            case "random":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new RandomVector(args));
-
-            case "function":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new FunctionVector(args));
-
-            case "constant":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new ConstantVector(args));
-
-            case "cache.vector":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new CacheVector(args));
-
-            case "single.value":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new SingleElementVector(args));
-
-            case "delegate":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DelegatingVector(args));
-
-            case "dense.local.onheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DenseLocalOnHeapVector(args));
-
-            case "dense.local.offheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new DenseLocalOffHeapVector(args));
-
-            case "sparse.local.onheap":
-                ensureClusterGroupIsNull(flavorNorm, grp);
-
-                return Optional.of(new SparseLocalOnHeapVector(args));
+            case "random": return Optional.of(new RandomVector(args));
+            case "function": return Optional.of(new FunctionVector(args));
+            case "constant": return Optional.of(new ConstantVector(args));
+            case "cache.vector": return Optional.of(new CacheVector(args));
+            case "single.value": return Optional.of(new SingleElementVector(args));
+            case "delegate": return Optional.of(new DelegatingVector(args));
+            case "dense.local.onheap": return Optional.of(new DenseLocalOnHeapVector(args));
+            case "dense.local.offheap": return Optional.of(new DenseLocalOffHeapVector(args));
+            case "sparse.local.onheap": return Optional.of(new SparseLocalVector(args));
 
             default:
                 return Optional.empty();
