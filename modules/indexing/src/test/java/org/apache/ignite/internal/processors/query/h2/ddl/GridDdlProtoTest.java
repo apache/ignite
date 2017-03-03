@@ -69,13 +69,6 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         assertCreateIndexThrowsWithMessage("DDL operation has been cancelled at INIT stage", false);
     }
 
-    /** Test behavior in case of ACK failure (cancel via {@link DdlStatementsProcessor#onAck}). */
-    public void testAckFailure() {
-        DdlProc.testName = GridTestUtils.getGridTestName();
-
-        assertCreateIndexThrowsWithMessage("DDL operation execution has failed", false);
-    }
-
     /**
      * Test error handling.
      *
