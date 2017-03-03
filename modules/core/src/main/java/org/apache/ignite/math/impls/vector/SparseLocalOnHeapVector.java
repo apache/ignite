@@ -104,9 +104,4 @@ public class SparseLocalOnHeapVector extends AbstractVector {
                 throw new java.lang.UnsupportedOperationException("This access mode is unsupported.");
         }
     }
-
-    @Override
-    public int size() {
-        return super.size();
-    }
 }
