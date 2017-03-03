@@ -117,6 +117,7 @@ BOOST_AUTO_TEST_CASE(UserTestType)
     CheckSimpleNP(TestType());
     CheckSimpleNP(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
         common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimeGmt(13, 32, 9),
         common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
 }
 
@@ -162,6 +163,7 @@ BOOST_AUTO_TEST_CASE(UserTestTypeGetData)
     CheckData(TestType());
     CheckData(TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9),
         common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimeGmt(13, 32, 9),
         common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456)));
 }
 
