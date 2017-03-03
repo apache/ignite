@@ -223,6 +223,19 @@ void CheckRawWritesRestricted(BinaryRawWriter& writer)
 
     try
     {
+        Time val(1);
+
+        writer.WriteTime(val);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
         Timestamp val(1);
 
         writer.WriteTimestamp(val);
@@ -819,6 +832,13 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
     CheckRawPrimitive<Date>(val);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveTime)
+{
+    Time val(time(NULL) * 1000);
+
+    CheckRawPrimitive<Time>(val);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
 {
     Timestamp val(time(NULL), 0);
@@ -884,6 +904,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveArrayDate)
     CheckRawPrimitiveArray<Date>(dflt, val1, val2);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTime)
+{
+    Time dflt(1);
+    Time val1(2);
+    Time val2(3);
+
+    CheckRawPrimitiveArray<Time>(dflt, val1, val2);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTimestamp)
 {
     Timestamp dflt(1);
@@ -933,6 +962,28 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
 
     Date expVal;
     Date actualVal = rawReader.ReadDate();
+
+    BOOST_REQUIRE(actualVal == expVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeNull)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+    BinaryRawWriter rawWriter(&writer);
+
+    rawWriter.WriteNull();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    Time expVal;
+    Time actualVal = rawReader.ReadTime();
 
     BOOST_REQUIRE(actualVal == expVal);
 }
