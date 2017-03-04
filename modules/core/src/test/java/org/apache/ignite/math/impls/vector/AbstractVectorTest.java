@@ -21,7 +21,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.vector.VectorArrayStorage;
+import org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage;
 import org.junit.*;
 import java.util.*;
 import java.util.stream.*;
@@ -61,7 +61,7 @@ public class AbstractVectorTest {
         testVector.setStorage(createStorage());
         assertTrue(testVector.size() == STORAGE_SIZE);
 
-        testVector.setStorage(new VectorArrayStorage(STORAGE_SIZE + STORAGE_SIZE));
+        testVector.setStorage(new ArrayVectorStorage(STORAGE_SIZE + STORAGE_SIZE));
         assertTrue(testVector.size() == STORAGE_SIZE + STORAGE_SIZE);
 
         testVector = getAbstractVector(createStorage());
@@ -893,7 +893,7 @@ public class AbstractVectorTest {
      * @return VectorStorage
      */
     private VectorStorage createEmptyStorage() {
-        return new VectorArrayStorage(STORAGE_SIZE);
+        return new ArrayVectorStorage(STORAGE_SIZE);
     }
 
     /**
@@ -902,7 +902,7 @@ public class AbstractVectorTest {
      * @return VectorStorage.
      */
     private VectorStorage createStorage() {
-        VectorArrayStorage storage = new VectorArrayStorage(STORAGE_SIZE);
+        ArrayVectorStorage storage = new ArrayVectorStorage(STORAGE_SIZE);
 
         for (int i = 0; i < STORAGE_SIZE; i++)
             storage.set(i, Math.random());
@@ -917,7 +917,7 @@ public class AbstractVectorTest {
      * @return Vector storage.
      */
     private VectorStorage createStorage(double[] data){
-        VectorArrayStorage storage = new VectorArrayStorage(data.length);
+        ArrayVectorStorage storage = new ArrayVectorStorage(data.length);
 
         for (int i = 0; i < data.length; i++)
             storage.set(i, data[i]);

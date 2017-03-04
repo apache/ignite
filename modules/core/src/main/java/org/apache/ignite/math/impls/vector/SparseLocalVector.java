@@ -42,7 +42,7 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
     public SparseLocalVector(int size, int acsMode) {
         assertAccessMode(acsMode);
             
-        setStorage(new SparseVectorStorage(size, acsMode));
+        setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
     }
 
     /**
@@ -57,19 +57,19 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
 
             assertAccessMode(acsMode);
 
-            setStorage(new SparseVectorStorage(size, acsMode));
+            setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
         }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
-    private SparseVectorStorage storage() {
-        return (SparseVectorStorage)getStorage();
+    private SparseLocalOnHeapVectorStorage storage() {
+        return (SparseLocalOnHeapVectorStorage)getStorage();
     }
 
     @Override
     public Vector like(int crd) {
-        SparseVectorStorage sto = storage();
+        SparseLocalOnHeapVectorStorage sto = storage();
 
         return new SparseLocalVector(sto.size(), sto.getAccessMode());
     }

@@ -23,9 +23,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Storage for sparse local matrix.
+ * Storage for sparse, local, on-heap matrix.
  */
-public class SparseLocalMatrixStorage implements MatrixStorage, StorageConstants {
+public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageConstants {
     private int rows, cols;
     private int acsMode, stoMode;
 
@@ -35,11 +35,11 @@ public class SparseLocalMatrixStorage implements MatrixStorage, StorageConstants
     /**
      *
      */
-    public SparseLocalMatrixStorage() {
+    public SparseLocalOnHeapMatrixStorage() {
         // No-op.
     }
 
-    public SparseLocalMatrixStorage(int rows, int cols, int acsMode, int stoMode) {
+    public SparseLocalOnHeapMatrixStorage(int rows, int cols, int acsMode, int stoMode) {
         assert rows > 0;
         assert cols > 0;
         assertAccessMode(acsMode);

@@ -23,12 +23,12 @@ import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link MatrixOffHeapStorage}.
+ * Unit tests for {@link DenseOffHeapMatrixStorage}.
  */
-public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest<MatrixOffHeapStorage> {
+public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest<DenseOffHeapMatrixStorage> {
     /** {@inheritDoc} */
     @Override public void setUp() {
-        storage = new MatrixOffHeapStorage(STORAGE_SIZE, STORAGE_SIZE);
+        storage = new DenseOffHeapMatrixStorage(STORAGE_SIZE, STORAGE_SIZE);
     }
 
     /** */

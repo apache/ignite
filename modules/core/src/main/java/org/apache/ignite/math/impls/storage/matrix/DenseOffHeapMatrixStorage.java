@@ -22,19 +22,19 @@ import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
- * TODO: add description.
+ * Local, dense off-heap matrix storage.
  */
-public class MatrixOffHeapStorage implements MatrixStorage {
+public class DenseOffHeapMatrixStorage implements MatrixStorage {
     private int rows, cols;
     private long ptr;
 
     /** */
-    public MatrixOffHeapStorage(){
+    public DenseOffHeapMatrixStorage(){
         // No-op.
     }
 
     /** */
-    public MatrixOffHeapStorage(int rows, int cols){
+    public DenseOffHeapMatrixStorage(int rows, int cols){
         assert rows > 0;
         assert cols > 0;
 
@@ -45,7 +45,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     }
 
     /** */
-    public MatrixOffHeapStorage(double[][] data) {
+    public DenseOffHeapMatrixStorage(double[][] data) {
         assert data != null;
         
         this.rows = data.length;
@@ -159,9 +159,9 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     public boolean equals(Object obj) {
         return obj != null &&
                 getClass().equals(obj.getClass()) &&
-                (rows == ((MatrixOffHeapStorage)obj).rows) &&
-                (cols == ((MatrixOffHeapStorage)obj).cols) &&
-                (rows == 0 || cols == 0 || ptr == ((MatrixOffHeapStorage)obj).ptr || isMemoryEquals((MatrixOffHeapStorage)obj));
+                (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
+                (cols == ((DenseOffHeapMatrixStorage)obj).cols) &&
+                (rows == 0 || cols == 0 || ptr == ((DenseOffHeapMatrixStorage)obj).ptr || isMemoryEquals((DenseOffHeapMatrixStorage)obj));
     }
 
     /** {@inheritDoc} */
@@ -177,7 +177,7 @@ public class MatrixOffHeapStorage implements MatrixStorage {
     }
 
     /** */
-    private boolean isMemoryEquals(MatrixOffHeapStorage otherStorage){
+    private boolean isMemoryEquals(DenseOffHeapMatrixStorage otherStorage){
         boolean result = true;
         for (int i = 0; i < otherStorage.rows; i++) {
             for (int j = 0; j < otherStorage.cols; j++) {

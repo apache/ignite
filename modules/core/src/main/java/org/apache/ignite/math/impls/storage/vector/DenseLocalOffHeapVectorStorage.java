@@ -25,14 +25,14 @@ import java.util.stream.*;
 /**
  * TODO: add description.
  */
-public class VectorOffHeapStorage implements VectorStorage {
+public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     private int size;
     private long ptr;
 
     /**
      *
      */
-    public VectorOffHeapStorage(){
+    public DenseLocalOffHeapVectorStorage(){
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class VectorOffHeapStorage implements VectorStorage {
      *
      * @param size
      */
-    public VectorOffHeapStorage(int size){
+    public DenseLocalOffHeapVectorStorage(int size){
         assert size > 0;
 
         this.size = size;
@@ -133,8 +133,8 @@ public class VectorOffHeapStorage implements VectorStorage {
     public boolean equals(Object obj) {
         return obj != null &&
             getClass().equals(obj.getClass()) &&
-            (size == ((VectorOffHeapStorage)obj).size) &&
-            (size == 0 || isMemoryEquals((VectorOffHeapStorage)obj));
+            (size == ((DenseLocalOffHeapVectorStorage)obj).size) &&
+            (size == 0 || isMemoryEquals((DenseLocalOffHeapVectorStorage)obj));
     }
 
     /** {@inheritDoc} */
@@ -149,7 +149,7 @@ public class VectorOffHeapStorage implements VectorStorage {
     }
 
     /** */
-    private boolean isMemoryEquals(VectorOffHeapStorage otherStorage){
+    private boolean isMemoryEquals(DenseLocalOffHeapVectorStorage otherStorage){
         return IntStream.range(0, size).parallel().noneMatch(idx -> Double.compare(get(idx), otherStorage.get(idx)) != 0);
     }
 

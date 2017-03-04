@@ -23,9 +23,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Vector storage that stores only non-zero doubles.
+ * Sparse, local, on-heap vector storage.
  */
-public class SparseVectorStorage implements VectorStorage, StorageConstants {
+public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageConstants {
     private int size;
     private int acsMode;
 
@@ -35,7 +35,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
     /**
      *
      */
-    public SparseVectorStorage() {
+    public SparseLocalOnHeapVectorStorage() {
         // No-op.
     }
 
@@ -44,7 +44,7 @@ public class SparseVectorStorage implements VectorStorage, StorageConstants {
      * @param size
      * @param acsMode
      */
-    public SparseVectorStorage(int size, int acsMode) {
+    public SparseLocalOnHeapVectorStorage(int size, int acsMode) {
         assert size > 0;
         assertAccessMode(acsMode);
 

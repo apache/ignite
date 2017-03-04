@@ -21,7 +21,7 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorage;
+import org.apache.ignite.math.impls.storage.matrix.ArrayMatrixStorage;
 
 import java.util.*;
 
@@ -50,7 +50,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
         assert rows > 0;
         assert cols > 0;
 
-        setStorage(new MatrixArrayStorage(rows, cols));
+        setStorage(new ArrayMatrixStorage(rows, cols));
     }
 
     /**
@@ -60,7 +60,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
     public DenseLocalOnHeapMatrix(double[][] mtx) {
         assert mtx != null;
 
-        setStorage(new MatrixArrayStorage(mtx));
+        setStorage(new ArrayMatrixStorage(mtx));
     }
 
     /**
@@ -70,7 +70,7 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
     private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
         assert orig != null;
 
-        setStorage(new MatrixArrayStorage(orig.rowSize(), orig.columnSize()));
+        setStorage(new ArrayMatrixStorage(orig.rowSize(), orig.columnSize()));
 
         assign(orig);
     }
@@ -83,9 +83,9 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
         assert args != null;
 
         if (args.containsKey("rows") && args.containsKey("cols"))
-            setStorage(new MatrixArrayStorage((int)args.get("rows"), (int)args.get("cols")));
+            setStorage(new ArrayMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
         else if (args.containsKey("arr"))
-            setStorage(new MatrixArrayStorage((double[][])args.get("arr")));
+            setStorage(new ArrayMatrixStorage((double[][])args.get("arr")));
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }

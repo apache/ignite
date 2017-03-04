@@ -19,7 +19,7 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
-import org.apache.ignite.math.impls.storage.vector.VectorDelegateStorage;
+import org.apache.ignite.math.impls.storage.vector.DelegateVectorStorage;
 
 import java.io.*;
 
@@ -41,7 +41,7 @@ public class VectorView extends AbstractVector {
      * @param len
      */
     public VectorView(Vector parent, int off, int len) {
-        super(new VectorDelegateStorage(parent.getStorage(), off, len));
+        super(new DelegateVectorStorage(parent.getStorage(), off, len));
     }
 
     /**
@@ -51,16 +51,16 @@ public class VectorView extends AbstractVector {
      * @param len
      */
     public VectorView(VectorStorage sto, int off, int len) {
-        super(new VectorDelegateStorage(sto, off, len));
+        super(new DelegateVectorStorage(sto, off, len));
     }
 
-    private VectorDelegateStorage storage() {
-        return (VectorDelegateStorage)getStorage();
+    private DelegateVectorStorage storage() {
+        return (DelegateVectorStorage)getStorage();
     }
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
-        VectorDelegateStorage sto = storage();
+        DelegateVectorStorage sto = storage();
 
         return new VectorView(sto.delegate(), sto.offset(), sto.length());
     }

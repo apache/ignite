@@ -25,16 +25,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link VectorOffHeapStorage}.
+ * Unit tests for {@link DenseLocalOffHeapVectorStorage}.
  */
-public class VectorOffheapStorageTest extends VectorBaseStorageTest<VectorOffHeapStorage> {
+public class VectorOffheapStorageTest extends VectorBaseStorageTest<DenseLocalOffHeapVectorStorage> {
     /** */
     private static final double DOUBLE_ZERO = 0d;
 
     /** */
     @Before
     public void setUp() {
-        storage = new VectorOffHeapStorage(STORAGE_SIZE);
+        storage = new DenseLocalOffHeapVectorStorage(STORAGE_SIZE);
     }
 
     /** */
@@ -78,7 +78,7 @@ public class VectorOffheapStorageTest extends VectorBaseStorageTest<VectorOffHea
     public void equalsTest(){
         assertTrue(VALUE_NOT_EQUALS, storage.equals(storage));
 
-        assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, storage.equals(new VectorArrayStorage(STORAGE_SIZE)));
+        assertFalse(VALUES_SHOULD_BE_NOT_EQUALS, storage.equals(new ArrayVectorStorage(STORAGE_SIZE)));
     }
 
 }

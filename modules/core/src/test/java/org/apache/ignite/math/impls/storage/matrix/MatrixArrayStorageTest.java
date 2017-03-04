@@ -25,12 +25,12 @@ import static org.apache.ignite.math.impls.MathTestConstants.UNEXPECTED_VALUE;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link MatrixArrayStorage}.
+ * Unit tests for {@link ArrayMatrixStorage}.
  */
-public class MatrixArrayStorageTest extends MatrixBaseStorageTest<MatrixArrayStorage>{
+public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixStorage>{
     /** {@inheritDoc} */
     @Override public void setUp() {
-        storage = new MatrixArrayStorage(STORAGE_SIZE, STORAGE_SIZE);
+        storage = new ArrayMatrixStorage(STORAGE_SIZE, STORAGE_SIZE);
     }
 
     /** */

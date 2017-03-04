@@ -21,7 +21,7 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
-import org.apache.ignite.math.impls.storage.vector.VectorOffHeapStorage;
+import org.apache.ignite.math.impls.storage.vector.DenseLocalOffHeapVectorStorage;
 
 import java.util.*;
 import java.util.stream.*;
@@ -32,7 +32,7 @@ import java.util.stream.*;
 public class DenseLocalOffHeapVector extends AbstractVector {
     /** */
     private void makeOffheapStorage(int size){
-        setStorage(new VectorOffHeapStorage(size));
+        setStorage(new DenseLocalOffHeapVectorStorage(size));
     }
 
     /**

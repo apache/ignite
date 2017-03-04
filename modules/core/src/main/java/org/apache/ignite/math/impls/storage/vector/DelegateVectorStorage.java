@@ -23,14 +23,14 @@ import java.io.*;
 /**
  * TODO: add description.
  */
-public class VectorDelegateStorage implements VectorStorage {
+public class DelegateVectorStorage implements VectorStorage {
     private VectorStorage sto;
     private int off, len;
 
     /**
      *
      */
-    public VectorDelegateStorage() {
+    public DelegateVectorStorage() {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class VectorDelegateStorage implements VectorStorage {
      * @param off
      * @param len
      */
-    public VectorDelegateStorage(VectorStorage sto, int off, int len) {
+    public DelegateVectorStorage(VectorStorage sto, int off, int len) {
         assert sto != null;
         assert off >= 0;
         assert len > 0;
@@ -129,9 +129,9 @@ public class VectorDelegateStorage implements VectorStorage {
         return this == obj ||
             ((obj != null)
                 && obj.getClass() == getClass()
-                && (sto.equals(((VectorDelegateStorage)obj).sto))
-                && len == ((VectorDelegateStorage)obj).len
-                && off == ((VectorDelegateStorage)obj).off);
+                && (sto.equals(((DelegateVectorStorage)obj).sto))
+                && len == ((DelegateVectorStorage)obj).len
+                && off == ((DelegateVectorStorage)obj).off);
     }
 
     /** {@inheritDoc} */

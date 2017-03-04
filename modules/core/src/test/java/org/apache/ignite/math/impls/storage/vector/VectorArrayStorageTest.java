@@ -25,12 +25,12 @@ import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
 /**
- * Unit test for {@link VectorArrayStorage}.
+ * Unit test for {@link ArrayVectorStorage}.
  */
-public class VectorArrayStorageTest extends VectorBaseStorageTest<VectorArrayStorage> {
+public class VectorArrayStorageTest extends VectorBaseStorageTest<ArrayVectorStorage> {
     /** */
     @Override public void setUp() {
-        storage = new VectorArrayStorage(STORAGE_SIZE);
+        storage = new ArrayVectorStorage(STORAGE_SIZE);
     }
 
     /** */
@@ -38,7 +38,7 @@ public class VectorArrayStorageTest extends VectorBaseStorageTest<VectorArraySto
     public void isArrayBased() throws Exception {
         assertTrue(WRONG_ATTRIBUTE_VALUE, storage.isArrayBased());
 
-        assertTrue(WRONG_ATTRIBUTE_VALUE, new VectorArrayStorage().isArrayBased());
+        assertTrue(WRONG_ATTRIBUTE_VALUE, new ArrayVectorStorage().isArrayBased());
     }
 
     /** */
@@ -50,7 +50,7 @@ public class VectorArrayStorageTest extends VectorBaseStorageTest<VectorArraySto
 
         assertTrue(UNEXPECTED_DATA_VALUE, Arrays.equals(storage.data(), new double[STORAGE_SIZE]));
 
-        assertNull(UNEXPECTED_DATA_VALUE, new VectorArrayStorage().data());
+        assertNull(UNEXPECTED_DATA_VALUE, new ArrayVectorStorage().data());
     }
 
 }

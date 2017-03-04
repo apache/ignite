@@ -21,7 +21,7 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.math.impls.storage.vector.VectorArrayStorage;
+import org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage;
 
 import java.util.*;
 
@@ -38,7 +38,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param size Vector cardinality.
      */
     private VectorStorage mkStorage(int size) {
-        return new VectorArrayStorage(size);
+        return new ArrayVectorStorage(size);
     }
 
     /**
@@ -48,7 +48,7 @@ public class DenseLocalOnHeapVector extends AbstractVector {
     private VectorStorage mkStorage(double[] arr, boolean cp) {
         assert arr != null;
 
-        return new VectorArrayStorage(cp ? arr.clone() : arr);
+        return new ArrayVectorStorage(cp ? arr.clone() : arr);
     }
 
     /**

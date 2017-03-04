@@ -24,14 +24,14 @@ import java.util.*;
 /**
  * TODO: add description.
  */
-public class MatrixArrayStorage implements MatrixStorage {
+public class ArrayMatrixStorage implements MatrixStorage {
     private double[][] data;
     private int rows, cols;
 
     /**
      *
      */
-    public MatrixArrayStorage() {
+    public ArrayMatrixStorage() {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class MatrixArrayStorage implements MatrixStorage {
      * @param rows
      * @param cols
      */
-    public MatrixArrayStorage(int rows, int cols) {
+    public ArrayMatrixStorage(int rows, int cols) {
         assert rows > 0;
         assert cols > 0;
 
@@ -53,7 +53,7 @@ public class MatrixArrayStorage implements MatrixStorage {
      * 
      * @param data
      */
-    public MatrixArrayStorage(double[][] data) {
+    public ArrayMatrixStorage(double[][] data) {
         assert data != null;
 
         this.data = data;
@@ -64,7 +64,7 @@ public class MatrixArrayStorage implements MatrixStorage {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass())
-            && Arrays.deepEquals(data, ((MatrixArrayStorage)o).data);
+            && Arrays.deepEquals(data, ((ArrayMatrixStorage)o).data);
     }
 
     /** {@inheritDoc} */
