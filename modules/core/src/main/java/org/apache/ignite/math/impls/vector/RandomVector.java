@@ -147,14 +147,6 @@ public class RandomVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public double kNorm(double power) {
-        if (power != 1.0)
-            return super.kNorm(power);
-        else // todo find out why super breaks here
-            return Math.pow(foldMap(Functions.PLUS, Functions.pow(power), 0d), 1.0 / power);
-    }
-
-    /** {@inheritDoc} */
     @Override public Vector divide(double x) {
         if (x == 1.0)
             return this;
@@ -164,7 +156,7 @@ public class RandomVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector times(double x) {
-        return new FunctionVector(size(), (i) -> get(i) * x);
+        return x == 0 ? new ConstantVector(size(), 0) : new FunctionVector(size(), (i) -> get(i) * x);
     }
 
     /** {@inheritDoc} */

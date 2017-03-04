@@ -95,7 +95,8 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class SparseLocalOnHeapVectorFixture implements Iterable<Vector> {
-        /** */ private final Supplier<VectorSizesExtraIterator<Integer>> iter;
+        /** */
+        private final Supplier<VectorSizesExtraIterator<Integer>> iter;
 
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
@@ -119,7 +120,7 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture{
-        SparseLocalOffHeapVectorFixture() {
+        /** */ SparseLocalOffHeapVectorFixture() {
             super("SparseLocalOffHeapVector", SparseLocalOffHeapVector::new);
         }
     }

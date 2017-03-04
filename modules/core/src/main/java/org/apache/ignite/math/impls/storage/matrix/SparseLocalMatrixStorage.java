@@ -154,9 +154,15 @@ public class SparseLocalMatrixStorage implements MatrixStorage, StorageConstants
         sto = (Map<Integer, Map<Integer, Double>>)in.readObject();
     }
 
+<<<<<<< HEAD
     @Override
     public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
+=======
+    /** {@inheritDoc} */
+    @Override public boolean isSequentialAccess() {
+        return accessMode == SparseDistributedMatrix.SEQUENTIAL_ACCESS_MODE;
+>>>>>>> ef31d7dac101649c07401eab1a2e66bab569aa26
     }
 
     @Override
@@ -178,4 +184,51 @@ public class SparseLocalMatrixStorage implements MatrixStorage, StorageConstants
     public boolean isArrayBased() {
         return false;
     }
+<<<<<<< HEAD
+=======
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj != null && getClass() == obj.getClass() && compareStorage((SparseLocalMatrixStorage)obj);
+    }
+
+    /** */
+    private boolean compareStorage(SparseLocalMatrixStorage obj) {
+        return  (rows == obj.rows) && (cols == obj.cols) && (obj.rowVectors.equals(rowVectors));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + cols;
+        result = result * 37 + rows;
+        result = result * 37 + accessMode;
+        result = result * 37 + rowVectors.hashCode();
+
+        return result;
+    }
+
+    /**
+     * Init all row objects.
+     */
+    private void initDataStorage(){
+        rowVectors = new Int2ObjectOpenHashMap();
+
+        for (int i = 0; i < rows; i++)
+            rowVectors.put(i, selectStorage(cols));
+    }
+
+    /** */
+    private VectorStorage selectStorage(int size){
+        switch (accessMode){
+            case 0:
+                return new SequentialAccessSparseVectorStorage();
+            case 1:
+                return new RandomAccessSparseVectorStorage(size);
+            default:
+                throw new java.lang.UnsupportedOperationException("This access mode is unsupported.");
+        }
+    }
+>>>>>>> ef31d7dac101649c07401eab1a2e66bab569aa26
 }
