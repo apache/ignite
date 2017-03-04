@@ -22,8 +22,6 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.VectorArrayStorage;
-import org.apache.ignite.math.impls.storage.vector.VectorNullStorage;
-import org.apache.ignite.math.impls.vector.AbstractVector;
 import org.junit.*;
 import java.util.*;
 import java.util.stream.*;

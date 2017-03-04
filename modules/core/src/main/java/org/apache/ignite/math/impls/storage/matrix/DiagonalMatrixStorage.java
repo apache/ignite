@@ -39,6 +39,8 @@ public class DiagonalMatrixStorage implements MatrixStorage {
      * @param diagonal
      */
     public DiagonalMatrixStorage(Vector diagonal) {
+        assert diagonal != null;
+
         this.diagonal = diagonal;
     }
 

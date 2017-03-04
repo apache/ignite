@@ -25,12 +25,8 @@ import java.util.*;
  * TODO: add description.
  */
 public class MatrixArrayStorage implements MatrixStorage {
-    /** */
     private double[][] data;
-
-    private int rows;
-
-    private int cols;
+    private int rows, cols;
 
     /**
      *
@@ -45,6 +41,9 @@ public class MatrixArrayStorage implements MatrixStorage {
      * @param cols
      */
     public MatrixArrayStorage(int rows, int cols) {
+        assert rows > 0;
+        assert cols > 0;
+
         this.data = new double[rows][cols];
         this.rows = rows;
         this.cols = cols;
@@ -55,6 +54,8 @@ public class MatrixArrayStorage implements MatrixStorage {
      * @param data
      */
     public MatrixArrayStorage(double[][] data) {
+        assert data != null;
+
         this.data = data;
         this.rows = data.length;
         this.cols = data[0].length;

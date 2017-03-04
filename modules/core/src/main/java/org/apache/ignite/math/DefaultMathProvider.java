@@ -47,7 +47,6 @@ public class DefaultMathProvider implements MathProvider {
             case "cache.matrix": return Optional.of(new CacheMatrix(args));
             case "dense.local.onheap": return Optional.of(new DenseLocalOnHeapMatrix(args));
             case "dense.local.offheap": return Optional.of(new DenseLocalOffHeapMatrix(args));
-            case "sparse.local.onheap": return Optional.of(new SparseLocalOnHeapMatrix(args));
 
             default:
                 return Optional.empty();

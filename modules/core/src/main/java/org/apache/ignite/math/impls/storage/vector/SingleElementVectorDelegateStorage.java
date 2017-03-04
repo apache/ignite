@@ -41,6 +41,9 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
      * @param idx
      */
     public SingleElementVectorDelegateStorage(Vector vec, int idx) {
+        assert vec != null;
+        assert idx >= 0;
+
         this.vec = vec;
         this.idx = idx;
     }

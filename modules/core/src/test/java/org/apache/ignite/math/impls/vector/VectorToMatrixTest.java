@@ -5,7 +5,6 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.math.impls.matrix.SparseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 

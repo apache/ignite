@@ -46,6 +46,12 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      * @param valMapper
      */
     public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        assert rows > 0;
+        assert cols > 0;
+        assert cache != null;
+        assert keyMapper != null;
+        assert valMapper != null;
+
         this.rows = rows;
         this.cols = cols;
         this.cache = cache;

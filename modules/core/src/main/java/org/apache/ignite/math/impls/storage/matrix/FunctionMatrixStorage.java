@@ -45,6 +45,8 @@ public class FunctionMatrixStorage implements MatrixStorage {
      * @param setFunc
      */
     public FunctionMatrixStorage(int rows, int cols, IntIntToDoubleFunction getFunc, IntIntDoubleToVoidFunction setFunc) {
+        assert rows > 0;
+        assert cols > 0;
         assert getFunc != null;
 
         this.rows = rows;

@@ -46,7 +46,9 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param cp {@code true} to clone array, reuse it otherwise.
      */
     private VectorStorage mkStorage(double[] arr, boolean cp) {
-        return new VectorArrayStorage(!cp ? arr : (arr == null ? null : arr.clone()));
+        assert arr != null;
+
+        return new VectorArrayStorage(cp ? arr.clone() : arr);
     }
 
     /**
@@ -72,8 +74,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param size Vector cardinality.
      */
     public DenseLocalOnHeapVector(int size) {
-        super(size);
-
         setStorage(mkStorage(size));
     }
 
@@ -82,8 +82,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param shallowCp {@code true} to use shallow copy.
      */
     public DenseLocalOnHeapVector(double[] arr, boolean shallowCp) {
-        super(arr == null ? 0 : arr.length);
-        
         setStorage(mkStorage(arr, shallowCp));
     }
 
@@ -98,8 +96,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
      * @param orig Source Vector.
      */
     private DenseLocalOnHeapVector(DenseLocalOnHeapVector orig) {
-        super(orig.size());
-
         setStorage(mkStorage(orig.size()));
 
         assign(orig);

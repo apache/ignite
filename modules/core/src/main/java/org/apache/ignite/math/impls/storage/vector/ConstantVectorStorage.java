@@ -41,6 +41,8 @@ public class ConstantVectorStorage implements VectorStorage {
      * @param val
      */
     public ConstantVectorStorage(int size, double val) {
+        assert size > 0;
+
         this.size = size;
         this.val = val;
     }

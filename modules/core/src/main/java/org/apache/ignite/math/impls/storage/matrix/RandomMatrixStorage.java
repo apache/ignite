@@ -42,6 +42,9 @@ public class RandomMatrixStorage implements MatrixStorage {
      * @param fastHash
      */
     public RandomMatrixStorage(int rows, int cols, boolean fastHash) {
+        assert rows > 0;
+        assert cols > 0;
+
         this.rows = rows;
         this.cols = cols;
         this.fastHash = fastHash;

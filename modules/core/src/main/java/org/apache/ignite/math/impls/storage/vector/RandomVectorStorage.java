@@ -40,6 +40,8 @@ public class RandomVectorStorage implements VectorStorage {
      * @param fastHash Whether or not to use fast hashing or Murmur hashing.
      */
     public RandomVectorStorage(int size, boolean fastHash) {
+        assert size > 0;
+
         this.size = size;
         this.fastHash = fastHash;
 

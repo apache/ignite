@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
 
 import java.io.*;
@@ -26,14 +27,6 @@ import java.io.*;
  * TODO: add description.
  */
 public class MatrixView extends AbstractMatrix {
-    private Matrix parent;
-
-    private int rowOff;
-    private int colOff;
-
-    private int rows;
-    private int cols;
-
     /**
      * Constructor for {@link Externalizable} interface.
      */
@@ -50,51 +43,43 @@ public class MatrixView extends AbstractMatrix {
      * @param cols
      */
     public MatrixView(Matrix parent, int rowOff, int colOff, int rows, int cols) {
-        super(new MatrixDelegateStorage(parent.getStorage(), rowOff, colOff, rows, cols));
+        this(parent.getStorage(), rowOff, colOff, rows, cols);
+    }
 
-        this.parent = parent;
+    /**
+     *
+     * @param sto
+     * @param rowOff
+     * @param colOff
+     * @param rows
+     * @param cols
+     */
+    public MatrixView(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
+        super(new MatrixDelegateStorage(sto, rowOff, colOff, rows, cols));
+    }
 
-        this.rowOff = rowOff;
-        this.colOff = colOff;
-
-        this.rows = rows;
-        this.cols = cols;
+    /**
+     * 
+     * @return
+     */
+    private MatrixDelegateStorage storage() {
+        return (MatrixDelegateStorage)getStorage();
     }
 
     @Override
     public Matrix copy() {
-        return new MatrixView(parent, rowOff, colOff, rows, cols);
+        MatrixDelegateStorage sto = storage();
+
+        return new MatrixView(sto.delegate(), sto.rowOffset(), sto.columnOffset(), sto.rowSize(), sto.columnSize());
     }
 
     @Override
     public Matrix like(int rows, int cols) {
-        return parent.like(rows, cols);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Vector likeVector(int crd) {
-        return parent.likeVector(crd);
-    }
-
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(parent);
-        out.writeInt(rowOff);
-        out.writeInt(colOff);
-        out.writeInt(rows);
-        out.writeInt(cols);
-    }
-
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        
-        parent = (Matrix)in.readObject();
-        rowOff = in.readInt();
-        colOff = in.readInt();
-        rows = in.readInt();
-        cols = in.readInt();
+        throw new UnsupportedOperationException();
     }
 }

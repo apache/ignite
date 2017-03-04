@@ -43,6 +43,10 @@ public class PivotedMatrixStorage implements MatrixStorage {
      * @param colPivot
      */
     public PivotedMatrixStorage(MatrixStorage sto, int[] rowPivot, int[] colPivot) {
+        assert sto != null;
+        assert rowPivot != null;
+        assert colPivot != null;
+        
         this.sto = sto;
         this.rowPivot = rowPivot;
         this.colPivot = colPivot;

@@ -47,6 +47,10 @@ public class MatrixVectorStorage implements VectorStorage {
      * @param colStride
      */
     public MatrixVectorStorage(Matrix parent, int row, int col, int rowStride, int colStride) {
+        assert parent != null;
+        assert rowStride >= 0;
+        assert colStride >= 0;
+        
         if (row < 0 || row >= parent.rowSize())
             throw new IndexException(row);
         if (col < 0 || col >= parent.columnSize())

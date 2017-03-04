@@ -15,29 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls.matrix;
-
-import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.vector.*;
+package org.apache.ignite.math;
 
 /**
- * Sparse local onheap matrix with {@link SparseLocalVector} as rows.
+ * TODO: add description.
  */
-public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageConstants {
+public interface StorageConstants {
+    /** Storage mode optimized for sequential access. */
+    static final int SEQUENTIAL_ACCESS_MODE = 1001;
+
+    /** Storage mode optimized for random access. */
+    static final int RANDOM_ACCESS_MODE = 1002;
+
+    /** Storage mode optimized for row access. */
+    static final int ROW_STORAGE_MODE = 2001;
+
+    /** Storage mode optimized for column access. */
+    static final int COLUMN_STORAGE_MODE = 2002;
+
     /**
      *
+     * @param mode
      */
-    public SparseLocalOnHeapMatrix() {
-        // No-op.
+    default void assertAccessMode(int mode) {
+        assert mode == SEQUENTIAL_ACCESS_MODE || mode == RANDOM_ACCESS_MODE;
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
-        return null; // TODO
-    }
-
-    @Override
-    public Vector likeVector(int crd) {
-        return null; // TODO
+    /**
+     *
+     * @param mode
+     */
+    default void assertStorageMode(int mode) {
+        assert mode == ROW_STORAGE_MODE || mode == COLUMN_STORAGE_MODE;
     }
 }

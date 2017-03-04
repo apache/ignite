@@ -65,6 +65,10 @@ public class PivotedVectorStorage implements VectorStorage {
      * @param unpivot Mapping from internal index to external.
      */
     public PivotedVectorStorage(VectorStorage sto, int[] pivot, int[] unpivot) {
+        assert sto != null;
+        assert pivot != null;
+        assert unpivot != null;
+
         this.sto = sto;
         this.pivot = pivot;
         this.unpivot = unpivot;

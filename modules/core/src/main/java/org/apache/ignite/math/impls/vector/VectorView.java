@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.vector.VectorDelegateStorage;
 
 import java.io.*;
@@ -33,24 +34,45 @@ public class VectorView extends AbstractVector {
         // No-op.
     }
 
-    /** */
+    /**
+     *
+     * @param parent
+     * @param off
+     * @param len
+     */
     public VectorView(Vector parent, int off, int len) {
         super(new VectorDelegateStorage(parent.getStorage(), off, len));
     }
 
+    /**
+     *
+     * @param sto
+     * @param off
+     * @param len
+     */
+    public VectorView(VectorStorage sto, int off, int len) {
+        super(new VectorDelegateStorage(sto, off, len));
+    }
+
+    private VectorDelegateStorage storage() {
+        return (VectorDelegateStorage)getStorage();
+    }
+
     /** {@inheritDoc} */
     @Override public Vector copy() {
-        return new VectorView(parent, off, len);
+        VectorDelegateStorage sto = storage();
+
+        return new VectorView(sto.delegate(), sto.offset(), sto.length());
     }
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        return parent == null ? null : parent.like(crd);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return parent.likeMatrix(rows, cols);
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -58,8 +80,6 @@ public class VectorView extends AbstractVector {
         return this == o ||
             ((o!=null)
                 && o.getClass() == getClass()
-                && (getStorage().equals(((VectorView)o).getStorage()))
-                && len == ((VectorView)o).len
-                && off == ((VectorView)o).off);
+                && (getStorage().equals(((VectorView)o).getStorage())));
     }
 }

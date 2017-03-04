@@ -25,12 +25,8 @@ import java.io.*;
  */
 public class MatrixDelegateStorage implements MatrixStorage {
     private MatrixStorage sto;
-
-    private int rowOff;
-    private int colOff;
-
-    private int rows;
-    private int cols;
+    private int rowOff, colOff;
+    private int rows, cols;
 
     /**
      *
@@ -48,6 +44,12 @@ public class MatrixDelegateStorage implements MatrixStorage {
      * @param cols
      */
     public MatrixDelegateStorage(MatrixStorage sto, int rowOff, int colOff, int rows, int cols) {
+        assert sto != null;
+        assert rowOff >= 0;
+        assert colOff >= 0;
+        assert rows > 0;
+        assert cols > 0;
+        
         this.sto = sto;
 
         this.rowOff = rowOff;
@@ -55,6 +57,14 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
         this.rows = rows;
         this.cols = cols;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public MatrixStorage delegate() {
+        return sto;
     }
 
     /**

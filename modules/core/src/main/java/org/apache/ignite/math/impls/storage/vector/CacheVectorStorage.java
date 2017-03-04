@@ -46,6 +46,11 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      * @param valMapper
      */
     public CacheVectorStorage(int size, IgniteCache<K, V> cache, IntFunction<K> idxFunc, ValueMapper<V> valMapper) {
+        assert size > 0;
+        assert cache != null;
+        assert idxFunc != null;
+        assert valMapper != null;
+        
         this.size = size;
         this.cache = cache;
         this.keyFunc = keyFunc;

@@ -41,6 +41,10 @@ public class VectorDelegateStorage implements VectorStorage {
      * @param len
      */
     public VectorDelegateStorage(VectorStorage sto, int off, int len) {
+        assert sto != null;
+        assert off >= 0;
+        assert len > 0;
+
         this.sto = sto;
         this.off = off;
         this.len = len;

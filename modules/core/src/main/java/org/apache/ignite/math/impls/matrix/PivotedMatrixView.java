@@ -21,6 +21,7 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.PivotedMatrixStorage;
 import org.apache.ignite.math.impls.vector.PivotedVectorView;
+import java.io.*;
 
 /**
  * Pivoted (index mapped) view over another matrix implementation.
@@ -28,6 +29,9 @@ import org.apache.ignite.math.impls.vector.PivotedVectorView;
 public class PivotedMatrixView extends AbstractMatrix {
     private Matrix mtx;
 
+    /**
+     * 
+     */
     public PivotedMatrixView() {
         // No-op.
     }
@@ -178,6 +182,20 @@ public class PivotedMatrixView extends AbstractMatrix {
      */
     public int columnUnpivot(int i) {
         return storage().columnUnpivot()[i];
+    }
+
+    @Override
+    public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        out.writeObject(mtx);
+    }
+
+    @Override
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        mtx = (Matrix)in.readObject();
     }
 
     /**

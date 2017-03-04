@@ -26,21 +26,12 @@ import java.util.*;
 /**
  * Local on-heap sparse vector based on hash map storage.
  */
-public class SparseLocalVector extends AbstractVector {
-    /** Use storage optimized for random access. */
-    public static final int RANDOM_ACCESS_MODE = 1;
-    /** Use storage optimized for sequential access. */
-    public static final int SEQUENTIAL_ACCESS_MODE = 0;
-
+public class SparseLocalVector extends AbstractVector implements StorageConstants {
     /**
      *
      */
     public SparseLocalVector() {
         // No-op.
-    }
-
-    private void checkAccessMode(int acsMode) {
-        assert(acsMode == RANDOM_ACCESS_MODE || acsMode == SEQUENTIAL_ACCESS_MODE);
     }
 
     /**
@@ -49,9 +40,9 @@ public class SparseLocalVector extends AbstractVector {
      * @param acsMode
      */
     public SparseLocalVector(int size, int acsMode) {
-        checkAccessMode(acsMode);
+        assertAccessMode(acsMode);
             
-        setStorage(new SparseVectorStorage(size, acsMode == SEQUENTIAL_ACCESS_MODE));
+        setStorage(new SparseVectorStorage(size, acsMode));
     }
 
     /**
@@ -64,9 +55,9 @@ public class SparseLocalVector extends AbstractVector {
             int size = (int)args.get("size");
             int acsMode = (int)args.get("acsMode");
 
-            checkAccessMode(acsMode);
+            assertAccessMode(acsMode);
 
-            setStorage(new SparseVectorStorage(size, acsMode == SEQUENTIAL_ACCESS_MODE));
+            setStorage(new SparseVectorStorage(size, acsMode));
         }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
@@ -80,7 +71,7 @@ public class SparseLocalVector extends AbstractVector {
     public Vector like(int crd) {
         SparseVectorStorage sto = storage();
 
-        return new SparseLocalVector(sto.size(), sto.isSequentialAccess());
+        return new SparseLocalVector(sto.size(), sto.getAccessMode());
     }
 
     @Override

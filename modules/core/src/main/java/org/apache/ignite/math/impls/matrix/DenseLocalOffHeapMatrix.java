@@ -35,6 +35,8 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
      * @param data
      */
     public DenseLocalOffHeapMatrix(double[][] data){
+        assert data != null;
+
         setStorage(new MatrixOffHeapStorage(data));
     }
 
@@ -44,6 +46,9 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
      * @param cols
      */
     public DenseLocalOffHeapMatrix(int rows, int cols){
+        assert rows > 0;
+        assert cols > 0;
+
         setStorage(new MatrixOffHeapStorage(rows, cols));
     }
 

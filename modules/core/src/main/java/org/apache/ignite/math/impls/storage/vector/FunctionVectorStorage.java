@@ -45,6 +45,7 @@ public class FunctionVectorStorage implements VectorStorage {
      * @param setFunc Optional set function ({@code null} for read-only storage).
      */
     public FunctionVectorStorage(int size, IntToDoubleFunction getFunc, IntDoubleToVoidFunction setFunc) {
+        assert size > 0;
         assert getFunc != null; // At least get function is required.
 
         this.size = size;

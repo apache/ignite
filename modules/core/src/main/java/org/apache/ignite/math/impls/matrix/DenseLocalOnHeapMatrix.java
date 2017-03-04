@@ -47,6 +47,9 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
      * @param cols
      */
     public DenseLocalOnHeapMatrix(int rows, int cols) {
+        assert rows > 0;
+        assert cols > 0;
+
         setStorage(new MatrixArrayStorage(rows, cols));
     }
 
@@ -55,6 +58,8 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
      * @param mtx
      */
     public DenseLocalOnHeapMatrix(double[][] mtx) {
+        assert mtx != null;
+
         setStorage(new MatrixArrayStorage(mtx));
     }
 
@@ -63,6 +68,8 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
      * @param orig
      */
     private DenseLocalOnHeapMatrix(DenseLocalOnHeapMatrix orig) {
+        assert orig != null;
+
         setStorage(new MatrixArrayStorage(orig.rowSize(), orig.columnSize()));
 
         assign(orig);

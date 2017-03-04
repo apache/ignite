@@ -29,11 +29,20 @@ public class VectorOffHeapStorage implements VectorStorage {
     private int size;
     private long ptr;
 
+    /**
+     *
+     */
     public VectorOffHeapStorage(){
         // No-op.
     }
 
+    /**
+     *
+     * @param size
+     */
     public VectorOffHeapStorage(int size){
+        assert size > 0;
+
         this.size = size;
 
         allocateMemory(size);

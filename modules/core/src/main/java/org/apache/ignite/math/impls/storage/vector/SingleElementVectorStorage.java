@@ -43,6 +43,9 @@ public class SingleElementVectorStorage implements VectorStorage {
      * @param val
      */
     public SingleElementVectorStorage(int size, int idx, double val) {
+        assert size > 0;
+        assert idx >= 0;
+
         this.size = size;
         this.idx = idx;
         this.val = val;

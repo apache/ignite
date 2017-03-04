@@ -25,8 +25,7 @@ import java.io.*;
  * TODO: add description.
  */
 public class MatrixOffHeapStorage implements MatrixStorage {
-    private int rows;
-    private int cols;
+    private int rows, cols;
     private long ptr;
 
     /** */
@@ -36,8 +35,10 @@ public class MatrixOffHeapStorage implements MatrixStorage {
 
     /** */
     public MatrixOffHeapStorage(int rows, int cols){
-        this.rows = rows;
+        assert rows > 0;
+        assert cols > 0;
 
+        this.rows = rows;
         this.cols = cols;
 
         allocateMemory(rows, cols);
@@ -45,6 +46,8 @@ public class MatrixOffHeapStorage implements MatrixStorage {
 
     /** */
     public MatrixOffHeapStorage(double[][] data) {
+        assert data != null;
+        
         this.rows = data.length;
         this.cols = data[0].length;
 

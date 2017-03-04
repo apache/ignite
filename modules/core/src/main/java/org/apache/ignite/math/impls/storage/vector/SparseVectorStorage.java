@@ -25,13 +25,16 @@ import java.util.*;
 /**
  * Vector storage that stores only non-zero doubles.
  */
-public class SparseVectorStorage implements VectorStorage {
+public class SparseVectorStorage implements VectorStorage, StorageConstants {
     private int size;
-    private boolean seqAcs; // 'True' for sequential access, 'false' for random access.
+    private int acsMode;
 
     // Actual map storage.
     private Map<Integer, Double> sto;
 
+    /**
+     *
+     */
     public SparseVectorStorage() {
         // No-op.
     }
@@ -39,31 +42,27 @@ public class SparseVectorStorage implements VectorStorage {
     /**
      *
      * @param size
-     * @param seqAcs
+     * @param acsMode
      */
-    public SparseVectorStorage(int size, boolean seqAcs) {
+    public SparseVectorStorage(int size, int acsMode) {
+        assert size > 0;
+        assertAccessMode(acsMode);
+
         this.size  = size;
-        this.seqAcs = seqAcs;
+        this.acsMode = acsMode;
 
-        initStorage();
-    }
-
-    /**
-     *
-     */
-    private void initStorage() {
-        if (seqAcs)
+        if (acsMode == SEQUENTIAL_ACCESS_MODE)
             sto = new Int2DoubleRBTreeMap();
         else
             sto = new Int2DoubleOpenHashMap();
     }
 
     /**
-     * 
+     *
      * @return
      */
-    public boolean isRandomAccess() {
-        return !seqAcs;
+    public int getAccessMode() {
+        return acsMode;
     }
 
     @Override
@@ -84,7 +83,7 @@ public class SparseVectorStorage implements VectorStorage {
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
-        out.writeBoolean(seqAcs);
+        out.writeInt(acsMode);
         out.writeObject(sto);
     }
 
@@ -92,13 +91,13 @@ public class SparseVectorStorage implements VectorStorage {
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
-        seqAcs = in.readBoolean();
+        acsMode = in.readInt();
         sto = (Map<Integer, Double>)in.readObject();
     }
 
     @Override
     public boolean isSequentialAccess() {
-        return seqAcs;
+        return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
     @Override

@@ -21,7 +21,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.*;
-import org.apache.ignite.math.impls.storage.matrix.*;
 import org.apache.ignite.math.impls.vector.*;
 import java.io.*;
 import java.util.*;
@@ -60,7 +59,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
      *
      */
     public AbstractMatrix() {
-        sto = new MatrixNullStorage();
+       // No-op.
     }
 
     /**
@@ -68,7 +67,9 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
      * @param sto
      */
     protected void setStorage(MatrixStorage sto) {
-        this.sto = sto == null ? new MatrixNullStorage() : sto;
+        assert sto != null;
+        
+        this.sto = sto;
     }
 
     /**

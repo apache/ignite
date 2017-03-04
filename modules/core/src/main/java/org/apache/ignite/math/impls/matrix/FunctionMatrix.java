@@ -44,6 +44,10 @@ public class FunctionMatrix extends AbstractMatrix {
      * @param setFunc Set function. If {@code null} - this will be a read-only matrix.
      */
     public FunctionMatrix(int rows, int cols, IntIntToDoubleFunction getFunc, IntIntDoubleToVoidFunction setFunc) {
+        assert rows > 0;
+        assert cols > 0;
+        assert getFunc != null;
+
         setStorage(new FunctionMatrixStorage(rows, cols, getFunc, setFunc));
     }
 
@@ -55,6 +59,10 @@ public class FunctionMatrix extends AbstractMatrix {
      * @param getFunc
      */
     public FunctionMatrix(int rows, int cols, IntIntToDoubleFunction getFunc) {
+        assert rows > 0;
+        assert cols > 0;
+        assert getFunc != null;
+
         setStorage(new FunctionMatrixStorage(rows, cols, getFunc));
     }
 

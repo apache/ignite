@@ -22,7 +22,6 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.MatrixView;
-import org.apache.ignite.math.impls.storage.vector.VectorNullStorage;
 
 import java.io.*;
 import java.util.*;
@@ -74,6 +73,8 @@ public abstract class AbstractVector implements Vector {
      * @param sto Storage.
      */
     public AbstractVector(boolean readOnly, VectorStorage sto) {
+        assert sto != null;
+        
         this.readOnly = readOnly;
         this.sto = sto;
     }
@@ -82,7 +83,7 @@ public abstract class AbstractVector implements Vector {
      *
      */
     public AbstractVector() {
-        this(false, new VectorNullStorage());
+        // No-op.
     }
 
     /**

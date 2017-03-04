@@ -51,6 +51,12 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         IgniteCache<K, V> cache,
         KeyMapper<K> keyMapper,
         ValueMapper<V> valMapper) {
+        assert rows > 0;
+        assert cols > 0;
+        assert cache != null;
+        assert keyMapper != null;
+        assert valMapper != null;
+        
         setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
     }
 

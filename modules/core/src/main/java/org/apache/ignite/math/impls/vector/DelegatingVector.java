@@ -44,6 +44,8 @@ public class DelegatingVector implements Vector {
      * @param dlg
      */
     public DelegatingVector(Vector dlg) {
+        assert dlg != null;
+
         this.dlg = dlg;
     }
 

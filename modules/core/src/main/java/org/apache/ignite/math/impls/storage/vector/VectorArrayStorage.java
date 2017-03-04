@@ -56,6 +56,8 @@ public class VectorArrayStorage implements VectorStorage {
      * @param size
      */
     public VectorArrayStorage(int size) {
+        assert size > 0;
+
         data = new double[size];
     }
 
@@ -64,6 +66,8 @@ public class VectorArrayStorage implements VectorStorage {
      * @param data
      */
     public VectorArrayStorage(double[] data) {
+        assert data != null;
+
         this.data = data;
     }
 
