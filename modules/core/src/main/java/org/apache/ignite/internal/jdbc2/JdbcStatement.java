@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import static java.sql.ResultSet.CONCUR_READ_ONLY;
+import static java.sql.ResultSet.FETCH_FORWARD;
+import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,14 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.FETCH_FORWARD;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * JDBC statement implementation.
@@ -76,6 +77,9 @@ public class JdbcStatement implements Statement {
 
     /** Batch statements. */
     private List<String> batch;
+    
+    /** timeout **/
+    private int timeout = -1;
 
     /**
      * Creates new statement.
@@ -109,7 +113,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), timeout);
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -140,7 +144,7 @@ public class JdbcStatement implements Statement {
 
         updateCnt = -1;
 
-        return Long.valueOf(doUpdate(sql, getArgs())).intValue();
+        return doUpdate(sql, getArgs());
     }
 
     /**
@@ -148,9 +152,9 @@ public class JdbcStatement implements Statement {
      * @param sql SQL query.
      * @param args Update arguments.
      * @return Number of affected items.
-     * @throws SQLException If failed.
+     * @throws SQLException
      */
-    long doUpdate(String sql, Object[] args) throws SQLException {
+    int doUpdate(String sql, Object[] args) throws SQLException {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
@@ -172,7 +176,11 @@ public class JdbcStatement implements Statement {
             JdbcQueryTaskV2.QueryResult qryRes =
                 loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
-            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
+            Long res = updateCounterFromQueryResult(qryRes.getRows());
+
+            updateCnt = res;
+
+            return res.intValue();
         }
         catch (IgniteSQLException e) {
             throw e.toJdbcException();
@@ -190,12 +198,12 @@ public class JdbcStatement implements Statement {
      * @return update counter, if found
      * @throws SQLException if getting an update counter from result proved to be impossible.
      */
-    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+    private static Long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
          if (F.isEmpty(rows))
-            return -1;
+            return 0L;
 
         if (rows.size() != 1)
-            throw new SQLException("Expected fetch size of 1 for update operation");
+            throw new SQLException("Expected number of rows of 1 for update operation");
 
         List<?> row = rows.get(0);
 
@@ -207,7 +215,7 @@ public class JdbcStatement implements Statement {
         if (!(objRes instanceof Long))
             throw new SQLException("Unexpected update result type");
 
-        return (Long)objRes;
+        return (Long) objRes;
     }
 
     /** {@inheritDoc} */
@@ -268,15 +276,15 @@ public class JdbcStatement implements Statement {
     /** {@inheritDoc} */
     @Override public int getQueryTimeout() throws SQLException {
         ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
+        
+        return this.timeout;
     }
 
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
@@ -333,7 +341,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), timeout);
 
         try {
             JdbcQueryTaskV2.QueryResult res =
