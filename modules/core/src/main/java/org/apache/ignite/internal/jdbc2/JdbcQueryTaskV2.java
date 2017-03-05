@@ -98,6 +98,9 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
+    /** timeout **/
+    private final int timeout;
+    
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -125,6 +128,38 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
+        this.timeout = -1;
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param sql Sql query.
+     * @param isQry Operation type flag - query or not - to enforce query type check.
+     * @param loc Local execution flag.
+     * @param args Args.
+     * @param fetchSize Fetch size.
+     * @param uuid UUID.
+     * @param locQry Local query flag.
+     * @param collocatedQry Collocated query flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param timeout query time out
+     */
+    public JdbcQueryTaskV2(Ignite ignite, String cacheName, String sql,
+                           Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
+                           boolean locQry, boolean collocatedQry, boolean distributedJoins, int timeout) {
+        this.ignite = ignite;
+        this.args = args;
+        this.uuid = uuid;
+        this.cacheName = cacheName;
+        this.sql = sql;
+        this.isQry = isQry;
+        this.fetchSize = fetchSize;
+        this.loc = loc;
+        this.locQry = locQry;
+        this.collocatedQry = collocatedQry;
+        this.distributedJoins = distributedJoins;
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
@@ -161,6 +196,11 @@ class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
+            // if timeout is set ( > 0), set the timeout to sql query 
+            if (timeout > 0){
+            	qry.setTimeout(timeout, TimeUnit.SECONDS);	
+            }
+            
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
 
             if (isQry == null)

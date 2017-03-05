@@ -77,6 +77,9 @@ public class JdbcStatement implements Statement {
     /** Batch statements. */
     private List<String> batch;
 
+    /** timeout **/
+    private int timeout = -1;
+
     /**
      * Creates new statement.
      *
@@ -109,7 +112,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), timeout);
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -166,7 +169,7 @@ public class JdbcStatement implements Statement {
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
         JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), timeout);
 
         try {
             JdbcQueryTaskV2.QueryResult qryRes =
@@ -269,14 +272,14 @@ public class JdbcStatement implements Statement {
     @Override public int getQueryTimeout() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
+        return this.timeout;
     }
 
     /** {@inheritDoc} */
     @Override public void setQueryTimeout(int timeout) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Query timeout is not supported.");
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
@@ -333,7 +336,7 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), timeout);
 
         try {
             JdbcQueryTaskV2.QueryResult res =
