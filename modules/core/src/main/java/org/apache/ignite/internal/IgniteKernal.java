@@ -3429,7 +3429,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             close();
                         }
                         else {
-                            U.error(log, "Failed to reconnect, retry", e);
+                            U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId() + ']', e);
 
                             ctx.gateway().onReconnectFailed(e);
                         }

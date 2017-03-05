@@ -23,6 +23,9 @@ import org.jetbrains.annotations.Nullable;
  * Indicates whether node could be rejoined to cluster.
  */
 public class IgniteCouldReconnectCheckedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Message.
      * @param cause Cause.
