@@ -186,7 +186,7 @@ public class JdbcResultSet implements ResultSet {
             if (useNewQryTask) {
                 // Connections from new clients send queries with new tasks, so we have to continue in the same manner
                 JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
-                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), stmt.getQueryTimeout());
+                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
                 try {
                     JdbcQueryTaskV2.QueryResult res =
@@ -207,7 +207,7 @@ public class JdbcResultSet implements ResultSet {
             }
 
             JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
-                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins(), stmt.getQueryTimeout());
+                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
 
             try {
                 JdbcQueryTask.QueryResult res =
