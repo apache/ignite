@@ -34,7 +34,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>) RandomVectorFixture::new
+        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
+        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new
     );
 
     /** */
@@ -124,6 +125,32 @@ class VectorImplementationsFixtures {
         /** */
         RandomVectorFixture() {
             super("RandomVector", RandomVector::new);
+        }
+    }
+
+    /** */
+    private static class ConstantVectorFixture implements Iterable<Vector> {
+        /** */
+        private final Supplier<VectorSizesExtraIterator<Double>> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
+        /** */
+        ConstantVectorFixture() { // todo make a superclass with functionality common for fixtures like this one
+            iter = () -> new VectorSizesExtraIterator<>("ConstantVector", ConstantVector::new,
+                ctxDescrHolder::set,
+                new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null});
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 

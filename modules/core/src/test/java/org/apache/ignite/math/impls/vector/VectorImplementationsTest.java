@@ -307,7 +307,7 @@ public class VectorImplementationsTest {
 
     /** */
     private static boolean readOnly(Vector v) {
-        return v instanceof RandomVector;
+        return v instanceof RandomVector || v instanceof ConstantVector;
     }
 
     /** */
