@@ -63,7 +63,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions update counters. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, Map<Integer, T2<Long, Long>>> partCntrs;
+    private IgniteDhtPartitionCountersMap partCntrs;
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
@@ -71,7 +71,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions history suppliers. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers;
+    private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Serialized partitions history suppliers. */
     private byte[] partHistSuppliersBytes;
@@ -79,7 +79,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Partitions that must be cleared and re-loaded. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<UUID, Map<Integer, Set<Integer>>> partsToReload;
+    private IgniteDhtPartitionsToReloadMap partsToReload;
 
     /** Serialized partitions that must be cleared and re-loaded. */
     private byte[] partsToReloadBytes;
@@ -114,8 +114,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers,
-        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
+        @Nullable IgniteDhtPartitionHistorySuppliersMap partHistSuppliers,
+        @Nullable IgniteDhtPartitionsToReloadMap partsToReload) {
         super(id, lastVer);
 
         assert id == null || topVer.equals(id.topologyVersion());
@@ -180,10 +180,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void addPartitionUpdateCounters(int cacheId, Map<Integer, T2<Long, Long>> cntrMap) {
         if (partCntrs == null)
-            partCntrs = new HashMap<>();
+            partCntrs = new IgniteDhtPartitionCountersMap();
 
-        if (!partCntrs.containsKey(cacheId))
-            partCntrs.put(cacheId, cntrMap);
+        partCntrs.putIfAbsent(cacheId, cntrMap);
     }
 
     /**
@@ -192,9 +191,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     @Override public Map<Integer, T2<Long, Long>> partitionUpdateCounters(int cacheId) {
         if (partCntrs != null) {
-            Map<Integer, T2<Long, Long>> res = partCntrs.get(cacheId);
-
-            return res != null ? res : Collections.<Integer, T2<Long, Long>>emptyMap();
+            return partCntrs.get(cacheId);
         }
 
         return Collections.emptyMap();
@@ -203,9 +200,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      *
      */
-    public Map<UUID, Map<T2<Integer, Integer>, Long>> partitionHistorySuppliers() {
+    public IgniteDhtPartitionHistorySuppliersMap partitionHistorySuppliers() {
         if (partHistSuppliers == null)
-            return Collections.emptyMap();
+            return IgniteDhtPartitionHistorySuppliersMap.empty();
 
         return partHistSuppliers;
     }
@@ -214,17 +211,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReload == null)
             return Collections.emptySet();
 
-        Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
-
-        if (nodeMap == null)
-            return Collections.emptySet();
-
-        Set<Integer> parts = nodeMap.get(cacheId);
-
-        if (parts == null)
-            return Collections.emptySet();
-
-        return parts;
+        return partsToReload.get(nodeId, cacheId);
     }
 
     /**
@@ -381,7 +368,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         }
 
         if (partCntrs == null)
-            partCntrs = new HashMap<>();
+            partCntrs = new IgniteDhtPartitionCountersMap();
 
         if (exsBytes != null && exs == null) {
             if (compressed())

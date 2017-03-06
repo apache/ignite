@@ -222,7 +222,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
     /** */
-    private final ConcurrentMap<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers = new ConcurrentHashMap<>();
+    private final IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** Forced Rebalance future. */
     private GridFutureAdapter<Boolean> forcedRebFut;
@@ -230,7 +230,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private volatile Map<Integer, Map<Integer, Long>> partHistReserved;
 
-    private final Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new ConcurrentHashMap<>();
+    private final IgniteDhtPartitionsToReloadMap partsToReload = new IgniteDhtPartitionsToReloadMap();
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -382,12 +382,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return ID of history supplier node or null if it doesn't exist.
      */
     @Nullable public UUID partitionHistorySupplier(int cacheId, int partId) {
-        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : partHistSuppliers.entrySet()) {
-            if (e.getValue().containsKey(new T2<>(cacheId, partId)))
-                return e.getKey();
-        }
-
-        return null;
+        return partHistSuppliers.getSupplier(cacheId, partId);
     }
 
     /**
@@ -1289,7 +1284,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (exchangeOnChangeGlobalState && err == null)
             cctx.kernalContext().state().onExchangeDone();
 
-        Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.get(cctx.localNodeId());
+        Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
         if (localReserved != null) {
             for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
@@ -1662,16 +1657,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 Long localCntr = localReserved.get(p);
 
                 if (localCntr != null && localCntr <= minCntr &&
-                    top.partitionState(cctx.localNodeId(), p) == GridDhtPartitionState.OWNING) {
-                    Map<T2<Integer, Integer>, Long> nodeMap = partHistSuppliers.get(cctx.localNodeId());
-
-                    if (nodeMap == null) {
-                        nodeMap = new HashMap<>();
-
-                        partHistSuppliers.put(cctx.localNodeId(), nodeMap);
-                    }
-
-                    nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
+                    maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    partHistSuppliers.put(cctx.localNodeId(), top.cacheId(), p, minCntr);
 
                     haveHistory.add(p);
 
@@ -1682,17 +1669,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.cacheId()).get(p);
 
-                if (histCntr != null && histCntr <= minCntr &&
-                    top.partitionState(e0.getKey(), p) == GridDhtPartitionState.OWNING) {
-                    Map<T2<Integer, Integer>, Long> nodeMap = partHistSuppliers.get(e0.getKey());
-
-                    if (nodeMap == null) {
-                        nodeMap = new HashMap<>();
-
-                        partHistSuppliers.put(e0.getKey(), nodeMap);
-                    }
-
-                    nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
+                if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    partHistSuppliers.put(e0.getKey(), top.cacheId(), p, minCntr);
 
                     haveHistory.add(p);
 
@@ -1712,25 +1690,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             Set<UUID> nodesToReload = top.setOwners(p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
 
-            for (UUID nodeId : nodesToReload) {
-                Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
-
-                if (nodeMap == null) {
-                    nodeMap = new HashMap<>();
-
-                    partsToReload.put(nodeId, nodeMap);
-                }
-
-                Set<Integer> parts = nodeMap.get(top.cacheId());
-
-                if (parts == null) {
-                    parts = new HashSet<>();
-
-                    nodeMap.put(top.cacheId(), parts);
-                }
-
-                parts.add(e.getKey());
-            }
+            for (UUID nodeId : nodesToReload)
+                partsToReload.put(nodeId, top.cacheId(), p);
         }
     }
 
