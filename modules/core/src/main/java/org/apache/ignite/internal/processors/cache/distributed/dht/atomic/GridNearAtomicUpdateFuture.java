@@ -301,6 +301,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         msgLog.debug("Process near atomic update response (from stripe " + res.stripe() + ") " +
                             "got " + resCnt + " / " + mappings.size() + " nodes");
                 }
+                if (!(rcvAll || op == TRANSFORM))
+                    return;
             }
 
             assert req != null && req.topologyVersion().equals(topVer) : req;
