@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  *
  * TODO: wip
  */
-@GridCommonTest(group = "Distubuted Models")
+@GridCommonTest(group = "Distributed Models")
 public class CacheMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_NUMBER = 3;
