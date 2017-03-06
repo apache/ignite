@@ -34,18 +34,23 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Distributed Models")
 public class CacheMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
-    private static final int NODE_NUMBER = 3;
-    public static final String CACHE_NAME = "test-cache";
+    private static final int NODE_COUNT = 3;
+    /** Cache name. */
+    private static final String CACHE_NAME = "test-cache";
     /** Grid instance. */
     private Ignite ignite;
 
+    /**
+     * Default constructor.
+     */
     public CacheMatrixTest(){
         super(false);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(NODE_NUMBER);
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
     }
 
     /** {@inheritDoc} */
@@ -57,11 +62,12 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
      *  {@inheritDoc}
      */
     @Override protected void beforeTest() throws Exception {
-        ignite = grid(NODE_NUMBER);
+        ignite = grid(NODE_COUNT);
     }
 
     /** */
     public void testGetSet() throws Exception {
+
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
