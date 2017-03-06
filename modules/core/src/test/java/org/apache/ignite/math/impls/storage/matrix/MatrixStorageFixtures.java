@@ -32,11 +32,7 @@ import static org.apache.ignite.math.StorageConstants.*;
  */
 class MatrixStorageFixtures {
     private static final List<Supplier<Iterable<MatrixStorage>>> suppliers = Arrays.asList(
-        new Supplier<Iterable<MatrixStorage>>() {
-            @Override public Iterable<MatrixStorage> get() {
-                return new SparseLocalMatrixStorageFixture();
-            }
-        }
+        (Supplier<Iterable<MatrixStorage>>)SparseLocalMatrixStorageFixture::new
     );
 
     void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer){

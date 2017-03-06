@@ -34,7 +34,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>) RandomVectorFixture::new
+        (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
+        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new
     );
 
     /** */
@@ -338,6 +339,32 @@ class VectorImplementationsFixtures {
         /** */
         private boolean hasNextDelta(int idx) {
             return deltas[idx] != null;
+        }
+    }
+
+    /** Delegating vector with dense local onheap vector */
+    private static class DelegatingVectorFixture implements Iterable<Vector> {
+
+        /** */ private final Supplier<VectorSizesExtraIterator<Boolean>> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
+        /** */
+        DelegatingVectorFixture() {
+            iter = () -> new VectorSizesExtraIterator<>("DelegatingVector with DenseLocalOnHeapVector",
+                (size, shallowCp) -> new DelegatingVector(new DenseLocalOnHeapVector(new double[size], shallowCp)),
+                ctxDescrHolder::set, new Boolean[] {false, true, null});
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 }

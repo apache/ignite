@@ -90,9 +90,11 @@ public class VectorImplementationsTest {
 
                 Class<? extends Vector> actualType = vLike.getClass();
 
-                assertTrue("Expected matrix type " + expType.getSimpleName()
-                        + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
-                    expType.isAssignableFrom(actualType));
+                /** skip this check for delegating vectors  */
+                if (expType != DelegatingVector.class)
+                    assertTrue("Expected matrix type " + expType.getSimpleName()
+                            + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
+                        expType.isAssignableFrom(actualType));
 
         });
     }
