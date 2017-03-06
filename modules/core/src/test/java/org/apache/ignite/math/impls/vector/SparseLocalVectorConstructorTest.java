@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.StorageConstants;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -72,42 +73,45 @@ public class SparseLocalVectorConstructorTest {
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
+        //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new SparseLocalVector(null).size());
     }
 
     /** */ @Test
     public void mapTest() {
-        assertEquals("Size from args.", 99,
-            new SparseLocalVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
-
-        final double[] test = new double[99];
-
-        assertEquals("Size from array in args.", test.length,
+        assertEquals("Size from args, random access.", 99,
             new SparseLocalVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", false);
+                put("size", 99);
+                put("acsMode", StorageConstants.RANDOM_ACCESS_MODE);
             }}).size());
 
-        assertEquals("Size from array in args, shallow copy.", test.length,
+        assertEquals("Size from args, sequential access.", 99,
             new SparseLocalVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", true);
+                put("size", 99);
+                put("acsMode", StorageConstants.SEQUENTIAL_ACCESS_MODE);
             }}).size());
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new SparseLocalVector(-1, 1).size());
     }
 
+    /** */ @Test(expected = AssertionError.class)
+    public void zeroSizeTest() {
+        assertEquals("0 size.", IMPOSSIBLE_SIZE,
+            new SparseLocalVector(0, 1).size());
+    }
+
     /** */ @Test
     public void primitiveTest() {
-        assertEquals("0 size.", 0,
-            new SparseLocalVector(0, 1).size());
+        assertEquals("1 size, random access.", 1,
+            new SparseLocalVector(1, StorageConstants.RANDOM_ACCESS_MODE).size());
 
-        assertEquals("1 size.", 1,
-            new SparseLocalVector(1, 1).size());
+        assertEquals("1 size, sequential access.", 1,
+            new SparseLocalVector(1, StorageConstants.SEQUENTIAL_ACCESS_MODE).size());
+
     }
 }

@@ -97,9 +97,9 @@ public class RandomVectorConstructorTest {
             }}).size());
     }
 
-    /** */ @Test
+    /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
-        assertEquals("Negative size.", 0,
+        assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new RandomVector(-1).size());
     }
 }

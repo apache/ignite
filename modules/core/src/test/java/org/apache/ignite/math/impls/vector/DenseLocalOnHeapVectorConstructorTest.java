@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -73,6 +72,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
+        //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new DenseLocalOnHeapVector((Map<String, Object>)null).size());
     }
@@ -97,7 +97,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
             }}).size());
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new DenseLocalOnHeapVector(-1).size());
@@ -115,14 +115,20 @@ public class DenseLocalOnHeapVectorConstructorTest {
             new DenseLocalOnHeapVector((double[])null).size());
     }
 
+    /** */ @Test(expected = NullPointerException.class)
+    public void defaultConstructorTest() {
+        assertEquals("Default constructor.", IMPOSSIBLE_SIZE,
+            new DenseLocalOnHeapVector().size());
+    }
+
+    /** */ @Test(expected = AssertionError.class)
+    public void nullArrShallowCopyTest() {
+        assertEquals("Null array shallow copy.", IMPOSSIBLE_SIZE,
+            new DenseLocalOnHeapVector(null, true).size());
+    }
+
     /** */ @Test
     public void primitiveTest() {
-        assertEquals("Default constructor.", 0,
-            new DenseLocalOnHeapVector().size());
-
-        assertEquals("Null array shallow copy.", 0,
-            new DenseLocalOnHeapVector(null, true).size());
-
         assertEquals("0 size shallow copy.", 0,
             new DenseLocalOnHeapVector(new double[0], true).size());
 

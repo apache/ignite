@@ -110,7 +110,7 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test(expected = NullPointerException.class)
     public void getXNegative0() {
         testVector.getX(0);
     }

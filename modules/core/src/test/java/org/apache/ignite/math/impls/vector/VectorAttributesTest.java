@@ -69,7 +69,7 @@ public class VectorAttributesTest {
 
         try {
             assertTrue("Null map args.",
-                pred.test(new DenseLocalOnHeapVector((Map<String, Object>)null)));
+                pred.test(new DenseLocalOnHeapVector(1)));
         } catch (AssertionError e) {
             expECaught = true;
         }
