@@ -17,17 +17,18 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.math.impls.matrix.CacheMatrixTest;
+/**
+ * Test suite for local and distributed tests
+ */
+
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/**
- * Test suite for all distributed tests located in org.apache.ignite.math.impls.* package.
- */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CacheMatrixTest.class
+    MathImplLocalTestSuite.class,
+    MathImplDistributedTestSuite.class
 })
-public class MathImplDistributedTestSuite{
+public class MathImplMainTestSuite {
     // No-op.
 }
