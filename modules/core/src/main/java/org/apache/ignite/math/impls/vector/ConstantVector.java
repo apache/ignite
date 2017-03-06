@@ -20,10 +20,8 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.vector.ConstantVectorStorage;
-
+import org.apache.ignite.math.impls.storage.vector.*;
 import java.util.*;
-import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
 
 /**
  * Constant value, read-only vector.
@@ -91,8 +89,9 @@ public class ConstantVector extends AbstractReadonlyVector {
             return false;
 
         ConstantVector that = (ConstantVector) o;
-        VectorStorage thisStorage = getStorage();
+        
+        VectorStorage sto = getStorage();
 
-        return (thisStorage != null ? thisStorage.equals(that.getStorage()) : that.getStorage() == null);
+        return (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);
     }
 }

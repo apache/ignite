@@ -122,8 +122,8 @@ public class RandomVector extends AbstractReadonlyVector {
             return false;
 
         RandomVector that = (RandomVector) o;
-        VectorStorage thisStorage = getStorage();
+        VectorStorage sto = getStorage();
 
-        return fastHash == that.fastHash && (thisStorage != null ? thisStorage.equals(that.getStorage()) : that.getStorage() == null);
+        return fastHash == that.fastHash && (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);
     }
 }
