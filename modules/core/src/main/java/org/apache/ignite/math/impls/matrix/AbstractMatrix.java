@@ -415,6 +415,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
                     for (int k = 0; k < cols; k++) {
                         if (k == i) {
                             flag = true;
+
                             continue;
                         }
 
@@ -581,10 +582,10 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         int cols = columnSize();
 
         for (int x = 0; x < rows; x++) {
-            int sum = 0;
+            double sum = 0;
 
             for (int y = 0; y < cols; y++)
-                sum += (int)Math.abs(getX(x, y));
+                sum += Math.abs(getX(x, y));
 
             if (sum > max)
                 max = sum;

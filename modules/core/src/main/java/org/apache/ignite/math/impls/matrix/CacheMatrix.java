@@ -112,16 +112,34 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param d
+     * @return
+     */
     @Override
     public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
     }
 
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param x
+     * @return
+     */
     @Override
     public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
     }
 
+    /**
+     * Return the same matrix with updates values (broken contract).
+     *
+     * @param x
+     * @return
+     */
     @Override
     public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
@@ -165,6 +183,11 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         return sum;
     }
 
+    /**
+     * 
+     * @param mapper
+     * @return
+     */
     private Matrix mapOverValues(Function<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();
 
