@@ -35,7 +35,7 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
-        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new
+        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
         (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new
     );
 
