@@ -846,7 +846,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     throw ex1;
                             }
 
-                            if (ex instanceof Error)
+                            if (ex instanceof Error && !cacheCtx.kernalContext().shutdownInitiated())
                                 throw ex;
 
                             throw err;

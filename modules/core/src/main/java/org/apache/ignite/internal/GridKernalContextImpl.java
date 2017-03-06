@@ -1039,6 +1039,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return platformProc;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean shutdownInitiated() {
+        return IgnitionEx.shutdownInitiated(igniteInstanceName());
+    }
+
     /**
      * @param disconnected Disconnected flag.
      */

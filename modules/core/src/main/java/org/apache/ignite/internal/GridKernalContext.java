@@ -628,4 +628,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Platform processor.
      */
     public PlatformProcessor platform();
+
+    /**
+     * @return True if grid is started to shutdown.
+     */
+    public boolean shutdownInitiated();
 }

@@ -1469,6 +1469,20 @@ public class IgnitionEx {
     }
 
     /**
+     * @param name Grid name.
+     * @return True if grid is started to shutdown.
+     */
+    public static boolean shutdownInitiated(@Nullable String name) {
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+
+        if (grid == null || (grid.grid()) == null)
+            throw new IgniteIllegalStateException("Ignite instance with provided name doesn't exist. " +
+                    "Did you call Ignition.start(..) to start an Ignite instance? [name=" + name + ']');
+
+        return grid.shutdownHook == null;
+    }
+
+    /**
      * Grid data container.
      */
     private static final class IgniteNamedInstance {
