@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,84 +27,93 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Create lock after owner node left topology test and wwork with it from another nodes
+ * Create lock after owner node left topology test and work with it from another nodes
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridCacheWorkAfterRecreateLockTest extends GridCommonAbstractTest {
 
     CountDownLatch latch = new CountDownLatch(3);
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void test() throws Exception {
 
-        final Ignite ignite = startNodeAndLock("node1");
+    public void test() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setGridName("node1");
+        final Ignite ignite = Ignition.start(cfg);
+
+        cfg.setGridName("node2");
+        final Ignite ignite2 = Ignition.start(cfg);
+
+        cfg.setGridName("node3");
+        final Ignite ignite3 = Ignition.start(cfg);
+
+        cfg.setGridName("node4");
+        final Ignite ignite4 = Ignition.start(cfg);
 
         new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(500);
                 }
                 catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-
                 ignite.close();
             }
         }).start();
 
-        Thread t1 = new Thread(new Runnable() {
-            @Override public void run() {
-                startNodeAndLock("node2");
-            }
-        });
-        t1.start();
-        Thread t2 = new Thread(new Runnable() {
-            @Override public void run() {
-                startNodeAndLock("node3");
-            }
-        });
-        t2.start();
+        IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
 
-        Thread t3 = new Thread(new Runnable() {
+        new Thread(new Runnable() {
             @Override public void run() {
-                startNodeAndLock("node4");
+                lock(ignite2);
             }
-        });
-        t3.start();
+        }).start();
 
+
+        new Thread(new Runnable() {
+            @Override public void run() {
+                lock(ignite3);
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override public void run() {
+                lock(ignite4);
+            }
+        }).start();
+
+        System.out.println(ignite.name() + " acquiring lock");
+
+        lock.lock();
+
+        System.out.println(ignite.name() + " acquired lock");
         latch.await();
+
     }
 
-    private Ignite startNodeAndLock(String name) {
+    private void lock(Ignite ignite) {
         try {
-            IgniteConfiguration cfg = new IgniteConfiguration();
-            cfg.setGridName(name);
-
-            Ignite ignite = Ignition.start(cfg);
 
             IgniteLock lock = ignite.reentrantLock("lock", true, true, true);
 
-            System.out.println("acquiring lock");
+            System.out.println(ignite.name() + " acquiring lock");
 
             lock.lock();
 
-            System.out.println("acquired lock");
-            if (!"node1".equals(name)) {
-                System.out.println("unlock lock");
-                Thread.sleep(500);
-                lock.unlock();
+            System.out.println(ignite.name() + " acquired lock");
 
-                latch.countDown();
-            }
-            return ignite;
+            Thread.sleep(500);
+
+            lock.unlock();
+
+            System.out.println(ignite.name() + " unlock lock");
+
+            latch.countDown();
         }
         catch (Exception e) {
+            latch.countDown();
             assertTrue(false);
         }
-
-        return null;
     }
-
 }
