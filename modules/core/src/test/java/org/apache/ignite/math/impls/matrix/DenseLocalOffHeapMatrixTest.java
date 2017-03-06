@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
@@ -33,7 +34,7 @@ import static org.junit.Assert.*;
  * TODO: move to {@link MatrixImplementationsTest}.
  */
 @Deprecated
-public class DenseLocalOffHeapMatrixTest {
+public class DenseLocalOffHeapMatrixTest extends ExternalizeTest<DenseLocalOffHeapMatrix> {
     /** */ private DenseLocalOffHeapMatrix denseLocalOffHeapMatrix;
 
     /** */
@@ -103,4 +104,7 @@ public class DenseLocalOffHeapMatrixTest {
         }
     }
 
+    @Override public void externalizeTest() {
+        externalizeTest(denseLocalOffHeapMatrix);
+    }
 }

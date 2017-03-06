@@ -30,6 +30,11 @@ import java.util.*;
  * TODO add description
  */
 public class DenseLocalOffHeapMatrix extends AbstractMatrix {
+    /** */
+    public DenseLocalOffHeapMatrix(){
+        // No-op.
+    }
+
     /**
      *
      * @param data
