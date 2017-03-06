@@ -34,6 +34,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -98,8 +99,7 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class JobStealingFailoverSpi extends IgniteSpiAdapter implements FailoverSpi,
-    JobStealingFailoverSpiMBean {
+public class JobStealingFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     /** Maximum number of attempts to execute a failed job on another node (default is {@code 5}). */
     public static final int DFLT_MAX_FAILOVER_ATTEMPTS = 5;
 
@@ -136,11 +136,6 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     /** Number of jobs that were stolen. */
     private int totalStolenJobs;
 
-    /** {@inheritDoc} */
-    @Override public int getMaximumFailoverAttempts() {
-        return maxFailoverAttempts;
-    }
-
     /**
      * Sets maximum number of attempts to execute a failed job on another node.
      * If job gets stolen and thief node exists then it is not considered as
@@ -160,17 +155,16 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalFailedOverJobsCount() {
-        return totalFailedOverJobs;
+    /**
+     * See {@link #setMaximumFailoverAttempts(int)}.
+     *
+     * @return Maximum number of attempts to execute a failed job on another node.
+     */
+    public int getMaximumFailoverAttempts() {
+        return maxFailoverAttempts;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalStolenJobsCount() {
-        return totalStolenJobs;
-    }
-
-    /** {@inheritDoc} */
+   /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(createSpiAttributeName(MAX_FAILOVER_ATTEMPT_ATTR), maxFailoverAttempts);
     }
@@ -185,7 +179,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
         if (log.isDebugEnabled())
             log.debug(configInfo("maxFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, JobStealingFailoverSpiMBean.class);
+        registerMBean(gridName, new JobStealingFailoverSpiMBeanImpl(this), JobStealingFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -359,7 +353,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public JobStealingFailoverSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -368,5 +362,31 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JobStealingFailoverSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for JobStealingFailoverSpi.
+     */
+    private class JobStealingFailoverSpiMBeanImpl extends IgniteSpiMBeanAdapter implements JobStealingFailoverSpiMBean {
+        /** {@inheritDoc} */
+        public JobStealingFailoverSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaximumFailoverAttempts() {
+            return JobStealingFailoverSpi.this.getMaximumFailoverAttempts();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalFailedOverJobsCount() {
+            return totalFailedOverJobs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalStolenJobsCount() {
+            return totalStolenJobs;
+        }
+
     }
 }

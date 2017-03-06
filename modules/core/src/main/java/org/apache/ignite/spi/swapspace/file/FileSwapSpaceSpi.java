@@ -63,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.swapspace.SwapContext;
@@ -140,7 +141,7 @@ import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_STORED;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false, checkClient = false)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
-public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
+public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /**
      * Default base directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
@@ -190,8 +191,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     @LoggerResource
     private IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override public String getBaseDirectory() {
+    /**
+     * Gets base directory.
+     *
+     * @return Base directory.
+     */
+    public String getBaseDirectory() {
         return baseDir;
     }
 
@@ -208,8 +213,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public float getMaximumSparsity() {
+    /**
+     * See {@link #setMaximumSparsity(float)}
+     *
+     * @return Maximum sparsity.
+     */
+    public float getMaximumSparsity() {
         return maxSparsity;
     }
 
@@ -226,8 +235,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getWriteBufferSize() {
+    /**
+     * See {@link #setWriteBufferSize(int)}
+     *
+     * @return Write buffer size in bytes.
+     */
+    public int getWriteBufferSize() {
         return writeBufSize;
     }
 
@@ -244,8 +257,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxWriteQueueSize() {
+    /**
+     * See {@link #setMaxWriteQueueSize(int)}
+     *
+     * @return Max write queue size in bytes.
+     */
+    public int getMaxWriteQueueSize() {
         return maxWriteQueSize;
     }
 
@@ -263,8 +280,12 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getReadStripesNumber() {
+    /**
+     * See {@link #setReadStripesNumber(int)}
+     *
+     * @return Read pool size.
+     */
+    public int getReadStripesNumber() {
         return readStripesNum;
     }
 
@@ -309,7 +330,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         startStopwatch();
 
-        registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
+        registerMBean(gridName, new FileSwapSpaceSpiMBeanImpl(this), FileSwapSpaceSpiMBean.class);
 
         String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
 
@@ -1965,6 +1986,41 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                     }
                 }
             };
+        }
+    }
+
+    /**
+     * MBean implementation for LocalDeploymentSpi.
+     */
+    private class FileSwapSpaceSpiMBeanImpl extends IgniteSpiMBeanAdapter implements FileSwapSpaceSpiMBean {
+        /** {@inheritDoc} */
+        FileSwapSpaceSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getBaseDirectory() {
+            return baseDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getMaximumSparsity() {
+            return maxSparsity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWriteBufferSize() {
+            return writeBufSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxWriteQueueSize() {
+            return FileSwapSpaceSpi.this.getMaxWriteQueueSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReadStripesNumber() {
+            return FileSwapSpaceSpi.this.getReadStripesNumber();
         }
     }
 }

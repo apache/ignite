@@ -32,6 +32,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
@@ -111,7 +112,7 @@ import org.apache.ignite.spi.checkpoint.CheckpointSpi;
  */
 @SuppressWarnings({"JDBCResourceOpenedButNotSafelyClosed", "JDBCExecuteWithNonConstantString"})
 @IgniteSpiMultipleInstancesSupport(true)
-public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, JdbcCheckpointSpiMBean {
+public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Default number of retries in case of errors (value is {@code 2}). */
     public static final int DFLT_NUMBER_OF_RETRIES = 2;
 
@@ -241,61 +242,6 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
     /** Listener. */
     private CheckpointListener lsnr;
-
-    /** {@inheritDoc} */
-    @Override public int getNumberOfRetries() {
-        return retryNum;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getDataSourceInfo() {
-        return dataSrc.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getUser() {
-        return user;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getPwd() {
-        return pwd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCheckpointTableName() {
-        return tblName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getKeyFieldName() {
-        return keyName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getKeyFieldType() {
-        return keyType;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getValueFieldName() {
-        return valName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getValueFieldType() {
-        return valType;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getExpireDateFieldName() {
-        return expDateName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getExpireDateFieldType() {
-        return expDateType;
-    }
 
     /**
      * Sets DataSource to use for database access. This parameter is mandatory and must be
@@ -920,5 +866,71 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
         super.setName(name);
 
         return this;
+    }
+
+    /**
+     * TODO: remove class or add MBean registration?
+     * MBean implementation for JdbcCheckpointSpi.
+     */
+    private class JdbcCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements JdbcCheckpointSpiMBean {
+        /** {@inheritDoc} */
+        JdbcCheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getNumberOfRetries() {
+            return retryNum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getDataSourceInfo() {
+            return dataSrc.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getUser() {
+            return user;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPwd() {
+            return pwd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getCheckpointTableName() {
+            return tblName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getKeyFieldName() {
+            return keyName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getKeyFieldType() {
+            return keyType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getValueFieldName() {
+            return valName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getValueFieldType() {
+            return valType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getExpireDateFieldName() {
+            return expDateName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getExpireDateFieldType() {
+            return expDateType;
+        }
     }
 }

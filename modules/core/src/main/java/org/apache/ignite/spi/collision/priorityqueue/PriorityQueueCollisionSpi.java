@@ -37,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
@@ -174,8 +175,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    PriorityQueueCollisionSpiMBean {
+public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /**
      * Default number of parallel jobs allowed (set to number of cores times 2).
      */
@@ -245,50 +245,54 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     @LoggerResource
     private IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override public int getParallelJobsNumber() {
+    /**
+     * Gets number of jobs that can be executed in parallel.
+     *
+     * @return Number of jobs that can be executed in parallel.
+     */
+    public int getParallelJobsNumber() {
         return parallelJobsNum;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets number of jobs that can be executed in parallel.
+     *
+     * @param parallelJobsNum Parallel jobs number.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setParallelJobsNumber(int parallelJobsNum) {
+    public PriorityQueueCollisionSpi setParallelJobsNumber(int parallelJobsNum) {
         A.ensure(parallelJobsNum > 0,  "parallelJobsNum > 0");
 
         this.parallelJobsNum = parallelJobsNum;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getWaitingJobsNumber() {
+    /**
+     * Maximum number of jobs that are allowed to wait in waiting queue. If number
+     * of waiting jobs ever exceeds this number, excessive jobs will be rejected.
+     *
+     * @return Maximum allowed number of waiting jobs.
+     */
+    public int getWaitingJobsNumber() {
         return waitJobsNum;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Maximum number of jobs that are allowed to wait in waiting queue. If number
+     * of waiting jobs ever exceeds this number, excessive jobs will be rejected.
+     *
+     * @param waitJobsNum Maximium jobs number.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setWaitingJobsNumber(int waitJobsNum) {
+    public PriorityQueueCollisionSpi setWaitingJobsNumber(int waitJobsNum) {
         A.ensure(waitJobsNum >= 0, "waitJobsNum >= 0");
 
         this.waitJobsNum = waitJobsNum;
-    }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentWaitJobsNumber() {
-        return waitingCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCurrentActiveJobsNumber() {
-        return runningCnt + heldCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCurrentRunningJobsNumber() {
-        return runningCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCurrentHeldJobsNumber() {
-        return heldCnt;
+        return this;
     }
 
     /**
@@ -298,6 +302,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
      * If not provided, default value is {@code {@link #DFLT_PRIORITY_ATTRIBUTE_KEY}}.
      *
      * @param taskPriAttrKey Priority session attribute key.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public PriorityQueueCollisionSpi setPriorityAttributeKey(String taskPriAttrKey) {
@@ -322,47 +327,93 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getPriorityAttributeKey() {
+    /**
+     * Gets key name of task priority attribute.
+     *
+     * @return Key name of task priority attribute.
+     */
+    public String getPriorityAttributeKey() {
         return taskPriAttrKey;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getJobPriorityAttributeKey() {
+    /**
+     * Gets key name of job priority attribute.
+     *
+     * @return Key name of job priority attribute.
+     */
+    public String getJobPriorityAttributeKey() {
         return jobPriAttrKey;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getDefaultPriority() {
+    /**
+     * Gets default priority to use if a job does not have priority attribute
+     * set.
+     *
+     * @return Default priority to use if a task does not have priority
+     *      attribute set.
+     */
+    public int getDefaultPriority() {
         return dfltPri;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets default priority to use if a job does not have priority attribute set.
+     *
+     * @param priority default priority.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setDefaultPriority(int dfltPri) {
-        this.dfltPri = dfltPri;
+    public PriorityQueueCollisionSpi setDefaultPriority(int priority) {
+        this.dfltPri = priority;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getStarvationIncrement() {
+    /**
+     * Gets value to increment job priority by every time a lower priority job gets
+     * behind a higher priority job.
+     *
+     * @return Value to increment job priority by every time a lower priority job gets
+     *      behind a higher priority job.
+     */
+    public int getStarvationIncrement() {
         return starvationInc;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets value to increment job priority by every time a lower priority job gets
+     * behind a higher priority job.
+     *
+     * @param starvationInc Increment value.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setStarvationIncrement(int starvationInc) {
+    public PriorityQueueCollisionSpi setStarvationIncrement(int starvationInc) {
         this.starvationInc = starvationInc;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isStarvationPreventionEnabled() {
+    /**
+     * Gets flag indicating whether job starvation prevention is enabled.
+     *
+     * @return Flag indicating whether job starvation prevention is enabled.
+     */
+    public boolean isStarvationPreventionEnabled() {
         return preventStarvation;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets flag indicating whether job starvation prevention is enabled.
+     *
+     * @param preventStarvation Flag indicating whether job starvation prevention is enabled.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setStarvationPreventionEnabled(boolean preventStarvation) {
+    public PriorityQueueCollisionSpi setStarvationPreventionEnabled(boolean preventStarvation) {
         this.preventStarvation = preventStarvation;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -391,7 +442,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
             log.debug(configInfo("preventStarvation", preventStarvation));
         }
 
-        registerMBean(gridName, this, PriorityQueueCollisionSpiMBean.class);
+        registerMBean(gridName, new PriorityQueueCollisionSpiMBeanImpl(this), PriorityQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -641,6 +692,97 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
          */
         public int originalIndex() {
             return originalIdx;
+        }
+    }
+
+    /**
+     * MBean implementation for PriorityQueueCollisionSpi.
+     */
+    private class PriorityQueueCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter implements PriorityQueueCollisionSpiMBean {
+        /** {@inheritDoc} */
+        PriorityQueueCollisionSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getParallelJobsNumber() {
+            return PriorityQueueCollisionSpi.this.getParallelJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @IgniteSpiConfiguration(optional = true)
+        @Override public void setParallelJobsNumber(int parallelJobsNum) {
+            PriorityQueueCollisionSpi.this.setParallelJobsNumber(parallelJobsNum);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWaitingJobsNumber() {
+            return PriorityQueueCollisionSpi.this.getWaitingJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setWaitingJobsNumber(int waitJobsNum) {
+            PriorityQueueCollisionSpi.this.setWaitingJobsNumber(waitJobsNum);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getPriorityAttributeKey() {
+            return PriorityQueueCollisionSpi.this.getPriorityAttributeKey();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getJobPriorityAttributeKey() {
+            return PriorityQueueCollisionSpi.this.getJobPriorityAttributeKey();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getDefaultPriority() {
+            return PriorityQueueCollisionSpi.this.getDefaultPriority();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setDefaultPriority(int dfltPri) {
+            PriorityQueueCollisionSpi.this.setDefaultPriority(dfltPri);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getStarvationIncrement() {
+            return PriorityQueueCollisionSpi.this.getStarvationIncrement();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setStarvationIncrement(int starvationInc) {
+            PriorityQueueCollisionSpi.this.setStarvationIncrement(starvationInc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStarvationPreventionEnabled() {
+            return PriorityQueueCollisionSpi.this.isStarvationPreventionEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setStarvationPreventionEnabled(boolean preventStarvation) {
+            PriorityQueueCollisionSpi.this.setStarvationPreventionEnabled(preventStarvation);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentWaitJobsNumber() {
+            return waitingCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentActiveJobsNumber() {
+            return runningCnt + heldCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentRunningJobsNumber() {
+            return runningCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentHeldJobsNumber() {
+            return heldCnt;
         }
     }
 }

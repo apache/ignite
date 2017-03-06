@@ -51,6 +51,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
@@ -122,7 +123,7 @@ import org.jetbrains.annotations.Nullable;
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, S3CheckpointSpiMBean {
+public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @LoggerResource
@@ -165,57 +166,12 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     private final Object mux = new Object();
 
     /**
-     * Gets S3 bucket name to use.
-     *
-     * @return S3 bucket name to use.
-     */
-    @Override public String getBucketName() {
-        return bucketName;
-    }
-
-    /**
-     * Gets S3 access key.
-     *
-     * @return S3 access key.
-     */
-    @Override public String getAccessKey() {
-        return cred.getAWSAccessKeyId();
-    }
-
-    /**
      * Gets S3 secret key.
      *
      * @return S3 secret key.
      */
     public String getSecretAccessKey() {
         return cred.getAWSSecretKey();
-    }
-
-    /**
-     * Gets HTTP proxy host.
-     *
-     * @return HTTP proxy host.
-     */
-    @Override public String getProxyHost() {
-        return cfg.getProxyHost();
-    }
-
-    /**
-     * Gets HTTP proxy port.
-     *
-     * @return HTTP proxy port.
-     */
-    @Override public int getProxyPort() {
-        return cfg.getProxyPort();
-    }
-
-    /**
-     * Gets HTTP proxy user name.
-     *
-     * @return HTTP proxy user name.
-     */
-    @Override public String getProxyUsername() {
-        return cfg.getProxyUsername();
     }
 
     /**
@@ -360,7 +316,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
 
         timeoutWrk.start();
 
-        registerMBean(gridName, this, S3CheckpointSpiMBean.class);
+        registerMBean(gridName, new S3CheckpointSpiMBeanImpl(this), S3CheckpointSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -717,6 +673,41 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(S3TimeoutWorker.class, this);
+        }
+    }
+
+    /**
+     * MBean implementation for S3CheckpointSpi.
+     */
+    private class S3CheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements S3CheckpointSpiMBean {
+        /** {@inheritDoc} */
+        S3CheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getBucketName() {
+            return bucketName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getAccessKey() {
+            return cred.getAWSAccessKeyId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getProxyHost() {
+            return cfg.getProxyHost();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getProxyPort() {
+            return cfg.getProxyPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getProxyUsername() {
+            return cfg.getProxyUsername();
         }
     }
 }

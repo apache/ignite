@@ -29,6 +29,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -94,8 +95,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  * @see org.apache.ignite.spi.eventstorage.EventStorageSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStorageSpi,
-    MemoryEventStorageSpiMBean {
+public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStorageSpi {
     /** Default event time to live value in milliseconds (value is {@link Long#MAX_VALUE}). */
     public static final long DFLT_EXPIRE_AGE_MS = Long.MAX_VALUE;
 
@@ -154,7 +154,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
             log.debug(configInfo("expireCnt", expireCnt));
         }
 
-        registerMBean(gridName, this, MemoryEventStorageSpiMBean.class);
+        registerMBean(gridName, new MemoryEventStorageSpiMBeanImpl(this), MemoryEventStorageSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -174,6 +174,15 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /**
+     * See {@link #setExpireAgeMs(long)}
+     *
+     * @return Event time-to-live.
+     */
+    public long getExpireAgeMs() {
+        return expireAgeMs;
+    }
+
+    /**
      * Sets events expiration time. All events that exceed this value
      * will be removed from the queue when next event comes.
      * <p>
@@ -187,6 +196,15 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
         this.expireAgeMs = expireAgeMs;
 
         return this;
+    }
+
+    /**
+     * See {@link #setExpireCount(long)}
+     *
+     * @return Maximum event queue size.
+     */
+    public long getExpireCount() {
+        return expireCnt;
     }
 
     /**
@@ -204,23 +222,10 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getExpireAgeMs() {
-        return expireAgeMs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getExpireCount() {
-        return expireCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getQueueSize() {
-        return evts.sizex();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearAll() {
+    /**
+     * Removes all events from the event queue.
+     */
+    void clearAll() {
         evts.clear();
     }
 
@@ -288,7 +293,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public MemoryEventStorageSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -297,5 +302,35 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MemoryEventStorageSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for MemoryEventStorageSpi.
+     */
+    private class MemoryEventStorageSpiMBeanImpl extends IgniteSpiMBeanAdapter implements MemoryEventStorageSpiMBean {
+        /** {@inheritDoc} */
+        MemoryEventStorageSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getExpireAgeMs() {
+            return MemoryEventStorageSpi.this.getExpireAgeMs();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getExpireCount() {
+            return MemoryEventStorageSpi.this.getExpireCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getQueueSize() {
+            return evts.sizex();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clearAll() {
+            evts.clear();
+        }
     }
 }

@@ -50,6 +50,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
@@ -254,8 +255,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
-    AdaptiveLoadBalancingSpiMBean {
+public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -278,11 +278,6 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-
-    /** {@inheritDoc} */
-    @Override public String getLoadProbeFormatted() {
-        return probe.toString();
-    }
 
     /**
      * Sets implementation of node load probe. By default {@link AdaptiveProcessingTimeLoadProbe}
@@ -310,7 +305,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         if (log.isDebugEnabled())
             log.debug(configInfo("loadProbe", probe));
 
-        registerMBean(gridName, this, AdaptiveLoadBalancingSpiMBean.class);
+        registerMBean(gridName, new AdaptiveLoadBalancingSpiMBeanImpl(this), AdaptiveLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -619,5 +614,20 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(AdaptiveLoadBalancingSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for LocalDeploymentSpi.
+     */
+    private class AdaptiveLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter implements AdaptiveLoadBalancingSpiMBean {
+        /** {@inheritDoc} */
+        AdaptiveLoadBalancingSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLoadProbeFormatted() {
+            return probe.toString();
+        }
     }
 }

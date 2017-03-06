@@ -52,6 +52,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
@@ -307,7 +308,7 @@ import org.jetbrains.annotations.Nullable;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, UriDeploymentSpiMBean {
+public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /**
      * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
      * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
@@ -425,15 +426,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     }
 
     /**
-     * Gets {@code checkMd5} property.
-     *
-     * @return value of the {@code checkMd5} property.
-     */
-    @Override public boolean isCheckMd5() {
-        return checkMd5;
-    }
-
-    /**
      * Indicates that URI must be encoded before usage. Encoding means replacing
      * all occurrences of space with '%20', percent sign with '%25'
      * and semicolon with '%3B'.
@@ -449,16 +441,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
         this.encodeUri = encodeUri;
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getTemporaryDirectoryPath() {
-        return tmpDirPath;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<String> getUriList() {
-        return Collections.unmodifiableList(uriList);
     }
 
     /** {@inheritDoc} */
@@ -538,7 +520,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
         initializeTemporaryDirectoryPath();
 
-        registerMBean(gridName, this, UriDeploymentSpiMBean.class);
+        registerMBean(gridName, new UriDeploymentSpiMBeanImpl(this), UriDeploymentSpiMBean.class);
 
         FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -1367,5 +1349,30 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UriDeploymentSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for UriDeploymentSpi.
+     */
+    private class UriDeploymentSpiMBeanImpl extends IgniteSpiMBeanAdapter implements UriDeploymentSpiMBean {
+        /** {@inheritDoc} */
+        UriDeploymentSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getTemporaryDirectoryPath() {
+            return tmpDirPath;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<String> getUriList() {
+            return Collections.unmodifiableList(uriList);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCheckMd5() {
+            return checkMd5;
+        }
     }
 }

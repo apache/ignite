@@ -72,7 +72,7 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public NoopCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;

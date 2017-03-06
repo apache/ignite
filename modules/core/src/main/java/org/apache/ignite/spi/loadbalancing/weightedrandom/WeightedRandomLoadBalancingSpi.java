@@ -44,6 +44,7 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.jetbrains.annotations.Nullable;
@@ -176,8 +177,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
-    WeightedRandomLoadBalancingSpiMBean {
+public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -225,11 +225,6 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isUseWeights() {
-        return isUseWeights;
-    }
-
     /**
      * Sets weight of this node. Nodes with more processing capacity
      * should be assigned proportionally larger weight. Default value
@@ -243,11 +238,6 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
         this.nodeWeight = nodeWeight;
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getNodeWeight() {
-        return nodeWeight;
     }
 
     /** {@inheritDoc} */
@@ -266,7 +256,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
             log.debug(configInfo("nodeWeight", nodeWeight));
         }
 
-        registerMBean(gridName, this, WeightedRandomLoadBalancingSpiMBean.class);
+        registerMBean(gridName, new WeightedRandomLoadBalancingSpiMBeanImpl(this), WeightedRandomLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -429,5 +419,26 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WeightedRandomLoadBalancingSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for WeightedRandomLoadBalancingSpi.
+     */
+    private class WeightedRandomLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements WeightedRandomLoadBalancingSpiMBean {
+        /** {@inheritDoc} */
+        WeightedRandomLoadBalancingSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isUseWeights() {
+            return isUseWeights;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getNodeWeight() {
+            return nodeWeight;
+        }
     }
 }

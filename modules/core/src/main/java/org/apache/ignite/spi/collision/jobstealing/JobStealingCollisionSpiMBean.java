@@ -87,10 +87,10 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Sets number of jobs that can be executed in parallel.
      *
-     * @param activeJobsTreshold Number of jobs that can be executed in parallel.
+     * @param activeJobsThreshold Number of jobs that can be executed in parallel.
      */
     @MXBeanDescription("Number of jobs that can be executed in parallel.")
-    public void setActiveJobsThreshold(int activeJobsTreshold);
+    public void setActiveJobsThreshold(int activeJobsThreshold);
 
     /**
      * Gets job count threshold at which this node will

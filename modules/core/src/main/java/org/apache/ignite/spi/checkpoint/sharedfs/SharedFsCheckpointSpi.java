@@ -42,6 +42,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
@@ -118,8 +119,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
-public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi,
-    SharedFsCheckpointSpiMBean {
+public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /**
      * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
      * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
@@ -177,13 +177,13 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         dirPaths.offer(DFLT_DIR_PATH);
     }
 
-     /** {@inheritDoc} */
-    @Override public Collection<String> getDirectoryPaths() {
-        return dirPaths;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCurrentDirectoryPath() {
+    /**
+     * For test purposes only.
+     * Gets path to the directory where all checkpoints are saved.
+     *
+     * @return Path to the checkpoints directory.
+     */
+    String getCurrentDirectoryPath() {
         return curDirPath;
     }
 
@@ -230,7 +230,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (!folder.isDirectory())
             throw new IgniteSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
 
-        registerMBean(gridName, this, SharedFsCheckpointSpiMBean.class);
+        registerMBean(gridName, new SharedFsCheckpointSpiMBeanImpl(this), SharedFsCheckpointSpiMBean.class);
 
         // Ack parameters.
         if (log.isDebugEnabled()) {
@@ -519,5 +519,25 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SharedFsCheckpointSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for SharedFsCheckpointSpi.
+     */
+    private class SharedFsCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements SharedFsCheckpointSpiMBean {
+        /** {@inheritDoc} */
+        SharedFsCheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<String> getDirectoryPaths() {
+            return dirPaths;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getCurrentDirectoryPath() {
+            return curDirPath;
+        }
     }
 }

@@ -71,7 +71,7 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public NoopIndexingSpi setName(String name) {
         super.setName(name);
 
         return this;
