@@ -845,7 +845,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             for (int n = 0; n < affNodes.size(); n++) {
                 ClusterNode affNode = affNodes.get(n);
-                int stripes = affNode.attribute(ATTR_STRIPE_SIZE);
+                int stripes = affNode.attribute(ATTR_STRIPE_SIZE) != null ? (int)affNode.attribute(ATTR_STRIPE_SIZE) : -1;
 
                 if (affNode == null)
                     throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
