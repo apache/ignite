@@ -91,7 +91,8 @@ public class ConstantVector extends AbstractReadonlyVector {
             return false;
 
         ConstantVector that = (ConstantVector) o;
+        VectorStorage thisStorage = getStorage();
 
-        return getStorage().equals(that.getStorage());
+        return (thisStorage != null ? thisStorage.equals(that.getStorage()) : that.getStorage() == null);
     }
 }

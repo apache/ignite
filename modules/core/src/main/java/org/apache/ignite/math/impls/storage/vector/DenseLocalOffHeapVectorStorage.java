@@ -129,12 +129,16 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean equals(Object obj) {
-        return obj != null &&
-            getClass().equals(obj.getClass()) &&
-            (size == ((DenseLocalOffHeapVectorStorage)obj).size) &&
-            (size == 0 || isMemoryEquals((DenseLocalOffHeapVectorStorage)obj));
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        DenseLocalOffHeapVectorStorage that = (DenseLocalOffHeapVectorStorage) o;
+
+        return size == that.size && isMemoryEquals(that);
     }
 
     /** {@inheritDoc} */
