@@ -329,6 +329,42 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         /**
+         * Collect running queries
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {Number} duration minimum duration time of running queries.
+         * @returns {Promise}
+         */
+        queryCollectRunning(demo, duration) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', '')
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCollectRunningQueriesTask')
+                .addParam('p3', 'java.lang.Long')
+                .addParam('p4', duration);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * Cancel running query.
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {Number} queryId query id to cancel.
+         * @returns {Promise}
+         */
+        queryCancel(demo, nid, queryId) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorCancelQueriesTask')
+                .addParam('p3', 'java.util.Collection')
+                .addParam('p4', 'java.lang.Long')
+                .addParam('p5', queryId);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
          * @param {Boolean} demo Is need run command on demo node.
          * @param {String} cacheName Cache name.
          * @returns {Promise}

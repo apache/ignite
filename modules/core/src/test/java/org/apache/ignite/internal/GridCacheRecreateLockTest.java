@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
@@ -29,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
-
     /**
      * @throws IgniteCheckedException If failed.
      */

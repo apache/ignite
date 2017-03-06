@@ -169,7 +169,7 @@ class GridUpdateNotifier {
             StringWriter sw = new StringWriter();
 
             try {
-                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
+                IgniteSystemProperties.safeSnapshot().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;

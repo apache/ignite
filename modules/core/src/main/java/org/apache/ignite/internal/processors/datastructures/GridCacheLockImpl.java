@@ -530,7 +530,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                         lockView.put(key, val);
                                         log.info("New state for lock " + key + " was created: " + val);
                                     } else
-                                        throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+                                        throw new IgniteCheckedException("Failed to find reentrant lock with given name: " +
+                                            name);
 
                                 final long newThreadID = newThread.getId();
 

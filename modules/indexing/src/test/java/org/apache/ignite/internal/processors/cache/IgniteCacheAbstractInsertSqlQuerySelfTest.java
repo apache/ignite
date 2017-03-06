@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryAbstractIdentityResolver;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
@@ -131,18 +132,21 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    protected void createCaches() {
+    void createCaches() {
         ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
         ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
+        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
     }
 
     /**
      *
      */
     final void createBinaryCaches() {
+        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
+
         {
             CacheConfiguration s2pCcfg = cacheConfig("S2P", true, false);
 
