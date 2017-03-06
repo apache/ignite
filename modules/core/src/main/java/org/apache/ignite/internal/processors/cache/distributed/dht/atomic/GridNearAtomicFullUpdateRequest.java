@@ -271,7 +271,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         keys = new ArrayList<>(initSize);
 
-        stripeMap = new HashMap<>();
+        if (maxStripes > 0)
+            stripeMap = new HashMap<>();
 
         partIds = new ArrayList<>(initSize);
     }
@@ -359,7 +360,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean completed() {
-        return res != null || (resMap != null && resMap.size() == stripeMap().size());
+        return res != null || (resMap != null && stripeMap() != null && resMap.size() == stripeMap().size());
     }
 
     /** {@inheritDoc} */
@@ -394,14 +395,16 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         assert val != null || op == DELETE;
 
-        int stripe = key.partition() >= maxStripes ? key.partition() % maxStripes : key.partition();
+        if (maxStripes > 0) {
+            int stripe = key.partition() >= maxStripes ? key.partition() % maxStripes : key.partition();
 
-        List<Integer> idxs = stripeMap.get(stripe);
+            List<Integer> idxs = stripeMap.get(stripe);
 
-        if (idxs == null)
-            stripeMap.put(stripe, idxs = new ArrayList<>());
+            if (idxs == null)
+                stripeMap.put(stripe, idxs = new ArrayList<>());
 
-        idxs.add(keys.size());
+            idxs.add(keys.size());
+        }
 
         keys.add(key);
         partIds.add(key.partition());
@@ -595,7 +598,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /**
      * @return Stripe mapping.
      */
-    public Map<Integer, int[]> stripeMap() {
+    @Nullable public Map<Integer, int[]> stripeMap() {
         return stripeMap0;
     }
 

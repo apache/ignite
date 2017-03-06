@@ -1729,7 +1729,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final int[] stripeIdxs;
 
-        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED && req instanceof GridNearAtomicFullUpdateRequest) {
+        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED
+            && req instanceof GridNearAtomicFullUpdateRequest
+            && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
             stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
             List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.length);
 

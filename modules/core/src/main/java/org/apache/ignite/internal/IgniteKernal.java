@@ -1425,7 +1425,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         add(ATTR_CONSISTENCY_CHECK_SKIPPED, getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK));
 
-        add(ATTR_STRIPE_SIZE, ctx.getStripedExecutorService().stripes());
+        add(ATTR_STRIPE_SIZE, ctx.getStripedExecutorService() != null ? ctx.getStripedExecutorService().stripes() : -1);
 
         if (cfg.getConsistentId() != null)
             add(ATTR_NODE_CONSISTENT_ID, cfg.getConsistentId());
