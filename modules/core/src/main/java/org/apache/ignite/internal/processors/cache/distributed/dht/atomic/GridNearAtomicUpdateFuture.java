@@ -783,6 +783,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         Map<UUID, GridNearAtomicFullUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
 
         // Create mappings first, then send messages.
+
+        int part = -1;
         for (Object key : keys) {
             if (key == null)
                 throw new NullPointerException("Null key.");
@@ -826,6 +828,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 continue;
 
             KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+
+            if (part == -1)
+                part = cacheKey.partition();
 
             if (remapKeys != null && !remapKeys.contains(cacheKey))
                 continue;
@@ -879,9 +884,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         keys.size(),
                         stripes);
 
-                    // todo: fix id generation
-                    int futId = futVer.hashCode() % stripes;
-                    mapped.partition(futId > 0 ? futId : -futId);
+                    mapped.partition(part);
                     pendingMappings.put(nodeId, mapped);
                 }
 

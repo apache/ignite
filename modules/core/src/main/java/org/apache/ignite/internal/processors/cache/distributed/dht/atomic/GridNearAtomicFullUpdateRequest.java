@@ -272,7 +272,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         keys = new ArrayList<>(initSize);
 
         if (maxStripes > 0)
-            stripeMap = new HashMap<>();
+            stripeMap = new HashMap<>(maxStripes);
 
         partIds = new ArrayList<>(initSize);
     }
@@ -396,12 +396,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         assert val != null || op == DELETE;
 
         if (maxStripes > 0) {
-            int stripe = key.partition() >= maxStripes ? key.partition() % maxStripes : key.partition();
+            int stripe = key.partition() % maxStripes;
 
             List<Integer> idxs = stripeMap.get(stripe);
 
             if (idxs == null)
-                stripeMap.put(stripe, idxs = new ArrayList<>());
+                stripeMap.put(stripe, idxs = new ArrayList<>(initSize));
 
             idxs.add(keys.size());
         }
@@ -612,7 +612,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (stripeMap != null && stripeMap0 == null) {
-            stripeMap0 = new HashMap<>();
+            stripeMap0 = new HashMap<>(stripeMap.size());
 
             for (Integer stripe : stripeMap.keySet()) {
                 List<Integer> list = stripeMap.get(stripe);
