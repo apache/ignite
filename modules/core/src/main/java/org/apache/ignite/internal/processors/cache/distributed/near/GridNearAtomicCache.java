@@ -166,12 +166,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
         for (int i = 0; i < keyNum; i++) {
-            int idx = stripeIdxs == null ? i : stripeIdxs[i];
+            int trueIdx = stripeIdxs == null ? i : stripeIdxs[i];
 
-            if (F.contains(skipped, idx))
+            if (F.contains(skipped, i))
                 continue;
 
-            KeyCacheObject key = req.key(idx);
+            KeyCacheObject key = req.key(trueIdx);
 
             if (F.contains(failed, key))
                 continue;
@@ -187,7 +187,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
             CacheObject val = null;
 
-            if (F.contains(nearValsIdxs, idx)) {
+            if (F.contains(nearValsIdxs, i)) {
                 val = res.nearValue(nearValIdx);
 
                 nearValIdx++;
@@ -196,11 +196,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 assert req.operation() != TRANSFORM;
 
                 if (req.operation() != DELETE)
-                    val = req.value(idx);
+                    val = req.value(trueIdx);
             }
 
-            long ttl = res.nearTtl(idx);
-            long expireTime = res.nearExpireTime(idx);
+            long ttl = res.nearTtl(trueIdx);
+            long expireTime = res.nearExpireTime(trueIdx);
 
             if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
                 expireTime = CU.toExpireTime(ttl);
