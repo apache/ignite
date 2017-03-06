@@ -33,7 +33,7 @@ class VectorImplementationsFixtures {
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SparseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new
     );
 
@@ -94,15 +94,15 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalOnHeapVectorFixture implements Iterable<Vector> {
+    private static class SparseLocalVectorFixture implements Iterable<Vector> {
         /** */
         private final Supplier<VectorSizesExtraIterator<Integer>> iter;
 
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
-        SparseLocalOnHeapVectorFixture() {
-            iter = () -> new VectorSizesExtraIterator<>("SparseLocalOnHeapVector", SparseLocalVector::new,
+        SparseLocalVectorFixture() {
+            iter = () -> new VectorSizesExtraIterator<>("SparseLocalVector", SparseLocalVector::new,
                 ctxDescrHolder::set,
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
