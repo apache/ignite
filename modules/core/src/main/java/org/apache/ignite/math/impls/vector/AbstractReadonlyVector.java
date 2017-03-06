@@ -21,11 +21,10 @@ public abstract class AbstractReadonlyVector extends AbstractVector {
     }
 
     /**
-     * @param readOnly Is read only.
      * @param sto Storage.
      */
-    public AbstractReadonlyVector(boolean readOnly, VectorStorage sto) {
-        super(readOnly, sto);
+    public AbstractReadonlyVector(VectorStorage sto) {
+        super(sto);
     }
 
     /** {@inheritDoc} */
