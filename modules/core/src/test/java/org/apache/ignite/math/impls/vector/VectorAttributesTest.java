@@ -32,13 +32,6 @@ import static org.junit.Assert.*;
 /** */
 public class VectorAttributesTest {
     /** */ @Test
-    public void specialCasesTest() {
-        assertSpecialCases(new DenseLocalOnHeapVector());
-
-        assertSpecialCases(new DenseLocalOffHeapVector((double[])null));
-    }
-
-    /** */ @Test
     public void isDenseTest() {
         alwaysTrueAttributeTest(StorageOpsMetrics::isDense);
     }
@@ -69,7 +62,7 @@ public class VectorAttributesTest {
 
         try {
             assertTrue("Null map args.",
-                pred.test(new DenseLocalOnHeapVector(1)));
+                pred.test(new DenseLocalOnHeapVector(0)));
         } catch (AssertionError e) {
             expECaught = true;
         }
@@ -78,6 +71,26 @@ public class VectorAttributesTest {
 
         assertTrue("Size from args.",
             pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
+
+        expECaught = false;
+
+        try {
+            assertTrue("Null array shallow copy.",
+                pred.test(new DenseLocalOnHeapVector(null, true)));
+        } catch (AssertionError e) {
+            expECaught = true;
+        }
+
+        expECaught = false;
+
+        try {
+            assertTrue("0 size, off heap vector.",
+                pred.test(new DenseLocalOffHeapVector(new double[0])));
+        } catch (AssertionError e) {
+            expECaught = true;
+        }
+
+        assertTrue("Default constructor expect exception at this predicate.", expECaught);
 
         final double[] test = new double[99];
 
@@ -92,9 +105,6 @@ public class VectorAttributesTest {
                 put("arr", test);
                 put("copy", true);
             }})));
-
-        assertTrue("Null array shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(null, true)));
 
         assertTrue("0 size shallow copy.",
             pred.test(new DenseLocalOnHeapVector(new double[0], true)));
@@ -129,56 +139,8 @@ public class VectorAttributesTest {
                 put("copy", true);
             }})));
 
-        assertTrue("0 size, off heap vector.",
-            pred.test(new DenseLocalOffHeapVector(new double[0])));
-
         assertTrue("1 size, off heap vector.",
             pred.test(new DenseLocalOffHeapVector(new double[1])));
 
-    }
-
-    /** */
-    private void assertSpecialCases(Vector v) {
-        boolean expECaught = false;
-
-        try {
-            assertTrue(v.isDense());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Expect exception at dense check.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isSequentialAccess());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Expect exception at sequential access check.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.getLookupCost() == 0);
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Expect exception at lookup cost check.", expECaught);
-
-        expECaught = false;
-
-        try {
-            assertTrue(v.isAddConstantTime());
-        } catch (org.apache.ignite.math.UnsupportedOperationException uoe) {
-            expECaught = true;
-        }
-
-        assertTrue("Expect exception at add constant time check.", expECaught);
-
-        assertNotNull("Expect non null guid.", v.guid());
     }
 }
