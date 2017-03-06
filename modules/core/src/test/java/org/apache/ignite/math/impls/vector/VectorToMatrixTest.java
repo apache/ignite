@@ -204,7 +204,6 @@ public class VectorToMatrixTest {
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
             put(SparseLocalVector.class, SparseLocalOnHeapMatrix.class);
-            put(SparseLocalOffHeapVector.class, SparseLocalOffHeapMatrix.class);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture

@@ -709,7 +709,6 @@ public class AbstractVectorTest {
     /** */
     @Test
     public void getStorage(){
-        assertTrue(UNEXPECTED_VALUE, testVector.getStorage().getClass() == VectorNullStorage.class);
         assertNotNull(NULL_VALUE, getAbstractVector(createEmptyStorage()));
         assertNotNull(NULL_VALUE, getAbstractVector(createStorage()));
         testVector.setStorage(createStorage());
@@ -755,7 +754,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage, STORAGE_SIZE) { // TODO: find out how to fix warning about missing constructor
+        return new AbstractVector(storage) { // TODO: find out how to fix warning about missing constructor
             /** */
             @Override public boolean isDense() {
                 return false;

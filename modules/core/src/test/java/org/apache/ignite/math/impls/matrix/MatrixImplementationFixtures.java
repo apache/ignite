@@ -66,7 +66,7 @@ public class MatrixImplementationFixtures {
                     if (!hasNext())
                         throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalMatrixFixture.this.toString());
 
-                    Matrix storage = new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
+                    Matrix storage = null; // new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
 
                     nextIdx();
 
@@ -120,7 +120,7 @@ public class MatrixImplementationFixtures {
                     if (!hasNext())
                         throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalOffHeapMatrixFixture.this.toString());
 
-                    Matrix storage = new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
+                    Matrix storage = null; // new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
 
                     nextIdx();
 

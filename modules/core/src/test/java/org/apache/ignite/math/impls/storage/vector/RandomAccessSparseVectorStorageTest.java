@@ -17,19 +17,20 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
+import org.apache.ignite.math.StorageConstants;
 import org.junit.Test;
 
 import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
 /**
- * Unit tests for {@link RandomAccessSparseVectorStorage}.
+ * Unit tests for {@link SparseLocalOnHeapVectorStorage}.
  */
-public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<RandomAccessSparseVectorStorage> {
+public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<SparseLocalOnHeapVectorStorage> {
     /** */
     @Override
     public void setUp(){
-        storage = new RandomAccessSparseVectorStorage(STORAGE_SIZE);
+        storage = new SparseLocalOnHeapVectorStorage(STORAGE_SIZE, StorageConstants.RANDOM_ACCESS_MODE);
     }
 
     /** */

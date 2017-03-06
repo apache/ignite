@@ -67,7 +67,7 @@ class MatrixStorageFixtures {
                     if (!hasNext())
                         throw new NoSuchElementException(SparseLocalMatrixStorageFixture.this.toString());
 
-                    MatrixStorage storage = new SparseLocalOnHeapMatrixStorage(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
+                    MatrixStorage storage = null; // new SparseLocalOnHeapMatrixStorage(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
 
                     nextIdx();
 
