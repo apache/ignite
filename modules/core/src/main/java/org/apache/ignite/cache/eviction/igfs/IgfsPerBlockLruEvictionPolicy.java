@@ -306,6 +306,24 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         return this;
     }
 
+    /**
+     * Gets current size of data in all blocks.
+     *
+     * @return Current size of data in all blocks.
+     */
+    public long getCurrentSize() {
+        return curSize.longValue();
+    }
+
+    /**
+     * Gets current amount of blocks.
+     *
+     * @return Current amount of blocks.
+     */
+    public int getCurrentBlocks() {
+        return queue.size();
+    }
+
     /** {@inheritDoc} */
     @Override public Object getMBean() {
         return new IgfsPerBlockLruEvictionPolicyMXBeanImpl();
@@ -450,12 +468,12 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
 
         /** {@inheritDoc} */
         @Override public long getCurrentSize() {
-            return curSize.longValue();
+            return IgfsPerBlockLruEvictionPolicy.this.getCurrentSize();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentBlocks() {
-            return queue.size();
+            return IgfsPerBlockLruEvictionPolicy.this.getCurrentBlocks();
         }
     }
 }

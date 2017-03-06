@@ -159,6 +159,24 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBea
     }
 
     /**
+     * Gets current queue size in bytes.
+     *
+     * @return current queue size in bytes.
+     */
+    public long getCurrentMemorySize() {
+        return memSize.longValue();
+    }
+
+    /**
+     * Gets current queue size.
+     *
+     * @return Current queue size.
+     */
+    public int getCurrentSize() {
+        return queue.size();
+    }
+
+    /**
      * Gets read-only view on internal {@code FIFO} queue in proper order.
      *
      * @return Read-only view ono internal {@code 'FIFO'} queue.
@@ -325,12 +343,12 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBea
     private class LruEvictionPolicyMBeanImpl implements LruEvictionPolicyMBean {
         /** {@inheritDoc} */
         @Override public long getCurrentMemorySize() {
-            return memSize.longValue();
+            return LruEvictionPolicy.this.getCurrentMemorySize();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentSize() {
-            return queue.size();
+            return LruEvictionPolicy.this.getCurrentSize();
         }
 
         /** {@inheritDoc} */
