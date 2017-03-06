@@ -27,6 +27,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
 import org.jsr166.LongAdder8;
@@ -50,7 +51,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * This implementation is very efficient since it is lock-free and does not create any additional table-like
  * data structures. The {@code LRU} ordering information is maintained by attaching ordering metadata to cache entries.
  */
-public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictionPolicyMBean, Externalizable {
+public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBeanAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,7 +94,7 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
      *
      * @return Maximum allowed size of cache before entry will start getting evicted.
      */
-    @Override public int getMaxSize() {
+    public int getMaxSize() {
         return max;
     }
 
@@ -101,45 +102,60 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
      * Sets maximum allowed size of cache before entry will start getting evicted.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
+     * @return {@code this} for chaining.
      */
-    @Override public void setMaxSize(int max) {
+    public LruEvictionPolicy<K, V> setMaxSize(int max) {
         A.ensure(max >= 0, "max >= 0");
 
         this.max = max;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getBatchSize() {
+    /**
+     * Gets batch size.
+     *
+     * @return batch size.
+     */
+    public int getBatchSize() {
         return batchSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setBatchSize(int batchSize) {
+    /**
+     * Sets batch size.
+     *
+     * @param batchSize Batch size.
+     * @return {@code this} for chaining.
+     */
+    public LruEvictionPolicy<K, V> setBatchSize(int batchSize) {
         A.ensure(batchSize > 0, "batchSize > 0");
 
         this.batchSize = batchSize;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentSize() {
-        return queue.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaxMemorySize() {
+    /**
+     * Gets maximum allowed cache size in bytes.
+     *
+     * @return maximum allowed cache size in bytes.
+     */
+    public long getMaxMemorySize() {
         return maxMemSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setMaxMemorySize(long maxMemSize) {
+    /**
+     * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum memory size.
+     * @return {@code this} for chaining.
+     */
+    public LruEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
         A.ensure(maxMemSize >= 0, "maxMemSize >= 0");
 
         this.maxMemSize = maxMemSize;
-    }
 
-    /** {@inheritDoc} */
-    @Override public long getCurrentMemorySize() {
-        return memSize.longValue();
+        return this;
     }
 
     /**
@@ -280,6 +296,11 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     }
 
     /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new LruEvictionPolicyMBeanImpl();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(max);
         out.writeInt(batchSize);
@@ -296,5 +317,50 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LruEvictionPolicy.class, this, "size", queue.sizex());
+    }
+
+    /**
+     * MBean implementation for LruEvictionPolicy.
+     */
+    private class LruEvictionPolicyMBeanImpl implements LruEvictionPolicyMBean {
+        /** {@inheritDoc} */
+        @Override public long getCurrentMemorySize() {
+            return memSize.longValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentSize() {
+            return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxSize() {
+            return LruEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(int max) {
+            LruEvictionPolicy.this.setMaxSize(max);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getBatchSize() {
+            return LruEvictionPolicy.this.getBatchSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setBatchSize(int batchSize) {
+            LruEvictionPolicy.this.setBatchSize(batchSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMemorySize() {
+            return LruEvictionPolicy.this.getMaxMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxMemorySize(long maxMemSize) {
+            LruEvictionPolicy.this.setMaxMemorySize(maxMemSize);
+        }
     }
 }

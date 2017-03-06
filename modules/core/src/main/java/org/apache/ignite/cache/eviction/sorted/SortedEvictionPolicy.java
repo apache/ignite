@@ -33,6 +33,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
@@ -59,7 +60,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * <p>
  * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedEvictionPolicyMBean, Externalizable {
+public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBeanAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -142,7 +143,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
      *
      * @return Maximum allowed size of cache before entry will start getting evicted.
      */
-    @Override public int getMaxSize() {
+    public int getMaxSize() {
         return max;
     }
 
@@ -150,45 +151,60 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
      * Sets maximum allowed size of cache before entry will start getting evicted.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
+     * @return {@code this} for chaining.
      */
-    @Override public void setMaxSize(int max) {
+    public SortedEvictionPolicy<K, V> setMaxSize(int max) {
         A.ensure(max >= 0, "max >= 0");
 
         this.max = max;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getBatchSize() {
+    /**
+     * Gets batch size.
+     *
+     * @return batch size.
+     */
+    public int getBatchSize() {
         return batchSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setBatchSize(int batchSize) {
+    /**
+     * Sets batch size.
+     *
+     * @param batchSize Batch size.
+     * @return {@code this} for chaining.
+     */
+    public SortedEvictionPolicy<K, V> setBatchSize(int batchSize) {
         A.ensure(batchSize > 0, "batchSize > 0");
 
         this.batchSize = batchSize;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentSize() {
-        return set.sizex();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaxMemorySize() {
+    /**
+     * Gets maximum allowed cache size in bytes.
+     *
+     * @return maximum allowed cache size in bytes.
+     */
+    public long getMaxMemorySize() {
         return maxMemSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void setMaxMemorySize(long maxMemSize) {
+    /**
+     * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum memory size.
+     * @return {@code this} for chaining.
+     */
+    public SortedEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
         A.ensure(maxMemSize >= 0, "maxMemSize >= 0");
 
         this.maxMemSize = maxMemSize;
-    }
 
-    /** {@inheritDoc} */
-    @Override public long getCurrentMemorySize() {
-        return memSize.longValue();
+        return this;
     }
 
     /**
@@ -323,6 +339,11 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         }
 
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new SortedEvictionPolicyMBeanImpl();
     }
 
     /** {@inheritDoc} */
@@ -514,6 +535,51 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
                 size.decrement();
 
             return e;
+        }
+    }
+
+    /**
+     * MBean implementation for SortedEvictionPolicy.
+     */
+    private class SortedEvictionPolicyMBeanImpl implements SortedEvictionPolicyMBean {
+        /** {@inheritDoc} */
+        @Override public long getCurrentMemorySize() {
+            return memSize.longValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentSize() {
+            return set.sizex();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxSize() {
+            return SortedEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(int max) {
+            SortedEvictionPolicy.this.setMaxSize(max);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getBatchSize() {
+            return SortedEvictionPolicy.this.getBatchSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setBatchSize(int batchSize) {
+            SortedEvictionPolicy.this.setBatchSize(batchSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMemorySize() {
+            return SortedEvictionPolicy.this.getMaxMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxMemorySize(long maxMemSize) {
+            SortedEvictionPolicy.this.setMaxMemorySize(maxMemSize);
         }
     }
 }

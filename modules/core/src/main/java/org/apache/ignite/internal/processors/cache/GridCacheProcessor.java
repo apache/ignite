@@ -117,6 +117,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -3488,6 +3489,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheName = U.maskName(cacheName);
 
         cacheName = near ? cacheName + "-near" : cacheName;
+
+        if(o instanceof IgniteMBeanAware)
+            o = ((IgniteMBeanAware)o).getMBean();
 
         for (Class<?> itf : o.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {

@@ -617,7 +617,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /**
-     * MBean implementation for LocalDeploymentSpi.
+     * MBean implementation for AdaptiveLoadBalancingSpi.
      */
     private class AdaptiveLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter implements AdaptiveLoadBalancingSpiMBean {
         /** {@inheritDoc} */
