@@ -39,6 +39,11 @@ public class DelegatingVector implements Vector {
     // GUID.
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
+    /** */
+    public DelegatingVector(){
+        // No-op.
+    }
+
     /**
      *
      * @param dlg
@@ -405,5 +410,27 @@ public class DelegatingVector implements Vector {
     /** {@inheritDoc} */
     @Override public void destroy() {
         dlg.destroy();
+    }
+
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + meta.hashCode();
+        result = result * 37 + dlg.hashCode();
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        DelegatingVector that = (DelegatingVector) o;
+
+        return meta.equals(that.meta) && dlg.equals(that.dlg);
     }
 }

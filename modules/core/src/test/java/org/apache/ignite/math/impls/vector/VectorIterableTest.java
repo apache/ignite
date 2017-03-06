@@ -188,7 +188,7 @@ public class VectorIterableTest {
     /** */
     private void consumeSampleVectorsWithZeroes(Vector sample,
         BiConsumer<Vector, Integer> consumer) {
-        if (sample instanceof RandomVector) {
+        if (readOnly(sample)) {
             int numZeroes = 0;
 
             for (Vector.Element e : sample.all())
@@ -256,6 +256,11 @@ public class VectorIterableTest {
     /** */
     private boolean isZero(double val) {
         return val == 0.0;
+    }
+
+    /** */
+    private boolean readOnly(Vector v) {
+        return v instanceof RandomVector || v instanceof ConstantVector;
     }
 }
 

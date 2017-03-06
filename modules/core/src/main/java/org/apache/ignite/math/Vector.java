@@ -36,7 +36,7 @@ import java.util.function.*;
  *
  * Based on ideas from <a href="http://mahout.apache.org/">Apache Mahout</a>.
  */
-public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetrics {
+public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetrics, Destroyable {
     /**
      * Holder for vector's element.
      */
@@ -472,9 +472,4 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Vector GUID.
      */
     IgniteUuid guid();
-
-    /**
-     * Destroys vector and it's storage if managed outside of JVM. It's do nothing in all other cases.
-     */
-    void destroy();
 }

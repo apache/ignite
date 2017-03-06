@@ -20,20 +20,17 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.matrix.FunctionMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
 
 import java.io.*;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.DoubleFunction;
 
 /**
  * Random vector. Each value is taken from {-1,0,1} with roughly equal probability. Note
  * that by default, the value is determined by a relatively simple hash of the index.
  */
-public class RandomVector extends AbstractVector {
+public class RandomVector extends AbstractReadonlyVector {
     private boolean fastHash;
 
     /**
@@ -93,73 +90,6 @@ public class RandomVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix cross(Vector vec) {
-        return new FunctionMatrix(size(), vec.size(),
-            (row, col) -> vec.get(col) * get(row));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrix(boolean rowLike) {
-        return new FunctionMatrix(rowLike ? 1 : size(), rowLike ? size() : 1,
-            (row, col) -> rowLike ? get(col) : get(row));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
-        return new FunctionMatrix(rowLike ? 1 : size() + 1, rowLike ? size() + 1 : 1, (row, col) -> {
-            if (row == 0 && col == 0)
-                return zeroVal;
-
-            return rowLike ? get(col - 1) : get(row -1);
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector copy() {
-        return this; // IMPL NOTE this exploits read-only feature of this type vector
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector logNormalize() {
-        return logNormalize(2.0, Math.sqrt(getLengthSquared()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector logNormalize(double power) {
-        return logNormalize(power, kNorm(power));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector map(DoubleFunction<Double> fun) {
-        return new FunctionVector(size(), (i) -> fun.apply(get(i)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
-        checkCardinality(vec);
-
-        return new FunctionVector(size(), (i) -> fun.apply(get(i), vec.get(i)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
-        return new FunctionVector(size(), (i) -> fun.apply(get(i), y));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector divide(double x) {
-        if (x == 1.0)
-            return this;
-
-        return new FunctionVector(size(), (i) -> get(i) / x);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Vector times(double x) {
-        return x == 0 ? new ConstantVector(size(), 0) : new FunctionVector(size(), (i) -> get(i) * x);
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -173,16 +103,27 @@ public class RandomVector extends AbstractVector {
         fastHash = in.readBoolean();
     }
 
-    /**
-     * @param power Power.
-     * @param normLen Normalized length.
-     * @return logNormalized value.
-     */
-    private Vector logNormalize(double power, double normLen) {
-        assert !(Double.isInfinite(power) || power <= 1.0);
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
 
-        double denominator = normLen * Math.log(power);
+        result = result * 37 + Boolean.hashCode(fastHash);
+        result = result * 37 + getStorage().hashCode();
 
-        return new FunctionVector(size(), (idx) -> Math.log1p(get(idx)) / denominator);
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RandomVector that = (RandomVector) o;
+        VectorStorage thisStorage = getStorage();
+
+        return fastHash == that.fastHash && (thisStorage != null ? thisStorage.equals(that.getStorage()) : that.getStorage() == null);
     }
 }

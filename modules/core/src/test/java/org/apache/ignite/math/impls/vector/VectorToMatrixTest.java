@@ -5,7 +5,6 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -23,12 +22,28 @@ public class VectorToMatrixTest {
         for (Class<? extends Vector> key : typesMap.keySet()) {
             Class<? extends Matrix> val = typesMap.get(key);
 
-            if (val == null)
+            if (val == null && !ignore(key))
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
     }
 
-    /** */ @Test
+    /** Ignore test for given vector type. */
+    private boolean ignore(Class clazz){
+        boolean isIgnored = false;
+        Class[] ignoredClasses = {DelegatingVector.class};
+
+        for (Class ignoredClass : ignoredClasses) {
+            if (ignoredClass == clazz){
+                isIgnored = true;
+                break;
+            }
+        }
+
+        return isIgnored;
+    }
+
+    /** */
+    @Test
     public void testLikeMatrix() {
         consumeSampleVectors((v, desc) -> {
             if (!availableForTesting(v))
@@ -186,10 +201,14 @@ public class VectorToMatrixTest {
 
         final Matrix actualLikeMatrix = v.likeMatrix(1, 1);
 
-        assertTrue("Need to enable matrix testing for vector type " + v.getClass().getSimpleName(),
-            availableForTesting || actualLikeMatrix == null);
+        if (ignore(v.getClass()))
+            return false;
+        else {
+            assertTrue("Need to enable matrix testing for vector type " + v.getClass().getSimpleName(),
+                availableForTesting || actualLikeMatrix == null);
 
-        return typesMap.get(v.getClass()) != null;
+            return typesMap.get(v.getClass()) != null;
+        }
     }
 
     /** */

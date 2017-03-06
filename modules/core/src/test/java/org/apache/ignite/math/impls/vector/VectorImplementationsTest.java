@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
@@ -27,7 +28,7 @@ import java.util.function.*;
 import static org.junit.Assert.*;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest {
+public class VectorImplementationsTest extends ExternalizeTest<Vector> {
     /** */ @Test
     public void vectorImplementationsFixturesTest() {
         new VectorImplementationsFixtures().selfTest();
@@ -90,9 +91,11 @@ public class VectorImplementationsTest {
 
                 Class<? extends Vector> actualType = vLike.getClass();
 
-                assertTrue("Expected matrix type " + expType.getSimpleName()
-                        + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
-                    expType.isAssignableFrom(actualType));
+                /** skip this check for delegating vectors  */
+                if (expType != DelegatingVector.class)
+                    assertTrue("Expected matrix type " + expType.getSimpleName()
+                            + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
+                        expType.isAssignableFrom(actualType));
 
         });
     }
@@ -307,7 +310,14 @@ public class VectorImplementationsTest {
 
     /** */
     private static boolean readOnly(Vector v) {
-        return v instanceof RandomVector;
+        return v instanceof RandomVector || v instanceof ConstantVector;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void externalizeTest() {
+        consumeSampleVectors((v, desc) -> {
+            externalizeTest(v);
+        });
     }
 
     /** */

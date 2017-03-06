@@ -124,14 +124,18 @@ public class DelegateVectorStorage implements VectorStorage {
         len = in.readInt();
     }
 
+
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        return this == obj ||
-            ((obj != null)
-                && obj.getClass() == getClass()
-                && (sto.equals(((DelegateVectorStorage)obj).sto))
-                && len == ((DelegateVectorStorage)obj).len
-                && off == ((DelegateVectorStorage)obj).off);
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        DelegateVectorStorage that = (DelegateVectorStorage) o;
+
+        return len == that.len && off == that.off && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 
     /** {@inheritDoc} */
