@@ -1092,10 +1092,16 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find reentrant lock with given name: " + name);
+                                    if (reCreate) {
+                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, isFailoverSafe(), isFair());
+                                        lockView.put(key, val);
+                                        log.info("New state for lock " + key + " was created: " + val);
+                                    } else {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to find reentrant lock with given name: " + name);
 
-                                    return null;
+                                        return null;
+                                    }
                                 }
 
                                 tx.rollback();
