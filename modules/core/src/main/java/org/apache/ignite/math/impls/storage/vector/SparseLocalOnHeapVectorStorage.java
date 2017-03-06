@@ -122,21 +122,24 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         SparseLocalOnHeapVectorStorage that = (SparseLocalOnHeapVectorStorage) o;
 
-        if (size != that.size) return false;
-        if (acsMode != that.acsMode) return false;
-        return sto != null ? sto.equals(that.sto) : that.sto == null;
+        return size == that.size && acsMode == that.acsMode && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = size;
-        result = 31 * result + acsMode;
-        result = 31 * result + (sto != null ? sto.hashCode() : 0);
-        return result;
+        int res = size;
+
+        res = 31 * res + acsMode;
+        res = 31 * res + (sto != null ? sto.hashCode() : 0);
+
+        return res;
     }
 }

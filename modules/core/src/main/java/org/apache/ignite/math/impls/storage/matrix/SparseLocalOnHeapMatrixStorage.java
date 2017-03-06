@@ -55,28 +55,27 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage) o;
 
-        if (rows != that.rows) return false;
-        if (cols != that.cols) return false;
-        if (acsMode != that.acsMode) return false;
-        if (stoMode != that.stoMode) return false;
-        return sto != null ? sto.equals(that.sto) : that.sto == null;
+        return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
+            && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
-        int result = 1;
+    @Override public int hashCode() {
+        int res = 1;
 
-        result = result * 37 + rows;
-        result = result * 37 + cols;
-        result = result * 37 + sto.hashCode();
+        res = res * 37 + rows;
+        res = res * 37 + cols;
+        res = res * 37 + sto.hashCode();
 
-        return result;
+        return res;
     }
 
     /**
