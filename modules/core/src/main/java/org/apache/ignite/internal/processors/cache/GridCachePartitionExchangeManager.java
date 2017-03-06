@@ -30,6 +30,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -823,7 +824,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return {@code True} if message was sent, {@code false} if node left grid.
      */
     private boolean sendAllPartitions(Collection<ClusterNode> nodes) {
-        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, null, true);
+        GridDhtPartitionsFullMessage m = createPartitionsFullMessage(nodes, null, null, null, null, true);
 
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
@@ -858,11 +859,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable final GridDhtPartitionExchangeId exchId,
         @Nullable GridCacheVersion lastVer,
         @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers,
+        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload,
         final boolean compress) {
         final GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
             lastVer,
             exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE,
-            partHistSuppliers
+            partHistSuppliers,
+            partsToReload
             );
 
         m.compress(compress);
@@ -1243,7 +1246,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = cacheCtx.topology();
 
                     if (top != null)
-                        updated |= top.update(null, entry.getValue(), null) != null;
+                        updated |= top.update(null, entry.getValue(), null, msg.partsToReload(cctx.localNodeId(), cacheId)) != null;
                 }
 
                 if (!cctx.kernalContext().clientNode() && updated)

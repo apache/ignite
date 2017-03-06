@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectMap;
@@ -75,6 +76,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Serialized partitions history suppliers. */
     private byte[] partHistSuppliersBytes;
 
+    /** Partitions that must be cleared and re-loaded. */
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<UUID, Map<Integer, Set<Integer>>> partsToReload;
+
+    /** Serialized partitions that must be cleared and re-loaded. */
+    private byte[] partsToReloadBytes;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -105,13 +114,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
         @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer,
-        @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers) {
+        @Nullable Map<UUID, Map<T2<Integer, Integer>, Long>> partHistSuppliers,
+        @Nullable Map<UUID, Map<Integer, Set<Integer>>> partsToReload) {
         super(id, lastVer);
 
         assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
         this.partHistSuppliers = partHistSuppliers;
+        this.partsToReload = partsToReload;
     }
 
     /**
@@ -199,6 +210,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         return partHistSuppliers;
     }
 
+    public Set<Integer> partsToReload(UUID nodeId, int cacheId) {
+        if (partsToReload == null)
+            return Collections.emptySet();
+
+        Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
+
+        if (nodeMap == null)
+            return Collections.emptySet();
+
+        Set<Integer> parts = nodeMap.get(cacheId);
+
+        if (parts == null)
+            return Collections.emptySet();
+
+        return parts;
+    }
+
     /**
      *
      */
@@ -219,12 +247,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
+            (partHistSuppliers != null && partHistSuppliersBytes == null) ||
+            (partsToReload != null && partsToReloadBytes == null) ||
             (exs != null && exsBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistSuppliersBytes0 = null;
+            byte[] partsToReloadBytes0 = null;
             byte[] exsBytes0 = null;
 
             if (parts != null && partsBytes == null)
@@ -236,6 +267,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (partHistSuppliers != null && partHistSuppliersBytes == null)
                 partHistSuppliersBytes0 = U.marshal(ctx, partHistSuppliers);
 
+            if (partsToReload != null && partsToReloadBytes == null)
+                partsToReloadBytes0 = U.marshal(ctx, partsToReload);
+
             if (exs != null && exsBytes == null)
                 exsBytes0 = U.marshal(ctx, exs);
 
@@ -246,11 +280,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistSuppliersBytesZip = U.zip(partHistSuppliersBytes0);
+                    byte[] partsToReloadBytesZip = U.zip(partsToReloadBytes0);
                     byte[] exsBytesZip = U.zip(exsBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistSuppliersBytes0 = partHistSuppliersBytesZip;
+                    partsToReloadBytes0 = partsToReloadBytesZip;
                     exsBytes0 = exsBytesZip;
 
                     compressed(true);
@@ -263,6 +299,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
             partHistSuppliersBytes = partHistSuppliersBytes0;
+            partsToReloadBytes = partsToReloadBytes0;
             exsBytes = exsBytes0;
         }
     }
@@ -336,6 +373,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 partHistSuppliers = U.unmarshal(ctx, partHistSuppliersBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
+        if (partsToReloadBytes != null && partsToReload == null) {
+            if (compressed())
+                partsToReload = U.unmarshalZip(ctx.marshaller(), partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                partsToReload = U.unmarshal(ctx, partsToReloadBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
+
         if (partCntrs == null)
             partCntrs = new HashMap<>();
 
@@ -396,6 +440,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 11:
+                if (!writer.writeByteArray("partsToReloadBytes", partsToReloadBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -458,6 +508,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 11:
+                partsToReloadBytes = reader.readByteArray("partsToReloadBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -479,7 +537,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */

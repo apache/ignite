@@ -232,7 +232,8 @@ public interface GridDhtPartitionTopology {
      */
     public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionsExchangeFuture exchFut,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap);
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        Set<Integer> partsToReload);
 
     /**
      * @param exchId Exchange ID.
@@ -313,6 +314,7 @@ public interface GridDhtPartitionTopology {
      * @param p Partition ID.
      * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
+     * @return Set of node IDs that should reload partitions.
      */
-    public void setOwners(int p, Set<UUID> owners, boolean updateSeq);
+    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
 }

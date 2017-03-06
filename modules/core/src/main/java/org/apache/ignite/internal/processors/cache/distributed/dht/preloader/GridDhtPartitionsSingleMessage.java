@@ -234,6 +234,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
+            (partHistCntrs != null && partHistCntrsBytes == null) ||
             (ex != null && exBytes == null);
 
         if (marshal) {

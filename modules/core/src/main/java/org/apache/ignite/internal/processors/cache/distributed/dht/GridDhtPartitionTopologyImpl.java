@@ -32,12 +32,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
@@ -684,7 +681,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
             else if (loc != null && state == RENTING && !showRenting)
                 throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently evicted " +
-                    "[part=" + p + ", shouldBeMoving=" + loc.shouldBeMoving() + "]");
+                    "[part=" + p + ", shouldBeMoving=" + loc.reload() + "]");
 
             if (loc == null) {
                 if (!treatAllPartAsLoc && !belongs)
@@ -978,7 +975,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     @Nullable @Override public GridDhtPartitionMap2 update(
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, T2<Long, Long>> cntrMap
+        @Nullable Map<Integer, T2<Long, Long>> cntrMap,
+        Set<Integer> partsToReload
     ) {
         GridDhtPartitionExchangeId exchId = exchFut != null ? exchFut.exchangeId() : null;
 
@@ -1123,16 +1121,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     else if (state == MOVING) {
                         GridDhtLocalPartition locPart = locParts.get(p);
 
-                        if (exchFut != null && exchFut.partitionHistorySupplier(cacheId(), p) == null &&
-                            locPart != null && locPart.updateCounter() > 0 && !locPart.shouldBeMoving()) {
-                            locPart.rent(true);
-
-                            changed = true;
-                        }
-
-                        if (locPart != null && locPart.state() == RENTING)
-                            locPart.shouldBeMoving(true);
-
                         if (locPart == null || locPart.state() == EVICTED)
                             locPart = createPartition(p);
 
@@ -1148,7 +1136,25 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             if (cntr != null && cntr.get2() > locPart.updateCounter())
                                 locPart.updateCounter(cntr.get2());
                         }
+                    }
+                    else if (state == RENTING && partsToReload.contains(p)) {
+                        GridDhtLocalPartition locPart = locParts.get(p);
 
+                        if (locPart == null || locPart.state() == EVICTED) {
+                            createPartition(p);
+
+                            changed = true;
+                        }
+                        else if (locPart.state() == OWNING || locPart.state() == MOVING) {
+                            locPart.reload(true);
+
+                            locPart.rent(false);
+
+                            changed = true;
+                        }
+                        else {
+                            locPart.reload(true);
+                        }
                     }
                 }
             }
@@ -1484,23 +1490,42 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
-    @Override public void setOwners(int p, Set<UUID> owners, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
+        Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
+
         lock.writeLock().lock();
 
         try {
             GridDhtLocalPartition locPart = locParts.get(p);
 
             if (locPart != null) {
-                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId()))
-                    locPart.moving();
+                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
+                    if (haveHistory)
+                        locPart.moving();
+                    else {
+                        locPart.rent(false);
+
+                        locPart.reload(true);
+
+                        result.add(cctx.localNodeId());
+                    }
+
+                }
             }
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
-                    e.getValue().put(p, MOVING);
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                    if (haveHistory)
+                        e.getValue().put(p, MOVING);
+                    else {
+                        e.getValue().put(p, RENTING);
+
+                        result.add(e.getKey());
+                    }
+                }
             }
 
             if (updateSeq)
@@ -1509,6 +1534,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         finally {
             lock.writeLock().unlock();
         }
+
+        return result;
     }
 
     /**
@@ -1576,7 +1603,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        part.shouldBeMoving(false);
+                        part.reload(false);
 
                         part.rent(false);
 
@@ -1603,7 +1630,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                 ClusterNode n = sorted.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    part.shouldBeMoving(false);
+                                    part.reload(false);
 
                                     part.rent(false);
 
@@ -1784,7 +1811,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
 
-            if (part.shouldBeMoving())
+            if (part.reload())
                 part = createPartition(part.id());
 
             updateLocal(part.id(), part.state(), seq);

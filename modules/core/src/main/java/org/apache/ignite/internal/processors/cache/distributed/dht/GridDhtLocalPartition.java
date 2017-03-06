@@ -139,7 +139,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private volatile boolean shouldBeRenting;
 
     /** Set if partition must be re-created and preloaded after eviction. */
-    private boolean shouldBeMoving;
+    private boolean reload;
 
     /**
      * @param cctx Context.
@@ -626,17 +626,17 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     * @return {@code True} if partition should be set to moving after it is cleared.
+     * @return {@code True} if partition should be re-created after it is cleared.
      */
-    public boolean shouldBeMoving() {
-        return shouldBeMoving;
+    public boolean reload() {
+        return reload;
     }
 
     /**
-     * @param value {@code shouldBeMoving} flag value.
+     * @param value {@code reload} flag value.
      */
-    public void shouldBeMoving(boolean value) {
-        shouldBeMoving = value;
+    public void reload(boolean value) {
+        reload = value;
     }
 
     /**

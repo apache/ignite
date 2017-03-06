@@ -76,8 +76,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -227,6 +225,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private volatile Map<Integer, Map<Integer, Long>> partHistReserved;
+
+    private final Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new ConcurrentHashMap<>();
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -641,7 +641,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                 if (updateTop && clientTop != null)
-                    cacheCtx.topology().update(this, clientTop.partitionMap(true), clientTop.updateCounters(false));
+                    cacheCtx.topology().update(this, clientTop.partitionMap(true), clientTop.updateCounters(false), Collections.<Integer>emptySet());
             }
 
             top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
@@ -763,7 +763,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (top.cacheId() == cacheCtx.cacheId()) {
                                 cacheCtx.topology().update(this,
                                     top.partitionMap(true),
-                                    top.updateCounters(false));
+                                    top.updateCounters(false),
+                                    Collections.<Integer>emptySet());
 
                                 break;
                             }
@@ -1101,6 +1102,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             exchangeId(),
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
+            partsToReload,
             compress);
 
         if (exchangeOnChangeGlobalState && !F.isEmpty(changeGlobalStateExceptions))
@@ -1543,21 +1545,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         int entryLeft = maxCntrs.size();
 
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
-            int p = e.getKey();
-            long maxCntr = e.getValue().cnt;
-
-            entryLeft--;
-
-            if (entryLeft != 0 && maxCntr == 0)
-                continue;
-
-            top.setOwners(p, e.getValue().nodes, entryLeft == 0);
-        }
-
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.cacheId()) : null;
+
+        Set<Integer> haveHistory = new HashSet<>();
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -1586,6 +1578,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
 
+                    haveHistory.add(p);
+
                     continue;
                 }
             }
@@ -1605,8 +1599,42 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     nodeMap.put(new T2<>(top.cacheId(), p), minCntr);
 
+                    haveHistory.add(p);
+
                     break;
                 }
+            }
+        }
+
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
+            int p = e.getKey();
+            long maxCntr = e.getValue().cnt;
+
+            entryLeft--;
+
+            if (entryLeft != 0 && maxCntr == 0)
+                continue;
+
+            Set<UUID> nodesToReload = top.setOwners(p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
+
+            for (UUID nodeId : nodesToReload) {
+                Map<Integer, Set<Integer>> nodeMap = partsToReload.get(nodeId);
+
+                if (nodeMap == null) {
+                    nodeMap = new HashMap<>();
+
+                    partsToReload.put(nodeId, nodeMap);
+                }
+
+                Set<Integer> parts = nodeMap.get(top.cacheId());
+
+                if (parts == null) {
+                    parts = new HashSet<>();
+
+                    nodeMap.put(top.cacheId(), parts);
+                }
+
+                parts.add(e.getKey());
             }
         }
     }
@@ -1862,12 +1890,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             if (cacheCtx != null)
-                cacheCtx.topology().update(this, entry.getValue(), cntrMap);
+                cacheCtx.topology().update(this, entry.getValue(), cntrMap,
+                    msg.partsToReload(cctx.localNodeId(), cacheId));
             else {
                 ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldest != null && oldest.isLocal())
-                    cctx.exchange().clientTopology(cacheId, this).update(this, entry.getValue(), cntrMap);
+                    cctx.exchange().clientTopology(cacheId, this).update(this, entry.getValue(), cntrMap, Collections.<Integer>emptySet());
             }
         }
     }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 
 /**
  * Partition topology for node which does not have any local partitions.
@@ -557,7 +559,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionsExchangeFuture exchFut,
-        GridDhtPartitionFullMap partMap, Map<Integer, T2<Long, Long>> cntrMap) {
+        GridDhtPartitionFullMap partMap, Map<Integer, T2<Long, Long>> cntrMap, Set<Integer> partsToReload) {
 
         GridDhtPartitionExchangeId exchId = exchFut != null ? exchFut.exchangeId() : null;
 
@@ -918,7 +920,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void setOwners(int p, Set<UUID> owners, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
+        Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
+
         lock.writeLock().lock();
 
         try {
@@ -926,8 +930,15 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (!e.getValue().containsKey(p))
                     continue;
 
-                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
-                    e.getValue().put(p, MOVING);
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey())) {
+                    if (haveHistory)
+                        e.getValue().put(p, MOVING);
+                    else {
+                        e.getValue().put(p, RENTING);
+
+                        result.add(e.getKey());
+                    }
+                }
                 else if (owners.contains(e.getKey()))
                     e.getValue().put(p, OWNING);
             }
@@ -940,6 +951,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
+
+        return result;
     }
 
     /** {@inheritDoc} */
