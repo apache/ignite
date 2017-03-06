@@ -89,11 +89,11 @@ public class VectorViewTest {
     }
 
     /** */
-    @Test
+    @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void testLike() throws Exception {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
             consumeSampleVectors((v, desc) -> {
-                Vector vLike = new VectorView(v, 0, 0).like(card);
+                Vector vLike = new VectorView(v, 0, 1).like(card);
 
                 Class<? extends Vector> expType = v.getClass();
 
@@ -111,12 +111,12 @@ public class VectorViewTest {
     }
 
     /** See also {@link VectorToMatrixTest#testLikeMatrix()}. */
-    @Test
+    @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void testLikeMatrix() throws Exception {
         final Set<String> untested = new LinkedHashSet<>();
 
         consumeSampleVectors((v, desc) -> {
-            final Matrix matrix = new VectorView(v, 0, 0).likeMatrix(1, 1);
+            final Matrix matrix = new VectorView(v, 0, 1).likeMatrix(1, 1);
 
             if (matrix == null) {
                 untested.add(v.getClass().getSimpleName());

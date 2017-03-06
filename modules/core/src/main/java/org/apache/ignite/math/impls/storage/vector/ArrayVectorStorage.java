@@ -48,7 +48,7 @@ public class ArrayVectorStorage implements VectorStorage {
      * IMPL NOTE required by Externalizable
      */
     public ArrayVectorStorage() {
-        this(null);
+        // No-op.
     }
 
     /**

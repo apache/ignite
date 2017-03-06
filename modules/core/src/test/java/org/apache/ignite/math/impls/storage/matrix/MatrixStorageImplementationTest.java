@@ -40,13 +40,13 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
         final AtomicReference<Integer> expRowSize = new AtomicReference<>(0);
         final AtomicReference<Integer> expColSize = new AtomicReference<>(0);
 
-        consumeSampleVectors((x,y) -> {expRowSize.set(x); expColSize.set(y);},
+        consumeSampleStorages((x,y) -> {expRowSize.set(x); expColSize.set(y);},
             (ms, desc) -> assertTrue("Expected size for " + desc, expColSize.get().equals(ms.columnSize()) && expRowSize.get().equals(ms.rowSize())));
     }
 
     @Test
     public void getSetTest(){
-        consumeSampleVectors(null, (ms,desc) -> {
+        consumeSampleStorages(null, (ms,desc) -> {
             for (int i = 0; i < ms.rowSize(); i++) {
                 for (int j = 0; j < ms.columnSize(); j++) {
                     double random = Math.random();
@@ -59,19 +59,19 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
 
     @Test
     public void serializationTest(){
-        consumeSampleVectors(null, (ms, desc) -> {
+        consumeSampleStorages(null, (ms, desc) -> {
 
         });
     }
 
     /** */
-    private void consumeSampleVectors(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer) {
+    private void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer) {
         new MatrixStorageFixtures().consumeSampleStorages(paramsConsumer, consumer);
     }
 
     @Override
     public void externalizeTest() {
-        consumeSampleVectors(null, (ms, desc) -> {
+        consumeSampleStorages(null, (ms, desc) -> {
             externalizeTest(ms);
         });
     }

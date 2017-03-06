@@ -74,7 +74,7 @@ public abstract class AbstractVector implements Vector {
      */
     public AbstractVector(boolean readOnly, VectorStorage sto) {
         assert sto != null;
-        
+
         this.readOnly = readOnly;
         this.sto = sto;
     }
@@ -771,7 +771,7 @@ public abstract class AbstractVector implements Vector {
         else if (power == 2.0)
             return Math.sqrt(getLengthSquared());
         else if (power == 1.0)
-            return foldMap(Functions.PLUS, Functions.IDENTITY, 0d);
+            return foldMap(Functions.PLUS, Math::abs, 0d);
         else if (power == 0.0)
             return nonZeroElements();
         else

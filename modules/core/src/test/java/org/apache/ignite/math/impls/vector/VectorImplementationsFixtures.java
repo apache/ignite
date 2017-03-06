@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
 
 import java.util.*;
@@ -32,7 +33,7 @@ class VectorImplementationsFixtures {
     private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Vector>>) DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SparseLocalOnHeapVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new
     );
 
@@ -93,16 +94,17 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalOnHeapVectorFixture implements Iterable<Vector> {
+    private static class SparseLocalVectorFixture implements Iterable<Vector> {
         /** */
         private final Supplier<VectorSizesExtraIterator<Integer>> iter;
 
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
-        SparseLocalOnHeapVectorFixture() {
-            iter = () -> new VectorSizesExtraIterator<>("SparseLocalOnHeapVector", SparseLocalVector::new,
-                ctxDescrHolder::set, new Integer[] {0, 1, null});
+        SparseLocalVectorFixture() {
+            iter = () -> new VectorSizesExtraIterator<>("SparseLocalVector", SparseLocalVector::new,
+                ctxDescrHolder::set,
+                new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
 
         /** {@inheritDoc} */
@@ -221,7 +223,7 @@ class VectorImplementationsFixtures {
             assertEquals("Extra param tested", extraIdxs.size(), extras.length - 1);
 
             assertEquals("Combinations tested mismatch.",
-                8 * 3 * (extras.length - 1), cnt);
+                7 * 3 * (extras.length - 1), cnt);
         }
 
         /** */
@@ -232,7 +234,7 @@ class VectorImplementationsFixtures {
 
     /** */
     private static class VectorSizesIterator implements Iterator<Vector> {
-        /** */ private static final Integer sizes[] = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, null};
+        /** */ private static final Integer sizes[] = new Integer[] {2, 4, 8, 16, 32, 64, 128, null};
 
         /** */ private static final Integer deltas[] = new Integer[] {-1, 0, 1, null};
 

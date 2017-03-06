@@ -159,7 +159,7 @@ public class VectorImplementationsTest {
             final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
             for (int off = 0; off < size; off++)
-                for (int len = 0; len < size - off; len++)
+                for (int len = 1; len < size - off; len++)
                     checker.assertCloseEnough(v.viewPart(off, len), Arrays.copyOfRange(ref, off, off + len));
         });
     }
@@ -343,7 +343,7 @@ public class VectorImplementationsTest {
             double norm = 0;
 
             for (double val : arr)
-                norm += pow == 1 ? val : Math.pow(val, pow);
+                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
 
             return norm;
         }
@@ -486,7 +486,7 @@ public class VectorImplementationsTest {
 
         /** */
         boolean closeEnough() {
-            return closeEnoughToZero() || new Double(exp).equals(obtained);
+            return new Double(exp).equals(obtained) || closeEnoughToZero();
         }
 
         /** {@inheritDoc} */

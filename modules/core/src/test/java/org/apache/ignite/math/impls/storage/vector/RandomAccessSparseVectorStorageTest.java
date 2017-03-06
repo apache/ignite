@@ -54,7 +54,7 @@ public class RandomAccessSparseVectorStorageTest extends VectorBaseStorageTest<S
     /** */
     @Test
     public void getLookupCost() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.getLookupCost() == 1);
+        assertTrue(UNEXPECTED_VALUE, storage.getLookupCost() == 0);
     }
 
     /** */

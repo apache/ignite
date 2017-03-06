@@ -48,8 +48,8 @@ public class VectorToMatrixTest {
                 + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
                 expMatrixType.isAssignableFrom(actualMatrixType));
 
-            for (int rows : new int[] {0, 1, 2})
-                for (int cols : new int[] {0, 1, 2}) {
+            for (int rows : new int[] {1, 2})
+                for (int cols : new int[] {1, 2}) {
                     final Matrix actualMatrix = v.likeMatrix(rows, cols);
 
                     String details = "rows " + rows + " cols " + cols;
@@ -121,7 +121,7 @@ public class VectorToMatrixTest {
             for (int delta : new int[] {-1, 0, 1}) {
                 final int size2 = v.size() + delta;
 
-                if (size2 < 0)
+                if (size2 < 1)
                     return;
 
                 final Vector v2 = new DenseLocalOnHeapVector(size2);
@@ -203,7 +203,7 @@ public class VectorToMatrixTest {
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
-            put(SparseLocalVector.class, SparseLocalOnHeapMatrix.class);
+            put(SparseLocalVector.class, null);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture

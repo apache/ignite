@@ -60,7 +60,7 @@ public class DenseLocalOffHeapVectorTest {
     /** */
     @Test
     public void like() throws Exception {
-        Vector like = offHeapVector.like(0);
+        Vector like = offHeapVector.like(1);
 
         try {
             assertTrue(MathTestConstants.UNEXPECTED_VALUE, like.getClass() == DenseLocalOffHeapVector.class);

@@ -41,7 +41,7 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
      */
     public SparseLocalVector(int size, int acsMode) {
         assertAccessMode(acsMode);
-            
+
         setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
     }
 
@@ -71,11 +71,19 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
     public Vector like(int crd) {
         SparseLocalOnHeapVectorStorage sto = storage();
 
-        return new SparseLocalVector(sto.size(), sto.getAccessMode());
+        return new SparseLocalVector(crd, sto.getAccessMode());
     }
 
     @Override
     public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return super.times(x).assign(0);
+        else
+            return super.times(x);
     }
 }

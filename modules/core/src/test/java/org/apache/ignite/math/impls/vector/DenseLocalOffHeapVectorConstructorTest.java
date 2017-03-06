@@ -97,24 +97,30 @@ public class DenseLocalOffHeapVectorConstructorTest {
             }}).size());
     }
 
-    /** */ @Test(expected = IllegalArgumentException.class)
+    /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector(-1).size());
     }
 
-    /** */ @Test(expected = AssertionError.class)
+    /** */ @Test(expected = NullPointerException.class)
     public void nullArrayTest() {
         assertEquals("Null array.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector((double[])null).size());
     }
 
+    /** */ @Test(expected = AssertionError.class)
+    public void zeroSizeTest() {
+        assertEquals("0 size.", IMPOSSIBLE_SIZE,
+            new DenseLocalOffHeapVector(new double[0]).size());
+    }
+
     /** */ @Test
     public void primitiveTest() {
-        assertEquals("0 size.", 0,
-            new DenseLocalOffHeapVector(new double[0]).size());
-
         assertEquals("1 size.", 1,
             new DenseLocalOffHeapVector(new double[1]).size());
+
+        assertEquals("2 size.", 2,
+            new DenseLocalOffHeapVector(new double[2]).size());
     }
 }
