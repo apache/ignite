@@ -25,6 +25,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.ignite.math.MatrixStorage;
 
+import static org.apache.ignite.math.StorageConstants.*;
+
 /**
  *
  */
@@ -53,21 +55,25 @@ class MatrixStorageFixtures {
     private static class SparseLocalMatrixStorageFixture implements Iterable<MatrixStorage>{
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private final Integer[] randomAccess = new Integer[] {0, 1, null};
+        private final Integer[] randomAccess = new Integer[] {SEQUENTIAL_ACCESS_MODE, RANDOM_ACCESS_MODE, null};
+        private final Integer[] rowStorage = new Integer[] {ROW_STORAGE_MODE, COLUMN_STORAGE_MODE, null};
         private int sizeIdx = 0;
-        private int modeIdx = 0;
+        private int acsModeIdx = 0;
+        private int stoModeIdx = 0;
 
         @Override public Iterator<MatrixStorage> iterator() {
             return new Iterator<MatrixStorage>() {
                 @Override public boolean hasNext() {
-                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx) && hasNextMode(modeIdx);
+                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx)
+                        && hasNextAcsMode(acsModeIdx) && hasNextStoMode(stoModeIdx);
                 }
 
                 @Override public MatrixStorage next() {
                     if (!hasNext())
                         throw new NoSuchElementException(SparseLocalMatrixStorageFixture.this.toString());
 
-                    MatrixStorage storage = null; // new SparseLocalOnHeapMatrixStorage(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
+                    MatrixStorage storage = new SparseLocalOnHeapMatrixStorage(
+                        rows[sizeIdx], cols[sizeIdx], randomAccess[acsModeIdx], rowStorage[stoModeIdx]);
 
                     nextIdx();
 
@@ -75,21 +81,29 @@ class MatrixStorageFixtures {
                 }
 
                 private void nextIdx(){
-                    if (hasNextMode(modeIdx + 1)){
-                        modeIdx++;
+                    if (hasNextStoMode(stoModeIdx + 1)){
+                        stoModeIdx++;
 
                         return;
                     }
 
-                    modeIdx = 0;
+                    stoModeIdx = 0;
+
+                    if (hasNextAcsMode(acsModeIdx + 1)){
+                        acsModeIdx++;
+
+                        return;
+                    }
+
+                    acsModeIdx = 0;
                     sizeIdx++;
                 }
             };
         }
 
         @Override public String toString() {
-            return "SparseLocalMatrixStorageFixture{ " + "rows=" + rows[sizeIdx] + " ,cols=" + cols[sizeIdx] +
-                " ,mode=" + randomAccess[modeIdx] + "}";
+            return "SparseLocalMatrixStorageFixture{ " + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] +
+                ", access mode=" + randomAccess[acsModeIdx] + ", storage mode=" + rowStorage[stoModeIdx] + "}";
         }
 
         private boolean hasNextRow(int idx){
@@ -100,8 +114,12 @@ class MatrixStorageFixtures {
             return cols[idx] != null;
         }
 
-        private boolean hasNextMode(int idx){
+        private boolean hasNextAcsMode(int idx){
             return randomAccess[idx] != null;
+        }
+
+        private boolean hasNextStoMode(int idx){
+            return rowStorage[idx] != null;
         }
     }
 }
