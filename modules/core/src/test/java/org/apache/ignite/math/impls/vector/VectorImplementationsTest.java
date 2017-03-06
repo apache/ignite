@@ -343,7 +343,7 @@ public class VectorImplementationsTest {
             double norm = 0;
 
             for (double val : arr)
-                norm += pow == 1 ? val : Math.pow(val, pow); // todo check if pow 1 should accumulate abs values
+                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
 
             return norm;
         }
