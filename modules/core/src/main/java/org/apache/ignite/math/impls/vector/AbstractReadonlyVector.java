@@ -5,9 +5,6 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
 import org.apache.ignite.math.impls.matrix.FunctionMatrix;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
 
