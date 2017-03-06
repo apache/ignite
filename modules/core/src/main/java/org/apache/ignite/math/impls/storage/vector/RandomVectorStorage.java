@@ -34,6 +34,11 @@ public class RandomVectorStorage implements VectorStorage {
     private int size;
     private boolean fastHash;
 
+    /** */
+    public RandomVectorStorage(){
+        // No-op.
+    }
+
     /**
      *
      * @param size Size of the storage.
@@ -109,5 +114,29 @@ public class RandomVectorStorage implements VectorStorage {
     @Override
     public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + Boolean.hashCode(fastHash);
+        result = result * 37 + seed;
+        result = result * 37 + size;
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RandomVectorStorage that = (RandomVectorStorage) o;
+
+        return size == that.size && seed == that.seed && fastHash == that.fastHash;
     }
 }

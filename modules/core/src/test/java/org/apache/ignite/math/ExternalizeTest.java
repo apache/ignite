@@ -41,14 +41,12 @@ public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
         T objRestored = null;
 
         try {
-            ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();//STORAGE_SIZE * Double.BYTES);
-
+            ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
             ObjectOutputStream objOutputStream = new ObjectOutputStream(byteArrOutputStream);
 
             objOutputStream.writeObject(initObj);
 
             ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
-
             ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
 
             objRestored = (T) objInputStream.readObject();
@@ -57,9 +55,8 @@ public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
         } catch (ClassNotFoundException | IOException e) {
             fail(e.getMessage());
         } finally {
-            if (objRestored != null){
+            if (objRestored != null)
                 objRestored.destroy();
-            }
         }
     }
 

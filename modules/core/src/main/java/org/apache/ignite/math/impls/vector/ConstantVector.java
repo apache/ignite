@@ -23,6 +23,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.ConstantVectorStorage;
 
 import java.util.*;
+import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
 
 /**
  * Constant value, read-only vector.
@@ -79,5 +80,18 @@ public class ConstantVector extends AbstractReadonlyVector {
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ConstantVector that = (ConstantVector) o;
+
+        return getStorage().equals(that.getStorage());
     }
 }

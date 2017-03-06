@@ -43,7 +43,6 @@ import org.junit.runners.Suite;
     // Common vectors tests.
     AbstractVectorTest.class,
     VectorImplementationsTest.class,
-    DenseLocalOffHeapVectorTest.class,
     VectorViewTest.class,
     // Vector utils tests.
     VectorIterableTest.class,

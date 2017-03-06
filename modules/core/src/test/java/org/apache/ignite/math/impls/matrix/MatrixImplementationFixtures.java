@@ -31,7 +31,8 @@ public class MatrixImplementationFixtures {
     /** */
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Matrix>>)SparseLocalMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)SparseLocalOffHeapMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)SparseLocalOffHeapMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new
     );
 
     /** */
@@ -135,6 +136,47 @@ public class MatrixImplementationFixtures {
 
         @Override public String toString() {
             return "SparseLocalRowMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + "}";
+        }
+
+        private boolean hasNextRow(int idx){
+            return rows[idx] != null;
+        }
+
+        private boolean hasNextCol(int idx){
+            return cols[idx] != null;
+        }
+    }
+
+    private static class DenseLocalOnHeapMatrixFixture implements Iterable<Matrix>{
+        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
+        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
+        private int sizeIdx = 0;
+
+        @Override public Iterator<Matrix> iterator() {
+            return new Iterator<Matrix>() {
+                @Override public boolean hasNext() {
+                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
+                }
+
+                @Override public Matrix next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException(MatrixImplementationFixtures.DenseLocalOnHeapMatrixFixture.this.toString());
+
+                    Matrix storage = new DenseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
+
+                    nextIdx();
+
+                    return storage;
+                }
+
+                private void nextIdx(){
+                    sizeIdx++;
+                }
+            };
+        }
+
+        @Override public String toString() {
+            return "DenseLocalOnHeapMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
         }
 
         private boolean hasNextRow(int idx){

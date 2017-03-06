@@ -102,4 +102,27 @@ public class RandomVector extends AbstractReadonlyVector {
 
         fastHash = in.readBoolean();
     }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + Boolean.hashCode(fastHash);
+        result = result * 37 + getStorage().hashCode();
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RandomVector that = (RandomVector) o;
+
+        return fastHash == that.fastHash && getStorage().equals(that.getStorage());
+    }
 }

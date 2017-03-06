@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.storage.vector;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import java.io.*;
+import org.apache.ignite.math.impls.vector.RandomVector;
 
 /**
  * Constant read-only vector storage.
@@ -72,8 +73,8 @@ public class ConstantVectorStorage implements VectorStorage {
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(size);
-        out.writeObject(val);
+        out.writeInt(size);
+        out.writeDouble(val);
     }
 
     @Override
@@ -105,5 +106,28 @@ public class ConstantVectorStorage implements VectorStorage {
     @Override
     public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + size;
+        result = result * 37 + Double.hashCode(val);
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ConstantVectorStorage that = (ConstantVectorStorage) o;
+
+        return size == that.size && val == that.val;
     }
 }
