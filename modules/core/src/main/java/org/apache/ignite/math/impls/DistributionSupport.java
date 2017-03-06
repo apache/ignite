@@ -29,6 +29,42 @@ import java.util.function.*;
  */
 public class DistributionSupport {
     /**
+     *
+     * @param <K>
+     * @param <V>
+     */
+    public static class CacheEntry<K, V> {
+        private Cache.Entry<K, V> entry;
+        private IgniteCache<K, V> cache;
+
+        /**
+         *
+         * @param entry
+         * @param cache
+         */
+        CacheEntry(Cache.Entry<K, V> entry, IgniteCache<K, V> cache) {
+            this.entry = entry;
+            this.cache = cache;
+        }
+
+        /**
+         *
+         * @return
+         */
+        public Cache.Entry<K, V> entry() {
+            return entry;
+        }
+
+        /**
+         *
+         * @return
+         */
+        public IgniteCache<K, V> cache() {
+            return cache;
+        }
+    }
+
+    /**
      * Gets local Ignite instance.
      */
     protected Ignite ignite() {
@@ -51,9 +87,7 @@ public class DistributionSupport {
      * @param <K>
      * @param <V>
      */
-    protected <K, V> void iterateOverEntries(
-        String cacheName,
-        BiConsumer<Cache.Entry<K, V>, IgniteCache<K, V>> clo) {
+    protected <K, V> void iterateOverEntries(String cacheName, Consumer<CacheEntry<K, V>> clo) {
         int partsCnt = ignite().affinity(cacheName).partitions();
 
         broadcastForCache(cacheName, () -> {
@@ -64,7 +98,7 @@ public class DistributionSupport {
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
                 for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part))) 
-                    clo.accept(entry, cache);
+                    clo.accept(new CacheEntry<K, V>(entry, cache));
         });
     }
 
@@ -77,5 +111,33 @@ public class DistributionSupport {
      */
     protected <A> Collection<A> broadcastForCache(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @param folder
+     * @param <K>
+     * @param <V>
+     * @param <A>
+     * @return
+     */
+    protected <K, V, A> Collection<A> foldForCache(String cacheName, BiFunction<CacheEntry<K, V>, A, A> folder) {
+        return broadcastForCache(cacheName, () -> {
+            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+
+            int partsCnt = ignite().affinity(cacheName).partitions();
+
+            A a = null;
+
+            // Iterate over all partitions. Some of them will be stored on that local node.
+            for (int part = 0; part < partsCnt; part++)
+                // Iterate over given partition.
+                // Query returns an empty cursor if this partition is not stored on this node.
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part)))
+                    a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
+
+            return a;
+        });
     }
 }

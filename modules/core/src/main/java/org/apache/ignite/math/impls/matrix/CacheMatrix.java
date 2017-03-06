@@ -22,8 +22,8 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.matrix.*;
-import javax.cache.*;
 import java.util.*;
+import java.util.function.*;
 
 /**
  * Matrix based on existing cache and key and value mapping functions.
@@ -113,20 +113,72 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     }
 
     @Override
+    public Matrix divide(double d) {
+        return mapOverValues((Double v) -> v / d);
+    }
+
+    @Override
+    public Matrix plus(double x) {
+        return mapOverValues((Double v) -> v + x);
+    }
+
+    @Override
+    public Matrix times(double x) {
+        return mapOverValues((Double v) -> v * x);
+    }
+
+
+    @Override
     public Matrix assign(double val) {
+        return mapOverValues((Double v) -> val);
+    }
+
+    @Override
+    public Matrix map(DoubleFunction<Double> fun) {
+        return mapOverValues(fun::apply);
+    }
+
+    @Override
+    public double sum() {
+        CacheMatrixStorage<K, V> sto = storage();
+
+        // Gets these values assigned to a local vars so that
+        // they will be available in the closure.
+        ValueMapper<V> valMapper = sto.valueMapper();
+        KeyMapper<K> keyMapper = sto.keyMapper();
+
+        Collection<Double> subSums = foldForCache(sto.cache().getName(), (CacheEntry<K, V> ce, Double acc) -> {
+            if (keyMapper.isValid(ce.entry().getKey())) {
+                double v = valMapper.toDouble(ce.entry().getValue());
+
+                return acc == null ? v : acc + v;
+            }
+            else
+              return acc;
+        });
+
+        double sum = 0.0;
+
+        for (double d : subSums)
+            sum += d;
+
+        return sum;
+    }
+
+    private Matrix mapOverValues(Function<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();
 
         // Gets these values assigned to a local vars so that
         // they will be available in the closure.
         KeyMapper<K> keyMapper = sto.keyMapper();
-        V newVal = sto.valueMapper().fromDouble(val);
+        ValueMapper<V> valMapper = sto.valueMapper();
 
-        iterateOverEntries(sto.cache().getName(), (Cache.Entry<K, V> entry, IgniteCache<K, V> cache) -> {
-            K k = entry.getKey();
+        iterateOverEntries(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
 
             if (keyMapper.isValid(k))
                 // Actual assignment.
-                cache.put(k, newVal);
+                ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
         });
 
         return this;
