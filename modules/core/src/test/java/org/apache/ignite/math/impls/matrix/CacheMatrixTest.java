@@ -67,7 +67,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testGetSet() throws Exception {
-
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
@@ -102,5 +101,4 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
             }
         }
     }
-
 }

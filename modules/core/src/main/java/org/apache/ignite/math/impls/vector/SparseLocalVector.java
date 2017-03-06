@@ -82,7 +82,7 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
     /** {@inheritDoc} */
     @Override public Vector times(double x) {
         if (x == 0.0)
-            return super.times(x).assign(0);
+            return assign(0);
         else
             return super.times(x);
     }
