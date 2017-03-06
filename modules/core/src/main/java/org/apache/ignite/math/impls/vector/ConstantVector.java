@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Constant value, read-only vector.
  */
-public class ConstantVector extends AbstractVector {
+public class ConstantVector extends AbstractReadonlyVector {
     /**
      *
      */

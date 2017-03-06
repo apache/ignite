@@ -35,6 +35,7 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) DenseLocalOffHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
+        (Supplier<Iterable<Vector>>) ConstantVectorFixture::new
         (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new
     );
 
@@ -62,27 +63,12 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class DenseLocalOnHeapVectorFixture implements Iterable<Vector> {
-        /** */ private final Supplier<VectorSizesExtraIterator<Boolean>> iter;
-
-        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
-
+    private static class DenseLocalOnHeapVectorFixture extends VectorSizesExtraFixture<Boolean> {
         /** */
         DenseLocalOnHeapVectorFixture() {
-            iter = () -> new VectorSizesExtraIterator<>("DenseLocalOnHeapVector",
+            super("DenseLocalOnHeapVector",
                 (size, shallowCp) -> new DenseLocalOnHeapVector(new double[size], shallowCp),
-                ctxDescrHolder::set, new Boolean[] {false, true, null});
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<Vector> iterator() {
-            return iter.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return ctxDescrHolder.get();
+                new Boolean[] {false, true, null});
         }
     }
 
@@ -95,17 +81,41 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class SparseLocalVectorFixture implements Iterable<Vector> {
+    private static class SparseLocalVectorFixture  extends VectorSizesExtraFixture<Integer> {
         /** */
-        private final Supplier<VectorSizesExtraIterator<Integer>> iter;
+        SparseLocalVectorFixture() {
+            super("SparseLocalVector", SparseLocalVector::new,
+                new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
+        }
+    }
+
+    /** */
+    private static class RandomVectorFixture extends VectorSizesFixture {
+        /** */
+        RandomVectorFixture() {
+            super("RandomVector", RandomVector::new);
+        }
+    }
+
+    /** */
+    private static class ConstantVectorFixture extends VectorSizesExtraFixture<Double> {
+        /** */
+        ConstantVectorFixture() {
+            super("ConstantVector", ConstantVector::new, new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null});
+        }
+    }
+
+
+    /** */
+    private static class VectorSizesExtraFixture<T> implements Iterable<Vector> {
+        /** */
+        private final Supplier<VectorSizesExtraIterator<T>> iter;
 
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
-        SparseLocalVectorFixture() {
-            iter = () -> new VectorSizesExtraIterator<>("SparseLocalVector", SparseLocalVector::new,
-                ctxDescrHolder::set,
-                new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
+        VectorSizesExtraFixture(String vectorKind, BiFunction<Integer, T, Vector> ctor, T[] extras) {
+            iter = () -> new VectorSizesExtraIterator<>(vectorKind, ctor, ctxDescrHolder::set, extras);
         }
 
         /** {@inheritDoc} */
@@ -117,14 +127,6 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
-        }
-    }
-
-    /** */
-    private static class RandomVectorFixture extends VectorSizesFixture {
-        /** */
-        RandomVectorFixture() {
-            super("RandomVector", RandomVector::new);
         }
     }
 
