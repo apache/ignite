@@ -89,7 +89,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 double v = Math.random();
-                cacheMatrix.set(i ,j ,v);
+                cacheMatrix.set(i, j, v);
 
                 assert Double.compare(v, cacheMatrix.get(i, j)) == 0;
                 assert Double.compare(v, cache.get(keyMapper.apply(i, j))) == 0;
