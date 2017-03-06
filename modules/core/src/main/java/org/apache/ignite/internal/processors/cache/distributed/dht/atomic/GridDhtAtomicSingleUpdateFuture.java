@@ -67,7 +67,11 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
         GridNearAtomicAbstractUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
-        super(cctx, completionCb, writeVer, updateReq, updateRes);
+        super(cctx,
+            completionCb,
+            writeVer,
+            updateReq,
+            updateRes);
     }
 
     /** {@inheritDoc} */

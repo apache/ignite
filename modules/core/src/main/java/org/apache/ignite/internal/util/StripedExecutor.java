@@ -125,11 +125,11 @@ public class StripedExecutor implements ExecutorService {
 
                 GridStringBuilder sb = new GridStringBuilder();
 
-                sb.a(">>> Possible starvation in striped pool: ")
-                    .a(stripe.thread.getName()).a(U.nl())
-                    .a(stripe.queueToString()).a(U.nl())
-                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("completed: ").a(completedCnt).a(U.nl());
+                sb.a(">>> Possible starvation in striped pool.").a(U.nl())
+                    .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
+                    .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
+                    .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
+                    .a("    Completed: ").a(completedCnt).a(U.nl());
 
                 U.printStackTrace(
                     stripe.thread.getId(),

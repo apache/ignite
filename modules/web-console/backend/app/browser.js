@@ -175,6 +175,34 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Collect running queries from all nodes in grid.
+                socket.on('node:query:running', (duration, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCollectRunning(demo, duration))
+                        .then((data) => {
+
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Cancel running query by query id on node.
+                socket.on('node:query:cancel', (nid, queryId, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCancel(demo, nid, queryId))
+                        .then((data) => {
+
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 // Return cache metadata from all nodes in grid.
                 socket.on('node:cache:metadata', (cacheName, cb) => {
                     agentMgr.findAgent(accountId())

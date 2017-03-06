@@ -18,6 +18,7 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
@@ -47,6 +48,9 @@ public class IgniteThread extends Thread {
 
     /** Group index. */
     private final int grpIdx;
+
+    /** */
+    private int compositeRwLockIdx;
 
     /**
      * Creates thread with given worker.
@@ -93,8 +97,10 @@ public class IgniteThread extends Thread {
     public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r, int grpIdx) {
         super(grp, r, createName(cntr.incrementAndGet(), threadName, gridName));
 
+        A.ensure(grpIdx >= -1, "grpIdx >= -1");
+
         this.gridName = gridName;
-        this.grpIdx = grpIdx;
+        this.grpIdx = compositeRwLockIdx = grpIdx;
     }
 
     /**
@@ -106,7 +112,7 @@ public class IgniteThread extends Thread {
         super(threadGrp, threadName);
 
         this.gridName = gridName;
-        this.grpIdx = GRP_IDX_UNASSIGNED;
+        this.grpIdx = compositeRwLockIdx = GRP_IDX_UNASSIGNED;
     }
 
     /**
@@ -123,6 +129,20 @@ public class IgniteThread extends Thread {
      */
     public int groupIndex() {
         return grpIdx;
+    }
+
+    /**
+     * @return Composite RW lock index.
+     */
+    public int compositeRwLockIndex() {
+        return compositeRwLockIdx;
+    }
+
+    /**
+     * @param compositeRwLockIdx Composite RW lock index.
+     */
+    public void compositeRwLockIndex(int compositeRwLockIdx) {
+        this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
     /**

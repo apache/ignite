@@ -33,13 +33,6 @@ module.exports.factory = function(express, activitiesService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
-        // Get user activities.
-        router.get('/user/:userId', (req, res) => {
-            activitiesService.listByUser(req.params.userId, req.query)
-                .then(res.api.ok)
-                .catch(res.api.error);
-        });
-
         // Post user activities to page.
         router.post('/page', (req, res) => {
             activitiesService.merge(req.user._id, req.body)

@@ -360,6 +360,25 @@ namespace ignite
                     const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
                     const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
 
+                /**
+                 * Executes LocalLoadCache on all cache nodes.
+                 *
+                 * @param err Error.
+                 */
+                void LoadCache(IgniteError& err);
+
+                /**
+                 * Loads state from the underlying persistent storage.
+                 *
+                 * This method is not transactional and may end up loading a stale value into
+                 * cache if another thread has updated the value immediately after it has been
+                 * loaded. It is mostly useful when pre-loading the cache from underlying
+                 * data store before start, or for read-only caches.
+                 *
+                 * @param err Error.
+                 */
+                void LocalLoadCache(IgniteError& err);
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
 
