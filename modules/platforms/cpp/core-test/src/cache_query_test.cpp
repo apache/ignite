@@ -1672,6 +1672,46 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimeEqual)
 }
 
 /**
+ * Test query for Time type.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryTimeEqual)
+{
+    // Test simple query.
+    Cache<int, Time> cache = grid.GetOrCreateCache<int, Time>("TimeCache");
+
+    // Test query with field of type 'Timestamp'.
+    SqlFieldsQuery qry("select _key from Time where _val='04:11:02'");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        int secs = i % 60;
+        int mins = i / 60;
+        cache.Put(i, MakeTimeGmt(4, mins, secs));
+    }
+
+    cursor = cache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int key = row.GetNext<int>();
+
+    BOOST_CHECK(key == 662);
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
  * Test fields query with several pages.
  */
 BOOST_AUTO_TEST_CASE(TestFieldsQueryPagesSeveral)
