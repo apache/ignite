@@ -17,85 +17,92 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.IntDoubleToVoidFunction;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.IntToDoubleFunction;
 
 import static org.junit.Assert.assertEquals;
 
 /** */
-public class ConstantVectorConstructorTest {
+public class FunctionVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new ConstantVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
+            new FunctionVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("size", 1);
+            put("size",  1);
             put("paramMissing", "whatever");
         }};
 
         assertEquals("Expect exception due to missing args.",
-            IMPOSSIBLE_SIZE, new ConstantVector(test).size());
+            -1, new FunctionVector(test).size());
     }
 
     /** */ @Test(expected = ClassCastException.class)
     public void mapInvalidParamTypeTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("size", "whatever");
-            put("value", 1.0);
+
+            put("getFunc", (IntToDoubleFunction) i -> i);
         }};
 
         assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
-            new ConstantVector(test).size());
+            new FunctionVector(test).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
         //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new ConstantVector(null).size());
+            new FunctionVector(null).size());
     }
 
     /** */ @Test
     public void mapTest() {
-        assertEquals("Size from args, value 0.", 99,
-            new ConstantVector(new HashMap<String, Object>(){{
+        assertEquals("Size from args.", 99,
+            new FunctionVector(new HashMap<String, Object>(){{
                 put("size", 99);
-                put("value", 0.0);
+
+                put("getFunc", (IntToDoubleFunction) i -> i);
             }}).size());
 
-        assertEquals("Size from array in args, shallow copy.", 99,
-            new ConstantVector(new HashMap<String, Object>(){{
+        assertEquals("Size from args with setFunc.", 99,
+            new FunctionVector(new HashMap<String, Object>(){{
                 put("size", 99);
-                put("value", 1.0);
+
+                put("getFunc", (IntToDoubleFunction) i -> i);
+
+                put("setFunc", (IntDoubleToVoidFunction) (integer, aDouble) -> { });
             }}).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
-            new ConstantVector(-1, 1).size());
+            new FunctionVector(-1, (i) -> i).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
-        assertEquals("Zero size.", IMPOSSIBLE_SIZE,
-            new ConstantVector(0, 1).size());
+        assertEquals("0 size.", IMPOSSIBLE_SIZE,
+            new FunctionVector(0, (i) -> i).size());
     }
 
     /** */ @Test
     public void primitiveTest() {
         assertEquals("1 size.", 1,
-            new ConstantVector(1, 1).size());
+            new FunctionVector(1, (i) -> i).size());
 
         assertEquals("2 size.", 2,
-            new ConstantVector(2, 1).size());
+            new FunctionVector(2, (i) -> i).size());
     }
 }

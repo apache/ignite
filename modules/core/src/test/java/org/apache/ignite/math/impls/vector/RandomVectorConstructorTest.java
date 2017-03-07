@@ -37,36 +37,21 @@ public class RandomVectorConstructorTest {
     /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr",  new double[0]);
-
-            put("shallowCopyMissing", "whatever");
+            put("paramMissing", "whatever");
         }};
 
         assertEquals("Expect exception due to missing args.",
             -1, new RandomVector(test).size());
     }
 
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
-    public void mapInvalidArrTypeTest() {
+    /** */ @Test(expected = ClassCastException.class)
+    public void mapInvalidParamTypeTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr", new int[0]);
-
-            put("shallowCopy", true);
+            put("size", "whatever");
+            put("fastHash", true);
         }};
 
-        assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
-            new RandomVector(test).size());
-    }
-
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
-    public void mapInvalidCopyTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr", new double[0]);
-
-            put("shallowCopy", 0);
-        }};
-
-        assertEquals("Expect exception due to invalid copy type.", IMPOSSIBLE_SIZE,
+        assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
             new RandomVector(test).size());
     }
 

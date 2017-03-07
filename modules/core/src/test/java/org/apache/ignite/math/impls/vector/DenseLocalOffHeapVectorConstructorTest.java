@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -39,40 +38,26 @@ public class DenseLocalOffHeapVectorConstructorTest {
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("arr",  new double[0]);
-
-            put("shallowCopyMissing", "whatever");
+            put("paramMissing", "whatever");
         }};
 
         assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector(test).size());
     }
 
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
-    public void mapInvalidArrTypeTest() {
+    /** */ @Test(expected = ClassCastException.class)
+    public void mapInvalidParamTypeTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr", new int[0]);
-
-            put("shallowCopy", true);
+            put("size", "whatever");
         }};
 
-        assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector(test).size());
-    }
-
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
-    public void mapInvalidCopyTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr", new double[0]);
-
-            put("shallowCopy", 0);
-        }};
-
-        assertEquals("Expect exception due to invalid copy type.", IMPOSSIBLE_SIZE,
+        assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector(test).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void mapNullTest() {
+        //noinspection ConstantConditions
         assertEquals("Null map args.", IMPOSSIBLE_SIZE,
             new DenseLocalOffHeapVector((Map<String, Object>)null).size());
     }
@@ -90,7 +75,7 @@ public class DenseLocalOffHeapVectorConstructorTest {
                 put("copy", false);
             }}).size());
 
-        assertEquals("Size from array in args, shallow copy.", test.length,
+        assertEquals("Size from array in args, with copy.", test.length,
             new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
                 put("arr", test);
                 put("copy", true);

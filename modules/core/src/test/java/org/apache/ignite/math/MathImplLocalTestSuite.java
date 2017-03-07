@@ -40,6 +40,7 @@ import org.junit.runners.Suite;
     SparseLocalVectorConstructorTest.class,
     RandomVectorConstructorTest.class,
     ConstantVectorConstructorTest.class,
+    FunctionVectorConstructorTest.class,
     // Common vectors tests.
     AbstractVectorTest.class,
     VectorImplementationsTest.class,
