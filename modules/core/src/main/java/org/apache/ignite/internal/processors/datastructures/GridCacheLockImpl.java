@@ -522,16 +522,11 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
 
-                                GridCacheLockState val = lockView.get(key);
+                                GridCacheLockState val = getCacheLockState();
 
                                 if (val == null)
-                                    if (reCreate) {
-                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
-                                        lockView.put(key, val);
-                                        log.info("New state for lock " + key + " was created: " + val);
-                                    } else
-                                        throw new IgniteCheckedException("Failed to find reentrant lock with given name: " +
-                                            name);
+                                    throw new IgniteCheckedException("Failed to find reentrant lock with given name: " +
+                                        name);
 
                                 final long newThreadID = newThread.getId();
 
@@ -614,7 +609,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheLockState val = lockView.get(key);
+                                GridCacheLockState val = getCacheLockState();
 
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
@@ -711,7 +706,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheLockState val = lockView.get(key);
+                                GridCacheLockState val = getCacheLockState();
 
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
@@ -1089,19 +1084,13 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     retryTopologySafe(new Callable<Sync>() {
                         @Override public Sync call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheLockState val = lockView.get(key);
+                                GridCacheLockState val = getCacheLockState();
 
                                 if (val == null) {
-                                    if (reCreate) {
-                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, isFailoverSafe(), isFair());
-                                        lockView.put(key, val);
-                                        log.info("New state for lock " + key + " was created: " + val);
-                                    } else {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Failed to find reentrant lock with given name: " + name);
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to find reentrant lock with given name: " + name);
 
-                                        return null;
-                                    }
+                                    return null;
                                 }
 
                                 tx.rollback();
@@ -1552,5 +1541,21 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLockImpl.class, this);
+    }
+
+    /**
+     * Returns cache lock state. If state is not exists and reCreate is true - creates state for key
+     *
+     * @return Cache lock state for key.
+     */
+    GridCacheLockState getCacheLockState() throws IgniteCheckedException {
+        GridCacheLockState val = lockView.get(key);
+
+        if (val == null && reCreate) {
+            val = new GridCacheLockState(0, ctx.nodeId(), 0, isFailoverSafe(), isFair());
+            lockView.put(key, val);
+            log.info("New state for lock " + key + " was created: " + val);
+        }
+        return  val;
     }
 }
