@@ -1479,7 +1479,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         while (true) {
             try {
-                Collection<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
+                List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -1706,22 +1706,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     }
 
                     nearMapping.evictReaders(res.nearEvicted());
-                }
-
-                // Process invalid partitions (no need to remap).
-                // Keep this loop for backward compatibility.
-                if (!F.isEmpty(res.invalidPartitions())) {
-                    for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
-                        IgniteTxEntry entry  = it.next();
-
-                        if (res.invalidPartitions().contains(entry.cached().partition())) {
-                            it.remove();
-
-                            if (log.isDebugEnabled())
-                                log.debug("Removed mapping for entry from dht mapping [key=" + entry.key() +
-                                    ", tx=" + tx + ", dhtMapping=" + dhtMapping + ']');
-                        }
-                    }
                 }
 
                 // Process invalid partitions (no need to remap).
