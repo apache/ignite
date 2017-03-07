@@ -242,7 +242,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
      *
      * @return Topology version.
      */
-    private AffinityTopologyVersion topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return cctx.affinity().affinityTopologyVersion();
     }
 }

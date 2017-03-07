@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.util.Collection;
 import java.util.Iterator;
 
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.testframework.assertions.Assertion;
 
 /**
@@ -61,6 +63,7 @@ public class CacheNodeSafeAssertion implements Assertion {
 
         int partCnt = affinity.partitions();
 
+        System.out.format("***SF Starting CacheNodeSafeAssertion, partCnt: %d\n", partCnt);
         boolean hostSafe = true;
 
         boolean nodeSafe = true;
@@ -69,6 +72,7 @@ public class CacheNodeSafeAssertion implements Assertion {
             // Results are returned with the primary node first and backups after. We want to ensure that there is at
             // least one backup on a different host.
             Collection<ClusterNode> results = affinity.mapPartitionToPrimaryAndBackups(x);
+            System.out.format("***SF [p%d] [ver=%s] Nodes: %s\n", x, ((GridCacheAffinityImpl) affinity).topologyVersion(), results.stream().map(ClusterNode::id).collect(Collectors.toList()));
 
             Iterator<ClusterNode> nodes = results.iterator();
 
@@ -83,9 +87,15 @@ public class CacheNodeSafeAssertion implements Assertion {
                 // backups is on a different host. For node safety, make sure at least of of the backups is not the
                 // primary.
                 Collection<ClusterNode> neighbors = hostSafe ? ignite.cluster().forHost(primary).nodes() : null;
+                System.out.format("***SF      Primary: %s\n" +
+                                  "***SF          Neighbors: %s, hostSafe=%s, nodeSafe=%s\n",
+                        primary.id(),
+                        neighbors == null ? "[]" : neighbors.stream().map(ClusterNode::id).collect(Collectors.toList()),
+                        hostSafe, nodeSafe);
 
                 while (nodes.hasNext()) {
                     ClusterNode backup = nodes.next();
+                    System.out.format("***SF              Backup: %s\n", backup.id());
 
                     if (hostSafe) {
                         if (!neighbors.contains(backup))
@@ -107,11 +117,15 @@ public class CacheNodeSafeAssertion implements Assertion {
                 break;
         }
 
-        if (hostSafe)
+        if (hostSafe) {
+            System.out.format("***SF Ending CacheNodeSafeAssertion: HostSafe\n");
             return;
+        }
 
-        if (nodeSafe)
+        if (nodeSafe) {
+            System.out.format("***SF Ending CacheNodeSafeAssertion: NodeSafe\n");
             return;
+        }
 
         throw new AssertionError("Cache " + cacheName + " is endangered!");
     }
