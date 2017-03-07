@@ -126,6 +126,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * (a.k.a. affinity co-location). The data of the partition where affKey is stored
      * will not be migrated from the target node while the job is executed.
      *
+     * It's guaranteed that the partition, which the affinity key belongs to, will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
+     *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
@@ -139,6 +143,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * (a.k.a. affinity co-location). The data of the partition where affKey is stored
      * will not be migrated from the target node while the job is executed. The data
      * of the extra caches' partitions with the same partition number also will not be migrated.
+     *
+     * It's guaranteed that the partition, which the affinity key belongs to, will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
@@ -155,6 +163,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * while the job is executed. The data of the extra caches' partitions with the same partition number
      * also will not be migrated.
      *
+     * It's guaranteed that the partition will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
+     *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition number.
      * @param job Job which will be co-located on the node with given affinity key.
@@ -168,6 +180,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes given job on the node where data for provided affinity key is located
      * (a.k.a. affinity co-location). The data of the partition where affKey is stored
      * will not be migrated from the target node while the job is executed.
+     *
+     * It's guaranteed that the partition, which the affinity key belongs to, will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -184,6 +200,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * will not be migrated from the target node while the job is executed. The data
      * of the extra caches' partitions with the same partition number also will not be migrated.
      *
+     * It's guaranteed that the partition, which the affinity key belongs to, will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
+     *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
@@ -199,6 +219,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * The data of the partition will not be migrated from the target node
      * while the job is executed. The data of the extra caches' partitions with the same partition number
      * also will not be migrated.
+     *
+     * It's guaranteed that the partition will not be evicted from a node
+     * while a job will be being executed there. The partition rebalancing usually happens due to
+     * the topology change event when a new node joins the cluster or the old one leaves it.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition to reserve.
