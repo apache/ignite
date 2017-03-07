@@ -62,32 +62,27 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         this.acsMode = acsMode;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         // TODO
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         // TODO
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         return null; // TODO
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return null; // TODO
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return null; // TODO
     }
 }

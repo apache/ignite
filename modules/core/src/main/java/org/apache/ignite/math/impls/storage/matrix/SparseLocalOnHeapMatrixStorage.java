@@ -94,8 +94,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         return acsMode;
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         if (stoMode == ROW_STORAGE_MODE) {
             Map<Integer, Double> row = sto.get(x);
 
@@ -122,8 +121,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         }
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         if (stoMode == ROW_STORAGE_MODE) {
             Map<Integer, Double> row = sto.computeIfAbsent(x, k ->
                 acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
@@ -138,18 +136,15 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         }
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
         out.writeInt(acsMode);
@@ -158,8 +153,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     }
 
     @SuppressWarnings({"unchecked"})
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
         acsMode = in.readInt();
@@ -167,28 +161,23 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         sto = (Map<Integer, Map<Integer, Double>>)in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

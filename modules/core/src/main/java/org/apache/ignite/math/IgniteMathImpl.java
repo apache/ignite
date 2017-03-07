@@ -48,13 +48,11 @@ public class IgniteMathImpl extends AsyncSupportAdapter<IgniteMathImpl> implemen
         this.ctx = ctx;
     }
 
-    @Override
-    public Matrix matrix(String flavor, Map<String, Object> args) {
+    @Override public Matrix matrix(String flavor, Map<String, Object> args) {
         return null; // TODO
     }
 
-    @Override
-    public Vector vector(String flavor, Map<String, Object> args) {
+    @Override public Vector vector(String flavor, Map<String, Object> args) {
         return null; // TODO
     }
 

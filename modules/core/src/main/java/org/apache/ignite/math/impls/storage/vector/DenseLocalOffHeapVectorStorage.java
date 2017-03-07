@@ -49,62 +49,52 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return GridUnsafe.getDouble(pointerOffset(i));
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         GridUnsafe.putDouble(pointerOffset(i), v);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] data() {
+    @Override public double[] data() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
 
         for (int i = 0; i < size; i++)
@@ -112,8 +102,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
 
         allocateMemory(size);
@@ -123,8 +112,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void destroy() {
+    @Override public void destroy() {
         GridUnsafe.freeMemory(ptr);
     }
 
@@ -142,8 +130,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         int result = 1;
 
         result = result * 37 + size;

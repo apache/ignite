@@ -55,60 +55,50 @@ public class SingleElementVectorStorage implements VectorStorage {
         return idx;
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return i == idx ? val : 0.0;
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         if (i == idx)
             val = v;
         else
             throw new UnsupportedOperationException("Can't set element outside of index: " + idx);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(idx);
         out.writeDouble(val);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         idx = in.readInt();
         val = in.readDouble();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

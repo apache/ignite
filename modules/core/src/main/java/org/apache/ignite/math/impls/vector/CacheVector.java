@@ -84,15 +84,13 @@ public class CacheVector<K, V> extends AbstractVector {
         return (CacheVectorStorage<K, V>)getStorage();
     }
 
-    @Override
-    public Vector like(int crd) {
+    @Override public Vector like(int crd) {
         CacheVectorStorage<K, V> sto = storage();
 
         return new CacheVector<K, V>(size(), sto.cache(), sto.keyFunction(), sto.valueMapper());
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
 }

@@ -31,13 +31,11 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
         // No-op.
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return null; // TODO
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return null; // TODO
     }
 }

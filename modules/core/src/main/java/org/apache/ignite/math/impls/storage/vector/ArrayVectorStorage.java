@@ -35,8 +35,7 @@ public class ArrayVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         int result = 1;
 
         result = result * 37 + Arrays.hashCode(data);
@@ -97,26 +96,22 @@ public class ArrayVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0.0;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 

@@ -33,8 +33,7 @@ public class DefaultMathProvider implements MathProvider {
         // No-op.
     }
 
-    @Override
-    public Optional<Matrix> matrix(String flavor, Map<String, Object> args) {
+    @Override public Optional<Matrix> matrix(String flavor, Map<String, Object> args) {
         assert flavor != null;
         assert args != null;
 
@@ -53,8 +52,7 @@ public class DefaultMathProvider implements MathProvider {
         }
     }
 
-    @Override
-    public Optional<Vector> vector(String flavor, Map<String, Object> args) {
+    @Override public Optional<Vector> vector(String flavor, Map<String, Object> args) {
         assert flavor != null;
         assert args != null;
 
@@ -76,13 +74,11 @@ public class DefaultMathProvider implements MathProvider {
         }
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op.
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
     }
 }

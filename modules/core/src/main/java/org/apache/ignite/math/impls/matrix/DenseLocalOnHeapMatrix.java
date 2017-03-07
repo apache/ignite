@@ -90,18 +90,15 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         return new DenseLocalOnHeapMatrix(this);
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return new DenseLocalOnHeapMatrix(rows, cols);
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return new DenseLocalOnHeapVector(crd);
     }
 }

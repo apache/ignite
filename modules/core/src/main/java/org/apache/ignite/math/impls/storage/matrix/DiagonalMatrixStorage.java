@@ -52,61 +52,50 @@ public class DiagonalMatrixStorage implements MatrixStorage {
         return diagonal;
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return x == y ? diagonal.get(x) : 0.0;
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         if (x == y)
             diagonal.set(x, v);
         else
             throw new UnsupportedOperationException("Can't set off-diagonal element.");
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return diagonal.size();
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return diagonal.size();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
        out.writeObject(diagonal);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         diagonal = (Vector)in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return diagonal.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return diagonal.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return diagonal.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return diagonal.isAddConstantTime();
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

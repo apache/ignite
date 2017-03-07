@@ -69,8 +69,7 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
         new MatrixStorageFixtures().consumeSampleStorages(paramsConsumer, consumer);
     }
 
-    @Override
-    public void externalizeTest() {
+    @Override public void externalizeTest() {
         consumeSampleStorages(null, (ms, desc) -> {
             externalizeTest(ms);
         });

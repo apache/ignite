@@ -67,8 +67,7 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(dlg);
         out.writeObject(meta);
         out.writeObject(guid);
@@ -84,326 +83,272 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Map<String, Object> getMetaStorage() {
+    @Override public Map<String, Object> getMetaStorage() {
         return meta;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         return dlg.likeMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix toMatrix(boolean rowLike) {
+    @Override public Matrix toMatrix(boolean rowLike) {
         return dlg.toMatrix(rowLike);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
+    @Override public Matrix toMatrixPlusOne(boolean rowLike, double zeroVal) {
         return dlg.toMatrixPlusOne(rowLike, zeroVal);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int size() {
+    @Override public int size() {
         return dlg.size();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return dlg.isDense();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return dlg.isSequentialAccess();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return dlg.isArrayBased();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector copy() {
+    @Override public Vector copy() {
         return new DelegatingVector(dlg);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<Element> all() {
+    @Override public Iterable<Element> all() {
         return dlg.all();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Iterable<Element> nonZeroes() {
+    @Override public Iterable<Element> nonZeroes() {
         return dlg.nonZeroes();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Spliterator<Double> allSpliterator() {
+    @Override public Spliterator<Double> allSpliterator() {
         return dlg.allSpliterator();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Spliterator<Double> nonZeroSpliterator() {
+    @Override public Spliterator<Double> nonZeroSpliterator() {
         return dlg.nonZeroSpliterator();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Element getElement(int idx) {
+    @Override public Element getElement(int idx) {
         return dlg.getElement(idx);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector assign(double val) {
+    @Override public Vector assign(double val) {
         return dlg.assign(val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector assign(double[] vals) {
+    @Override public Vector assign(double[] vals) {
         return dlg.assign(vals);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector assign(Vector vec) {
+    @Override public Vector assign(Vector vec) {
         return dlg.assign(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector assign(IntToDoubleFunction fun) {
+    @Override public Vector assign(IntToDoubleFunction fun) {
         return dlg.assign(fun);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector map(DoubleFunction<Double> fun) {
+    @Override public Vector map(DoubleFunction<Double> fun) {
         return dlg.map(fun);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
         return dlg.map(vec, fun);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
         return dlg.map(fun, y);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector divide(double x) {
+    @Override public Vector divide(double x) {
         return dlg.divide(x);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double dot(Vector vec) {
+    @Override public double dot(Vector vec) {
         return dlg.dot(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double get(int idx) {
+    @Override public double get(int idx) {
         return dlg.get(idx);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getX(int idx) {
+    @Override public double getX(int idx) {
         return dlg.getX(idx);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector like(int crd) {
+    @Override public Vector like(int crd) {
         return dlg.like(crd);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector minus(Vector vec) {
+    @Override public Vector minus(Vector vec) {
         return dlg.minus(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector normalize() {
+    @Override public Vector normalize() {
         return dlg.normalize();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector normalize(double power) {
+    @Override public Vector normalize(double power) {
         return dlg.normalize(power);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector logNormalize() {
+    @Override public Vector logNormalize() {
         return dlg.logNormalize();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector logNormalize(double power) {
+    @Override public Vector logNormalize(double power) {
         return dlg.logNormalize(power);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double kNorm(double power) {
+    @Override public double kNorm(double power) {
         return dlg.kNorm(power);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Element minValue() {
+    @Override public Element minValue() {
         return dlg.minValue();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Element maxValue() {
+    @Override public Element maxValue() {
         return dlg.maxValue();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector plus(double x) {
+    @Override public Vector plus(double x) {
         return dlg.plus(x);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector plus(Vector vec) {
+    @Override public Vector plus(Vector vec) {
         return dlg.plus(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector set(int idx, double val) {
+    @Override public Vector set(int idx, double val) {
         return dlg.set(idx, val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector setX(int idx, double val) {
+    @Override public Vector setX(int idx, double val) {
         return dlg.setX(idx, val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector incrementX(int idx, double val) {
+    @Override public Vector incrementX(int idx, double val) {
         return dlg.incrementX(idx, val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector increment(int idx, double val) {
+    @Override public Vector increment(int idx, double val) {
         return dlg.increment(idx, val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int nonZeroElements() {
+    @Override public int nonZeroElements() {
         return dlg.nonZeroElements();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector times(double x) {
+    @Override public Vector times(double x) {
         return dlg.times(x);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector times(Vector vec) {
+    @Override public Vector times(Vector vec) {
         return dlg.times(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector viewPart(int off, int len) {
+    @Override public Vector viewPart(int off, int len) {
         return dlg.viewPart(off, len);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public VectorStorage getStorage() {
+    @Override public VectorStorage getStorage() {
         return dlg.getStorage();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double sum() {
+    @Override public double sum() {
         return dlg.sum();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix cross(Vector vec) {
+    @Override public Matrix cross(Vector vec) {
         return dlg.cross(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
         return dlg.foldMap(foldFun, mapFun, zeroVal);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
+    @Override public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
         return dlg.foldMap(vec, foldFun, combFun, zeroVal);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLengthSquared() {
+    @Override public double getLengthSquared() {
         return dlg.getLengthSquared();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getDistanceSquared(Vector vec) {
+    @Override public double getDistanceSquared(Vector vec) {
         return dlg.getDistanceSquared(vec);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return dlg.getLookupCost();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return dlg.isAddConstantTime();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public IgniteUuid guid() {
+    @Override public IgniteUuid guid() {
         return guid;
     }
 

@@ -93,22 +93,19 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         return (CacheMatrixStorage<K, V>)getStorage();
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         CacheMatrixStorage<K, V> sto = storage();
 
         return new CacheMatrix<K, V>(rowSize(), columnSize(), sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         CacheMatrixStorage<K, V> sto = storage();
 
         return new CacheMatrix<K, V>(rows, cols, sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
     }
 
@@ -118,8 +115,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param d
      * @return
      */
-    @Override
-    public Matrix divide(double d) {
+    @Override public Matrix divide(double d) {
         return mapOverValues((Double v) -> v / d);
     }
 
@@ -129,8 +125,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param x
      * @return
      */
-    @Override
-    public Matrix plus(double x) {
+    @Override public Matrix plus(double x) {
         return mapOverValues((Double v) -> v + x);
     }
 
@@ -140,24 +135,20 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param x
      * @return
      */
-    @Override
-    public Matrix times(double x) {
+    @Override public Matrix times(double x) {
         return mapOverValues((Double v) -> v * x);
     }
 
 
-    @Override
-    public Matrix assign(double val) {
+    @Override public Matrix assign(double val) {
         return mapOverValues((Double v) -> val);
     }
 
-    @Override
-    public Matrix map(DoubleFunction<Double> fun) {
+    @Override public Matrix map(DoubleFunction<Double> fun) {
         return mapOverValues(fun::apply);
     }
 
-    @Override
-    public double sum() {
+    @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
         // Gets these values assigned to a local vars so that

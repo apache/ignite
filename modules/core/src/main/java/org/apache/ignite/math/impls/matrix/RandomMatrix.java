@@ -89,30 +89,25 @@ public class RandomMatrix extends AbstractMatrix {
         // No-op.
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         return new RandomMatrix(rowSize(), columnSize(), fastHash);
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return new RandomMatrix(rows, cols);
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return new RandomVector(crd);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeBoolean(fastHash);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         fastHash = in.readBoolean();

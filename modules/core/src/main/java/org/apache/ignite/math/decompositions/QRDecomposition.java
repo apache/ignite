@@ -163,8 +163,7 @@ public class QRDecomposition {
     /**
      * Returns a rough string rendition of a QR.
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return String.format("QR(%d x %d, fullRank=%s)", rows, cols, hasFullRank());
     }
 }

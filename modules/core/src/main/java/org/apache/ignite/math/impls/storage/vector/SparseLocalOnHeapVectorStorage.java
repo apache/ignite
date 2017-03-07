@@ -65,58 +65,48 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         return acsMode;
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return sto.get(i);
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         sto.put(i, v);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(acsMode);
         out.writeObject(sto);
     }
 
     @SuppressWarnings({"unchecked"})
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         acsMode = in.readInt();
         sto = (Map<Integer, Double>)in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 

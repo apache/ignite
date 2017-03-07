@@ -57,67 +57,56 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return GridUnsafe.getDouble(pointerOffset(x, y));
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         GridUnsafe.putDouble(pointerOffset(x, y), v);
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[][] data() {
+    @Override public double[][] data() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
 
@@ -129,8 +118,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
 
@@ -144,8 +132,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void destroy() {
+    @Override public void destroy() {
         GridUnsafe.freeMemory(ptr);
     }
 
@@ -155,8 +142,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         return obj != null &&
                 getClass().equals(obj.getClass()) &&
                 (rows == ((DenseOffHeapMatrixStorage)obj).rows) &&
@@ -165,8 +151,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         int result = 1;
 
         result = result * 37 + rows;

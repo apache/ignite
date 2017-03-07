@@ -101,22 +101,19 @@ public class FunctionMatrix extends AbstractMatrix {
         return (FunctionMatrixStorage)getStorage();
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         FunctionMatrixStorage sto = storage();
 
         return new FunctionMatrix(sto.rowSize(), sto.columnSize(), sto.getFunction(), sto.setFunction());
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         FunctionMatrixStorage sto = storage();
 
         return new FunctionMatrix(rows, cols, sto.getFunction(), sto.setFunction());
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
     }
 }

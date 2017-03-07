@@ -116,48 +116,39 @@ public class MatrixVectorStorage implements VectorStorage {
             return (parent.columnSize() - col) / colStride;
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return parent.get(row + i * rowStride, col + i * colStride);
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         parent.set(row + i * rowStride, col + i * colStride, v);
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return parent.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return parent.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return parent.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return parent.isAddConstantTime();
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return parent.isArrayBased();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
         out.writeInt(row);
         out.writeInt(col);
@@ -165,8 +156,7 @@ public class MatrixVectorStorage implements VectorStorage {
         out.writeInt(colStride);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         parent = (Matrix)in.readObject();
         row = in.readInt();
         col = in.readInt();

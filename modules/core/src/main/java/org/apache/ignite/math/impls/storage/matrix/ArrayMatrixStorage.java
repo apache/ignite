@@ -68,8 +68,7 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hashCode() {
+    @Override public int hashCode() {
         int result = 1;
 
         result = result * 37 + rows;
@@ -79,53 +78,43 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return result;
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return data[x][y];
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         data[x][y] = v;
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return true;
     }
 
-    @Override
-    public double[][] data() {
+    @Override public double[][] data() {
         return data;
     }
 

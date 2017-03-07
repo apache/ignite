@@ -56,55 +56,45 @@ public class ConstantVectorStorage implements VectorStorage {
         return val;
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return val;
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         throw new UnsupportedOperationException("Can't set value into constant vector.");
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeDouble(val);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         val = in.readDouble();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         throw new UnsupportedOperationException("Can't mutate constant vector.");
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 

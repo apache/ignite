@@ -138,28 +138,23 @@ public class PivotedMatrixStorage implements MatrixStorage {
         }
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return sto.get(rowPivot[x], colPivot[y]);
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         sto.set(rowPivot[x], colPivot[y], v);
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return sto.columnSize();
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return sto.rowSize();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(rowPivot);
         out.writeObject(colPivot);
@@ -167,8 +162,7 @@ public class PivotedMatrixStorage implements MatrixStorage {
         out.writeObject(colUnpivot);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
         rowPivot = (int[])in.readObject();
         colPivot = (int[])in.readObject();
@@ -176,28 +170,23 @@ public class PivotedMatrixStorage implements MatrixStorage {
         colUnpivot = (int[])in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return sto.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return sto.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
 

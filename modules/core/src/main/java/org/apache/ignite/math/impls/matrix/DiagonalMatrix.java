@@ -96,28 +96,23 @@ public class DiagonalMatrix extends AbstractMatrix {
         super(new DiagonalMatrixStorage(new ConstantVector(size, val)));
     }
 
-    @Override
-    public Vector viewRow(int row) {
+    @Override public Vector viewRow(int row) {
         return new SingleElementVectorView(storage().diagonal(), row);
     }
 
-    @Override
-    public Vector viewColumn(int col) {
+    @Override public Vector viewColumn(int col) {
         return new SingleElementVectorView(storage().diagonal(), col);
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         return new DiagonalMatrix(storage().diagonal());
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return storage().diagonal().likeMatrix(rows, cols);
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return storage().diagonal().like(crd);
     }
 }

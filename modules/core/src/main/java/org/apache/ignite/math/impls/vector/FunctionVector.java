@@ -87,15 +87,13 @@ public class FunctionVector extends AbstractVector {
         return (FunctionVectorStorage)getStorage();
     }
 
-    @Override
-    public Vector like(int crd) {
+    @Override public Vector like(int crd) {
         FunctionVectorStorage sto = storage();
 
         return new FunctionVector(crd, sto.getFunction(), sto.setFunction());
     }
 
-    @Override
-    public Matrix likeMatrix(int rows, int cols) {
+    @Override public Matrix likeMatrix(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
 }

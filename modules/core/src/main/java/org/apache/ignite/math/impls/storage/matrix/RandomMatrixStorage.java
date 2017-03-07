@@ -50,8 +50,7 @@ public class RandomMatrixStorage implements MatrixStorage {
         this.fastHash = fastHash;
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         if (!fastHash) {
             ByteBuffer buf = ByteBuffer.allocate(8);
 
@@ -73,59 +72,49 @@ public class RandomMatrixStorage implements MatrixStorage {
         return fastHash;
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         throw new UnsupportedOperationException("Random matrix storage is a read-only storage.");
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
         out.writeInt(seed);
         out.writeBoolean(fastHash);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
         seed = in.readInt();
         fastHash = in.readBoolean();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

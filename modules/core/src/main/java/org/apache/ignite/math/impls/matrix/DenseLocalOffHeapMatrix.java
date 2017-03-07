@@ -73,8 +73,7 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         DenseLocalOffHeapMatrix copy = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().rowSize());
 
         copy.assign(this);
@@ -83,20 +82,17 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         return new DenseLocalOffHeapMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return new DenseLocalOffHeapVector(crd);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void destroy() {
+    @Override public void destroy() {
         getStorage().destroy();
     }
 }

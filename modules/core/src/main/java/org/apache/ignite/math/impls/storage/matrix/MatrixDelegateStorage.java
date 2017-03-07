@@ -99,58 +99,47 @@ public class MatrixDelegateStorage implements MatrixStorage {
         return cols;
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return sto.get(rowOff + x, colOff + y);
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         sto.set(rowOff + x, colOff + y, v);
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased() && rowOff == 0 && colOff == 0;
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return sto.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return sto.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
-    @Override
-    public double[][] data() {
+    @Override public double[][] data() {
         return sto.data();
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
 
         out.writeInt(rowOff);
@@ -160,8 +149,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
         out.writeInt(cols);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
 
         rowOff = in.readInt();

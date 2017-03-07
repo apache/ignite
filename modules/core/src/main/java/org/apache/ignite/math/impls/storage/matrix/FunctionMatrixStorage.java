@@ -65,13 +65,11 @@ public class FunctionMatrixStorage implements MatrixStorage {
         this(rows, cols, getFunc, null);
     }
 
-    @Override
-    public double get(int x, int y) {
+    @Override public double get(int x, int y) {
         return getFunc.apply(x, y);
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    @Override public void set(int x, int y, double v) {
         if (setFunc != null)
             setFunc.apply(x, y, v);
         else
@@ -94,54 +92,45 @@ public class FunctionMatrixStorage implements MatrixStorage {
         return setFunc;
     }
 
-    @Override
-    public int columnSize() {
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(setFunc);
         out.writeObject(getFunc);
         out.writeInt(rows);
         out.writeInt(cols);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setFunc = (IntIntDoubleToVoidFunction)in.readObject();
         getFunc = (IntIntToDoubleFunction)in.readObject();
         rows = in.readInt();
         cols = in.readInt();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return false;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return false;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

@@ -82,8 +82,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
-    @Override
-    public Matrix swapRows(int i, int j) {
+    @Override public Matrix swapRows(int i, int j) {
         if (i < 0 || i >= storage().rowPivot().length)
             throw new IndexException(i);
         if (j < 0 || j >= storage().rowPivot().length)
@@ -94,8 +93,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
-    @Override
-    public Matrix swapColumns(int i, int j) {
+    @Override public Matrix swapColumns(int i, int j) {
         if (i < 0 || i >= storage().columnPivot().length)
             throw new IndexException(i);
         if (j < 0 || j >= storage().columnPivot().length)
@@ -106,8 +104,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         return this;
     }
 
-    @Override
-    public Vector viewRow(int row) {
+    @Override public Vector viewRow(int row) {
         return new PivotedVectorView(
             mtx.viewRow(storage().rowPivot()[row]),
             storage().columnPivot(),
@@ -115,8 +112,7 @@ public class PivotedMatrixView extends AbstractMatrix {
         );
     }
 
-    @Override
-    public Vector viewColumn(int col) {
+    @Override public Vector viewColumn(int col) {
         return new PivotedVectorView(
             mtx.viewColumn(storage().columnPivot()[col]),
             storage().rowPivot(),
@@ -184,15 +180,13 @@ public class PivotedMatrixView extends AbstractMatrix {
         return storage().columnUnpivot()[i];
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         out.writeObject(mtx);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         mtx = (Matrix)in.readObject();
@@ -206,18 +200,15 @@ public class PivotedMatrixView extends AbstractMatrix {
         return (PivotedMatrixStorage)getStorage();
     }
 
-    @Override
-    public Matrix copy() {
+    @Override public Matrix copy() {
         return new PivotedMatrixView(mtx, storage().rowPivot(), storage().columnPivot());
     }
 
-    @Override
-    public Matrix like(int rows, int cols) {
+    @Override public Matrix like(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
     }
 }

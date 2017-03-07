@@ -21,13 +21,11 @@ package org.apache.ignite.math;
  * Identity value mapper.
  */
 public class IdentityValueMapper implements ValueMapper<Double> {
-    @Override
-    public Double fromDouble(double v) {
+    @Override public Double fromDouble(double v) {
         return v;
     }
 
-    @Override
-    public double toDouble(Double v) {
+    @Override public double toDouble(Double v) {
         return v;
     }
 }

@@ -79,60 +79,50 @@ public class FunctionVectorStorage implements VectorStorage {
         this(size, getFunc, null);
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return getFunc.applyAsDouble(i);
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         if (setFunc != null)
             setFunc.accept(i, v);
         else
             throw new UnsupportedOperationException("Cannot set into read-only vector.");
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(setFunc);
         out.writeObject(getFunc);
         out.writeInt(size);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setFunc = (IntDoubleToVoidFunction)in.readObject();
         getFunc = (IntToDoubleFunction)in.readObject();
         size = in.readInt();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return false;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return false;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 }

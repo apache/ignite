@@ -53,13 +53,11 @@ public class RandomVectorStorage implements VectorStorage {
         seed = new Random().nextInt();
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return size;
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         if (!fastHash) {
             ByteBuffer buf = ByteBuffer.allocate(4);
 
@@ -72,47 +70,39 @@ public class RandomVectorStorage implements VectorStorage {
             return (((i * PRIME) & 8) * 0.25) - 1;
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         throw new UnsupportedOperationException("Random vector storage is a read-only storage.");
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
         out.writeInt(seed);
         out.writeBoolean(fastHash);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         size = in.readInt();
         seed = in.readInt();
         fastHash = in.readBoolean();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return true;
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return false;
     }
 

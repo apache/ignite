@@ -90,57 +90,47 @@ public class PivotedVectorStorage implements VectorStorage {
         // No-op.
     }
 
-    @Override
-    public int size() {
+    @Override public int size() {
         return sto.size();
     }
 
-    @Override
-    public double get(int i) {
+    @Override public double get(int i) {
         return sto.get(pivot[i]);
     }
 
-    @Override
-    public void set(int i, double v) {
+    @Override public void set(int i, double v) {
         sto.set(pivot[i], v);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
         out.writeObject(pivot);
         out.writeObject(unpivot);
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (VectorStorage)in.readObject();
         pivot = (int[])in.readObject();
         unpivot = (int[])in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
-    @Override
-    public boolean isDense() {
+    @Override public boolean isDense() {
         return sto.isDense();
     }
 
-    @Override
-    public double getLookupCost() {
+    @Override public double getLookupCost() {
         return sto.getLookupCost();
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    @Override public boolean isAddConstantTime() {
         return sto.isAddConstantTime();
     }
 
-    @Override
-    public boolean isArrayBased() {
+    @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
 }
