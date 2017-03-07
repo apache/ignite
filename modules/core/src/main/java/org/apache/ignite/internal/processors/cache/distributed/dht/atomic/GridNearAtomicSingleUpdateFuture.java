@@ -120,7 +120,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public Long version() {
         synchronized (mux) {
             return futVer;
         }
@@ -183,7 +183,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            GridCacheVersion futVer = onFutureDone();
+            Long futVer = onFutureDone();
 
             if (futVer != null)
                 cctx.mvcc().removeAtomicFuture(futVer);
@@ -380,7 +380,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     /** {@inheritDoc} */
     @Override protected void mapOnTopology() {
         AffinityTopologyVersion topVer;
-        GridCacheVersion futVer;
+        long futVer = -1;
 
         cache.topology().readLock();
 
@@ -431,12 +431,12 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             cache.topology().readUnlock();
         }
 
-        if (futVer != null)
+        if (futVer > -1)
             map(topVer, futVer);
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer, GridCacheVersion futVer) {
+    @Override protected void map(AffinityTopologyVersion topVer, Long futVer) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -453,7 +453,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             updVer = this.updVer;
 
             if (updVer == null) {
-                updVer = futVer;
+                updVer = cctx.versions().next(topVer);
 
                 if (log.isDebugEnabled())
                     log.debug("Assigned fast-map version for update on near node: " + updVer);
@@ -496,8 +496,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     /**
      * @return Future version.
      */
-    private GridCacheVersion onFutureDone() {
-        GridCacheVersion ver0;
+    private Long onFutureDone() {
+        Long ver0;
 
         GridFutureAdapter<Void> fut0;
 
@@ -525,7 +525,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @throws Exception If failed.
      */
     private GridNearAtomicAbstractUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
+        Long futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         if (key == null)
             throw new NullPointerException("Null key.");

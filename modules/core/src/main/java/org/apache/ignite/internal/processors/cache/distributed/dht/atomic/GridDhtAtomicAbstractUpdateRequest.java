@@ -168,7 +168,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheMessag
     /**
      * @return Version assigned on primary node.
      */
-    public abstract GridCacheVersion futureVersion();
+    public abstract Long futureVersion();
 
     /**
      * @return Write version.

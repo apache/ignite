@@ -21,24 +21,30 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Simple tests for {@link GridNearAtomicFullUpdateRequest}.
+ * Trivial GridNearAtomicFullUpdateRequest tests.
  */
 public class GridNearAtomicFullUpdateRequestTest extends MarshallingAbstractTest {
 
+    /**
+     * Message marshalling test.
+     *
+     * @throws IgniteCheckedException If fails.
+     */
     public void testMarshall() throws IgniteCheckedException {
-        GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
-            555,
+        GridCacheVersion updVer = new GridCacheVersion(1, 2, 3, 5);
+
+        int entryNum = 3;
+
+        GridNearAtomicFullUpdateRequest msg = new GridNearAtomicFullUpdateRequest(555,
             UUID.randomUUID(),
-            new GridCacheVersion(1, 2, 3, 4),
+            555L,
             false,
-            new GridCacheVersion(1, 2, 3, 4),
-            new AffinityTopologyVersion(2),
+            updVer,
+            new AffinityTopologyVersion(25, 5),
             false,
             CacheWriteSynchronizationMode.PRIMARY_SYNC,
             GridCacheOperation.UPDATE,
@@ -53,16 +59,20 @@ public class GridNearAtomicFullUpdateRequestTest extends MarshallingAbstractTest
             true,
             false,
             3,
-            2
-        );
+            entryNum);
 
-        req.addUpdateEntry(new KeyCacheObjectImpl(1, null, 1), new CacheObjectImpl(2, null), 0, 0, null, true);
-        req.addUpdateEntry(new KeyCacheObjectImpl(2, null, 1), new CacheObjectImpl(2, null), 0, 0, null, true);
-        req.addUpdateEntry(new KeyCacheObjectImpl(3, null, 2), new CacheObjectImpl(2, null), 0, 0, null, true);
+        for (int i = 0; i < entryNum; i++)
+            msg.addUpdateEntry(
+                key(i, i),
+                val(i),
+                -1,
+                -1,
+                null,
+                true
+            );
 
-        GridNearAtomicFullUpdateRequest req2 = marshalUnmarshal(req);
+        GridNearAtomicFullUpdateRequest received = marshalUnmarshal(msg);
 
-        assertEquals(2, req2.stripeMap().size());
-
+        assertEquals(Long.valueOf(555), received.futureVersion());
     }
 }

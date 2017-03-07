@@ -126,7 +126,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     protected CachePartialUpdateCheckedException err;
 
     /** Future ID. */
-    protected GridCacheVersion futVer;
+    protected Long futVer;
 
     /** Completion future for a particular topology version. */
     protected GridFutureAdapter<Void> topCompleteFut;
@@ -212,9 +212,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             // Cannot remap.
             remapCnt = 1;
 
-            GridCacheVersion futVer = addAtomicFuture(topVer);
+            long futVer = addAtomicFuture(topVer);
 
-            if (futVer != null)
+            if (futVer > -1)
                 map(topVer, futVer);
         }
     }
@@ -223,7 +223,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param topVer Topology version.
      * @param futVer Future version
      */
-    protected abstract void map(AffinityTopologyVersion topVer, GridCacheVersion futVer);
+    protected abstract void map(AffinityTopologyVersion topVer, Long futVer);
 
     /**
      * Maps future on ready topology.
@@ -262,7 +262,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                    @Override
+                    public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
                     }
                 });
@@ -326,8 +327,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param topVer Topology version.
      * @return Future version in case future added.
      */
-    protected final GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
-        GridCacheVersion futVer = cctx.versions().next(topVer);
+    protected final long addAtomicFuture(AffinityTopologyVersion topVer) {
+        long futVer = cctx.versions().nextAtomicFutureVersion();
 
         synchronized (mux) {
             assert this.futVer == null : this;
@@ -338,7 +339,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         }
 
         if (storeFuture() && !cctx.mvcc().addAtomicFuture(futVer, this))
-            return null;
+            return -1;
 
         return futVer;
     }

@@ -106,7 +106,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheMvccFuture<?>>> mvccFuts = newMap();
 
     /** Pending atomic futures. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
+    private final ConcurrentMap<Long, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
 
     /** Pending data streamer futures. */
@@ -129,7 +129,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     };
 
     /** Logger. */
-    @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
+    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
 
     /** */
@@ -253,9 +253,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
                 if (cacheFut.isCancelled() || cacheFut.isDone()) {
-                    GridCacheVersion futVer = cacheFut.version();
+                    long futVer = cacheFut.version();
 
-                    if (futVer != null)
+                    if (futVer > -1)
                         atomicFuts.remove(futVer, cacheFut);
                 }
             }
@@ -427,7 +427,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param fut Future.
      * @return {@code False} if future was forcibly completed with error.
      */
-    public boolean addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(long futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
@@ -455,7 +455,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> atomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> atomicFuture(long futVer) {
         return atomicFuts.get(futVer);
     }
 
@@ -463,7 +463,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(long futVer) {
         return atomicFuts.remove(futVer);
     }
 
@@ -491,8 +491,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         return fut;
     }
-
-    /**
 
     /**
      * Adds future.
@@ -788,8 +786,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param cand Cache lock candidate to add.
-     * @return {@code True} if added as a result of this operation,
-     *      {@code false} if was previously added.
+     * @return {@code True} if added as a result of this operation, {@code false} if was previously added.
      */
     public boolean addNext(GridCacheContext cacheCtx, GridCacheMvccCandidate cand) {
         assert cand != null;
@@ -930,8 +927,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheMvccCandidate removeExplicitLock(long threadId,
         IgniteTxKey key,
-        @Nullable GridCacheVersion ver)
-    {
+        @Nullable GridCacheVersion ver) {
         assert threadId > 0;
 
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
@@ -952,8 +948,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param threadId Thread id.
      * @param key Key to look up.
-     * @return Last added explicit lock candidate for given thread id and key or {@code null} if
-     *      no such candidate.
+     * @return Last added explicit lock candidate for given thread id and key or {@code null} if no such candidate.
      */
     @Nullable public GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
         if (threadId < 0)
@@ -1055,7 +1050,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param topVer Topology version to finish.
-     *
      * @return Finish update future.
      */
     @SuppressWarnings("unchecked")
@@ -1075,7 +1069,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
      * @return Finish update future.
      */
     @SuppressWarnings("unchecked")

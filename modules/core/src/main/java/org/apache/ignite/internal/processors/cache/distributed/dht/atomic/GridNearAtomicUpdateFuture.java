@@ -155,7 +155,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public Long version() {
         synchronized (mux) {
             return futVer;
         }
@@ -245,7 +245,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            GridCacheVersion futVer = onFutureDone();
+            Long futVer = onFutureDone();
 
             if (futVer != null)
                 cctx.mvcc().removeAtomicFuture(futVer);
@@ -503,7 +503,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /** {@inheritDoc} */
     @Override protected void mapOnTopology() {
         AffinityTopologyVersion topVer;
-        GridCacheVersion futVer;
+        long futVer = -1;
 
         cache.topology().readLock();
 
@@ -554,7 +554,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             cache.topology().readUnlock();
         }
 
-        if (futVer != null)
+        if (futVer > -1)
             map(topVer, futVer, remapKeys);
     }
 
@@ -613,7 +613,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer, GridCacheVersion futVer) {
+    @Override protected void map(AffinityTopologyVersion topVer, Long futVer) {
         map(topVer, futVer, null);
     }
 
@@ -623,7 +623,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param remapKeys Keys to remap.
      */
     void map(AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
+        Long futVer,
         @Nullable Collection<KeyCacheObject> remapKeys) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
@@ -641,7 +641,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             updVer = this.updVer;
 
             if (updVer == null) {
-                updVer = futVer;
+                updVer = cctx.versions().next(topVer);
 
                 if (log.isDebugEnabled())
                     log.debug("Assigned fast-map version for update on near node: " + updVer);
@@ -727,8 +727,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @return Future version.
      */
-    private GridCacheVersion onFutureDone() {
-        GridCacheVersion ver0;
+    private Long onFutureDone() {
+        Long ver0;
 
         GridFutureAdapter<Void> fut0;
 
@@ -760,7 +760,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private Map<UUID, GridNearAtomicFullUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
+        Long futVer,
         @Nullable GridCacheVersion updVer,
         @Nullable Collection<KeyCacheObject> remapKeys) throws Exception {
         Iterator<?> it = null;
@@ -903,7 +903,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @throws Exception If failed.
      */
     private GridNearAtomicFullUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        GridCacheVersion futVer,
+        Long futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         Object key = F.first(keys);
 

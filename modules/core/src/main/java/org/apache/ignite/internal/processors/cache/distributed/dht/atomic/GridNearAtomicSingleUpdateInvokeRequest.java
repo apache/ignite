@@ -95,7 +95,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     GridNearAtomicSingleUpdateInvokeRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        Long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,

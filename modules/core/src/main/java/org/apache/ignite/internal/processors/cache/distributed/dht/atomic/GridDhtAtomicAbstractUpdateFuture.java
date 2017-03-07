@@ -74,7 +74,10 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     protected final GridCacheContext cctx;
 
     /** Future version. */
-    protected final GridCacheVersion futVer;
+    protected final long futVer;
+
+    /** Future id. */
+    protected final IgniteUuid futId;
 
     /** Completion callback. */
     @GridToStringExclude
@@ -119,7 +122,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 //            cctx.versions().next(updateReq.topologyVersion()) : // Generate new if request mapped to local.
 //            updateReq.futureVersion();
 
-        this.futVer = cctx.versions().next(updateReq.topologyVersion());
+        this.futVer = cctx.versions().nextAtomicFutureVersion();
+        this.futId = IgniteUuid.randomUuid();
 
         this.updateReq = updateReq;
         this.completionCb = completionCb;
@@ -303,11 +307,11 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
     /** {@inheritDoc} */
     @Override public final IgniteUuid futureId() {
-        return futVer.asGridUuid();
+        return futId;
     }
 
     /** {@inheritDoc} */
-    @Override public final GridCacheVersion version() {
+    @Override public final Long version() {
         return futVer;
     }
 
@@ -418,7 +422,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
         ClusterNode node,
-        GridCacheVersion futVer,
+        Long futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,

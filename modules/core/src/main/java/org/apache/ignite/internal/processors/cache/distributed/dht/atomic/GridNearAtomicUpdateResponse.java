@@ -60,7 +60,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private Long futVer;
 
     /** Update error. */
     @GridDirectTransient
@@ -124,7 +124,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, Long futVer, boolean addDepInfo) {
         assert futVer != null;
 
         this.cacheId = cacheId;
@@ -155,7 +155,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public Long futureVersion() {
         return futVer;
     }
 
@@ -496,7 +496,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeLong("futVer", futVer))
                     return false;
 
                 writer.incrementState();
@@ -594,7 +594,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 5:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readLong("futVer");
 
                 if (!reader.isLastRead())
                     return false;

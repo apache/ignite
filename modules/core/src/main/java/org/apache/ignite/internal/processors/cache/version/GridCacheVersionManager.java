@@ -41,6 +41,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
 
+    /** Maximum number of atomic ids for thread. Must be power of two ! */
+    protected static final int THREAD_RESERVE_SIZE = 0x4000;
+
     /**
      * Current order. Initialize to current time to make sure that
      * local version increments even after restarts.
@@ -62,6 +65,16 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private GridCacheVersion ISOLATED_STREAMER_VER;
+
+    /** Global atomic id counter. */
+    protected final AtomicLong globalAtomicCnt = new AtomicLong();
+
+    /** Per thread atomic id counter. */
+    private final ThreadLocal<LongWrapper> threadAtomicVersionCnt = new ThreadLocal<LongWrapper>() {
+        @Override protected LongWrapper initialValue() {
+            return new LongWrapper(globalAtomicCnt);
+        }
+    };
 
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -262,8 +275,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * in the pending set before newer ones, hence preventing starvation.
      *
      * @param topVer Topology version for which new version should be obtained.
-     * @param addTime If {@code true} then adds to the given topology version number of seconds
-     *        from the start time of the first grid node.
+     * @param addTime If {@code true} then adds to the given topology version number of seconds from the start time of
+     * the first grid node.
      * @param dataCenterId Data center id.
      * @return New lock order.
      */
@@ -303,5 +316,39 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheVersion last() {
         return last;
+    }
+
+    /**
+     * @return Next future Id for atomic futures.
+     */
+    public long nextAtomicFutureVersion() {
+        LongWrapper cnt = threadAtomicVersionCnt.get();
+        return cnt.getNext();
+    }
+
+    /** Long wrapper. */
+    private static class LongWrapper {
+        /** */
+        private long val;
+        private final AtomicLong globalCnt;
+
+        /** */
+        public LongWrapper(AtomicLong globalCnt) {
+            assert THREAD_RESERVE_SIZE > 1 && (THREAD_RESERVE_SIZE & (THREAD_RESERVE_SIZE - 1)) == 0 :
+                "THREAD_RESERVE_SIZE must be power of two";
+
+            this.globalCnt = globalCnt;
+            val = globalCnt.getAndAdd(THREAD_RESERVE_SIZE);
+        }
+
+        /** */
+        public long getNext() {
+            long res = val++;
+
+            if ((val & (THREAD_RESERVE_SIZE - 1)) == 0)
+                val = globalCnt.getAndAdd(THREAD_RESERVE_SIZE);
+
+            return res;
+        }
     }
 }

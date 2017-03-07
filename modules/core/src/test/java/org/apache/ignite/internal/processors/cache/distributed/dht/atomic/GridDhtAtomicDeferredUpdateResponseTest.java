@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
 
-/**
- * Update future for atomic cache.
- */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return Future version.
-     */
-    public Long version();
+/** */
+public class GridDhtAtomicDeferredUpdateResponseTest extends MarshallingAbstractTest {
 
     /**
-     * Gets future that will be completed when it is safe when update is finished on the given version of topology.
+     * Message marshalling test.
      *
-     * @param topVer Topology version to finish.
-     * @return Future or {@code null} if no need to wait.
+     * @throws IgniteCheckedException If fails.
      */
-    public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer);
+    public void testMarshall() throws IgniteCheckedException {
+        GridDhtAtomicDeferredUpdateResponse msg = new GridDhtAtomicDeferredUpdateResponse(
+            555,
+            Arrays.asList(555l, 556l, 557l),
+            false);
+
+        GridDhtAtomicDeferredUpdateResponse received = marshalUnmarshal(msg);
+
+        assertEquals(3, received.futureVersions().size());
+
+    }
 }

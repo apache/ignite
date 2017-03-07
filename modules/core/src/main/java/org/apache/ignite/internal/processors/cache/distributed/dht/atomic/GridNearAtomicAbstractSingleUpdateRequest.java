@@ -71,7 +71,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     protected UUID nodeId;
 
     /** Future version. */
-    protected GridCacheVersion futVer;
+    protected Long futVer;
 
     /** Update version. Set to non-null if fastMap is {@code true}. */
     private GridCacheVersion updateVer;
@@ -128,7 +128,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     protected GridNearAtomicAbstractSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        Long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
@@ -200,7 +200,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /**
      * @return Future version.
      */
-    @Override public GridCacheVersion futureVersion() {
+    @Override public Long futureVersion() {
         return futVer;
     }
 
@@ -430,7 +430,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeLong("futVer", futVer))
                     return false;
 
                 writer.incrementState();
@@ -496,7 +496,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
                 reader.incrementState();
 
             case 4:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readLong("futVer");
 
                 if (!reader.isLastRead())
                     return false;

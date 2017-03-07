@@ -21,13 +21,11 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -42,8 +40,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** ACK future versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> futVers;
+    private GridLongList futVers;
 
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
@@ -64,12 +61,15 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      * @param futVers Future versions.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers, boolean addDepInfo) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<Long> futVers, boolean addDepInfo) {
         assert !F.isEmpty(futVers);
 
         this.cacheId = cacheId;
-        this.futVers = futVers;
         this.addDepInfo = addDepInfo;
+        this.futVers = new GridLongList(futVers.size());
+
+        for (long ver : futVers)
+            this.futVers.add(ver);
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     /**
      * @return List of ACKed future versions.
      */
-    public Collection<GridCacheVersion> futureVersions() {
+    public GridLongList futureVersions() {
         return futVers;
     }
 
@@ -105,7 +105,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("futVers", futVers))
                     return false;
 
                 writer.incrementState();
@@ -127,7 +127,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (reader.state()) {
             case 3:
-                futVers = reader.readCollection("futVers", MessageCollectionItemType.MSG);
+                futVers = reader.readMessage("futVers");
 
                 if (!reader.isLastRead())
                     return false;

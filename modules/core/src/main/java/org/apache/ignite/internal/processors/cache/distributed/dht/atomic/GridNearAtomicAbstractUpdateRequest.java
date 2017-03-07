@@ -62,7 +62,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     /**
      * @return Future version.
      */
-    public abstract GridCacheVersion futureVersion();
+    public abstract Long futureVersion();
 
     /**
      * @return Flag indicating whether this is fast-map udpate.
