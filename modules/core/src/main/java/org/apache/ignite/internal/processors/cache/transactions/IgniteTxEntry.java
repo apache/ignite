@@ -99,9 +99,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Cache ID. */
     private int cacheId;
 
-    /** Partition ID. */
-    private int partId = -1;
-
     /** Transient tx key. */
     @GridDirectTransient
     private IgniteTxKey txKey;
@@ -261,7 +258,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         keepBinary(keepBinary);
 
         key = entry.key();
-        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
@@ -314,7 +310,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
-        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
@@ -348,7 +343,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         IgniteTxEntry cp = new IgniteTxEntry();
 
         cp.key = key;
-        cp.partId = partId;
         cp.cacheId = cacheId;
         cp.ctx = ctx;
 
@@ -935,8 +929,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
 
-        key.partition(partId);
-
         val.unmarshal(this.ctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
@@ -1090,12 +1082,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 writer.incrementState();
 
-            case 12:
-                if (!writer.writeInt("partId", partId))
-                    return false;
-
-                writer.incrementState();
-
             case 13:
                 if (!writer.writeMessage("oldVal", oldVal))
                     return false;
@@ -1204,14 +1190,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             case 11:
                 val = reader.readMessage("val");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                partId = reader.readInt("partId", -1);
 
                 if (!reader.isLastRead())
                     return false;

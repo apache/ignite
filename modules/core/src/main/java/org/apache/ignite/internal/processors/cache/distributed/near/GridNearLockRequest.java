@@ -464,12 +464,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
-            case 35:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -606,14 +600,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 35:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridNearLockRequest.class);
@@ -626,7 +612,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 36;
+        return 35;
     }
 
     /** {@inheritDoc} */

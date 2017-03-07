@@ -457,7 +457,7 @@ public class IgniteTxHandler {
                 tx.onePhaseCommit(true);
             }
 
-            if (req.returnValue())
+            if (req.needReturnValue())
                 tx.needReturnValue(true);
 
             IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(
