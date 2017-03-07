@@ -1682,7 +1682,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             while (true) {
                                 try {
+                                    log().error("Start to wait fut: " + exchFut.topologyVersion());
+
+                                    if (cctx.localNode().isClient() && exchFut.topologyVersion().topologyVersion() == 4) {
+                                        int z = 0;
+
+                                        ++z;
+                                    }
+
                                     exchFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
+
+                                    log().error("Exch fut completed: " + exchFut.topologyVersion());
 
                                     break;
                                 }
@@ -1705,8 +1715,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                         dumpedObjects++;
                                     }
+
+                                    log().error("Exch fut failed: " + exchFut.topologyVersion(), ignored);
                                 }
                                 catch (Exception e) {
+                                    log().error("Exch fut failed: " + exchFut.topologyVersion(), e);
+
                                     if (cctx.localNode().isClient() && X.hasCause(e, IOException.class))
                                         throw new IgniteCouldReconnectCheckedException("Reconnect", e);
 

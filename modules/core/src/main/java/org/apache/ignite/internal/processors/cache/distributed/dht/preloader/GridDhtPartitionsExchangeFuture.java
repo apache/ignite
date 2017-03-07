@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCouldReconnectCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -513,9 +515,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (cctx.localNode().isClient() && X.hasCause(e,
                 IOException.class,
-                IgniteClientDisconnectedCheckedException.class))
-                onDone(new IgniteCouldReconnectCheckedException("Local node could be reconnected. [locNodeId="
-                    + cctx.localNodeId() + ']', e));
+                IgniteClientDisconnectedCheckedException.class)) {
+                IgniteInternalFuture<Object> rejoin = cctx.discovery().rejoin();
+
+                try {
+                    rejoin.get();
+                }
+                catch (IgniteCheckedException e0) {
+                    log.error("Failed to rejoin.", e0);
+                }
+
+                IgniteFuture<?> reconnectFut = cctx.kernalContext().cluster().clientReconnectFuture();
+
+                onDone(new IgniteClientDisconnectedException(reconnectFut,
+                    "Client node reconnected [locNodeId=" + cctx.localNodeId() + ']', e));
+            }
             else
                 onDone(e);
 
@@ -691,8 +705,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
             else {
-                if (!centralizedAff)
+                if (!centralizedAff) {
                     sendLocalPartitions(crd);
+
+                    log.error("!!!! Successfully sent to coordinator: " + topologyVersion());
+                }
 
                 initDone();
 

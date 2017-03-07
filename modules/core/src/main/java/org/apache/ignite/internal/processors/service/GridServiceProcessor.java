@@ -1508,60 +1508,60 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Deployment callback.
-     *
-     * @param dep Service deployment.
-     * @param topVer Topology version.
-     */
-    private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
-        // Retry forever.
-        try {
-            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+        /**
+         * Deployment callback.
+         *
+         * @param dep Service deployment.
+         * @param topVer Topology version.
+         */
+        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
+            // Retry forever.
+            try {
+                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-            // If topology version changed, reassignment will happen from topology event.
-            if (newTopVer.equals(topVer))
-                reassign(dep, topVer);
-        }
-        catch (IgniteCheckedException e) {
-            if (!(e instanceof ClusterTopologyCheckedException))
-                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
-
-            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
-
-            if (!newTopVer.equals(topVer)) {
-                assert newTopVer.compareTo(topVer) > 0;
-
-                // Reassignment will happen from topology event.
-                return;
+                // If topology version changed, reassignment will happen from topology event.
+                if (newTopVer.equals(topVer))
+                    reassign(dep, topVer);
             }
+            catch (IgniteCheckedException e) {
+                if (!(e instanceof ClusterTopologyCheckedException))
+                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-            ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                private IgniteUuid id = IgniteUuid.randomUuid();
+                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                private long start = System.currentTimeMillis();
+                if (!newTopVer.equals(topVer)) {
+                    assert newTopVer.compareTo(topVer) > 0;
 
-                @Override public IgniteUuid timeoutId() {
-                    return id;
+                    // Reassignment will happen from topology event.
+                    return;
                 }
 
-                @Override public long endTime() {
-                    return start + RETRY_TIMEOUT;
-                }
+                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                    private IgniteUuid id = IgniteUuid.randomUuid();
 
-                @Override public void onTimeout() {
-                    if (!busyLock.enterBusy())
-                        return;
+                    private long start = System.currentTimeMillis();
 
-                    try {
-                        // Try again.
-                        onDeployment(dep, topVer);
+                    @Override public IgniteUuid timeoutId() {
+                        return id;
                     }
-                    finally {
-                        busyLock.leaveBusy();
+
+                    @Override public long endTime() {
+                        return start + RETRY_TIMEOUT;
                     }
-                }
-            });
+
+                    @Override public void onTimeout() {
+                        if (!busyLock.enterBusy())
+                            return;
+
+                        try {
+                            // Try again.
+                            onDeployment(dep, topVer);
+                        }
+                        finally {
+                            busyLock.leaveBusy();
+                        }
+                    }
+                });
         }
     }
 

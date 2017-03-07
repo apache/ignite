@@ -1155,6 +1155,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         msg,
                         sockTimeout);
 
+                    // TODO: need to rethinking
                     if (forceFut != null)
                         throw new IgniteCheckedException("Force fail local node.");
 
@@ -1885,10 +1886,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (joining()) {
                     Map<UUID, Map<Integer, byte[]>> dataMap = msg.clientDiscoData();
 
-                    if (dataMap != null) {
-                        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                    try {
+                        if (dataMap != null) {
+                            for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                                spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
+                                    U.resolveClassLoader(spi.ignite().configuration()));
+                        }
+                    }
+                    catch (Throwable e) {
+                        int z = 0;
+                        ++z;
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
