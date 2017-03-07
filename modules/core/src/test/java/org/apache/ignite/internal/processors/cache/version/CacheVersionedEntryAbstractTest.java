@@ -155,7 +155,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             });
 
         assert ver1.version().compareTo(ver2.version()) < 0;
-        assert ver1.updateTime() <= ver2.updateTime();
     }
 
     /**
@@ -165,7 +164,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         assertNotNull(entry);
 
         assertNotNull(entry.version());
-        assert entry.updateTime() > 0;
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());

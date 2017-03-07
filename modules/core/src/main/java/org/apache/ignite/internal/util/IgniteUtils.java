@@ -9217,11 +9217,7 @@ public abstract class IgniteUtils {
 
             GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
 
-            off += 4;
-
-            GridUnsafe.putLong(arr, off, drVer.globalTime());
-
-            off += 8;
+            off += 12;
 
             GridUnsafe.putLong(arr, off, drVer.order());
 
@@ -9234,11 +9230,7 @@ public abstract class IgniteUtils {
 
         GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
-        off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.globalTime());
-
-        off += 8;
+        off += 12;
 
         GridUnsafe.putLong(arr, off, ver.order());
 
@@ -9255,7 +9247,6 @@ public abstract class IgniteUtils {
     public static GridCacheVersion readVersion(long ptr, boolean verEx) {
         GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
             GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 8),
             GridUnsafe.getLong(ptr + 16));
 
         if (verEx) {
@@ -9263,7 +9254,6 @@ public abstract class IgniteUtils {
 
             ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
                 GridUnsafe.getInt(ptr + 4),
-                GridUnsafe.getLong(ptr + 8),
                 GridUnsafe.getLong(ptr + 16),
                 ver);
         }
@@ -9284,17 +9274,13 @@ public abstract class IgniteUtils {
 
         int nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
-        off += 4;
-
-        long globalTime = GridUnsafe.getLong(arr, off);
-
-        off += 8;
+        off += 12;
 
         long order = GridUnsafe.getLong(arr, off);
 
         off += 8;
 
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, order);
 
         if (verEx) {
             topVer = GridUnsafe.getInt(arr, off);
@@ -9303,15 +9289,11 @@ public abstract class IgniteUtils {
 
             nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
-            off += 4;
-
-            globalTime = GridUnsafe.getLong(arr, off);
-
-            off += 8;
+            off += 12;
 
             order = GridUnsafe.getLong(arr, off);
 
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, order, ver);
         }
 
         return ver;
