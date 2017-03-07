@@ -727,8 +727,8 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix viewPart(int[] offset, int[] size) {
-        return new MatrixView(this, offset[0], offset[1], size[0], size[1]);
+    @Override public Matrix viewPart(int[] off, int[] size) {
+        return new MatrixView(this, off[0], off[1], size[0], size[1]);
     }
 
     /** {@inheritDoc} */
@@ -763,19 +763,31 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = 1;
+
         result = result * 37 + guid.hashCode();
         result = result * 37 + sto.hashCode();
         result = result * 37 + meta.hashCode();
+
         return result;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        return obj != null && obj.getClass() == this.getClass() && compareMatrix((AbstractMatrix) obj);
-    }
 
-    /** We ignore guid's for comparisons. */
-    private boolean compareMatrix(AbstractMatrix obj) {
-        return /**obj.guid.equals(guid) && */ sto.equals(obj.getStorage()) && obj.meta.equals(meta);
+    /**
+     * {@inheritDoc}
+     *
+     * We ignore guid's for comparisons.
+     */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        AbstractMatrix that = (AbstractMatrix) o;
+
+        MatrixStorage sto = getStorage();
+
+        return (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);
     }
 }

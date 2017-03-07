@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.storage.matrix;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
+import org.apache.ignite.math.impls.matrix.AbstractMatrix;
 
 /**
  * Matrix storage based on arbitrary cache and key and value mapping functions.
@@ -61,7 +62,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
 
     /**
      *
-     * @return
+     * @return Ignite cache.
      */
     public IgniteCache<K, V> cache() {
         return cache;
@@ -69,7 +70,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
 
     /**
      *
-     * @return
+     * @return Key mapper.
      */
     public KeyMapper<K> keyMapper() {
         return keyMapper;
@@ -77,34 +78,34 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
 
     /**
      *
-     * @return
+     * @return Value mapper.
      */
     public ValueMapper<V> valueMapper() {
         return valMapper;
     }
 
-    @Override
-    public double get(int x, int y) {
+    /** {@inheritDoc} */
+    @Override public double get(int x, int y) {
         return valMapper.toDouble(cache.get(keyMapper.apply(x, y)));
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    /** {@inheritDoc} */
+    @Override public void set(int x, int y, double v) {
         cache.put(keyMapper.apply(x, y), valMapper.fromDouble(v));
     }
 
-    @Override
-    public int columnSize() {
+    /** {@inheritDoc} */
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    /** {@inheritDoc} */
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
         out.writeUTF(cache.getName());
@@ -112,9 +113,9 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         out.writeObject(valMapper);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
         cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
@@ -122,28 +123,56 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         valMapper = (ValueMapper<V>)in.readObject();
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    /** {@inheritDoc} */
+    @Override public boolean isSequentialAccess() {
         return false;
     }
 
-    @Override
-    public boolean isDense() {
+    /** {@inheritDoc} */
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public double getLookupCost() {
+    /** {@inheritDoc} */
+    @Override public double getLookupCost() {
         return 0;
     }
 
-    @Override
-    public boolean isAddConstantTime() {
+    /** {@inheritDoc} */
+    @Override public boolean isAddConstantTime() {
         return false;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + rows;
+        result = result * 37 + cols;
+        result = result * 37 + cache.hashCode();
+        result = result * 37 + keyMapper.hashCode();
+        result = result * 37 + valMapper.hashCode();
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        CacheMatrixStorage that = (CacheMatrixStorage) o;
+
+        return (cache != null ? cache.equals(that.cache) : that.cache == null) &&
+            (keyMapper != null ? keyMapper.equals(that.keyMapper) : that.keyMapper == null) &&
+            (valMapper != null ? valMapper.equals(that.valMapper) : that.valMapper == null);
     }
 }

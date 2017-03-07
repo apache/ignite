@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.KeyMapper;
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -70,25 +71,8 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        assert ignite != null;
-
-        CacheConfiguration cfg = new CacheConfiguration();
-        cfg.setName(CACHE_NAME);
-
-        IgniteCache<Integer, Double> cache = ignite.getOrCreateCache(CACHE_NAME);
-
-        assert cache != null;
-
-        KeyMapper<Integer> keyMapper = new KeyMapper<Integer>() {
-            @Override public Integer apply(int x, int y) {
-                return x * cols + y;
-            }
-
-            @Override public boolean isValid(Integer integer) {
-                return (rows * cols) > integer;
-            }
-        };
-
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
         for (int i = 0; i < rows; i++) {
@@ -100,5 +84,54 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
                 assert Double.compare(v, cache.get(keyMapper.apply(i, j))) == 0;
             }
         }
+    }
+
+    /** */
+    public void testCopy() throws Exception{
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        fillMatrix(cacheMatrix);
+
+        Matrix copy = cacheMatrix.copy();
+
+        assertTrue("Copy of cache matrix is not equal to original.", copy.equals(cacheMatrix));
+    }
+
+    /** */
+    private IgniteCache<Integer, Double> getCache() {
+        assert ignite != null;
+
+        CacheConfiguration cfg = new CacheConfiguration();
+        cfg.setName(CACHE_NAME);
+
+        IgniteCache<Integer, Double> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+        assert cache != null;
+        return cache;
+    }
+
+    /** */
+    private KeyMapper<Integer> getKeyMapper(final int rows, final int cols) {
+        return new KeyMapper<Integer>() {
+            @Override public Integer apply(int x, int y) {
+                return x * cols + y;
+            }
+
+            @Override public boolean isValid(Integer integer) {
+                return (rows * cols) > integer;
+            }
+        };
+    }
+
+    /** */
+    private void fillMatrix(Matrix m){
+        for (int i = 0; i < m.rowSize(); i++)
+            for (int j = 0; j < m.columnSize(); j++)
+                m.set(i, j, Math.random());
     }
 }
