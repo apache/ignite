@@ -106,10 +106,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
             a[i] = -1;
 
             try {
-                Iterator<Cache.Entry<String, Value>> it = cache.iterator();
-
-                while (it.hasNext())
-                    it.next();
+                b.deserialize();
             }
             catch (Exception ex) {
                 Throwable root = ex;
@@ -158,7 +155,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         val2,
 
         /** */
-        val3;
+        val3
     }
 
     /** */
