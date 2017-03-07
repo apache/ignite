@@ -337,13 +337,15 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param backups Number of backups.
      * @param neighborhoodCache Neighborhood.
      * @param balanceMap Balance map.
+     * @param replicasCnt The count of the replicas. In general it is a count of backups + 1 (primary).
      * @return Assignment.
      */
     public List<ClusterNode> assignPartition(int part,
         List<ClusterNode> nodes,
         int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache,
-        @Nullable Map<ClusterNode, Integer[]> balanceMap) {
+        @Nullable Map<ClusterNode, Integer[]> balanceMap,
+        final int replicasCnt) {
         if (nodes.size() <= 1)
             return nodes;
 
@@ -360,15 +362,13 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             hashArr[i] = F.t(hash, node);
         }
 
-        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
-
-        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
+        Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, replicasCnt);
 
         PartitionDistributionBalancer balancer = new PartitionDistributionBalancer(sortedNodes, balanceMap);
 
         PartitionDistributionBalancer.BalancedIterator it = balancer.iterator();
 
-        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
+        List<ClusterNode> res = new ArrayList<>(replicasCnt);
 
         Collection<ClusterNode> allNeighbors = new HashSet<>();
 
@@ -389,8 +389,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
             it.replica(replica);
 
-            while (res.size() < primaryAndBackups && it.hasNext()) {
+            while (res.size() < replicasCnt && it.hasNext()) {
                 ClusterNode node = it.next();
+
+                if (res.contains(node))
+                    continue;
 
                 if (exclNeighbors) {
                     if (!allNeighbors.contains(node)) {
@@ -413,19 +416,19 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     if (exclNeighbors)
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
 
-                    if (balanceMap != null && replica < primaryAndBackups)
+                    if (balanceMap != null && replica < replicasCnt)
                         it.replica(replica);
                 }
             }
         }
 
-        if (balanceMap != null && res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups) {
+        if (balanceMap != null && res.size() < replicasCnt && nodes.size() >= replicasCnt) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
             int replica = res.size();
 
             it.replica(replica);
 
-            while (res.size() < primaryAndBackups && it.hasNext()) {
+            while (res.size() < replicasCnt && it.hasNext()) {
                 ClusterNode node = it.next();
 
                 if (!res.contains(node)) {
@@ -447,16 +450,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
         }
 
-        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups) {
+        if (res.size() < replicasCnt && nodes.size() >= replicasCnt) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria
             // and balance is violated.
             int replica = res.size();
 
             Iterator<ClusterNode> itSorted = sortedNodes.iterator();
 
-            itSorted.next();
-
-            while (itSorted.hasNext() && res.size() < primaryAndBackups) {
+            while (itSorted.hasNext() && res.size() < replicasCnt) {
                 ClusterNode node = itSorted.next();
 
                 if (!res.contains(node)) {
@@ -476,7 +477,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
         }
 
-        assert res.size() <= primaryAndBackups;
+        assert res.size() == replicasCnt;
 
         return res;
     }
@@ -542,7 +543,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         for (int i = 0; i < parts; i++) {
             List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(),
-                neighborhoodCache, balanceMap);
+                neighborhoodCache, balanceMap, replCnt);
 
             assignments.add(partAssignment);
         }

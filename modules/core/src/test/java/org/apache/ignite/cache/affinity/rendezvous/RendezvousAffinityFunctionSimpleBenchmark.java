@@ -410,11 +410,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkAdd() {
         mode = TopologyModificationMode.ADD;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff0 = new RendezvousAffinityFunction(false, 1024);
 
 //        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
+        affinityBenchmark(aff0, new RendezvousAffinityFunction(false, 1024));
     }
 
     /**
