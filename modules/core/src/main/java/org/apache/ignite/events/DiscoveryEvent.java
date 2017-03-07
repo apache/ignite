@@ -19,6 +19,7 @@ package org.apache.ignite.events;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,6 +75,9 @@ public class DiscoveryEvent extends EventAdapter {
 
     /** Collection of nodes corresponding to topology version. */
     private Collection<ClusterNode> topSnapshot;
+
+    /** Discovery cache corresponding to topology version. */
+    private DiscoCache discoCache;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
@@ -152,6 +156,20 @@ public class DiscoveryEvent extends EventAdapter {
     public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
         this.topVer = topVer;
         this.topSnapshot = topSnapshot;
+    }
+
+    /**
+     * @return Discovery cache corresponding to topology version.
+     */
+    public DiscoCache discoCache() {
+        return discoCache;
+    }
+
+    /**
+     * @param discoCache Discovery cache corresponding to topology version.
+     */
+    public void discoCache(DiscoCache discoCache) {
+        this.discoCache = discoCache;
     }
 
     /** {@inheritDoc} */

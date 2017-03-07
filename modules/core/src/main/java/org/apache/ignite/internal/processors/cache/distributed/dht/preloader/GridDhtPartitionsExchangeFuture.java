@@ -44,7 +44,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -101,6 +101,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dummy reassign flag. */
     private final boolean reassign;
 
+    /** */
+    @GridToStringExclude
+    private volatile DiscoCache discoCache;
+
     /** Discovery event. */
     private volatile DiscoveryEvent discoEvt;
 
@@ -111,10 +115,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     @GridToStringExclude
     private int pendingSingleUpdates;
-
-    /** */
-    @GridToStringExclude
-    private List<ClusterNode> srvNodes;
 
     /** */
     private ClusterNode crd;
@@ -144,9 +144,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private boolean init;
-
-    /** Topology snapshot. */
-    private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot = new AtomicReference<>();
 
     /** Last committed cache version before next topology version use. */
     private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
@@ -335,6 +332,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @return Discovery cache.
+     */
+    public DiscoCache discoCache() {
+        return discoCache;
+    }
+
+    /**
      * @param cacheId Cache ID to check.
      * @param topVer Topology version.
      * @return {@code True} if cache was added during this exchange.
@@ -445,11 +449,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
-            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
+            discoCache = discoEvt.discoCache();
 
-            remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
+            discoCache.updateAlives(cctx.discovery());
 
-            crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
+            remaining.addAll(F.nodeIds(F.view(discoCache.serverNodes(), F.remoteNodes(cctx.localNodeId()))));
+
+            crd = discoCache.oldestAliveServerNode();
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -560,7 +566,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                 if (updateTop && clientTop != null)
-                    cacheCtx.topology().update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false));
+                    top.update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false));
             }
 
             top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
@@ -852,7 +858,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         List<String> cachesWithoutNodes = null;
 
         for (String name : cctx.cache().cacheNames()) {
-            if (cctx.discovery().cacheAffinityNodes(name, topologyVersion()).isEmpty()) {
+            if (discoCache.cacheAffinityNodes(name).isEmpty()) {
                 if (cachesWithoutNodes == null)
                     cachesWithoutNodes = new ArrayList<>();
 
@@ -1106,7 +1112,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        topSnapshot.set(null);
         singleMsgs.clear();
         fullMsgs.clear();
         crd = null;
@@ -1261,7 +1266,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         try {
             assert crd.isLocal();
 
-            if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
+            if (!crd.equals(discoCache.serverNodes().get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal())
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
@@ -1291,13 +1296,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     onAffinityInitialized(fut);
             }
             else {
-                List<ClusterNode> nodes;
+                List<ClusterNode> nodes = new ArrayList<>(discoCache.aliveServerNodes());
 
-                synchronized (mux) {
-                    srvNodes.remove(cctx.localNode());
-
-                    nodes = new ArrayList<>(srvNodes);
-                }
+                nodes.remove(cctx.localNode());
 
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
@@ -1571,15 +1572,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         ClusterNode crd0;
 
                         synchronized (mux) {
-                            if (!srvNodes.remove(node))
-                                return;
+                            discoCache.updateAlives(node);
 
                             boolean rmvd = remaining.remove(node.id());
 
                             if (node.equals(crd)) {
                                 crdChanged = true;
 
-                                crd = srvNodes.size() > 0 ? srvNodes.get(0) : null;
+                                crd = discoCache.oldestAliveServerNode();
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -1698,17 +1698,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
-        List<ClusterNode> srvNodes;
 
         synchronized (mux) {
             remaining = new HashSet<>(this.remaining);
-            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
-            "srvNodes", srvNodes,
             "super", super.toString());
     }
 }

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,6 +101,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** */
     private final Object similarAffKey;
+    /** */
+    private volatile DiscoCache discoCache;
 
     /**
      * @param cctx Context.
@@ -119,6 +121,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         this.similarAffKey = similarAffKey;
 
         topVer = exchFut.topologyVersion();
+        discoCache = exchFut.discoCache();
 
         log = cctx.logger(getClass());
 
@@ -190,6 +193,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             this.stopping = stopping;
 
             topVer = exchId.topologyVersion();
+            discoCache = exchFut.discoCache();
 
             updateSeq.setIfGreater(updSeq);
 
@@ -263,7 +267,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             removeNode(exchId.nodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(topVer);
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         assert oldest != null;
 
@@ -416,7 +420,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
             if (!F.isEmpty(nodeIds)) {
                 for (UUID nodeId : nodeIds) {
-                    ClusterNode n = cctx.discovery().node(nodeId);
+                    ClusterNode n = discoCache.node(nodeId);
 
                     if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
                         if (nodes == null)
@@ -442,7 +446,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(discoCache.allNodesWithCaches()) : null;
 
         lock.readLock().lock();
 
@@ -465,7 +469,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     continue;
 
                 if (hasState(p, id, state, states)) {
-                    ClusterNode n = cctx.discovery().node(id);
+                    ClusterNode n = discoCache.node(id);
 
                     if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion()))
                         nodes.add(n);
@@ -758,7 +762,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId.equals(cctx.localNodeId());
 
         // In case if node joins, get topology at the time of joining node.
-        ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(topVer);
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         // If this node became the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
@@ -808,7 +812,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         assert nodeId != null;
         assert lock.writeLock().isHeldByCurrentThread();
 
-        ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(topVer);
+        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
         ClusterNode loc = cctx.localNode();
 
