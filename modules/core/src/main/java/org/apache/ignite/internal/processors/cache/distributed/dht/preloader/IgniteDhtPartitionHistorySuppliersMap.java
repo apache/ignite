@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 

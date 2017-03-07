@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.UUID;
 
 public class IgniteDhtPartitionsToReloadMap implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     private Map<UUID, Map<Integer, Set<Integer>>> map;
 

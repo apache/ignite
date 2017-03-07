@@ -25,6 +25,8 @@ import java.util.Map;
 import org.apache.ignite.internal.util.typedef.T2;
 
 public class IgniteDhtPartitionCountersMap implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     private Map<Integer, Map<Integer, T2<Long, Long>>> map;
 
