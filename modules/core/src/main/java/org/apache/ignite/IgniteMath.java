@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
@@ -53,19 +52,6 @@ public interface IgniteMath extends IgniteAsyncSupport {
     Matrix matrix(String flavor, Map<String, Object> args);
 
     /**
-     * Creates new distributed matrix with given {@code flavor}.
-     * 
-     * @param flavor Matrix flavor.
-     * @param args Initialization parameters for the new matrix.
-     * @param grp Cluster group to be used.
-     * @return Newly created matrix.
-     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
-     * @throws UnsupportedOperationException Thrown when provider is found but matrix cannot be created
-     *      based on the given arguments.
-     */
-    Matrix matrix(String flavor, Map<String, Object> args, ClusterGroup grp);
-
-    /**
      * Creates new local vector with given {@code flavor}.
      *
      * @param flavor Vector flavor.
@@ -76,19 +62,4 @@ public interface IgniteMath extends IgniteAsyncSupport {
      *      based on the given arguments.
      */
     Vector vector(String flavor, Map<String, Object> args);
-
-    /**
-     * Creates new distributed vector with given {@code flavor}.
-     *
-     * @param flavor Vector flavor.
-     * @param args Optional initialization parameters for the new vector.
-     * @param grp Cluster group to be used.
-     * @return Newly created vector.
-     * @throws UnknownProviderException Thrown when no provider can be found for given {@code flavor}.
-     * @throws UnsupportedOperationException Thrown if cluster group is not
-     *      applicable for given vector's {@code flavor}.
-     * @throws UnsupportedOperationException Thrown when provider is found but vector cannot be created
-     *      based on the given arguments.
-     */
-    Vector vector(String flavor, Map<String, Object> args, ClusterGroup grp);
 }

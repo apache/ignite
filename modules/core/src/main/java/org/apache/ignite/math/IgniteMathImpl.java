@@ -54,17 +54,7 @@ public class IgniteMathImpl extends AsyncSupportAdapter<IgniteMathImpl> implemen
     }
 
     @Override
-    public Matrix matrix(String flavor, Map<String, Object> args, ClusterGroup grp) {
-        return null; // TODO
-    }
-
-    @Override
     public Vector vector(String flavor, Map<String, Object> args) {
-        return null; // TODO
-    }
-
-    @Override
-    public Vector vector(String flavor, Map<String, Object> args, ClusterGroup grp) {
         return null; // TODO
     }
 
