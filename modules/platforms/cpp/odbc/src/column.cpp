@@ -58,7 +58,7 @@ namespace
      * complex type.
      * @return Column type header.
      */
-    int8_t ReadColumnHeader(ignite::impl::interop::InteropInputStream& stream)
+    int8_t ReadColumnHeader(InteropInputStream& stream)
     {
         using namespace ignite::impl::binary;
 
@@ -130,10 +130,10 @@ namespace ignite
             // No-op.
         }
 
-        Column::Column(ignite::impl::binary::BinaryReaderImpl& reader) :
+        Column::Column(BinaryReaderImpl& reader) :
             type(0), startPos(-1), endPos(-1), offset(0), size(0)
         {
-            ignite::impl::interop::InteropInputStream* stream = reader.GetStream();
+            InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
                 return;
@@ -294,12 +294,8 @@ namespace ignite
             size = sizeTmp;
         }
 
-        SqlResult Column::ReadToBuffer(ignite::impl::binary::BinaryReaderImpl& reader,
-            app::ApplicationDataBuffer& dataBuf)
+        SqlResult Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
         {
-            using namespace ignite::impl::binary;
-            using namespace ignite::impl::interop;
-
             if (!IsValid())
                 return SQL_RESULT_ERROR;
 
@@ -310,7 +306,7 @@ namespace ignite
                 return SQL_RESULT_NO_DATA;
             }
 
-            ignite::impl::interop::InteropInputStream* stream = reader.GetStream();
+            InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
                 return SQL_RESULT_ERROR;

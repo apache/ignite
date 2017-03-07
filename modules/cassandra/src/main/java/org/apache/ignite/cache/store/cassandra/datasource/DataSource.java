@@ -39,6 +39,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
@@ -54,9 +56,11 @@ public class DataSource {
     private ConsistencyLevel writeConsistency;
 
     /** Username to use for authentication. */
+    @GridToStringExclude
     private String user;
 
     /** Password to use for authentication. */
+    @GridToStringExclude
     private String pwd;
 
     /** Port to use for Cassandra connection. */
@@ -546,5 +550,10 @@ public class DataSource {
      */
     private synchronized void invalidate() {
         ses = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataSource.class, this);
     }
 }

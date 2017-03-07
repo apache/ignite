@@ -59,6 +59,33 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** */
     private static final int OP_RECEIVER = 2;
 
+    /** */
+    private static final int OP_ALLOW_OVERWRITE = 3;
+
+    /** */
+    private static final int OP_SET_ALLOW_OVERWRITE = 4;
+
+    /** */
+    private static final int OP_SKIP_STORE = 5;
+
+    /** */
+    private static final int OP_SET_SKIP_STORE = 6;
+
+    /** */
+    private static final int OP_PER_NODE_BUFFER_SIZE = 7;
+
+    /** */
+    private static final int OP_SET_PER_NODE_BUFFER_SIZE = 8;
+
+    /** */
+    private static final int OP_PER_NODE_PARALLEL_OPS = 9;
+
+    /** */
+    private static final int OP_SET_PER_NODE_PARALLEL_OPS = 10;
+
+    /** */
+    private static final int OP_LISTEN_TOPOLOGY = 11;
+
     /** Cache name. */
     private final String cacheName;
 
@@ -126,7 +153,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 return TRUE;
 
-            case OP_RECEIVER:
+            case OP_RECEIVER: {
                 long ptr = reader.readLong();
 
                 Object rec = reader.readObjectDetached();
@@ -134,39 +161,77 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepBinary));
 
                 return TRUE;
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);
         }
     }
 
-    /**
-     * Listen topology changes.
-     *
-     * @param ptr Pointer.
-     */
-    public void listenTopology(final long ptr) {
-        lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+    /** {@inheritDoc}  */
+    @Override protected long processInLongOutLong(int type, final long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_SET_ALLOW_OVERWRITE:
+                ldr.allowOverwrite(val == TRUE);
 
-                long topVer = discoEvt.topologyVersion();
-                int topSize = platformCtx.kernalContext().discovery().cacheNodes(
-                    cacheName, new AffinityTopologyVersion(topVer)).size();
+                return TRUE;
 
-                platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
+            case OP_SET_PER_NODE_BUFFER_SIZE:
+                ldr.perNodeBufferSize((int) val);
+
+                return TRUE;
+
+            case OP_SET_SKIP_STORE:
+                ldr.skipStore(val == TRUE);
+
+                return TRUE;
+
+            case OP_SET_PER_NODE_PARALLEL_OPS:
+                ldr.perNodeParallelOperations((int) val);
+
+                return TRUE;
+
+            case OP_LISTEN_TOPOLOGY: {
+                lsnr = new GridLocalEventListener() {
+                    @Override public void onEvent(Event evt) {
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                        long topVer = discoEvt.topologyVersion();
+                        int topSize = platformCtx.kernalContext().discovery().cacheNodes(
+                                cacheName, new AffinityTopologyVersion(topVer)).size();
+
+                        platformCtx.gateway().dataStreamerTopologyUpdate(val, topVer, topSize);
+                    }
+                };
+
+                platformCtx.kernalContext().event().addLocalEventListener(lsnr,
+                        EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+                GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
+
+                AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
+
+                int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
+
+                platformCtx.gateway().dataStreamerTopologyUpdate(val, topVer.topologyVersion(), topSize);
+
+                return TRUE;
             }
-        };
 
-        platformCtx.kernalContext().event().addLocalEventListener(lsnr, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
+            case OP_ALLOW_OVERWRITE:
+                return ldr.allowOverwrite() ? TRUE : FALSE;
 
-        GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
+            case OP_PER_NODE_BUFFER_SIZE:
+                return ldr.perNodeBufferSize();
 
-        AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
+            case OP_SKIP_STORE:
+                return ldr.skipStore() ? TRUE : FALSE;
 
-        int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
+            case OP_PER_NODE_PARALLEL_OPS:
+                return ldr.perNodeParallelOperations();
+        }
 
-        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
+        return super.processInLongOutLong(type, val);
     }
 
     /**

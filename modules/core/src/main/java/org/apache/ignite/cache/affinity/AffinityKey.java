@@ -60,12 +60,12 @@ public class AffinityKey<K> implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private K key;
 
     /** Affinity key. */
     @AffinityKeyMapped
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private Object affKey;
 
     /**

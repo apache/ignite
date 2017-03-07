@@ -1,0 +1,68 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var form = 'events'
+-var model = 'backupItem'
+-var modelEventStorage = model + '.eventStorage'
+-var modelEventStorageKind = modelEventStorage + '.kind'
+-var eventStorageMemory = modelEventStorageKind + ' === "Memory"'
+-var eventStorageCustom = modelEventStorageKind + ' === "Custom"'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Events
+        ignite-form-field-tooltip.tipLabel
+            | Grid events are used for notification about what happens within the grid#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/events" target="_blank") More info]
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +dropdown-multiple('Include type:', model + '.includeEventTypes', '"includeEventTypes"', true, 'Choose recorded event types', '', 'eventGroups',
+                    'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
+                    Note, that either the include event types or the exclude event types can be established')
+
+                .settings-row
+                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', '',
+                    '[\
+                        {value: "Memory", label: "Memory"},\
+                        {value: "Custom", label: "Custom"}\
+                    ]',
+                    'Regulate how grid store events locally on node\
+                    <ul>\
+                        <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                        <li>Custom - Custom implementation of event storage SPI</li>\
+                    </ul>')
+
+                div(ng-show=eventStorageMemory)
+                    .settings-row
+                        +number('Events expiration time:', modelEventStorage + '.Memory.expireAgeMs', '"EventStorageExpireAgeMs"', 'true', 'Long.MAX_VALUE', '1', 'All events that exceed this value will be removed from the queue when next event comes')
+                    .settings-row
+                        +number('Events queue size:', modelEventStorage + '.Memory.expireCount', '"EventStorageExpireCount"', 'true', '10000', '1', 'Events will be filtered out when new request comes')
+                    .settings-row
+                        +java-class('Filter:', modelEventStorage + '.Memory.filter', '"EventStorageFilter"', 'true', 'false',
+                        'Filter for events to be recorded<br/>\
+                        Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;', eventStorageMemory)
+
+                .settings-row(ng-show=eventStorageCustom)
+                    +java-class('Class:', modelEventStorage + '.Custom.className', '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name', eventStorageCustom)
+
+            .col-sm-6
+                +preview-xml-java(model, 'clusterEvents')

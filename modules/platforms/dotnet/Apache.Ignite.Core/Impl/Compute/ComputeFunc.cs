@@ -66,7 +66,10 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             catch (TargetInvocationException ex)
             {
-                throw ex.InnerException;
+                if (ex.InnerException != null)
+                    throw ex.InnerException;
+
+                throw;
             }
         }
 

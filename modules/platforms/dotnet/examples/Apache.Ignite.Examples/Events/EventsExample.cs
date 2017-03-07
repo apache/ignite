@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-using System;
-using System.Linq;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Events;
-using Apache.Ignite.ExamplesDll.Compute;
-using Apache.Ignite.ExamplesDll.Events;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Events
 {
+    using System;
+    using System.Linq;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Events;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Compute;
+    using Apache.Ignite.ExamplesDll.Events;
+
     /// <summary>
     /// Example demonstrating Ignite events.
     /// <para />

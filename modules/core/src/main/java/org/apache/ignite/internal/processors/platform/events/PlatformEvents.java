@@ -69,7 +69,28 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private static final int OP_GET_ENABLED_EVENTS = 10;
 
     /** */
+    private static final int OP_WITH_ASYNC = 11;
+
+    /** */
+    private static final int OP_IS_ENABLED = 12;
+
+    /** */
+    private static final int OP_LOCAL_LISTEN = 13;
+
+    /** */
+    private static final int OP_STOP_LOCAL_LISTEN = 14;
+
+    /** */
+    private static final int OP_REMOTE_QUERY_ASYNC = 15;
+
+    /** */
+    private static final int OP_WAIT_FOR_LOCAL_ASYNC = 16;
+
+    /** */
     private final IgniteEvents events;
+
+    /** */
+    private final IgniteEvents eventsAsync;
 
     /** */
     private final EventResultWriter eventResWriter;
@@ -89,53 +110,10 @@ public class PlatformEvents extends PlatformAbstractTarget {
         assert events != null;
 
         this.events = events;
+        eventsAsync = events.withAsync();
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
-    }
-
-    /**
-     * Gets events with asynchronous mode enabled.
-     *
-     * @return Events with asynchronous mode enabled.
-     */
-    public PlatformEvents withAsync() {
-        if (events.isAsync())
-            return this;
-
-        return new PlatformEvents(platformCtx, events.withAsync());
-    }
-
-    /**
-     * Adds an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     * @param type Event type.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void localListen(long hnd, int type) {
-        events.localListen(localFilter(hnd), type);
-    }
-
-    /**
-     * Removes an event listener for local events.
-     *
-     * @param hnd Interop listener handle.
-     */
-    @SuppressWarnings({"UnusedDeclaration", "unchecked"})
-    public boolean stopLocalListen(long hnd) {
-        return events.stopLocalListen(localFilter(hnd));
-    }
-
-    /**
-     * Check if event is enabled.
-     *
-     * @param type Event type.
-     * @return {@code True} if event of passed in type is enabled.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean isEnabled(int type) {
-        return events.isEnabled(type);
     }
 
     /** {@inheritDoc} */
@@ -163,6 +141,26 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
                 return TRUE;
 
+            case OP_LOCAL_LISTEN:
+                events.localListen(localFilter(reader.readLong()), reader.readInt());
+
+                return TRUE;
+
+            case OP_REMOTE_QUERY_ASYNC:
+                startRemoteQuery(reader, eventsAsync);
+
+                readAndListenFuture(reader, currentFuture(), eventColResWriter);
+
+                return TRUE;
+
+            case OP_WAIT_FOR_LOCAL_ASYNC: {
+                startWaitForLocal(reader, eventsAsync);
+
+                readAndListenFuture(reader, currentFuture(), eventResWriter);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -186,13 +184,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_WAIT_FOR_LOCAL: {
-                boolean hasFilter = reader.readBoolean();
-
-                IgnitePredicate pred = hasFilter ? localFilter(reader.readLong()) : null;
-
-                int[] eventTypes = readEventTypes(reader);
-
-                EventAdapter result = (EventAdapter) events.waitForLocal(pred, eventTypes);
+                EventAdapter result = startWaitForLocal(reader, events);
 
                 platformCtx.writeEvent(writer, result);
 
@@ -230,24 +222,9 @@ public class PlatformEvents extends PlatformAbstractTarget {
             }
 
             case OP_REMOTE_QUERY: {
-                Object pred = reader.readObjectDetached();
+                Collection<Event> result = startRemoteQuery(reader, events);
 
-                long timeout = reader.readLong();
-
-                int[] types = readEventTypes(reader);
-
-                PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
-
-                Collection<Event> result = events.remoteQuery(filter, timeout);
-
-                if (result == null)
-                    writer.writeInt(-1);
-                else {
-                    writer.writeInt(result.size());
-
-                    for (Event e : result)
-                        platformCtx.writeEvent(writer, e);
-                }
+                eventColResWriter.write(writer, result, null);
 
                 break;
             }
@@ -255,6 +232,42 @@ public class PlatformEvents extends PlatformAbstractTarget {
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
+    }
+
+    /**
+     * Starts the waitForLocal.
+     *
+     * @param reader Reader
+     * @param events Events.
+     * @return Result.
+     */
+    private EventAdapter startWaitForLocal(BinaryRawReaderEx reader, IgniteEvents events) {
+        Long filterHnd = reader.readObject();
+
+        IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
+
+        int[] eventTypes = readEventTypes(reader);
+
+        return (EventAdapter) events.waitForLocal(filter, eventTypes);
+    }
+
+    /**
+     * Starts the remote query.
+     *
+     * @param reader Reader.
+     * @param events Events.
+     * @return Result.
+     */
+    private Collection<Event> startRemoteQuery(BinaryRawReaderEx reader, IgniteEvents events) {
+        Object pred = reader.readObjectDetached();
+
+        long timeout = reader.readLong();
+
+        int[] types = readEventTypes(reader);
+
+        PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+
+        return events.remoteQuery(filter, timeout);
     }
 
     /** {@inheritDoc} */
@@ -270,12 +283,38 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)events.future()).internalFuture();
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (events.isAsync())
+                    return this;
+
+                return new PlatformEvents(platformCtx, events.withAsync());
+        }
+
+        return super.processOutObject(type);
     }
 
-    /** <inheritDoc /> */
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_IS_ENABLED:
+                return events.isEnabled((int)val) ? TRUE : FALSE;
+
+            case OP_STOP_LOCAL_LISTEN:
+                return events.stopLocalListen(localFilter(val)) ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((IgniteFutureImpl)eventsAsync.future()).internalFuture();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override protected PlatformFutureUtils.Writer futureWriter(int opId) {
         switch (opId) {
             case OP_WAIT_FOR_LOCAL:
@@ -382,12 +421,17 @@ public class PlatformEvents extends PlatformAbstractTarget {
         /** <inheritDoc /> */
         @SuppressWarnings("unchecked")
         @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
-            Collection<EventAdapter> events = (Collection<EventAdapter>)obj;
+            Collection<Event> events = (Collection<Event>)obj;
 
-            writer.writeInt(events.size());
+            if (obj != null) {
+                writer.writeInt(events.size());
 
-            for (EventAdapter e : events)
-                platformCtx.writeEvent(writer, e);
+                for (Event e : events)
+                    platformCtx.writeEvent(writer, e);
+            }
+            else {
+                writer.writeInt(-1);
+            }
         }
 
         /** <inheritDoc /> */

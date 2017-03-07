@@ -273,7 +273,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             nodeId,
                             req.threadId(),
                             req.version(),
-                            req.timeout(),
                             tx != null,
                             tx != null && tx.implicitSingle(),
                             null

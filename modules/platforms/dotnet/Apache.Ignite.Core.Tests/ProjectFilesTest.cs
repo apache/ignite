@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using NUnit.Framework;
 
     /// <summary>
@@ -37,11 +39,68 @@ namespace Apache.Ignite.Core.Tests
             var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories);
             Assert.GreaterOrEqual(projFiles.Length, 7);
 
-            var invalidFiles =
-                projFiles.Where(x => !File.ReadAllText(x.FullName).Contains("ToolsVersion=\"4.0\"")).ToArray();
+            CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
+        }
 
-            Assert.AreEqual(0, invalidFiles.Length,
-                "Invalid csproj files: " + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+        /// <summary>
+        /// Tests that release build settings are correct: XML docs are generated.
+        /// </summary>
+        [Test]
+        public void TestCsprojReleaseDocs()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"), 
+                "Missing XML doc in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: there are no DEBUG/TRACE constants.
+        /// </summary>
+        [Test]
+        public void TestCsprojBuildSettings()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"), 
+                "Invalid constants in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: debug information is disabled.
+        /// </summary>
+        [Test]
+        public void TestCsprojPdbSettings()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"), 
+                "Invalid DebugType in release mode: ");
+        }
+
+        /// <summary>
+        /// Tests that release build settings are correct: debug information is disabled.
+        /// </summary>
+        [Test]
+        public void TestCsprojOptimizeCode()
+        {
+            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"), 
+                "Invalid optimize setting in release mode: ");
+        }
+
+        /// <summary>
+        /// Gets the csproj files that go to the release binary package.
+        /// </summary>
+        private static IEnumerable<FileInfo> GetReleaseCsprojFiles()
+        {
+            return GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => x.Name != "Apache.Ignite.csproj" &&
+                            !x.Name.Contains("Test") &&
+                            !x.Name.Contains("Example") &&
+                            !x.Name.Contains("Benchmark"));
+        }
+
+        /// <summary>
+        /// Gets the release section.
+        /// </summary>
+        private static string GetReleaseSection(string csproj)
+        {
+            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>", 
+                RegexOptions.Singleline).Value;
         }
 
         /// <summary>
@@ -53,17 +112,32 @@ namespace Apache.Ignite.Core.Tests
             var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories);
             Assert.GreaterOrEqual(slnFiles.Length, 2);
 
-            var invalidFiles =
-                slnFiles.Where(x =>
-                {
-                    var text = File.ReadAllText(x.FullName);
+            CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||
+                                      !x.Contains("Microsoft Visual Studio Solution File, Format Version 11.00"),
+                "Invalid sln files: ");
+        }
 
-                    return !text.Contains("# Visual Studio 2010") ||
-                           !text.Contains("Microsoft Visual Studio Solution File, Format Version 11.00");
-                }).ToArray();
+        /// <summary>
+        /// Tests that there are no Cyrillic C instead of English C (which are on the same keyboard key).
+        /// </summary>
+        [Test]
+        public void TestCyrillicChars()
+        {
+            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories)
+                  .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
+
+            CheckFiles(srcFiles, x => x.Contains('\u0441') || x.Contains('\u0421'), "Files with Cyrillic 'C': ");
+        }
+
+        /// <summary>
+        /// Checks the files.
+        /// </summary>
+        private static void CheckFiles(IEnumerable<FileInfo> files, Func<string, bool> isInvalid, string errorText)
+        {
+            var invalidFiles = files.Where(x => isInvalid(File.ReadAllText(x.FullName))).ToArray();
 
             Assert.AreEqual(0, invalidFiles.Length,
-                "Invalid sln files: " + string.Join(", ", invalidFiles.Select(x => x.FullName)));
+                errorText + string.Join(", ", invalidFiles.Select(x => x.FullName)));
         }
 
         /// <summary>

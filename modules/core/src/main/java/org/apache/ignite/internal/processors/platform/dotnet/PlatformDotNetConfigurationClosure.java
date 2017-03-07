@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -89,7 +89,15 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr);
+        PlatformLogger userLogger = null;
+
+        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
+            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
+            userLogger.setGateway(gate);
+        }
+
+        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
+            userLogger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -146,18 +154,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
 
-        if (ggHome == null)
-            ggHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
+        if (ggHome != null)
             U.setIgniteHome(ggHome);
-
-        try {
-            U.setWorkDirectory(igniteCfg.getWorkDirectory(), ggHome);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
 
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);

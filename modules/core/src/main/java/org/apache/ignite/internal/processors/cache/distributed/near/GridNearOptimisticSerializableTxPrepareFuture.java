@@ -117,8 +117,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                     Object key = entry.key().value(ctx.cacheObjectContext(), false);
 
                                     IgniteTxOptimisticCheckedException err0 =
-                                        new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
-                                            "read/write conflict [key=" + key + ", cache=" + ctx.name() + ']');
+                                        new IgniteTxOptimisticCheckedException(S.toString(
+                                            "Failed to prepare transaction, read/write conflict",
+                                            "key", key, true,
+                                            "cache", ctx.name(), false));
 
                                     ERR_UPD.compareAndSet(this, null, err0);
                                 }
@@ -184,7 +186,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
 
-        if (e instanceof IgniteTxOptimisticCheckedException) {
+        if (e instanceof IgniteTxOptimisticCheckedException || e instanceof IgniteTxTimeoutCheckedException) {
             if (m != null)
                 tx.removeMapping(m.node().id());
         }
@@ -424,10 +426,21 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         final ClusterNode n = m.node();
 
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1) {
+            IgniteCheckedException err = tx.timeoutException();
+
+            fut.onResult(err);
+
+            return err;
+        }
+
         GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
             futId,
             tx.topologyVersion(),
             tx,
+            timeout,
             m.reads(),
             m.writes(),
             m.near(),
@@ -515,7 +528,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     ) {
         GridCacheContext cacheCtx = entry.context();
 
-        List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
+        List<ClusterNode> nodes = cacheCtx.isLocal() ?
+            cacheCtx.affinity().nodes(entry.key(), topVer) :
+            cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
 

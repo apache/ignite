@@ -273,6 +273,10 @@ namespace Apache.Ignite.Linq.Impl
                 // Workaround for unlimited offset (IGNITE-2602)
                 // H2 allows NULL & -1 for unlimited, but Ignite indexing does not
                 // Maximum limit that works is (int.MaxValue - offset) 
+
+                if (offset.Count is ParameterExpression)
+                    throw new NotSupportedException("Skip() without Take() is not supported in compiled queries.");
+
                 var offsetInt = (int) ((ConstantExpression) offset.Count).Value;
                 _builder.Append((int.MaxValue - offsetInt).ToString(CultureInfo.InvariantCulture));
             }
@@ -423,17 +427,6 @@ namespace Apache.Ignite.Linq.Impl
             }
             else
             {
-                var innerExpr = joinClause.InnerSequence as ConstantExpression;
-
-                if (innerExpr == null)
-                    throw new NotSupportedException("Unexpected JOIN inner sequence (subqueries are not supported): " +
-                                                    joinClause.InnerSequence);
-
-                if (!(innerExpr.Value is ICacheQueryable))
-                    throw new NotSupportedException("Unexpected JOIN inner sequence " +
-                                                    "(only results of cache.ToQueryable() are supported): " +
-                                                    innerExpr.Value);
-
                 var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
                 var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
                 var alias = _aliases.GetTableAlias(joinClause);

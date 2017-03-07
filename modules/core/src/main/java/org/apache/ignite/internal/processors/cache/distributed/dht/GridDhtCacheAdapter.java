@@ -35,8 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -574,8 +574,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
         catch (GridDhtInvalidPartitionException e) {
             if (log.isDebugEnabled())
-                log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
-                    ", err=" + e + ']');
+                log.debug(S.toString("Ignoring entry for partition that does not belong",
+                    "key", key, true,
+                    "val", val, true,
+                    "err", e, false));
         }
     }
 
@@ -1166,7 +1168,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PartitionEntrySet.class, this, "super", super.toString());
+            return S.toString(PartitionEntrySet.class, this, "super", super.toString(), true);
         }
     }
 
@@ -1229,13 +1231,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
         final boolean backup,
         final boolean keepBinary) {
+        return localEntriesIterator(primary,
+            backup,
+            keepBinary,
+            ctx.affinity().affinityTopologyVersion());
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param keepBinary Keep binary flag.
+     * @param topVer Specified affinity topology version.
+     * @return Local entries iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+        final boolean backup,
+        final boolean keepBinary,
+        final AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (primary && backup)
             return iterator(entries().iterator(), !keepBinary);
         else {
-            final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
             Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {

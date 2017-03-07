@@ -62,6 +62,13 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /**
+     * @param id Message ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
      * @return Collection of change requests.
      */
     public Collection<DynamicCacheChangeRequest> requests() {

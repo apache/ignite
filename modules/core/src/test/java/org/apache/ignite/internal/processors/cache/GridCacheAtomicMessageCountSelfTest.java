@@ -27,8 +27,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -137,11 +139,14 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicFullUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicSingleUpdateRequest.class);
 
             int putCnt = 15;
 
+            int expNearSingleCnt = 0;
             int expNearCnt = 0;
             int expDhtCnt = 0;
 
@@ -160,28 +165,31 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
                     if (affinity.isPrimary(locNode, i))
                         expDhtCnt++;
                     else
-                        expNearCnt ++;
+                        expNearSingleCnt++;
                 }
 
                 jcache(0).put(i, i);
             }
 
-            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
-            assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
+            assertEquals(expNearSingleCnt, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+            assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
 
             if (writeOrderMode == CLOCK) {
                 for (int i = 1; i < 4; i++) {
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class));
                 }
             }
             else {
                 for (int i = 1; i < 4; i++) {
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class));
+                    assertEquals(0, commSpi.messageCount(GridNearAtomicFullUpdateRequest.class));
                 }
             }
         }

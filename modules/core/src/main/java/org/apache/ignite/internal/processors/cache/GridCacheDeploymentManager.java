@@ -359,10 +359,14 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
 
         if (log.isDebugEnabled())
-            log.debug("Finished examining entry [entryCls=" + e.getClass() +
-                ", key=" + key0 + ", keyCls=" + key0.getClass() +
-                ", valCls=" + (val0 != null ? val0.getClass() : "null") +
-                ", keyLdr=" + keyLdr + ", valLdr=" + valLdr + ", res=" + res + ']');
+            log.debug(S.toString("Finished examining entry",
+                "entryCls", e.getClass(), true,
+                "key", key0, true,
+                "keyCls", key0.getClass(), true,
+                "valCls", (val0 != null ? val0.getClass() : "null"), true,
+                "keyLdr", keyLdr, false,
+                "valLdr", valLdr, false,
+                "res", res, false));
 
         return res;
     }
@@ -399,7 +403,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     ", daemon=" + daemon + ']');
 
             if (!daemon) {
-                LT.warn(log, null, "Ignoring deployment in PRIVATE or ISOLATED mode " +
+                LT.warn(log, "Ignoring deployment in PRIVATE or ISOLATED mode " +
                     "[sndId=" + sndId + ", ldrId=" + ldrId + ", userVer=" + userVer + ", mode=" + mode +
                     ", participants=" + participants + ", daemon=" + daemon + ']');
             }
@@ -408,7 +412,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (mode != cctx.gridConfig().getDeploymentMode()) {
-            LT.warn(log, null, "Local and remote deployment mode mismatch (please fix configuration and restart) " +
+            LT.warn(log, "Local and remote deployment mode mismatch (please fix configuration and restart) " +
                 "[locDepMode=" + cctx.gridConfig().getDeploymentMode() + ", rmtDepMode=" + mode + ", rmtNodeId=" +
                 sndId + ']');
 

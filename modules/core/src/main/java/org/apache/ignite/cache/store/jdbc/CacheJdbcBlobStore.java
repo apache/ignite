@@ -252,7 +252,10 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         V val = entry.getValue();
 
         if (log.isDebugEnabled())
-            log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
+            log.debug(S.toString("Store put",
+                "key", key, true,
+                "val", val, true,
+                "tx", tx, false));
 
         Connection conn = null;
 
@@ -560,7 +563,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return U.marshal(marsh, obj);
     }
 
     /**
@@ -575,7 +578,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return U.unmarshal(marsh, bytes, getClass().getClassLoader());
     }
 
     /**

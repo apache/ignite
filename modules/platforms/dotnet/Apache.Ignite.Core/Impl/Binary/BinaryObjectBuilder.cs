@@ -1027,7 +1027,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Mutation ocntext.
+        /// Mutation context.
         /// </summary>
         private class Context
         {

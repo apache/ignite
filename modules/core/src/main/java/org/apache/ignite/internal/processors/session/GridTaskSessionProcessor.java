@@ -73,8 +73,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param endTime Execution end time.
      * @param siblings Collection of siblings.
      * @param attrs Map of attributes.
-     * @param fullSup {@code True} to enable distributed session attributes
-     *      and checkpoints.
+     * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
+     * @param internal {@code True} in case of internal task.
      * @param subjId Subject ID.
      * @return New session if one did not exist, or existing one.
      */
@@ -90,6 +90,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
+        boolean internal,
         UUID subjId) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
@@ -105,6 +106,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 attrs,
                 ctx,
                 false,
+                internal,
                 subjId);
         }
 
@@ -127,6 +129,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         attrs,
                         ctx,
                         true,
+                        internal,
                         subjId));
 
                 if (old != null)

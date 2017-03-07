@@ -139,6 +139,22 @@ namespace ignite
                 const DiagnosticRecord& GetStatusRecord(int32_t idx) const;
 
                 /**
+                 * Get specified status record.
+                 *
+                 * @param idx Status record index.
+                 * @return Status record instance reference.
+                 */
+                DiagnosticRecord& GetStatusRecord(int32_t idx);
+
+                /**
+                 * Get last non-retrieved status record index.
+                 *
+                 * @return Index of the last non-retrieved status record or zero
+                 *  if nothing was found.
+                 */
+                int32_t GetLastNonRetrieved() const;
+
+                /**
                  * Check if the record is in the success state.
                  *
                  * @return True if the record is in the success state.

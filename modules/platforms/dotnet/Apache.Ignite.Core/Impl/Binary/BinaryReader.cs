@@ -768,7 +768,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_curHdr.IsCompactFooter)
             {
                 // Get schema from Java
-                var schema = Marshaller.Ignite.ClusterGroup.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
+                var schema = Marshaller.Ignite.BinaryProcessor.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
 
                 if (schema == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -137,7 +138,10 @@ public class TxDeadlock {
 
             Object val = CU.value(txKey.key(), cctx, true);
 
-            sb.append(e.getValue()).append(" [key=").append(val).append(", cache=").append(cctx.namexx()).append("]\n");
+            sb.append(e.getValue()).append(" [");
+            if (S.INCLUDE_SENSITIVE)
+                sb.append("key=").append(val).append(", ");
+            sb.append("cache=").append(cctx.namexx()).append("]\n");
         }
 
         return sb.toString();

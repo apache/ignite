@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Base class for managed and unmanaged data streams.
     /// </summary>
-    internal unsafe abstract class BinaryStreamBase : IBinaryStream
+    internal abstract unsafe class BinaryStreamBase : IBinaryStream
     {
         /** Byte: zero. */
         private const byte ByteZero = 0;
@@ -1070,13 +1070,10 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <returns>
         ///   <c>True</c> if they are same.
         /// </returns>
-        public virtual bool IsSameArray(byte[] arr)
-        {
-            return false;
-        }
-
+        public abstract bool IsSameArray(byte[] arr);
+        
         /// <summary>
-        /// Seek to the given positoin.
+        /// Seek to the given position.
         /// </summary>
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>

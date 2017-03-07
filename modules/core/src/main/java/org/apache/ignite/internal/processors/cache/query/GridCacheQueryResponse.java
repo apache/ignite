@@ -124,7 +124,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = U.marshal(ctx, err);
 
         if (metaDataBytes == null)
             metaDataBytes = marshalCollection(metadata, cctx);
@@ -149,7 +149,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (metadata == null)
             metadata = unmarshalCollection(metaDataBytes, ctx, ldr);

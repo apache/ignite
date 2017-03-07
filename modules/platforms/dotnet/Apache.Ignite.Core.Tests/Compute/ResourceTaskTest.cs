@@ -54,6 +54,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test Ignite injection into the task.
+        /// </summary>
+        [Test]
+        public void TestTaskInjectionBinarizable()
+        {
+            int res = Grid1.GetCompute().Execute(new InjectionTaskBinarizable(), 0);
+
+            Assert.AreEqual(GetServerCount(), res);
+        }
+
+        /// <summary>
         /// Test Ignite injection into the closure.
         /// </summary>
         [Test]
@@ -86,6 +97,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(GetServerCount(), res);
         }
 
+        /** <inheritdoc /> */
+        protected override ICollection<Type> GetBinaryTypes()
+        {
+            return new[] {typeof(InjectionJobBinarizable)};
+        }
+
         /// <summary>
         /// Injection task.
         /// </summary>
@@ -110,6 +127,40 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 return results.Sum(res => res.Data);
             }
+        }
+
+        /// <summary>
+        /// Injection task.
+        /// </summary>
+        private class InjectionTaskBinarizable : Injectee, IComputeTask<object, int, int>
+        {
+            /** <inheritDoc /> */
+            public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
+            {
+                CheckInjection();
+
+                return subgrid.ToDictionary(x => (IComputeJob<int>) new InjectionJobBinarizable(), x => x);
+            }
+
+            /** <inheritDoc /> */
+            public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
+            {
+                return ComputeJobResultPolicy.Wait;
+            }
+
+            /** <inheritDoc /> */
+            public int Reduce(IList<IComputeJobResult<int>> results)
+            {
+                return results.Sum(res => res.Data);
+            }
+        }
+
+        /// <summary>
+        /// Binarizable job.
+        /// </summary>
+        public class InjectionJobBinarizable : InjectionJob
+        {
+            // No-op.
         }
 
         /// <summary>

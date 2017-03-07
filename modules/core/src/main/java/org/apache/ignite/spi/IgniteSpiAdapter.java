@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -759,6 +760,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
+        @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+            /* No-op. */
+        }
+
+        /** {@inheritDoc} */
         @Override public void recordEvent(Event evt) {
             /* No-op. */
         }
@@ -846,6 +852,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public boolean isEventRecordable(int... types) {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+             /* No-op. */
         }
 
         /** {@inheritDoc} */

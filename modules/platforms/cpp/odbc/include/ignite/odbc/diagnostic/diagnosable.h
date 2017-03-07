@@ -48,6 +48,13 @@ namespace ignite
                 virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
 
                 /**
+                 * Get diagnostic record.
+                 *
+                 * @return Diagnostic record.
+                 */
+                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
+
+                /**
                  * Add new status record.
                  *
                  * @param sqlState SQL state.

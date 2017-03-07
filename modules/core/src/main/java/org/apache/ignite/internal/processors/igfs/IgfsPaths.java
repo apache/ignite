@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
@@ -48,7 +47,7 @@ public class IgfsPaths implements Externalizable {
     private IgfsMode dfltMode;
 
     /** Path modes. */
-    private List<T2<IgfsPath, IgfsMode>> pathModes;
+    private ArrayList<T2<IgfsPath, IgfsMode>> pathModes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -65,7 +64,7 @@ public class IgfsPaths implements Externalizable {
      * @param pathModes Path modes.
      * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes)
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable ArrayList<T2<IgfsPath, IgfsMode>> pathModes)
         throws IgniteCheckedException {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
@@ -75,7 +74,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-            new JdkMarshaller().marshal(payload, out);
+            U.marshal(new JdkMarshaller(), payload, out);
 
             payloadBytes = out.toByteArray();
         }
@@ -91,7 +90,7 @@ public class IgfsPaths implements Externalizable {
     /**
      * @return Path modes.
      */
-    @Nullable public List<T2<IgfsPath, IgfsMode>> pathModes() {
+    @Nullable public ArrayList<T2<IgfsPath, IgfsMode>> pathModes() {
         return pathModes;
     }
 
@@ -106,7 +105,7 @@ public class IgfsPaths implements Externalizable {
         else {
             ByteArrayInputStream in = new ByteArrayInputStream(payloadBytes);
 
-            return new JdkMarshaller().unmarshal(in, clsLdr);
+            return U.unmarshal(new JdkMarshaller(), in, clsLdr);
         }
     }
 
@@ -144,9 +143,7 @@ public class IgfsPaths implements Externalizable {
             pathModes = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++) {
-                IgfsPath path = new IgfsPath();
-
-                path.readExternal(in);
+                IgfsPath path = IgfsUtils.readPath(in);
 
                 pathModes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }

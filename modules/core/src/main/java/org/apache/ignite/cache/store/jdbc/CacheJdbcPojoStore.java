@@ -35,6 +35,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -102,7 +103,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             return prop.get(obj);
         }
         catch (Exception e) {
-            throw new CacheException("Failed to read object of class: " + typeName, e);
+            throw new CacheException("Failed to read object property [cache=" + U.maskName(cacheName) +
+                ", type=" + typeName + ", prop=" + fldName + "]", e);
         }
     }
 
@@ -148,14 +150,15 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
      */
     private Object buildBuiltinObject(String typeName, JdbcTypeField[] fields, Map<String, Integer> loadColIdxs,
         ResultSet rs) throws CacheLoaderException {
+        JdbcTypeField field = fields[0];
+
         try {
-            JdbcTypeField field = fields[0];
-            int colIdx = loadColIdxs.get(field.getDatabaseFieldName());
+            Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
             return transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
+            throw new CacheLoaderException("Failed to read object: [cls=" + typeName + ", prop=" + field + "]", e);
         }
     }
 
@@ -196,9 +199,9 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     throw new IllegalStateException("Failed to find property in POJO class [type=" + typeName +
                         ", prop=" + fldJavaName + "]");
 
-                String fldDbName = fld.getDatabaseFieldName();
+                String dbName = fld.getDatabaseFieldName();
 
-                Integer colIdx = loadColIdxs.get(fldDbName);
+                Integer colIdx = columnIndex(loadColIdxs, dbName);
 
                 try {
                     Object colVal = transformer.getColumnValue(rs, colIdx, fld.getJavaFieldType());
@@ -208,12 +211,13 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
                     }
                     catch (Exception e) {
                         throw new CacheLoaderException("Failed to set property in POJO class [type=" + typeName +
-                            ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + fldDbName + "]", e);
+                            ", colIdx=" + colIdx + ", prop=" + fld +
+                            ", dbValCls=" + colVal.getClass().getName() + ", dbVal=" + colVal + "]", e);
                     }
                 }
                 catch (SQLException e) {
-                    throw new CacheLoaderException("Failed to read object property [type= " + typeName +
-                        ", prop=" + fldJavaName + ", col=" + colIdx + ", dbName=" + fldDbName + "]", e);
+                    throw new CacheLoaderException("Failed to read object property [type=" + typeName +
+                        ", colIdx=" + colIdx + ", prop=" + fld + "]", e);
                 }
             }
 
@@ -245,7 +249,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             Collection<Object> hashValues = calcHash ? new ArrayList<>(hashFields.size()) : null;
 
             for (JdbcTypeField field : fields) {
-                Integer colIdx = loadColIdxs.get(field.getDatabaseFieldName());
+                Integer colIdx = columnIndex(loadColIdxs, field.getDatabaseFieldName());
 
                 Object colVal = transformer.getColumnValue(rs, colIdx, field.getJavaFieldType());
 
@@ -261,7 +265,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
             return builder.build();
         }
         catch (SQLException e) {
-            throw new CacheException("Failed to read binary object", e);
+            throw new CacheException("Failed to read binary object: " + typeName, e);
         }
     }
 
@@ -333,6 +337,11 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheJdbcPojoStore.class, this);
+    }
+
     /**
      * Description of type property.
      */
@@ -371,8 +380,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param obj Object to get property value from.
          * @return Property value.
-         * @throws IllegalAccessException
-         * @throws InvocationTargetException
+         * @throws IllegalAccessException If failed to get value from property or failed access to property via reflection.
+         * @throws InvocationTargetException If failed access to property via reflection.
          */
         private Object get(Object obj) throws IllegalAccessException, InvocationTargetException {
             if (getter != null)
@@ -389,8 +398,8 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
          *
          * @param obj Object to set property value to.
          * @param val New property value to set.
-         * @throws IllegalAccessException
-         * @throws InvocationTargetException
+         * @throws IllegalAccessException If failed to set property value or failed access to property via reflection.
+         * @throws InvocationTargetException If failed access to property via reflection.
          */
         private void set(Object obj, Object val) throws IllegalAccessException, InvocationTargetException {
             if (setter != null)
