@@ -17,9 +17,10 @@
 
 package org.apache.ignite.math;
 
+import java.util.function.*;
+
 /**
  * Setter function for the vector.
  */
-public interface IntDoubleToVoidFunction {
-    public void apply(int i, double v);
+public interface IntDoubleToVoidFunction extends BiConsumer<Integer, Double> {
 }

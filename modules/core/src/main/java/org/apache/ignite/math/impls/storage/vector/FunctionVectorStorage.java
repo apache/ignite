@@ -92,7 +92,7 @@ public class FunctionVectorStorage implements VectorStorage {
     @Override
     public void set(int i, double v) {
         if (setFunc != null)
-            setFunc.apply(i, v);
+            setFunc.accept(i, v);
         else
             throw new UnsupportedOperationException("Cannot set into read-only vector.");
     }

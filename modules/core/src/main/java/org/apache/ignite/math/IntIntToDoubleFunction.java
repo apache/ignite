@@ -17,9 +17,10 @@
 
 package org.apache.ignite.math;
 
+import java.util.function.*;
+
 /**
  * Getters functions for matrices.
  */
-public interface IntIntToDoubleFunction {
-    public double apply(int x, int y);
+public interface IntIntToDoubleFunction extends BiFunction<Integer, Integer, Double> {
 }
