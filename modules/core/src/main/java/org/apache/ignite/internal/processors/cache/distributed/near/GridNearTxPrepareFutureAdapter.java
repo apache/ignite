@@ -189,7 +189,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             return;
 
         assert res.error() == null : res;
-        assert F.isEmpty(res.invalidPartitions()) : res;
 
         UUID nodeId = m.node().id();
 
@@ -207,8 +206,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
                         CacheVersionedValue tup = entry.getValue();
 
-                        nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                            tup.version(), nodeId, tx.topologyVersion());
+                        nearEntry.resetFromPrimary(tup.value(),
+                            tx.xidVersion(),
+                            tup.version(),
+                            nodeId,
+                            tx.topologyVersion());
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
