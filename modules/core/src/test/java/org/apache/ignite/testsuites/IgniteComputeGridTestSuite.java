@@ -22,6 +22,7 @@ import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
 import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
 import org.apache.ignite.internal.GridAffinitySelfTest;
 import org.apache.ignite.internal.GridAlwaysFailoverSpiFailSelfTest;
+import org.apache.ignite.internal.GridCacheLockOwnerLeaveTest;
 import org.apache.ignite.internal.GridCacheRecreateLockTest;
 import org.apache.ignite.internal.GridCacheWorkAfterRecreateLockTest;
 import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
@@ -158,6 +159,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(StripedExecutorTest.class);
         suite.addTestSuite(GridCacheRecreateLockTest.class);
         suite.addTestSuite(GridCacheWorkAfterRecreateLockTest.class);
+        suite.addTestSuite(GridCacheLockOwnerLeaveTest.class);
 
         return suite;
     }
