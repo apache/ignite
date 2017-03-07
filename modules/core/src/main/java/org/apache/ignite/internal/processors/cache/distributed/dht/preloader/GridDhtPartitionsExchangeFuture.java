@@ -117,6 +117,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private int pendingSingleUpdates;
 
     /** */
+    @GridToStringExclude
+    private List<ClusterNode> srvNodes;
+
+    /** */
     private ClusterNode crd;
 
     /** ExchangeFuture id. */
@@ -449,13 +453,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
-            discoCache = discoEvt.discoCache();
+            srvNodes = new ArrayList<>(discoCache.serverNodes());
 
-            discoCache.updateAlives(cctx.discovery());
+            remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
-            remaining.addAll(F.nodeIds(F.view(discoCache.serverNodes(), F.remoteNodes(cctx.localNodeId()))));
-
-            crd = discoCache.oldestAliveServerNode();
+            crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
             boolean crdNode = crd != null && crd.isLocal();
 
@@ -1296,9 +1298,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     onAffinityInitialized(fut);
             }
             else {
-                List<ClusterNode> nodes = new ArrayList<>(discoCache.aliveServerNodes());
+                List<ClusterNode> nodes;
 
-                nodes.remove(cctx.localNode());
+                synchronized (mux) {
+                    srvNodes.remove(cctx.localNode());
+
+                    nodes = new ArrayList<>(srvNodes);
+                }
 
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
@@ -1571,15 +1577,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         ClusterNode crd0;
 
+                        discoCache.updateAlives(node);
+
                         synchronized (mux) {
-                            discoCache.updateAlives(node);
+                            if (!srvNodes.remove(node))
+                                return;
 
                             boolean rmvd = remaining.remove(node.id());
 
                             if (node.equals(crd)) {
                                 crdChanged = true;
 
-                                crd = discoCache.oldestAliveServerNode();
+                                crd = srvNodes.size() > 0 ? srvNodes.get(0) : null;
                             }
 
                             if (crd != null && crd.isLocal()) {
@@ -1698,14 +1707,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public String toString() {
         Set<UUID> remaining;
+        List<ClusterNode> srvNodes;
 
         synchronized (mux) {
             remaining = new HashSet<>(this.remaining);
+            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
+            "srvNodes", srvNodes,
             "super", super.toString());
     }
 }

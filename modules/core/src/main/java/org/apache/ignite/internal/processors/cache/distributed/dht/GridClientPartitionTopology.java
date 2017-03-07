@@ -121,6 +121,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         this.similarAffKey = similarAffKey;
 
         topVer = exchFut.topologyVersion();
+
         discoCache = exchFut.discoCache();
 
         log = cctx.logger(getClass());

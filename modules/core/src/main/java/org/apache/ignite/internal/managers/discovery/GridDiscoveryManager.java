@@ -1894,20 +1894,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ArrayList<ClusterNode> allNodes = new ArrayList<>(topSnapshot.size());
 
         for (ClusterNode node : topSnapshot) {
-            if(alive(node))
+            if (alive(node))
                 alives.add(node.id());
 
-            if(node.isDaemon())
+            if (node.isDaemon())
                 dmnNodes.add(node);
             else {
                 allNodes.add(node);
 
-                if(!node.isLocal()) {
+                if (!node.isLocal()) {
                     rmtNodes.add(node);
                 }
             }
 
-            if(!CU.clientNode(node))
+            if (!CU.clientNode(node))
                 srvNodes.add(node);
 
             nodeMap.put(node.id(), node);
