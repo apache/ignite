@@ -17,17 +17,14 @@
 
 package org.apache.ignite.transactions;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
+import java.util.*;
 
 /**
  * Ignite cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
- * {@ignitelink org.apache.ignite.cache.jta.CacheTmLookup}
+ * {@ignlink org.apache.ignite.cache.jta.CacheTmLookup}
  * interface. Cache transactions can also be started explicitly directly from {@link IgniteTransactions} API
  * via any of the {@code 'IgniteTransactions.txStart(..)'} methods.
  * <p>

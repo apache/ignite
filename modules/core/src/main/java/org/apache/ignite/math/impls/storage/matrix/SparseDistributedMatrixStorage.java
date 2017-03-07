@@ -9,8 +9,16 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * TODO: add description.
@@ -18,6 +26,11 @@ import java.io.*;
 public class SparseDistributedMatrixStorage implements MatrixStorage, StorageConstants {
     private int rows, cols;
     private int stoMode, acsMode;
+
+    private IgniteCache<
+        Integer /* Row or column index. */,
+        Map<Integer, Double> /* Map-based row or column. */
+    > cache = null;
 
     /**
      *
@@ -43,6 +56,50 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
         this.cols = cols;
         this.stoMode = stoMode;
         this.acsMode = acsMode;
+
+        CacheConfiguration<Integer, Map<Integer, Double>> cfg = new CacheConfiguration<>();
+
+        // Assume 10% density.
+        cfg.setStartSize(Math.max(1024, (rows * cols) / 10));
+
+        // Write to primary.
+        cfg.setAtomicWriteOrderMode(PRIMARY);
+        cfg.setWriteSynchronizationMode(PRIMARY_SYNC);
+
+        // Atomic transactions only.
+        cfg.setAtomicityMode(ATOMIC);
+
+        // No eviction.
+        cfg.setEvictionPolicy(null);
+
+        // Cache is partitioned.
+        cfg.setCacheMode(CacheMode.PARTITIONED);
+
+        cache = Ignition.ignite().getOrCreateCache(cfg);
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public IgniteCache<Integer, Map<Integer, Double>> cache() {
+        return cache;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public int accessMode() {
+        return acsMode;
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public int storageMode() {
+        return stoMode;
     }
 
     @Override
