@@ -26,11 +26,21 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import java.io.*;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
+ *
+ * Unlike {@link CacheMatrix} that is based on existing cache, this implementation creates distributed
+ * cache internally and doesn't rely on pre-existing cache.
+ *
+ * To get an existing matrix of this type use {@link #locateMatrix(IgniteUuid)} and {@link #guid()} methods.
+ * Note that when you create this matrix using its constructors it will create a new independent cache.
+ *
+ * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
+ * matrix.
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
     private int rows, cols;
@@ -60,6 +70,15 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         this.cols = cols;
         this.stoMode = stoMode;
         this.acsMode = acsMode;
+    }
+
+    /**
+     *
+     * @param guid
+     * @return
+     */
+    public static SparseDistributedMatrix locateMatrix(IgniteUuid guid) {
+        return null; // TODO
     }
 
     @Override public void writeExternal(ObjectOutput out) throws IOException {

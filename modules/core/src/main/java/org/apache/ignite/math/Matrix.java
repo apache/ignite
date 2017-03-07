@@ -373,13 +373,13 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
      *
-     * @param offset View offset as <code>int[x,y]</code>.
+     * @param off View offset as <code>int[x,y]</code>.
      * @param size View size as <code>int[rows, cols]</code>
      * @return New view.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      * @throws IndexException Thrown in case of offset is out of bound.
      */
-    Matrix viewPart(int[] offset, int[] size);
+    Matrix viewPart(int[] off, int[] size);
 
     /**
      * Creates new view into this matrix. Changes to the view will be propagated to this matrix.
