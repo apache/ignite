@@ -67,7 +67,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** Whether or not to log grid name. */
     private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
     /** Test sensitive mode. */
-    private static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE, "true") != null;
+    private static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
     /** Prefix for all suspicious sensitive data */
     private static final String SENSITIVE_PREFIX = "SENSITIVE> ";
     /** Sensitive patterns: excluding */
