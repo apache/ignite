@@ -30,7 +30,7 @@ public class VectorToMatrixTest {
     /** Ignore test for given vector type. */
     private boolean ignore(Class clazz){
         boolean isIgnored = false;
-        Class[] ignoredClasses = {DelegatingVector.class};
+        Class[] ignoredClasses = {DelegatingVector.class, FunctionVector.class};
 
         for (Class ignoredClass : ignoredClasses) {
             if (ignoredClass == clazz){
@@ -197,18 +197,17 @@ public class VectorToMatrixTest {
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
 
+        if (ignore(v.getClass()))
+            return false;
+
         final boolean availableForTesting = typesMap.get(v.getClass()) != null;
 
         final Matrix actualLikeMatrix = v.likeMatrix(1, 1);
 
-        if (ignore(v.getClass()))
-            return false;
-        else {
-            assertTrue("Need to enable matrix testing for vector type " + v.getClass().getSimpleName(),
-                availableForTesting || actualLikeMatrix == null);
+        assertTrue("Need to enable matrix testing for vector type " + v.getClass().getSimpleName(),
+            availableForTesting || actualLikeMatrix == null);
 
-            return typesMap.get(v.getClass()) != null;
-        }
+        return availableForTesting;
     }
 
     /** */
@@ -225,6 +224,7 @@ public class VectorToMatrixTest {
             put(SparseLocalVector.class, null);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
+            put(FunctionVector.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }

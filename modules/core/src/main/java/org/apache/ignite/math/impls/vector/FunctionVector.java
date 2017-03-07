@@ -96,4 +96,12 @@ public class FunctionVector extends AbstractVector {
     @Override public Matrix likeMatrix(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
+
+    /** {@inheritDoc */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return like(size()).assign(0);
+        else
+            return super.times(x);
+    }
 }

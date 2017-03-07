@@ -53,7 +53,7 @@ public abstract class ExternalizeTest<T extends Externalizable & Destroyable> {
 
             assertTrue(VALUE_NOT_EQUALS, initObj.equals(objRestored));
         } catch (ClassNotFoundException | IOException e) {
-            fail(e.getMessage());
+            fail(e + " [" + e.getMessage() + "]");
         } finally {
             if (objRestored != null)
                 objRestored.destroy();
