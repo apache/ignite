@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -184,6 +185,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      *
      */
     private void preparePessimistic() {
+        boolean mappingKnown = true;
+
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
@@ -195,9 +198,18 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             GridCacheContext cacheCtx = txEntry.context();
 
-            List<ClusterNode> nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodesByKey(txEntry.key(), topVer) :
-                cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
+            List<ClusterNode> nodes;
+
+            if (!cacheCtx.isLocal()) {
+                GridDhtPartitionTopology top = cacheCtx.topology();
+
+                if (mappingKnown && (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer)))
+                    mappingKnown = false;
+
+                nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
+            }
+            else
+                nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
             ClusterNode primary = F.first(nodes);
 
@@ -228,8 +240,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         long timeout = tx.remainingTime();
 
-        if (timeout == -1)
+        if (timeout == -1) {
             onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+
+            return;
+        }
 
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();

@@ -113,7 +113,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
+    private IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
@@ -286,6 +286,27 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param entries Entries.
+     * @return First entry.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IgniteTxEntry unmarshal(@Nullable Collection<IgniteTxEntry> entries) throws IgniteCheckedException {
+        if (entries == null)
+            return null;
+
+        IgniteTxEntry firstEntry = null;
+
+        for (IgniteTxEntry e : entries) {
+            e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+
+            if (firstEntry == null)
+                firstEntry = e;
+        }
+
+        return firstEntry;
+    }
+
+    /**
      * Prepares near transaction.
      *
      * @param nearNodeId Near node ID that initiated transaction.
@@ -308,15 +329,13 @@ public class IgniteTxHandler {
             return null;
         }
 
-        IgniteTxEntry firstEntry = null;
+        IgniteTxEntry firstEntry;
 
         try {
-            for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
-                e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+            IgniteTxEntry firstWrite = unmarshal(req.writes());
+            IgniteTxEntry firstRead = unmarshal(req.reads());
 
-                if (firstEntry == null)
-                    firstEntry = e;
-            }
+            firstEntry = firstWrite != null ? firstWrite : firstRead;
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -452,7 +471,7 @@ public class IgniteTxHandler {
                 tx.nearOnOriginatingNode(true);
 
             if (req.onePhaseCommit()) {
-                assert req.last();
+                assert req.last() : req;
 
                 tx.onePhaseCommit(true);
             }

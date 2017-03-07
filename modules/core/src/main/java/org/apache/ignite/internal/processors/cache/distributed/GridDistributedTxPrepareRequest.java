@@ -74,6 +74,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     private static final int SYSTEM_TX_FLAG_MASK = 0x10;
 
+    /** */
+    private static final int KNOWN_MAPPING_FLAG_MASK = 0x20;
+
     /** Collection to message converter. */
     private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
         @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
