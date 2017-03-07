@@ -195,6 +195,7 @@
     <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h" />
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h" />

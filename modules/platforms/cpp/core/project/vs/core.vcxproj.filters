@@ -192,6 +192,9 @@
     <ClInclude Include="..\..\include\ignite\ignite_binding_context.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
