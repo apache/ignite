@@ -44,6 +44,7 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
             (ms, desc) -> assertTrue("Expected size for " + desc, expColSize.get().equals(ms.columnSize()) && expRowSize.get().equals(ms.rowSize())));
     }
 
+    /** */
     @Test
     public void getSetTest(){
         consumeSampleStorages(null, (ms,desc) -> {
@@ -57,21 +58,15 @@ public class MatrixStorageImplementationTest extends ExternalizeTest<MatrixStora
         });
     }
 
-    @Test
-    public void serializationTest(){
+    /** */
+    @Override public void externalizeTest() {
         consumeSampleStorages(null, (ms, desc) -> {
-
+            externalizeTest(ms);
         });
     }
 
     /** */
     private void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer, BiConsumer<MatrixStorage, String> consumer) {
         new MatrixStorageFixtures().consumeSampleStorages(paramsConsumer, consumer);
-    }
-
-    @Override public void externalizeTest() {
-        consumeSampleStorages(null, (ms, desc) -> {
-            externalizeTest(ms);
-        });
     }
 }

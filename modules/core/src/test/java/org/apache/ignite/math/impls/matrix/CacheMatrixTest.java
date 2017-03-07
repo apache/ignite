@@ -19,13 +19,16 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.KeyMapper;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Ignore;
 
 /**
  * Tests for {@link CacheMatrix}.
@@ -97,9 +100,50 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         fillMatrix(cacheMatrix);
 
-        Matrix copy = cacheMatrix.copy();
+        Matrix cp = cacheMatrix.copy();
 
-        assertTrue("Copy of cache matrix is not equal to original.", copy.equals(cacheMatrix));
+        assertTrue("Copy of cache matrix is not equal to original.", cp.equals(cacheMatrix));
+    }
+
+//  TODO: wait for right like/copy
+//    /** */
+//    public void testLike() throws Exception{
+//        final int rows = MathTestConstants.STORAGE_SIZE;
+//        final int cols = MathTestConstants.STORAGE_SIZE;
+//
+//        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+//        IgniteCache<Integer, Double> cache = getCache();
+//        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+//
+//        Matrix like = cacheMatrix.like(rows, cols);
+//
+//        assertTrue("Like matrix of empty cache matrix is not equal to original.", like.equals(cacheMatrix));
+//
+//        fillMatrix(cacheMatrix);
+//
+//        assertFalse("Like matrix should be not equal to original.", like.equals(cacheMatrix));
+//    }
+
+    /** TODO: wip */
+    public void testPlus(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double initVal = 1;
+        double plusVal = 2;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        cacheMatrix.assign(initVal);
+        cacheMatrix.plus(plusVal);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                assertEquals(cacheMatrix.get(i, j), initVal + plusVal);
     }
 
     /** */

@@ -93,18 +93,21 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         return (CacheMatrixStorage<K, V>)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         CacheMatrixStorage<K, V> sto = storage();
 
         return new CacheMatrix<K, V>(rowSize(), columnSize(), sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
         CacheMatrixStorage<K, V> sto = storage();
 
         return new CacheMatrix<K, V>(rows, cols, sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
     }
@@ -139,15 +142,17 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         return mapOverValues((Double v) -> v * x);
     }
 
-
+    /** {@inheritDoc} */
     @Override public Matrix assign(double val) {
         return mapOverValues((Double v) -> val);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix map(DoubleFunction<Double> fun) {
         return mapOverValues(fun::apply);
     }
 
+    /** {@inheritDoc} */
     @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
