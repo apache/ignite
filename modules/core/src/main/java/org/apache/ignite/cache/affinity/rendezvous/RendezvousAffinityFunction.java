@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -77,6 +79,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
+
+    /** Default number of partitions. */
+    public static final int MAX_BALANCED_REPLICAS = 8;
 
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
@@ -331,12 +336,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param nodes Nodes.
      * @param backups Number of backups.
      * @param neighborhoodCache Neighborhood.
+     * @param balanceMap Balance map.
      * @return Assignment.
      */
     public List<ClusterNode> assignPartition(int part,
         List<ClusterNode> nodes,
         int backups,
-        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache,
+        @Nullable Map<ClusterNode, Integer[]> balanceMap) {
         if (nodes.size() <= 1)
             return nodes;
 
@@ -357,13 +364,19 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         Iterable<ClusterNode> sortedNodes = new LazyLinearSortedContainer(hashArr, primaryAndBackups);
 
-        Iterator<ClusterNode> it = sortedNodes.iterator();
+        PartitionDistributionBalancer balancer = new PartitionDistributionBalancer(sortedNodes, balanceMap);
+
+        PartitionDistributionBalancer.BalancedIterator it = balancer.iterator();
 
         List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
 
         Collection<ClusterNode> allNeighbors = new HashSet<>();
 
+        it.replica(0);
+
         ClusterNode primary = it.next();
+
+        balancer.acceptPartition(primary, 0);
 
         res.add(primary);
 
@@ -372,38 +385,85 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         // Select backups.
         if (backups > 0) {
-            while (it.hasNext() && res.size() < primaryAndBackups) {
+            int replica = 1;
+
+            it.replica(replica);
+
+            while (res.size() < primaryAndBackups && it.hasNext()) {
                 ClusterNode node = it.next();
 
                 if (exclNeighbors) {
                     if (!allNeighbors.contains(node)) {
+                        balancer.acceptPartition(node, replica++);
+
                         res.add(node);
 
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
+
+                        it.replica(replica);
                     }
                 }
                 else if ((backupFilter != null && backupFilter.apply(primary, node))
                     || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
                     || (affinityBackupFilter == null && backupFilter == null) ) {
+                    balancer.acceptPartition(node, replica++);
+
                     res.add(node);
 
                     if (exclNeighbors)
                         allNeighbors.addAll(neighborhoodCache.get(node.id()));
+
+                    if (balanceMap != null && replica < primaryAndBackups)
+                        it.replica(replica);
                 }
             }
         }
 
-        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
+        if (balanceMap != null && res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            it = sortedNodes.iterator();
+            int replica = res.size();
 
-            it.next();
+            it.replica(replica);
 
-            while (it.hasNext() && res.size() < primaryAndBackups) {
+            while (res.size() < primaryAndBackups && it.hasNext()) {
                 ClusterNode node = it.next();
 
-                if (!res.contains(node))
+                if (!res.contains(node)) {
+                    balancer.acceptPartition(node, replica++);
+
                     res.add(node);
+
+                    it.replica(replica);
+                }
+            }
+
+            if (!exclNeighborsWarn) {
+                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.",
+                    "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.");
+
+                exclNeighborsWarn = true;
+            }
+        }
+
+        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups) {
+            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria
+            // and balance is violated.
+            int replica = res.size();
+
+            Iterator<ClusterNode> itSorted = sortedNodes.iterator();
+
+            itSorted.next();
+
+            while (itSorted.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = itSorted.next();
+
+                if (!res.contains(node)) {
+                    balancer.acceptPartition(node, replica++);
+
+                    res.add(node);
+                }
             }
 
             if (!exclNeighborsWarn) {
@@ -445,7 +505,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return key;
     }
 
-
     /** {@inheritDoc} */
     @Override public void reset() {
         // No-op.
@@ -474,13 +533,40 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         List<ClusterNode> nodes = affCtx.currentTopologySnapshot();
 
+        final int replCnt = affCtx.backups() == Integer.MAX_VALUE ? nodes.size()
+            : Math.min(affCtx.backups() + 1, nodes.size());
+
+
+        Map<ClusterNode, Integer[]> balanceMap =  replCnt < MAX_BALANCED_REPLICAS ?
+            createBalanceMap(nodes, replCnt) : null;
+
         for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(), neighborhoodCache);
+            List<ClusterNode> partAssignment = assignPartition(i, nodes, affCtx.backups(),
+                neighborhoodCache, balanceMap);
 
             assignments.add(partAssignment);
         }
 
         return assignments;
+    }
+
+    /**
+     * @param nodes Current topology.
+     * @param replicasCnt Replicas count.
+     * @return Balance map. A value array contains desired count of partition for each node and number of replica.
+     */
+    @NotNull private Map<ClusterNode, Integer[]> createBalanceMap(List<ClusterNode> nodes, int replicasCnt) {
+        Map<ClusterNode, Integer[]> balanceMap;
+        balanceMap = new HashMap<>();
+
+        for (ClusterNode n : nodes) {
+            Integer[] arr = new Integer[replicasCnt];
+
+            Arrays.fill(arr, parts / nodes.size() + 1);
+
+            balanceMap.put(n, arr);
+        }
+        return balanceMap;
     }
 
     /** {@inheritDoc} */
@@ -520,6 +606,146 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
+     *
+     */
+    private static class PartitionDistributionBalancer {
+        /** Sorted nodes. */
+        private final Iterable<ClusterNode> nodes;
+
+        /** Balance map. */
+        private final Map<ClusterNode, Integer[]> balanceMap;
+
+        /**
+         * @param nodes Nodes.
+         * @param balanceMap Balance map.
+         */
+        private PartitionDistributionBalancer(Iterable<ClusterNode> nodes, Map<ClusterNode, Integer[]> balanceMap) {
+            this.balanceMap = balanceMap;
+            this.nodes = nodes;
+        }
+
+        /**
+         * @return Node iterator.
+         */
+        public PartitionDistributionBalancer.BalancedIterator iterator() {
+            return new PartitionDistributionBalancer.BalancedIterator(nodes.iterator());
+        }
+
+        /**
+         * @param node Cluster node.
+         * @param replica Replica number.
+         */
+        public void acceptPartition(ClusterNode node, int replica) {
+            if (balanceMap != null)
+                balanceMap.get(node)[replica] -= 1;
+        }
+
+        /**
+         *
+         */
+        class BalancedIterator {
+            /** Index of the first unsorted element. */
+            private Iterator<ClusterNode> it;
+
+            /** Current node. */
+            private ClusterNode curNode;
+
+            /** Replica number. 0 - primary, 1 - the first backup, 2 - the second backup, etc. */
+            private int replica;
+
+            /**
+             * @param it Node iterator.
+             */
+            private BalancedIterator(Iterator<ClusterNode> it) {
+                this.it = it;
+            }
+
+            /**
+             * @param replica 0 - primary, 1 - the first backup, 2 - the second backup, etc..
+             */
+            public void replica(int replica) {
+                if (balanceMap == null)
+                    return;
+
+                // Reset nodes iterator if replica changed.
+                if (this.replica != replica)
+                    it = nodes.iterator();
+
+                this.replica = replica;
+            }
+            /**
+             * Returns {@code true} if the iteration has more elements.
+             * (In other words, returns {@code true} if {@link #next} would
+             * return an element rather than throwing an exception.)
+             *
+             * @return {@code true} if the iteration has more elements
+             */
+            public boolean hasNext() {
+                if (balanceMap == null)
+                    return it.hasNext();
+
+                if (curNode == null)
+                    curNode = nextBalanced();
+
+                return curNode != null;
+            }
+
+            /**
+             * Returns the next element in the iteration for the replica..
+             *
+             * @return the next element in the iteration
+             * @throws NoSuchElementException if the iteration has no more elements
+             */
+            public ClusterNode next() {
+                if (balanceMap == null)
+                    return it.next();
+
+                if (curNode == null) {
+                    curNode = nextBalanced();
+
+                    if (curNode == null)
+                        throw new NoSuchElementException();
+                }
+
+                ClusterNode res = curNode;
+
+                curNode = null;
+
+                return res;
+            }
+
+            /**
+             * Returns the next element in the iteration for the replica..
+             *
+             * @return the next element in the iteration
+             * @throws NoSuchElementException if the iteration has no more elements
+             */
+            private ClusterNode nextBalanced() {
+                assert balanceMap != null;
+
+                if (!it.hasNext())
+                    return null;
+
+                ClusterNode n;
+                do {
+                    n = it.next();
+                } while (it.hasNext() && !isBalanced(n));
+
+                return n;
+            }
+
+            /**
+             * @param node Cluster node.
+             * @return {@code true} if partition count is balanced.
+             */
+            private boolean isBalanced(ClusterNode node) {
+                return balanceMap.get(node)[replica] > 0;
+            }
+        }
+    }
+
+
+    /**
      * Sorts the initial array with linear sort algorithm array
      */
     private static class LazyLinearSortedContainer implements Iterable<ClusterNode> {
@@ -545,7 +771,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         /** {@inheritDoc} */
         @Override public Iterator<ClusterNode> iterator() {
-            return new SortIterator();
+            return new LazyLinearSortedContainer.SortIterator();
         }
 
         /**
