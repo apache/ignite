@@ -2776,32 +2776,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
-        ArrayList<InetAddress> inetAddrs = new ArrayList<>(addrs.size());
+        Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
 
         for (InetSocketAddress addr : addrs)
-            if (!inetAddrs.contains(addr.getAddress()))
-                inetAddrs.add(addr.getAddress());
+            allInetAddrs.add(addr.getAddress());
 
-        List<InetAddress> filteredAddrs = U.filterReachable(inetAddrs);
+        List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
 
-        if (filteredAddrs.size() < inetAddrs.size()) {
-            LinkedHashSet<InetSocketAddress> reachableAddrs = new LinkedHashSet<>(addrs.size());
-            LinkedHashSet<InetSocketAddress> unreachableAddrs = new LinkedHashSet<>(addrs.size());
+        if (reachableInetAddrs.size() < allInetAddrs .size()) {
+            LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
 
             for (InetSocketAddress addr : addrs) {
-                if (filteredAddrs.contains(addr.getAddress()))
-                    reachableAddrs.add(addr);
-                else
-                    unreachableAddrs.add(addr);
+                if (reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+            }
+            for (InetSocketAddress addr : addrs) {
+                if (!reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
             }
 
-            addrs = new LinkedHashSet<>(reachableAddrs);
-            addrs.addAll(unreachableAddrs);
+            addrs = addrs0;
         }
 
         if (log.isDebugEnabled())
-            log.debug("Addresses to connect for node: " +
-                "[rmtNode=" + node.id() + "]: " + addrs.toString());
+            log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
 
         boolean conn = false;
         GridCommunicationClient client = null;
