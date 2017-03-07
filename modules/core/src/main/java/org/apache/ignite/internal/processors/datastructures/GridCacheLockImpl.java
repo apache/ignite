@@ -108,6 +108,12 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     /** Re-create flag. */
     private volatile boolean reCreate;
 
+    /** Failover safe flag. */
+    private volatile boolean failoverSafe;
+
+    /** Fair flag. */
+    private volatile boolean fair;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -1053,13 +1059,17 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
      * @param reCreate If {@code true} reentrant lock will be re-created in case it is not in cache.
+     * @param failoverSafe Flag indicating behaviour in case of failure.
+     * @param fair Flag indicating fairness policy of this lock.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
         GridCacheContext ctx,
-        boolean reCreate) {
+        boolean reCreate,
+        boolean failoverSafe,
+        boolean fair) {
         assert name != null;
         assert key != null;
         assert ctx != null;
@@ -1070,6 +1080,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         this.lockView = lockView;
         this.ctx = ctx;
         this.reCreate = reCreate;
+        this.failoverSafe = failoverSafe;
+        this.fair = fair;
 
         log = ctx.logger(getClass());
     }
@@ -1085,7 +1097,6 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                         @Override public Sync call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheLockState val = getCacheLockState();
-
                                 if (val == null) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to find reentrant lock with given name: " + name);
@@ -1552,7 +1563,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         GridCacheLockState val = lockView.get(key);
 
         if (val == null && reCreate) {
-            val = new GridCacheLockState(0, ctx.nodeId(), 0, isFailoverSafe(), isFair());
+            val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
             lockView.put(key, val);
             log.info("New state for lock " + key + " was created: " + val);
         }
