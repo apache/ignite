@@ -178,12 +178,20 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     }
 
     /**
-     * For test purposes only.
+     * Gets collection of all configured paths where checkpoints can be saved.
+     *
+     * @return Collection of all configured paths.
+     */
+    public Collection<String> getDirectoryPaths() {
+        return dirPaths;
+    }
+
+    /**
      * Gets path to the directory where all checkpoints are saved.
      *
      * @return Path to the checkpoints directory.
      */
-    String getCurrentDirectoryPath() {
+    public String getCurrentDirectoryPath() {
         return curDirPath;
     }
 
@@ -510,7 +518,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public SharedFsCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -532,12 +540,12 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         /** {@inheritDoc} */
         @Override public Collection<String> getDirectoryPaths() {
-            return dirPaths;
+            return SharedFsCheckpointSpi.this.getDirectoryPaths();
         }
 
         /** {@inheritDoc} */
         @Override public String getCurrentDirectoryPath() {
-            return curDirPath;
+            return SharedFsCheckpointSpi.this.getCurrentDirectoryPath();
         }
     }
 }

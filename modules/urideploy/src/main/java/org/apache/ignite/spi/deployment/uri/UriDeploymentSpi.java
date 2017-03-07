@@ -393,6 +393,15 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /**
+     * Gets temporary directory path.
+     *
+     * @return Temporary directory path.
+     */
+    public String getTemporaryDirectoryPath() {
+        return tmpDirPath;
+    }
+
+    /**
      * Sets list of URI which point to GAR file and which should be
      * scanned by SPI for the new tasks.
      * <p>
@@ -426,6 +435,15 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /**
+     * Gets {@code checkMd5} property.
+     *
+     * @return value of the {@code checkMd5} property.
+     */
+    public boolean isCheckMd5() {
+        return checkMd5;
+    }
+
+    /**
      * Indicates that URI must be encoded before usage. Encoding means replacing
      * all occurrences of space with '%20', percent sign with '%25'
      * and semicolon with '%3B'.
@@ -441,6 +459,15 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         this.encodeUri = encodeUri;
 
         return this;
+    }
+
+    /**
+     * Gets list of URIs that are processed by SPI.
+     *
+     * @return List of URIs.
+     */
+    public List<String> getUriList() {
+        return Collections.unmodifiableList(uriList);
     }
 
     /** {@inheritDoc} */
@@ -1362,17 +1389,17 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
 
         /** {@inheritDoc} */
         @Override public String getTemporaryDirectoryPath() {
-            return tmpDirPath;
+            return UriDeploymentSpi.this.getTemporaryDirectoryPath();
         }
 
         /** {@inheritDoc} */
         @Override public List<String> getUriList() {
-            return Collections.unmodifiableList(uriList);
+            return  UriDeploymentSpi.this.getUriList();
         }
 
         /** {@inheritDoc} */
         @Override public boolean isCheckMd5() {
-            return checkMd5;
+            return  UriDeploymentSpi.this.isCheckMd5();
         }
     }
 }

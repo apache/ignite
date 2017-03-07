@@ -244,6 +244,105 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     private CheckpointListener lsnr;
 
     /**
+     * Gets number of retries in case of DB failure.
+     *
+     * @return Number of retries.
+     */
+    public int getNumberOfRetries() {
+        return retryNum;
+    }
+
+    /**
+     * Gets data source description.
+     *
+     * @return Description for data source.
+     */
+    public String getDataSourceInfo() {
+        return dataSrc.toString();
+    }
+
+    /**
+     * Gets checkpoint jdbc user name.
+     *
+     * @return User name for checkpoint jdbc.
+     */
+    public String getUser() {
+        return user;
+    }
+
+    /**
+     * Gets checkpoint jdbc password.
+     *
+     * @return Password for checkpoint jdbc.
+     */
+    public String getPwd() {
+        return pwd;
+    }
+
+    /**
+     * Gets checkpoint table name.
+     *
+     * @return Checkpoint table name.
+     */
+    public String getCheckpointTableName() {
+        return tblName;
+    }
+
+    /**
+     * Gets key field name for checkpoint table.
+     *
+     * @return Key field name for checkpoint table.
+     */
+    public String getKeyFieldName() {
+        return keyName;
+    }
+
+    /**
+     * Gets key field type for checkpoint table.
+     *
+     * @return Key field type for checkpoint table.
+     */
+    public String getKeyFieldType() {
+        return keyType;
+    }
+
+    /**
+     * Gets value field name for checkpoint table.
+     *
+     * @return Value field name for checkpoint table.
+     */
+    public String getValueFieldName() {
+        return valName;
+    }
+
+    /**
+     * Gets value field type for checkpoint table.
+     *
+     * @return Value field type for checkpoint table.
+     */
+    public String getValueFieldType() {
+        return valType;
+    }
+
+    /**
+     * Gets expiration date field name for checkpoint table.
+     *
+     * @return Create date field name for checkpoint table.
+     */
+    public String getExpireDateFieldName() {
+        return expDateName;
+    }
+
+    /**
+     * Gets expiration date field type for checkpoint table.
+     *
+     * @return Expiration date field type for checkpoint table.
+     */
+    public String getExpireDateFieldType() {
+        return expDateType;
+    }
+
+    /**
      * Sets DataSource to use for database access. This parameter is mandatory and must be
      * provided for this SPI to be able to start.
      * <p>
@@ -862,14 +961,13 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public JdbcCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;
     }
 
     /**
-     * TODO: remove class or add MBean registration?
      * MBean implementation for JdbcCheckpointSpi.
      */
     private class JdbcCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements JdbcCheckpointSpiMBean {
@@ -880,57 +978,57 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
         /** {@inheritDoc} */
         @Override public int getNumberOfRetries() {
-            return retryNum;
+            return JdbcCheckpointSpi.this.getNumberOfRetries();
         }
 
         /** {@inheritDoc} */
         @Override public String getDataSourceInfo() {
-            return dataSrc.toString();
+            return JdbcCheckpointSpi.this.getDataSourceInfo();
         }
 
         /** {@inheritDoc} */
         @Override public String getUser() {
-            return user;
+            return JdbcCheckpointSpi.this.getUser();
         }
 
         /** {@inheritDoc} */
         @Override public String getPwd() {
-            return pwd;
+            return JdbcCheckpointSpi.this.getPwd();
         }
 
         /** {@inheritDoc} */
         @Override public String getCheckpointTableName() {
-            return tblName;
+            return JdbcCheckpointSpi.this.getCheckpointTableName();
         }
 
         /** {@inheritDoc} */
         @Override public String getKeyFieldName() {
-            return keyName;
+            return JdbcCheckpointSpi.this.getKeyFieldName();
         }
 
         /** {@inheritDoc} */
         @Override public String getKeyFieldType() {
-            return keyType;
+            return JdbcCheckpointSpi.this.getKeyFieldType();
         }
 
         /** {@inheritDoc} */
         @Override public String getValueFieldName() {
-            return valName;
+            return JdbcCheckpointSpi.this.getValueFieldName();
         }
 
         /** {@inheritDoc} */
         @Override public String getValueFieldType() {
-            return valType;
+            return JdbcCheckpointSpi.this.getValueFieldType();
         }
 
         /** {@inheritDoc} */
         @Override public String getExpireDateFieldName() {
-            return expDateName;
+            return JdbcCheckpointSpi.this.getExpireDateFieldName();
         }
 
         /** {@inheritDoc} */
         @Override public String getExpireDateFieldType() {
-            return expDateType;
+            return JdbcCheckpointSpi.this.getExpireDateFieldType();
         }
     }
 }

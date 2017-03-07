@@ -296,6 +296,42 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     }
 
     /**
+     * Gets current number of jobs that wait for the execution.
+     *
+     * @return Number of jobs that wait for execution.
+     */
+    public int getCurrentWaitJobsNumber() {
+        return waitingCnt;
+    }
+
+    /**
+     * Gets current number of jobs that are active, i.e. {@code 'running + held'} jobs.
+     *
+     * @return Number of active jobs.
+     */
+    public int getCurrentActiveJobsNumber() {
+        return runningCnt + heldCnt;
+    }
+
+    /*
+     * Gets number of currently running (not {@code 'held}) jobs.
+     *
+     * @return Number of currently running (not {@code 'held}) jobs.
+     */
+    public int getCurrentRunningJobsNumber() {
+        return runningCnt;
+    }
+
+    /**
+     * Gets number of currently {@code 'held'} jobs.
+     *
+     * @return Number of currently {@code 'held'} jobs.
+     */
+    public int getCurrentHeldJobsNumber() {
+        return heldCnt;
+    }
+
+    /**
      * Sets task priority attribute key. This key will be used to look up task
      * priorities from task context (see {@link org.apache.ignite.compute.ComputeTaskSession#getAttribute(Object)}).
      * <p>
@@ -634,7 +670,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public PriorityQueueCollisionSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -767,22 +803,22 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
 
         /** {@inheritDoc} */
         @Override public int getCurrentWaitJobsNumber() {
-            return waitingCnt;
+            return PriorityQueueCollisionSpi.this.getCurrentWaitJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentActiveJobsNumber() {
-            return runningCnt + heldCnt;
+            return PriorityQueueCollisionSpi.this.getCurrentActiveJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentRunningJobsNumber() {
-            return runningCnt;
+            return PriorityQueueCollisionSpi.this.getCurrentRunningJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentHeldJobsNumber() {
-            return heldCnt;
+            return PriorityQueueCollisionSpi.this.getCurrentHeldJobsNumber();
         }
     }
 }

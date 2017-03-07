@@ -159,7 +159,43 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
         return this;
     }
 
-     /** {@inheritDoc} */
+    /**
+     * Gets current number of jobs that wait for the execution.
+     *
+     * @return Number of jobs that wait for execution.
+     */
+    public int getCurrentWaitJobsNumber() {
+        return waitingCnt;
+    }
+
+    /**
+     * Gets current number of jobs that are active, i.e. {@code 'running + held'} jobs.
+     *
+     * @return Number of active jobs.
+     */
+    public int getCurrentActiveJobsNumber() {
+        return runningCnt + heldCnt;
+    }
+
+    /**
+     * Gets number of currently running (not {@code 'held}) jobs.
+     *
+     * @return Number of currently running (not {@code 'held}) jobs.
+     */
+    public int getCurrentRunningJobsNumber() {
+        return runningCnt;
+    }
+
+    /**
+     * Gets number of currently {@code 'held'} jobs.
+     *
+     * @return Number of currently {@code 'held'} jobs.
+     */
+    public int getCurrentHeldJobsNumber() {
+        return heldCnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws IgniteSpiException {
         assertParameter(parallelJobsNum > 0, "parallelJobsNum > 0");
         assertParameter(waitJobsNum >= 0, "waitingJobsNum >= 0");
@@ -256,7 +292,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public FifoQueueCollisionSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -278,32 +314,32 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
 
         /** {@inheritDoc} */
         @Override public int getParallelJobsNumber() {
-            return parallelJobsNum;
+            return FifoQueueCollisionSpi.this.getParallelJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentWaitJobsNumber() {
-            return waitingCnt;
+            return FifoQueueCollisionSpi.this.getCurrentWaitJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentActiveJobsNumber() {
-            return runningCnt + heldCnt;
+            return FifoQueueCollisionSpi.this.getCurrentActiveJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentRunningJobsNumber() {
-            return runningCnt;
+            return FifoQueueCollisionSpi.this.getCurrentRunningJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentHeldJobsNumber() {
-            return heldCnt;
+            return FifoQueueCollisionSpi.this.getCurrentHeldJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getWaitingJobsNumber() {
-            return waitJobsNum;
+            return FifoQueueCollisionSpi.this.getWaitingJobsNumber();
         }
 
         /** {@inheritDoc} */

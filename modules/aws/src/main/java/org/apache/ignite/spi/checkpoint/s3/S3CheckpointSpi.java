@@ -166,12 +166,57 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     private final Object mux = new Object();
 
     /**
+     * Gets S3 bucket name to use.
+     *
+     * @return S3 bucket name to use.
+     */
+    public String getBucketName() {
+        return bucketName;
+    }
+
+    /**
+     * Gets S3 access key.
+     *
+     * @return S3 access key.
+     */
+    public String getAccessKey() {
+        return cred.getAWSAccessKeyId();
+    }
+
+    /**
      * Gets S3 secret key.
      *
      * @return S3 secret key.
      */
     public String getSecretAccessKey() {
         return cred.getAWSSecretKey();
+    }
+
+    /**
+     * Gets HTTP proxy host.
+     *
+     * @return HTTP proxy host.
+     */
+    public String getProxyHost() {
+        return cfg.getProxyHost();
+    }
+
+    /**
+     * Gets HTTP proxy port.
+     *
+     * @return HTTP proxy port.
+     */
+    public int getProxyPort() {
+        return cfg.getProxyPort();
+    }
+
+    /**
+     * Gets HTTP proxy user name.
+     *
+     * @return HTTP proxy user name.
+     */
+    public String getProxyUsername() {
+        return cfg.getProxyUsername();
     }
 
     /**
@@ -536,7 +581,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public S3CheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -687,27 +732,27 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
         /** {@inheritDoc} */
         @Override public String getBucketName() {
-            return bucketName;
+            return S3CheckpointSpi.this.getBucketName();
         }
 
         /** {@inheritDoc} */
         @Override public String getAccessKey() {
-            return cred.getAWSAccessKeyId();
+            return S3CheckpointSpi.this.getAccessKey();
         }
 
         /** {@inheritDoc} */
         @Override public String getProxyHost() {
-            return cfg.getProxyHost();
+            return S3CheckpointSpi.this.getProxyHost();
         }
 
         /** {@inheritDoc} */
         @Override public int getProxyPort() {
-            return cfg.getProxyPort();
+            return S3CheckpointSpi.this.getProxyPort();
         }
 
         /** {@inheritDoc} */
         @Override public String getProxyUsername() {
-            return cfg.getProxyUsername();
+            return S3CheckpointSpi.this.getProxyUsername();
         }
     }
 }

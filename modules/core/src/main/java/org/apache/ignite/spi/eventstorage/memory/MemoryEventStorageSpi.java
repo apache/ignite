@@ -223,9 +223,18 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /**
+     * Gets current queue size of the event queue.
+     *
+     * @return Current queue size of the event queue.
+     */
+    public long getQueueSize() {
+        return evts.sizex();
+    }
+
+    /**
      * Removes all events from the event queue.
      */
-    void clearAll() {
+    public void clearAll() {
         evts.clear();
     }
 
@@ -325,12 +334,12 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
 
         /** {@inheritDoc} */
         @Override public long getQueueSize() {
-            return evts.sizex();
+            return MemoryEventStorageSpi.this.getQueueSize();
         }
 
         /** {@inheritDoc} */
         @Override public void clearAll() {
-            evts.clear();
+            MemoryEventStorageSpi.this.clearAll();
         }
     }
 }

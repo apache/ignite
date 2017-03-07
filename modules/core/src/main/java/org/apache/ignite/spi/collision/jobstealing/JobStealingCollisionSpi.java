@@ -450,6 +450,71 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         return this;
     }
 
+    /**
+     * {@link #setStealingAttributes(Map)}.
+     *
+     * @return Node attributes to enable job stealing for.
+     */
+     public Map<String, ? extends Serializable> getStealingAttributes() {
+        return stealAttrs;
+    }
+
+    /**
+     * Gets number of currently running (not {@code 'held}) jobs.
+     *
+     * @return Number of currently running (not {@code 'held}) jobs.
+     */
+    public int getCurrentRunningJobsNumber() {
+        return runningNum;
+    }
+
+    /**
+     * Gets number of currently {@code 'held'} jobs.
+     *
+     * @return Number of currently {@code 'held'} jobs.
+     */
+    public int getCurrentHeldJobsNumber() {
+        return heldNum;
+    }
+
+    /**
+     * Gets current number of jobs that wait for the execution.
+     *
+     * @return Number of jobs that wait for execution.
+     */
+    public int getCurrentWaitJobsNumber() {
+        return waitingNum;
+    }
+
+    /**
+     * Gets current number of jobs that are being executed.
+     *
+     * @return Number of active jobs.
+     */
+    public int getCurrentActiveJobsNumber() {
+        return runningNum + heldNum;
+    }
+
+    /**
+     * Gets total number of stolen jobs.
+     *
+     * @return Number of stolen jobs.
+     */
+    public int getTotalStolenJobsNumber() {
+        return totalStolenJobsNum.get();
+    }
+
+    /**
+     * Gets current number of jobs to be stolen. This is outstanding
+     * requests number.
+     *
+     * @return Number of jobs to be stolen.
+     */
+    public int getCurrentJobsToStealNumber() {
+        return stealReqs.get();
+    }
+
+
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         HashMap<String, Object> res = new HashMap<>(4);
@@ -1101,37 +1166,37 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
         /** {@inheritDoc} */
         @Override public Map<String, ? extends Serializable> getStealingAttributes() {
-            return stealAttrs;
+            return JobStealingCollisionSpi.this.getStealingAttributes();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentRunningJobsNumber() {
-            return runningNum;
+            return JobStealingCollisionSpi.this.getCurrentRunningJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentHeldJobsNumber() {
-            return heldNum;
+            return JobStealingCollisionSpi.this.getCurrentHeldJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentWaitJobsNumber() {
-            return waitingNum;
+            return JobStealingCollisionSpi.this.getCurrentWaitJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentActiveJobsNumber() {
-            return runningNum + heldNum;
+            return JobStealingCollisionSpi.this.getCurrentActiveJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getTotalStolenJobsNumber() {
-            return totalStolenJobsNum.get();
+            return JobStealingCollisionSpi.this.getTotalStolenJobsNumber();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentJobsToStealNumber() {
-            return stealReqs.get();
+            return JobStealingCollisionSpi.this.getCurrentJobsToStealNumber();
         }
 
         /** {@inheritDoc} */

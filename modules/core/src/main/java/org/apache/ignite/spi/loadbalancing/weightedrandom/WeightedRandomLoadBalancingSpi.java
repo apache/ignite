@@ -226,6 +226,15 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /**
+     * See {@link #setUseWeights(boolean)}.
+     *
+     * @return Maximum sparsity.
+     */
+    public boolean isUseWeights() {
+        return isUseWeights;
+    }
+
+    /**
      * Sets weight of this node. Nodes with more processing capacity
      * should be assigned proportionally larger weight. Default value
      * is {@link #DFLT_NODE_WEIGHT} and is equal for all nodes.
@@ -238,6 +247,15 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
         this.nodeWeight = nodeWeight;
 
         return this;
+    }
+
+    /**
+     * See {@link #setNodeWeight(int)}.
+     *
+     * @return Maximum sparsity.
+     */
+    public int getNodeWeight() {
+        return nodeWeight;
     }
 
     /** {@inheritDoc} */
@@ -410,7 +428,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public WeightedRandomLoadBalancingSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -433,12 +451,12 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
 
         /** {@inheritDoc} */
         @Override public boolean isUseWeights() {
-            return isUseWeights;
+            return WeightedRandomLoadBalancingSpi.this.isUseWeights();
         }
 
         /** {@inheritDoc} */
         @Override public int getNodeWeight() {
-            return nodeWeight;
+            return WeightedRandomLoadBalancingSpi.this.getNodeWeight();
         }
     }
 }

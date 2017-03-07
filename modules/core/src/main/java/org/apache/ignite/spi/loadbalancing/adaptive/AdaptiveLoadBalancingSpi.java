@@ -280,6 +280,15 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /**
+     * Gets text description of current load probing implementation used.
+     *
+     * @return Text description of current load probing implementation used.
+     */
+    public String getLoadProbeFormatted() {
+        return probe.toString();
+    }
+
+    /**
      * Sets implementation of node load probe. By default {@link AdaptiveProcessingTimeLoadProbe}
      * is used which proportionally distributes load based on the average job execution
      * time on every node.
@@ -605,7 +614,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public AdaptiveLoadBalancingSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -627,7 +636,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
 
         /** {@inheritDoc} */
         @Override public String getLoadProbeFormatted() {
-            return probe.toString();
+            return AdaptiveLoadBalancingSpi.this.getLoadProbeFormatted();
         }
     }
 }

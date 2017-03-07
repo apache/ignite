@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -129,7 +130,6 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -185,6 +185,8 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
  * <li>Node local port number (see {@link #setLocalPort(int)})</li>
  * <li>Local port range (see {@link #setLocalPortRange(int)}</li>
  * <li>Connections per node (see {@link #setConnectionsPerNode(int)})</li>
+ * <li>Connection buffer flush frequency (see {@link #setConnectionBufferFlushFrequency(long)})</li>
+ * <li>Connection buffer size (see {@link #setConnectionBufferSize(int)})</li>
  * <li>Idle connection timeout (see {@link #setIdleConnectionTimeout(long)})</li>
  * <li>Direct or heap buffer allocation (see {@link #setDirectBuffer(boolean)})</li>
  * <li>Direct or heap buffer allocation for sending (see {@link #setDirectSendBuffer(boolean)})</li>
@@ -1773,6 +1775,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     @Deprecated
     public void setMinimumBufferedMessageCount(int minBufferedMsgCnt) {
         // No-op.
+    }
+
+    /**
+     * Gets the minimum number of messages for this SPI, that are buffered
+     * prior to sending.
+     *
+     * @return Minimum buffered message count.
+     * @deprecated Not used anymore.
+     */
+    @Deprecated
+    public int getMinimumBufferedMessageCount() {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -3563,7 +3577,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public TcpCommunicationSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -4741,19 +4755,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Deprecated
         @Override public int getConnectionBufferSize() {
-            return 0;
+            return TcpCommunicationSpi.this.getConnectionBufferSize();
         }
 
         /** {@inheritDoc} */
         @Deprecated
         @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-            // No-op.
+            TcpCommunicationSpi.this.setConnectionBufferFlushFrequency(connBufFlushFreq);
         }
 
         /** {@inheritDoc} */
         @Deprecated
         @Override public long getConnectionBufferFlushFrequency() {
-            return 0;
+            return TcpCommunicationSpi.this.getConnectionBufferFlushFrequency();
         }
 
         /** {@inheritDoc} */
@@ -4804,7 +4818,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** {@inheritDoc} */
         @Deprecated
         @Override public int getMinimumBufferedMessageCount() {
-            return 0;
+            return TcpCommunicationSpi.this.getMinimumBufferedMessageCount();
         }
 
         /** {@inheritDoc} */
@@ -4812,22 +4826,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             TcpCommunicationSpi.this.dumpStats();
         }
 
+        /** {@inheritDoc} */
         @Override public int getSentMessagesCount() {
             return TcpCommunicationSpi.this.getSentMessagesCount();
         }
 
+        /** {@inheritDoc} */
         @Override public long getSentBytesCount() {
             return TcpCommunicationSpi.this.getSentBytesCount();
         }
 
+        /** {@inheritDoc} */
         @Override public int getReceivedMessagesCount() {
             return TcpCommunicationSpi.this.getReceivedMessagesCount();
         }
 
+        /** {@inheritDoc} */
         @Override public long getReceivedBytesCount() {
             return TcpCommunicationSpi.this.getReceivedBytesCount();
         }
 
+        /** {@inheritDoc} */
         @Override public int getOutboundMessagesQueueSize() {
             return TcpCommunicationSpi.this.getOutboundMessagesQueueSize();
         }

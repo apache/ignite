@@ -340,7 +340,7 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public RoundRobinLoadBalancingSpi setName(String name) {
         super.setName(name);
 
         return this;

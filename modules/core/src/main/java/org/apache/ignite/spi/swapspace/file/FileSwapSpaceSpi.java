@@ -214,7 +214,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /**
-     * See {@link #setMaximumSparsity(float)}
+     * See {@link #setMaximumSparsity(float)}.
      *
      * @return Maximum sparsity.
      */
@@ -236,7 +236,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /**
-     * See {@link #setWriteBufferSize(int)}
+     * See {@link #setWriteBufferSize(int)}.
      *
      * @return Write buffer size in bytes.
      */
@@ -258,7 +258,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /**
-     * See {@link #setMaxWriteQueueSize(int)}
+     * See {@link #setMaxWriteQueueSize(int)}.
      *
      * @return Max write queue size in bytes.
      */
@@ -281,7 +281,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /**
-     * See {@link #setReadStripesNumber(int)}
+     * See {@link #setReadStripesNumber(int)}.
      *
      * @return Read pool size.
      */
@@ -732,7 +732,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public FileSwapSpaceSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -2000,17 +2000,17 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
 
         /** {@inheritDoc} */
         @Override public String getBaseDirectory() {
-            return baseDir;
+            return FileSwapSpaceSpi.this.getBaseDirectory();
         }
 
         /** {@inheritDoc} */
         @Override public float getMaximumSparsity() {
-            return maxSparsity;
+            return FileSwapSpaceSpi.this.getMaximumSparsity();
         }
 
         /** {@inheritDoc} */
         @Override public int getWriteBufferSize() {
-            return writeBufSize;
+            return FileSwapSpaceSpi.this.getWriteBufferSize();
         }
 
         /** {@inheritDoc} */

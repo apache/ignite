@@ -134,6 +134,15 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         return this;
     }
 
+    /**
+     * Gets cache name to be used by this SPI..
+     *
+     * @return Cache name to be used by this SPI.
+     */
+    public String getCacheName() {
+        return cacheName;
+    }
+
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(cacheName), "!F.isEmpty(cacheName)");
@@ -247,7 +256,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
 
     /** {@inheritDoc} */
     @Override
-    public IgniteSpiAdapter setName(String name) {
+    public CacheCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -269,7 +278,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
 
         /** {@inheritDoc} */
         @Override public String getCacheName() {
-            return cacheName;
+            return CacheCheckpointSpi.this.getCacheName();
         }
     }
 }
