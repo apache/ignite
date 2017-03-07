@@ -234,14 +234,14 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws TransactionHeuristicException If transaction has entered an unknown state.
      */
     @IgniteAsyncSupported
-    public void commit() throws IgniteException;
+    public void commit() throws TransactionException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
      * @throws IgniteException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws IgniteException;
+    @Override public void close() throws TransactionException;
 
     /**
      * Rolls back this transaction.
@@ -249,5 +249,5 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws IgniteException If rollback failed.
      */
     @IgniteAsyncSupported
-    public void rollback() throws IgniteException;
+    public void rollback() throws TransactionException;
 }

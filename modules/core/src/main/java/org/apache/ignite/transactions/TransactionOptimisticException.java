@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteException;
 /**
  * Exception thrown whenever grid transactions fail optimistically.
  */
-public class TransactionOptimisticException extends IgniteException {
+public class TransactionOptimisticException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -27,7 +27,7 @@ import org.apache.ignite.IgniteException;
  * <p>
  * Usually this exception is cause for {@link TransactionTimeoutException}.
  */
-public class TransactionDeadlockException extends IgniteException {
+public class TransactionDeadlockException extends TransactionException {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 

@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteException;
  * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
  * this exception can contain {@link TransactionDeadlockException} as cause.
  */
-public class TransactionTimeoutException extends IgniteException {
+public class TransactionTimeoutException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
 
