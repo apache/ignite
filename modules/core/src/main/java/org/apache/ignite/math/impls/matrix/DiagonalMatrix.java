@@ -113,11 +113,11 @@ public class DiagonalMatrix extends AbstractMatrix {
 
     @Override
     public Matrix like(int rows, int cols) {
-        return null; // TODO
+        return storage().diagonal().likeMatrix(rows, cols);
     }
 
     @Override
     public Vector likeVector(int crd) {
-        return null; // TODO
+        return storage().diagonal().like(crd);
     }
 }
