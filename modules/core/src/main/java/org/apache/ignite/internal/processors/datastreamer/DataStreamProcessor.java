@@ -420,7 +420,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
-            ctx.io().send(nodeId, resTopic, res, threadIoPolicy());
+            ctx.io().sendToCustomTopic(nodeId, resTopic, res, threadIoPolicy());
         }
         catch (IgniteCheckedException e) {
             if (ctx.discovery().alive(nodeId))

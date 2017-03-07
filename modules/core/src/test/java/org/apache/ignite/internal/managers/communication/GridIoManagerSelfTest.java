@@ -90,21 +90,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     public void testSendIfOneOfNodesIsLocalAndTopicIsEnum() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE, new TestMessage(),
-                    GridIoPolicy.P2P_POOL);
-
-                return null;
-            }
-        }, AssertionError.class, "Internal Ignite code should never call the method with local node in a node list.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSendIfOneOfNodesIsLocalAndTopicIsObject() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                new GridIoManager(ctx).send(F.asList(locNode, rmtNode), new Object(), new TestMessage(),
+                new GridIoManager(ctx).sendToGridTopic(F.asList(locNode, rmtNode), GridTopic.TOPIC_CACHE, new TestMessage(),
                     GridIoPolicy.P2P_POOL);
 
                 return null;
@@ -127,12 +113,12 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
             // No-op. We are using mocks so real sending is impossible.
         }
 
-        verify(ioMgr).send(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
+        verify(ioMgr).sendToGridTopic(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
 
-        verify(ioMgr).send(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
+        verify(ioMgr).sendToGridTopic(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
     }
 
@@ -151,12 +137,12 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
             // No-op. We are using mocks so real sending is impossible.
         }
 
-        verify(ioMgr).send(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
+        verify(ioMgr).sendToGridTopic(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL));
 
         Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
 
-        verify(ioMgr).send(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
+        verify(ioMgr).sendToGridTopic(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
     }
 
@@ -175,7 +161,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
             // No-op. We are using mocks so real sending is impossible.
         }
 
-        verify(ioMgr).sendOrderedMessage(
+        verify(ioMgr).sendOrderedMessageToGridTopic(
             argThat(new IsEqualCollection(F.asList(locNode, rmtNode))),
             eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class),
@@ -196,7 +182,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, GridTopic topic, Message msg, byte plc, boolean async)
+        @Override public void sendToGridTopic(ClusterNode node, GridTopic topic, Message msg, byte plc)
             throws IgniteCheckedException {
             // No-op.
         }
