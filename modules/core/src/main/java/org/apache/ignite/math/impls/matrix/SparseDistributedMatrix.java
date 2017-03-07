@@ -26,9 +26,12 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.Vector;
 import java.io.*;
+import java.util.*;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -45,6 +48,11 @@ import java.io.*;
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
     private int rows, cols;
     private int stoMode, acsMode;
+
+    private IgniteCache<
+        Integer /* Row or column index. */,
+        Map<Integer, Double> /* Map-based row or column. */
+    > cache = null;
 
     /**
      *

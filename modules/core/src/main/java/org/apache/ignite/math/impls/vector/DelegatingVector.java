@@ -338,13 +338,13 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public double getLookupCost() {
-        return dlg.getLookupCost();
+    @Override public boolean isRandomAccess() {
+        return dlg.isRandomAccess();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAddConstantTime() {
-        return dlg.isAddConstantTime();
+    @Override public boolean isDistributed() {
+        return dlg.isDistributed();
     }
 
     /** {@inheritDoc} */

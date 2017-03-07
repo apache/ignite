@@ -114,11 +114,13 @@ public class FunctionVectorStorage implements VectorStorage {
         return false;
     }
 
-    @Override public double getLookupCost() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return false;
     }
 
-    @Override public boolean isAddConstantTime() {
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
         return false;
     }
 

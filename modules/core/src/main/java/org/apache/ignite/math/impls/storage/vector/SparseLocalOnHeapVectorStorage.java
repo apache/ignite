@@ -98,12 +98,14 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
         return false;
     }
 
-    @Override public double getLookupCost() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return true;
     }
 
-    @Override public boolean isAddConstantTime() {
-        return true;
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
+        return false;
     }
 
     @Override public boolean isArrayBased() {

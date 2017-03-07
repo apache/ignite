@@ -127,12 +127,14 @@ public class MatrixDelegateStorage implements MatrixStorage {
         return sto.isDense();
     }
 
-    @Override public double getLookupCost() {
-        return sto.getLookupCost();
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return sto.isRandomAccess();
     }
 
-    @Override public boolean isAddConstantTime() {
-        return sto.isAddConstantTime();
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
+        return sto.isDistributed();
     }
 
     @Override public double[][] data() {

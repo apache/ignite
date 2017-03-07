@@ -87,12 +87,14 @@ public class DiagonalMatrixStorage implements MatrixStorage {
         return diagonal.isDense();
     }
 
-    @Override public double getLookupCost() {
-        return diagonal.getLookupCost();
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return diagonal.isRandomAccess();
     }
 
-    @Override public boolean isAddConstantTime() {
-        return diagonal.isAddConstantTime();
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
+        return diagonal.isDistributed();
     }
 
     @Override public boolean isArrayBased() {

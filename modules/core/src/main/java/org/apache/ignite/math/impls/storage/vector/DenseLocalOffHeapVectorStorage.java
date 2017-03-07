@@ -84,13 +84,13 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public double getLookupCost() {
-        return 0;
+    @Override public boolean isRandomAccess() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAddConstantTime() {
-        return true;
+    @Override public boolean isDistributed() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -23,37 +23,27 @@ package org.apache.ignite.math;
 public interface StorageOpsMetrics {
     /**
      * Checks if this implementation should be considered to be iterable in index order in an efficient way.
-     *
-     * @return
      */
     public boolean isSequentialAccess();
 
     /**
+     * Checks if this implementation is optimized for random access.
+     */
+    public boolean isRandomAccess();
+
+    /**
      * Checks if this implementation should be considered dense so that it explicitly
      * represents every value.
-     *
-     * @return
      */
     public boolean isDense();
 
     /**
-     * Gets an estimate of the cost *in number of ops* it takes to lookup a random element in this vector.
-     *
-     * @return
-     */
-    public double getLookupCost();
-
-    /**
-     * Checks if adding a non-zero element to this vector is done in a constant time.
-     *
-     * @return
-     */
-    public boolean isAddConstantTime();
-
-    /**
      * Checks if implementation is based on Java arrays.
-     *
-     * @return
      */
     public boolean isArrayBased();
+
+    /**
+     * Checks whether implementation is JVM-local or distributed (multi-JVM).
+     */
+    public boolean isDistributed();
 }

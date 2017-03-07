@@ -136,12 +136,14 @@ public class MatrixVectorStorage implements VectorStorage {
         return parent.isDense();
     }
 
-    @Override public double getLookupCost() {
-        return parent.getLookupCost();
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return parent.isRandomAccess();
     }
 
-    @Override public boolean isAddConstantTime() {
-        return parent.isAddConstantTime();
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
+        return parent.isDistributed();
     }
 
     @Override public boolean isArrayBased() {

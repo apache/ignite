@@ -109,12 +109,14 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
         return false;
     }
 
-    @Override public double getLookupCost() {
-        return 0;
+    @Override
+    public boolean isRandomAccess() {
+        return true;
     }
 
-    @Override public boolean isAddConstantTime() {
-        return false;
+    @Override
+    public boolean isDistributed() {
+        return true;
     }
 
     @Override public boolean isArrayBased() {

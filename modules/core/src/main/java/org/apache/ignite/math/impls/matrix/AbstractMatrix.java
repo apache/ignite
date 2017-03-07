@@ -142,13 +142,13 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public double getLookupCost() {
-        return sto.getLookupCost();
+    @Override public boolean isRandomAccess() {
+        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAddConstantTime() {
-        return sto.isAddConstantTime();
+    @Override public boolean isDistributed() {
+        return sto.isDistributed();
     }
 
     /** {@inheritDoc} */

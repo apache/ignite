@@ -20,7 +20,6 @@ package org.apache.ignite.math.impls.storage.matrix;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
-import org.apache.ignite.math.impls.matrix.AbstractMatrix;
 
 /**
  * Matrix storage based on arbitrary cache and key and value mapping functions.
@@ -134,13 +133,13 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public double getLookupCost() {
-        return 0;
+    @Override public boolean isRandomAccess() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAddConstantTime() {
-        return false;
+    @Override public boolean isDistributed() {
+        return true;
     }
 
     /** {@inheritDoc} */

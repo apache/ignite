@@ -17,14 +17,10 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.StorageOpsMetrics;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.*;
+import java.util.*;
 import java.util.function.*;
 
 import static org.junit.Assert.*;
@@ -39,16 +35,6 @@ public class VectorAttributesTest {
     /** */ @Test
     public void isSequentialAccessTest() {
         alwaysTrueAttributeTest(StorageOpsMetrics::isSequentialAccess);
-    }
-
-    /** */ @Test
-    public void getLookupCostTest() {
-        alwaysTrueAttributeTest(v -> v.getLookupCost() == 0);
-    }
-
-    /** */ @Test
-    public void isAddConstantTimeTest() {
-        alwaysTrueAttributeTest(StorageOpsMetrics::isAddConstantTime);
     }
 
     /** */ @Test

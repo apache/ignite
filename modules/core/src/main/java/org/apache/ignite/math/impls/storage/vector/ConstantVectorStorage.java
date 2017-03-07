@@ -17,10 +17,9 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
-import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.*;
 import java.io.*;
-import org.apache.ignite.math.impls.vector.RandomVector;
 
 /**
  * Constant read-only vector storage.
@@ -86,12 +85,12 @@ public class ConstantVectorStorage implements VectorStorage {
         return true;
     }
 
-    @Override public double getLookupCost() {
-        return 0;
+    @Override public boolean isRandomAccess() {
+        return true;
     }
 
-    @Override public boolean isAddConstantTime() {
-        throw new UnsupportedOperationException("Can't mutate constant vector.");
+    @Override public boolean isDistributed() {
+        return false;
     }
 
     @Override public boolean isArrayBased() {

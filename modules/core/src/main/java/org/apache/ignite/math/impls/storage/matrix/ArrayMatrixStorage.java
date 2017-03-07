@@ -90,12 +90,14 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return true;
     }
 
-    @Override public double getLookupCost() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
+        return true;
     }
 
-    @Override public boolean isAddConstantTime() {
-        return true;
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
+        return false;
     }
 
     @Override public void set(int x, int y, double v) {

@@ -47,18 +47,6 @@ public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixSto
 
     /** */
     @Test
-    public void getLookupCost() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.getLookupCost() == 0);
-    }
-
-    /** */
-    @Test
-    public void isAddConstantTime() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.isAddConstantTime());
-    }
-
-    /** */
-    @Test
     public void isArrayBased() throws Exception {
         assertTrue(UNEXPECTED_VALUE, storage.isArrayBased());
     }

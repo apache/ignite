@@ -19,9 +19,8 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.storage.vector.ArrayVectorStorage;
+import org.apache.ignite.math.impls.storage.vector.*;
 import org.junit.*;
 import java.util.*;
 import java.util.stream.*;
@@ -774,13 +773,13 @@ public class AbstractVectorTest {
                 return null;
             }
 
-            /** */
-            @Override public double getLookupCost() {
-                return 0;
+            /** {@inheritDoc} */
+            @Override public boolean isRandomAccess() {
+                return true;
             }
 
-            /** */
-            @Override public boolean isAddConstantTime() {
+            /** {@inheritDoc} */
+            @Override public boolean isDistributed() {
                 return false;
             }
         };
@@ -843,13 +842,13 @@ public class AbstractVectorTest {
                 return null;
             }
 
-            /** */
-            @Override public double getLookupCost() {
-                return 0;
+            /** {@inheritDoc} */
+            @Override public boolean isRandomAccess() {
+                return true;
             }
 
-            /** */
-            @Override public boolean isAddConstantTime() {
+            /** {@inheritDoc} */
+            @Override public boolean isDistributed() {
                 return false;
             }
         };
