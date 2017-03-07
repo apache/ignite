@@ -1903,60 +1903,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param addrs InetSocketAddresses.
-     */
-    public static List<InetSocketAddress> filterReachableAddresses(List<InetSocketAddress> addrs) {
-        final int reachTimeout = 2000;
-
-        if (addrs.isEmpty())
-            return Collections.emptyList();
-
-        if (addrs.size() == 1) {
-            InetSocketAddress addr = addrs.get(0);
-
-            if (reachable(addr.getAddress(), reachTimeout))
-                return Collections.singletonList(addr);
-
-            return Collections.emptyList();
-        }
-
-        final List<InetSocketAddress> res = new ArrayList<>(addrs.size());
-
-        Collection<Future<?>> futs = new ArrayList<>(addrs.size());
-
-        ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
-
-        for (final InetSocketAddress addr : addrs) {
-            futs.add(executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    if (reachable(addr.getAddress(), reachTimeout)) {
-                        synchronized (res) {
-                            res.add(addr);
-                        }
-                    }
-                }
-            }));
-        }
-
-        for (Future<?> fut : futs) {
-            try {
-                fut.get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        executor.shutdown();
-
-        return res;
-    }
-
-    /**
      * Returns host names consistent with {@link #resolveLocalHost(String)}. So when it returns
      * a common address this method returns single host name, and when a wildcard address passed
      * this method tries to collect addresses of all available interfaces.
