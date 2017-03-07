@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -169,12 +170,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException;
 
     /**
-     * @param part Partition.
-     * @param partCntr Partition counter to get historical data if available.
+     * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+    public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**

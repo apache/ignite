@@ -459,7 +459,7 @@ public class GridDhtPartitionDemander {
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
                 UUID nodeId = e.getKey().id();
 
-                Collection<Integer> parts= e.getValue().partitions();
+                Collection<Integer> parts = e.getValue().partitions();
 
                 assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
 

@@ -28,4 +28,10 @@ public interface IgniteRebalanceIterator extends GridCloseableIterator<CacheData
      * @return {@code True} if this iterator is a historical iterator starting from the requested partition counter.
      */
     public boolean historical();
+
+    public boolean isPartitionDone(int partId);
+
+    public boolean isPartitionMissing(int partId);
+
+    public void setPartitionMissing(int partId);
 }

@@ -46,17 +46,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** Update sequence. */
     private long updateSeq;
 
-    /** Partition. */
-    @GridDirectCollection(int.class)
-    private Collection<Integer> parts;
-
-    /** Partitions that must be restored from history. */
-    @GridDirectCollection(int.class)
-    private Collection<Integer> historicalParts;
-
-    /** Partition counters. */
-    @GridDirectMap(keyType = int.class, valueType = long.class)
-    private Map<Integer, Long> partsCntrs;
+    private IgniteDhtDemandedPartitionsMap parts;
 
     /** Topic. */
     @GridDirectTransient
@@ -83,14 +73,15 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;
+
+        parts = new IgniteDhtDemandedPartitionsMap();
     }
 
     /**
      * @param cp Message to copy from.
      * @param parts Partitions.
      */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts,
-        Map<Integer, Long> partsCntrs) {
+    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, IgniteDhtDemandedPartitionsMap parts) {
         cacheId = cp.cacheId;
         updateSeq = cp.updateSeq;
         topic = cp.topic;
@@ -98,12 +89,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         workerId = cp.workerId;
         topVer = cp.topVer;
 
-        // Create a copy of passed in collection since it can be modified when this message is being sent.
-        this.parts = new HashSet<>(parts);
-        this.partsCntrs = partsCntrs;
+        assert parts != null;
 
-        if (cp.historicalParts != null)
-            this.historicalParts = new HashSet<>(cp.historicalParts);
+        this.parts = parts;
     }
 
     /**
@@ -114,34 +102,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     }
 
     /**
-     * @param p Partition.
-     */
-    void addPartition(int p, boolean historical) {
-        if (parts == null)
-            parts = new HashSet<>();
-
-        parts.add(p);
-
-        if (historical) {
-            if (historicalParts == null)
-                historicalParts = new HashSet<>();
-
-            historicalParts.add(p);
-        }
-    }
-
-    /**
      * @return Partition.
      */
-    Collection<Integer> partitions() {
+    IgniteDhtDemandedPartitionsMap partitions() {
         return parts;
-    }
-
-    boolean isHistorical(int p) {
-        if (historicalParts == null)
-            return false;
-
-        return historicalParts.contains(p);
     }
 
     /**
@@ -201,14 +165,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     }
 
     /**
-     * @param part Partition to get counter for.
-     * @return Partition counter associated with this partition or {@code null} if this information is unavailable.
-     */
-    Long partitionCounter(int part) {
-        return partsCntrs == null ? null : partsCntrs.get(part);
-    }
-
-    /**
      * @return Topology version for which demand message is sent.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -252,24 +208,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeCollection("historicalParts", historicalParts, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeCollection("parts", parts, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMap("partsCntrs", partsCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
-                    return false;
-
-                writer.incrementState();
-
             case 6:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
@@ -316,29 +254,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
-                historicalParts = reader.readCollection("historicalParts", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                parts = reader.readCollection("parts", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                partsCntrs = reader.readMap("partsCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
 
             case 6:
                 timeout = reader.readLong("timeout");
