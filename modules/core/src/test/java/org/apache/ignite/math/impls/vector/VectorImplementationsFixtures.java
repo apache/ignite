@@ -36,7 +36,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
         (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
-        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new
+        (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
+        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new
     );
 
     /** */
@@ -105,6 +106,19 @@ class VectorImplementationsFixtures {
         }
     }
 
+    /** */
+    private static class FunctionVectorFixture extends VectorSizesExtraFixture<Double> {
+        /** */
+        FunctionVectorFixture() {
+            super("FunctionVector",
+                (size, scale) -> {
+                    final double[] arr = new double[size];
+                    return new FunctionVector(size, idx -> arr[idx] * scale,
+                        (idx, value) -> arr[idx] = value / scale);
+                },
+                new Double[] {0.5, 1.0, 2.0, null});
+        }
+    }
 
     /** */
     private static class VectorSizesExtraFixture<T> implements Iterable<Vector> {

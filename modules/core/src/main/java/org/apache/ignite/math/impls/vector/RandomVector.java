@@ -105,12 +105,12 @@ public class RandomVector extends AbstractReadonlyVector {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + Boolean.hashCode(fastHash);
-        result = result * 37 + getStorage().hashCode();
+        res = res * 37 + Boolean.hashCode(fastHash);
+        res = res * 37 + getStorage().hashCode();
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
