@@ -168,7 +168,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         for (int i = 0; i < keyNum; i++) {
             int trueIdx = stripeIdxs == null ? i : stripeIdxs[i];
 
-            if (F.contains(skipped, i))
+            if (F.contains(skipped, trueIdx))
                 continue;
 
             KeyCacheObject key = req.key(trueIdx);
@@ -187,7 +187,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
             CacheObject val = null;
 
-            if (F.contains(nearValsIdxs, i)) {
+            if (F.contains(nearValsIdxs, trueIdx)) {
                 val = res.nearValue(nearValIdx);
 
                 nearValIdx++;
@@ -199,8 +199,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     val = req.value(trueIdx);
             }
 
-            long ttl = res.nearTtl(trueIdx);
-            long expireTime = res.nearExpireTime(trueIdx);
+            long ttl = res.nearTtl(i);
+            long expireTime = res.nearExpireTime(i);
 
             if (ttl != CU.TTL_NOT_CHANGED && expireTime == CU.EXPIRE_TIME_CALCULATE)
                 expireTime = CU.toExpireTime(ttl);

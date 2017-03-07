@@ -2248,7 +2248,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 updRes,
                                 taskName,
                                 expiry,
-                                sndPrevVal);
+                                sndPrevVal,
+                                stripeIdxs);
 
                             firstEntryIdx = i;
 
@@ -2297,7 +2298,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 updRes,
                                 taskName,
                                 expiry,
-                                sndPrevVal);
+                                sndPrevVal,
+                                stripeIdxs);
 
                             firstEntryIdx = i;
 
@@ -2424,7 +2426,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 updRes,
                 taskName,
                 expiry,
-                sndPrevVal);
+                sndPrevVal,
+                stripeIdxs);
         }
         else
             assert filtered.isEmpty();
@@ -2756,7 +2759,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final UpdateBatchResult batchRes,
         final String taskName,
         @Nullable final IgniteCacheExpiryPolicy expiry,
-        final boolean sndPrevVal
+        final boolean sndPrevVal,
+        final int[] stripeIdxs
     ) {
         assert putMap == null ^ rmvKeys == null;
 
@@ -2934,20 +2938,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     if (hasNear) {
-                        // it's index inside stripe keys in case of striped processing
-                        int idx = firstEntryIdx + i;
+                        // it's index inside all keys
+                        int trueIdx = stripeIdxs == null ? firstEntryIdx + i : stripeIdxs[firstEntryIdx + i];
 
                         if (primary) {
                             if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
 
                                 if (req.operation() == TRANSFORM) {
-                                    res.addNearValue(idx,
+                                    res.addNearValue(trueIdx,
                                         writeVal,
                                         updRes.newTtl(),
                                         CU.EXPIRE_TIME_CALCULATE);
                                 }
                                 else
-                                    res.addNearTtl(idx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
+                                    res.addNearTtl(trueIdx, updRes.newTtl(), CU.EXPIRE_TIME_CALCULATE);
 
                                 if (writeVal != null || entry.hasValue()) {
                                     IgniteInternalFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -2958,10 +2962,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             else if (readers.contains(node.id())) // Reader became primary or backup.
                                 entry.removeReader(node.id(), req.messageId());
                             else
-                                res.addSkippedIndex(idx);
+                                res.addSkippedIndex(trueIdx);
                         }
                         else
-                            res.addSkippedIndex(idx);
+                            res.addSkippedIndex(trueIdx);
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {

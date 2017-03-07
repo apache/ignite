@@ -133,11 +133,11 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Stripe to index mapping. */
     @GridDirectTransient
-    private Map<Integer, List<Integer>> stripeMap;
+    private int[] stripeCnt;
 
     /** Stripe to index mapping bytes. */
     @GridDirectMap(keyType = int.class, valueType = int[].class)
-    private Map<Integer, int[]> stripeMap0;
+    private Map<Integer, int[]> stripeMap;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -178,7 +178,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @GridDirectTransient
     private int initSize;
 
-    /** Number of maxStripes on remote node. */
+    @GridDirectTransient
+    private int maxEntryCnt;
+
+    /** Number of stripes on remote node. */
     @GridDirectTransient
     private int maxStripes;
 
@@ -267,12 +270,10 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
         // participate in request. As such, we know upper bound of all collections in request. If this bound is lower
         // than 10, we use it.
+        this.maxEntryCnt = maxEntryCnt;
         initSize = Math.min(maxEntryCnt, 10);
 
         keys = new ArrayList<>(initSize);
-
-        if (maxStripes > 0)
-            stripeMap = new HashMap<>(maxStripes);
 
         partIds = new ArrayList<>(initSize);
     }
@@ -395,15 +396,23 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         assert val != null || op == DELETE;
 
-        if (maxStripes > 0) {
+        if (maxStripes > 1) {
             int stripe = key.partition() % maxStripes;
 
-            List<Integer> idxs = stripeMap.get(stripe);
+            if (stripeCnt == null)
+                stripeCnt = new int[maxStripes];
+
+            if (stripeMap == null)
+                stripeMap = new HashMap<>(maxStripes);
+
+            int[] idxs = stripeMap.get(stripe);
 
             if (idxs == null)
-                stripeMap.put(stripe, idxs = new ArrayList<>(initSize));
+                stripeMap.put(stripe, idxs = new int[maxEntryCnt]);
 
-            idxs.add(keys.size());
+            int idx = stripeCnt[stripe];
+            idxs[idx] = keys.size();
+            stripeCnt[stripe] = idx + 1;
         }
 
         keys.add(key);
@@ -599,7 +608,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @return Stripe mapping.
      */
     @Nullable public Map<Integer, int[]> stripeMap() {
-        return stripeMap0;
+        return stripeMap;
     }
 
     /** {@inheritDoc} */
@@ -611,18 +620,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
-        if (stripeMap != null && stripeMap0 == null) {
-            stripeMap0 = new HashMap<>(stripeMap.size());
+        if (stripeMap != null && stripeCnt != null) {
 
-            for (Integer stripe : stripeMap.keySet()) {
-                List<Integer> list = stripeMap.get(stripe);
-                int[] arr = new int[list.size()];
-
-                for (int i1 = 0; i1 < list.size(); i1++)
-                    arr[i1] = list.get(i1);
-
-                stripeMap0.put(stripe, arr);
+            for (Integer idx : stripeMap.keySet()) {
+                stripeMap.put(idx, Arrays.copyOf(stripeMap.get(idx), stripeCnt[idx]));
             }
+
+            stripeCnt = null;
         }
 
         prepareMarshalCacheObjects(keys, cctx);
@@ -827,7 +831,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeMap("stripeMap0", stripeMap0, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeMap("stripeMap", stripeMap, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                     return false;
 
                 writer.incrementState();
@@ -1039,7 +1043,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 21:
-                stripeMap0 = reader.readMap("stripeMap0", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                stripeMap = reader.readMap("stripeMap", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
                 if (!reader.isLastRead())
                     return false;
