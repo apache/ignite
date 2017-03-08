@@ -313,6 +313,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
+        U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
         if (!ctx.clientNode())
             ctx.event().removeLocalEventListener(topLsnr);
 
@@ -349,8 +351,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     ctx.name());
             }
         }
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -1799,6 +1799,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (!busyLock.enterBusy())
                 return;
 
+            busyLock.leaveBusy();
+
             svcName.set(null);
 
             try {
@@ -1811,8 +1813,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     throw t;
             }
             finally {
-                busyLock.leaveBusy();
-
                 svcName.set(null);
             }
         }
