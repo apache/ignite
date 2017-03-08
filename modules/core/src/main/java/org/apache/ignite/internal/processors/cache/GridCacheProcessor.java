@@ -3472,15 +3472,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Registers MBean for cache components.
      *
-     * @param o Cache component.
+     * @param obj Cache component.
      * @param cacheName Cache name.
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
     @SuppressWarnings("unchecked")
-    private void registerMbean(Object o, @Nullable String cacheName, boolean near)
+    private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
-        assert o != null;
+        assert obj != null;
 
         MBeanServer srvr = ctx.config().getMBeanServer();
 
@@ -3490,17 +3490,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheName = near ? cacheName + "-near" : cacheName;
 
-        if(o instanceof IgniteMBeanAware)
-            o = ((IgniteMBeanAware)o).getMBean();
+        final Object mbeanImpl = (obj instanceof IgniteMBeanAware) ? ((IgniteMBeanAware)obj).getMBean() : obj;
 
-        for (Class<?> itf : o.getClass().getInterfaces()) {
+        for (Class<?> itf : obj.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    U.registerCacheMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
+                    U.registerCacheMBean(srvr, ctx.gridName(), cacheName, obj.getClass().getName(), mbeanImpl,
                         (Class<Object>)itf);
                 }
                 catch (JMException e) {
-                    throw new IgniteCheckedException("Failed to register MBean for component: " + o, e);
+                    throw new IgniteCheckedException("Failed to register MBean for component: " + obj, e);
                 }
 
                 break;
