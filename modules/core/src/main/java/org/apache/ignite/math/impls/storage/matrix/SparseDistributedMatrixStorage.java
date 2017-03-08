@@ -9,24 +9,27 @@
 
 package org.apache.ignite.math.impls.storage.matrix;
 
+import it.unimi.dsi.fastutil.ints.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * TODO: add description.
  */
-public class SparseDistributedMatrixStorage implements MatrixStorage, StorageConstants {
+public class SparseDistributedMatrixStorage extends DistributionSupport implements MatrixStorage, StorageConstants {
     private int rows, cols;
     private int stoMode, acsMode;
 
+    // Actual distributed storage.
     private IgniteCache<
         Integer /* Row or column index. */,
         Map<Integer, Double> /* Map-based row or column. */
@@ -57,6 +60,14 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
         this.stoMode = stoMode;
         this.acsMode = acsMode;
 
+        cache = newCache();
+    }
+
+    /**
+     *
+     * @return
+     */
+    private IgniteCache<Integer, Map<Integer, Double>> newCache() {
         CacheConfiguration<Integer, Map<Integer, Double>> cfg = new CacheConfiguration<>();
 
         // Assume 10% density.
@@ -72,10 +83,13 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
         // No eviction.
         cfg.setEvictionPolicy(null);
 
+        // No copying of values.
+        cfg.setCopyOnRead(false);
+
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
-        cache = Ignition.ignite().getOrCreateCache(cfg);
+        return Ignition.ignite().getOrCreateCache(cfg);
     }
 
     /**
@@ -104,12 +118,64 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
 
     @Override
     public double get(int x, int y) {
-        return 0; // TODO
+        if (stoMode == ROW_STORAGE_MODE)
+            return matrixGet(cache.getName(), x, y);
+        else
+            return matrixGet(cache.getName(), y, x);
     }
 
     @Override
     public void set(int x, int y, double v) {
-        // TODO
+        if (stoMode == ROW_STORAGE_MODE)
+            matrixSet(cache.getName(), x, y, v);
+        else
+            matrixSet(cache.getName(), y, x, v);
+    }
+
+    /**
+     * Distributed matrix get.
+     *
+     * @param cacheName Matrix's cache.
+     * @param a Row or column index.
+     * @param b Row or column index.
+     * @return Matrix value at (a, b) index.
+     */
+    private double matrixGet(String cacheName, int a, int b) {
+        // Remote get from the primary node (where given row or column is stored locally).
+        return ignite().compute(groupForKey(cacheName, a)).call(() -> {
+            IgniteCache<Integer, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+
+            // Local get.
+            Map<Integer, Double> map = cache.localPeek(a, CachePeekMode.PRIMARY);
+
+            return (map == null || !map.containsKey(b)) ? 0.0 : map.get(b);
+        });
+    }
+
+    /**
+     * Distributed matrix set.
+     *
+     * @param cacheName Matrix's cache.
+     * @param a Row or column index.
+     * @param b Row or column index.
+     * @param v New value to set.
+     */
+    private void matrixSet(String cacheName, int a, int b, double v) {
+        // Remote set on the primary node (where given row or column is stored locally).
+        ignite().compute(groupForKey(cacheName, a)).run(() -> {
+            IgniteCache<Integer, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+
+            // Local get.
+            Map<Integer, Double> map = cache.localPeek(a, CachePeekMode.PRIMARY);
+
+            if (map == null)
+                map = acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap();
+
+            map.put(b, v);
+
+            // Local put.
+            cache.put(a, map);
+        });
     }
 
     @Override
@@ -124,12 +190,20 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
 
     @Override
     public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeInt(rows);
+        out.writeInt(cols);
+        out.writeInt(acsMode);
+        out.writeInt(stoMode);
+        out.writeUTF(cache.getName());
     }
 
     @Override
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        rows = in.readInt();
+        cols = in.readInt();
+        acsMode = in.readInt();
+        stoMode = in.readInt();
+        cache = ignite().getOrCreateCache(in.readUTF());
     }
 
     @Override
@@ -144,7 +218,7 @@ public class SparseDistributedMatrixStorage implements MatrixStorage, StorageCon
 
     @Override
     public boolean isRandomAccess() {
-        return true;
+        return acsMode == RANDOM_ACCESS_MODE;
     }
 
     @Override

@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import javax.cache.*;
 import java.util.*;
@@ -78,6 +79,17 @@ public class DistributionSupport {
      */
     protected void broadcastForCache(String cacheName, IgniteRunnable run) {
         ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
+    }
+
+    /**
+     * 
+     * @param cacheName
+     * @param k
+     * @param <K>
+     * @return
+     */
+    protected <K> ClusterGroup groupForKey(String cacheName, K k) {
+        return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
     }
 
     /**
