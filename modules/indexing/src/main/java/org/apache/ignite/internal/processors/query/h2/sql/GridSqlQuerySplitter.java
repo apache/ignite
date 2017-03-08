@@ -861,6 +861,7 @@ public class GridSqlQuerySplitter {
         if (!tblAliases.contains(tblAlias))
             return;
 
+        GridSqlType resType = col.resultType();
         String uniqueColAlias = uniqueColumnAlias(col);
         GridSqlAlias colAlias = cols.get(uniqueColAlias);
 
@@ -874,6 +875,7 @@ public class GridSqlQuerySplitter {
         col = column(uniqueColAlias);
         // col.tableAlias(wrapAlias.alias());
         col.expressionInFrom(wrapAlias);
+        col.resultType(resType);
 
         prnt.child(childIdx, col);
     }
@@ -1345,7 +1347,7 @@ public class GridSqlQuerySplitter {
             GridSqlType t = col.resultType();
 
             if (t == null)
-                throw new NullPointerException("Column type.");
+                throw new NullPointerException("Column type: " + col);
 
             if (t == GridSqlType.UNKNOWN)
                 throw new IllegalStateException("Unknown type: " + col);
