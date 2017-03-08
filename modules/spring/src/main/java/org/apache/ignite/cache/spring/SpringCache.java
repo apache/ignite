@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
@@ -69,6 +70,25 @@ class SpringCache implements Cache {
         if (val != null && type != null && !type.isInstance(val))
             throw new IllegalStateException("Cached value is not of required type [cacheName=" + cache.getName() +
                 ", key=" + key + ", val=" + val + ", requiredType=" + type + ']');
+
+        return (T)val;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T get(Object key, Callable<T> valueLoader) {
+        Object val = cache.get(key);
+
+        if (val == null) {
+            try {
+                val = valueLoader.call();
+            }
+            catch (Exception ignored) {
+                return null;
+            }
+
+            put(key, val);
+        }
 
         return (T)val;
     }
