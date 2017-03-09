@@ -58,7 +58,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     private IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Invalid partitions by cache ID. */
     @GridDirectMap(keyType = Integer.class, valueType = int[].class)
@@ -81,11 +81,11 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param miniId Mini future ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, int miniId, boolean addDepInfo) {
         super(xid, addDepInfo);
 
         assert futId != null;
-        assert miniId != null;
+        assert miniId != 0;
 
         this.futId = futId;
         this.miniId = miniId;
@@ -98,12 +98,12 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param err Error.
      * @param addDepInfo Deployment enabled.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err,
+    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, int miniId, Throwable err,
         boolean addDepInfo) {
         super(xid, err, addDepInfo);
 
         assert futId != null;
-        assert miniId != null;
+        assert miniId != 0;
 
         this.futId = futId;
         this.miniId = miniId;
@@ -112,7 +112,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey> nearEvicted() {
+    Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
@@ -133,14 +133,14 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @return Map from cacheId to an array of invalid partitions.
      */
-    public Map<Integer, int[]> invalidPartitionsByCacheId() {
+    Map<Integer, int[]> invalidPartitionsByCacheId() {
         return invalidParts;
     }
 
@@ -250,7 +250,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -300,7 +300,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 reader.incrementState();
 
             case 10:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
