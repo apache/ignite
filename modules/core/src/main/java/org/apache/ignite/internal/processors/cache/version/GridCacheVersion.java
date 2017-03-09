@@ -65,12 +65,11 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
-     * @param globalTime Globally adjusted time.
      * @param order Version order.
      * @param nodeOrder Node order.
      * @param dataCenterId Replication data center ID.
      */
-    public GridCacheVersion(int topVer, long globalTime, long order, int nodeOrder, int dataCenterId) {
+    public GridCacheVersion(int topVer, long order, int nodeOrder, int dataCenterId) {
         assert topVer >= 0 : topVer;
         assert order >= 0 : order;
         assert nodeOrder >= 0 : nodeOrder;
@@ -80,7 +79,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
 
         this.topVer = topVer;
-        this.globalTime = globalTime;
         this.order = order;
 
         nodeOrderDrId = nodeOrder | (dataCenterId << DR_ID_SHIFT);
@@ -90,13 +88,11 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
-     * @param globalTime Globally adjusted time.
      * @param order Version order.
      */
-    public GridCacheVersion(int topVer, int nodeOrderDrId, long globalTime, long order) {
+    public GridCacheVersion(int topVer, int nodeOrderDrId, long order) {
         this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
-        this.globalTime = globalTime;
         this.order = order;
     }
 
