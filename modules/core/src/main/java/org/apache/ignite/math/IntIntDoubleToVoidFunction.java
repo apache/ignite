@@ -17,9 +17,11 @@
 
 package org.apache.ignite.math;
 
+import java.io.Serializable;
+
 /**
  * Setter function for matrices.
  */
-public interface IntIntDoubleToVoidFunction {
+public interface IntIntDoubleToVoidFunction extends Serializable {
     public void apply(int x, int y, double v);
 }

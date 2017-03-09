@@ -22,5 +22,5 @@ import java.util.function.*;
 /**
  * Getters functions for matrices.
  */
-public interface IntIntToDoubleFunction extends BiFunction<Integer, Integer, Double> {
+public interface IntIntToDoubleFunction extends IgniteBiFunction<Integer, Integer, Double> {
 }
