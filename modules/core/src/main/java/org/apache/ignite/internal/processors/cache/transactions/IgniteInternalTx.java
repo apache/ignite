@@ -683,6 +683,11 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean onePhaseCommit();
 
     /**
+     * @return {@code True} if transaction works in mode when DHT nodes reply directly to near node.
+     */
+    public boolean dhtReplyNear();
+
+    /**
      * @return {@code True} if transaction has transform entries. This flag will be only set for local
      *      transactions.
      */

@@ -230,6 +230,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (tx == null) {
                                 tx = new GridDhtTxRemote(
                                     ctx.shared(),
+                                    false, // TODO IGNITE-4768.
                                     req.nodeId(),
                                     req.futureId(),
                                     nodeId,

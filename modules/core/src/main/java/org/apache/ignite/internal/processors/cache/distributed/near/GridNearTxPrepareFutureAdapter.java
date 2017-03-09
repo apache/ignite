@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxNearPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -155,6 +156,12 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     public abstract void onResult(UUID nodeId, GridNearTxPrepareResponse res);
 
     /**
+     * @param nodeId Sender.
+     * @param res Response.
+     */
+    public abstract void onDhtResponse(UUID nodeId, GridDhtTxNearPrepareResponse res);
+
+    /**
      * Checks if mapped transaction can be committed on one phase.
      * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
      *
@@ -182,8 +189,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param m Mapping.
      * @param res Response.
      */
+    final void onDhtPrepareResponse(GridDistributedTxMapping m, GridDhtTxNearPrepareResponse res) {
+
+    }
+
+    /**
+     * @param m Mapping.
+     * @param res Response.
+     */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+    final void onPrimaryPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;
 

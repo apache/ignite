@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxNearPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
@@ -200,6 +200,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     ", fut=" + this + ']');
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDhtResponse(UUID nodeId, GridDhtTxNearPrepareResponse res) {
+        assert false; // TODO IGNITE-4768.
     }
 
     /**
@@ -913,7 +918,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                             remap();
                     }
                     else {
-                        parent.onPrepareResponse(m, res);
+                        parent.onPrimaryPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.
                         if (mappings != null)

@@ -15,85 +15,92 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Response to prepare request.
+ *
  */
-public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridDhtTxNearPrepareResponse extends GridCacheMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Error. */
-    @GridToStringExclude
-    @GridDirectTransient
-    private Throwable err;
+    /** */
+    private int partId;
 
-    /** Serialized error. */
-    private byte[] errBytes;
+    /** */
+    private GridCacheVersion nearTxId;
+
+    /** Future ID.  */
+    private IgniteUuid futId;
+
+    /** Mini future ID. */
+    private int miniId;
 
     /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     *
      */
-    public GridDistributedTxPrepareResponse() {
-        /* No-op. */
+    public GridDhtTxNearPrepareResponse() {
+        // No-op.
     }
 
     /**
-     * @param xid Transaction ID.
-     * @param addDepInfo Deployment info flag.
+     * @param partId Partition ID.
+     * @param nearTxId Near transaction ID.
+     * @param futId Future ID.
+     * @param miniId Mini future ID.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, boolean addDepInfo) {
-        super(xid, 0, addDepInfo);
+    public GridDhtTxNearPrepareResponse(int partId, GridCacheVersion nearTxId, IgniteUuid futId, int miniId) {
+        assert nearTxId != null;
+        assert futId != null;
+        assert miniId > 0;
+
+        this.partId = partId;
+        this.nearTxId = nearTxId;
+        this.futId = futId;
+        this.miniId = miniId;
     }
 
     /**
-     * @param xid Lock ID.
-     * @param err Error.
-     * @param addDepInfo Deployment info flag.
+     * @return Near transaction ID.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, Throwable err, boolean addDepInfo) {
-        super(xid, 0, addDepInfo);
+    public GridCacheVersion nearTxId() {
+        return nearTxId;
+    }
 
-        this.err = err;
+    /**
+     * @return Future ID.
+     */
+    public IgniteUuid futureId() {
+        return futId;
+    }
+
+    /**
+     * @return Mini future ID.
+     */
+    public int miniId() {
+        return miniId;
     }
 
     /** {@inheritDoc} */
-    @Override public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @param err Error to set.
-     */
-    public void error(Throwable err) {
-        this.err = err;
-    }
-
-    /**
-     * @return Rollback flag.
-     */
-    public boolean isRollback() {
-        return err != null;
+    @Override public int partition() {
+        return partId;
     }
 
     /** {@inheritDoc} */
@@ -112,19 +119,18 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
+    @Override public byte directType() {
+        return -50;
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
+    @Override public byte fieldsCount() {
+        return 7;
+    }
 
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -142,8 +148,26 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         }
 
         switch (writer.state()) {
-            case 7:
-                if (!writer.writeByteArray("errBytes", errBytes))
+            case 3:
+                if (!writer.writeIgniteUuid("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeInt("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("nearTxId", nearTxId))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
@@ -164,8 +188,32 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
             return false;
 
         switch (reader.state()) {
-            case 7:
-                errBytes = reader.readByteArray("errBytes");
+            case 3:
+                futId = reader.readIgniteUuid("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                miniId = reader.readInt("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                nearTxId = reader.readMessage("nearTxId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -174,22 +222,11 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
         }
 
-        return reader.afterMessageRead(GridDistributedTxPrepareResponse.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 26;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
+        return reader.afterMessageRead(GridDhtTxNearPrepareResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridToStringBuilder.toString(GridDistributedTxPrepareResponse.class, this, "err",
-            err == null ? "null" : err.toString(), "super", super.toString());
+        return S.toString(GridDhtTxNearPrepareResponse.class, this);
     }
 }

@@ -92,6 +92,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
+        boolean dhtReplyNear,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -143,6 +144,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
+
+        dhtReplyNear(dhtReplyNear);
     }
 
     /**
@@ -165,6 +168,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
+        boolean dhtReplyNear,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -212,6 +216,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
+
+        dhtReplyNear(dhtReplyNear);
     }
 
     /**

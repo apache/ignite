@@ -193,6 +193,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected boolean onePhaseCommit;
 
     /** */
+    protected boolean dhtReplyNear;
+
+    /** */
     protected CacheWriteSynchronizationMode syncMode;
 
     /** If this transaction contains transform entries. */
@@ -665,7 +668,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public Map<Integer, Set<Integer>> invalidPartitions() {
-        return invalidParts == null ? Collections.<Integer, Set<Integer>>emptyMap() : invalidParts;
+        return invalidParts;
     }
 
     /** {@inheritDoc} */
@@ -977,6 +980,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     @Override public boolean onePhaseCommit() {
         return onePhaseCommit;
+    }
+
+    /**
+     * @param dhtReplyNear {@code True} if transaction works in mode when DHT nodes reply directly to near node.
+     */
+    public void dhtReplyNear(boolean dhtReplyNear) {
+        this.dhtReplyNear = dhtReplyNear;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean dhtReplyNear() {
+        return dhtReplyNear;
     }
 
     /** {@inheritDoc} */
@@ -2389,6 +2404,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public boolean onePhaseCommit() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean dhtReplyNear() {
             return false;
         }
 

@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -778,6 +777,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             return true;
         }
         else {
+            if (tx.dhtReplyNear())
+                return onComplete(null);
+
             if (REPLIED_UPD.compareAndSet(this, 0, 1)) {
                 GridNearTxPrepareResponse res = createPrepareResponse(this.err);
 
@@ -1216,25 +1218,37 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
-            {
-                // Assign keys to primary nodes.
-                if (!F.isEmpty(writes)) {
-                    for (IgniteTxEntry write : writes)
-                        map(tx.entry(write.txKey()));
-                }
+            assert tx.transactionNodes() != null;
 
-                if (!F.isEmpty(reads)) {
-                    for (IgniteTxEntry read : reads)
-                        map(tx.entry(read.txKey()));
-                }
+            final boolean dhtReplyNear = tx.dhtReplyNear();
+
+            Collection<UUID> backupNodes;
+            IgniteUuid nearFutId;
+
+            if (dhtReplyNear) {
+                backupNodes = tx.transactionNodes().get(cctx.localNodeId());
+                nearFutId = tx.colocated() ? tx.xid() : tx.nearFutureId();
+            }
+            else {
+                backupNodes = null;
+                nearFutId = null;
+            }
+
+            // Assign keys to primary nodes.
+            if (!F.isEmpty(writes)) {
+                for (IgniteTxEntry write : writes)
+                    map(tx.entry(write.txKey()), backupNodes);
+            }
+
+            if (!F.isEmpty(reads)) {
+                for (IgniteTxEntry read : reads)
+                    map(tx.entry(read.txKey()), backupNodes);
             }
 
             if (isDone())
                 return;
 
             if (last) {
-                assert tx.transactionNodes() != null;
-
                 final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
                 // Create mini futures.
@@ -1257,15 +1271,21 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (tx.remainingTime() == -1)
                         return;
 
-                    MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
+                    MiniFuture fut = null;
 
-                    add(fut); // Append new future.
+                    if (!tx.dhtReplyNear()) {
+                        fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
+
+                        add(fut); // Append new future.
+                    }
 
                     assert txNodes != null;
 
                     GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                         futId,
-                        fut.futureId(),
+                        fut != null ? fut.futureId() : null,
+                        nearFutId,
+                        nearMiniId,
                         tx.topologyVersion(),
                         tx,
                         timeout,
@@ -1273,8 +1293,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         nearWrites,
                         txNodes,
                         tx.nearXidVersion(),
-                        false,
-                        true,
+                        tx.dhtReplyNear(),
+                        /*last*/true,
                         tx.onePhaseCommit(),
                         tx.subjectId(),
                         tx.taskNameHash(),
@@ -1344,7 +1364,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         }
                     }
                     catch (ClusterTopologyCheckedException ignored) {
-                        fut.onNodeLeft();
+                        if (fut != null)
+                            fut.onNodeLeft();
                     }
                     catch (IgniteCheckedException e) {
                         if (!cctx.kernalContext().isStopping()) {
@@ -1354,7 +1375,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                     ", node=" + n.id() + ']');
                             }
 
-                            fut.onResult(e);
+                            // TODO IGNITE-4768, reply on near with error.
+                            if (fut != null)
+                                fut.onResult(e);
                         }
                         else {
                             if (msgLog.isDebugEnabled()) {
@@ -1368,6 +1391,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
 
                 for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
+                    assert !tx.dhtReplyNear();
+
                     if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
                         if (tx.remainingTime() == -1)
                             return;
@@ -1379,6 +1404,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                             futId,
                             fut.futureId(),
+                            nearFutId,
+                            nearMiniId,
                             tx.topologyVersion(),
                             tx,
                             timeout,
@@ -1459,49 +1486,73 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /**
+     * @param entry Entry.
+     */
+    private void onPrepare(IgniteTxEntry entry) {
+        if (entry.op() == READ || entry.op() == NOOP) {
+            GridCacheContext cacheCtx = entry.context();
+
+            ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(entry);
+
+            if (expiry != null) {
+                entry.op(NOOP);
+
+                entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
+            }
+        }
+    }
+
+    /**
      * @param entry Transaction entry.
      */
-    private void map(IgniteTxEntry entry) {
+    private void map(IgniteTxEntry entry, @Nullable Collection<UUID> backupNodes) {
         if (entry.cached().isLocal())
             return;
 
-        GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
+        onPrepare(entry);
 
         GridCacheContext cacheCtx = entry.context();
 
         GridDhtCacheAdapter<?, ?> dht = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
-        ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(entry);
-
-        if (expiry != null && (entry.op() == READ || entry.op() == NOOP)) {
-            entry.op(NOOP);
-
-            entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
-        }
+        GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
 
         while (true) {
             try {
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
+                assert dhtNodes.size() > 0 && dhtNodes.get(0).id().equals(cctx.localNodeId()) : dhtNodes;
+
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
                         ", entry=" + entry + ']');
 
-                // Exclude local node.
-                map(entry, F.view(dhtNodes, F.remoteNodes(cctx.localNodeId())), dhtMap);
+                for (int i = 1; i < dhtNodes.size(); i++) {
+                    ClusterNode node = dhtNodes.get(i);
+
+                    if (backupNodes != null  && !backupNodes.contains(node.id()))
+                        continue;
+
+                    addMapping(entry, node, dhtMap);
+                }
 
                 Collection<UUID> readers = cached.readers();
 
                 if (!F.isEmpty(readers)) {
-                    Collection<ClusterNode> nearNodes =
-                        cctx.discovery().nodes(readers, F0.not(F.idForNodeId(tx.nearNodeId())));
+                    for (UUID readerId : readers) {
+                        if (readerId.equals(tx.nearNodeId()))
+                            continue;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) +
-                            ", entry=" + entry + ']');
+                        ClusterNode readerNode = cctx.discovery().node(readerId);
 
-                    // Exclude DHT nodes.
-                    map(entry, F.view(nearNodes, F0.notIn(dhtNodes)), nearMap);
+                        if (readerNode == null || dhtNodes.contains(readerNode))
+                            continue;
+
+                        if (log.isDebugEnabled())
+                            log.debug("Mapping entry to near node [node=" + readerNode + ", entry=" + entry + ']');
+
+                        addMapping(entry, readerNode, nearMap);
+                    }
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Entry has no near readers: " + entry);
@@ -1518,39 +1569,35 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /**
      * @param entry Entry.
-     * @param nodes Nodes.
+     * @param n Node.
      * @param globalMap Map.
      */
-    private void map(
+    private void addMapping(
         IgniteTxEntry entry,
-        Iterable<ClusterNode> nodes,
+        ClusterNode n,
         Map<UUID, GridDistributedTxMapping> globalMap
     ) {
-        if (nodes != null) {
-            for (ClusterNode n : nodes) {
-                GridDistributedTxMapping global = globalMap.get(n.id());
+        GridDistributedTxMapping global = globalMap.get(n.id());
 
-                if (!F.isEmpty(entry.entryProcessors())) {
-                    GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
-                        entry.cached().partition());
+        if (!F.isEmpty(entry.entryProcessors())) {
+            GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
+                entry.cached().partition());
 
-                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
-                        T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
+            if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
+                T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
 
-                        assert procVal != null : entry;
+                assert procVal != null : entry;
 
-                        entry.op(procVal.get1());
-                        entry.value(procVal.get2(), true, false);
-                        entry.entryProcessors(null);
-                    }
-                }
-
-                if (global == null)
-                    globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
-
-                global.add(entry);
+                entry.op(procVal.get1());
+                entry.value(procVal.get2(), true, false);
+                entry.entryProcessors(null);
             }
         }
+
+        if (global == null)
+            globalMap.put(n.id(), global = new GridDistributedTxMapping(n));
+
+        global.add(entry);
     }
 
     /**

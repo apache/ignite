@@ -56,8 +56,13 @@ public class GridDhtTxMapping {
                 txNodes.put(primary.id(), backups);
             }
 
-            for (int i = 1; i < size; i++)
-                backups.add(nodes.get(i).id());
+            for (int i = 1; i < size; i++) {
+                ClusterNode backup = nodes.get(i);
+
+                assert !primary.equals(backup) : primary;
+
+                backups.add(backup.id());
+            }
         }
         else
             txNodes.put(primary.id(), new GridLeanSet<UUID>());

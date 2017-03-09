@@ -517,5 +517,4 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public String toString() {
         return S.toString(GridNearTxPrepareResponse.class, this, "super", super.toString());
     }
-
 }
