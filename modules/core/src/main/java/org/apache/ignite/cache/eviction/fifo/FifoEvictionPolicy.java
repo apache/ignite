@@ -151,6 +151,15 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBe
     }
 
     /**
+     * Gets current queue size.
+     *
+     * @return Current queue size.
+     */
+    public int getCurrentSize() {
+        return queue.size();
+    }
+
+    /**
      * Gets maximum allowed cache size in bytes.
      *
      * @return maximum allowed cache size in bytes.
@@ -171,6 +180,15 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBe
         this.maxMemSize = maxMemSize;
 
         return this;
+    }
+
+    /**
+     * Gets current queue size in bytes.
+     *
+     * @return current queue size in bytes.
+     */
+    public long getCurrentMemorySize() {
+        return memSize.longValue();
     }
 
     /**
@@ -334,12 +352,12 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteMBe
     private class FifoEvictionPolicyMBeanImpl implements FifoEvictionPolicyMBean {
         /** {@inheritDoc} */
         @Override public long getCurrentMemorySize() {
-            return memSize.longValue();
+            return FifoEvictionPolicy.this.getCurrentMemorySize();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentSize() {
-            return queue.size();
+            return FifoEvictionPolicy.this.getCurrentSize();
         }
 
         /** {@inheritDoc} */

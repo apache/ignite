@@ -185,6 +185,15 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteM
     }
 
     /**
+     * Gets current size.
+     *
+     * @return Current size.
+     */
+    public int getCurrentSize() {
+        return set.sizex();
+    }
+
+    /**
      * Gets maximum allowed cache size in bytes.
      *
      * @return maximum allowed cache size in bytes.
@@ -205,6 +214,15 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteM
         this.maxMemSize = maxMemSize;
 
         return this;
+    }
+
+    /**
+     * Gets current sorted entries queue size in bytes.
+     *
+     * @return current sorted entries queue size in bytes.
+     */
+    public long getCurrentMemorySize() {
+        return memSize.longValue();
     }
 
     /**
@@ -544,12 +562,12 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, IgniteM
     private class SortedEvictionPolicyMBeanImpl implements SortedEvictionPolicyMBean {
         /** {@inheritDoc} */
         @Override public long getCurrentMemorySize() {
-            return memSize.longValue();
+            return SortedEvictionPolicy.this.getCurrentMemorySize();
         }
 
         /** {@inheritDoc} */
         @Override public int getCurrentSize() {
-            return set.sizex();
+            return SortedEvictionPolicy.this.getCurrentSize();
         }
 
         /** {@inheritDoc} */
