@@ -46,6 +46,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -92,6 +93,7 @@ import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -521,6 +523,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         finally {
             invalidateResultCache();
 
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Create index dynamically.
+     *
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> createIndex(String tblName, QueryIndex idx, boolean ifNotExists) {
+        if (!enterBusy())
+            return new GridFinishedFuture<>(new IgniteException("Failed to create index because " +
+                "local node is stopping."));
+
+        try {
+            return qryProc.createIndex(space, tblName, idx, ifNotExists);
+        }
+        catch (Exception e) {
+            return new GridFinishedFuture<>(
+                new IgniteException("Index creation failed due to unexpected exception.", e));
+        }
+        finally {
             leaveBusy();
         }
     }

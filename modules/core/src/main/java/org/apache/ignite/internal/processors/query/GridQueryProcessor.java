@@ -247,6 +247,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     TypeDescriptor desc = new TypeDescriptor();
 
+                    desc.space(cctx.name());
+
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
                     Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
@@ -362,6 +364,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         continue;
 
                     TypeDescriptor desc = new TypeDescriptor();
+
+                    desc.space(cctx.name());
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
@@ -950,6 +954,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void cancelQueries(Collection<Long> queries) {
         if (moduleEnabled())
             idx.cancelQueries(queries);
+    }
+
+    /**
+     * Create index.
+     *
+     * @param space Space name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
+        for (TypeDescriptor desc : types.values()) {
+            if (desc.matchSpaceAndTable(space, tblName))
+                return desc.createIndexAsync(idx, ifNotExists);
+        }
+
+        return new GridFinishedFuture<>(new IgniteException("Failed to create index becase table is not found [" +
+            "space=" + space + ", table=" + tblName + ']'));
     }
 
     /**
@@ -2278,6 +2301,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Descriptor of type.
      */
     private static class TypeDescriptor implements GridQueryTypeDescriptor {
+        /** Space. */
+        private String space;
+
         /** */
         private String name;
 
@@ -2322,6 +2348,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** SPI can decide not to register this type. */
         private boolean registered;
+
+        /**
+         * @return Space.
+         */
+        String space() {
+            return space;
+        }
+
+        /**
+         * @param space Space.
+         */
+        void space(String space) {
+            this.space = space;
+        }
 
         /**
          * @return {@code True} if type registration in SPI was finished and type was not rejected.
@@ -2566,6 +2606,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         void affinityKey(String affKey) {
             this.affKey = affKey;
+        }
+
+        /**
+         * Check whether space and table name matches.
+         *
+         * @param space Space.
+         * @param tblName Table name.
+         * @return {@code True} if matches.
+         */
+        public boolean matchSpaceAndTable(String space, String tblName) {
+            return F.eq(space, this.space) && F.eq(tblName, this.tblName);
+        }
+
+        /**
+         * Initiate asynchronous index creation.
+         *
+         * @param idx Index description.
+         * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+         * @return Future completed when index is created.
+         */
+        public IgniteInternalFuture<?> createIndexAsync(QueryIndex idx, boolean ifNotExists) {
+            // TODO
+            return null;
         }
 
         /** {@inheritDoc} */

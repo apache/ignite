@@ -48,6 +48,7 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeAddressHashResolver;
@@ -150,6 +151,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -2511,6 +2513,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         t.close(true);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
+    }
+
+    /**
+     * Dynamically create index.
+     *
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexCreate(String cacheName, String tblName, QueryIndex idx,
+        boolean ifNotExists) {
+        IgniteInternalCache cache = cache(cacheName);
+
+        if (cache == null)
+            return new GridFinishedFuture<>(new IgniteException("Cache doesn't exist: " + cacheName));
+
+        return cache.context().queries().createIndex(tblName, idx, ifNotExists);
     }
 
     /**

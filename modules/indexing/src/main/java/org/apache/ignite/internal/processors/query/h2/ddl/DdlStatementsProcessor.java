@@ -185,7 +185,7 @@ public class DdlStatementsProcessor {
             res.setOperationId(msg.operation().operationId());
             res.setError(exceptionToBytes(ex));
 
-            ctx.io().send(snd, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
+            ctx.io().sendToGridTopic(snd, GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (Throwable e) {
             U.error(log, "Failed to notify coordinator about local DLL operation completion [opId=" +
@@ -270,7 +270,7 @@ public class DdlStatementsProcessor {
         res.setOperationId(args.operationId());
 
         try {
-            ctx.io().send(args.clientNodeId(), GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
+            ctx.io().sendToGridTopic(args.clientNodeId(), GridTopic.TOPIC_QUERY, res, GridIoPolicy.IDX_POOL);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to notify client node about DDL operation failure " +
