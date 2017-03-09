@@ -160,7 +160,6 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheVersionEx [topVer=" + topologyVersion() +
-            ", time=" + globalTime() +
             ", order=" + order() +
             ", nodeOrder=" + nodeOrder() +
             ", drVer=" + drVer + ']';

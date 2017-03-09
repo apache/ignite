@@ -9217,11 +9217,7 @@ public abstract class IgniteUtils {
 
             GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
 
-            off += 4;
-
-            GridUnsafe.putLong(arr, off, drVer.globalTime());
-
-            off += 8;
+            off += 12;
 
             GridUnsafe.putLong(arr, off, drVer.order());
 
@@ -9234,11 +9230,7 @@ public abstract class IgniteUtils {
 
         GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
-        off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.globalTime());
-
-        off += 8;
+        off += 12;
 
         GridUnsafe.putLong(arr, off, ver.order());
 

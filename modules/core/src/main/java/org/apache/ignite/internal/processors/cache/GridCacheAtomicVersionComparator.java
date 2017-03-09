@@ -36,10 +36,6 @@ public class GridCacheAtomicVersionComparator {
         int otherTopVer = other.topologyVersion();
 
         if (topVer == otherTopVer) {
-            long globalTime = one.globalTime();
-            long otherGlobalTime = other.globalTime();
-
-            if (globalTime == otherGlobalTime || ignoreTime) {
                 long locOrder = one.order();
                 long otherLocOrder = other.order();
 
@@ -51,9 +47,6 @@ public class GridCacheAtomicVersionComparator {
                 }
                 else
                     return locOrder > otherLocOrder ? 1 : -1;
-            }
-            else
-                return globalTime > otherGlobalTime ? 1 : -1;
         }
         else
             return topVer > otherTopVer ? 1 : -1;

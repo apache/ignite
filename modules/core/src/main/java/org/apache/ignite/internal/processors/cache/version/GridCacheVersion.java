@@ -50,9 +50,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** Node order (used as global order) and DR ID. */
     private int nodeOrderDrId;
 
-    /** Globally adjusted time. */
-    private long globalTime;
-
     /** Order. */
     private long order;
 
@@ -110,13 +107,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      */
     public int nodeOrderAndDrIdRaw() {
         return nodeOrderDrId;
-    }
-
-    /**
-     * @return Adjusted time.
-     */
-    public long globalTime() {
-        return globalTime;
     }
 
     /**
@@ -183,7 +173,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      * @return Version represented as {@code GridUuid}
      */
     public IgniteUuid asGridUuid() {
-        return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
+        return new IgniteUuid(new UUID(topVer << 32, nodeOrderDrId << 32), order);
     }
 
     /** {@inheritDoc} */
@@ -194,7 +184,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(topVer);
-        out.writeLong(globalTime);
         out.writeLong(order);
         out.writeInt(nodeOrderDrId);
     }
@@ -202,7 +191,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         topVer = in.readInt();
-        globalTime = in.readLong();
         order = in.readLong();
         nodeOrderDrId = in.readInt();
     }
@@ -260,24 +248,18 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("globalTime", globalTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("order", order))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeInt("topVer", topVer))
                     return false;
 
@@ -297,14 +279,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
         switch (reader.state()) {
             case 0:
-                globalTime = reader.readLong("globalTime");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 nodeOrderDrId = reader.readInt("nodeOrderDrId");
 
                 if (!reader.isLastRead())
@@ -312,7 +286,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 order = reader.readLong("order");
 
                 if (!reader.isLastRead())
@@ -320,7 +294,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 topVer = reader.readInt("topVer");
 
                 if (!reader.isLastRead())
@@ -346,7 +320,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "GridCacheVersion [topVer=" + topologyVersion() +
-            ", time=" + globalTime() +
             ", order=" + order() +
             ", nodeOrder=" + nodeOrder() + ']';
     }
