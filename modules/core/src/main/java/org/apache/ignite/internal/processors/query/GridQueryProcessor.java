@@ -959,7 +959,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
-        for (TypeDescriptor desc : types.values()) {
+        for (QueryTypeDescriptorImpl desc : types.values()) {
             if (desc.matchSpaceAndTable(space, tblName))
                 return desc.dynamicIndexCreate(idx, ifNotExists);
         }

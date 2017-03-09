@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class QueryIndexHandler {
     /** Indexes. */
-    private final Map<String, GridQueryProcessor.IndexDescriptor> idxs = new ConcurrentHashMap<>();
+    private final Map<String, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
 
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
@@ -31,7 +31,7 @@ public class QueryIndexHandler {
      *
      * @param idxs Indexes.
      */
-    public void onInitialStateReady(Map<String, GridQueryProcessor.IndexDescriptor> idxs) {
+    public void onInitialStateReady(Map<String, QueryIndexDescriptorImpl> idxs) {
         this.idxs.putAll(idxs);
     }
 
@@ -48,7 +48,7 @@ public class QueryIndexHandler {
         try {
             String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
 
-            GridQueryProcessor.IndexDescriptor oldIdx = idxs.get(idxName);
+            QueryIndexDescriptorImpl oldIdx = idxs.get(idxName);
 
             if (oldIdx != null) {
                 if (ifNotExists)

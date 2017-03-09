@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -33,6 +36,9 @@ import java.util.Map;
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
+    /** Space. */
+    private String space;
+
     /** */
     private String name;
 
@@ -53,6 +59,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     @GridToStringInclude
     private final Map<String, QueryIndexDescriptorImpl> indexes = new HashMap<>();
+
+    /** Index state manager. */
+    private final QueryIndexHandler idxState = new QueryIndexHandler();
 
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
@@ -77,6 +86,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** SPI can decide not to register this type. */
     private boolean registered;
+
+    /**
+     * @return Space.
+     */
+    public String space() {
+        return space;
+    }
+
+    /**
+     * @param space Space.
+     */
+    public void space(String space) {
+        this.space = space;
+    }
 
     /**
      * @return {@code True} if type registration in SPI was finished and type was not rejected.
@@ -177,6 +200,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
     }
 
+    /** {@inheritDoc} */
+    @Override public GridQueryIndexDescriptor textIndex() {
+        return fullTextIdx;
+    }
+
     /**
      * Adds index.
      *
@@ -203,12 +231,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param descending Sorting order.
      * @throws IgniteCheckedException If failed.
      */
-    public void addFieldToIndex(String idxName, String field, int orderNum,
-        boolean descending) throws IgniteCheckedException {
+    public void addFieldToIndex(String idxName, String field, int orderNum, boolean descending)
+        throws IgniteCheckedException {
         QueryIndexDescriptorImpl desc = indexes.get(idxName);
 
-        if (desc == null)
-            desc = addIndex(idxName, QueryIndexType.SORTED);
+        assert desc != null;
 
         desc.addField(field, orderNum, descending);
     }
@@ -219,11 +246,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param field Field name.
      */
     public void addFieldToTextIndex(String field) {
-        if (fullTextIdx == null) {
+        if (fullTextIdx == null)
             fullTextIdx = new QueryIndexDescriptorImpl(QueryIndexType.FULLTEXT);
-
-            indexes.put(null, fullTextIdx);
-        }
 
         fullTextIdx.addField(field, 0, false);
     }
@@ -328,6 +352,35 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
+    }
+
+    /**
+     * Check whether space and table name matches.
+     *
+     * @param space Space.
+     * @param tblName Table name.
+     * @return {@code True} if matches.
+     */
+    public boolean matchSpaceAndTable(String space, String tblName) {
+        return F.eq(space, this.space) && F.eq(tblName, this.tblName);
+    }
+
+    /**
+     * Callback invoked when initial type state is ready.
+     */
+    public void onInitialStateReady() {
+        idxState.onInitialStateReady(indexes);
+    }
+
+    /**
+     * Initiate asynchronous index creation.
+     *
+     * @param idx Index description.
+     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexCreate(QueryIndex idx, boolean ifNotExists) {
+        return idxState.onCreateIndex(idx, ifNotExists);
     }
 
     /** {@inheritDoc} */
