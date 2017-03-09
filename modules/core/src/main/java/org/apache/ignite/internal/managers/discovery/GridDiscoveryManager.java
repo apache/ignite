@@ -227,6 +227,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node join to topology event. */
     private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
+    /** Discovery cache snapshot at the local join event time. */
+    private volatile DiscoCache onJoinDiscoCache;
+
     /** GC CPU load. */
     private volatile double gcCpuLoad;
 
@@ -566,8 +569,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(F.view(topSnapshot, FILTER_DAEMON)));
 
-                    discoEvt.discoCache(discoCache);
-
+                    onJoinDiscoCache = discoCache;
                     locJoinEvt.onDone(discoEvt);
 
                     return;
@@ -584,6 +586,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ((IgniteKernal)ctx.grid()).onDisconnected();
 
                     locJoinEvt = new GridFutureAdapter<>();
+                    onJoinDiscoCache = null;
 
                     registeredCaches.clear();
 
@@ -1806,11 +1809,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return Event that represents a local node joined to topology. */
     public DiscoveryEvent localJoinEvent() {
         try {
-            return locJoinEvt.get();
+            DiscoveryEvent event = locJoinEvt.get();
+
+            assert onJoinDiscoCache != null;
+
+            return event;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return Discovery cache snapshot at the local join event time.
+     */
+    public DiscoCache onJoinDiscoCache() {
+        return onJoinDiscoCache;
     }
 
     /**
@@ -2144,7 +2158,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.node(ctx.discovery().localNode());
                 evt.eventNode(node);
                 evt.type(type);
-                evt.discoCache(discoCache);
                 evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_DAEMON));
 
                 if (type == EVT_NODE_METRICS_UPDATED)
@@ -2171,7 +2184,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else
                     assert false;
 
-                ctx.event().record(evt);
+                ctx.event().record(evt, discoCache);
             }
         }
 
@@ -2350,12 +2363,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         customEvt.node(ctx.discovery().localNode());
                         customEvt.eventNode(node);
                         customEvt.type(type);
-                        customEvt.discoCache(evt.get4());
                         customEvt.topologySnapshot(topVer.topologyVersion(), evt.get5());
                         customEvt.affinityTopologyVersion(topVer);
                         customEvt.customMessage(evt.get6());
 
-                        ctx.event().record(customEvt);
+                        ctx.event().record(customEvt, evt.get4());
                     }
 
                     return;

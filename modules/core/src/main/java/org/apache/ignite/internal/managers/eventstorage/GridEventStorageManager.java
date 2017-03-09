@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -78,6 +80,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
+
+    private final CopyOnWriteArrayList<DiscoveryEventListener> discoLsnrs = new CopyOnWriteArrayList<>();
 
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -313,6 +317,30 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             if (isRecordable(type))
                 notifyListeners(evt);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Records discovery events.
+     *
+     * @param evt Event to record.
+     * @param discoCache Discovery cache.
+     */
+    public void record(DiscoveryEvent evt, DiscoCache discoCache) {
+        assert evt != null;
+
+        if (!enterBusy())
+            return;
+
+        try {
+            // notify discovery listeners first.
+            notifyDiscoveryListeners(evt, discoCache);
+
+            // notify all other registered listeners.
+            record(evt);
         }
         finally {
             leaveBusy();
@@ -602,6 +630,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
+     * Adds discovery event listener.
+     *
+     * @param lsnr Listener to add.
+     */
+    public void addDiscoveryEventListener(DiscoveryEventListener lsnr) {
+        assert lsnr != null;
+        discoLsnrs.add(lsnr);
+    }
+
+    /**
      * Adds local event listener.
      *
      * @param lsnr Listener to add.
@@ -708,6 +746,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
+     * @param lsnr Discovery event listener.
+     * @return {@code True} if the listener was removed.
+     */
+    public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr) {
+        return discoLsnrs.remove(lsnr);
+    }
+
+    /**
      *
      * @param p Optional predicate.
      * @param types Event types to wait for.
@@ -795,6 +841,26 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     if (e instanceof Error)
                         throw (Error)e;
                 }
+            }
+        }
+    }
+
+    /**
+     * @param evt Discovery event
+     * @param cache Discovery cache.
+     */
+    private void notifyDiscoveryListeners(DiscoveryEvent evt, DiscoCache cache) {
+        assert evt != null && cache != null;
+
+        for (DiscoveryEventListener lsnr : discoLsnrs) {
+            try {
+                lsnr.onEvent(evt, cache);
+            }
+            catch (Throwable e) {
+                U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
         }
     }

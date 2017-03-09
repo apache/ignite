@@ -386,10 +386,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      */
-    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
+        this.discoCache = discoCache;
 
         evtLatch.countDown();
     }
@@ -453,6 +454,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert !dummy && !forcePreload : this;
 
         try {
+            discoCache.updateAlives(cctx.discovery());
+
             srvNodes = new ArrayList<>(discoCache.serverNodes());
 
             remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
