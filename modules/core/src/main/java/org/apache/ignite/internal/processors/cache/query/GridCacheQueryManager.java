@@ -2496,7 +2496,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         for (Map.Entry<String, GridQueryIndexDescriptor> e : idxs.entrySet()) {
                             GridQueryIndexDescriptor desc = e.getValue();
 
-                            // Add only SQL SORTED indexes.
+                            // Add only SQL indexes.
                             if (desc.type() == QueryIndexType.SORTED) {
                                 Collection<String> idxFields = new LinkedList<>();
                                 Collection<String> descendings = new LinkedList<>();
