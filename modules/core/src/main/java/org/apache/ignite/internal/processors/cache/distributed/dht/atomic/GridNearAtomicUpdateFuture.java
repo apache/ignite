@@ -288,7 +288,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 req = mappings != null ? mappings.get(nodeId) : null;
 
                 if (req != null && req.onResponse(res)) {
-                    resCnt++;
+
+                    if (req.completed())
+                        resCnt++;
 
                     if (msgLog.isDebugEnabled())
                         msgLog.debug("Process near atomic update response " +
@@ -300,6 +302,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     if (msgLog.isDebugEnabled())
                         msgLog.debug("Process near atomic update response (from stripe " + res.stripe() + ") " +
                             "got " + resCnt + " / " + mappings.size() + " nodes");
+                    return;
                 }
             }
 

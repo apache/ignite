@@ -178,6 +178,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @GridDirectTransient
     private int initSize;
 
+    /** Maximum number of keys. */
     @GridDirectTransient
     private int maxEntryCnt;
 
@@ -331,22 +332,28 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
         if (res.stripe() > -1) {
+
+            // already has an error
+            if (this.res != null)
+                return false;
+
             if (resMap == null)
                 resMap = new HashMap<>(stripeMap.size());
 
             if (!resMap.containsKey(res.stripe())) {
                 resMap.put(res.stripe(), res);
 
-                return resMap.size() == stripeMap.size();
+                return true;
             }
 
             return false;
         }
         else {
             // single response - error or local update result
+            this.resMap = null;
+
             if (this.res == null) {
                 this.res = res;
-                this.resMap = null;
                 return true;
             }
 

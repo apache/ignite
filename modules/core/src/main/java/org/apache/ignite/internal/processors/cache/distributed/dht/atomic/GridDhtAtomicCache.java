@@ -1871,6 +1871,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         !needRemap(req.topologyVersion(), top.topologyVersion())) {
                         ClusterNode node = ctx.discovery().node(nodeId);
 
+                        int size = stripeIdxs == null ? req.size() : stripeIdxs.length;
+
                         if (node == null) {
                             U.warn(msgLog, "Skip near update request, node originated update request left [" +
                                 "futId=" + req.futureVersion() + ", node=" + nodeId + ']');
@@ -1899,13 +1901,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         boolean sndPrevVal = !top.rebalanceFinished(req.topologyVersion());
 
-                        dhtFut = createDhtFuture(ver, req, res, completionCb, false);
+                        dhtFut = createDhtFuture(ver, req, res, completionCb, size, false);
 
                         expiry = expiryPolicy(req.expiry());
 
                         GridCacheReturn retVal = null;
 
-                        if (req.size() > 1 &&                     // Several keys ...
+                        if (size > 1 &&                           // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
                             // (conflict resolver should be used for local store)
@@ -2603,7 +2605,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     dhtFut);
 
                 if (dhtFut == null && !F.isEmpty(filteredReaders)) {
-                    dhtFut = createDhtFuture(ver, req, res, completionCb, true);
+                    dhtFut = createDhtFuture(ver, req, res, completionCb, keyNum, true);
 
                     readersOnly = true;
                 }
@@ -2907,7 +2909,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     batchRes.addDeleted(entry, updRes, entries);
 
                     if (dhtFut == null && !F.isEmpty(filteredReaders)) {
-                        dhtFut = createDhtFuture(ver, req, res, completionCb, true);
+                        dhtFut = createDhtFuture(ver, req, res, completionCb, entries.size(), true);
 
                         batchRes.readersOnly(true);
                     }
@@ -3240,6 +3242,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        int size,
         boolean force
     ) {
         if (!force) {
@@ -3263,10 +3266,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        if (updateReq.size() == 1)
+        if (size == 1)
             return new GridDhtAtomicSingleUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
         else
-            return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
+            return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes, size);
     }
 
     /**

@@ -64,7 +64,8 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicAbstractUpdateRequest updateReq,
-        GridNearAtomicUpdateResponse updateRes
+        GridNearAtomicUpdateResponse updateRes,
+        int size
     ) {
         super(cctx,
             completionCb,
@@ -72,8 +73,8 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             updateReq,
             updateRes);
 
-        keys = new ArrayList<>(updateReq.size());
-        mappings = U.newHashMap(updateReq.size());
+        keys = new ArrayList<>(size);
+        mappings = U.newHashMap(size);
     }
 
     /** {@inheritDoc} */
@@ -153,6 +154,6 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateFuture.class, this);
+        return S.toString(GridDhtAtomicAbstractUpdateFuture.class, this);
     }
 }
