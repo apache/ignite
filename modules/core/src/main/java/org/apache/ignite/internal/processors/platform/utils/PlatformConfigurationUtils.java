@@ -955,7 +955,7 @@ public class PlatformConfigurationUtils {
 
         if (comm instanceof TcpCommunicationSpi) {
             w.writeBoolean(true);
-            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+            TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
             w.writeLong(tcp.getConnectTimeout());
