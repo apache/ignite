@@ -101,9 +101,6 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 
 /**
  * Indexing processor.
@@ -1399,7 +1396,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 idxName = propName + "_idx";
 
             if (idxOrder == 0) // Add index only on the first field.
-                d.addIndex(idxName, isGeometryClass(propCls) ? GEO_SPATIAL : SORTED);
+                d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             if (idxType == IndexType.TEXT)
                 d.addFieldToTextIndex(propName);
@@ -1429,7 +1426,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, false);
         }
@@ -1441,7 +1438,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
@@ -1591,7 +1588,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 QueryIndexType idxTyp = idx.getIndexType();
 
                 if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
+                    d.addIndex(idxName, idxTyp);
 
                     int i = 0;
 
@@ -2413,7 +2410,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @return Index descriptor.
          * @throws IgniteCheckedException In case of error.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
+        public IndexDescriptor addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
             IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
@@ -2436,7 +2433,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IndexDescriptor desc = indexes.get(idxName);
 
             if (desc == null)
-                desc = addIndex(idxName, SORTED);
+                desc = addIndex(idxName, QueryIndexType.SORTED);
 
             desc.addField(field, orderNum, descending);
         }
@@ -2448,7 +2445,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         public void addFieldToTextIndex(String field) {
             if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(FULLTEXT);
+                fullTextIdx = new IndexDescriptor(QueryIndexType.FULLTEXT);
 
                 indexes.put(null, fullTextIdx);
             }
@@ -2583,12 +2580,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private Collection<String> descendings;
 
         /** */
-        private final GridQueryIndexType type;
+        private final QueryIndexType type;
 
         /**
          * @param type Type.
          */
-        private IndexDescriptor(GridQueryIndexType type) {
+        private IndexDescriptor(QueryIndexType type) {
             assert type != null;
 
             this.type = type;
@@ -2628,7 +2625,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
+        @Override public QueryIndexType type() {
             return type;
         }
 
