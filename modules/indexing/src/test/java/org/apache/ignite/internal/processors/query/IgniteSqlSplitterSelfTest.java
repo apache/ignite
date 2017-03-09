@@ -36,13 +36,12 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -149,6 +148,70 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEqualsCollections(res.subList(9, 10), columnQuery(c, qry + "limit ? offset abs(-(4 + ?))", 1, 5));
         }
         finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSortedMergeIndex() throws Exception {
+        IgniteCache<Integer,Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
+            Integer.class, Value.class));
+
+        try {
+            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 8);
+
+            Random rnd = new GridRandom();
+
+            int cnt = 1000;
+
+            for (int i = 0; i < cnt; i++) {
+                c.put(i, new Value(
+                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(100),
+                    rnd.nextInt(8) == 0 ? null: rnd.nextInt(2000)));
+            }
+
+            List<List<?>> plan = c.query(new SqlFieldsQuery(
+                "explain select snd from Value order by fst desc")).getAll();
+            String rdcPlan = (String)plan.get(1).get(0);
+
+            assertTrue(rdcPlan.contains("merge_sorted"));
+            assertTrue(rdcPlan.contains("/* index sorted */"));
+
+            plan = c.query(new SqlFieldsQuery(
+                "explain select snd from Value")).getAll();
+            rdcPlan = (String)plan.get(1).get(0);
+
+            assertTrue(rdcPlan.contains("merge_scan"));
+            assertFalse(rdcPlan.contains("/* index sorted */"));
+
+            for (int i = 0; i < 10; i++) {
+                X.println(" --> " + i);
+
+                List<List<?>> res = c.query(new SqlFieldsQuery(
+                    "select fst from Value order by fst").setPageSize(5)
+                ).getAll();
+
+                assertEquals(cnt, res.size());
+
+                Integer p = null;
+
+                for (List<?> row : res) {
+                    Integer x = (Integer)row.get(0);
+
+                    if (x != null) {
+                        if (p != null)
+                            assertTrue(x + " >= " + p,  x >= p);
+
+                        p = x;
+                    }
+                }
+            }
+        }
+        finally {
+            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 1024);
+
             c.destroy();
         }
     }
@@ -848,13 +911,44 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key";
 
-            final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
+            SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
             qry.setDistributedJoins(true);
 
             List<List<?>> results = c1.query(qry).getAll();
 
             assertEquals(2, results.size());
+
+            select0 += " order by n2 desc";
+
+            qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            results = c1.query(qry).getAll();
+
+            assertEquals(2, results.size());
+
+            assertEquals("p2", results.get(0).get(1));
+            assertEquals("p1", results.get(1).get(1));
+
+            // Test for replicated subquery with aggregate.
+            select0 = "select p.name " +
+                "from \"pers\".Person2 p, " +
+                "(select max(_key) orgId from \"org\".Organization) o " +
+                "where p.orgId = o.orgId";
+
+            X.println("Plan: \n" +
+                c1.query(new SqlFieldsQuery("explain " + select0).setDistributedJoins(true)).getAll());
+
+            qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            results = c1.query(qry).getAll();
+
+            assertEquals(1, results.size());
+            assertEquals("p2", results.get(0).get(0));
         }
         finally {
             c1.destroy();
