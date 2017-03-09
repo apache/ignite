@@ -96,7 +96,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                 ClusterNode srvNode = aliveSrvNodes.poll();
 
                 try {
-                    ioMgr.send(
+                    ioMgr.sendToGridTopic(
                             srvNode,
                             GridTopic.TOPIC_MAPPING_MARSH,
                             new MissingMappingRequestMessage(
