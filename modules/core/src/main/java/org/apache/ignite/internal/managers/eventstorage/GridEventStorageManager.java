@@ -919,7 +919,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param cache Discovery cache.
      */
     private void notifyDiscoveryListeners(DiscoveryEvent evt, DiscoCache cache) {
-        assert evt != null && cache != null;
+        assert evt != null;
 
         notifyDiscoveryListeners(discoLsnrs.get(evt.type()), evt, cache);
     }

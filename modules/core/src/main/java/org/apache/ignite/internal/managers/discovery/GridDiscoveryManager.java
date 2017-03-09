@@ -535,12 +535,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
+                final DiscoCache discoCache;
+
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                final DiscoCache discoCache = createDiscoCache(locNode, topSnapshot);
-
                 if (verChanged) {
+                    discoCache = createDiscoCache(locNode, topSnapshot);
+
                     discoCacheHist.put(nextTopVer, discoCache);
 
                     boolean set = updateTopologyVersionIfGreater(nextTopVer, discoCache);
@@ -549,6 +551,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         topSnap + ", topVer=" + topVer + ", node=" + node +
                         ", evt=" + U.gridEventName(type) + ']';
                 }
+                else
+                    // Current version.
+                    discoCache = discoCache();
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
