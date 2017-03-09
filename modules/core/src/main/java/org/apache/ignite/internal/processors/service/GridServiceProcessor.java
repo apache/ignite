@@ -1796,9 +1796,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private abstract class BusyRunnable implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
+            // Won't start Runnable if ServiceProcessor is stopping
             if (!busyLock.enterBusy())
                 return;
 
+            // and do not block ServiceProcessor stopping process.
             busyLock.leaveBusy();
 
             svcName.set(null);
