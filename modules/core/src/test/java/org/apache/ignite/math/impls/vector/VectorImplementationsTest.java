@@ -191,9 +191,6 @@ public class VectorImplementationsTest extends ExternalizeTest<Vector> {
     @Test
     public void getDistanceSquared() {
         consumeSampleVectors((v, desc) -> {
-            if (v instanceof FunctionVector)
-                return; // todo fix either tests or implementation
-
             new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
 
             final int size = v.size();
@@ -218,7 +215,7 @@ public class VectorImplementationsTest extends ExternalizeTest<Vector> {
                     exp - vOffHeap.get(idxMirror) == 0);
             }
 
-            final double exp = v.minus(vOnHeap).getLengthSquared();
+            final double exp = vOnHeap.minus(v).getLengthSquared(); // IMPL NOTE this won't mutate vOnHeap
             final Metric metric = new Metric(exp, v.getDistanceSquared(vOnHeap));
 
             assertTrue("On heap vector not close enough at " + desc + ", " + metric,
