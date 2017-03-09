@@ -36,12 +36,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -83,7 +80,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -1984,7 +1980,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Descriptor of type.
      */
-    private class TypeDescriptor implements GridQueryTypeDescriptor {
+    private static class TypeDescriptor implements GridQueryTypeDescriptor {
         /** Space. */
         private String space;
 
@@ -2010,7 +2006,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private final Map<String, IndexDescriptor> indexes = new HashMap<>();
 
         /** Index state manager. */
-        private final IndexStateManager idxState = new IndexStateManager();
+        private final QueryIndexHandler idxState = new QueryIndexHandler();
 
         /** */
         private IndexDescriptor fullTextIdx;
@@ -2402,68 +2398,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(IndexDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Index state manager.
-     */
-    private class IndexStateManager {
-        /** Indexes. */
-        private final Map<String, IndexDescriptor> idxs = new ConcurrentHashMap<>();
-
-        /** Client futures. */
-        private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
-
-        /** RW lock. */
-        private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-        /**
-         * Handle initial index state.
-         *
-         * @param idxs Indexes.
-         */
-        public void onInitialStateReady(Map<String, IndexDescriptor> idxs) {
-            this.idxs.putAll(idxs);
-        }
-
-        /**
-         * Handle dynamic index creation.
-         *
-         * @param idx Index.
-         * @param ifNotExists IF-NOT-EXISTS flag.
-         * @return Future completed when index is created.
-         */
-        public IgniteInternalFuture<?> onCreateIndex(QueryIndex idx, boolean ifNotExists) {
-            lock.writeLock().lock();
-
-            try {
-                String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
-
-                IndexDescriptor oldIdx = idxs.get(idxName);
-
-                if (oldIdx != null) {
-                    if (ifNotExists)
-                        return new GridFinishedFuture<>();
-                    else
-                        return new GridFinishedFuture<>(new IgniteException("Index already exists [idxName=" +
-                            idxName + ']'));
-                }
-
-                UUID opId = UUID.randomUUID();
-                GridFutureAdapter fut = new GridFutureAdapter();
-
-                GridFutureAdapter oldFut = cliFuts.put(opId, fut);
-
-                assert oldFut == null;
-
-                // TODO: Start discovery.
-
-                return fut;
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
         }
     }
 
