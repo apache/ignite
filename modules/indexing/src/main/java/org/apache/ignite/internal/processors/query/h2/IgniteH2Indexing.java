@@ -59,6 +59,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -185,9 +186,6 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
@@ -2657,7 +2655,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
                 }
 
-                if (idx.type() == SORTED) {
+                if (idx.type() == QueryIndexType.SORTED) {
                     // We don't care about number of fields in affinity index, just affinity key must be the first.
                     affIdxFound |= affCol != null && equal(cols.get(0), affCol);
 
@@ -2665,7 +2663,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
                 }
-                else if (idx.type() == GEO_SPATIAL)
+                else if (idx.type() == QueryIndexType.GEOSPATIAL)
                     idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
                 else
                     throw new IllegalStateException("Index type: " + idx.type());
