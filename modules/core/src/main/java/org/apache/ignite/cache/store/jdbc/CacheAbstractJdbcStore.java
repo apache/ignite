@@ -215,14 +215,13 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @param typeName Type name.
      * @param typeKind Type kind.
      * @param flds Fields descriptors.
-     * @param hashFlds Field names for hash code calculation.
      * @param loadColIdxs Select query columns index.
      * @param rs ResultSet.
      * @return Constructed object.
      * @throws CacheLoaderException If failed to construct cache object.
      */
     protected abstract <R> R buildObject(@Nullable String cacheName, String typeName, TypeKind typeKind,
-        JdbcTypeField[] flds, Collection<String> hashFlds, Map<String, Integer> loadColIdxs, ResultSet rs)
+        JdbcTypeField[] flds, Map<String, Integer> loadColIdxs, ResultSet rs)
         throws CacheLoaderException;
 
     /**
@@ -457,8 +456,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
-                        K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, em.loadColIdxs, rs);
-                        V val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), null, em.loadColIdxs, rs);
+                        K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.loadColIdxs, rs);
+                        V val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), em.loadColIdxs, rs);
 
                         clo.apply(key, val);
                     }
@@ -875,7 +874,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next())
-                return buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), null, em.loadColIdxs, rs);
+                return buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), em.loadColIdxs, rs);
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load object [table=" + em.fullTableName() +
@@ -1993,8 +1992,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     colIdxs.put(meta.getColumnLabel(i).toUpperCase(), i);
 
                 while (rs.next()) {
-                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, colIdxs, rs);
-                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), null, colIdxs, rs);
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), colIdxs, rs);
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), colIdxs, rs);
 
                     clo.apply(key, val);
                 }
@@ -2089,8 +2088,8 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 Map<K1, V1> entries = U.newHashMap(keys.size());
 
                 while (rs.next()) {
-                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, em.loadColIdxs, rs);
-                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), null, em.loadColIdxs, rs);
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.loadColIdxs, rs);
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), em.loadColIdxs, rs);
 
                     entries.put(key, val);
                 }
