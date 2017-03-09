@@ -1916,10 +1916,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (!node.isLocal())
                     rmtNodes.add(node);
-            }
 
-            if (!CU.clientNode(node))
-                srvNodes.add(node);
+                if (!CU.clientNode(node))
+                    srvNodes.add(node);
+            }
 
             nodeMap.put(node.id(), node);
         }
