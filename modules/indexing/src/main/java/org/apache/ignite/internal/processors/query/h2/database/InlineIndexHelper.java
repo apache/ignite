@@ -342,7 +342,7 @@ public class InlineIndexHelper {
             return -2;
 
         int c = comp.compare(v1, v);
-        assert c > -2;
+        c = c != 0 ? c > 0 ? 1 : -1 : 0;
 
         if (size > 0)
             return fixSort(c, sortType());
