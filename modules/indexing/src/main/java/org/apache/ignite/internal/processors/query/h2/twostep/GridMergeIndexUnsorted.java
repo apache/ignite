@@ -92,7 +92,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
     @Override public boolean fetchedAll() {
         int x = activeSources.get();
 
-        assert x >= 0; // This method must not be called if the sources were not set.
+        assert x >= 0: x; // This method must not be called if the sources were not set.
 
         return x == 0 && queue.isEmpty();
     }

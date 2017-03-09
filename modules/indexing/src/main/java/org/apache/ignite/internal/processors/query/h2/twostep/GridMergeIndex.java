@@ -69,6 +69,18 @@ public abstract class GridMergeIndex extends BaseIndex {
     private static final AtomicReferenceFieldUpdater<GridMergeIndex, ConcurrentMap> lastPagesUpdater =
         AtomicReferenceFieldUpdater.newUpdater(GridMergeIndex.class, ConcurrentMap.class, "lastPages");
 
+    static {
+        if (!U.isPow2(PREFETCH_SIZE)) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+                ") must be positive and a power of 2.");
+        }
+
+        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+                ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
+        }
+    }
+
     /** */
     protected final Comparator<SearchRow> firstRowCmp = new Comparator<SearchRow>() {
         @Override public int compare(SearchRow rowInList, SearchRow searchRow) {
@@ -132,16 +144,6 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param ctx Context.
      */
     protected GridMergeIndex(GridKernalContext ctx) {
-        if (!U.isPow2(PREFETCH_SIZE)) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be positive and a power of 2.");
-        }
-
-        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
-        }
-
         this.ctx = ctx;
 
         fetched = new BlockList<>(PREFETCH_SIZE);

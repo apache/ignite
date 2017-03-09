@@ -931,6 +931,24 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
             assertEquals("p2", results.get(0).get(1));
             assertEquals("p1", results.get(1).get(1));
+
+            // Test for replicated subquery with aggregate.
+            select0 = "select p.name " +
+                "from \"pers\".Person2 p, " +
+                "(select max(_key) orgId from \"org\".Organization) o " +
+                "where p.orgId = o.orgId";
+
+            X.println("Plan: \n" +
+                c1.query(new SqlFieldsQuery("explain " + select0).setDistributedJoins(true)).getAll());
+
+            qry = new SqlFieldsQuery(select0);
+
+            qry.setDistributedJoins(true);
+
+            results = c1.query(qry).getAll();
+
+            assertEquals(1, results.size());
+            assertEquals("p2", results.get(0).get(0));
         }
         finally {
             c1.destroy();

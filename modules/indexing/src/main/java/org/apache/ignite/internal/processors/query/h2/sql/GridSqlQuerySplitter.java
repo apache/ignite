@@ -207,7 +207,6 @@ public class GridSqlQuerySplitter {
         // If we have distributed joins, then we have to optimize all MAP side queries
         // to have a correct join order with respect to batched joins and check if we need
         // distributed joins at all.
-        // TODO Also we need to have a list of table aliases to filter by primary or explicit partitions.
         if (distributedJoins) {
             boolean allCollocated = true;
 
@@ -220,7 +219,7 @@ public class GridSqlQuerySplitter {
                 mapSqlQry.query(parse(prepared, true).getSQL());
             }
 
-            // We do not need distributed joins if all MAP queries are colocated.
+            // We do not need distributed joins if all MAP queries are collocated.
             if (allCollocated)
                 distributedJoins = false;
         }
@@ -1318,8 +1317,25 @@ public class GridSqlQuerySplitter {
         setupParameters(map, mapQry, params);
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
+        map.partitioned(hasPartitionedTables(mapQry));
 
         mapSqlQrys.add(map);
+    }
+
+    /**
+     * @param ast Map query AST.
+     * @return {@code true} If the given AST has partitioned tables.
+     */
+    private static boolean hasPartitionedTables(GridSqlAst ast) {
+        if (ast instanceof GridSqlTable)
+            return ((GridSqlTable)ast).dataTable().isPartitioned();
+
+        for (int i = 0; i < ast.size(); i++) {
+            if (hasPartitionedTables(ast.child(i)))
+                return true;
+        }
+
+        return false;
     }
 
     /**

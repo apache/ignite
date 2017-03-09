@@ -99,6 +99,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.setupConnection;
@@ -526,7 +527,7 @@ public class GridReduceQueryExecutor {
             Map<ClusterNode, IntArray> partsMap = null;
 
             if (qry.isLocal())
-                nodes = Collections.singleton(ctx.discovery().localNode());
+                nodes = singletonList(ctx.discovery().localNode());
             else {
                 if (isPreloadingActive(cctx, extraSpaces)) {
                     if (cctx.isReplicated())
@@ -550,17 +551,17 @@ public class GridReduceQueryExecutor {
                         "We must be on a client node.";
 
                     // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                    nodes = Collections.singleton(F.rand(nodes));
+                    nodes = singletonList(F.rand(nodes));
                 }
             }
-
-            final Collection<ClusterNode> finalNodes = nodes;
 
             int tblIdx = 0;
 
             final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
 
-            final int segmentsPerIndex = cctx.config().getQueryParallelism();
+            final int segmentsPerIndex = qry.explain() ? 1 : cctx.config().getQueryParallelism();
+
+            int replicatedQrysCnt = 0;
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
@@ -582,13 +583,26 @@ public class GridReduceQueryExecutor {
                 else
                     idx = GridMergeIndexUnsorted.createDummy(ctx);
 
-                idx.setSources(nodes, segmentsPerIndex);
+                // If the query has only replicated tables, we have to run it on a single node only.
+                if (!mapQry.isPartitioned()) {
+                    ClusterNode node = F.rand(nodes);
+
+                    mapQry.node(node.id());
+
+                    replicatedQrysCnt++;
+
+                    idx.setSources(singletonList(node), 1); // Replicated tables can have only 1 segment.
+                }
+                else
+                    idx.setSources(nodes, segmentsPerIndex);
+
                 idx.setPageSize(r.pageSize);
 
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(r.idxs.size() * nodes.size() * segmentsPerIndex);
+            r.latch = new CountDownLatch(
+                (r.idxs.size() - replicatedQrysCnt) * nodes.size() * segmentsPerIndex + replicatedQrysCnt);
 
             runs.put(qryReqId, r);
 
@@ -616,6 +630,8 @@ public class GridReduceQueryExecutor {
                 final boolean oldStyle = minNodeVer.compareToIgnoreTimestamp(DISTRIBUTED_JOIN_SINCE) < 0;
                 final boolean distributedJoins = qry.distributedJoins();
 
+                final Collection<ClusterNode> finalNodes = nodes;
+
                 cancel.set(new Runnable() {
                     @Override public void run() {
                         send(finalNodes, new GridQueryCancelRequest(qryReqId), null, false);
@@ -635,6 +651,9 @@ public class GridReduceQueryExecutor {
 
                 if (qry.isLocal())
                     flags |= GridH2QueryRequest.FLAG_IS_LOCAL;
+
+                if (qry.explain())
+                    flags |= GridH2QueryRequest.FLAG_EXPLAIN;
 
                 if (send(nodes,
                     oldStyle ?
