@@ -182,6 +182,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
+        idxHnd.onStart();
+
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
@@ -189,6 +191,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     cache.context().queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        idxHnd.onKernalStart();
     }
 
     /**
@@ -492,18 +499,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
 
-        if (cancel && idx != null)
+        if (cancel && idx != null) {
             try {
                 while (!busyLock.tryBlock(500))
                     idx.cancelAllQueries();
 
                 return;
-            }
-            catch (InterruptedException ignored) {
+            } catch (InterruptedException ignored) {
                 U.warn(log, "Interrupted while waiting for active queries cancellation.");
 
                 Thread.currentThread().interrupt();
             }
+        }
+
+        idxHnd.onKernalStop();
 
         busyLock.block();
     }
@@ -511,6 +520,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
+
+        idxHnd.onStop();
 
         if (idx != null)
             idx.stop();

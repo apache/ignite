@@ -47,6 +47,34 @@ public class QueryIndexHandler {
     }
 
     /**
+     * Handle start.
+     */
+    public void onStart() {
+        // TODO
+    }
+
+    /**
+     * Handle kernal start callback.
+     */
+    public void onKernalStart() {
+        // TODO
+    }
+
+    /**
+     * Handle kernal stop callback.
+     */
+    public void onKernalStop() {
+        // TODO
+    }
+
+    /**
+     * Handle stop callback.
+     */
+    public void onStop() {
+        // TODO
+    }
+
+    /**
      * Handle cache creation.
      *
      * @param cacheName Cache name.
