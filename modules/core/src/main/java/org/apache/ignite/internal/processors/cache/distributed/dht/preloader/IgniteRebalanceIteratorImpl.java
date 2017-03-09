@@ -28,12 +28,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.jetbrains.annotations.Nullable;
 
 public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
-    private final NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators;
+    @Nullable private final NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators;
+
+    @Nullable private final GridCloseableIterator<CacheDataRow> historicalIterator;
 
     private final Set<Integer> missingParts = new HashSet<>();
 
@@ -47,8 +51,10 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
     public IgniteRebalanceIteratorImpl(
         NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators,
+        GridCloseableIterator<CacheDataRow> historicalIterator,
         IgniteRunnable closeRunnable) throws IgniteCheckedException {
         this.fullIterators = fullIterators;
+        this.historicalIterator = historicalIterator;
         this.closeRunnable = closeRunnable;
 
         advance();
@@ -58,18 +64,18 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         if (fullIterators.isEmpty())
             reachedEnd = true;
 
-        while (!reachedEnd || current == null || !current.getValue().hasNextX() || missingParts.contains(current.getKey())) {
+        while (!reachedEnd && (current == null || !current.getValue().hasNextX() || missingParts.contains(current.getKey()))) {
             if (current == null)
                 current = fullIterators.firstEntry();
             else {
-                current = fullIterators.ceilingEntry(current.getKey());
+                current = fullIterators.ceilingEntry(current.getKey() + 1);
 
                 if (current == null)
                     reachedEnd = true;
             }
         }
 
-        assert !reachedEnd || current == null;
+        assert current != null || reachedEnd;
     }
 
     @Override public synchronized boolean historical(int partId) {

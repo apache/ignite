@@ -46,7 +46,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** Update sequence. */
     private long updateSeq;
 
+    @GridDirectTransient
     private IgniteDhtDemandedPartitionsMap parts;
+
+    private byte[] partsBytes;
 
     /** Topic. */
     @GridDirectTransient
@@ -178,6 +181,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
         if (topic != null && topicBytes == null)
             topicBytes = U.marshal(ctx, topic);
+
+        if (parts != null && partsBytes == null)
+            partsBytes = U.marshal(ctx, parts);
     }
 
     /** {@inheritDoc} */
@@ -186,6 +192,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
         if (topicBytes != null && topic == null)
             topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
+        if (partsBytes != null && parts == null)
+            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -208,31 +217,37 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 6:
+            case 3:
+                if (!writer.writeByteArray("partsBytes", partsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 5:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 6:
                 if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 7:
                 if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 8:
                 if (!writer.writeInt("workerId", workerId))
                     return false;
 
@@ -254,8 +269,15 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
+            case 3:
+                partsBytes = reader.readByteArray("partsBytes");
 
-            case 6:
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -263,7 +285,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 7:
+            case 5:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -271,7 +293,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 8:
+            case 6:
                 topicBytes = reader.readByteArray("topicBytes");
 
                 if (!reader.isLastRead())
@@ -279,7 +301,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 9:
+            case 7:
                 updateSeq = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
@@ -287,7 +309,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 10:
+            case 8:
                 workerId = reader.readInt("workerId");
 
                 if (!reader.isLastRead())
@@ -307,7 +329,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 9;
     }
 
     /** {@inheritDoc} */

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -33,33 +35,49 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     private Set<Integer> full;
 
     public void addHistorical(int partId, long from, long to) {
-        assert !full.contains(partId);
+        assert !hasFull(partId);
+
+        if (historical == null)
+            historical = new HashMap<>();
 
         historical.put(partId, new T2<>(from, to));
     }
 
     public void addFull(int partId) {
-        assert !historical.containsKey(partId);
+        assert !hasHistorical(partId);
+
+        if (full == null)
+            full = new HashSet<>();
 
         full.add(partId);
     }
 
     public boolean remove(int partId) {
-        assert !(full.contains(partId) && historical.containsKey(partId));
+        assert !(hasFull(partId) && hasHistorical(partId));
 
-        if (full.remove(partId))
+        if (full != null && full.remove(partId))
             return true;
-        else
-            return historical.remove(partId) != null;
 
+        if (historical != null && historical.remove(partId) != null)
+            return true;
+
+        return false;
     }
 
     public boolean hasHistorical() {
         return historical != null && !historical.isEmpty();
     }
 
+    public boolean hasHistorical(int partId) {
+        return historical != null && historical.containsKey(partId);
+    }
+
     public boolean hasFull() {
         return full != null && !full.isEmpty();
+    }
+
+    public boolean hasFull(int partId) {
+        return full != null && full.contains(partId);
     }
 
     public boolean isEmpty() {
@@ -73,11 +91,11 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
         return histSize + fullSize;
     }
 
-    public Set<Map.Entry<Integer, T2<Long, Long>>> historicalEntrySet() {
+    public Map<Integer, T2<Long, Long>> historicalMap() {
         if (historical == null)
-            return Collections.emptySet();
+            return Collections.emptyMap();
 
-        return historical.entrySet();
+        return Collections.unmodifiableMap(historical);
     }
 
     public Set<Integer> fullSet() {

@@ -302,6 +302,11 @@ class GridDhtPartitionSupplier {
                 // TODO GG-11141.
             }
 
+            for (Integer p : d.partitions().fullSet()) {
+                if (iter.isPartitionDone(p))
+                    s.last(p);
+            }
+
             reply(node, d, s, scId);
 
             if (log.isDebugEnabled())

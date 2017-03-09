@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -671,8 +673,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
 
-        assert !parts.hasHistorical() && parts.hasFull();
-
+        // TODO : replace with GridCloseableIterators.
         final TreeMap<Integer, GridIterator<CacheDataRow>> iterators = new TreeMap<>();
         Set<Integer> missing = null;
 
@@ -693,6 +694,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators,
+            historicalIterator(parts.historicalMap()),
             new IgniteRunnable() {
                 @Override public void run() {
                     for (Integer p : iterators.keySet()) {
@@ -711,6 +713,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         return iter;
+    }
+
+    @Nullable protected GridCloseableIterator<CacheDataRow> historicalIterator(Map<Integer, T2<Long, Long>> partCntrs)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */

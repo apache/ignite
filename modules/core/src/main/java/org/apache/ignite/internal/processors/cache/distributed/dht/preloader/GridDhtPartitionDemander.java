@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -494,7 +492,7 @@ public class GridDhtPartitionDemander {
                 if (parts.hasHistorical()) {
                     hasReservedStripe = true;
 
-                    for (Map.Entry<Integer,T2<Long,Long>> entry : parts.historicalEntrySet())
+                    for (Map.Entry<Integer,T2<Long,Long>> entry : parts.historicalMap().entrySet())
                         sParts.get(lsnrCnt - 1).addHistorical(entry.getKey(), entry.getValue().get1(), entry.getValue().get2());
                 }
 
