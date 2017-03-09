@@ -144,6 +144,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
+    /** Index handler. */
+    private final QueryIndexHandler idxHnd;
+
     /** */
     private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
 
@@ -163,6 +166,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        idxHnd = new QueryIndexHandler(ctx);
     }
 
     /** {@inheritDoc} */
@@ -223,6 +228,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idx.registerCache(cctx, cctx.config());
 
         try {
+            Collection<QueryTypeDescriptorImpl> typeDescs = new ArrayList<>();
+
             List<Class<?>> mustDeserializeClss = null;
 
             boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
@@ -234,9 +241,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (F.isEmpty(qryEntity.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + qryEntity);
 
-                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
-
-                    desc.space(cctx.name());
+                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cctx.name());
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
@@ -333,8 +338,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
-                    desc.onInitialStateReady();
-
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
 
@@ -342,6 +345,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         types.put(altTypeId, desc);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
+
+                    typeDescs.add(desc);
                 }
             }
 
@@ -354,9 +359,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
                         continue;
 
-                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
-
-                    desc.space(cctx.name());
+                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cctx.name());
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
@@ -428,8 +431,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
-                    desc.onInitialStateReady();
-
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
 
@@ -437,10 +438,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         types.put(altTypeId, desc);
 
                     desc.registered(idx.registerType(ccfg.getName(), desc));
+
+                    typeDescs.add(desc);
                 }
             }
 
-            // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
+            idxHnd.onCacheCreated(cctx.name(), typeDescs);
 
             if (mustDeserializeClss != null) {
                 U.warn(log, "Some classes in query configuration cannot be written in binary format " +
@@ -517,6 +520,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        idxHnd.onDisconnected();
+
         if (idx != null)
             idx.onDisconnected(reconnectFut);
     }
@@ -551,6 +556,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
+            idxHnd.onCacheStopped(cctx.name());
+
             idx.unregisterCache(cctx.config());
 
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
@@ -959,13 +966,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
-        for (QueryTypeDescriptorImpl desc : types.values()) {
-            if (desc.matchSpaceAndTable(space, tblName))
-                return desc.dynamicIndexCreate(idx, ifNotExists);
-        }
-
-        return new GridFinishedFuture<>(new IgniteException("Failed to create index becase table is not found [" +
-            "space=" + space + ", table=" + tblName + ']'));
+        return idxHnd.onCreateIndex(space, tblName, idx, ifNotExists);
     }
 
     /**
@@ -1297,6 +1298,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
                     ldr.equals(U.detectClassLoader(desc.keyClass()))) {
+                    idxHnd.onTypeUnregistered(desc);
+
                     idx.unregisterType(e.getKey().space(), desc);
 
                     it.remove();

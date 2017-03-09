@@ -18,12 +18,9 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -36,8 +33,8 @@ import java.util.Map;
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
-    /** Space. */
-    private String space;
+    /** Cache name. */
+    private final String cacheName;
 
     /** */
     private String name;
@@ -59,9 +56,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     @GridToStringInclude
     private final Map<String, QueryIndexDescriptorImpl> indexes = new HashMap<>();
-
-    /** Index state manager. */
-    private final QueryIndexHandler idxState = new QueryIndexHandler();
 
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
@@ -88,17 +82,19 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private boolean registered;
 
     /**
-     * @return Space.
+     * Constructor.
+     *
+     * @param cacheName Cache name.
      */
-    public String space() {
-        return space;
+    public QueryTypeDescriptorImpl(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
-     * @param space Space.
+     * @return Cache name.
      */
-    public void space(String space) {
-        this.space = space;
+    public String cacheName() {
+        return cacheName;
     }
 
     /**
@@ -352,35 +348,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
-    }
-
-    /**
-     * Check whether space and table name matches.
-     *
-     * @param space Space.
-     * @param tblName Table name.
-     * @return {@code True} if matches.
-     */
-    public boolean matchSpaceAndTable(String space, String tblName) {
-        return F.eq(space, this.space) && F.eq(tblName, this.tblName);
-    }
-
-    /**
-     * Callback invoked when initial type state is ready.
-     */
-    public void onInitialStateReady() {
-        idxState.onInitialStateReady(indexes);
-    }
-
-    /**
-     * Initiate asynchronous index creation.
-     *
-     * @param idx Index description.
-     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
-     * @return Future completed when index is created.
-     */
-    public IgniteInternalFuture<?> dynamicIndexCreate(QueryIndex idx, boolean ifNotExists) {
-        return idxState.onCreateIndex(idx, ifNotExists);
     }
 
     /** {@inheritDoc} */
