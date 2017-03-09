@@ -36,19 +36,19 @@ namespace ignite
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
         cfg.jvmOpts.push_back("-Duser.timezone=GMT");
 
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
         BOOST_REQUIRE(cfgPath != 0);
 
+#ifdef IGNITE_TESTS_32
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
+        cfg.springCfgPath.assign(cfgPath).append("/queries-test-32.xml");
+#else
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
         cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
+#endif
 
         IgniteError err;
 

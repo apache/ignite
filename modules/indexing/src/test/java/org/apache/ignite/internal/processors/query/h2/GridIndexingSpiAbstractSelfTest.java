@@ -25,9 +25,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -66,6 +69,19 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     /** */
     private static final Map<String, Class<?>> fieldsBA = new HashMap<>();
 
+    /** */
+    private IgniteEx ignite0;
+
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCacheConfiguration(
+                cacheCfg("A"),
+                cacheCfg("B"));
+
+        return cfg;
+    }
+
     /**
      * Fields initialization.
      */
@@ -90,14 +106,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     /** */
     private static TypeDesc typeBA = new TypeDesc("B", "A", fieldsBA, null);
 
-    /** */
-    private IgniteH2Indexing idx = new IgniteH2Indexing();
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        getTestResources().inject(idx);
-
-        startIndexing(idx);
+        ignite0 = startGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -117,9 +128,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     }
 
     @Override protected void afterTest() throws Exception {
-        idx.stop();
-
-        idx = null;
+        stopAllGrids();
     }
 
     /**
@@ -181,7 +190,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @return Indexing.
      */
     private IgniteH2Indexing getIndexing() {
-        return idx;
+        return U.field(ignite0.context().query(), "idx");
     }
 
     protected boolean offheap() {

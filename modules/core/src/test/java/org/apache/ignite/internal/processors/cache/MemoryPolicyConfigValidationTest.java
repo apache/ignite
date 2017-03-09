@@ -87,7 +87,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createTooSmallMemoryCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy("myPlc", 10, true);
+        res[0] = createMemoryPolicy(null, 10, true);
 
         return res;
     }
@@ -96,9 +96,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      *
      */
     private MemoryPolicyConfiguration[] createPlcWithReservedNameMisuseCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("sysMemPlc", 1024 * 1024, true);
+        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
+        res[1] = createMemoryPolicy("sysMemPlc", 1024 * 1024, false);
 
         return res;
     }
@@ -109,7 +110,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithNullNameOnNonDefaultCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("dflt", 1024 * 1024, true);
+        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
         res[1] = createMemoryPolicy(null, 1024 * 1024, false);
 
         return res;
@@ -121,7 +122,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createPlcWithEmptyNameOnNonDefaultCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("dflt", 1024 * 1024, true);
+        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
         res[1] = createMemoryPolicy("", 1024 * 1024, false);
 
         return res;
@@ -131,10 +132,11 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      *
      */
     private MemoryPolicyConfiguration[] createPlcsWithNamesConflictCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[3];
 
-        res[0] = createMemoryPolicy("cflt0", 1024 * 1024, true);
+        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
         res[1] = createMemoryPolicy("cflt0", 1024 * 1024, false);
+        res[2] = createMemoryPolicy("cflt0", 1024 * 1024, false);
 
         return res;
     }
@@ -156,8 +158,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     private MemoryPolicyConfiguration[] createDuplicateDefaultsPlcsCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy("dflt0", 1024 * 1024, true);
-        res[1] = createMemoryPolicy("dflt1", 1024 * 1024, true);
+        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
+        res[1] = createMemoryPolicy(null, 1024 * 1024, true);
 
         return res;
     }

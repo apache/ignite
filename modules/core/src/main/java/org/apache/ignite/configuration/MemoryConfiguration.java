@@ -37,8 +37,11 @@ public class MemoryConfiguration implements Serializable {
     /** Default page size. */
     public static final int DFLT_PAGE_SIZE = 2 * 1024;
 
-    /** Memory size for system cache. */
+    /** Size of memory for system cache. */
     private long sysCacheMemSize = DFLT_SYS_CACHE_MEM_SIZE;
+
+    /** Size of memory for caches with default MemoryPolicy. */
+    private long dfltMemPlcSize = DFLT_PAGE_CACHE_SIZE;
 
     /** Page size. */
     private int pageSize = DFLT_PAGE_SIZE;
@@ -61,6 +64,20 @@ public class MemoryConfiguration implements Serializable {
      */
     public void setSystemCacheMemorySize(long sysCacheMemSize) {
         this.sysCacheMemSize = sysCacheMemSize;
+    }
+
+    /**
+     *
+     */
+    public long getDefaultMemoryPolicySize() {
+        return dfltMemPlcSize;
+    }
+
+    /**
+     * @param dfltMemPlcSize Size of default memory policy.
+     */
+    public void setDefaultMemoryPolicySize(long dfltMemPlcSize) {
+        this.dfltMemPlcSize = dfltMemPlcSize;
     }
 
     /**
@@ -102,7 +119,7 @@ public class MemoryConfiguration implements Serializable {
 
         memPlc.setDefault(true);
         memPlc.setName(null);
-        memPlc.setSize(DFLT_PAGE_CACHE_SIZE);
+        memPlc.setSize(dfltMemPlcSize);
 
         return memPlc;
     }

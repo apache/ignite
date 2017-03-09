@@ -38,8 +38,8 @@
 
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="systemCacheMemorySize" value="104857600"/>
-                <property name="defaultMemoryPolicySize" value="1073741824"/>
+                <property name="systemCacheMemorySize" value="41943040"/>
+                <property name="defaultMemoryPolicySize" value="103833600"/>
             </bean>
         </property>
 

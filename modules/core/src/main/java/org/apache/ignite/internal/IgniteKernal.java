@@ -81,6 +81,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -753,6 +754,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackClassPaths(rtBean);
         ackSystemProperties();
         ackEnvironmentVariables();
+        ackMemoryConfiguration();
         ackCacheConfiguration();
         ackP2pConfiguration();
         ackRebalanceConfiguration();
@@ -2336,6 +2338,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
                     "[cache=" + ccfg.getName() + "]");
         }
+    }
+
+    /**
+     *
+     */
+    private void ackMemoryConfiguration() {
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+
+        U.log(log, "System cache MemoryPolicy size is configured to " +
+                (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
+        "MB size. " +
+                "Use IgniteConfiguration.MemoryConfiguration.systemCacheMemorySize property to change it.");
+
+        U.log(log, "Default MemoryPolicy size is configured to " +
+                        (memCfg.getDefaultMemoryPolicySize() / (1024 * 1024)) +
+                        "MB size. " +
+                "Use IgniteConfiguration.MemoryConfiguration.defaultMemoryPolicySize property to change it.");
     }
 
     /**

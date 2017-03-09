@@ -42,12 +42,14 @@ public class RowStore {
 
     /**
      * @param cctx Cache context.
+     * @param freeList Free list.
      */
-    public RowStore(GridCacheContext<?,?> cctx) {
+    public RowStore(GridCacheContext<?,?> cctx, FreeList freeList) {
         assert cctx != null;
+        assert freeList != null;
 
         this.cctx = cctx;
-        freeList = cctx.freeList();
+        this.freeList = freeList;
 
         coctx = cctx.cacheObjectContext();
         pageMem = cctx.memoryPolicy().pageMemory();

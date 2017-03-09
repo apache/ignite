@@ -730,7 +730,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
-        CacheDataRowStore rowStore = new CacheDataRowStore(cctx);
+        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, cctx.freeList());
 
         String idxName = treeName(p);
 
@@ -1561,9 +1561,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     protected class CacheDataRowStore extends RowStore {
         /**
          * @param cctx Cache context.
+         * @param freeList Free list.
          */
-        public CacheDataRowStore(GridCacheContext<?, ?> cctx) {
-            super(cctx);
+        public CacheDataRowStore(GridCacheContext<?, ?> cctx, FreeList freeList) {
+            super(cctx, freeList);
         }
 
         /**

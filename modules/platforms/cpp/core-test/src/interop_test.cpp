@@ -119,7 +119,15 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 {
     IgniteConfiguration cfg;
 
-    InitConfig(cfg, "cache-test.xml");
+    char* config = NULL;
+
+#ifdef IGNITE_TESTS_32
+    config = "cache-test-32.xml";
+#else
+    config = "cache-test.xml";
+#endif
+
+    InitConfig(cfg, config);
 
     Ignite ignite = Ignition::Start(cfg);
 

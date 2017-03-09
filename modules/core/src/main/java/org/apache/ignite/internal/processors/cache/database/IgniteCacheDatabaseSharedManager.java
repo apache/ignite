@@ -139,7 +139,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return
      */
     public Collection<PageMemory> pageMemories() {
-        return pageMemMap.values();
+        return pageMemMap != null ? pageMemMap.values() : null;
     }
 
     /**
@@ -204,16 +204,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (MemoryPolicyConfiguration plcCfg : plcCfgs) {
             assert plcCfg != null;
 
-            checkPolicyName(plcCfg, plcsNames);
-
-            checkPolicySize(plcCfg);
-
             if (dfltPlcPresented) {
                 if (plcCfg.isDefault())
                     throw new IgniteCheckedException("Only one default MemoryPolicyConfiguration must be presented.");
             }
             else
                 dfltPlcPresented = plcCfg.isDefault();
+
+            checkPolicyName(plcCfg, plcsNames);
+
+            checkPolicySize(plcCfg);
         }
 
         if (!dfltPlcPresented)
@@ -234,6 +234,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private static void checkPolicyName(MemoryPolicyConfiguration plcCfg, Set<String> observedNames) throws IgniteCheckedException {
         String name = plcCfg.getName();
+
+        if (plcCfg.isDefault() && name != null)
+            throw new IgniteCheckedException("Default MemoryPolicyConfiguration must have a null name.");
 
         if (!plcCfg.isDefault() && (name == null || name.isEmpty()))
             throw new IgniteCheckedException("Non-default MemoryPolicyConfiguration must have non-null name.");

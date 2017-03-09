@@ -101,17 +101,17 @@ struct CacheTestSuiteFixture {
         cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
         cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
+
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
         cfg.jvmMaxMem = 768;
+        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test-32.xml");
 #else
         cfg.jvmInitMem = 1024;
         cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
         cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
+#endif
         
         for (int i = 0; i < 2; i++) 
         {
