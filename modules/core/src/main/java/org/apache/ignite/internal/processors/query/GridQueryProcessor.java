@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -102,7 +103,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static java.lang.Enum.valueOf;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 
@@ -973,7 +973,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
         for (TypeDescriptor desc : types.values()) {
             if (desc.matchSpaceAndTable(space, tblName))
-                return desc.createIndexAsync(idx, ifNotExists);
+                return desc.dynamicIndexCreate(idx, ifNotExists);
         }
 
         return new GridFinishedFuture<>(new IgniteException("Failed to create index becase table is not found [" +
@@ -2310,7 +2310,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Descriptor of type.
      */
-    private static class TypeDescriptor implements GridQueryTypeDescriptor {
+    private class TypeDescriptor implements GridQueryTypeDescriptor {
         /** Space. */
         private String space;
 
@@ -2647,9 +2647,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param ifNotExists When set to {@code true} operation will fail if index already exists.
          * @return Future completed when index is created.
          */
-        public IgniteInternalFuture<?> createIndexAsync(QueryIndex idx, boolean ifNotExists) {
-            // TODO
-            return null;
+        public IgniteInternalFuture<?> dynamicIndexCreate(QueryIndex idx, boolean ifNotExists) {
+            return idxState.onCreateIndex(idx, ifNotExists);
         }
 
         /** {@inheritDoc} */
@@ -2735,20 +2734,62 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Index state manager.
      */
-    private static class IndexStateManager {
+    private class IndexStateManager {
         /** Indexes. */
         private final Map<String, IndexDescriptor> idxs = new ConcurrentHashMap<>();
+
+        /** Client futures. */
+        private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
 
         /** RW lock. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
         /**
-         * Callback invoked when original index state is ready.
+         * Handle initial index state.
          *
          * @param idxs Indexes.
          */
         public void onInitialStateReady(Map<String, IndexDescriptor> idxs) {
             this.idxs.putAll(idxs);
+        }
+
+        /**
+         * Handle dynamic index creation.
+         *
+         * @param idx Index.
+         * @param ifNotExists IF-NOT-EXISTS flag.
+         * @return Future completed when index is created.
+         */
+        public IgniteInternalFuture<?> onCreateIndex(QueryIndex idx, boolean ifNotExists) {
+            lock.writeLock().lock();
+
+            try {
+                String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
+
+                IndexDescriptor oldIdx = idxs.get(idxName);
+
+                if (oldIdx != null) {
+                    if (ifNotExists)
+                        return new GridFinishedFuture<>();
+                    else
+                        return new GridFinishedFuture<>(new IgniteException("Index already exists [idxName=" +
+                            idxName + ']'));
+                }
+
+                UUID opId = UUID.randomUUID();
+                GridFutureAdapter fut = new GridFutureAdapter();
+
+                GridFutureAdapter oldFut = cliFuts.put(opId, fut);
+
+                assert oldFut == null;
+
+                // TODO: Start discovery.
+
+                return fut;
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 
