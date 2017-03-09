@@ -175,11 +175,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
-            if (evt.type() != EVT_NODE_JOINED && evt.type() != EVT_NODE_LEFT && evt.type() != EVT_NODE_FAILED &&
-                evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
-                return;
-            }
-
             if (!enterBusy())
                 return;
 
@@ -304,7 +299,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         exchWorker = new ExchangeWorker();
 
-        cctx.gridEvents().addDiscoveryEventListener(discoLsnr);
+        cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
+            EVT_DISCOVERY_CUSTOM_EVT);
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
@@ -361,8 +357,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
-        DiscoCache discoCache = cctx.discovery().onJoinDiscoCache();
+        T2<DiscoveryEvent, DiscoCache> localJoin = cctx.discovery().localJoin();
+
+        DiscoveryEvent discoEvt = localJoin.get1();
+        DiscoCache discoCache = localJoin.get2();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 

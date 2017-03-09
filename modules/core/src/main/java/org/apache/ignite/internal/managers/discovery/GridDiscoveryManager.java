@@ -87,6 +87,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -225,10 +226,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
-
-    /** Discovery cache snapshot at the local join event time. */
-    private volatile DiscoCache onJoinDiscoCache;
+    private GridFutureAdapter<T2<DiscoveryEvent, DiscoCache>> locJoin = new GridFutureAdapter<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -569,8 +567,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(F.view(topSnapshot, FILTER_DAEMON)));
 
-                    onJoinDiscoCache = discoCache;
-                    locJoinEvt.onDone(discoEvt);
+                    locJoin.onDone(new T2<>(discoEvt, discoCache));
 
                     return;
                 }
@@ -585,8 +582,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ((IgniteKernal)ctx.grid()).onDisconnected();
 
-                    locJoinEvt = new GridFutureAdapter<>();
-                    onJoinDiscoCache = null;
+                    locJoin = new GridFutureAdapter<>();
 
                     registeredCaches.clear();
 
@@ -1324,8 +1320,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             U.join(segChkThread, log);
         }
 
-        if (!locJoinEvt.isDone())
-            locJoinEvt.onDone(
+        if (!locJoin.isDone())
+            locJoin.onDone(
                 new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
@@ -1809,22 +1805,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return Event that represents a local node joined to topology. */
     public DiscoveryEvent localJoinEvent() {
         try {
-            DiscoveryEvent event = locJoinEvt.get();
-
-            assert onJoinDiscoCache != null;
-
-            return event;
+            return locJoin.get().get1();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
 
-    /**
-     * @return Discovery cache snapshot at the local join event time.
-     */
-    public DiscoCache onJoinDiscoCache() {
-        return onJoinDiscoCache;
+    /** @return Tuple that consists of a local join event and discovery cache at the join time. */
+    public T2<DiscoveryEvent, DiscoCache> localJoin() {
+        try {
+            return locJoin.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
