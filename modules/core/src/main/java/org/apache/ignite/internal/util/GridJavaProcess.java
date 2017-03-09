@@ -269,6 +269,7 @@ public final class GridJavaProcess {
      *
      * @return The current directory, null for default.
      */
+    @SuppressWarnings("unused")
     public File getProcessDirectory() {
         return currDir;
     }

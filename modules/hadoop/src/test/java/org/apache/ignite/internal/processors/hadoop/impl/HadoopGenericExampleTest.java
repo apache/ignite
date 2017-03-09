@@ -292,13 +292,14 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * @param conf The configuration object.
      */
     protected void prepareConf(Configuration conf) {
+        // Simplify the situation using just local file system:
         conf.set("fs.defaultFS", "file:///");
 
         // Set the Ignite framework and the address:
         conf.set(MRConfig.FRAMEWORK_NAME, "ignite");
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
 
-        // To execute the sample on local MR engine, uncomment this:
+        // To execute the sample on local MR engine use this:
         //conf.set(MRConfig.FRAMEWORK_NAME, "local");
         //conf.unset(MRConfig.MASTER_ADDRESS);
     }
@@ -307,7 +308,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
      * Runs the example.
      */
     protected final void runExampleTest() throws Exception {
-        X.println("####### Running the test.");
+        X.println("Running the test.");
 
         final GenericHadoopExample ex = example();
 
@@ -333,12 +334,12 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
 
         String[] args = ex.parameters(fp);
 
-        System.out.println("### Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: " +
+        System.out.println("Running Hadoop example [" + ex.name() + "] with " + args.length + " parameters: " +
             Arrays.toString(args));
 
         int res = ToolRunner.run(conf, ex.tool(), args);
 
-        System.out.println("####### return status = " + res);
+        System.out.println("Return status = " + res);
 
         assertEquals(0, res);
 
