@@ -34,22 +34,14 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.engine.Database;
-import org.h2.engine.DbObject;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
-import org.h2.index.Cursor;
 import org.h2.index.Index;
-import org.h2.index.IndexLookupBatch;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.schema.Schema;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -857,93 +849,15 @@ public class GridH2Table extends TableBase {
      * Wrapper type for primary key.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class ScanIndex extends BaseIndex {
+    static class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         /** */
         static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
-        /** */
-        private static final IndexType TYPE = IndexType.createScan(false);
-
-        /** */
-        private final GridH2IndexBase delegate;
-
         /**
-         * Constructor.
-         *
-         * @param delegate Index delegate to.
+         * @param delegate Delegate.
          */
-        private ScanIndex(GridH2IndexBase delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getDiskSpaceUsed() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Session ses, Row row) {
-            delegate.add(ses, row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canFindNext() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canGetFirstOrLast() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean canScan() {
-            return delegate.canScan();
-        }
-
-        /** {@inheritDoc} */
-        @Override public final void close(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commit(int operation, Row row) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareRows(SearchRow rowData, SearchRow compare) {
-            return delegate.compareRows(rowData, compare);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor find(TableFilter filter, SearchRow first, SearchRow last) {
-            return find(filter.getSession(), first, last);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-            return delegate.find(ses, null, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor findFirstOrLast(Session ses, boolean first) {
-            throw DbException.getUnsupportedException("SCAN");
-        }
-
-        /** {@inheritDoc} */
-        @Override public Cursor findNext(Session ses, SearchRow higherThan, SearchRow last) {
-            throw DbException.throwInternalError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getColumnIndex(Column col) {
-            return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Column[] getColumns() {
-            return delegate.getColumns();
+        public ScanIndex(GridH2IndexBase delegate) {
+            super(delegate);
         }
 
         /** {@inheritDoc} */
@@ -957,163 +871,13 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public IndexColumn[] getIndexColumns() {
-            return delegate.getIndexColumns();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexType getIndexType() {
-            return TYPE;
-        }
-
-        /** {@inheritDoc} */
         @Override public String getPlanSQL() {
             return delegate.getTable().getSQL() + "." + SCAN_INDEX_NAME_SUFFIX;
         }
 
         /** {@inheritDoc} */
-        @Override public Row getRow(Session ses, long key) {
-            return delegate.getRow(ses, key);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getRowCount(Session ses) {
-            return delegate.getRowCount(ses);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getRowCountApproximation() {
-            return delegate.getRowCountApproximation();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Table getTable() {
-            return delegate.getTable();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRowIdIndex() {
-            return delegate.isRowIdIndex();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean needRebuild() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(Session ses, Row row) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setSortedInsertMode(boolean sortedInsertMode) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-            return delegate.createLookupBatch(filter);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void truncate(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Schema getSchema() {
-            return delegate.getSchema();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isHidden() {
-            return delegate.isHidden();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void checkRename() {
-            throw DbException.getUnsupportedException("rename");
-        }
-
-        /** {@inheritDoc} */
-        @Override public ArrayList<DbObject> getChildren() {
-            return delegate.getChildren();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getComment() {
-            return delegate.getComment();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getCreateSQL() {
-            return null; // Scan should return null.
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getCreateSQLForCopy(Table tbl, String quotedName) {
-            return delegate.getCreateSQLForCopy(tbl, quotedName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Database getDatabase() {
-            return delegate.getDatabase();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getDropSQL() {
-            return delegate.getDropSQL();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getId() {
-            return delegate.getId();
-        }
-
-        /** {@inheritDoc} */
         @Override public String getName() {
             return delegate.getName() + SCAN_INDEX_NAME_SUFFIX;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getSQL() {
-            return delegate.getSQL();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return delegate.getType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isTemporary() {
-            return delegate.isTemporary();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeChildrenAndResources(Session ses) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rename(String newName) {
-            throw DbException.getUnsupportedException("rename");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setComment(String comment) {
-            throw DbException.getUnsupportedException("comment");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTemporary(boolean temporary) {
-            throw DbException.getUnsupportedException("temporary");
         }
     }
 }
