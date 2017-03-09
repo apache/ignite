@@ -53,7 +53,7 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +number-min-max('Shared memory port:', `${communication}.sharedMemoryPort`, '"sharedMemoryPort"', 'true', '48100', '-1', '65535',
                         'Local port to accept shared memory connections<br/>\
-                        If set to #[b -1] shared memory communication will be disabled')
+                        If set to <b>-1</b> shared memory communication will be disabled')
                 .settings-row
                     +number('Idle connection timeout:', `${communication}.idleConnectionTimeout`, '"idleConnectionTimeout"', 'true', '30000', '1',
                         'Maximum idle connection timeout upon which a connection to client will be closed')
