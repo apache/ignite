@@ -1,10 +1,12 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.examples.pi.DistBbp;
+
 import org.apache.hadoop.mapreduce.MRConfig;
 import org.apache.hadoop.util.Tool;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
+import org.apache.ignite.internal.processors.hadoop.impl.pi2.DistBbp;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Bbp Pi digits example.
@@ -13,7 +15,17 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
     /** */
     private final GenericHadoopExample ex = new GenericHadoopExample() {
         /** */
-        private final Tool impl = new DistBbp();
+        private final DistBbp impl = new DistBbp() {
+            /** {@inheritDoc} */
+            @Override protected void verify(String res) {
+                super.verify(res);
+
+                //assertEquals("90FDAA22168C 2 (12 hex digits)", res); // for 2 skipped bits.
+                assertEquals("110B4611A625 F (12 hex digits)", res); // for 25 skipped bits.
+
+                X.println("Verified okay.");
+            }
+        };
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
@@ -26,7 +38,7 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
 //            <remoteDir> Remote directory for submitting jobs.
 //            <localDir> Local directory for storing output files.
 
-            return new String[] { "2", "2", "2", "x", "2",
+            return new String[] { "25", "2", "2", "x", "2",
                 fp.getWorkDir(name()) + "/remote" ,
                 fp.getWorkDir(name()) + "/local" };
         }
@@ -69,11 +81,11 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
         return ex;
     }
 
-    @Override protected boolean isOneJvm() {
-        return true; // TODO
-    }
-
-    @Override protected int gridCount() {
-        return 1;
-    }
+//    @Override protected boolean isOneJvm() {
+//        return true; // TODO
+//    }
+//
+//    @Override protected int gridCount() {
+//        return 1;
+//    }
 }
