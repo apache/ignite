@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,6 +53,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -699,8 +701,8 @@ public class GridH2Table extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */
@@ -948,9 +950,9 @@ public class GridH2Table extends TableBase {
 
         /** {@inheritDoc} */
         @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-            SortOrder sortOrder) {
+            SortOrder sortOrder, HashSet<Column> cols) {
             long rows = getRowCountApproximation();
-            double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
+            double baseCost = getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, cols);
             int mul = delegate.getDistributedMultiplier(ses, filters, filter);
 
             return  mul * baseCost;
@@ -1017,8 +1019,8 @@ public class GridH2Table extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-            return delegate.createLookupBatch(filter);
+        @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
+            return delegate.createLookupBatch(filters, filter);
         }
 
         /** {@inheritDoc} */

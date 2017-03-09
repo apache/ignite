@@ -27,6 +27,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
+import org.h2.table.TableType;
 
 /**
  * Merge table for distributed queries.
@@ -91,8 +92,8 @@ public class GridMergeTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return EXTERNAL_TABLE_ENGINE;
+    @Override public TableType getTableType() {
+        return TableType.EXTERNAL_TABLE_ENGINE;
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -433,8 +435,9 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
+        SortOrder sortOrder, HashSet<Column> cols) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true, cols);
     }
 
     /** {@inheritDoc} */
