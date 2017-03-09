@@ -2455,6 +2455,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
         }
 
+        /** {@inheritDoc} */
+        @Override public GridQueryIndexDescriptor textIndex() {
+            return fullTextIdx;
+        }
+
         /**
          * Adds index.
          *
@@ -2497,11 +2502,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param field Field name.
          */
         public void addFieldToTextIndex(String field) {
-            if (fullTextIdx == null) {
+            if (fullTextIdx == null)
                 fullTextIdx = new IndexDescriptor(FULLTEXT);
-
-                indexes.put(null, fullTextIdx);
-            }
 
             fullTextIdx.addField(field, 0, false);
         }

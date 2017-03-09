@@ -81,6 +81,13 @@ public interface GridQueryTypeDescriptor {
     public Map<String, GridQueryIndexDescriptor> indexes();
 
     /**
+     * Get text index for this type (if any).
+     *
+     * @return Text index or {@code null}.
+     */
+    public GridQueryIndexDescriptor textIndex();
+
+    /**
      * Gets value class.
      *
      * @return Value class.

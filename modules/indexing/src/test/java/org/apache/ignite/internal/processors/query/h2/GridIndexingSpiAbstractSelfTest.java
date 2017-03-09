@@ -627,8 +627,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** */
         @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-            return textIdx == null ? Collections.<String, GridQueryIndexDescriptor>emptyMap() :
-                Collections.singletonMap("index", textIdx);
+            return Collections.emptyMap();
+        }
+
+        /** */
+        @Override public GridQueryIndexDescriptor textIndex() {
+            return textIdx;
         }
 
         /** */

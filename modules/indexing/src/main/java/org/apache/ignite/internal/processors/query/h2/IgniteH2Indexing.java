@@ -2629,45 +2629,46 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean affIdxFound = false;
 
+            GridQueryIndexDescriptor textIdx = type.textIndex();
+
+            if (textIdx != null) {
+                try {
+                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
+                }
+                catch (IgniteCheckedException e1) {
+                    throw new IgniteException(e1);
+                }
+            }
+
             for (Map.Entry<String, GridQueryIndexDescriptor> e : type.indexes().entrySet()) {
                 String name = e.getKey();
                 GridQueryIndexDescriptor idx = e.getValue();
 
-                if (idx.type() == FULLTEXT) {
-                    try {
-                        luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
-                    }
-                    catch (IgniteCheckedException e1) {
-                        throw new IgniteException(e1);
-                    }
+                List<IndexColumn> cols = new ArrayList<>(idx.fields().size() + 2);
+
+                boolean escapeAll = schema.escapeAll();
+
+                for (String field : idx.fields()) {
+                    String fieldName = escapeAll ? field : escapeName(field, false).toUpperCase();
+
+                    Column col = tbl.getColumn(fieldName);
+
+                    cols.add(tbl.indexColumn(col.getColumnId(),
+                        idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
                 }
-                else {
-                    List<IndexColumn> cols = new ArrayList<>(idx.fields().size() + 2);
 
-                    boolean escapeAll = schema.escapeAll();
+                if (idx.type() == SORTED) {
+                    // We don't care about number of fields in affinity index, just affinity key must be the first.
+                    affIdxFound |= affCol != null && equal(cols.get(0), affCol);
 
-                    for (String field : idx.fields()) {
-                        String fieldName = escapeAll ? field : escapeName(field, false).toUpperCase();
+                    cols = treeIndexColumns(cols, keyCol, affCol);
 
-                        Column col = tbl.getColumn(fieldName);
-
-                        cols.add(tbl.indexColumn(col.getColumnId(),
-                            idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
-                    }
-
-                    if (idx.type() == SORTED) {
-                        // We don't care about number of fields in affinity index, just affinity key must be the first.
-                        affIdxFound |= affCol != null && equal(cols.get(0), affCol);
-
-                        cols = treeIndexColumns(cols, keyCol, affCol);
-
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
-                    }
-                    else if (idx.type() == GEO_SPATIAL)
-                        idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
-                    else
-                        throw new IllegalStateException("Index type: " + idx.type());
+                    idxs.add(new GridH2TreeIndex(name, tbl, false, cols));
                 }
+                else if (idx.type() == GEO_SPATIAL)
+                    idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
+                else
+                    throw new IllegalStateException("Index type: " + idx.type());
             }
 
             // Add explicit affinity key index if nothing alike was found.
