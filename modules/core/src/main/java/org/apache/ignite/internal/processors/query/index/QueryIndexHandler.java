@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.index;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -23,10 +23,11 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -47,7 +48,7 @@ public class QueryIndexHandler {
     private final IgniteLogger log;
 
     /** All indexes. */
-    private final Map<IndexKey, Descriptor> idxs = new ConcurrentHashMap<>();
+    private final Map<QueryIndexKey, Descriptor> idxs = new ConcurrentHashMap<>();
 
     /** Client futures. */
     // TODO: Special future which is aware of index key, handle it during cache, type undeploy and disconnect.
@@ -107,7 +108,7 @@ public class QueryIndexHandler {
         try {
             for (QueryTypeDescriptorImpl typ : typs) {
                 for (QueryIndexDescriptorImpl idx : typ.indexes0()) {
-                    IndexKey idxKey = new IndexKey(space, idx.name());
+                    QueryIndexKey idxKey = new QueryIndexKey(space, idx.name());
 
                     Descriptor desc = idxs.get(idxKey);
 
@@ -134,10 +135,10 @@ public class QueryIndexHandler {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<IndexKey, Descriptor>> iter = idxs.entrySet().iterator();
+            Iterator<Map.Entry<QueryIndexKey, Descriptor>> iter = idxs.entrySet().iterator();
 
             while (iter.hasNext()) {
-                Map.Entry<IndexKey, Descriptor> entry = iter.next();
+                Map.Entry<QueryIndexKey, Descriptor> entry = iter.next();
 
                 if (F.eq(space, entry.getValue().type().space()))
                     iter.remove();
@@ -157,10 +158,10 @@ public class QueryIndexHandler {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<IndexKey, Descriptor>> iter = idxs.entrySet().iterator();
+            Iterator<Map.Entry<QueryIndexKey, Descriptor>> iter = idxs.entrySet().iterator();
 
             while (iter.hasNext()) {
-                Map.Entry<IndexKey, Descriptor> entry = iter.next();
+                Map.Entry<QueryIndexKey, Descriptor> entry = iter.next();
 
                 if (F.eq(desc, entry.getValue().type()))
                     iter.remove();
@@ -191,7 +192,7 @@ public class QueryIndexHandler {
         boolean ifNotExists) {
         String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
 
-        IndexKey idxKey = new IndexKey(space, idxName);
+        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
 
         lock.readLock().lock();
 
@@ -228,65 +229,6 @@ public class QueryIndexHandler {
         }
         finally {
             lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Index key.
-     */
-    private static class IndexKey {
-        /** Space. */
-        private final String space;
-
-        /** Name. */
-        private final String name;
-
-        /**
-         * Constructor.
-         *
-         * @param space Space.
-         * @param name Name.
-         */
-        public IndexKey(String space, String name) {
-            this.space = space;
-            this.name = name;
-        }
-
-        /**
-         * @return Space.
-         */
-        public String space() {
-            return space;
-        }
-
-        /**
-         * @return Name.
-         */
-        public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + (name != null ? name.hashCode() : 0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            IndexKey other = (IndexKey)o;
-
-            return F.eq(name, other.name) && F.eq(space, other.space);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IndexKey.class, this);
         }
     }
 
