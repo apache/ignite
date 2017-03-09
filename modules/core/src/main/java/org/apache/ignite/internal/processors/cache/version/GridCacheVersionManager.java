@@ -271,7 +271,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         if (topVer == -1)
             topVer = cctx.kernalContext().discovery().topologyVersion();
 
-        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
+//        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
+        long globalTime = 0;
 
         if (addTime) {
             if (gridStartTime == 0)

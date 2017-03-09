@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
@@ -176,13 +175,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Timeout processor.
      */
     public GridTimeoutProcessor timeout();
-
-    /**
-     * Gets time processor.
-     *
-     * @return Time processor.
-     */
-    public GridClockSyncProcessor clockSync();
 
     /**
      * Gets resource processor.
