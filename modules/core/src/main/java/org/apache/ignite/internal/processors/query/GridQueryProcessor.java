@@ -37,9 +37,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,6 +102,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static java.lang.Enum.valueOf;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 
@@ -341,6 +345,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
+                    desc.onInitialStateReady();
+
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
 
@@ -433,6 +439,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         typeId = new TypeId(ccfg.getName(), valCls);
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
+
+                    desc.onInitialStateReady();
 
                     addTypeByName(ccfg, desc);
                     types.put(typeId, desc);
@@ -2327,6 +2335,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @GridToStringInclude
         private final Map<String, IndexDescriptor> indexes = new HashMap<>();
 
+        /** Index state manager. */
+        private final IndexStateManager idxState = new IndexStateManager();
+
         /** */
         private IndexDescriptor fullTextIdx;
 
@@ -2488,8 +2499,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param descending Sorting order.
          * @throws IgniteCheckedException If failed.
          */
-        public void addFieldToIndex(String idxName, String field, int orderNum,
-            boolean descending) throws IgniteCheckedException {
+        public void addFieldToIndex(String idxName, String field, int orderNum, boolean descending)
+            throws IgniteCheckedException {
             IndexDescriptor desc = indexes.get(idxName);
 
             assert desc != null;
@@ -2623,6 +2634,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * Callback invoked when initial type state is ready.
+         */
+        public void onInitialStateReady() {
+            idxState.onInitialStateReady(indexes);
+        }
+
+        /**
          * Initiate asynchronous index creation.
          *
          * @param idx Index description.
@@ -2711,6 +2729,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(IndexDescriptor.class, this);
+        }
+    }
+
+    /**
+     * Index state manager.
+     */
+    private static class IndexStateManager {
+        /** Indexes. */
+        private final Map<String, IndexDescriptor> idxs = new ConcurrentHashMap<>();
+
+        /** RW lock. */
+        private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+        /**
+         * Callback invoked when original index state is ready.
+         *
+         * @param idxs Indexes.
+         */
+        public void onInitialStateReady(Map<String, IndexDescriptor> idxs) {
+            this.idxs.putAll(idxs);
         }
     }
 
