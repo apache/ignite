@@ -355,7 +355,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
-        if (mapping.node().isLocal()) {
+        if (mapping.primary().isLocal()) {
             if (write.context().isNear())
                 tx.nearLocallyMapped(true);
             else if (write.context().isColocated())
@@ -417,12 +417,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 updated.last(true);
 
-                GridDistributedTxMapping prev = map.put(updated.node().id(), updated);
+                GridDistributedTxMapping prev = map.put(updated.primary().id(), updated);
 
                 if (prev != null)
                     prev.last(false);
 
-                if (updated.node().isLocal()) {
+                if (updated.primary().isLocal()) {
                     if (write.context().isNear())
                         tx.nearLocallyMapped(true);
                     else if (write.context().isColocated())
@@ -483,7 +483,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         try {
             assert !m.empty();
 
-            final ClusterNode n = m.node();
+            final ClusterNode n = m.primary();
 
             long timeout = tx.remainingTime();
 
@@ -643,7 +643,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             }
         }
 
-        if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
+        if (cur == null || !cur.primary().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
             boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
 
             cur = new GridDistributedTxMapping(primary);
@@ -815,7 +815,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @return Node ID.
          */
         public ClusterNode node() {
-            return m.node();
+            return m.primary();
         }
 
         /**
@@ -848,7 +848,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
-                    ", node=" + m.node().id() + ']');
+                    ", node=" + m.primary().id() + ']');
             }
 
             if (isDone())

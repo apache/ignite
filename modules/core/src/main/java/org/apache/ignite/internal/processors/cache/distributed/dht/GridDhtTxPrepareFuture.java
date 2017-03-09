@@ -1241,7 +1241,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
                     assert !dhtMapping.empty();
 
-                    ClusterNode n = dhtMapping.node();
+                    ClusterNode n = dhtMapping.primary();
 
                     assert !n.isLocal();
 
@@ -1368,11 +1368,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
 
                 for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
-                    if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
+                    if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
                         if (tx.remainingTime() == -1)
                             return;
 
-                        MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
+                        MiniFuture fut = new MiniFuture(nearMapping.primary().id(), null, nearMapping);
 
                         add(fut); // Append new future.
 
@@ -1419,12 +1419,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         assert req.transactionNodes() != null;
 
                         try {
-                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+                            cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +
                                     ", dhtTxId=" + tx.xidVersion() +
-                                    ", node=" + nearMapping.node().id() + ']');
+                                    ", node=" + nearMapping.primary().id() + ']');
                             }
                         }
                         catch (ClusterTopologyCheckedException ignored) {
@@ -1435,7 +1435,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 if (msgLog.isDebugEnabled()) {
                                     msgLog.debug("DHT prepare fut, failed to send request near [txId=" + tx.nearXidVersion() +
                                         ", dhtTxId=" + tx.xidVersion() +
-                                        ", node=" + nearMapping.node().id() + ']');
+                                        ", node=" + nearMapping.primary().id() + ']');
                                 }
 
                                 fut.onResult(e);
@@ -1444,7 +1444,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 if (msgLog.isDebugEnabled()) {
                                     msgLog.debug("DHT prepare fut, failed to send request near, ignore [txId=" + tx.nearXidVersion() +
                                         ", dhtTxId=" + tx.xidVersion() +
-                                        ", node=" + nearMapping.node().id() +
+                                        ", node=" + nearMapping.primary().id() +
                                         ", err=" + e + ']');
                                 }
                             }
@@ -1627,7 +1627,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             GridDistributedTxMapping dhtMapping,
             GridDistributedTxMapping nearMapping
         ) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
+            assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
             this.nodeId = nodeId;
             this.dhtMapping = dhtMapping;
@@ -1645,7 +1645,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
          * @return Node ID.
          */
         public ClusterNode node() {
-            return dhtMapping != null ? dhtMapping.node() : nearMapping.node();
+            return dhtMapping != null ? dhtMapping.primary() : nearMapping.primary();
         }
 
         /**
@@ -1691,7 +1691,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 try {
                                     GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
 
-                                    cached.removeReader(nearMapping.node().id(), res.messageId());
+                                    cached.removeReader(nearMapping.primary().id(), res.messageId());
 
                                     break;
                                 }

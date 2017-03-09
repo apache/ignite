@@ -45,7 +45,7 @@ public class GridDistributedTxMapping implements Externalizable {
 
     /** Mapped node. */
     @GridToStringExclude
-    private ClusterNode node;
+    private ClusterNode primary;
 
     /** Entries. */
     @GridToStringInclude
@@ -74,10 +74,10 @@ public class GridDistributedTxMapping implements Externalizable {
     }
 
     /**
-     * @param node Mapped node.
+     * @param primary Primary node.
      */
-    public GridDistributedTxMapping(ClusterNode node) {
-        this.node = node;
+    public GridDistributedTxMapping(ClusterNode primary) {
+        this.primary = primary;
 
         entries = new LinkedHashSet<>();
     }
@@ -127,8 +127,8 @@ public class GridDistributedTxMapping implements Externalizable {
     /**
      * @return Node.
      */
-    public ClusterNode node() {
-        return node;
+    public ClusterNode primary() {
+        return primary;
     }
 
     /**
@@ -236,20 +236,20 @@ public class GridDistributedTxMapping implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(node);
+        out.writeObject(primary);
 
         U.writeCollection(out, entries);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        node = (ClusterNode)in.readObject();
+        primary = (ClusterNode)in.readObject();
 
         entries = U.readCollection(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedTxMapping.class, this, "node", node.id());
+        return S.toString(GridDistributedTxMapping.class, this, "node", primary.id());
     }
 }

@@ -237,6 +237,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         checkOnePhase();
 
+        if (mappingKnown && tx.onePhaseCommit())
+            mappingKnown = false;
+
         long timeout = tx.remainingTime();
 
         if (timeout == -1) {
@@ -248,7 +251,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         int miniId = 0;
 
         for (final GridDistributedTxMapping m : mappings.values()) {
-            final ClusterNode node = m.node();
+            final ClusterNode primary = m.primary();
 
             GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                 futId,
@@ -281,8 +284,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             add(fut);
 
-            if (node.isLocal()) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(node.id(),
+            if (primary.isLocal()) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(primary.id(),
                     tx,
                     req);
 
@@ -299,11 +302,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
             else {
                 try {
-                    cctx.io().send(node, req, tx.ioPolicy());
+                    cctx.io().send(primary, req, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +
-                            ", node=" + node.id() + ']');
+                            ", node=" + primary.id() + ']');
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
@@ -314,7 +317,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 catch (IgniteCheckedException e) {
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
-                            ", node=" + node.id() + ", err=" + e + ']');
+                            ", node=" + primary.id() + ", err=" + e + ']');
                     }
 
                     fut.onError(e);
@@ -399,7 +402,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @return Node ID.
          */
         public ClusterNode primary() {
-            return m.node();
+            return m.primary();
         }
 
         /**
@@ -421,7 +424,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         void onNodeLeft(ClusterTopologyCheckedException e) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Near pessimistic prepare, mini future node left [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + m.node().id() + ']');
+                    ", nodeId=" + m.primary().id() + ']');
             }
 
             if (tx.onePhaseCommit()) {

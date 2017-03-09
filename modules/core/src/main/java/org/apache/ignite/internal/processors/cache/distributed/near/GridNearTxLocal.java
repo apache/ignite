@@ -577,12 +577,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
         if (!F.isEmpty(maps)) {
             for (GridDistributedTxMapping map : maps) {
-                ClusterNode n = map.node();
+                ClusterNode primary = map.primary();
 
-                GridDistributedTxMapping m = mappings.get(n.id());
+                GridDistributedTxMapping m = mappings.get(primary.id());
 
                 if (m == null) {
-                    mappings.put(m = new GridDistributedTxMapping(n));
+                    mappings.put(m = new GridDistributedTxMapping(primary));
 
                     m.near(map.near());
 
@@ -605,7 +605,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param entry Entry.
      */
     void addSingleEntryMapping(GridDistributedTxMapping map, IgniteTxEntry entry) {
-        ClusterNode n = map.node();
+        ClusterNode n = map.primary();
 
         GridDistributedTxMapping m = new GridDistributedTxMapping(n);
 

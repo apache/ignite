@@ -393,7 +393,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
-            ClusterNode n = dhtMapping.node();
+            ClusterNode n = dhtMapping.primary();
 
             assert !n.isLocal();
 
@@ -474,7 +474,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         }
 
         for (GridDistributedTxMapping nearMapping : nearMap.values()) {
-            if (!dhtMap.containsKey(nearMapping.node().id())) {
+            if (!dhtMap.containsKey(nearMapping.primary().id())) {
                 if (nearMapping.empty())
                     // Nothing to send.
                     continue;
@@ -513,12 +513,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 req.writeVersion(tx.writeVersion());
 
                 try {
-                    cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + nearMapping.node().id() + ']');
+                            ", node=" + nearMapping.primary().id() + ']');
                     }
 
                     if (sync)
@@ -534,7 +534,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
                                 ", dhtTxId=" + tx.xidVersion() +
-                                ", node=" + nearMapping.node().id() +
+                                ", node=" + nearMapping.primary().id() +
                                 ", err=" + e + ']');
                         }
 
@@ -599,7 +599,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @param nearMapping nearMapping.
          */
         MiniFuture(GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
+            assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
             this.dhtMapping = dhtMapping;
             this.nearMapping = nearMapping;
@@ -616,7 +616,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @return Node ID.
          */
         public ClusterNode node() {
-            return node != null ? node : dhtMapping != null ? dhtMapping.node() : nearMapping.node();
+            return node != null ? node : dhtMapping != null ? dhtMapping.primary() : nearMapping.primary();
         }
 
         /**

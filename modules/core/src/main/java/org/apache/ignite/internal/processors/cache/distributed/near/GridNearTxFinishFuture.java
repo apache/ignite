@@ -198,7 +198,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         FinishMiniFuture f = (FinishMiniFuture)fut;
 
                         if (f.futureId().equals(res.miniId())) {
-                            assert f.node().id().equals(nodeId);
+                            assert f.primary().id().equals(nodeId);
 
                             finishFut = f;
 
@@ -441,7 +441,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         GridDistributedTxMapping mapping = mappings.singleMapping();
 
         if (mapping != null) {
-            UUID nodeId = mapping.node().id();
+            UUID nodeId = mapping.primary().id();
 
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
@@ -471,7 +471,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         GridDistributedTxMapping mapping = mappings.singleMapping();
 
         if (mapping != null) {
-            UUID nodeId = mapping.node().id();
+            UUID nodeId = mapping.primary().id();
 
             Collection<UUID> backups = tx.transactionNodes().get(nodeId);
 
@@ -657,7 +657,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param commit Commit flag.
      */
     private void finish(GridDistributedTxMapping m, boolean commit) {
-        ClusterNode n = m.node();
+        ClusterNode n = m.primary();
 
         assert !m.empty();
 
@@ -727,7 +727,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
             catch (ClusterTopologyCheckedException ignored) {
                 // Remove previous mapping.
-                mappings.remove(m.node().id());
+                mappings.remove(m.primary().id());
 
                 fut.onNodeLeft(n.id(), false);
             }
@@ -753,7 +753,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (f.getClass() == FinishMiniFuture.class) {
                     FinishMiniFuture fut = (FinishMiniFuture)f;
 
-                    ClusterNode node = fut.node();
+                    ClusterNode node = fut.primary();
 
                     if (node != null) {
                         return "FinishFuture[node=" + node.id() +
@@ -872,8 +872,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Node ID.
          */
-        ClusterNode node() {
-            return m.node();
+        ClusterNode primary() {
+            return m.primary();
         }
 
         /**
@@ -885,10 +885,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /** {@inheritDoc} */
         boolean onNodeLeft(UUID nodeId, boolean discoThread) {
-            if (nodeId.equals(m.node().id())) {
+            if (nodeId.equals(m.primary().id())) {
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, mini future node left [txId=" + tx.nearXidVersion() +
-                        ", node=" + m.node().id() + ']');
+                        ", node=" + m.primary().id() + ']');
                 }
 
                 if (tx.syncMode() == FULL_SYNC) {

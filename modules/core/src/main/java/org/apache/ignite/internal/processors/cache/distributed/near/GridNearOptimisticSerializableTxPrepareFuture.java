@@ -148,7 +148,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture) fut;
 
-                if (f.node().id().equals(nodeId)) {
+                if (f.primary().id().equals(nodeId)) {
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                         nodeId);
 
@@ -181,7 +181,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         if (e instanceof IgniteTxOptimisticCheckedException || e instanceof IgniteTxTimeoutCheckedException) {
             if (m != null)
-                tx.removeMapping(m.node().id());
+                tx.removeMapping(m.primary().id());
         }
 
         ERR_UPD.compareAndSet(this, null, e);
@@ -393,7 +393,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                     fut = (MiniFuture)fut0;
 
-                    tx.removeMapping(fut.mapping().node().id());
+                    tx.removeMapping(fut.mapping().primary().id());
 
                     fut.onResult(new IgniteCheckedException("Failed to prepare transaction.", err));
                 }
@@ -421,7 +421,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     @Nullable private IgniteCheckedException prepare(final MiniFuture fut) {
         GridDistributedTxMapping m = fut.mapping();
 
-        final ClusterNode n = m.node();
+        final ClusterNode primary = m.primary();
 
         long timeout = tx.remainingTime();
 
@@ -475,8 +475,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         req.miniId(fut.futureId());
 
         // If this is the primary node for the keys.
-        if (n.isLocal()) {
-            IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+        if (primary.isLocal()) {
+            IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(primary.id(),
+                tx,
+                req);
 
             prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                 @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
@@ -491,7 +493,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         }
         else {
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                cctx.io().send(primary, req, tx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException e) {
                 e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
@@ -617,8 +619,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         Collection<String> futs = F.viewReadOnly(futures(),
             new C1<IgniteInternalFuture<?>, String>() {
                 @Override public String apply(IgniteInternalFuture<?> f) {
-                    return "[node=" + ((MiniFuture)f).node().id() +
-                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                    return "[node=" + ((MiniFuture)f).primary().id() +
+                        ", loc=" + ((MiniFuture)f).primary().isLocal() +
                         ", done=" + f.isDone() + "]";
                 }
             },
@@ -645,7 +647,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * Constructor.
          */
-        public ClientRemapFuture() {
+        ClientRemapFuture() {
             super(new ClientRemapFutureReducer());
         }
     }
@@ -720,10 +722,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         }
 
         /**
-         * @return Node ID.
+         * @return Primary node.
          */
-        public ClusterNode node() {
-            return m.node();
+        public ClusterNode primary() {
+            return m.primary();
         }
 
         /**
@@ -788,7 +790,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                         assert parent.cctx.kernalContext().clientNode();
                         assert m.clientFirst();
 
-                        parent.tx.removeMapping(m.node().id());
+                        parent.tx.removeMapping(m.primary().id());
 
                         ClientRemapFuture remapFut0 = null;
 

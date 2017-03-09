@@ -184,13 +184,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+    final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;
 
         assert res.error() == null : res;
 
-        UUID nodeId = m.node().id();
+        UUID nodeId = m.primary().id();
 
         for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
             IgniteTxEntry txEntry = tx.entry(entry.getKey());
