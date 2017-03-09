@@ -175,7 +175,7 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     /**
      * @return Number of nodes to start.
      */
-    protected final int gridCount() {
+    protected int gridCount() {
         return 3;
     }
 }

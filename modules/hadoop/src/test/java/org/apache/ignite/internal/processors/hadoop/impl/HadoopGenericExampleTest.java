@@ -295,7 +295,7 @@ public abstract class HadoopGenericExampleTest extends HadoopAbstract2Test {
         conf.set("fs.defaultFS", "file:///");
 
         // Set the Ignite framework and the address:
-        conf.set(MRConfig.FRAMEWORK_NAME,  "ignite");
+        conf.set(MRConfig.FRAMEWORK_NAME, "ignite");
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");
 
         // To execute the sample on local MR engine, uncomment this:
