@@ -19,7 +19,11 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.*;
@@ -111,11 +115,7 @@ class VectorImplementationsFixtures {
         /** */
         FunctionVectorFixture() {
             super("FunctionVector",
-                (size, scale) -> {
-                    final double[] arr = new double[size];
-                    return new FunctionVector(size, idx -> arr[idx] * scale,
-                        (idx, value) -> arr[idx] = value / scale);
-                },
+                (size, scale) -> new FunctionVectorForTest(new double[size], scale),
                 new Double[] {0.5, 1.0, 2.0, null});
         }
     }
@@ -381,6 +381,71 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** Subclass tweaked for serialization */
+    private static class FunctionVectorForTest extends FunctionVector {
+        /** */ double[] arr;
+
+        /** */ double scale;
+
+        /** */
+        public FunctionVectorForTest() {
+            // No-op.
+        }
+
+        /** */
+        FunctionVectorForTest(double[] arr, double scale) {
+            super(arr.length, idx -> arr[idx] * scale, (idx, value) -> arr[idx] = value / scale);
+
+            this.arr = arr;
+
+            this.scale = scale;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            out.writeObject(arr);
+
+            out.writeDouble(scale);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            arr = (double[])in.readObject();
+
+            scale = in.readDouble();
+
+            setStorage(new FunctionVectorStorage(arr.length, idx -> arr[idx] * scale, (idx, value) -> arr[idx] = value / scale));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = 1;
+
+            res = res * 37 + new Double(scale).hashCode();
+            res = res * 37 + getStorage().hashCode();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            FunctionVectorForTest that = (FunctionVectorForTest) o;
+
+            return new Double(scale).equals(that.scale)
+                && (arr != null ? Arrays.equals(arr, that.arr) : that.arr == null);
         }
     }
 }

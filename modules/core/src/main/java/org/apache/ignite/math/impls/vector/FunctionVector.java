@@ -23,7 +23,6 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 
 import java.util.*;
-import java.util.function.*;
 
 /**
  * TODO: add description.
@@ -42,7 +41,7 @@ public class FunctionVector extends AbstractVector {
      * @param getFunc
      * @param setFunc Set function. If {@code null} - this will be a read-only vector.
      */
-    public FunctionVector(int size, IntToDoubleFunction getFunc, IntDoubleToVoidFunction setFunc) {
+    public FunctionVector(int size, IgniteFunction<Integer, Double> getFunc, IntDoubleToVoidFunction setFunc) {
         setStorage(new FunctionVectorStorage(size, getFunc, setFunc));
     }
 
@@ -52,7 +51,7 @@ public class FunctionVector extends AbstractVector {
      * @param size
      * @param getFunc
      */
-    public FunctionVector(int size, IntToDoubleFunction getFunc) {
+    public FunctionVector(int size, IgniteFunction<Integer, Double> getFunc) {
         setStorage(new FunctionVectorStorage(size, getFunc));
     }
 
@@ -63,14 +62,14 @@ public class FunctionVector extends AbstractVector {
         assert args != null;
 
         if (args.containsKey("size") && args.containsKey("getFunc") && args.containsKey("setFunc")) {
-            IntToDoubleFunction getFunc = (IntToDoubleFunction)args.get("getFunc");
+            IgniteFunction<Integer, Double> getFunc = (IgniteFunction<Integer, Double>)args.get("getFunc");
             IntDoubleToVoidFunction setFunc = (IntDoubleToVoidFunction)args.get("setFunc");
             int size = (int)args.get("size");
 
             setStorage(new FunctionVectorStorage(size, getFunc, setFunc));
         }
         else if (args.containsKey("size") && args.containsKey("getFunc")) {
-            IntToDoubleFunction getFunc = (IntToDoubleFunction)args.get("getFunc");
+            IgniteFunction<Integer, Double> getFunc = (IgniteFunction<Integer, Double>)args.get("getFunc");
             int size = (int)args.get("size");
 
             setStorage(new FunctionVectorStorage(size, getFunc));

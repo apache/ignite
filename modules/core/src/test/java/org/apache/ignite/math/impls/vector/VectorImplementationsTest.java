@@ -93,9 +93,9 @@ public class VectorImplementationsTest extends ExternalizeTest<Vector> {
 
                 /* skip this check for delegating vectors  */
                 if (expType != DelegatingVector.class)
-                    assertTrue("Expected matrix type " + expType.getSimpleName()
-                            + " should be assignable from actual type " + actualType.getSimpleName() + " in " + desc,
-                        expType.isAssignableFrom(actualType));
+                    assertTrue("Actual vector type " + actualType.getSimpleName()
+                            + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
+                        actualType.isAssignableFrom(expType));
 
         });
     }
@@ -315,13 +315,7 @@ public class VectorImplementationsTest extends ExternalizeTest<Vector> {
 
     /** {@inheritDoc} */
     @Override public void externalizeTest() {
-        consumeSampleVectors((v, desc) -> {
-            if (v instanceof FunctionVector)
-                return; // todo find out if it's indeed legitimate to skip test here
-            // see eg http://stackoverflow.com/a/22808112
-
-            externalizeTest(v);
-        });
+        consumeSampleVectors((v, desc) -> externalizeTest(v));
     }
 
     /** */

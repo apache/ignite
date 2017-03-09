@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.IgniteFunction;
 import org.apache.ignite.math.IntDoubleToVoidFunction;
 import org.junit.Test;
 
@@ -72,14 +73,14 @@ public class FunctionVectorConstructorTest {
             new FunctionVector(new HashMap<String, Object>(){{
                 put("size", 99);
 
-                put("getFunc", (IntToDoubleFunction) i -> i);
+                put("getFunc", (IgniteFunction<Integer, Double>) i -> (double)i);
             }}).size());
 
         assertEquals("Size from args with setFunc.", 99,
             new FunctionVector(new HashMap<String, Object>(){{
                 put("size", 99);
 
-                put("getFunc", (IntToDoubleFunction) i -> i);
+                put("getFunc", (IgniteFunction<Integer, Double>) i -> (double)i);
 
                 put("setFunc", (IntDoubleToVoidFunction) (integer, aDouble) -> { });
             }}).size());
@@ -88,21 +89,21 @@ public class FunctionVectorConstructorTest {
     /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
         assertEquals("Negative size.", IMPOSSIBLE_SIZE,
-            new FunctionVector(-1, (i) -> i).size());
+            new FunctionVector(-1, (i) -> (double)i).size());
     }
 
     /** */ @Test(expected = AssertionError.class)
     public void zeroSizeTest() {
         assertEquals("0 size.", IMPOSSIBLE_SIZE,
-            new FunctionVector(0, (i) -> i).size());
+            new FunctionVector(0, (i) -> (double)i).size());
     }
 
     /** */ @Test
     public void primitiveTest() {
         assertEquals("1 size.", 1,
-            new FunctionVector(1, (i) -> i).size());
+            new FunctionVector(1, (i) -> (double)i).size());
 
         assertEquals("2 size.", 2,
-            new FunctionVector(2, (i) -> i).size());
+            new FunctionVector(2, (i) -> (double)i).size());
     }
 }

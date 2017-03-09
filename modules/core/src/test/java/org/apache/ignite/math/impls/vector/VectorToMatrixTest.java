@@ -7,7 +7,9 @@ import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -28,12 +30,12 @@ public class VectorToMatrixTest {
     }
 
     /** Ignore test for given vector type. */
-    private boolean ignore(Class clazz){
+    private boolean ignore(Class<? extends Vector> clazz){
         boolean isIgnored = false;
-        Class[] ignoredClasses = {DelegatingVector.class, FunctionVector.class};
+        List<Class<? extends Vector>> ignoredClasses = Arrays.asList(DelegatingVector.class, FunctionVector.class);
 
-        for (Class ignoredClass : ignoredClasses) {
-            if (ignoredClass == clazz){
+        for (Class<? extends Vector> ignoredClass : ignoredClasses) {
+            if (ignoredClass.isAssignableFrom(clazz)){
                 isIgnored = true;
                 break;
             }

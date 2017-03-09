@@ -26,7 +26,7 @@ import java.util.function.*;
  * Read-only or read-write function-based vector storage.
  */
 public class FunctionVectorStorage implements VectorStorage {
-    private IntToDoubleFunction getFunc;
+    private IgniteFunction<Integer, Double> getFunc;
     private IntDoubleToVoidFunction setFunc;
     private int size;
 
@@ -44,7 +44,7 @@ public class FunctionVectorStorage implements VectorStorage {
      * @param getFunc Get function.
      * @param setFunc Optional set function ({@code null} for read-only storage).
      */
-    public FunctionVectorStorage(int size, IntToDoubleFunction getFunc, IntDoubleToVoidFunction setFunc) {
+    public FunctionVectorStorage(int size, IgniteFunction<Integer, Double> getFunc, IntDoubleToVoidFunction setFunc) {
         assert size > 0;
         assert getFunc != null; // At least get function is required.
 
@@ -57,7 +57,7 @@ public class FunctionVectorStorage implements VectorStorage {
      *
      * @return
      */
-    public IntToDoubleFunction getFunction() {
+    public IgniteFunction<Integer, Double> getFunction() {
         return getFunc;
     }
 
@@ -75,7 +75,7 @@ public class FunctionVectorStorage implements VectorStorage {
      * @param size Cardinality of this vector storage.
      * @param getFunc Get function.
      */
-    public FunctionVectorStorage(int size, IntToDoubleFunction getFunc) {
+    public FunctionVectorStorage(int size, IgniteFunction<Integer, Double> getFunc) {
         this(size, getFunc, null);
     }
 
@@ -84,7 +84,7 @@ public class FunctionVectorStorage implements VectorStorage {
     }
 
     @Override public double get(int i) {
-        return getFunc.applyAsDouble(i);
+        return getFunc.apply(i);
     }
 
     @Override public void set(int i, double v) {
@@ -102,7 +102,7 @@ public class FunctionVectorStorage implements VectorStorage {
 
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setFunc = (IntDoubleToVoidFunction)in.readObject();
-        getFunc = (IntToDoubleFunction)in.readObject();
+        getFunc = (IgniteFunction<Integer, Double>)in.readObject();
         size = in.readInt();
     }
 
