@@ -566,7 +566,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             assignments.add(partAssignment);
         }
 
-        printAssignment(assignments);
+//        printAssignment(assignments);
 
         return assignments;
     }
