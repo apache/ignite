@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteException;
@@ -9,6 +26,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,9 +47,10 @@ public class QueryIndexHandler {
     private final IgniteLogger log;
 
     /** All indexes. */
-    private final Map<String, Descriptor> idxs = new ConcurrentHashMap<>();
+    private final Map<IndexKey, Descriptor> idxs = new ConcurrentHashMap<>();
 
     /** Client futures. */
+    // TODO: Special future which is aware of index key, handle it during cache, type undeploy and disconnect.
     private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
 
     /** RW lock. */
@@ -79,23 +98,25 @@ public class QueryIndexHandler {
     /**
      * Handle cache creation.
      *
-     * @param cacheName Cache name.
+     * @param space Space.
      * @param typs Type descriptors.
      */
-    public void onCacheCreated(String cacheName, Collection<QueryTypeDescriptorImpl> typs) {
+    public void onCacheCreated(String space, Collection<QueryTypeDescriptorImpl> typs) {
         lock.writeLock().lock();
 
         try {
             for (QueryTypeDescriptorImpl typ : typs) {
                 for (QueryIndexDescriptorImpl idx : typ.indexes0()) {
-                    Descriptor desc = idxs.get(idx.name());
+                    IndexKey idxKey = new IndexKey(space, idx.name());
+
+                    Descriptor desc = idxs.get(idxKey);
 
                     if (desc != null) {
-                        throw new IgniteException("Duplicate index name [idxName=" + idx.name() +
-                            ", existingCache=" + desc.type().cacheName() + ", newCache=" + cacheName + ']');
+                        throw new IgniteException("Duplicate index name [space=" + space + ", idxName=" + idx.name() +
+                            ", existingTable=" + desc.type().tableName() + ", table=" + typ.tableName() + ']');
                     }
 
-                    idxs.put(idx.name(), new Descriptor(typ, idx));
+                    idxs.put(idxKey, new Descriptor(typ, idx));
                 }
             }
         }
@@ -107,18 +128,18 @@ public class QueryIndexHandler {
     /**
      * Handle cache stop.
      *
-     * @param cacheName Cache name.
+     * @param space Space.
      */
-    public void onCacheStopped(String cacheName) {
+    public void onCacheStopped(String space) {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<String, Descriptor>> iter = idxs.entrySet().iterator();
+            Iterator<Map.Entry<IndexKey, Descriptor>> iter = idxs.entrySet().iterator();
 
             while (iter.hasNext()) {
-                Map.Entry<String, Descriptor> entry = iter.next();
+                Map.Entry<IndexKey, Descriptor> entry = iter.next();
 
-                if (F.eq(cacheName, entry.getValue().type().cacheName()))
+                if (F.eq(space, entry.getValue().type().space()))
                     iter.remove();
             }
         }
@@ -136,10 +157,10 @@ public class QueryIndexHandler {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<String, Descriptor>> iter = idxs.entrySet().iterator();
+            Iterator<Map.Entry<IndexKey, Descriptor>> iter = idxs.entrySet().iterator();
 
             while (iter.hasNext()) {
-                Map.Entry<String, Descriptor> entry = iter.next();
+                Map.Entry<IndexKey, Descriptor> entry = iter.next();
 
                 if (F.eq(desc, entry.getValue().type()))
                     iter.remove();
@@ -160,18 +181,22 @@ public class QueryIndexHandler {
     /**
      * Handle dynamic index creation.
      *
+     * @param space Space.
+     * @param tblName Table name.
      * @param idx Index.
      * @param ifNotExists IF-NOT-EXISTS flag.
      * @return Future completed when index is created.
      */
-    public IgniteInternalFuture<?> onCreateIndex(String cacheName, String tblName, QueryIndex idx,
+    public IgniteInternalFuture<?> onCreateIndex(String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
         String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
+
+        IndexKey idxKey = new IndexKey(space, idxName);
 
         lock.readLock().lock();
 
         try {
-            Descriptor oldIdxDesc = idxs.get(idxName);
+            Descriptor oldIdxDesc = idxs.get(idxKey);
 
             if (oldIdxDesc != null) {
                 // Make sure that index is bound to the same table.
@@ -179,15 +204,15 @@ public class QueryIndexHandler {
 
                 if (!F.eq(oldTblName, tblName)) {
                     return new GridFinishedFuture<>(new IgniteException("Index already exists and is bound to " +
-                        "another table [idxName=" + idxName + ", expTblName=" + oldTblName +
+                        "another table [space=" + space + ", idxName=" + idxName + ", expTblName=" + oldTblName +
                         ", actualTblName=" + tblName + ']'));
                 }
 
                 if (ifNotExists)
                     return new GridFinishedFuture<>();
                 else
-                    return new GridFinishedFuture<>(new IgniteException("Index already exists [idxName=" +
-                        idxName + ']'));
+                    return new GridFinishedFuture<>(new IgniteException("Index already exists [space=" + space +
+                        ", idxName=" + idxName + ']'));
             }
 
             UUID opId = UUID.randomUUID();
@@ -207,9 +232,68 @@ public class QueryIndexHandler {
     }
 
     /**
+     * Index key.
+     */
+    private static class IndexKey {
+        /** Space. */
+        private final String space;
+
+        /** Name. */
+        private final String name;
+
+        /**
+         * Constructor.
+         *
+         * @param space Space.
+         * @param name Name.
+         */
+        public IndexKey(String space, String name) {
+            this.space = space;
+            this.name = name;
+        }
+
+        /**
+         * @return Space.
+         */
+        public String space() {
+            return space;
+        }
+
+        /**
+         * @return Name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * (space != null ? space.hashCode() : 0) + (name != null ? name.hashCode() : 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            IndexKey other = (IndexKey)o;
+
+            return F.eq(name, other.name) && F.eq(space, other.space);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(IndexKey.class, this);
+        }
+    }
+
+    /**
      * Type and index descriptor.
      */
-    private static final class Descriptor {
+    private static class Descriptor {
         /** Type. */
         private final QueryTypeDescriptorImpl typ;
 

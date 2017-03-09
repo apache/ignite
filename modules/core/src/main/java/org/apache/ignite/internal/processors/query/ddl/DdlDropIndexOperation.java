@@ -28,6 +28,9 @@ public class DdlDropIndexOperation extends DdlAbstractIndexOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Space. */
+    private final String space;
+
     /** Index name. */
     private final String idxName;
 
@@ -39,14 +42,23 @@ public class DdlDropIndexOperation extends DdlAbstractIndexOperation {
      *
      * @param cliNodeId Client node ID.
      * @param opId Operation id.
+     * @param space Space.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    DdlDropIndexOperation(UUID cliNodeId, UUID opId, String idxName, boolean ifExists) {
+    DdlDropIndexOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
         super(cliNodeId, opId);
 
+        this.space = space;
         this.idxName = idxName;
         this.ifExists = ifExists;
+    }
+
+    /**
+     * @return Space.
+     */
+    public String space() {
+        return space;
     }
 
     /**

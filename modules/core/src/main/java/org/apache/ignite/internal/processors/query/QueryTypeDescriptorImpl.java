@@ -34,8 +34,8 @@ import java.util.Map;
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
-    /** Cache name. */
-    private final String cacheName;
+    /** Space. */
+    private final String space;
 
     /** */
     private String name;
@@ -85,17 +85,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /**
      * Constructor.
      *
-     * @param cacheName Cache name.
+     * @param space Cache name.
      */
-    public QueryTypeDescriptorImpl(String cacheName) {
-        this.cacheName = cacheName;
+    public QueryTypeDescriptorImpl(String space) {
+        this.space = space;
     }
 
     /**
-     * @return Cache name.
+     * @return Space.
      */
-    public String cacheName() {
-        return cacheName;
+    public String space() {
+        return space;
     }
 
     /**
