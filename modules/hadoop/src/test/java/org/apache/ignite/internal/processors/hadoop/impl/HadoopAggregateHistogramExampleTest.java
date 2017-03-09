@@ -52,8 +52,8 @@ public class HadoopAggregateHistogramExampleTest extends HadoopGenericExampleTes
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-//            System.out.println("usage: inputDirs outDir "
-//                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
+//            Parameters: inputDirs outDir
+//                [numOfReducer [textinputformat|seq [specfile [jobName]]]]
             return new String[] { inDir(fp), outDir(fp),
                 "1", // Numper of reduces other than 1 does not make sense there.
                 "textinputformat"

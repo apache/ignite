@@ -83,7 +83,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
+    @Override protected final boolean isMultiJvm() {
         // This test cannot work in multi JVM node since it uses common static counters.
         return false;
     }

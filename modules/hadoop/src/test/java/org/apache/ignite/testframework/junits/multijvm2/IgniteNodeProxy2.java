@@ -120,16 +120,12 @@ public class IgniteNodeProxy2 {
             // First, check it from the client node viewpoint:
             int act = tmpClientIgnite.cluster().nodes().size() - 1;
 
-            X.println("##### Topology size from the client's viewpoint: " + act);
-
             if (requiredTopSize != act)
                 return false;
 
             // Second, check topology from each node viewpoint:
             for (ClusterNode cn: tmpClientIgnite.cluster().nodes()) {
                 act = -1 + topologySizeFromNodeViewpoint(tmpClientIgnite, cn);
-
-                X.println("##### Topology size from " + cn + " viewpoint: " + act);
 
                 if (requiredTopSize != act)
                     return false;
@@ -187,6 +183,7 @@ public class IgniteNodeProxy2 {
      * @param idx The index.
      * @return The node name by given index.
      */
+    @SuppressWarnings("unused")
     public static String nodeName(int idx) {
         return nameOrderList.get(idx);
     }
@@ -226,6 +223,7 @@ public class IgniteNodeProxy2 {
 
         cfg.setWorkDirectory(params.isUniqueWorkDir() ? createUniqueDir("work").getAbsolutePath() : null);
 
+        @SuppressWarnings("deprecation")
         String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id).setConsistentId(id), true);
 
         Collection<String> filteredJvmArgs = new ArrayList<>();

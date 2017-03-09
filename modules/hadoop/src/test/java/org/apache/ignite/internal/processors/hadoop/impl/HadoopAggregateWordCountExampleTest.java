@@ -54,8 +54,8 @@ public class HadoopAggregateWordCountExampleTest extends HadoopGenericExampleTes
         }
 
         @Override String[] parameters(FrameworkParameters fp) {
-//            System.out.println("usage: inputDirs outDir "
-//                + "[numOfReducer [textinputformat|seq [specfile [jobName]]]]");
+            // Parameters: inputDirs outDir
+            //  [numOfReducer [textinputformat|seq [specfile [jobName]]]]
             return new String[] {
                 inDir(fp),
                 outDir(fp),

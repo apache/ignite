@@ -29,7 +29,7 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
 
         /** {@inheritDoc} */
         @Override String[] parameters(FrameworkParameters fp) {
-//      Usage: java org.apache.hadoop.examples.pi.DistBbp <b> <nThreads> <nJobs> <type> <nPart> <remoteDir> <localDir>
+//      Usage: DistBbp <b> <nThreads> <nJobs> <type> <nPart> <remoteDir> <localDir>:
 //            <b> The number of bits to skip, i.e. compute the (b+1)th position.
 //            <nThreads> The number of working threads.
 //            <nJobs> The number of jobs per sum.
@@ -67,7 +67,7 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
         // See org.apache.hadoop.examples.pi.Parser.VERBOSE_PROPERTY
         conf.set("pi.parser.verbose", "true");
 
-        conf.set("pi.job.separation.seconds", "0");
+        conf.set("pi.job.separation.seconds", "0"); // This allows to speed up execution.
 
         conf.set(MRConfig.FRAMEWORK_NAME, "ignite");
         conf.set(MRConfig.MASTER_ADDRESS, "localhost:11211");

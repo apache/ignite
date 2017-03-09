@@ -91,8 +91,12 @@ public class HadoopAbstract2Test extends GridCommonAbstractTest {
     /**
      * Process start parameters for indexed and named node.
      *
+     * @param idx The node index.
+     * @param nodeName The node name.
+     *
      * @return The parameters.
      */
+    @SuppressWarnings("UnusedParameters")
     protected NodeProcessParameters getParameters(int idx, String nodeName) {
         return NodeProcessParameters.DFLT;
     }

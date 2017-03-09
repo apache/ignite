@@ -102,9 +102,9 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                     assert lfs.getLen() > 0;
                 }
 
-//                TODO: Local MR execution works okay, but manual setting of this
-//                TODO: id for some reason is required for Ignite.
-//                TODO: investigate, why this happens.
+                // TODO: Local MR execution works okay, but manual setting of this
+                // TODO: id for some reason is required for Ignite.
+                // TODO: investigate, why this happens.
                 conf.set(MRJobConfig.TASK_ATTEMPT_ID, "attempt_000000000000_0000_m_000000_0");
             }
 
