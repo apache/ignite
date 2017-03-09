@@ -314,9 +314,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5, 0);
-        waitRebalanceFinished(ignite2, 5, 0);
-        waitRebalanceFinished(ignite3, 5, 0);
+        waitRebalanceFinished(ignite0, 5);
+        waitRebalanceFinished(ignite2, 5);
+        waitRebalanceFinished(ignite3, 5);
     }
 
     /**
@@ -434,6 +434,28 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         assertTrue(top.rebalanceFinished(topVer0));
     }
+
+    /**
+     * @param ignite Ignite.
+     * @param topVer Topology version.
+     * @throws Exception If failed.
+     */
+    private void waitRebalanceFinished(Ignite ignite, long topVer) throws Exception {
+        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer, 0);
+        final AffinityTopologyVersion topVer1 = new AffinityTopologyVersion(topVer, 1);
+
+        final GridDhtPartitionTopology top =
+            ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return top.rebalanceFinished(topVer0) || top.rebalanceFinished(topVer1);
+            }
+        }, 5000);
+
+        assertTrue(top.rebalanceFinished(topVer0) || top.rebalanceFinished(topVer1));
+    }
+
 
     /**
      * @throws Exception If failed.
