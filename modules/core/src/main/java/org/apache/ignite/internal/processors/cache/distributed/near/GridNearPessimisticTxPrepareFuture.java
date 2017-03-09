@@ -184,8 +184,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      *
      */
     private void preparePessimistic() {
-        boolean mappingKnown = true;
-
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
@@ -201,9 +199,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionTopology top = cacheCtx.topology();
-
-                if (mappingKnown && (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer)))
-                    mappingKnown = false;
 
                 nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
             }
@@ -237,9 +232,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         checkOnePhase(txMapping);
 
-        if (mappingKnown && tx.onePhaseCommit())
-            mappingKnown = false;
-
         long timeout = tx.remainingTime();
 
         if (timeout == -1) {
@@ -262,7 +254,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 m.writes(),
                 m.near(),
                 txMapping.transactionNodes(),
-                mappingKnown,
                 true,
                 tx.onePhaseCommit(),
                 tx.needReturnValue() && tx.implicit(),

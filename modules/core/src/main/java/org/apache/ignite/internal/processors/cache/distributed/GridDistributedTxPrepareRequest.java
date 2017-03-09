@@ -74,9 +74,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** */
     private static final int SYSTEM_TX_FLAG_MASK = 0x10;
 
-    /** */
-    private static final int MAPPING_KNOWN_FLAG_MASK = 0x20;
-
     /** Collection to message converter. */
     private static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
         @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
@@ -177,7 +174,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
-        boolean mappingKnown,
         boolean retVal,
         boolean last,
         boolean onePhaseCommit,
@@ -202,11 +198,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         setFlag(tx.isInvalidate(), INVALIDATE_FLAG_MASK);
         setFlag(onePhaseCommit, ONE_PHASE_COMMIT_FLAG_MASK);
         setFlag(last, LAST_REQ_FLAG_MASK);
-        setFlag(mappingKnown, MAPPING_KNOWN_FLAG_MASK);
-    }
-
-    public final boolean mappingKnown() {
-        return isFlag(MAPPING_KNOWN_FLAG_MASK);
     }
 
     /**

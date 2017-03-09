@@ -500,7 +500,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     m.writes(),
                     m.near(),
                     txMapping.transactionNodes(),
-                    false,
                     m.last(),
                     tx.onePhaseCommit(),
                     tx.needReturnValue() && tx.implicit(),
