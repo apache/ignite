@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -28,15 +27,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -44,10 +40,6 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
@@ -62,8 +54,6 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -77,6 +67,12 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
+import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
+import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryMethodsAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryPropertyAccessor;
+import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -84,12 +80,8 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
@@ -101,9 +93,6 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 
 /**
  * Indexing processor.
@@ -144,10 +133,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Type descriptors. */
-    private final Map<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
+    private final Map<QueryTypeIdKey, QueryTypeDescriptorImpl> types = new ConcurrentHashMap8<>();
 
     /** Type descriptors. */
-    private final ConcurrentMap<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap8<>();
 
     /** */
     private ExecutorService execSvc;
@@ -235,7 +224,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (F.isEmpty(qryEntity.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + qryEntity);
 
-                    TypeDescriptor desc = new TypeDescriptor();
+                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
@@ -296,16 +285,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             mustDeserializeClss.add(valCls);
                     }
 
-                    TypeId typeId;
-                    TypeId altTypeId = null;
+                    QueryTypeIdKey typeId;
+                    QueryTypeIdKey altTypeId = null;
 
                     if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(qryEntity, desc);
 
-                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                        typeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
 
                         if (valCls != null)
-                            altTypeId = new TypeId(ccfg.getName(), valCls);
+                            altTypeId = new QueryTypeIdKey(ccfg.getName(), valCls);
 
                         if (!cctx.customAffinityMapper() && qryEntity.getKeyType() != null) {
                             // Need to setup affinity key for distributed joins.
@@ -322,14 +311,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                             String affField =
-                                ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyCls);
+                                ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                             if (affField != null)
                                 desc.affinityKey(affField);
                         }
 
-                        typeId = new TypeId(ccfg.getName(), valCls);
-                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                        typeId = new QueryTypeIdKey(ccfg.getName(), valCls);
+                        altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
@@ -351,7 +340,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
                         continue;
 
-                    TypeDescriptor desc = new TypeDescriptor();
+                    QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
@@ -405,22 +394,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             mustDeserializeClss.add(valCls);
                     }
 
-                    TypeId typeId;
-                    TypeId altTypeId = null;
+                    QueryTypeIdKey typeId;
+                    QueryTypeIdKey altTypeId = null;
 
                     if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(meta, desc);
 
-                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        typeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
 
                         if (valCls != null)
-                            altTypeId = new TypeId(ccfg.getName(), valCls);
+                            altTypeId = new QueryTypeIdKey(ccfg.getName(), valCls);
                     }
                     else {
                         processClassMeta(meta, desc, coCtx);
 
-                        typeId = new TypeId(ccfg.getName(), valCls);
-                        altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        typeId = new QueryTypeIdKey(ccfg.getName(), valCls);
+                        altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
@@ -472,8 +461,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?, ?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
-        if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
+    private void addTypeByName(CacheConfiguration<?, ?> ccfg, QueryTypeDescriptorImpl desc) throws IgniteCheckedException {
+        if (typesByName.putIfAbsent(new QueryTypeNameKey(ccfg.getName(), desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
                 "in cache '" + ccfg.getName() + "'.");
     }
@@ -546,15 +535,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             idx.unregisterCache(cctx.config());
 
-            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
+            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
             while (it.hasNext()) {
-                Map.Entry<TypeId, TypeDescriptor> entry = it.next();
+                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> entry = it.next();
 
-                if (F.eq(cctx.name(), entry.getKey().space)) {
+                if (F.eq(cctx.name(), entry.getKey().space())) {
                     it.remove();
 
-                    typesByName.remove(new TypeName(cctx.name(), entry.getValue().name()));
+                    typesByName.remove(new QueryTypeNameKey(cctx.name(), entry.getValue().name()));
                 }
             }
         }
@@ -581,7 +570,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return rebuildIndexes(
                 space,
                 typesByName.get(
-                    new TypeName(
+                    new QueryTypeNameKey(
                         space,
                         valTypeName)));
         }
@@ -595,7 +584,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
+    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final QueryTypeDescriptorImpl desc) {
         if (idx == null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
 
@@ -645,8 +634,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
 
-            for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
+            for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet())
+                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space(), e.getValue()));
 
             fut.markInitialized();
 
@@ -698,22 +687,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             Class<?> valCls = null;
 
-            TypeId id;
+            QueryTypeIdKey id;
 
             boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
 
             if (binaryVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
-                id = new TypeId(space, typeId);
+                id = new QueryTypeIdKey(space, typeId);
             }
             else {
                 valCls = val.value(coctx, false).getClass();
 
-                id = new TypeId(space, valCls);
+                id = new QueryTypeIdKey(space, valCls);
             }
 
-            TypeDescriptor desc = types.get(id);
+            QueryTypeDescriptorImpl desc = types.get(id);
 
             if (desc == null || !desc.registered())
                 return;
@@ -778,7 +767,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, clause, cctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                 @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                    TypeDescriptor type = typesByName.get(new TypeName(space, resType));
+                    QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, resType));
 
                     if (type == null || !type.registered())
                         throw new CacheException("Failed to find SQL table for type: " + resType);
@@ -867,8 +856,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String sqlQry = qry.getSql();
                         Object[] params = qry.getArgs();
 
-                        TypeDescriptor typeDesc = typesByName.get(
-                            new TypeName(
+                        QueryTypeDescriptorImpl typeDesc = typesByName.get(
+                            new QueryTypeNameKey(
                                 space,
                                 type));
 
@@ -1169,7 +1158,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                        TypeDescriptor type = typesByName.get(new TypeName(space, resType));
+                        QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, resType));
 
                         if (type == null || !type.registered())
                             throw new CacheException("Failed to find SQL table for type: " + resType);
@@ -1259,18 +1248,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
 
         try {
-            Iterator<Map.Entry<TypeId, TypeDescriptor>> it = types.entrySet().iterator();
+            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
             while (it.hasNext()) {
-                Map.Entry<TypeId, TypeDescriptor> e = it.next();
+                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e = it.next();
 
-                if (!F.eq(e.getKey().space, space))
+                if (!F.eq(e.getKey().space(), space))
                     continue;
 
-                TypeDescriptor desc = e.getValue();
+                QueryTypeDescriptorImpl desc = e.getValue();
 
-                if (ldr.equals(U.detectClassLoader(desc.valCls)) || ldr.equals(U.detectClassLoader(desc.keyCls))) {
-                    idx.unregisterType(e.getKey().space, desc);
+                if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
+                    ldr.equals(U.detectClassLoader(desc.keyClass()))) {
+                    idx.unregisterType(e.getKey().space(), desc);
 
                     it.remove();
                 }
@@ -1289,7 +1279,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param coCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d, CacheObjectContext coCtx)
+    private void processClassMeta(CacheTypeMetadata meta, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1336,7 +1326,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
+            QueryClassProperty prop = buildClassProperty(
                 keyCls,
                 valCls,
                 entry.getKey(),
@@ -1361,7 +1351,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void addToIndex(
-        TypeDescriptor d,
+        QueryTypeDescriptorImpl d,
         Class<?> keyCls,
         Class<?> valCls,
         String pathStr,
@@ -1380,7 +1370,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             propCls = valCls;
         }
         else {
-            ClassProperty prop = buildClassProperty(
+            QueryClassProperty prop = buildClassProperty(
                 keyCls,
                 valCls,
                 pathStr,
@@ -1399,7 +1389,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 idxName = propName + "_idx";
 
             if (idxOrder == 0) // Add index only on the first field.
-                d.addIndex(idxName, isGeometryClass(propCls) ? GEO_SPATIAL : SORTED);
+                d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             if (idxType == IndexType.TEXT)
                 d.addFieldToTextIndex(propName);
@@ -1415,7 +1405,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processBinaryMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processBinaryMeta(CacheTypeMetadata meta, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1423,31 +1413,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, false);
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases, null);
 
             d.addProperty(prop, false);
 
@@ -1465,7 +1455,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases,
+                    QueryBinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases,
                         null);
 
                     d.addProperty(prop, false);
@@ -1480,9 +1470,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases, null);
 
-            if (!d.props.containsKey(prop.name()))
+            if (!d.properties().containsKey(prop.name()))
                 d.addProperty(prop, false);
         }
     }
@@ -1494,7 +1484,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processBinaryMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processBinaryMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
@@ -1527,8 +1517,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
-            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class, true),
-                aliases, isKeyField);
+            QueryBinaryProperty prop = buildBinaryProperty(entry.getKey(),
+                U.classForName(entry.getValue(), Object.class, true), aliases, isKeyField);
 
             d.addProperty(prop, false);
         }
@@ -1545,7 +1535,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void processClassMeta(
         QueryEntity qryEntity,
-        TypeDescriptor d,
+        QueryTypeDescriptorImpl d,
         CacheObjectContext coCtx
     ) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
@@ -1554,7 +1544,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(
+            QueryClassProperty prop = buildClassProperty(
                 d.keyClass(),
                 d.valueClass(),
                 entry.getKey(),
@@ -1575,7 +1565,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor to populate.
      * @throws IgniteCheckedException If failed to build index information.
      */
-    private void processIndexes(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processIndexes(QueryEntity qryEntity, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
         if (!F.isEmpty(qryEntity.getIndexes())) {
             Map<String, String> aliases = qryEntity.getAliases();
 
@@ -1591,7 +1581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 QueryIndexType idxTyp = idx.getIndexType();
 
                 if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp == QueryIndexType.SORTED ? SORTED : GEO_SPATIAL);
+                    d.addIndex(idxName, idxTyp);
 
                     int i = 0;
 
@@ -1637,11 +1627,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @return Binary property.
      */
-    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
+    private QueryBinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String, String> aliases,
         @Nullable Boolean isKeyField) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
-        BinaryProperty res = null;
+        QueryBinaryProperty res = null;
 
         StringBuilder fullName = new StringBuilder();
 
@@ -1654,7 +1644,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new BinaryProperty(prop, res, resType, isKeyField, alias);
+            res = new QueryBinaryProperty(ctx, log, prop, res, resType, isKeyField, alias);
         }
 
         return res;
@@ -1669,9 +1659,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
-    private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
+    private static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
         Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
-        ClassProperty res = buildClassProperty(
+        QueryClassProperty res = buildClassProperty(
             true,
             keyCls,
             pathStr,
@@ -1698,11 +1688,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param aliases Aliases.
      * @return Property instance corresponding to the given path.
      */
-    private static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
+    private static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
         Map<String,String> aliases, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
-        ClassProperty res = null;
+        QueryClassProperty res = null;
 
         StringBuilder fullName = new StringBuilder();
 
@@ -1714,12 +1704,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            PropertyAccessor accessor = findProperty(prop, cls);
+            QueryPropertyAccessor accessor = findProperty(prop, cls);
 
             if (accessor == null)
                 return null;
 
-            ClassProperty tmp = new ClassProperty(accessor, key, alias, coCtx);
+            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, coCtx);
 
             tmp.parent(res);
 
@@ -1744,10 +1734,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Collection<GridQueryTypeDescriptor> spaceTypes = new ArrayList<>(
             Math.min(10, types.size()));
 
-        for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet()) {
-            TypeDescriptor desc = e.getValue();
+        for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
+            QueryTypeDescriptorImpl desc = e.getValue();
 
-            if (desc.registered() && F.eq(e.getKey().space, space))
+            if (desc.registered() && F.eq(e.getKey().space(), space))
                 spaceTypes.add(desc);
         }
 
@@ -1763,7 +1753,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws IgniteCheckedException {
-        TypeDescriptor type = typesByName.get(new TypeName(space, typeName));
+        QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
         if (type == null || !type.registered())
             throw new IgniteCheckedException("Failed to find type descriptor for type name: " + typeName);
@@ -1833,7 +1823,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cls Class to search for a member in.
      * @return Member for given name.
      */
-    @Nullable private static PropertyAccessor findProperty(String prop, Class<?> cls) {
+    @Nullable private static QueryPropertyAccessor findProperty(String prop, Class<?> cls) {
         StringBuilder getBldr = new StringBuilder("get");
         getBldr.append(prop);
         getBldr.setCharAt(3, Character.toUpperCase(getBldr.charAt(3)));
@@ -1854,10 +1844,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             catch (NoSuchMethodException ignore) {
                 // Have getter, but no setter - return read-only accessor.
-                return new ReadOnlyMethodsAccessor(getter, prop);
+                return new QueryReadOnlyMethodsAccessor(getter, prop);
             }
 
-            return new MethodsAccessor(getter, setter, prop);
+            return new QueryMethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignore) {
             // No-op.
@@ -1881,10 +1871,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             catch (NoSuchMethodException ignore) {
                 // Have getter, but no setter - return read-only accessor.
-                return new ReadOnlyMethodsAccessor(getter, prop);
+                return new QueryReadOnlyMethodsAccessor(getter, prop);
             }
 
-            return new MethodsAccessor(getter, setter, prop);
+            return new QueryMethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignore) {
             // No-op.
@@ -1894,7 +1884,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         while (cls0 != null)
             try {
-                return new FieldAccessor(cls0.getDeclaredField(prop));
+                return new QueryFieldAccessor(cls0.getDeclaredField(prop));
             }
             catch (NoSuchFieldException ignored) {
                 cls0 = cls0.getSuperclass();
@@ -1912,10 +1902,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             catch (NoSuchMethodException ignore) {
                 // Have getter, but no setter - return read-only accessor.
-                return new ReadOnlyMethodsAccessor(getter, prop);
+                return new QueryReadOnlyMethodsAccessor(getter, prop);
             }
 
-            return new MethodsAccessor(getter, setter, prop);
+            return new QueryMethodsAccessor(getter, setter, prop);
         }
         catch (NoSuchMethodException ignored) {
             // No-op.
@@ -1940,1005 +1930,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Description of type property.
-     */
-    private static class ClassProperty implements GridQueryProperty {
-        /** */
-        private final PropertyAccessor accessor;
-
-        /** */
-        private final boolean key;
-
-        /** */
-        private ClassProperty parent;
-
-        /** */
-        private final String name;
-
-        /** */
-        private final CacheObjectContext coCtx;
-
-        /**
-         * Constructor.
-         *
-         * @param accessor Way of accessing the property.
-         */
-        ClassProperty(PropertyAccessor accessor, boolean key, String name, @Nullable CacheObjectContext coCtx) {
-            this.accessor = accessor;
-
-            this.key = key;
-
-            this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
-
-            this.coCtx = coCtx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = unwrap(this.key ? key : val);
-
-            if (parent != null)
-                x = parent.value(key, val);
-
-            if (x == null)
-                return null;
-
-            return accessor.getValue(x);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
-            Object x = unwrap(this.key ? key : val);
-
-            if (parent != null)
-                x = parent.value(key, val);
-
-            if (x == null)
-                return;
-
-            accessor.setValue(x, propVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean key() {
-            return key;
-        }
-
-        /**
-         * Unwraps cache object, if needed.
-         *
-         * @param o Object to unwrap.
-         * @return Unwrapped object.
-         */
-        private Object unwrap(Object o) {
-            return coCtx == null ? o : o instanceof CacheObject ? ((CacheObject)o).value(coCtx, false) : o;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> type() {
-            return accessor.getType();
-        }
-
-        /**
-         * @param parent Parent property if this is embeddable element.
-         */
-        public void parent(ClassProperty parent) {
-            this.parent = parent;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ClassProperty.class, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryProperty parent() {
-            return parent;
-        }
-    }
-
-    /**
-     *
-     */
-    private class BinaryProperty implements GridQueryProperty {
-        /** Property name. */
-        private String propName;
-
-        /** */
-        private String alias;
-
-        /** Parent property. */
-        private BinaryProperty parent;
-
-        /** Result class. */
-        private Class<?> type;
-
-        /** */
-        private volatile int isKeyProp;
-
-        /** Binary field to speed-up deserialization. */
-        private volatile BinaryField field;
-
-        /** Flag indicating that we already tried to take a field. */
-        private volatile boolean fieldTaken;
-
-        /** Whether user was warned about missing property. */
-        private volatile boolean warned;
-
-        /**
-         * Constructor.
-         *
-         * @param propName Property name.
-         * @param parent Parent property.
-         * @param type Result type.
-         * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
-         * @param alias Field alias.
-         */
-        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, @Nullable Boolean key, String alias) {
-            super();
-            this.propName = propName;
-            this.alias = F.isEmpty(alias) ? propName : alias;
-            this.parent = parent;
-            this.type = type;
-
-            if (key != null)
-                this.isKeyProp = key ? 1 : -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object obj;
-
-            if (parent != null) {
-                obj = parent.value(key, val);
-
-                if (obj == null)
-                    return null;
-
-                if (!ctx.cacheObjects().isBinaryObject(obj))
-                    throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
-                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
-            }
-            else {
-                int isKeyProp0 = isKeyProp;
-
-                if (isKeyProp0 == 0) {
-                    // Key is allowed to be a non-binary object here.
-                    // We check key before value consistently with ClassProperty.
-                    if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
-                        isKeyProp = isKeyProp0 = 1;
-                    else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
-                        isKeyProp = isKeyProp0 = -1;
-                    else {
-                        if (!warned) {
-                            U.warn(log, "Neither key nor value have property \"" + propName + "\" " +
-                                "(is cache indexing configured correctly?)");
-
-                            warned = true;
-                        }
-
-                        return null;
-                    }
-                }
-
-                obj = isKeyProp0 == 1 ? key : val;
-            }
-
-            if (obj instanceof BinaryObject) {
-                BinaryObject obj0 = (BinaryObject) obj;
-                return fieldValue(obj0);
-            }
-            else if (obj instanceof BinaryObjectBuilder) {
-                BinaryObjectBuilder obj0 = (BinaryObjectBuilder)obj;
-
-                return obj0.getField(name());
-            }
-            else
-                throw new IgniteCheckedException("Unexpected binary object class [type=" + obj.getClass() + ']');
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(Object key, Object val, Object propVal) throws IgniteCheckedException {
-            Object obj = key() ? key : val;
-
-            if (obj == null)
-                return;
-
-            Object srcObj = obj;
-
-            if (!(srcObj instanceof BinaryObjectBuilder))
-                throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
-
-            if (parent != null)
-                obj = parent.value(key, val);
-
-            boolean needsBuild = false;
-
-            if (obj instanceof BinaryObjectExImpl) {
-                if (parent == null)
-                    throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
-
-                needsBuild = true;
-
-                obj = ((BinaryObjectExImpl)obj).toBuilder();
-            }
-
-            if (!(obj instanceof BinaryObjectBuilder))
-                throw new UnsupportedOperationException("Individual properties can be set for binary builders only");
-
-            setValue0((BinaryObjectBuilder) obj, propName, propVal, type());
-
-            if (needsBuild) {
-                obj = ((BinaryObjectBuilder) obj).build();
-
-                assert parent != null;
-
-                // And now let's set this newly constructed object to parent
-                setValue0((BinaryObjectBuilder) srcObj, parent.propName, obj, obj.getClass());
-            }
-        }
-
-        /**
-         * @param builder Object builder.
-         * @param field Field name.
-         * @param val Value to set.
-         * @param valType Type of {@code val}.
-         * @param <T> Value type.
-         */
-        private <T> void setValue0(BinaryObjectBuilder builder, String field, Object val, Class<T> valType) {
-            //noinspection unchecked
-            builder.setField(field, (T)val, valType);
-        }
-
-        /**
-         * Get binary field for the property.
-         *
-         * @param obj Target object.
-         * @return Binary field.
-         */
-        private BinaryField binaryField(BinaryObject obj) {
-            BinaryField field0 = field;
-
-            if (field0 == null && !fieldTaken) {
-                BinaryType type = obj instanceof BinaryObjectEx ? ((BinaryObjectEx)obj).rawType() : obj.type();
-
-                if (type != null) {
-                    field0 = type.field(propName);
-
-                    assert field0 != null;
-
-                    field = field0;
-                }
-
-                fieldTaken = true;
-            }
-
-            return field0;
-        }
-
-        /**
-         * Gets field value for the given binary object.
-         *
-         * @param obj Binary object.
-         * @return Field value.
-         */
-        @SuppressWarnings("IfMayBeConditional")
-        private Object fieldValue(BinaryObject obj) {
-            BinaryField field = binaryField(obj);
-
-            if (field != null)
-                return field.value(obj);
-            else
-                return obj.field(propName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return alias;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean key() {
-            int isKeyProp0 = isKeyProp;
-
-            if (isKeyProp0 == 0)
-                throw new IllegalStateException("Ownership flag not set for binary property. Have you set 'keyFields'" +
-                    " property of QueryEntity in programmatic or XML configuration?");
-
-            return isKeyProp0 == 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryProperty parent() {
-            return parent;
-        }
-    }
-
-    /**
-     * Descriptor of type.
-     */
-    private static class TypeDescriptor implements GridQueryTypeDescriptor {
-        /** */
-        private String name;
-
-        /** */
-        private String tblName;
-
-        /** Value field names and types with preserved order. */
-        @GridToStringInclude
-        private final Map<String, Class<?>> fields = new LinkedHashMap<>();
-
-        /** */
-        @GridToStringExclude
-        private final Map<String, GridQueryProperty> props = new HashMap<>();
-
-        /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
-        private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
-
-        /** */
-        @GridToStringInclude
-        private final Map<String, IndexDescriptor> indexes = new HashMap<>();
-
-        /** */
-        private IndexDescriptor fullTextIdx;
-
-        /** */
-        private Class<?> keyCls;
-
-        /** */
-        private Class<?> valCls;
-
-        /** */
-        private String keyTypeName;
-
-        /** */
-        private String valTypeName;
-
-        /** */
-        private boolean valTextIdx;
-
-        /** */
-        private String affKey;
-
-        /** SPI can decide not to register this type. */
-        private boolean registered;
-
-        /**
-         * @return {@code True} if type registration in SPI was finished and type was not rejected.
-         */
-        boolean registered() {
-            return registered;
-        }
-
-        /**
-         * @param registered Sets registered flag.
-         */
-        void registered(boolean registered) {
-            this.registered = registered;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /**
-         * Sets type name.
-         *
-         * @param name Name.
-         */
-        void name(String name) {
-            this.name = name;
-        }
-
-        /**
-         * Gets table name for type.
-         * @return Table name.
-         */
-        public String tableName() {
-            return tblName;
-        }
-
-        /**
-         * Sets table name for type.
-         *
-         * @param tblName Table name.
-         */
-        public void tableName(String tblName) {
-            this.tblName = tblName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Class<?>> fields() {
-            return fields;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryProperty property(String name) {
-            GridQueryProperty res = props.get(name);
-
-            if (res == null)
-                res = uppercaseProps.get(name.toUpperCase());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
-            assert field != null;
-
-            GridQueryProperty prop = property(field);
-
-            if (prop == null)
-                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
-
-            return (T)prop.value(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public void setValue(String field, Object key, Object val, Object propVal)
-            throws IgniteCheckedException {
-            assert field != null;
-
-            GridQueryProperty prop = property(field);
-
-            if (prop == null)
-                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
-
-            prop.setValue(key, val, propVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
-        }
-
-        /**
-         * Adds index.
-         *
-         * @param idxName Index name.
-         * @param type Index type.
-         * @return Index descriptor.
-         * @throws IgniteCheckedException In case of error.
-         */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) throws IgniteCheckedException {
-            IndexDescriptor idx = new IndexDescriptor(type);
-
-            if (indexes.put(idxName, idx) != null)
-                throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
-
-            return idx;
-        }
-
-        /**
-         * Adds field to index.
-         *
-         * @param idxName Index name.
-         * @param field Field name.
-         * @param orderNum Fields order number in index.
-         * @param descending Sorting order.
-         * @throws IgniteCheckedException If failed.
-         */
-        public void addFieldToIndex(String idxName, String field, int orderNum,
-            boolean descending) throws IgniteCheckedException {
-            IndexDescriptor desc = indexes.get(idxName);
-
-            if (desc == null)
-                desc = addIndex(idxName, SORTED);
-
-            desc.addField(field, orderNum, descending);
-        }
-
-        /**
-         * Adds field to text index.
-         *
-         * @param field Field name.
-         */
-        public void addFieldToTextIndex(String field) {
-            if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(FULLTEXT);
-
-                indexes.put(null, fullTextIdx);
-            }
-
-            fullTextIdx.addField(field, 0, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> valueClass() {
-            return valCls;
-        }
-
-        /**
-         * Sets value class.
-         *
-         * @param valCls Value class.
-         */
-        void valueClass(Class<?> valCls) {
-            A.notNull(valCls, "Value class must not be null");
-            this.valCls = valCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> keyClass() {
-            return keyCls;
-        }
-
-        /**
-         * Set key class.
-         *
-         * @param keyCls Key class.
-         */
-        void keyClass(Class<?> keyCls) {
-            this.keyCls = keyCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String keyTypeName() {
-            return keyTypeName;
-        }
-
-        /**
-         * Set key type name.
-         *
-         * @param keyTypeName Key type name.
-         */
-        public void keyTypeName(String keyTypeName) {
-            this.keyTypeName = keyTypeName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String valueTypeName() {
-            return valTypeName;
-        }
-
-        /**
-         * Set value type name.
-         *
-         * @param valTypeName Value type name.
-         */
-        public void valueTypeName(String valTypeName) {
-            this.valTypeName = valTypeName;
-        }
-
-        /**
-         * Adds property to the type descriptor.
-         *
-         * @param prop Property.
-         * @param failOnDuplicate Fail on duplicate flag.
-         * @throws IgniteCheckedException In case of error.
-         */
-        public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
-            String name = prop.name();
-
-            if (props.put(name, prop) != null && failOnDuplicate)
-                throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
-
-            if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
-                throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
-
-            fields.put(name, prop.type());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean valueTextIndex() {
-            return valTextIdx;
-        }
-
-        /**
-         * Sets if this value should be text indexed.
-         *
-         * @param valTextIdx Flag value.
-         */
-        public void valueTextIndex(boolean valTextIdx) {
-            this.valTextIdx = valTextIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String affinityKey() {
-            return affKey;
-        }
-
-        /**
-         * @param affKey Affinity key field.
-         */
-        void affinityKey(String affKey) {
-            this.affKey = affKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Index descriptor.
-     */
-    private static class IndexDescriptor implements GridQueryIndexDescriptor {
-        /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
-            new Comparator<T2<String, Integer>>() {
-                @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    if (o1.get2().equals(o2.get2())) // Order is equal, compare field names to avoid replace in Set.
-                        return o1.get1().compareTo(o2.get1());
-
-                    return o1.get2() < o2.get2() ? -1 : 1;
-                }
-            });
-
-        /** Fields which should be indexed in descending order. */
-        private Collection<String> descendings;
-
-        /** */
-        private final GridQueryIndexType type;
-
-        /**
-         * @param type Type.
-         */
-        private IndexDescriptor(GridQueryIndexType type) {
-            assert type != null;
-
-            this.type = type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> fields() {
-            Collection<String> res = new ArrayList<>(fields.size());
-
-            for (T2<String, Integer> t : fields)
-                res.add(t.get1());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean descending(String field) {
-            return descendings != null && descendings.contains(field);
-        }
-
-        /**
-         * Adds field to this index.
-         *
-         * @param field Field name.
-         * @param orderNum Field order number in this index.
-         * @param descending Sort order.
-         */
-        public void addField(String field, int orderNum, boolean descending) {
-            fields.add(new T2<>(field, orderNum));
-
-            if (descending) {
-                if (descendings == null)
-                    descendings  = new HashSet<>();
-
-                descendings.add(field);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IndexDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Identifying TypeDescriptor by space and value class.
-     */
-    private static class TypeId {
-        /** */
-        private final String space;
-
-        /** Value type. */
-        private final Class<?> valType;
-
-        /** Value type ID. */
-        private final int valTypeId;
-
-        /**
-         * Constructor.
-         *
-         * @param space Space name.
-         * @param valType Value type.
-         */
-        private TypeId(String space, Class<?> valType) {
-            assert valType != null;
-
-            this.space = space;
-            this.valType = valType;
-
-            valTypeId = 0;
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param space Space name.
-         * @param valTypeId Value type ID.
-         */
-        private TypeId(String space, int valTypeId) {
-            this.space = space;
-            this.valTypeId = valTypeId;
-
-            valType = null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TypeId typeId = (TypeId)o;
-
-            return (valTypeId == typeId.valTypeId) &&
-                (valType != null ? valType == typeId.valType : typeId.valType == null) &&
-                (space != null ? space.equals(typeId.space) : typeId.space == null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + (valType != null ? valType.hashCode() : valTypeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeId.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TypeName {
-        /** */
-        private final String space;
-
-        /** */
-        private final String typeName;
-
-        /**
-         * @param space Space name.
-         * @param typeName Type name.
-         */
-        private TypeName(@Nullable String space, String typeName) {
-            assert !F.isEmpty(typeName) : typeName;
-
-            this.space = space;
-            this.typeName = typeName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TypeName other = (TypeName)o;
-
-            return (space != null ? space.equals(other.space) : other.space == null) &&
-                typeName.equals(other.typeName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return 31 * (space != null ? space.hashCode() : 0) + typeName.hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeName.class, this);
-        }
-    }
-
-    /**
      * The way to index.
      */
     private enum IndexType {
         /** Ascending index. */
         ASC,
+
         /** Descending index. */
         DESC,
+
         /** Text index. */
         TEXT
-    }
-
-    /** Way of accessing a property - either via field or getter and setter methods. */
-    private interface PropertyAccessor {
-        /**
-         * Get property value from given object.
-         *
-         * @param obj Object to retrieve property value from.
-         * @return Property value.
-         * @throws IgniteCheckedException if failed.
-         */
-        public Object getValue(Object obj) throws IgniteCheckedException;
-
-        /**
-         * Set property value on given object.
-         *
-         * @param obj Object to set property value on.
-         * @param newVal Property value.
-         * @throws IgniteCheckedException if failed.
-         */
-        public void setValue(Object obj, Object newVal)throws IgniteCheckedException;
-
-        /**
-         * @return Name of this property.
-         */
-        public String getPropertyName();
-
-        /**
-         * @return Type of the value of this property.
-         */
-        public Class<?> getType();
-    }
-
-    /** Accessor that deals with fields. */
-    private static final class FieldAccessor implements PropertyAccessor {
-        /** Field to access. */
-        private final Field fld;
-
-        /** */
-        private FieldAccessor(Field fld) {
-            fld.setAccessible(true);
-
-            this.fld = fld;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getValue(Object obj) throws IgniteCheckedException {
-            try {
-                return fld.get(obj);
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to get field value", e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
-            try {
-                fld.set(obj, newVal);
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to set field value", e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getPropertyName() {
-            return fld.getName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> getType() {
-            return fld.getType();
-        }
-    }
-
-    /** Getter and setter methods based accessor. */
-    private static final class MethodsAccessor implements PropertyAccessor {
-        /** */
-        private final Method getter;
-
-        /** */
-        private final Method setter;
-
-        /** */
-        private final String propName;
-
-        /**
-         * @param getter Getter method.
-         * @param setter Setter method.
-         * @param propName Property name.
-         */
-        private MethodsAccessor(Method getter, Method setter, String propName) {
-            getter.setAccessible(true);
-            setter.setAccessible(true);
-
-            this.getter = getter;
-            this.setter = setter;
-            this.propName = propName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getValue(Object obj) throws IgniteCheckedException {
-            try {
-                return getter.invoke(obj);
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to invoke getter method " +
-                    "[type=" + getType() + ", property=" + propName + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
-            try {
-                setter.invoke(obj, newVal);
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to invoke setter method " +
-                    "[type=" + getType() + ", property=" + propName + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getPropertyName() {
-            return propName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> getType() {
-            return getter.getReturnType();
-        }
-    }
-
-    /** Accessor with getter only. */
-    private static final class ReadOnlyMethodsAccessor implements PropertyAccessor {
-        /** */
-        private final Method getter;
-
-        /** */
-        private final String propName;
-
-        /**
-         * @param getter Getter method.
-         * @param propName Property name.
-         */
-        private ReadOnlyMethodsAccessor(Method getter, String propName) {
-            getter.setAccessible(true);
-
-            this.getter = getter;
-            this.propName = propName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getValue(Object obj) throws IgniteCheckedException {
-            try {
-                return getter.invoke(obj);
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to invoke getter method " +
-                    "[type=" + getType() + ", property=" + propName + ']', e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(Object obj, Object newVal) throws IgniteCheckedException {
-            throw new UnsupportedOperationException("Property is read-only [type=" + getType() +
-                ", property=" + propName + ']');
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getPropertyName() {
-            return propName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> getType() {
-            return getter.getReturnType();
-        }
     }
 }
