@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
