@@ -666,21 +666,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     topVer,
                     futVer,
                     updVer,
-                    remapKeys);
+                    remapKeys,
+                    syncMode);
 
                 if (pendingMappings.size() == 1)
                     singleReq0 = F.firstValue(pendingMappings);
                 else {
-                    if (syncMode == PRIMARY_SYNC) {
-                        mappings0 = U.newHashMap(pendingMappings.size());
-
-                        for (GridNearAtomicFullUpdateRequest req : pendingMappings.values()) {
-                            if (req.hasPrimary())
-                                mappings0.put(req.nodeId(), req);
-                        }
-                    }
-                    else
-                        mappings0 = pendingMappings;
+                    mappings0 = pendingMappings;
 
                     assert !mappings0.isEmpty() || size == 0 : this;
                 }
@@ -761,7 +753,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         AffinityTopologyVersion topVer,
         Long futVer,
         @Nullable GridCacheVersion updVer,
-        @Nullable Collection<KeyCacheObject> remapKeys) throws Exception {
+        @Nullable Collection<KeyCacheObject> remapKeys,
+        CacheWriteSynchronizationMode syncMode) throws Exception {
         Iterator<?> it = null;
 
         if (vals != null)
@@ -844,7 +837,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             for (int n = 0; n < affNodes.size(); n++) {
                 ClusterNode affNode = affNodes.get(n);
-                int stripes = affNode.attribute(ATTR_STRIPE_SIZE) != null ? (int)affNode.attribute(ATTR_STRIPE_SIZE) : -1;
 
                 if (affNode == null)
                     throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
@@ -855,6 +847,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 GridNearAtomicFullUpdateRequest mapped = pendingMappings.get(nodeId);
 
                 if (mapped == null) {
+                    int stripes = affNode.attribute(ATTR_STRIPE_SIZE) != null ? (int)affNode.attribute(ATTR_STRIPE_SIZE) : -1;
+
                     mapped = new GridNearAtomicFullUpdateRequest(
                         cctx.cacheId(),
                         nodeId,
@@ -884,7 +878,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                 mapped.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, i == 0);
 
-                i++;
+                if (syncMode == PRIMARY_SYNC)
+                    break;
             }
         }
 

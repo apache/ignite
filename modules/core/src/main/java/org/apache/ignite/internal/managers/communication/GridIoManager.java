@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -806,13 +807,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         };
 
+        StripedExecutor stripedExecutor = ctx.getStripedExecutorService();
+
         if (msg.topicOrdinal() == TOPIC_IO_TEST.ordinal()) {
             IgniteIoTestMessage msg0 = (IgniteIoTestMessage)msg.message();
 
             if (msg0.processFromNioThread())
                 c.run();
             else
-                ctx.getStripedExecutorService().execute(-1, c);
+                stripedExecutor.execute(-1, c);
 
             return;
         }
@@ -822,15 +825,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             (msg.partition() != Integer.MIN_VALUE || msg.message() instanceof GridNearAtomicFullUpdateRequest)
             ) {
 
-            if (msg.message() instanceof GridNearAtomicFullUpdateRequest && ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() != null) {
-                for (Integer stripe : ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap().keySet()) {
-                    assert stripe < ctx.getStripedExecutorService().stripes() : stripe;
+            Map<Integer, int[]> stripemap = msg.message() instanceof GridNearAtomicFullUpdateRequest ?
+                ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() : null;
 
-                    ctx.getStripedExecutorService().execute(stripe, c);
+            if (stripemap != null) {
+                for (Integer stripe : stripemap.keySet()) {
+                    stripedExecutor.execute(stripe, c);
                 }
             }
             else
-                ctx.getStripedExecutorService().execute(msg.partition(), c);
+                stripedExecutor.execute(msg.partition(), c);
 
             return;
         }
