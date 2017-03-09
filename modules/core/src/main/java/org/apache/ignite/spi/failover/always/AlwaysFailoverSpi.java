@@ -126,6 +126,15 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     private int totalFailoverJobs;
 
     /**
+     * See {@link #setMaximumFailoverAttempts(int)}.
+     *
+     * @return Maximum number of attempts to execute a failed job on another node.
+     */
+    public int getMaximumFailoverAttempts() {
+        return maxFailoverAttempts;
+    }
+
+    /**
      * Sets maximum number of attempts to execute a failed job on another node.
      * If not specified, {@link #DFLT_MAX_FAILOVER_ATTEMPTS} value will be used.
      *
@@ -140,12 +149,12 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
     }
 
     /**
-     * See {@link #setMaximumFailoverAttempts(int)}.
+     * Get total number of jobs that were failed over.
      *
-     * @return Maximum number of attempts to execute a failed job on another node.
+     * @return Total number of failed over jobs.
      */
-    public int getMaximumFailoverAttempts() {
-        return maxFailoverAttempts;
+    public int getTotalFailoverJobsCount() {
+        return totalFailoverJobs;
     }
 
     /** {@inheritDoc} */
@@ -317,7 +326,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi {
 
         /** {@inheritDoc} */
         @Override public int getTotalFailoverJobsCount() {
-            return totalFailoverJobs;
+            return AlwaysFailoverSpi.this.getTotalFailoverJobsCount();
         }
     }
 }

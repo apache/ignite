@@ -137,6 +137,15 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     private int totalStolenJobs;
 
     /**
+     * See {@link #setMaximumFailoverAttempts(int)}.
+     *
+     * @return Maximum number of attempts to execute a failed job on another node.
+     */
+    public int getMaximumFailoverAttempts() {
+        return maxFailoverAttempts;
+    }
+
+    /**
      * Sets maximum number of attempts to execute a failed job on another node.
      * If job gets stolen and thief node exists then it is not considered as
      * failed job.
@@ -156,15 +165,24 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /**
-     * See {@link #setMaximumFailoverAttempts(int)}.
+     * Get total number of jobs that were failed over including stolen ones.
      *
-     * @return Maximum number of attempts to execute a failed job on another node.
+     * @return Total number of failed over jobs.
      */
-    public int getMaximumFailoverAttempts() {
-        return maxFailoverAttempts;
+    public int getTotalFailedOverJobsCount() {
+        return totalFailedOverJobs;
     }
 
-   /** {@inheritDoc} */
+    /**
+     * Get total number of jobs that were stolen.
+     *
+     * @return Total number of stolen jobs.
+     */
+    public int getTotalStolenJobsCount() {
+        return totalStolenJobs;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return F.<String, Object>asMap(createSpiAttributeName(MAX_FAILOVER_ATTEMPT_ATTR), maxFailoverAttempts);
     }
@@ -380,12 +398,12 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
 
         /** {@inheritDoc} */
         @Override public int getTotalFailedOverJobsCount() {
-            return totalFailedOverJobs;
+            return JobStealingFailoverSpi.this.getTotalFailedOverJobsCount();
         }
 
         /** {@inheritDoc} */
         @Override public int getTotalStolenJobsCount() {
-            return totalStolenJobs;
+            return JobStealingFailoverSpi.this.getTotalStolenJobsCount();
         }
 
     }

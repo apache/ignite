@@ -393,15 +393,6 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
     }
 
     /**
-     * Gets temporary directory path.
-     *
-     * @return Temporary directory path.
-     */
-    public String getTemporaryDirectoryPath() {
-        return tmpDirPath;
-    }
-
-    /**
      * Sets list of URI which point to GAR file and which should be
      * scanned by SPI for the new tasks.
      * <p>
@@ -459,6 +450,15 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
         this.encodeUri = encodeUri;
 
         return this;
+    }
+
+    /**
+     * Gets temporary directory path.
+     *
+     * @return Temporary directory path.
+     */
+    public String getTemporaryDirectoryPath() {
+        return tmpDirPath;
     }
 
     /**
