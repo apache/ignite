@@ -138,13 +138,16 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * reservation is released. */
     private volatile boolean shouldBeRenting;
 
+    /** Set if partition must be re-created and preloaded after eviction. */
+    private boolean reload;
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
      * @param entryFactory Entry factory.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
+        int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;
@@ -373,12 +376,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         map.removeEntry(entry);
 
         // Attempt to evict.
-        try {
-            tryEvict();
-        }
-        catch (NodeStoppingException ignore) {
-            // No-op.
-        }
+        tryEvictAsync(false);
     }
 
     /**
@@ -514,12 +512,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if ((reservations & 0xFFFF) == 0 && shouldBeRenting)
                     rent(true);
 
-                try {
-                    tryEvict();
-                }
-                catch (NodeStoppingException ignore) {
-                    // No-op.
-                }
+                tryEvictAsync(false);
 
                 break;
             }
@@ -530,7 +523,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(((long)stateToRestore.ordinal())  <<  32);
+        state.set(((long)stateToRestore.ordinal()) << 32);
     }
 
     /**
@@ -632,10 +625,24 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return {@code True} if partition should be re-created after it is cleared.
+     */
+    public boolean reload() {
+        return reload;
+    }
+
+    /**
+     * @param value {@code reload} flag value.
+     */
+    public void reload(boolean value) {
+        reload = value;
+    }
+
+    /**
      * @param updateSeq Update sequence.
      * @return Future to signal that this node is no longer an owner or backup.
      */
-    IgniteInternalFuture<?> rent(boolean updateSeq) {
+    public IgniteInternalFuture<?> rent(boolean updateSeq) {
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);
@@ -663,8 +670,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
-        assert cctx.kernalContext().state().active();
-
         long reservations = state.get();
 
         int ord = (int)(reservations >> 32);
@@ -713,7 +718,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearEvicting() {
-       boolean free;
+        boolean free;
 
         while (true) {
             int cnt = evictGuard.get();
@@ -804,9 +809,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     private void destroyCacheDataStore() {
         try {
-            CacheDataStore store = dataStore();
-
-            cctx.offheap().destroyCacheDataStore(id, store);
+            cctx.offheap().destroyCacheDataStore(dataStore());
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
@@ -817,12 +820,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     void onUnlock() {
-        try {
-            tryEvict();
-        }
-        catch (NodeStoppingException ignore) {
-            // No-op.
-        }
+        tryEvictAsync(false);
     }
 
     /**
@@ -949,7 +947,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     try {
                         CacheDataRow row = it0.next();
 
-                        GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
+                        GridDhtCacheEntry cached = (GridDhtCacheEntry) getEntry(row.key());
+
+                        if (cached == null || cached.obsolete())
+                            cached = (GridDhtCacheEntry) putEntryIfObsoleteOrAbsent(
+                                cctx.affinity().affinityTopologyVersion(), row.key(), null, true, false);
 
                         if (cached.clearInternal(clearVer, extras)) {
                             if (rec) {

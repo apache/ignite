@@ -235,7 +235,6 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
     void addEntry0(int p, GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
         assert info != null;
         assert (info.key() != null || info.keyBytes() != null);
-        assert info.value() != null;
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx);

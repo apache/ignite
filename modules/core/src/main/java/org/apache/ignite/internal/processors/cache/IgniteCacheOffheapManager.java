@@ -82,10 +82,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public Iterable<CacheDataStore> cacheDataStores();
 
     /**
-     * @param p Partition ID.
      * @param store Data store.
      */
-    public void destroyCacheDataStore(int p, CacheDataStore store) throws IgniteCheckedException;
+    public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.

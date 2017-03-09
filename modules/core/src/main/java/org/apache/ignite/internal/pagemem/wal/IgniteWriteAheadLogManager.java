@@ -59,8 +59,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * the underlying storage.
      *
      * @param ptr Optional pointer to sync. If {@code null}, will sync up to the latest record.
-     * @throws IgniteCheckedException If
-     * @throws StorageException
+     * @throws IgniteCheckedException If failed to fsync.
+     * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
+     *      method, the WAL will be invalidated and the node will be stopped.
      */
     public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException;
 
@@ -75,6 +76,22 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
 
     /**
+     * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
+     *
+     * @param start WAL pointer.
+     * @throws IgniteException If failed to reserve.
+     */
+    public boolean reserve(WALPointer start) throws IgniteCheckedException;
+
+    /**
+     * Invoke this method to release WAL history since provided pointer that was previously reserved.
+     *
+     * @param start WAL pointer.
+     * @throws IgniteException If failed to release.
+     */
+    public void release(WALPointer start) throws IgniteCheckedException;
+
+    /**
      * Gives a hint to WAL manager to clear entries logged before the given pointer. Some entries before the
      * the given pointer will be kept because there is a configurable WAL history size. Those entries may be used
      * for partial partition rebalancing.
@@ -83,4 +100,10 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Number of deleted WAL segments.
      */
     public int truncate(WALPointer ptr);
+
+    /**
+     * @param ptr Pointer.
+     * @return True if given pointer is located in reserved segment.
+     */
+    public boolean reserved(WALPointer ptr);
 }
