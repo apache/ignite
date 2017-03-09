@@ -423,9 +423,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     public void testAffinityBenchmarkChangeLast() {
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
+        AffinityFunction aff0 = new NonBalanceRendezvousAffinityFunction(true, 1024);
 
-        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
+//        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
         affinityBenchmark(aff0, new RendezvousAffinityFunction(true, 1024));
     }
@@ -437,7 +437,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     private void affinityBenchmark(AffinityFunction aff0, AffinityFunction aff1) {
         int[] nodesCnts = {100, 1, 2, 3, 4, 100, 200, 300, 400, 500, 600};
 
-        final int backups = 0;
+        final int backups = 2;
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);

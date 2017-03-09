@@ -401,94 +401,47 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         // Select backups.
         if (backups > 0) {
-            int replica = 1;
+            // The general assignment iteration. Use all: filters, balance & exclude neighbours if need.
+            assignIteration(res, neighborhoodCache, allNeighbors, primary, replicasCnt, balancer, it,
+                exclNeighbors, affinityBackupFilter, backupFilter);
 
-            it.replica(replica);
+            // Try to comply filters and without balance (may add some node)
+            if ((affinityBackupFilter != null || backupFilter != null)
+                && res.size() < replicasCnt && nodes.size() >= replicasCnt) {
+                balancer.useBalance(false);
 
-            while (res.size() < replicasCnt && it.hasNext()) {
-                ClusterNode node = it.next();
+                it = balancer.iterator();
 
-                if (res.contains(node))
-                    continue;
+                assignIteration(res, neighborhoodCache, allNeighbors, primary, replicasCnt, balancer, it,
+                    exclNeighbors, affinityBackupFilter, backupFilter);
+            }
 
-                if (exclNeighbors) {
-                    if (!allNeighbors.contains(node)) {
-                        balancer.acceptPartition(node, replica++);
+            // Try to comply balance without filters
+            if (balanceMap != null && res.size() < replicasCnt && nodes.size() >= replicasCnt) {
+                balancer.useBalance(true);
 
-                        res.add(node);
+                it = balancer.iterator();
 
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-
-                        it.replica(replica);
-                    }
-                }
-                else if ((backupFilter != null && backupFilter.apply(primary, node))
-                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    || (affinityBackupFilter == null && backupFilter == null) ) {
-                    balancer.acceptPartition(node, replica++);
-
-                    res.add(node);
-
-                    if (exclNeighbors)
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
-
-                    if (balanceMap != null && replica < replicasCnt)
-                        it.replica(replica);
-                }
+                assignIteration(res, neighborhoodCache, allNeighbors, primary, replicasCnt, balancer, it,
+                    false, null, null);
             }
         }
 
-        if (balanceMap != null && res.size() < replicasCnt && nodes.size() >= replicasCnt) {
-            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            int replica = res.size();
-
-            it.replica(replica);
-
-            while (res.size() < replicasCnt && it.hasNext()) {
-                ClusterNode node = it.next();
-
-                if (!res.contains(node)) {
-                    balancer.acceptPartition(node, replica++);
-
-                    res.add(node);
-
-                    it.replica(replica);
-                }
-            }
-
-            if (!exclNeighborsWarn) {
-                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups. " +
-                        "Try to assign according with partition balance.",
-                    "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups. " +
-                        "Try to assign according with partition balance.");
-
-                exclNeighborsWarn = true;
-            }
-        }
-
+        // Add nodes for required backups count. Ignore all restrictions.
         if (res.size() < replicasCnt && nodes.size() >= replicasCnt) {
-            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria
-            // and balance is violated.
-            int replica = res.size();
+            balancer.useBalance(false);
 
-            Iterator<ClusterNode> itSorted = sortedNodes.iterator();
+            it = balancer.iterator();
 
-            while (itSorted.hasNext() && res.size() < replicasCnt) {
-                ClusterNode node = itSorted.next();
-
-                if (!res.contains(node)) {
-                    balancer.acceptPartition(node, replica++);
-
-                    res.add(node);
-                }
-            }
+            assignIteration(res, neighborhoodCache, allNeighbors, primary, replicasCnt, balancer, it,
+                false, null, null);
 
             if (!exclNeighborsWarn) {
-                LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
+                LT.warn(log, "All restrictions (backup filters, even of partitions distribution and " +
+                        "exclNeighbors property) of the affinity function are ignored ignored " +
                         "because topology has no enough nodes to assign backups.",
-                    "Affinity function excludeNeighbors property is ignored " +
+                    "All restrictions (backup filters, even of partitions distribution and " +
+                        "exclNeighbors property) of the affinity function are ignored ignored " +
                         "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;
@@ -498,6 +451,64 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         assert res.size() == replicasCnt;
 
         return res;
+    }
+
+    /**
+     * @param res Results nodes list.
+     * @param neighborhoodCache Neighborhood cache
+     * @param allNeighbors All neighbors.
+     * @param primary Primary node.
+     * @param replicasCnt Total replicas count.
+     * @param balancer Balancer.
+     * @param it Node iterator.
+     * @param exclNeighbors Exclude neighbors flag.
+     * @param affinityBackupFilter Affinity backup filter
+     * @param backupFilter Backup filter
+     */
+    private void assignIteration(List<ClusterNode> res,
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache,
+        Collection<ClusterNode> allNeighbors,
+        ClusterNode primary,
+        int replicasCnt,
+        PartitionDistributionBalancer balancer,
+        PartitionDistributionBalancer.BalancedIterator it,
+        boolean exclNeighbors,
+        IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter,
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        int replica = res.size();
+
+        it.replica(replica);
+
+        while (res.size() < replicasCnt && it.hasNext()) {
+            ClusterNode node = it.next();
+
+            if (res.contains(node))
+                continue;
+
+            if (exclNeighbors) {
+                if (!allNeighbors.contains(node)) {
+                    balancer.acceptPartition(node, replica++);
+
+                    res.add(node);
+
+                    allNeighbors.addAll(neighborhoodCache.get(node.id()));
+
+                    it.replica(replica);
+                }
+            }
+            else if ((backupFilter != null && backupFilter.apply(primary, node))
+                || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                || (affinityBackupFilter == null && backupFilter == null)) {
+                balancer.acceptPartition(node, replica++);
+
+                res.add(node);
+
+                if (exclNeighbors)
+                    allNeighbors.addAll(neighborhoodCache.get(node.id()));
+
+                it.replica(replica);
+            }
+        }
     }
 
     /**
@@ -654,6 +665,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         /** Balance map. */
         private final Map<ClusterNode, Integer[]> balanceMap;
 
+        /** Balance map. */
+        private boolean useBalance = true;
+
         /**
          * @param nodes Nodes.
          * @param balanceMap Balance map.
@@ -680,6 +694,13 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         }
 
         /**
+         * @param useBalance Use balance flag.
+         */
+        public void useBalance(boolean useBalance) {
+            this.useBalance = useBalance;
+        }
+
+        /**
          *
          */
         class BalancedIterator {
@@ -703,7 +724,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
              * @param replica 0 - primary, 1 - the first backup, 2 - the second backup, etc..
              */
             public void replica(int replica) {
-                if (balanceMap == null)
+                if (!useBalance || balanceMap == null)
                     return;
 
                 // Reset nodes iterator if replica changed.
@@ -720,7 +741,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
              * @return {@code true} if the iteration has more elements
              */
             public boolean hasNext() {
-                if (balanceMap == null)
+                if (!useBalance || balanceMap == null)
                     return it.hasNext();
 
                 if (curNode == null)
@@ -736,7 +757,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
              * @throws NoSuchElementException if the iteration has no more elements
              */
             public ClusterNode next() {
-                if (balanceMap == null)
+                if (!useBalance || balanceMap == null)
                     return it.next();
 
                 if (curNode == null) {
