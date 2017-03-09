@@ -44,12 +44,26 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
         full.add(partId);
     }
 
+    public boolean remove(int partId) {
+        assert !(full.contains(partId) && historical.containsKey(partId));
+
+        if (full.remove(partId))
+            return true;
+        else
+            return historical.remove(partId) != null;
+
+    }
+
     public boolean hasHistorical() {
         return historical != null && !historical.isEmpty();
     }
 
     public boolean hasFull() {
         return full != null && !full.isEmpty();
+    }
+
+    public boolean isEmpty() {
+        return !hasFull() && !hasHistorical();
     }
 
     public int size() {

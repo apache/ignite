@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -326,7 +327,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             cctx.cacheId()));
                     }
 
-                    msg.partitions().addHistorical(p, "???");
+                    T2<Long, Long> cntr = top.updateCounter(p);
+
+                    assert cntr != null;
+
+                    msg.partitions().addHistorical(p, cntr.get1(), cntr.get2());
                 }
                 else {
                     if (cctx.shared().database().persistenceEnabled()) {
@@ -883,8 +888,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
                 U.warn(log, ">>> " + fut);
         }
-
-        supplier.dumpDebugInfo();
     }
 
     /**

@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -71,12 +74,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -663,52 +668,49 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
-        AffinityTopologyVersion topVer)
+        final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
 
-        final GridIterator<CacheDataRow> it = iterator(part);
+        assert !parts.hasHistorical() && parts.hasFull();
 
-        return new IgniteRebalanceIterator() {
-            @Override public boolean historical() {
-                return false;
+        final TreeMap<Integer, GridIterator<CacheDataRow>> iterators = new TreeMap<>();
+        Set<Integer> missing = null;
+
+        for (Integer p : parts.fullSet()) {
+            GridDhtLocalPartition loc = cctx.topology().localPartition(p, topVer, false);
+
+            if (loc == null || loc.state() != OWNING || !loc.reserve()) {
+                // Reply with partition of "-1" to let sender know that
+                // this node is no longer an owner.
+
+                if (missing == null)
+                    missing = new HashSet<>();
+
+                missing.add(p);
             }
+            else
+                iterators.put(p, iterator(p));
+        }
 
-            @Override public boolean hasNextX() throws IgniteCheckedException {
-                return it.hasNextX();
-            }
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators,
+            new IgniteRunnable() {
+                @Override public void run() {
+                    for (Integer p : iterators.keySet()) {
+                        GridDhtLocalPartition loc = cctx.topology().localPartition(p, topVer, false);
 
-            @Override public CacheDataRow nextX() throws IgniteCheckedException {
-                return it.nextX();
-            }
+                        assert loc != null && loc.reservations() > 0;
 
-            @Override public void removeX() throws IgniteCheckedException {
-                it.removeX();
-            }
+                        loc.release();
+                    }
+                }
+            });
 
-            @Override public Iterator<CacheDataRow> iterator() {
-                return it.iterator();
-            }
+        if (missing != null) {
+            for (Integer p : missing)
+                iter.setPartitionMissing(p);
+        }
 
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override public CacheDataRow next() {
-                return it.next();
-            }
-
-            @Override public void close() {
-
-            }
-
-            @Override public boolean isClosed() {
-                return false;
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
+        return iter;
     }
 
     /** {@inheritDoc} */

@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private final GridCacheMapEntryFactory entryFactory;
 
     /** Partition update counter. */
-    private Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
+    private final Map<Integer, T2<Long, Long>> cntrMap = new HashMap<>();
 
     /** */
     private volatile AffinityTopologyVersion rebalancedTopVer = AffinityTopologyVersion.NONE;
@@ -1879,6 +1879,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public T2<Long, Long> updateCounter(int part) {
+        T2<Long, Long> tuple = cntrMap.get(part);
+
+        return tuple == null ? new T2<>(0L, 0L) : tuple;
     }
 
     /** {@inheritDoc} */

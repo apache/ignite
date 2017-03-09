@@ -226,107 +226,80 @@ class GridDhtPartitionSupplier {
                         ", idx=" + idx + "]");
             }
 
-            // TODO: move to RebalanceIterator
-            {
-                if (sctx != null && sctx.loc != null) {
-                    loc = sctx.loc;
+            IgniteRebalanceIterator iter;
 
-                    assert loc.reservations() > 0;
-                }
-                else {
-                    loc = top.localPartition(part, d.topologyVersion(), false);
+            if (sctx == null || sctx.entryIt == null)
+                iter = cctx.offheap().rebalanceIterator(d.partitions(), d.topologyVersion());
+            else
+                iter = sctx.entryIt;
 
-                    if (loc == null || loc.state() != OWNING || !loc.reserve()) {
-                        // Reply with partition of "-1" to let sender know that
-                        // this node is no longer an owner.
-                        s.missed(part);
+            while (iter.hasNext()) {
+                if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
+                    if (++bCnt >= maxBatchesCnt) {
+                        saveSupplyContext(scId,
+                            iter,
+                            d.topologyVersion(),
+                            d.updateSequence());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Requested partition is not owned by local node [part=" + part +
-                                ", demander=" + id + ']');
+                        reply(node, d, s, scId);
 
-                        continue;
+                        return;
                     }
-                }
-            }
-
-            try {
-                IgniteRebalanceIterator iter;
-
-                if (sctx == null || sctx.entryIt == null)
-                    iter = cctx.offheap().rebalanceIterator(d.partitions(), d.topologyVersion());
-                else
-                    iter = sctx.entryIt;
-
-                while (iter.hasNext()) {
-                    if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
-                        if (++bCnt >= maxBatchesCnt) {
-                            saveSupplyContext(scId,
-                                iter,
-                                d.topologyVersion(),
-                                d.updateSequence());
-
-                            reply(node, d, s, scId);
-
-                            return;
-                        }
-                        else {
-                            if (!reply(node, d, s, scId))
-                                return;
-
-                            s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
-                                cctx.cacheId(),
-                                d.topologyVersion(),
-                                cctx.deploymentEnabled());
-                        }
-                    }
-
-                    CacheDataRow row = iter.next();
-
-                    int part = row.partition();
-
-                    if (!iter.isPartitionMissing(part) && !cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
-                        // Demander no longer needs this partition,
-                        // so we send '-1' partition and move on.
-                        iter.setPartitionMissing(part);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Demanding node does not need requested partition " +
-                                "[part=" + part + ", nodeId=" + id + ']');
-                    }
-
-                    if (iter.isPartitionMissing(part)) {
-                        s.missed(part);
-
-                        continue;
-                    }
-
-                    GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-                    info.key(row.key());
-                    info.expireTime(row.expireTime());
-                    info.version(row.version());
-                    info.value(row.value());
-
-                    if (preloadPred == null || preloadPred.apply(info))
-                        s.addEntry0(part, info, cctx);
                     else {
-                        if (log.isDebugEnabled())
-                            log.debug("Rebalance predicate evaluated to false (will not send " +
-                                "cache entry): " + info);
+                        if (!reply(node, d, s, scId))
+                            return;
+
+                        s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                            cctx.cacheId(),
+                            d.topologyVersion(),
+                            cctx.deploymentEnabled());
                     }
-
-                    if (iter.isPartitionDone(part))
-                        s.last(part);
-
-                    // Need to manually prepare cache message.
-                    // TODO GG-11141.
                 }
-            }
-            finally {
-                // TODO : move to RebalanceIterator
-                if (loc != null)
-                    loc.release();
+
+                CacheDataRow row = iter.next();
+
+                int part = row.partition();
+
+                if (!iter.isPartitionMissing(part) && !cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
+                    // Demander no longer needs this partition,
+                    // so we send '-1' partition and move on.
+                    iter.setPartitionMissing(part);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Demanding node does not need requested partition " +
+                            "[part=" + part + ", nodeId=" + id + ']');
+                }
+
+                if (iter.isPartitionMissing(part)) {
+                    s.missed(part);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Requested partition is marked as missing on local node [part=" + part +
+                            ", demander=" + id + ']');
+
+                    continue;
+                }
+
+                GridCacheEntryInfo info = new GridCacheEntryInfo();
+
+                info.key(row.key());
+                info.expireTime(row.expireTime());
+                info.version(row.version());
+                info.value(row.value());
+
+                if (preloadPred == null || preloadPred.apply(info))
+                    s.addEntry0(part, info, cctx);
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                            "cache entry): " + info);
+                }
+
+                if (iter.isPartitionDone(part))
+                    s.last(part);
+
+                // Need to manually prepare cache message.
+                // TODO GG-11141.
             }
 
             reply(node, d, s, scId);
@@ -427,22 +400,6 @@ class GridDhtPartitionSupplier {
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(SupplyContext.class, this);
-        }
-    }
-
-    /**
-     * Dumps debug information.
-     */
-    public void dumpDebugInfo() {
-        synchronized (scMap) {
-            if (!scMap.isEmpty()) {
-                U.warn(log, "Rebalancing supplier reserved following partitions:");
-
-                for (SupplyContext sc : scMap.values()) {
-                    if (sc.loc != null)
-                        U.warn(log, ">>> " + sc.loc);
-                }
-            }
         }
     }
 }

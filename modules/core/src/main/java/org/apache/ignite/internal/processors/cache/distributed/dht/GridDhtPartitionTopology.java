@@ -277,6 +277,8 @@ public interface GridDhtPartitionTopology {
      */
     public Map<Integer, T2<Long, Long>> updateCounters(boolean skipZeros);
 
+    public T2<Long, Long> updateCounter(int part);
+
     /**
      * @param part Partition to own.
      * @return {@code True} if owned.

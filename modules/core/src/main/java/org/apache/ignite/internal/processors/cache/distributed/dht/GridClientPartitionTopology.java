@@ -457,7 +457,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state,
+        GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -972,10 +973,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             }
             else
                 return new HashMap<>(cntrMap);
-}
+        }
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public T2<Long, Long> updateCounter(int part) {
+        T2<Long, Long> tuple = cntrMap.get(part);
+
+        return tuple == null ? new T2<>(0L, 0L) : tuple;
     }
 
     /** {@inheritDoc} */
