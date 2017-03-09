@@ -190,7 +190,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        txMapping = new GridDhtTxMapping();
+        GridDhtTxMapping txMapping = new GridDhtTxMapping();
 
         for (IgniteTxEntry txEntry : tx.allEntries()) {
             txEntry.clearEntryReadVersion();
@@ -235,7 +235,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         if (mappingKnown && tx.onePhaseCommit())
             mappingKnown = false;

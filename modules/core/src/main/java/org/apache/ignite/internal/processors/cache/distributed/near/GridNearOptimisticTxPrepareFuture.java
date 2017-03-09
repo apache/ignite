@@ -78,6 +78,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /** */
     private int miniId;
 
+    /** */
+    private GridDhtTxMapping txMapping;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -380,7 +383,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         proceedPrepare(mapping, null);
     }
@@ -449,7 +452,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         proceedPrepare(mappings);
     }

@@ -95,9 +95,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
-    /** Full information about transaction nodes mapping. */
-    protected GridDhtTxMapping txMapping;
-
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -160,8 +157,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /**
      * Checks if mapped transaction can be committed on one phase.
      * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
+     *
+     * @param txMapping Transaction mapping.
      */
-    protected final void checkOnePhase() {
+    protected final void checkOnePhase(GridDhtTxMapping txMapping) {
         if (tx.storeUsed())
             return;
 

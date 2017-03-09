@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -33,16 +29,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Transaction node mapping.
  */
-public class GridDistributedTxMapping implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDistributedTxMapping {
     /** Mapped node. */
     @GridToStringExclude
     private ClusterNode primary;
@@ -65,13 +57,6 @@ public class GridDistributedTxMapping implements Externalizable {
 
     /** {@code True} if this is first mapping for optimistic tx on client node. */
     private boolean clientFirst;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDistributedTxMapping() {
-        // No-op.
-    }
 
     /**
      * @param primary Primary node.
@@ -232,20 +217,6 @@ public class GridDistributedTxMapping implements Externalizable {
      */
     public boolean empty() {
         return entries.isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(primary);
-
-        U.writeCollection(out, entries);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        primary = (ClusterNode)in.readObject();
-
-        entries = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

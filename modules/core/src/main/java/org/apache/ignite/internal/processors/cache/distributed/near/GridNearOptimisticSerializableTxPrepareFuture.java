@@ -334,15 +334,15 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         assert topVer.topologyVersion() > 0;
 
-        txMapping = new GridDhtTxMapping();
+        GridDhtTxMapping txMapping = new GridDhtTxMapping();
 
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
         for (IgniteTxEntry write : writes)
-            map(write, topVer, mappings, remap, topLocked);
+            map(write, topVer, mappings, txMapping, remap, topLocked);
 
         for (IgniteTxEntry read : reads)
-            map(read, topVer, mappings, remap, topLocked);
+            map(read, topVer, mappings, txMapping, remap, topLocked);
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
@@ -360,7 +360,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         int miniId = 0;
 
@@ -382,7 +382,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             MiniFuture fut = (MiniFuture)fut0;
 
-            IgniteCheckedException err = prepare(fut);
+            IgniteCheckedException err = prepare(fut, txMapping);
 
             if (err != null) {
                 while (it.hasNext()) {
@@ -418,7 +418,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param fut Mini future.
      * @return Prepare error if any.
      */
-    @Nullable private IgniteCheckedException prepare(final MiniFuture fut) {
+    @Nullable private IgniteCheckedException prepare(final MiniFuture fut, GridDhtTxMapping txMapping) {
         GridDistributedTxMapping m = fut.mapping();
 
         final ClusterNode primary = m.primary();
@@ -523,6 +523,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> curMapping,
+        GridDhtTxMapping txMapping,
         boolean remap,
         boolean topLocked
     ) {
