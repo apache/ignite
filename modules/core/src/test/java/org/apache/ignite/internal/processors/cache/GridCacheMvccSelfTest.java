@@ -175,7 +175,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.orderCompleted(
             new GridCacheVersion(1,  2, 0, 0),
-            Arrays.asList(new GridCacheVersion(1,  3, 4, 0), ver2, new GridCacheVersion(1,  5, 6, 0)),
+            Arrays.asList(new GridCacheVersion(1, 3, 4, 0), ver2, new GridCacheVersion(1,  5, 6, 0)),
             Collections.<GridCacheVersion>emptyList()
         );
 

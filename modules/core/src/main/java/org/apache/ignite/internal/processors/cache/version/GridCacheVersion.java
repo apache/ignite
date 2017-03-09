@@ -247,19 +247,19 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         }
 
         switch (writer.state()) {
-            case 1:
+            case 0:
                 if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeLong("order", order))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 2:
                 if (!writer.writeInt("topVer", topVer))
                     return false;
 
@@ -278,7 +278,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
             return false;
 
         switch (reader.state()) {
-            case 1:
+            case 0:
                 nodeOrderDrId = reader.readInt("nodeOrderDrId");
 
                 if (!reader.isLastRead())
@@ -286,7 +286,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 order = reader.readLong("order");
 
                 if (!reader.isLastRead())
@@ -294,7 +294,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
                 reader.incrementState();
 
-            case 3:
+            case 2:
                 topVer = reader.readInt("topVer");
 
                 if (!reader.isLastRead())
