@@ -539,6 +539,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
                 final DiscoCache discoCache = createDiscoCache(locNode, topSnapshot);
+
                 if (verChanged) {
                     discoCacheHist.put(nextTopVer, discoCache);
 
@@ -1812,7 +1813,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /** @return Tuple that consists of a local join event and discovery cache at the join time. */
+    /**
+     * @return Tuple that consists of a local join event and discovery cache at the join time.
+     */
     public T2<DiscoveryEvent, DiscoCache> localJoin() {
         try {
             return locJoin.get();
@@ -1897,7 +1900,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         HashSet<UUID> alives = U.newHashSet(topSnapshot.size());
         HashMap<UUID, ClusterNode> nodeMap = U.newHashMap(topSnapshot.size());
 
-        ArrayList<ClusterNode> dmnNodes = new ArrayList<>(topSnapshot.size());
+        ArrayList<ClusterNode> daemonNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> srvNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> rmtNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> allNodes = new ArrayList<>(topSnapshot.size());
@@ -1907,13 +1910,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 alives.add(node.id());
 
             if (node.isDaemon())
-                dmnNodes.add(node);
+                daemonNodes.add(node);
             else {
                 allNodes.add(node);
 
-                if (!node.isLocal()) {
+                if (!node.isLocal())
                     rmtNodes.add(node);
-                }
             }
 
             if (!CU.clientNode(node))
@@ -1967,7 +1969,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
-            Collections.unmodifiableList(dmnNodes),
+            Collections.unmodifiableList(daemonNodes),
             U.sealList(srvNodesWithCaches),
             U.sealList(allNodesWithCaches),
             U.sealList(rmtNodesWithCaches),
@@ -2099,9 +2101,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     if (!segValid) {
                         List<ClusterNode> empty = Collections.emptyList();
+
                         ClusterNode node = getSpi().getLocalNode();
-                        discoWrk.addEvent(EVT_NODE_SEGMENTED, AffinityTopologyVersion.NONE, node,
-                            createDiscoCache(node, empty), empty, null);
+
+                        discoWrk.addEvent(EVT_NODE_SEGMENTED,
+                            AffinityTopologyVersion.NONE,
+                            node,
+                            createDiscoCache(node, empty),
+                            empty,
+                            null);
 
                         lastSegChkRes.set(false);
                     }

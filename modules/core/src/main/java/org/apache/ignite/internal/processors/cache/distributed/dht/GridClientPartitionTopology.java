@@ -101,6 +101,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** */
     private final Object similarAffKey;
+
     /** */
     private volatile DiscoCache discoCache;
 

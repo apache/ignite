@@ -1068,6 +1068,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
+     * @param cache Discovery data cache.
      * @param reqs Cache change requests.
      * @param affChangeMsg Affinity change message.
      * @return Exchange future.

@@ -80,7 +80,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
 
-    /** Discovery listeners. */
+    /** Internal discovery listeners. */
     private final ConcurrentMap<Integer, Set<DiscoveryEventListener>> discoLsnrs = new ConcurrentHashMap8<>();
 
     /** Busy lock to control activity of threads. */
@@ -337,10 +337,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             return;
 
         try {
-            // notify discovery listeners first.
+            // Notify internal discovery listeners first.
             notifyDiscoveryListeners(evt, discoCache);
 
-            // notify all other registered listeners.
+            // Notify all other registered listeners.
             record(evt);
         }
         finally {

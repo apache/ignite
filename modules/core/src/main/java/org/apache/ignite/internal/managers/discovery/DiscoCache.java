@@ -31,10 +31,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-/** Cache for discovery collections. */
+/**
+ *
+ */
 public class DiscoCache {
     /** Local node. */
     private final ClusterNode loc;
@@ -49,7 +50,7 @@ public class DiscoCache {
     private final List<ClusterNode> srvNodes;
 
     /** Daemon nodes. */
-    private final List<ClusterNode> dmnNodes;
+    private final List<ClusterNode> daemonNodes;
 
     /** All server nodes. */
     private final List<ClusterNode> srvNodesWithCaches;
@@ -85,7 +86,7 @@ public class DiscoCache {
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
      * @param srvNodes Server nodes.
-     * @param dmnNodes Daemon nodes.
+     * @param daemonNodes Daemon nodes.
      * @param srvNodesWithCaches Server nodes with at least one cache configured.
      * @param allNodesWithCaches All nodes with at least one cache configured.
      * @param rmtNodesWithCaches Remote nodes with at least one cache configured.
@@ -95,17 +96,24 @@ public class DiscoCache {
      * @param nearEnabledCaches Caches where at least one node has near cache enabled.
      * @param alives Alive nodes.
      */
-    public DiscoCache(ClusterNode loc, List<ClusterNode> rmtNodes, List<ClusterNode> allNodes,
-        List<ClusterNode> srvNodes, List<ClusterNode> dmnNodes, List<ClusterNode> srvNodesWithCaches,
-        List<ClusterNode> allNodesWithCaches, List<ClusterNode> rmtNodesWithCaches,
-        Map<Integer, List<ClusterNode>> allCacheNodes, Map<Integer, List<ClusterNode>> affCacheNodes,
-        Map<UUID, ClusterNode> nodeMap, Set<Integer> nearEnabledCaches,
+    DiscoCache(ClusterNode loc,
+        List<ClusterNode> rmtNodes,
+        List<ClusterNode> allNodes,
+        List<ClusterNode> srvNodes,
+        List<ClusterNode> daemonNodes,
+        List<ClusterNode> srvNodesWithCaches,
+        List<ClusterNode> allNodesWithCaches,
+        List<ClusterNode> rmtNodesWithCaches,
+        Map<Integer, List<ClusterNode>> allCacheNodes,
+        Map<Integer, List<ClusterNode>> affCacheNodes,
+        Map<UUID, ClusterNode> nodeMap,
+        Set<Integer> nearEnabledCaches,
         Set<UUID> alives) {
         this.loc = loc;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
-        this.dmnNodes = dmnNodes;
+        this.daemonNodes = daemonNodes;
         this.srvNodesWithCaches = srvNodesWithCaches;
         this.allNodesWithCaches = allNodesWithCaches;
         this.rmtNodesWithCaches = rmtNodesWithCaches;
@@ -138,7 +146,7 @@ public class DiscoCache {
 
     /** @return Daemon nodes. */
     public List<ClusterNode> daemonNodes() {
-        return dmnNodes;
+        return daemonNodes;
     }
 
     /** @return Server nodes with at least one cache configured. */
@@ -269,10 +277,10 @@ public class DiscoCache {
     /**
      * Removes left node from alives lists.
      *
-     * @param removed Removed node.
+     * @param rmvd Removed node.
      */
-    public void updateAlives(ClusterNode removed) {
-        alives.remove(removed.id());
+    public void updateAlives(ClusterNode rmvd) {
+        alives.remove(rmvd.id());
     }
 
     /**
@@ -297,6 +305,6 @@ public class DiscoCache {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DiscoCache.class, this, "allNodesWithDaemons", U.toShortString(allNodes));
+        return S.toString(DiscoCache.class, this);
     }
 }

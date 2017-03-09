@@ -19,17 +19,13 @@ package org.apache.ignite.internal.managers.eventstorage;
 
 import java.util.EventListener;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 
 /**
- * Listener for asynchronous local node discovery events. You can subscribe for local node grid
- * event notifications via {@link GridEventStorageManager#addDiscoveryEventListener(DiscoveryEventListener)}.
+ * Internal listener for discovery events.
  */
 public interface DiscoveryEventListener extends EventListener {
     /**
-     * Local event callback.
-     *
      * @param evt Discovery event.
      * @param discoCache Discovery cache.
      */

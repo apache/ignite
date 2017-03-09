@@ -385,6 +385,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
+     * @param discoCache Discovery data cache.
      */
     public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt, DiscoCache discoCache) {
         assert exchId.equals(this.exchId);
