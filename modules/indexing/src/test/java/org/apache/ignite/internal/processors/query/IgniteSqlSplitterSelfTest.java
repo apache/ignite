@@ -36,8 +36,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
@@ -227,6 +225,38 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals(2, columnQuery(c, qry + "where a < 2 and b >= 3").size());
             assertEquals(3, columnQuery(c, qry + "where a <= 1 and b > 0").size());
             assertEquals(2, columnQuery(c, qry + "where a <= 1 and b >= 3").size());
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
+     */
+    public void testUseIndexHints() {
+        CacheConfiguration ccfg = cacheConfig("pers", true,
+            Integer.class, Person2.class);
+
+        IgniteCache<Integer, Person2> c = ignite(0).getOrCreateCache(ccfg);
+
+        try {
+            String select = "select 1 from Person2 use index (\"orgId_idx\") where name = '' and orgId = 1";
+
+            String plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (\"orgId_idx\")"));
+            assertTrue(plan.contains("/* \"pers\".\"orgId_idx\":"));
+
+            select = "select 1 from Person2 use index (\"name_idx\") where name = '' and orgId = 1";
+
+            plan = c.query(new SqlFieldsQuery("explain " + select)).getAll().toString();
+
+            X.println("Plan: \n" + plan);
+
+            assertTrue(plan.contains("USE INDEX (\"name_idx\")"));
+            assertTrue(plan.contains("/* \"pers\".\"name_idx\":"));
         }
         finally {
             c.destroy();
@@ -1626,7 +1656,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         int orgId;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         String name;
 
         /**

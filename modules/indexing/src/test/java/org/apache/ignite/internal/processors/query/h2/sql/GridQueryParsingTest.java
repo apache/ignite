@@ -284,6 +284,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUseIndexHints() throws Exception {
+        checkQuery("select * from Person use index (\"name_idx\")");
+        checkQuery("select * from Person use index (\"parentName_idx\")");
+        checkQuery("select * from Person use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person use index ()");
+
+        checkQuery("select * from Person p use index (\"name_idx\")");
+        checkQuery("select * from Person p use index (\"parentName_idx\")");
+        checkQuery("select * from Person p use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person p use index ()");
+    }
+
+    /**
      * Query AST transformation heavily depends on this behavior.
      *
      * @throws Exception If failed.
