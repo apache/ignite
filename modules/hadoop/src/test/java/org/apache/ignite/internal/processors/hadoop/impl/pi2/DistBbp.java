@@ -127,12 +127,12 @@ public class DistBbp extends Configured implements Tool {
     final double pi = Bellard.computePi(b, sums);
     Util.printBitSkipped(b);
 
-      // Fix: added assertion:
+      // FIX: added assertion:
       String res = Util.pi2string(pi, Bellard.bit2terms(b));
 
-      verify(res);
+      Util.out.println(res);
 
-    Util.out.println(res);
+      verify(res);
 
     return 0;
   }

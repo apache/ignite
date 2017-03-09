@@ -20,8 +20,8 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
             @Override protected void verify(String res) {
                 super.verify(res);
 
-                //assertEquals("90FDAA22168C 2 (12 hex digits)", res); // for 2 skipped bits.
-                assertEquals("110B4611A625 F (12 hex digits)", res); // for 25 skipped bits.
+                //assertEquals("90FDAA22168C 2 (12 hex digits)", res); // Correct result for b==2.
+                assertEquals("110B4611A625 F (12 hex digits)", res); // Correct result for b==25.
 
                 X.println("Verified okay.");
             }
@@ -80,12 +80,4 @@ public class HadoopBbpExampleTest extends HadoopGenericExampleTest {
     @Override protected GenericHadoopExample example() {
         return ex;
     }
-
-//    @Override protected boolean isOneJvm() {
-//        return true; // TODO
-//    }
-//
-//    @Override protected int gridCount() {
-//        return 1;
-//    }
 }
