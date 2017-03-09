@@ -34,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -946,7 +947,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
-                        if (e instanceof ClusterTopologyCheckedException)
+                        if (e instanceof ClusterTopologyLocalException)
                             fut.onResult();
                         else {
                             if (msgLog.isDebugEnabled()) {

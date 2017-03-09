@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -739,7 +740,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         // We don't wait for reply to this message.
                         ctx.io().send(n, req, ctx.ioPolicy());
                     }
-                    catch (ClusterTopologyCheckedException e) {
+                    catch (ClusterTopologyLocalException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
                                 ", n=" + n + ", e=" + e + ']');
@@ -844,7 +845,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         // We don't wait for reply to this message.
                         ctx.io().send(n, req, ctx.ioPolicy());
                     }
-                    catch (ClusterTopologyCheckedException e) {
+                    catch (ClusterTopologyLocalException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
                                 ", n=" + n + ", e=" + e + ']');

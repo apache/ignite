@@ -38,6 +38,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -281,7 +282,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 try {
                     cctx.io().send(nodeId, ackReq, GridIoPolicy.SYSTEM_POOL);
                 }
-                catch (ClusterTopologyCheckedException ignored) {
+                catch (ClusterTopologyLocalException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send one phase commit ack to backup node because it left grid: " + nodeId);
                 }
@@ -2068,7 +2069,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 cctx.gridIO().send(node, TOPIC_TX, req, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
-                if (e instanceof ClusterTopologyCheckedException) {
+                if (e instanceof ClusterTopologyLocalException) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to finish deadlock detection, node left: " + nodeId);
                 }

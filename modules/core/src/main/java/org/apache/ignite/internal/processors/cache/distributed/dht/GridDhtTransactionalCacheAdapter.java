@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -439,7 +440,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyLocalException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send lock reply to remote node because it left grid: " + nodeId);
         }
@@ -538,7 +539,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         ", node=" + nodeId + ']');
                 }
             }
-            catch (ClusterTopologyCheckedException ignored) {
+            catch (ClusterTopologyLocalException ignored) {
                 U.warn(txLockMsgLog, "Failed to send dht lock response, node failed [" +
                     "txId=" + req.nearXidVersion() +
                     ", dhtTxId=" + req.version() +
@@ -1142,7 +1143,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyLocalException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send client lock remap response, client node failed " +
                     "[node=" + nearNode + ", req=" + req + ']');
@@ -1660,7 +1661,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 ctx.io().send(n, req, ctx.ioPolicy());
             }
-            catch (ClusterTopologyCheckedException ignore) {
+            catch (ClusterTopologyLocalException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Node left while sending unlock request: " + n);
             }
@@ -1689,7 +1690,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     ctx.io().send(n, req, ctx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException ignore) {
+                catch (ClusterTopologyLocalException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Node left while sending unlock request: " + n);
                 }

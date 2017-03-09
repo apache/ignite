@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -585,7 +586,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyCheckedException e) {
+            catch (ClusterTopologyLocalException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
@@ -647,7 +648,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyCheckedException e) {
+            catch (ClusterTopologyLocalException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
@@ -1044,7 +1045,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 break;
             }
-            catch (ClusterTopologyCheckedException e) {
+            catch (ClusterTopologyLocalException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
 
@@ -1524,7 +1525,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     reassign(dep, topVer);
             }
             catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
+                if (!(e instanceof ClusterTopologyLocalException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
                 AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
@@ -1629,7 +1630,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
-                                        if (!(e instanceof ClusterTopologyCheckedException))
+                                        if (!(e instanceof ClusterTopologyLocalException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1701,7 +1702,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         it.remove();
                     }
                     catch (IgniteCheckedException e) {
-                        if (!(e instanceof ClusterTopologyCheckedException))
+                        if (!(e instanceof ClusterTopologyLocalException))
                             LT.error(log, e, "Failed to do service reassignment (will retry): " +
                                 dep.configuration().getName());
                     }

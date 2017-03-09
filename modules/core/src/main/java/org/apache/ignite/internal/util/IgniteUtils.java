@@ -178,8 +178,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -798,7 +799,7 @@ public abstract class IgniteUtils {
             }
         });
 
-        m.put(ClusterGroupEmptyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+        m.put(ClusterGroupEmptyLocalException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
                 return new ClusterGroupEmptyException(e.getMessage(), e);
             }
@@ -807,12 +808,16 @@ public abstract class IgniteUtils {
         m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
                 ClusterTopologyException topEx = new ClusterTopologyException(e.getMessage(), e);
-
                 ClusterTopologyCheckedException checked = (ClusterTopologyCheckedException)e;
+                topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
+                return topEx;
+            }
+        });
 
-                if (checked.retryReadyFuture() != null)
-                    topEx.retryReadyFuture(new IgniteFutureImpl<>(checked.retryReadyFuture()));
-
+        m.put(ClusterTopologyLocalException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                ClusterTopologyException topEx = new ClusterTopologyException(e.getMessage(), e);
+                ClusterTopologyLocalException checked = (ClusterTopologyLocalException)e;;
                 return topEx;
             }
         });
@@ -4702,8 +4707,8 @@ public abstract class IgniteUtils {
      *
      * @return Empty projection exception.
      */
-    public static ClusterGroupEmptyCheckedException emptyTopologyException() {
-        return new ClusterGroupEmptyCheckedException("Cluster group is empty.");
+    public static ClusterGroupEmptyLocalException emptyTopologyException() {
+        return new ClusterGroupEmptyLocalException("Cluster group is empty.");
     }
 
     /**

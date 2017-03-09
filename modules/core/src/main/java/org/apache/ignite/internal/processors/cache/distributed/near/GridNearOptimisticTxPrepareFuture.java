@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -114,9 +115,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 if (f.node().id().equals(nodeId)) {
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
-                        nodeId);
-
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        nodeId, cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
                     f.onNodeLeft(e, true);
 
@@ -556,9 +555,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                     }
                     catch (ClusterTopologyCheckedException e) {
-                        e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
-
                         fut.onNodeLeft(e, false);
+                    } catch (ClusterTopologyLocalException e) {
+                        fut.onNodeLeft(e.toChecked(cctx.nextAffinityReadyFuture(tx.topologyVersion())), false);
                     }
                     catch (IgniteCheckedException e) {
                         if (msgLog.isDebugEnabled()) {

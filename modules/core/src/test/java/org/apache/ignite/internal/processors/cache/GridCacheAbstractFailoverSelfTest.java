@@ -27,7 +27,7 @@ import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -267,7 +267,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.put("key" + i, i);
         }
         catch (CacheException e) {
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
+            if (!X.hasCause(e, ClusterTopologyLocalException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
@@ -299,7 +299,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (Exception e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyLocalException.class))
                 throw e;
             else
                 info("Failed to put values to cache due to topology exception [0," + cnt + ')');
@@ -317,7 +317,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.remove("key" + i);
         }
         catch (CacheException e) {
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
+            if (!X.hasCause(e, ClusterTopologyLocalException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
@@ -351,7 +351,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (Exception e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyLocalException.class))
                 throw e;
             else
                 info("Failed to remove values from cache due to topology exception [0," + cnt + ')');

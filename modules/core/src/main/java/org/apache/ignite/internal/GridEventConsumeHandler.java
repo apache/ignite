@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
@@ -231,7 +232,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                 ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
                                                     false, false);
                                             }
-                                            catch (ClusterTopologyCheckedException ignored) {
+                                            catch (ClusterTopologyLocalException ignored) {
                                                 // No-op.
                                             }
                                             catch (Throwable e) {

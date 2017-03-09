@@ -24,7 +24,7 @@ import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
@@ -605,13 +605,13 @@ object visor extends VisorTag {
       */
     def mcompact() {
         val namespaces = Array("a", "c", "e", "n", "s", "t")
-        
+
         for (namespace <- namespaces) {
             val vars = mem.filter { case (k, _) => k.matches(s"$namespace\\d+") }
 
             if (vars.nonEmpty) {
                 clearNamespace(namespace)
-                
+
                 vars.toSeq.sortBy(_._1).foreach { case (_, v) => setVar(v, namespace) }
             }
         }

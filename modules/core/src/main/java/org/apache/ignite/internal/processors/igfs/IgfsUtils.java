@@ -35,7 +35,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -215,7 +215,7 @@ public class IgfsUtils {
                 // Dealing with a kind of IGFS error, wrap it once again, preserving message and root cause.
                 err0 = newIgfsException(err0.getClass(), err0.getMessage(), err0);
             else {
-                if (err instanceof ClusterTopologyServerNotFoundException)
+                if (err instanceof ClusterTopologyServerNotFoundLocalException)
                     err0 = new IgfsException("Cache server nodes not found.", err);
                 else
                     // Unknown error nature.

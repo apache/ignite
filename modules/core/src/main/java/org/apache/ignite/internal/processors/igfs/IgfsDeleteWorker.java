@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -157,7 +157,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         try {
             info = meta.info(trashId);
         }
-        catch (ClusterTopologyServerNotFoundException ignore) {
+        catch (ClusterTopologyServerNotFoundLocalException ignore) {
             // Ignore.
         }
         catch (IgniteCheckedException e) {

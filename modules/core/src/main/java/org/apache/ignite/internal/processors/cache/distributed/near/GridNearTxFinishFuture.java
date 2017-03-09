@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -501,9 +502,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     readyNearMappingFromBackup(mapping);
 
                     ClusterTopologyCheckedException cause =
-                        new ClusterTopologyCheckedException("Backup node left grid: " + backupId);
-
-                    cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        new ClusterTopologyCheckedException("Backup node left grid: " + backupId,
+                            cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
                     onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(backup has left grid): " + tx.xidVersion(), cause));
@@ -564,9 +564,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         }
                         else {
                             ClusterTopologyCheckedException cause =
-                                new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
-
-                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                                new ClusterTopologyCheckedException("Primary node left grid: " + nodeId,
+                                    cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
                             mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                                 "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
@@ -595,7 +594,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                     ", ver=" + backup.version() + ']'));
                             }
                         }
-                        catch (ClusterTopologyCheckedException ignored) {
+                        catch (ClusterTopologyLocalException ignored) {
                             mini.onNodeLeft(backupId, false);
                         }
                         catch (IgniteCheckedException e) {
@@ -766,7 +765,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!wait)
                     fut.onDone();
             }
-            catch (ClusterTopologyCheckedException ignored) {
+            catch (ClusterTopologyLocalException ignored) {
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
@@ -963,7 +962,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                         try {
                                             cctx.io().send(backup, req, tx.ioPolicy());
                                         }
-                                        catch (ClusterTopologyCheckedException ignored) {
+                                        catch (ClusterTopologyLocalException ignored) {
                                             mini.onNodeLeft(backupId, discoThread);
                                         }
                                         catch (IgniteCheckedException e) {
@@ -1034,7 +1033,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (nodeId.equals(backup.id())) {
                 readyNearMappingFromBackup(m);
 
-                onDone(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                onDone(new ClusterTopologyLocalException("Remote node left grid: " + nodeId));
 
                 return true;
             }
@@ -1052,11 +1051,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             if (err != null) {
                 if (err instanceof IgniteCheckedException) {
-                    ClusterTopologyCheckedException cause =
-                        ((IgniteCheckedException)err).getCause(ClusterTopologyCheckedException.class);
-
-                    if (cause != null)
-                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                    assert ((IgniteCheckedException)err).hasCause(ClusterTopologyLocalException.class) :
+                        "Should never happen if IGNITE-1948 done well";
                 }
 
                 onDone(err);

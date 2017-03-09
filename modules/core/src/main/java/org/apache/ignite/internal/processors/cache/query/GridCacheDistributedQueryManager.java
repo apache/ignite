@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -329,7 +330,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 return true;
             }
-            catch (ClusterTopologyCheckedException ignored) {
+            catch (ClusterTopologyLocalException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send query response since node left grid [nodeId=" + nodeId +
                         ", res=" + res + "]");

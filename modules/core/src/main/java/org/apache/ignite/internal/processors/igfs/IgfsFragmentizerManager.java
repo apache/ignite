@@ -37,6 +37,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
@@ -191,7 +192,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
             }
             catch (IgniteCheckedException e) {
                 if (!igfsCtx.kernalContext().discovery().alive(nodeId))
-                    throw new ClusterTopologyCheckedException("Failed to send message (node left the grid) " +
+                    throw new ClusterTopologyLocalException("Failed to send message (node left the grid) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
 
                 if (i == MESSAGE_SEND_RETRY_COUNT - 1)

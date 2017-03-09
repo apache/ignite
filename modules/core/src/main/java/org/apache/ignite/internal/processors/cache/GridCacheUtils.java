@@ -57,9 +57,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -97,7 +98,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -1429,7 +1429,7 @@ public class GridCacheUtils {
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
             return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
-        else if (e instanceof ClusterTopologyServerNotFoundException)
+        else if (e instanceof ClusterTopologyServerNotFoundLocalException)
             return new CacheServerNotFoundException(e.getMessage(), e);
 
         if (e.getCause() instanceof CacheException)
@@ -1612,7 +1612,7 @@ public class GridCacheUtils {
                     try {
                         return c.call();
                     }
-                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                    catch (ClusterGroupEmptyLocalException | ClusterTopologyServerNotFoundLocalException e) {
                         throw e;
                     }
                     catch (TransactionRollbackException e) {
@@ -1625,20 +1625,12 @@ public class GridCacheUtils {
                         if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
 
+                        assert !X.hasCause(e, ClusterTopologyLocalException.class): "Should never happen if IGNITE-1948 done well";
+
                         if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
                             ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
-
-                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
-                                ClusterTopologyServerNotFoundException)
-                                throw e;
-
-                            // IGNITE-1948: remove this check when the issue is fixed
-                            if (topErr.retryReadyFuture() != null)
-                                topErr.retryReadyFuture().get();
-                            else
-                                U.sleep(1);
-                        }
-                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            topErr.retryReadyFuture().get();
+                        } else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
                             CachePartialUpdateCheckedException.class))
                             U.sleep(1);
                         else

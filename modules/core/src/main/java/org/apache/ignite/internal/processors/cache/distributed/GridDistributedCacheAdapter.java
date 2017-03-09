@@ -32,7 +32,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -191,7 +191,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             }
             while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) != 0 || retry);
         }
-        catch (ClusterGroupEmptyCheckedException ignore) {
+        catch (ClusterGroupEmptyLocalException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
@@ -241,7 +241,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                         else
                             removeAllAsync(opFut, topVer0, skipStore, keepBinary);
                     }
-                    catch (ClusterGroupEmptyCheckedException ignore) {
+                    catch (ClusterGroupEmptyLocalException ignore) {
                         if (log.isDebugEnabled())
                             log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
 

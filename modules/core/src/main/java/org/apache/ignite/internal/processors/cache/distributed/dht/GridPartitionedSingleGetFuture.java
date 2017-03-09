@@ -28,7 +28,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
@@ -310,7 +311,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 cctx.io().send(node, req, cctx.ioPolicy());
             }
             catch (IgniteCheckedException e) {
-                if (e instanceof ClusterTopologyCheckedException)
+                if (e instanceof ClusterTopologyLocalException)
                     onNodeLeft(node.id());
                 else
                     onDone(e);
@@ -657,8 +658,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param topVer Topology version.
      * @return Exception.
      */
-    private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
-        return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+    private ClusterTopologyServerNotFoundLocalException serverNotFoundError(AffinityTopologyVersion topVer) {
+        return new ClusterTopologyServerNotFoundLocalException("Failed to map keys for cache " +
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
     }
 

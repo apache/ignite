@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -112,7 +113,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             }
         }
         catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
-            ClusterTopologyCheckedException e) {
+            ClusterTopologyLocalException e) {
             if (!ignoreFailure(e))
                 onDone(e);
         }

@@ -25,22 +25,17 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class ClusterTopologyCheckedException extends ClusterTopologyLocalException {
+public class ClusterTopologyLocalException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Next topology version to wait. */
-    private final transient IgniteInternalFuture<?> readyFut;
 
     /**
      * Creates new topology exception with given error message.
      *
      * @param msg Error message.
-     * @param readyFut Retry ready future.
      */
-    public ClusterTopologyCheckedException(String msg, @NotNull IgniteInternalFuture<?> readyFut) {
+    public ClusterTopologyLocalException(String msg) {
         super(msg);
-        this.readyFut = readyFut;
     }
 
     /**
@@ -49,19 +44,16 @@ public class ClusterTopologyCheckedException extends ClusterTopologyLocalExcepti
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
-     * @param readyFut Retry ready future.
      */
-    public ClusterTopologyCheckedException(String msg, @Nullable Throwable cause,
-        @NotNull IgniteInternalFuture<?> readyFut) {
-
+    public ClusterTopologyLocalException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
-        this.readyFut = readyFut;
     }
 
     /**
+     *
      * @return Retry ready future.
      */
-    public IgniteInternalFuture<?> retryReadyFuture() {
-        return readyFut;
+    public ClusterTopologyCheckedException toChecked(@NotNull IgniteInternalFuture<?> readyFut){
+        return new ClusterTopologyCheckedException(this.getMessage(), this.getCause(), readyFut);
     }
 }

@@ -32,7 +32,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -789,7 +790,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         assert topVer.topologyVersion() > 0;
 
         if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+            onDone(new ClusterTopologyServerNotFoundLocalException("Failed to map keys for cache " +
                 "(all partition nodes left the grid): " + cctx.name()));
 
             return;
@@ -1070,7 +1071,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             ", node=" + node.id() + ']');
                     }
                 }
-                catch (ClusterTopologyCheckedException ex) {
+                catch (ClusterTopologyLocalException ex) {
                     assert fut != null;
 
                     fut.onResult(ex);
@@ -1088,7 +1089,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                     ", node=" + node.id() + ']');
                             }
                         }
-                        catch (ClusterTopologyCheckedException ex) {
+                        catch (ClusterTopologyLocalException ex) {
                             assert fut != null;
 
                             fut.onResult(ex);
@@ -1290,7 +1291,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
-            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+            throw new ClusterTopologyServerNotFoundLocalException("Failed to lock keys " +
                 "(all partition nodes left the grid).");
 
         if (cctx.discovery().node(primary.id()) == null)
@@ -1314,9 +1315,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      */
     private ClusterTopologyCheckedException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
         ClusterTopologyCheckedException topEx = new ClusterTopologyCheckedException("Failed to acquire lock for keys " +
-            "(primary node left grid, retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
-
-        topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
+            "(primary node left grid, retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested,
+            cctx.shared().nextAffinityReadyFuture(topVer));
 
         return topEx;
     }
@@ -1442,7 +1442,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult(ClusterTopologyLocalException e) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
                     ", inTx=" + inTx() +

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -382,7 +383,7 @@ public class IgniteTxHandler {
                                 ", node=" + nearNodeId + ']');
                         }
                     }
-                    catch (ClusterTopologyCheckedException ignored) {
+                    catch (ClusterTopologyLocalException ignored) {
                         if (txPrepareMsgLog.isDebugEnabled()) {
                             txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
                                 "txId=" + req.version() +
@@ -1270,7 +1271,7 @@ public class IgniteTxHandler {
             }
         }
         catch (IgniteCheckedException e) {
-            if (e instanceof ClusterTopologyCheckedException) {
+            if (e instanceof ClusterTopologyLocalException) {
                 if (txPrepareMsgLog.isDebugEnabled()) {
                     txPrepareMsgLog.debug("Failed to send dht prepare response, node left [txId=" + req.nearXidVersion() +
                         ", dhtTxId=" + req.version() +
@@ -1328,8 +1329,8 @@ public class IgniteTxHandler {
                     }
                 }
                 else {
-                    ClusterTopologyCheckedException cause =
-                        new ClusterTopologyCheckedException("Primary node left grid.");
+                    ClusterTopologyLocalException cause =
+                        new ClusterTopologyLocalException("Primary node left grid.");
 
                     res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(transaction has been rolled back on backup node): " + req.version(), cause));
@@ -1693,7 +1694,7 @@ public class IgniteTxHandler {
                     ", node=" + nodeId + ", res=" + res + ']');
             }
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyLocalException ignored) {
             if (txRecoveryMsgLog.isDebugEnabled())
                 txRecoveryMsgLog.debug("Failed to send tx recovery response, node failed [" +
                     ", txId=" + req.nearXidVersion() +

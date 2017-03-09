@@ -33,7 +33,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterTopologyLocalException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundLocalException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -897,7 +898,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             assert topVer.topologyVersion() > 0 : topVer;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all " +
+                onDone(new ClusterTopologyServerNotFoundLocalException("Failed to map keys for near-only cache (all " +
                     "partition nodes left the grid)."));
 
                 return;
@@ -1334,7 +1335,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException ex) {
+                catch (ClusterTopologyLocalException ex) {
                     fut.onResult(ex);
                 }
             }
@@ -1347,7 +1348,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                             cctx.io().send(node, req, cctx.ioPolicy());
                         }
-                        catch (ClusterTopologyCheckedException ex) {
+                        catch (ClusterTopologyLocalException ex) {
                             fut.onResult(ex);
                         }
                         catch (IgniteCheckedException e) {
@@ -1376,7 +1377,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
-            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+            throw new ClusterTopologyServerNotFoundLocalException("Failed to lock keys " +
                 "(all partition nodes left the grid).");
 
         if (cctx.discovery().node(primary.id()) == null)
@@ -1407,9 +1408,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      */
     private ClusterTopologyCheckedException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
         ClusterTopologyCheckedException topEx = new ClusterTopologyCheckedException("Failed to acquire lock for keys " +
-            "(primary node left grid, retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
-
-        topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
+            "(primary node left grid, retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested,
+            cctx.shared().nextAffinityReadyFuture(topVer));
 
         return topEx;
     }
@@ -1538,7 +1538,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult(ClusterTopologyLocalException e) {
             if (isDone())
                 return;
 
