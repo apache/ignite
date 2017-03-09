@@ -8,8 +8,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,8 +28,8 @@ public class QueryIndexHandler {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Indexes. */
-    private final Map<String, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
+    /** All indexes. */
+    private final Map<String, Descriptor> idxs = new ConcurrentHashMap<>();
 
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
@@ -78,11 +80,28 @@ public class QueryIndexHandler {
      * Handle cache creation.
      *
      * @param cacheName Cache name.
-     * @param typDescs Type descriptors.
+     * @param typs Type descriptors.
      */
-    public void onCacheCreated(String cacheName, Collection<QueryTypeDescriptorImpl> typDescs) {
-        // TODO: Make sure indexes are unique.
-//        this.idxs.put(typ.indexes());
+    public void onCacheCreated(String cacheName, Collection<QueryTypeDescriptorImpl> typs) {
+        lock.writeLock().lock();
+
+        try {
+            for (QueryTypeDescriptorImpl typ : typs) {
+                for (QueryIndexDescriptorImpl idx : typ.indexes0()) {
+                    Descriptor desc = idxs.get(idx.name());
+
+                    if (desc != null) {
+                        throw new IgniteException("Duplicate index name [idxName=" + idx.name() +
+                            ", existingCache=" + desc.type().cacheName() + ", newCache=" + cacheName + ']');
+                    }
+
+                    idxs.put(idx.name(), new Descriptor(typ, idx));
+                }
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -91,7 +110,21 @@ public class QueryIndexHandler {
      * @param cacheName Cache name.
      */
     public void onCacheStopped(String cacheName) {
-        // TODO
+        lock.writeLock().lock();
+
+        try {
+            Iterator<Map.Entry<String, Descriptor>> iter = idxs.entrySet().iterator();
+
+            while (iter.hasNext()) {
+                Map.Entry<String, Descriptor> entry = iter.next();
+
+                if (F.eq(cacheName, entry.getValue().type().cacheName()))
+                    iter.remove();
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -100,7 +133,21 @@ public class QueryIndexHandler {
      * @param desc Descriptor.
      */
     public void onTypeUnregistered(QueryTypeDescriptorImpl desc) {
-        // TODO
+        lock.writeLock().lock();
+
+        try {
+            Iterator<Map.Entry<String, Descriptor>> iter = idxs.entrySet().iterator();
+
+            while (iter.hasNext()) {
+                Map.Entry<String, Descriptor> entry = iter.next();
+
+                if (F.eq(desc, entry.getValue().type()))
+                    iter.remove();
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -119,24 +166,23 @@ public class QueryIndexHandler {
      */
     public IgniteInternalFuture<?> onCreateIndex(String cacheName, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        // TODO: Integrated from previous impl:
-//        for (QueryTypeDescriptorImpl desc : types.values()) {
-//            if (desc.matchCacheAndTable(space, tblName))
-//                return desc.dynamicIndexCreate(idx, ifNotExists);
-//        }
-//
-//        return new GridFinishedFuture<>(new IgniteException("Failed to create index becase table is not found [" +
-//            "space=" + space + ", table=" + tblName + ']'));
+        String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
 
-
-        lock.writeLock().lock();
+        lock.readLock().lock();
 
         try {
-            String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
+            Descriptor oldIdxDesc = idxs.get(idxName);
 
-            QueryIndexDescriptorImpl oldIdx = idxs.get(idxName);
+            if (oldIdxDesc != null) {
+                // Make sure that index is bound to the same table.
+                String oldTblName = oldIdxDesc.type().tableName();
 
-            if (oldIdx != null) {
+                if (!F.eq(oldTblName, tblName)) {
+                    return new GridFinishedFuture<>(new IgniteException("Index already exists and is bound to " +
+                        "another table [idxName=" + idxName + ", expTblName=" + oldTblName +
+                        ", actualTblName=" + tblName + ']'));
+                }
+
                 if (ifNotExists)
                     return new GridFinishedFuture<>();
                 else
@@ -156,7 +202,43 @@ public class QueryIndexHandler {
             return fut;
         }
         finally {
-            lock.writeLock().unlock();
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Type and index descriptor.
+     */
+    private static final class Descriptor {
+        /** Type. */
+        private final QueryTypeDescriptorImpl typ;
+
+        /** Index. */
+        private final QueryIndexDescriptorImpl idx;
+
+        /**
+         * Constructor.
+         *
+         * @param typ Type.
+         * @param idx Index.
+         */
+        private Descriptor(QueryTypeDescriptorImpl typ, QueryIndexDescriptorImpl idx) {
+            this.typ = typ;
+            this.idx = idx;
+        }
+
+        /**
+         * @return Type.
+         */
+        public QueryTypeDescriptorImpl type() {
+            return typ;
+        }
+
+        /**
+         * @return Index.
+         */
+        public QueryIndexDescriptorImpl index() {
+            return idx;
         }
     }
 }

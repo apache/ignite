@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -196,6 +197,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
     }
 
+    /**
+     * @return Raw index descriptors.
+     */
+    public Collection<QueryIndexDescriptorImpl> indexes0() {
+        return indexes.values();
+    }
+
     /** {@inheritDoc} */
     @Override public GridQueryIndexDescriptor textIndex() {
         return fullTextIdx;
@@ -210,7 +218,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(type);
+        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(idxName, type);
 
         if (indexes.put(idxName, idx) != null)
             throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
@@ -243,7 +251,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void addFieldToTextIndex(String field) {
         if (fullTextIdx == null)
-            fullTextIdx = new QueryIndexDescriptorImpl(QueryIndexType.FULLTEXT);
+            fullTextIdx = new QueryIndexDescriptorImpl(null, QueryIndexType.FULLTEXT);
 
         fullTextIdx.addField(field, 0, false);
     }
