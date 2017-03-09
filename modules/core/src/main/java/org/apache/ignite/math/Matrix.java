@@ -19,7 +19,6 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.lang.*;
 import java.io.*;
-import java.util.function.*;
 
 /**
  * A matrix interface.
@@ -86,7 +85,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param fun Mapping function.
      * @return This matrix.
      */
-    Matrix map(DoubleFunction<Double> fun);
+    Matrix map(IgniteDoubleFunction<Double> fun);
 
     /**
      * Maps all values in this matrix through a given function.
@@ -100,7 +99,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return This function.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
-    Matrix map(Matrix mtx, BiFunction<Double, Double, Double> fun);
+    Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun);
 
     /**
      * Assigns values from given vector to the specified column in this matrix.
@@ -128,7 +127,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param fun Aggregating function.
      * @return Vector of row aggregates.
      */
-    Vector foldRows(Function<Vector, Double> fun);
+    Vector foldRows(IgniteFunction<Vector, Double> fun);
 
     /**
      * Collects the results of applying a given function to all columns in this matrix.
@@ -136,7 +135,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param fun Aggregating function.
      * @return Vector of column aggregates.
      */
-    Vector foldColumns(Function<Vector, Double> fun);
+    Vector foldColumns(IgniteFunction<Vector, Double> fun);
 
     /**
      * Folds this matrix into a single value.
@@ -148,7 +147,7 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold function.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal);
+    <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal);
 
     /**
      * Calculates the density of the matrix based on supplied criteria.

@@ -18,23 +18,13 @@
 package org.apache.ignite.math;
 
 import java.io.Serializable;
+import java.util.function.Function;
 
 /**
- * TODO: add description.
+ * Serializable function.
+ *
+ * @see java.util.function.Function
  */
-public interface KeyMapper<K> extends Serializable {
-    /**
-     * 
-     * @param x
-     * @param y
-     * @return
-     */
-    public K apply(int x, int y);
+public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
 
-    /**
-     * Checks that a pair (x, y) exists for which method {@link #apply(int, int)} will return 'k'.
-     *
-     * @param k Key to check.
-     */
-    public boolean isValid(K k);
 }

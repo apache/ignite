@@ -9,10 +9,12 @@
 
 package org.apache.ignite.math;
 
+import java.io.Serializable;
+
 /**
  * Utility mapper that can be used to map arbitrary values types to and from double.
  */
-public interface ValueMapper<V> {
+public interface ValueMapper<V> extends Serializable {
     /**
      *
      * @param v

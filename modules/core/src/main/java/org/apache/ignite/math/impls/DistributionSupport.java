@@ -21,9 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.math.IgniteBiFunction;
+import org.apache.ignite.math.IgniteConsumer;
+
 import javax.cache.*;
 import java.util.*;
-import java.util.function.*;
 
 /**
  * Distribution-related misc. support.
@@ -99,7 +101,7 @@ public class DistributionSupport {
      * @param <K>
      * @param <V>
      */
-    protected <K, V> void iterateOverEntries(String cacheName, Consumer<CacheEntry<K, V>> clo) {
+    protected <K, V> void iterateOverEntries(String cacheName, IgniteConsumer<CacheEntry<K, V>> clo) {
         int partsCnt = ignite().affinity(cacheName).partitions();
 
         broadcastForCache(cacheName, () -> {
@@ -134,7 +136,7 @@ public class DistributionSupport {
      * @param <A>
      * @return
      */
-    protected <K, V, A> Collection<A> foldForCache(String cacheName, BiFunction<CacheEntry<K, V>, A, A> folder) {
+    protected <K, V, A> Collection<A> foldForCache(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
         return broadcastForCache(cacheName, () -> {
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
 

@@ -266,7 +266,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix map(DoubleFunction<Double> fun) {
+    @Override public Matrix map(IgniteDoubleFunction<Double> fun) {
         int rows = sto.rowSize();
         int cols = sto.columnSize();
 
@@ -278,7 +278,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix map(Matrix mtx, BiFunction<Double, Double, Double> fun) {
+    @Override public Matrix map(Matrix mtx, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(mtx);
 
         int rows = sto.rowSize();
@@ -322,7 +322,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public Vector foldRows(Function<Vector, Double> fun) {
+    @Override public Vector foldRows(IgniteFunction<Vector, Double> fun) {
         int rows = rowSize();
 
         Vector vec = likeVector(rows);
@@ -334,7 +334,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public Vector foldColumns(Function<Vector, Double> fun) {
+    @Override public Vector foldColumns(IgniteFunction<Vector, Double> fun) {
         int cols = columnSize();
 
         Vector vec = likeVector(cols);
@@ -346,7 +346,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
 
         int rows = rowSize();

@@ -23,7 +23,6 @@ import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.matrix.*;
 import java.util.*;
-import java.util.function.*;
 
 /**
  * Matrix based on existing cache and key and value mapping functions.
@@ -148,7 +147,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Matrix map(DoubleFunction<Double> fun) {
+    @Override public Matrix map(IgniteDoubleFunction<Double> fun) {
         return mapOverValues(fun::apply);
     }
 
@@ -184,7 +183,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
      * @param mapper
      * @return
      */
-    private Matrix mapOverValues(Function<Double, Double> mapper) {
+    private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();
 
         // Gets these values assigned to a local vars so that

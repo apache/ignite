@@ -18,23 +18,12 @@
 package org.apache.ignite.math;
 
 import java.io.Serializable;
+import java.util.function.DoubleFunction;
 
 /**
- * TODO: add description.
+ * Serializable double function.
+ *
+ * @see java.util.function.DoubleFunction
  */
-public interface KeyMapper<K> extends Serializable {
-    /**
-     * 
-     * @param x
-     * @param y
-     * @return
-     */
-    public K apply(int x, int y);
-
-    /**
-     * Checks that a pair (x, y) exists for which method {@link #apply(int, int)} will return 'k'.
-     *
-     * @param k Key to check.
-     */
-    public boolean isValid(K k);
+public interface IgniteDoubleFunction<R> extends DoubleFunction<R>, Serializable {
 }

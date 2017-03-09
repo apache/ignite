@@ -19,8 +19,9 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.KeyMapper;
@@ -28,7 +29,6 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Ignore;
 
 /**
  * Tests for {@link CacheMatrix}.
@@ -53,8 +53,9 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 1; i <= NODE_COUNT; i++)
-            startGrid(i);
+        for (int i = 1; i <= NODE_COUNT; i++) {
+            IgniteEx igniteEx = startGrid(i);
+        }
     }
 
     /** {@inheritDoc} */
@@ -67,6 +68,8 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
      */
     @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
+
+        ignite.configuration().setPeerClassLoadingEnabled(true);
     }
 
     /** */
