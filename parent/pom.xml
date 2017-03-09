@@ -35,6 +35,8 @@
 
     <properties>
         <ignite.edition>fabric</ignite.edition>
+        <hadoop.version>2.4.1</hadoop.version>
+        <spark.version>1.5.2</spark.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
