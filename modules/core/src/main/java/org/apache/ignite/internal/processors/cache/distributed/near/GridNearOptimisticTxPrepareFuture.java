@@ -75,6 +75,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
 
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -232,7 +235,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -246,7 +249,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -494,6 +497,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     m.writes(),
                     m.near(),
                     txMapping.transactionNodes(),
+                    false,
                     m.last(),
                     tx.onePhaseCommit(),
                     tx.needReturnValue() && tx.implicit(),
@@ -521,7 +525,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     }
                 }
 
-                final MiniFuture fut = new MiniFuture(this, m, mappings);
+                final MiniFuture fut = new MiniFuture(this, m, ++miniId, mappings);
 
                 req.miniId(fut.futureId());
 
@@ -771,7 +775,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         private final GridNearOptimisticTxPrepareFuture parent;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Keys. */
         @GridToStringInclude
@@ -787,19 +791,23 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param parent Parent.
          * @param m Mapping.
+         * @param futId Mini future ID.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridNearOptimisticTxPrepareFuture parent, GridDistributedTxMapping m,
+        MiniFuture(GridNearOptimisticTxPrepareFuture parent,
+            GridDistributedTxMapping m,
+            int futId,
             Queue<GridDistributedTxMapping> mappings) {
             this.parent = parent;
             this.m = m;
+            this.futId = futId;
             this.mappings = mappings;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

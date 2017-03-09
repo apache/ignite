@@ -128,13 +128,23 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         Collection<IgniteTxEntry> nearWrites,
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
+        boolean mappingKnown,
         boolean last,
         boolean onePhaseCommit,
         UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
         boolean retVal) {
-        super(tx, timeout, null, dhtWrites, txNodes, retVal, last, onePhaseCommit, addDepInfo);
+        super(tx,
+            timeout,
+            null,
+            dhtWrites,
+            txNodes,
+            mappingKnown,
+            retVal,
+            last,
+            onePhaseCommit,
+            addDepInfo);
 
         assert futId != null;
         assert miniId != null;

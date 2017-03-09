@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -78,7 +77,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         for (IgniteInternalFuture<?> fut : futures()) {
             MiniFuture f = (MiniFuture)fut;
 
-            if (f.node().id().equals(nodeId)) {
+            if (f.primary().id().equals(nodeId)) {
                 ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Remote node left grid: " +
                     nodeId);
 
@@ -101,7 +100,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             MiniFuture f = miniFuture(res.miniId());
 
             if (f != null) {
-                assert f.node().id().equals(nodeId);
+                assert f.primary().id().equals(nodeId);
 
                 f.onResult(res);
             }
@@ -131,16 +130,16 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                MiniFuture mini = (MiniFuture) future(i);
+                MiniFuture mini = (MiniFuture)future(i);
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -246,6 +245,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             return;
         }
 
+        int miniId = 0;
+
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();
 
@@ -258,6 +259,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 m.writes(),
                 m.near(),
                 txMapping.transactionNodes(),
+                mappingKnown,
                 true,
                 tx.onePhaseCommit(),
                 tx.needReturnValue() && tx.implicit(),
@@ -273,7 +275,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     req.addDhtVersion(txEntry.txKey(), null);
             }
 
-            final MiniFuture fut = new MiniFuture(m);
+            final MiniFuture fut = new MiniFuture(m, ++miniId);
 
             req.miniId(fut.futureId());
 
@@ -353,8 +355,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
+                return "[node=" + ((MiniFuture)f).primary().id() +
+                    ", loc=" + ((MiniFuture)f).primary().isLocal() +
                     ", done=" + f.isDone() + "]";
             }
         });
@@ -372,29 +374,31 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** */
         private GridDistributedTxMapping m;
 
         /**
          * @param m Mapping.
+         * @param futId Mini future ID.
          */
-        MiniFuture(GridDistributedTxMapping m) {
+        MiniFuture(GridDistributedTxMapping m, int futId) {
             this.m = m;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
         /**
          * @return Node ID.
          */
-        public ClusterNode node() {
+        public ClusterNode primary() {
             return m.node();
         }
 

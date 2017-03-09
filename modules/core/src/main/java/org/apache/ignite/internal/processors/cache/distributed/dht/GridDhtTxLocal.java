@@ -72,7 +72,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private IgniteUuid nearFutId;
 
     /** Near future ID. */
-    private IgniteUuid nearMiniId;
+    private int nearMiniId;
 
     /** Near future ID. */
     private IgniteUuid nearFinFutId;
@@ -121,7 +121,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
         IgniteUuid nearFutId,
-        IgniteUuid nearMiniId,
+        int nearMiniId,
         long nearThreadId,
         boolean implicit,
         boolean implicitSingle,
@@ -159,7 +159,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         assert nearNodeId != null;
         assert nearFutId != null;
-        assert nearMiniId != null;
+        assert nearMiniId != 0;
         assert nearXidVer != null;
 
         this.nearNodeId = nearNodeId;
@@ -394,7 +394,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         @Nullable Collection<IgniteTxEntry> writes,
         Map<IgniteTxKey, GridCacheVersion> verMap,
         long msgId,
-        IgniteUuid nearMiniId,
+        int nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last
     ) {
@@ -417,7 +417,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 needReturnValue()))) {
                 GridDhtTxPrepareFuture f = prepFut;
 
-                assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
+                assert f.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
                     "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
 
                 if (timeout == -1)
@@ -427,7 +427,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             }
         }
         else {
-            assert fut.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
+            assert fut.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
                 "[futMiniId=" + fut.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + fut + ']';
 
             // Prepare was called explicitly.
@@ -626,7 +626,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';
 
-        assert nearMiniId != null;
+        assert nearMiniId != 0;
 
         return super.finish(commit);
     }

@@ -1000,7 +1000,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             cctx,
             this,
             timeout,
-            IgniteUuid.randomUuid(),
+            0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
             needReturnValue() && implicit());

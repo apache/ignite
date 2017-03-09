@@ -56,9 +56,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -224,7 +222,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(long miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -238,7 +236,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -364,10 +362,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         checkOnePhase();
 
+        int miniId = 0;
+
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            add(new MiniFuture(this, m));
+            add(new MiniFuture(this, m, ++miniId));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
@@ -442,6 +442,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.writes(),
             m.near(),
             txMapping.transactionNodes(),
+            false,
             m.last(),
             tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),
@@ -687,7 +688,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             AtomicIntegerFieldUpdater.newUpdater(MiniFuture.class, "rcvRes");
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Parent future. */
         private final GridNearOptimisticSerializableTxPrepareFuture parent;
@@ -703,16 +704,18 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * @param parent Parent future.
          * @param m Mapping.
+         * @param futId Mini future ID.
          */
-        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m) {
+        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m, int futId) {
             this.parent = parent;
             this.m = m;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
