@@ -20,6 +20,8 @@ package org.apache.ignite.math.impls.storage.matrix;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Matrix storage based on arbitrary cache and key and value mapping functions.
@@ -57,6 +59,14 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         this.cache = cache;
         this.keyMapper = keyMapper;
         this.valMapper = valMapper;
+
+        Map batchInitVals = new HashMap();
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                batchInitVals.put(keyMapper.apply(i, j), 0d);
+
+        cache.putAll(batchInitVals);
     }
 
     /**

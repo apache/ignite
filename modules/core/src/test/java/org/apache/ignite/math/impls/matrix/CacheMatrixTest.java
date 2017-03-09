@@ -30,6 +30,8 @@ import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
+import java.util.Collections;
+
 /**
  * Tests for {@link CacheMatrix}.
  *
@@ -127,26 +129,68 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 //        assertFalse("Like matrix should be not equal to original.", like.equals(cacheMatrix));
 //    }
 
-    /** TODO: wip */
+    /** TODO: wip, currently test fails. */
     public void testPlus(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        double initVal = 1;
         double plusVal = 2;
 
         KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
-        cacheMatrix.assign(initVal);
         cacheMatrix.plus(plusVal);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                assertEquals(cacheMatrix.get(i, j), initVal + plusVal);
+                assertEquals(plusVal, cacheMatrix.get(i, j));
+    }
+
+    /** */
+    public void testAssignSingleValue(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double initVal = 1;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        cacheMatrix.assign(initVal);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                assertEquals(initVal, cacheMatrix.get(i, j));
+    }
+
+    /** */
+    public void testAssignArray(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double[][] initVal = new double[rows][cols];
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                initVal[i][j] = Math.random();
+
+        cacheMatrix.assign(initVal);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                assertEquals(initVal[i][j], cacheMatrix.get(i, j));
     }
 
     /** */
