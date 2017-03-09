@@ -146,6 +146,21 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
+     * @return Metrics.
+     */
+    public String getMetrics() {
+        GridStringBuilder sb = new GridStringBuilder();
+        sb.a("completed");
+        for (int i = 0; i < stripes.length; i++) {
+            Stripe stripe = stripes[i];
+
+            long completedCnt = stripe.completedCnt;
+            sb.a(':').a(completedCnt);
+        }
+        return sb.toString();
+    }
+
+    /**
      * @return Stripes count.
      */
     public int stripes() {

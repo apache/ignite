@@ -1152,7 +1152,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 pubPoolIdleThreads + ", qSize=" + pubPoolQSize + "]" + NL +
                                 "    ^-- System thread pool [active=" + sysPoolActiveThreads + ", idle=" +
                                 sysPoolIdleThreads + ", qSize=" + sysPoolQSize + "]" + NL +
-                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]";
+                                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
+                                "    ^-- Striped executor [" + ctx.getStripedExecutorService().getMetrics() + "]";
 
                             log.info(msg);
                         }

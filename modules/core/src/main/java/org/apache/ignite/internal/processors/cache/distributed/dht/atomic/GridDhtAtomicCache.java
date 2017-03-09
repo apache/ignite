@@ -1829,7 +1829,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED)
             res.stripe(stripeIdx);
 
-        // todo: partition assignment
         res.partition(req.partition());
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
