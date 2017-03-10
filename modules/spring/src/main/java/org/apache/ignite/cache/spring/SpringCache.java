@@ -83,8 +83,8 @@ class SpringCache implements Cache {
             try {
                 val = valueLoader.call();
             }
-            catch (Exception ignored) {
-                return null;
+            catch (Exception e) {
+                throw new ValueRetrievalException(key, valueLoader, e);
             }
 
             put(key, val);
