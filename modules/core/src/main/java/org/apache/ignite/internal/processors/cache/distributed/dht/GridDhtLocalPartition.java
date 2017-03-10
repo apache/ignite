@@ -942,43 +942,41 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
 
                 while (it0.hasNext()) {
-                    cctx.shared().database().checkpointReadLock();
-
                     try {
                         CacheDataRow row = it0.next();
 
-                        GridDhtCacheEntry cached = (GridDhtCacheEntry) getEntry(row.key());
+                        GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
 
-                        if (cached == null || cached.obsolete())
-                            cached = (GridDhtCacheEntry) putEntryIfObsoleteOrAbsent(
-                                cctx.affinity().affinityTopologyVersion(), row.key(), null, true, false);
+                        cctx.shared().database().checkpointReadLock();
 
-                        if (cached.clearInternal(clearVer, extras)) {
-                            if (rec) {
-                                cctx.events().addEvent(cached.partition(),
-                                    cached.key(),
-                                    cctx.localNodeId(),
-                                    (IgniteUuid)null,
-                                    null,
-                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                    null,
-                                    false,
-                                    cached.rawGet(),
-                                    cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
-                                    false);
+                        try {
+                            if (cached.clearInternal(clearVer, extras)) {
+                                if (rec) {
+                                    cctx.events().addEvent(cached.partition(),
+                                        cached.key(),
+                                        cctx.localNodeId(),
+                                        (IgniteUuid)null,
+                                        null,
+                                        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                        null,
+                                        false,
+                                        cached.rawGet(),
+                                        cached.hasValue(),
+                                        null,
+                                        null,
+                                        null,
+                                        false);
+                                }
                             }
+                        }
+                        finally {
+                            cctx.shared().database().checkpointReadUnlock();
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
                         break; // Partition is already concurrently cleared and evicted.
-                    }
-                    finally {
-                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }
