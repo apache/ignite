@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
@@ -375,6 +376,11 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalTx tx() {
+        return tx;
     }
 
     /** {@inheritDoc} */

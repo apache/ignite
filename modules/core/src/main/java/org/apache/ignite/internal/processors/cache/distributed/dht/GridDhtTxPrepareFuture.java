@@ -1418,6 +1418,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             nearMapping.writes(),
                             tx.transactionNodes(),
                             tx.nearXidVersion(),
+                            false,
                             true,
                             tx.onePhaseCommit(),
                             tx.subjectId(),

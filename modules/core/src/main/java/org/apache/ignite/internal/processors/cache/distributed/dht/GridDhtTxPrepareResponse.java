@@ -134,7 +134,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @param val {@code True} if this is reply for near node.
      */
-    void nearNodeResponse(boolean val) {
+    public void nearNodeResponse(boolean val) {
         setFlag(val, NEAR_RES_FLAG_MASK);
     }
 

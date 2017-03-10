@@ -969,8 +969,10 @@ public class IgniteTxHandler {
                     req.partition(),
                     req.nearXidVersion(),
                     req.nearFutureId(),
-                    null, //req.nearMiniId(),
+                    req.nearMiniId(),
                     req.deployInfo() != null);
+
+                nearRes.nearNodeResponse(true);
             }
             else {
                 res = new GridDhtTxPrepareResponse(
