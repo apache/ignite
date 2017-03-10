@@ -112,17 +112,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     }
 
     /**
-     * @param p Partition to check.
-     * @return {@code True} if historical.
-     */
-    boolean isHistorical(int p) {
-        if (historicalParts == null)
-            return false;
-
-        return historicalParts.contains(p);
-    }
-
-    /**
      * @param updateSeq Update sequence.
      */
     void updateSequence(long updateSeq) {

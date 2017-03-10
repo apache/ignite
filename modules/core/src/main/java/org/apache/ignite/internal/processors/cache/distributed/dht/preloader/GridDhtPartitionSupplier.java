@@ -209,11 +209,9 @@ class GridDhtPartitionSupplier {
             if (sctx == null && d.partitions() == null)
                 return;
 
-            assert !(sctx != null && d.partitions() != null);
+            assert !(sctx != null && !d.partitions().isEmpty());
 
             long bCnt = 0;
-
-            boolean newReq = true;
 
             long maxBatchesCnt = cctx.config().getRebalanceBatchesPrefetchCount();
 
@@ -230,17 +228,19 @@ class GridDhtPartitionSupplier {
 
             IgniteRebalanceIterator iter;
 
-            Set<Integer> sentLast;
+            Set<Integer> remainingParts;
 
             if (sctx == null || sctx.entryIt == null) {
                 iter = cctx.offheap().rebalanceIterator(d.partitions(), d.topologyVersion());
 
-                sentLast = new HashSet<>();
+                remainingParts = new HashSet<>(d.partitions().fullSet());
+
+                remainingParts.addAll(d.partitions().historicalMap().keySet());
             }
             else {
                 iter = sctx.entryIt;
 
-                sentLast = sctx.sentLast;
+                remainingParts = sctx.sentLast;
             }
 
             while (iter.hasNext()) {
@@ -248,7 +248,7 @@ class GridDhtPartitionSupplier {
                     if (++bCnt >= maxBatchesCnt) {
                         saveSupplyContext(scId,
                             iter,
-                            sentLast,
+                            remainingParts,
                             d.topologyVersion(),
                             d.updateSequence());
 
@@ -290,7 +290,7 @@ class GridDhtPartitionSupplier {
 
                     continue;
                 }
-                else if (sentLast.contains(part))
+                else if (!remainingParts.contains(part))
                     continue;
 
                 GridCacheEntryInfo info = new GridCacheEntryInfo();
@@ -311,22 +311,26 @@ class GridDhtPartitionSupplier {
                 if (iter.isPartitionDone(part)) {
                     s.last(part);
 
-                    sentLast.add(part);
+                    remainingParts.remove(part);
                 }
 
                 // Need to manually prepare cache message.
                 // TODO GG-11141.
             }
 
-            for (Integer p : d.partitions().fullSet()) {
-                if (iter.isPartitionDone(p) && !sentLast.contains(p)) {
+            Iterator<Integer> remainingIter = remainingParts.iterator();
+
+            while (remainingIter.hasNext()) {
+                int p = remainingIter.next();
+
+                if (iter.isPartitionDone(p)) {
                     s.last(p);
 
-                    sentLast.add(p);
+                    remainingIter.remove();
                 }
             }
 
-            assert sentLast.size() == d.partitions().size();
+            assert remainingParts.isEmpty();
 
             iter.close();
 

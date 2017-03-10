@@ -162,6 +162,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public GridIterator<CacheDataRow> iterator(boolean primary, boolean backup, final AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
+    public GridCloseableIterator<CacheDataRow> reservedIterator(final int part, final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
+
     /**
      * @param part Partition.
      * @return Partition data iterator.

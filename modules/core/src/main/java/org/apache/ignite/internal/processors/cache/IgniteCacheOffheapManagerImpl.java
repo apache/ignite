@@ -604,6 +604,47 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         };
     }
 
+    @Override public GridCloseableIterator<CacheDataRow> reservedIterator(int part,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        final GridDhtLocalPartition loc = cctx.topology().localPartition(part, cctx.topology().topologyVersion(), false);
+
+        if (loc == null || loc.state() != OWNING || !loc.reserve())
+            return null;
+
+        CacheDataStore data = partitionData(part);
+
+        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            /** */
+            private CacheDataRow next;
+
+            @Override protected CacheDataRow onNext() {
+                CacheDataRow res = next;
+
+                next = null;
+
+                return res;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (next != null)
+                    return true;
+
+                if (cur.next())
+                    next = cur.get();
+
+                return next != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                assert loc != null && loc.state() == OWNING && loc.reservations() > 0;
+
+                loc.release();
+            }
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public GridIterator<CacheDataRow> iterator(int part) throws IgniteCheckedException {
         CacheDataStore data = partitionData(part);
@@ -674,39 +715,23 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
 
-        // TODO : replace with GridCloseableIterators.
-        final TreeMap<Integer, GridIterator<CacheDataRow>> iterators = new TreeMap<>();
+        final TreeMap<Integer, GridCloseableIterator<CacheDataRow>> iterators = new TreeMap<>();
         Set<Integer> missing = null;
 
         for (Integer p : parts.fullSet()) {
-            GridDhtLocalPartition loc = cctx.topology().localPartition(p, topVer, false);
+            GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
 
-            if (loc == null || loc.state() != OWNING || !loc.reserve()) {
-                // Reply with partition of "-1" to let sender know that
-                // this node is no longer an owner.
-
+            if (partIter == null) {
                 if (missing == null)
                     missing = new HashSet<>();
 
                 missing.add(p);
             }
             else
-                iterators.put(p, iterator(p));
+                iterators.put(p, partIter);
         }
 
-        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators,
-            historicalIterator(parts.historicalMap()),
-            new IgniteRunnable() {
-                @Override public void run() {
-                    for (Integer p : iterators.keySet()) {
-                        GridDhtLocalPartition loc = cctx.topology().localPartition(p, topVer, false);
-
-                        assert loc != null && loc.reservations() > 0;
-
-                        loc.release();
-                    }
-                }
-            });
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator(parts.historicalMap()));
 
         if (missing != null) {
             for (Integer p : missing)

@@ -28,33 +28,28 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
 public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
-    @Nullable private final NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators;
+    @Nullable private final NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators;
 
     @Nullable private final IgniteHistoricalIterator historicalIterator;
 
     private final Set<Integer> missingParts = new HashSet<>();
 
-    private final IgniteRunnable closeRunnable;
-
-    private Map.Entry<Integer, GridIterator<CacheDataRow>> current;
+    private Map.Entry<Integer, GridCloseableIterator<CacheDataRow>> current;
 
     private boolean reachedEnd;
 
     private boolean closed;
 
     public IgniteRebalanceIteratorImpl(
-        NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators,
-        IgniteHistoricalIterator historicalIterator,
-        IgniteRunnable closeRunnable) throws IgniteCheckedException {
+        NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators,
+        IgniteHistoricalIterator historicalIterator) throws IgniteCheckedException {
         this.fullIterators = fullIterators;
         this.historicalIterator = historicalIterator;
-        this.closeRunnable = closeRunnable;
 
         advance();
     }
@@ -125,7 +120,10 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         if (historicalIterator != null)
             historicalIterator.close();
 
-        closeRunnable.run();
+        if (fullIterators != null) {
+            for (GridCloseableIterator<CacheDataRow> iter : fullIterators.values())
+                iter.close();
+        }
 
         closed = true;
     }
