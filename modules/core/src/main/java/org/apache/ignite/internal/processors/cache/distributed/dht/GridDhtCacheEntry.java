@@ -91,7 +91,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         // Record this entry with partition.
         int p = cctx.affinity().partition(key);
 
-        locPart = ctx.topology().localPartition(p, topVer, true);
+        locPart = ctx.topology().localPartition(p, topVer, true, true);
 
         assert locPart != null : p;
     }

@@ -105,7 +105,8 @@ public class SnapshotOperation implements Serializable {
      * @param op Op.
      */
     public static Collection<File> getOptionalPathsParameter(SnapshotOperation op) {
-        assert op.type() == SnapshotOperationType.CHECK || op.extraParameter() instanceof Collection;
+        assert (op.type() == SnapshotOperationType.CHECK || op.type() == SnapshotOperationType.RESTORE)
+            && (op.extraParameter() == null || op.extraParameter() instanceof Collection);
 
         return (Collection<File>)op.extraParameter();
     }

@@ -75,6 +75,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 
 /**
@@ -235,6 +236,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         top = null;
     }
+
     /**
      * @return Node stop exception.
      */
@@ -270,8 +272,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-            ", cache=" + cctx.name() +
-            ", topVer=" + top.topologyVersion() + ']';
+                ", cache=" + cctx.name() +
+                ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
@@ -290,47 +292,95 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             // If partition belongs to local node.
             if (cctx.affinity().partitionLocalNode(p, topVer)) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
 
                 assert part != null;
                 assert part.id() == p;
 
-                if (part.state() != MOVING) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping partition assignment (state is not MOVING): " + part);
+                ClusterNode histSupplier = null;
 
-                    continue; // For.
+                if (cctx.shared().database().persistenceEnabled()) {
+                    UUID nodeId = exchFut.partitionHistorySupplier(cctx.cacheId(), p);
+
+                    if (nodeId != null)
+                        histSupplier = cctx.discovery().node(nodeId);
                 }
 
-                Collection<ClusterNode> picked = pickedOwners(p, topVer);
+                if (histSupplier != null) {
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
 
-                if (picked.isEmpty()) {
-                    top.own(part);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                        cctx.events().addPreloadEvent(p,
-                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-                            discoEvt.type(), discoEvt.timestamp());
+                        continue; // For.
                     }
 
-                    if (log.isDebugEnabled())
-                        log.debug("Owning partition as there are no other owners: " + part);
-                }
-                else {
-                    ClusterNode n = F.rand(picked);
+                    assert cctx.shared().database().persistenceEnabled();
+                    assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
-                    GridDhtPartitionDemandMessage msg = assigns.get(n);
+                    GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
 
                     if (msg == null) {
-                        assigns.put(n, msg = new GridDhtPartitionDemandMessage(
+                        assigns.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             exchFut.exchangeId().topologyVersion(),
                             cctx.cacheId()));
                     }
 
-                    msg.addPartition(p);
+                    msg.addPartition(p, true);
+                }
+                else {
+                    if (cctx.shared().database().persistenceEnabled()) {
+                        if (part.state() == RENTING || part.state() == EVICTED) {
+                            try {
+                                part.rent(false).get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Error while clearing outdated local partition", e);
+                            }
+
+                            part = top.localPartition(p, topVer, true);
+
+                            assert part != null;
+                        }
+                    }
+
+                    if (part.state() != MOVING) {
+                        if (log.isDebugEnabled())
+                            log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                        continue; // For.
+                    }
+
+                    Collection<ClusterNode> picked = pickedOwners(p, topVer);
+
+                    if (picked.isEmpty()) {
+                        top.own(part);
+
+                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                            DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                            cctx.events().addPreloadEvent(p,
+                                EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                                discoEvt.type(), discoEvt.timestamp());
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Owning partition as there are no other owners: " + part);
+                    }
+                    else {
+                        ClusterNode n = F.rand(picked);
+
+                        GridDhtPartitionDemandMessage msg = assigns.get(n);
+
+                        if (msg == null) {
+                            assigns.put(n, msg = new GridDhtPartitionDemandMessage(
+                                top.updateSequence(),
+                                exchFut.exchangeId().topologyVersion(),
+                                cctx.cacheId()));
+                        }
+
+                        msg.addPartition(p, false);
+                    }
                 }
             }
         }
@@ -379,7 +429,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s) {
+    @Override public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s) {
         if (!enterBusy())
             return;
 
@@ -399,7 +449,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
+    @Override public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d) {
         if (!enterBusy())
             return;
 
@@ -789,7 +839,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                                 try {
                                     part.tryEvict();
 
-                                    if (part.state() != EVICTED)
+                                    if (part.state() == RENTING)
                                         partsToEvict.push(part);
                                 }
                                 catch (Throwable ex) {

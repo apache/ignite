@@ -38,6 +38,9 @@ public class StartSnapshotOperationAckDiscoveryMessage implements DiscoveryCusto
     /** Custom message ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** Operation id. */
+    private IgniteUuid opId;
+
     /** */
     private Exception err;
 
@@ -55,12 +58,14 @@ public class StartSnapshotOperationAckDiscoveryMessage implements DiscoveryCusto
      * @param err Error.
      */
     public StartSnapshotOperationAckDiscoveryMessage(
+        IgniteUuid id,
         SnapshotOperation snapshotOperation,
         Map<Integer, Long> lastFullSnapshotIdForCache,
         Map<Integer, Long> lastSnapshotIdForCache,
         Exception err,
         UUID initiatorNodeId
     ) {
+        this.opId = id;
         this.snapshotOperation = snapshotOperation;
         this.lastFullSnapshotIdForCache = lastFullSnapshotIdForCache;
         this.lastSnapshotIdForCache = lastSnapshotIdForCache;
@@ -71,6 +76,13 @@ public class StartSnapshotOperationAckDiscoveryMessage implements DiscoveryCusto
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    /**
+     *
+     */
+    public IgniteUuid operationId() {
+        return opId;
     }
 
     /**

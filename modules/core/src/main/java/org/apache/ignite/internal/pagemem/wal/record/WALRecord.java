@@ -160,7 +160,10 @@ public abstract class WALRecord {
         DATA_PAGE_UPDATE_RECORD,
 
         /** init */
-        BTREE_META_PAGE_INIT_ROOT2
+        BTREE_META_PAGE_INIT_ROOT2,
+
+        /** Partition destroy. */
+        PARTITION_DESTROY
         ;
 
         /** */
