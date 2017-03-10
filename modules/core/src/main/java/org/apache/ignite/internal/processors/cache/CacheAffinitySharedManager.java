@@ -824,7 +824,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         else {
             GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                 aff.cacheName(),
-                fut.topologyVersion());
+                fut.topologyVersion(),
+                fut.discoCache());
 
             fetchFut.init();
 
@@ -952,7 +953,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             else {
                 GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                     cacheCtx.name(),
-                    topVer);
+                    topVer,
+                    fut.discoCache());
 
                 fetchFut.init();
 
@@ -1118,7 +1120,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                         aff.cacheName(),
-                        prev.topologyVersion());
+                        prev.topologyVersion(),
+                        prev.discoCache());
 
                     fetchFut.init();
 
