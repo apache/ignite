@@ -130,19 +130,21 @@ public interface GridQueryIndexing {
     /**
      * Registers cache.
      *
+     * @param spaceName Space name.
      * @param cctx Cache context.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(String spaceName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg)
+        throws IgniteCheckedException;
 
     /**
      * Unregisters cache.
      *
-     * @param ccfg Cache configuration.
+     * @param spaceName Space name.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
+    public void unregisterCache(String spaceName) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.

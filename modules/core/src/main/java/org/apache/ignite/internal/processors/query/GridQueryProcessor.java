@@ -199,7 +199,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         CacheConfiguration<?,?> ccfg = cctx.config();
 
-        idx.registerCache(cctx, cctx.config());
+        idx.registerCache(cctx.name(), cctx, cctx.config());
 
         try {
             List<Class<?>> mustDeserializeClss = null;
@@ -423,7 +423,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            idx.unregisterCache(ccfg);
+            idx.unregisterCache(cctx.name());
 
             throw e;
         }
@@ -522,7 +522,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            idx.unregisterCache(cctx.config());
+            idx.unregisterCache(cctx.name());
 
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
