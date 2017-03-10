@@ -201,10 +201,9 @@ public abstract class PagesList extends DataStructure {
                         long tailId = upd[i];
 
                         long pageId = tailId;
-                        int count = 0;
+                        int cnt = 0;
 
                         while (pageId != 0L) {
-
                             try (Page page = page(pageId)) {
                                 long pageAddr = readLock(page);
 
@@ -213,12 +212,12 @@ public abstract class PagesList extends DataStructure {
                                 try {
                                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
-                                    count += io.getCount(pageAddr);
+                                    cnt += io.getCount(pageAddr);
                                     pageId = io.getPreviousId(pageAddr);
 
                                     // In reuse bucket the page itself can be used as a free page.
                                     if (isReuseBucket(bucket) && pageId != 0L)
-                                        count++;
+                                        cnt++;
                                 }
                                 finally {
                                     readUnlock(page, pageAddr);
@@ -226,9 +225,9 @@ public abstract class PagesList extends DataStructure {
                             }
                         }
 
-                        Stripe stripe = new Stripe(tailId, count == 0);
+                        Stripe stripe = new Stripe(tailId, cnt == 0);
                         tails[i] = stripe;
-                        bucketSize += count;
+                        bucketSize += cnt;
                     }
 
                     boolean ok = casBucket(bucket, null, tails);

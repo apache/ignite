@@ -22,7 +22,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
-import org.apache.ignite.cache.LargeEntryUpdateTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityDynamicCacheSelfTest;
@@ -229,8 +228,6 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Warmup closure tests.
         suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
-
-        suite.addTestSuite(LargeEntryUpdateTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);

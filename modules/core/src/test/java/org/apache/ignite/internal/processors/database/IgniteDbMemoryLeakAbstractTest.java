@@ -172,9 +172,8 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      */
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
+
         final IgniteCache<Object, Object> cache = cache(ignite);
-
-
 
         Runnable target = new Runnable() {
             @Override public void run() {
