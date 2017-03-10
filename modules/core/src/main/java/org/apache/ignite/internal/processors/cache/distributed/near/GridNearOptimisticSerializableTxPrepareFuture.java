@@ -76,6 +76,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     @GridToStringExclude
     private ClientRemapFuture remapFut;
 
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -228,7 +231,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(long miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -368,8 +371,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         checkOnePhase(txMapping);
 
-        int miniId = 0;
-
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
@@ -448,7 +449,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.writes(),
             m.near(),
             txMapping.transactionNodes(),
-            false,
             m.last(),
             tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),

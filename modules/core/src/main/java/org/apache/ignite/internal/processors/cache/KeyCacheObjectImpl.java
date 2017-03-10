@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -199,5 +200,13 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
         return val.equals(other.val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "KeyCacheObject",
+            "part", part, true,
+            "val", val, true,
+            "hasValBytes", valBytes != null, false);
     }
 }

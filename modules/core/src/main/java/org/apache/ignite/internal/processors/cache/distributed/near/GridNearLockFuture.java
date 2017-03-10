@@ -1181,6 +1181,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             req.filter(filter, cctx);
 
         if (node.isLocal()) {
+            req.miniId(-1);
+
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
 

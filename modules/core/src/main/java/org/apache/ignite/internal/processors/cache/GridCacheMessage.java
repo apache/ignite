@@ -701,6 +701,17 @@ public abstract class GridCacheMessage implements Message {
         return reader.afterMessageRead(GridCacheMessage.class);
     }
 
+    /**
+     * @param str Bulder.
+     * @param name Flag name.
+     */
+    protected final void appendFlag(StringBuilder str, String name) {
+        if (str.length() > 0)
+            str.append('|');
+
+        str.append(name);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheMessage.class, this, "cacheId", cacheId);

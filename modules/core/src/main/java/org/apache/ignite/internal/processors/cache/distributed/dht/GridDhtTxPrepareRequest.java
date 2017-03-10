@@ -59,7 +59,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Future ID. */
     private IgniteUuid nearFutId;
@@ -128,7 +128,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         IgniteUuid nearFutId,
         int nearMiniId,
         AffinityTopologyVersion topVer,
@@ -156,7 +156,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             onePhaseCommit,
             addDepInfo);
 
-        assert dhtNearReply || (futId != null && miniId != null);
+        assert dhtNearReply || (futId != null && miniId != 0);
         assert !dhtNearReply || (nearFutId != null && nearMiniId != 0);
 
         this.topVer = topVer;
@@ -259,7 +259,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -390,7 +390,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -494,7 +494,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 22:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

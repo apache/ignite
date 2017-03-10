@@ -561,7 +561,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -575,7 +575,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -1250,6 +1250,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 return;
 
             if (last) {
+                int miniId = 0;
+
+                assert tx.transactionNodes() != null;
+
                 final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
                 // Create mini futures.
@@ -1275,7 +1279,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     MiniFuture fut = null;
 
                     if (!tx.dhtReplyNear()) {
-                        fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
+                        fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
 
                         add(fut); // Append new future.
                     }
@@ -1398,7 +1402,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         if (tx.remainingTime() == -1)
                             return;
 
-                        MiniFuture fut = new MiniFuture(nearMapping.primary().id(), null, nearMapping);
+                        MiniFuture fut = new MiniFuture(nearMapping.primary().id(), ++miniId, null, nearMapping);
 
                         add(fut); // Append new future.
 
@@ -1414,7 +1418,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             nearMapping.writes(),
                             tx.transactionNodes(),
                             tx.nearXidVersion(),
-                            false,
                             true,
                             tx.onePhaseCommit(),
                             tx.subjectId(),
@@ -1652,7 +1655,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Node ID. */
         private UUID nodeId;
@@ -1667,17 +1670,20 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         /**
          * @param nodeId Node ID.
+         * @param futId Future ID.
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
         MiniFuture(
             UUID nodeId,
+            int futId,
             GridDistributedTxMapping dhtMapping,
             GridDistributedTxMapping nearMapping
         ) {
             assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
             this.nodeId = nodeId;
+            this.futId = futId;
             this.dhtMapping = dhtMapping;
             this.nearMapping = nearMapping;
         }
@@ -1685,7 +1691,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

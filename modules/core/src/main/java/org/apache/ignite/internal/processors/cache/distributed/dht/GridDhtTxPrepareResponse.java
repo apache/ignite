@@ -61,7 +61,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     private IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Invalid partitions by cache ID. */
     @GridDirectMap(keyType = Integer.class, valueType = int[].class)
@@ -89,12 +89,12 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         int part,
         GridCacheVersion xid,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         boolean addDepInfo) {
         super(part, xid, addDepInfo);
 
         assert futId != null;
-        assert miniId != null;
+        assert miniId != 0;
 
         this.futId = futId;
         this.miniId = miniId;
@@ -112,13 +112,13 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         int part,
         GridCacheVersion xid,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         Throwable err,
         boolean addDepInfo) {
         super(part, xid, err, addDepInfo);
 
         assert futId != null;
-        assert miniId != null;
+        assert miniId != 0;
 
         this.futId = futId;
         this.miniId = miniId;
@@ -162,7 +162,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -279,7 +279,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -329,7 +329,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 reader.incrementState();
 
             case 10:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

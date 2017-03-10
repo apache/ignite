@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAwa
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -153,6 +154,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private IgniteTxState txState;
 
     /** */
+    @GridToStringExclude
     private byte flags;
 
     /**
@@ -694,7 +696,21 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public String toString() {
+        StringBuilder flags = new StringBuilder();
+
+        if (needReturnValue())
+            flags.append("retVal");
+        if (isInvalidate())
+            flags.append("invalidate");
+        if (onePhaseCommit())
+            flags.append("onePhase");
+        if (last())
+            flags.append("last");
+        if (system())
+            flags.append("sys");
+
         return GridToStringBuilder.toString(GridDistributedTxPrepareRequest.class, this,
+            "flags", flags.toString(),
             "super", super.toString());
     }
 }
