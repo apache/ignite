@@ -146,18 +146,26 @@ public class DistributionSupport {
      */
     protected <K, V, A> Collection<A> foldForCache(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
         return broadcastForCache(cacheName, () -> {
+            Ignite localIgnite = Ignition.localIgnite();
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
 
             int partsCnt = ignite().affinity(cacheName).partitions();
 
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            Affinity affinity = localIgnite.affinity(cacheName);
+            ClusterNode localNode = localIgnite.cluster().localNode();
+
             A a = null;
 
             // Iterate over all partitions. Some of them will be stored on that local node.
-            for (int part = 0; part < partsCnt; part++)
+            for (int part = 0; part < partsCnt; part++) {
+                int finalPart = part;
+
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part)))
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(finalPart) == localNode)))
                     a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
+            }
 
             return a;
         });

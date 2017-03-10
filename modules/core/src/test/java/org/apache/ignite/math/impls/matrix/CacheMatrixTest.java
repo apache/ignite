@@ -151,18 +151,60 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
+        double initVal = 1;
         double divVal = 2;
 
         KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
-        cacheMatrix.assign(1);
+        cacheMatrix.assign(initVal);
         cacheMatrix.divide(divVal);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                assertTrue(Double.compare(cacheMatrix.get(i, j), 1 / divVal) == 0);
+                assertTrue(Double.compare(cacheMatrix.get(i, j), initVal / divVal) == 0);
+    }
+
+    /** */
+    public void testTimes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double initVal = 1;
+        double timVal = 2;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        cacheMatrix.assign(initVal);
+        cacheMatrix.times(timVal);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                assertTrue(Double.compare(cacheMatrix.get(i, j), initVal * timVal) == 0);
+    }
+
+    /** */
+    public void testSum(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double initVal = 1;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        cacheMatrix.assign(initVal);
+        double sum = cacheMatrix.sum();
+
+        assertTrue(Double.compare(sum, rows * cols) == 0);
     }
 
     /** */
