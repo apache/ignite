@@ -34,6 +34,21 @@ namespace ignite
             {
             public:
                 /**
+                 * Operation result.
+                 */
+                enum OperationResult
+                {
+                    /** Null. */
+                    ResultNull = 0,
+
+                    /** Success. */
+                    ResultSuccess = 1,
+
+                    /** Error. */
+                    ResultError = -1
+                };
+
+                /**
                  * Constructor used to create new instance.
                  *
                  * @param env Environment.
@@ -105,6 +120,16 @@ namespace ignite
                  * @param err Error.
                  */
                 void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
+
+                /**
+                 * In stream out long operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param outInMem Input and output memory.
+                 * @param err Error.
+                 * @return Operation result.
+                 */
+                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError* err);
 
                 /**
                 * Internal out-in operation.

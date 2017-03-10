@@ -902,7 +902,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
+    public <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
         throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
