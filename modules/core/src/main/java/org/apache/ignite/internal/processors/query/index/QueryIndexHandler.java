@@ -26,7 +26,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
@@ -51,7 +50,6 @@ public class QueryIndexHandler {
     private final Map<QueryIndexKey, Descriptor> idxs = new ConcurrentHashMap<>();
 
     /** Client futures. */
-    // TODO: Special future which is aware of index key, handle it during cache, type undeploy and disconnect.
     private final Map<UUID, QueryIndexClientFuture> cliFuts = new ConcurrentHashMap<>();
 
     /** RW lock. */
@@ -94,6 +92,13 @@ public class QueryIndexHandler {
      */
     public void onStop() {
         // TODO
+    }
+
+    /**
+     * Handle disconnect.
+     */
+    public void onDisconnected() {
+        // TODO: Complete client futures, clear state.
     }
 
     /**
@@ -209,13 +214,6 @@ public class QueryIndexHandler {
             else
                 rmvCliFut.onCacheStop();
         }
-    }
-
-    /**
-     * Handle disconnect.
-     */
-    public void onDisconnected() {
-        // TODO
     }
 
     /**
