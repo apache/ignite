@@ -129,7 +129,7 @@ namespace ignite
                  * @param err Error.
                  * @return Operation result.
                  */
-                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError* err);
+                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
