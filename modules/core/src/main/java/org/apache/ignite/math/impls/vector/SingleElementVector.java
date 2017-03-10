@@ -87,7 +87,7 @@ public class SingleElementVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public int nonZeroElements() {
-        return 1;
+        return isZero(get(storage().index())) ? 0 : 1;
     }
 
     /** {@inheritDoc} */

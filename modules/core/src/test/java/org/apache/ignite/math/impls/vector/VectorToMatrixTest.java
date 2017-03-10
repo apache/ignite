@@ -32,7 +32,8 @@ public class VectorToMatrixTest {
     /** Ignore test for given vector type. */
     private boolean ignore(Class<? extends Vector> clazz){
         boolean isIgnored = false;
-        List<Class<? extends Vector>> ignoredClasses = Arrays.asList(DelegatingVector.class, FunctionVector.class);
+        List<Class<? extends Vector>> ignoredClasses = Arrays.asList(DelegatingVector.class, FunctionVector.class,
+            SingleElementVector.class);
 
         for (Class<? extends Vector> ignoredClass : ignoredClasses) {
             if (ignoredClass.isAssignableFrom(clazz)){
