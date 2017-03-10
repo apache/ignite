@@ -28,7 +28,7 @@ import java.util.function.*;
 import static org.junit.Assert.*;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest extends ExternalizeTest<Vector> {
+public class VectorImplementationsTest {
     /** */ @Test
     public void vectorImplementationsFixturesTest() {
         new VectorImplementationsFixtures().selfTest();
@@ -313,9 +313,15 @@ public class VectorImplementationsTest extends ExternalizeTest<Vector> {
         return v instanceof RandomVector || v instanceof ConstantVector;
     }
 
-    /** {@inheritDoc} */
-    @Override public void externalizeTest() {
-        consumeSampleVectors((v, desc) -> externalizeTest(v));
+    /** */
+    @Test
+    public void externalizeTest() {
+        (new ExternalizeTest<Vector>() {
+            /** {@inheritDoc} */
+            @Override public void externalizeTest() {
+                consumeSampleVectors((v, desc) -> externalizeTest(v));
+            }
+        }).externalizeTest();
     }
 
     /** */
