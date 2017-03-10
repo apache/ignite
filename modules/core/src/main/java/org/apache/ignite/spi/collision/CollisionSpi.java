@@ -48,8 +48,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CollisionSpi extends IgniteSpi {
     /**
-     * This is a callback called when either new grid job arrived or executing job finished its
-     * execution. When new job arrives it is added to the end of the wait list and this
+     * This is a callback called periodically and when new grid job arrived or executing job finished its
+     * execution or topology changed. When new job arrives it is added to the end of the wait list and this
      * method is called. When job finished its execution, it is removed from the active list and
      * this method is called (i.e., when grid job is finished it will not appear in any list
      * in collision resolution).
