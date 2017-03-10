@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.eviction.fifo;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
@@ -44,7 +43,7 @@ import org.jsr166.ConcurrentLinkedDeque8.Node;
  * table-like data structures. The {@code FIFO} ordering information is
  * maintained by attaching ordering metadata to cache entries.
  */
-public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements FifoEvictionPolicyMBean, Externalizable {
+public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements FifoEvictionPolicyMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,7 +80,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return queue.size();
+        return queue.sizex();
     }
 
     /**
@@ -94,6 +93,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
@@ -125,7 +125,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
                         return false;
                     }
 
-                    addToMemorySize(entry.size());
+                    memSize.add(entry.size());
 
                     return true;
                 }
@@ -157,7 +157,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
         if (meta != null) {
             size = entry.size();
 
-            addToMemorySize(-size);
+            memSize.add(-size);
 
             if (!entry.evict())
                 touch(entry);

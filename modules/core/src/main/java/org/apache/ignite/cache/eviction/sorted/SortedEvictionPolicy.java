@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.eviction.sorted;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -59,7 +58,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * <p>
  * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements SortedEvictionPolicyMBean, Externalizable {
+public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements SortedEvictionPolicyMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -108,6 +107,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     public SortedEvictionPolicy(int max, int batchSize, @Nullable Comparator<EvictableEntry<K, V>> comp) {
         setMaxSize(max);
         setBatchSize(batchSize);
+
         this.comp = comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp);
         this.set = new GridConcurrentSkipListSetEx<>(this.comp);
     }
@@ -161,7 +161,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
                         return false;
                     }
 
-                    addToMemorySize(entry.size());
+                    memSize.add(entry.size());
 
                     return true;
                 }
@@ -177,7 +177,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return set.size();
+        return set.sizex();
     }
 
     /**
@@ -195,10 +195,12 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
 
         EvictableEntry<K, V> entry = h.entry;
 
-        if (entry != null && h.order > 0 && entry.removeMeta(h)) {
+        assert entry != null;
+
+        if (h.order > 0 && entry.removeMeta(h)) {
             size = entry.size();
 
-            addToMemorySize(-size);
+            memSize.add(-size);
 
             if (!entry.evict())
                 touch(entry);
@@ -210,6 +212,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
+
         out.writeObject(comp);
     }
 
@@ -217,6 +220,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
+
         comp = (Comparator<Holder<K, V>>)in.readObject();
     }
 
@@ -225,6 +229,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      *
      * @param meta Holder.
      */
+    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         Holder<K, V> holder = (Holder<K, V>)meta;
 

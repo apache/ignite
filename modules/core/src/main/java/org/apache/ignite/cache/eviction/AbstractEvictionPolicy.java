@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.eviction;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -24,12 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jsr166.LongAdder8;
 
 /**
- * Common functionality implementation for eviction policies
+ * Common functionality implementation for eviction policies with max size/max memory and batch eviction support.
  */
-public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, V> {
-    /** Memory size occupied by elements in container. */
-    private final LongAdder8 memSize = new LongAdder8();
-
+public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable {
     /** Max memory size occupied by elements in container. */
     private volatile long maxMemSize;
 
@@ -38,6 +36,9 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
 
     /** Batch size. */
     private volatile int batchSize = 1;
+
+    /** Memory size occupied by elements in container. */
+    protected final LongAdder8 memSize = new LongAdder8();
 
     /**
      * Shrinks backed container to maximum allowed size.
@@ -48,7 +49,7 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
         if (maxMem > 0) {
             long startMemSize = memSize.longValue();
 
-            if (startMemSize >= maxMem)
+            if (startMemSize >= maxMem) {
                 for (long i = maxMem; i < startMemSize && memSize.longValue() > maxMem; ) {
                     int size = shrink0();
 
@@ -57,6 +58,7 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
 
                     i += size;
                 }
+            }
         }
 
         int max = this.max;
@@ -64,10 +66,12 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
         if (max > 0) {
             int startSize = getCurrentSize();
 
-            if (startSize >= max + (maxMem > 0 ? 1 : this.batchSize))
-                for (int i = max; i < startSize && getCurrentSize() > max; i++)
+            if (startSize >= max + (maxMem > 0 ? 1 : this.batchSize)) {
+                for (int i = max; i < startSize && getCurrentSize() > max; i++) {
                     if (shrink0() == -1)
                         break;
+                }
+            }
         }
     }
 
@@ -77,6 +81,7 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
             if (!entry.isCached())
                 return;
 
+            // Shrink only if queue was changed.
             if (touch(entry))
                 shrink();
         }
@@ -86,28 +91,19 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
             if (node != null) {
                 removeMeta(node);
 
-                addToMemorySize(-entry.size());
+                memSize.add(-entry.size());
             }
-
         }
     }
 
     /**
-     * @param x Changing memory size by adding the value.
-     */
-    protected void addToMemorySize(int x) {
-        memSize.add(x);
-    }
-
-    /**
-     *
-     * @return Size of the container.
+     * @return Size of the container with trackable entries.
      */
     protected abstract int getCurrentSize();
 
     /**
      *
-     * @return Size of the memory which was shrinked0.
+     * @return Size of the memory which was shrinked.
      */
     protected abstract int shrink0();
 
@@ -191,18 +187,15 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
         return batchSize;
     }
 
-    public LongAdder8 getMemSize() {
-        return memSize;
-    }
-
     /** {@inheritDoc} */
-    public void writeExternal(ObjectOutput out) throws IOException {
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(max);
         out.writeInt(batchSize);
         out.writeLong(maxMemSize);
     }
+
     /** {@inheritDoc} */
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         max = in.readInt();
         batchSize = in.readInt();
         maxMemSize = in.readLong();

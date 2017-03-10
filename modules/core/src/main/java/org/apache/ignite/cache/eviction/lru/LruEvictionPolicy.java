@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.eviction.lru;
 
-import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
@@ -43,7 +42,7 @@ import org.jsr166.ConcurrentLinkedDeque8.Node;
  * This implementation is very efficient since it is lock-free and does not create any additional table-like
  * data structures. The {@code LRU} ordering information is maintained by attaching ordering metadata to cache entries.
  */
-public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements LruEvictionPolicyMBean, Externalizable {
+public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements LruEvictionPolicyMBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,7 +68,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return queue.size();
+        return queue.sizex();
     }
 
     /**
@@ -82,6 +81,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
@@ -113,7 +113,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
                         return false;
                     }
 
-                    addToMemorySize(entry.size());
+                    memSize.add(entry.size());
 
                     return true;
                 }
@@ -153,7 +153,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
         if (meta != null) {
             size = entry.size();
 
-            addToMemorySize(-size);
+            memSize.add(-size);
 
             if (!entry.evict())
                 touch(entry);
