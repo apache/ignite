@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -70,6 +71,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private int taskNameHash;
 
     /** */
+    @GridToStringExclude
     private byte flags;
 
     /**
@@ -402,6 +404,19 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxPrepareRequest.class, this, super.toString());
+        StringBuilder flags = new StringBuilder();
+
+        if (near())
+            flags.append("near");
+        if (firstClientRequest())
+            flags.append("clientReq");
+        if (implicitSingle())
+            flags.append("single");
+        if (explicitLock())
+            flags.append("explicitLock");
+
+        return S.toString(GridNearTxPrepareRequest.class, this,
+            "flags", flags.toString(),
+            "super", super.toString());
     }
 }
