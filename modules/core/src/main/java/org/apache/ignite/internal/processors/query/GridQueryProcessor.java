@@ -197,12 +197,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        String space = cctx.name();
+
         CacheConfiguration<?,?> ccfg = cctx.config();
 
-        idx.registerCache(cctx.name(), cctx, cctx.config());
+        idx.registerCache(space, cctx, cctx.config());
 
         try {
-            List<Class<?>> mustDeserializeClss = null;
+            List<Class<?>> mustDeserializeClss = new ArrayList<>();
 
             boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
@@ -264,9 +266,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.valueTypeName(qryEntity.getValueType());
 
                     if (binaryEnabled && keyOrValMustDeserialize) {
-                        if (mustDeserializeClss == null)
-                            mustDeserializeClss = new ArrayList<>();
-
                         if (keyMustDeserialize)
                             mustDeserializeClss.add(keyCls);
 
@@ -280,10 +279,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(qryEntity, desc);
 
-                        typeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                        typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.getValueType()));
 
                         if (valCls != null)
-                            altTypeId = new QueryTypeIdKey(ccfg.getName(), valCls);
+                            altTypeId = new QueryTypeIdKey(space, valCls);
 
                         if (!cctx.customAffinityMapper() && qryEntity.getKeyType() != null) {
                             // Need to setup affinity key for distributed joins.
@@ -306,8 +305,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 desc.affinityKey(affField);
                         }
 
-                        typeId = new QueryTypeIdKey(ccfg.getName(), valCls);
-                        altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
+                        typeId = new QueryTypeIdKey(space, valCls);
+                        altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
@@ -316,7 +315,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (altTypeId != null)
                         types.put(altTypeId, desc);
 
-                    desc.registered(idx.registerType(ccfg.getName(), desc));
+                    desc.registered(idx.registerType(space, desc));
                 }
             }
 
@@ -373,9 +372,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     desc.valueTypeName(meta.getValueType());
 
                     if (binaryEnabled && keyOrValMustDeserialize) {
-                        if (mustDeserializeClss == null)
-                            mustDeserializeClss = new ArrayList<>();
-
                         if (keyMustDeserialize)
                             mustDeserializeClss.add(keyCls);
 
@@ -389,16 +385,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
                         processBinaryMeta(meta, desc);
 
-                        typeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        typeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(meta.getValueType()));
 
                         if (valCls != null)
-                            altTypeId = new QueryTypeIdKey(ccfg.getName(), valCls);
+                            altTypeId = new QueryTypeIdKey(space, valCls);
                     }
                     else {
                         processClassMeta(meta, desc, coCtx);
 
-                        typeId = new QueryTypeIdKey(ccfg.getName(), valCls);
-                        altTypeId = new QueryTypeIdKey(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        typeId = new QueryTypeIdKey(space, valCls);
+                        altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
                     addTypeByName(ccfg, desc);
@@ -407,13 +403,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (altTypeId != null)
                         types.put(altTypeId, desc);
 
-                    desc.registered(idx.registerType(ccfg.getName(), desc));
+                    desc.registered(idx.registerType(space, desc));
                 }
             }
 
             // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
 
-            if (mustDeserializeClss != null) {
+            if (!mustDeserializeClss.isEmpty()) {
                 U.warn(log, "Some classes in query configuration cannot be written in binary format " +
                     "because they either implement Externalizable interface or have writeObject/readObject methods. " +
                     "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
@@ -423,7 +419,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            idx.unregisterCache(cctx.name());
+            idx.unregisterCache(space);
 
             throw e;
         }
