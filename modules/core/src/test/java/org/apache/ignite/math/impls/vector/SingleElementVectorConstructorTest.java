@@ -17,6 +17,8 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -100,11 +102,45 @@ public class SingleElementVectorConstructorTest {
         final int[] sizes = new int[] {1, 4, 8};
 
         for (int size : sizes)
-            for (int idx = 0; idx < size; idx++) {
-                final Double expVal = (double) (size - idx);
+            for (int idx = 0; idx < size; idx++)
+                basicTest(size, idx);
+    }
 
-                assertTrue("Expect value " + expVal + " at index " + idx + " for size " + size,
-                    expVal.equals( new SingleElementVector(size, idx, expVal).get(idx)));
+    /** */
+    private void basicTest(int size, int idx) {
+        final Double expVal = (double) (size - idx);
+
+        Vector v = new SingleElementVector(size, idx, expVal);
+
+        assertTrue("Expect value " + expVal + " at index " + idx + " for size " + size,
+            expVal.equals(v.get(idx)));
+
+        final double delta = 1.0;
+
+        v.set(idx, expVal - delta);
+
+        assertTrue("Expect value " + expVal + " at index " + idx + " for size " + size,
+            expVal.equals(v.get(idx) + delta));
+
+        final Double zero = 0.0;
+
+        for (int i = 0; i < size; i++) {
+            if (i == idx)
+                continue;
+
+            assertTrue("Expect zero at index " + i + " for size " + size,
+                zero.equals(v.get(i)));
+
+            boolean eCaught = false;
+
+            try {
+                v.set(i, 1.0);
+            } catch (UnsupportedOperationException uoe) {
+                eCaught = true;
             }
+
+            assertTrue("Expect " + UnsupportedOperationException.class.getSimpleName()
+                    + " at index " + i + " for size " + size, eCaught);
+        }
     }
 }
