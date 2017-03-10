@@ -679,7 +679,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert futVer != null && futVer.equals(this.futVer) || (this.isDone() && this.error() != null);
+                assert F.eq(futVer, this.futVer) || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
 
                 this.updVer = updVer;

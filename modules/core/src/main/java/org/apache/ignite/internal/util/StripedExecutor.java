@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripeThread;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.LongAdder8;
 
 /**
  * Striped executor.
@@ -151,13 +152,23 @@ public class StripedExecutor implements ExecutorService {
     public String getMetrics() {
         GridStringBuilder sb = new GridStringBuilder();
         sb.a("completed");
+        GridStringBuilder sb2 = new GridStringBuilder();
+        sb2.a("park");
+        GridStringBuilder sb3 = new GridStringBuilder();
+        sb3.a("unpark");
+        GridStringBuilder sb4 = new GridStringBuilder();
+        sb4.a("queue");
+
         for (int i = 0; i < stripes.length; i++) {
             Stripe stripe = stripes[i];
 
-            long completedCnt = stripe.completedCnt;
-            sb.a(':').a(completedCnt);
+            sb.a(':').a(stripe.completedCnt);
+            sb2.a(':').a(stripe.parkCntr());
+            sb3.a(':').a(stripe.unparkCntr());
+            sb4.a(':').a(stripe.queueSize());
         }
-        return sb.toString();
+
+        return sb.a(' ').a(sb2).a(' ').a(sb3).a(' ').a(sb4).toString();
     }
 
     /**
@@ -535,6 +546,20 @@ public class StripedExecutor implements ExecutorService {
          */
         abstract String queueToString();
 
+        /**
+         * @return Number of park ops.
+         */
+        public long parkCntr() {
+            return 0;
+        }
+
+        /**
+         * @return Number of unpark ops.
+         */
+        public long unparkCntr() {
+            return 0;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Stripe.class, this);
@@ -550,6 +575,12 @@ public class StripedExecutor implements ExecutorService {
 
         /** */
         private volatile boolean parked;
+
+        /** */
+        private final LongAdder8 parkCntr = new LongAdder8();
+
+        /** */
+        private final LongAdder8 unparkCntr = new LongAdder8();
 
         /**
          * @param gridName Grid name.
@@ -589,6 +620,7 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
+                    parkCntr.increment();
                     LockSupport.park();
 
                     if (Thread.interrupted())
@@ -604,8 +636,10 @@ public class StripedExecutor implements ExecutorService {
         void execute(Runnable cmd) {
             queue.add(cmd);
 
-            if (parked)
+            if (parked) {
+                unparkCntr.increment();
                 LockSupport.unpark(thread);
+            }
         }
 
         /** {@inheritDoc} */
@@ -616,6 +650,16 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long parkCntr() {
+            return parkCntr.sum();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long unparkCntr() {
+            return unparkCntr.sum();
         }
 
         /** {@inheritDoc} */
