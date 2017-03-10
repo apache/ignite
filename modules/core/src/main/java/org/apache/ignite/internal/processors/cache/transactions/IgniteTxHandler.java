@@ -271,6 +271,7 @@ public class IgniteTxHandler {
                         U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
 
                     return new GridNearTxPrepareResponse(
+                        req.partition(),
                         req.version(),
                         req.futureId(),
                         req.miniId(),
@@ -382,6 +383,7 @@ public class IgniteTxHandler {
                     }
 
                     GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                        req.partition(),
                         req.version(),
                         req.futureId(),
                         req.miniId(),
@@ -836,14 +838,9 @@ public class IgniteTxHandler {
         try {
             assert tx != null : "Transaction is null for near finish request [nodeId=" +
                 nodeId + ", req=" + req + "]";
+            assert req.syncMode() != null : req;
 
-            if (req.syncMode() == null) {
-                boolean sync = req.commit() ? req.syncCommit() : req.syncRollback();
-
-                tx.syncMode(sync ? FULL_SYNC : FULL_ASYNC);
-            }
-            else
-                tx.syncMode(req.syncMode());
+            tx.syncMode(req.syncMode());
 
             if (req.commit()) {
                 tx.storeEnabled(req.storeEnabled());
@@ -937,7 +934,7 @@ public class IgniteTxHandler {
      * @param nodeId Sender node ID.
      * @param req Request.
      */
-    protected final void processDhtTxPrepareRequest(final UUID nodeId, final GridDhtTxPrepareRequest req) {
+    private void processDhtTxPrepareRequest(final UUID nodeId, final GridDhtTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received dht prepare request [txId=" + req.nearXidVersion() +
                 ", dhtTxId=" + req.version() +
@@ -955,7 +952,12 @@ public class IgniteTxHandler {
         GridDhtTxPrepareResponse res;
 
         try {
-            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), req.deployInfo() != null);
+            res = new GridDhtTxPrepareResponse(
+                req.partition(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                req.deployInfo() != null);
 
             // Start near transaction first.
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
@@ -1007,7 +1009,12 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 nearTx.rollback();
 
-            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), e,
+            res = new GridDhtTxPrepareResponse(
+                req.partition(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                e,
                 req.deployInfo() != null);
         }
 
@@ -1058,7 +1065,7 @@ public class IgniteTxHandler {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected final void processDhtTxOnePhaseCommitAckRequest(final UUID nodeId,
+    private void processDhtTxOnePhaseCommitAckRequest(final UUID nodeId,
         final GridDhtTxOnePhaseCommitAckRequest req) {
         assert nodeId != null;
         assert req != null;
@@ -1075,14 +1082,14 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     @SuppressWarnings({"unchecked"})
-    protected final void processDhtTxFinishRequest(final UUID nodeId, final GridDhtTxFinishRequest req) {
+    private void processDhtTxFinishRequest(final UUID nodeId, final GridDhtTxFinishRequest req) {
         assert nodeId != null;
         assert req != null;
 
         if (req.checkCommitted()) {
             boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
-            if (!committed || !req.syncCommit())
+            if (!committed || req.syncMode() != FULL_SYNC)
                 sendReply(nodeId, req, committed, null);
             else {
                 IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
