@@ -171,16 +171,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idx.registerCache(space, cctx, cctx.config());
 
         try {
-            // TODO: First iteration: register in indexing?
-
-            // TODO: Second iteration: add to internal collections?
-
             for (QueryTypeCandidate cand : cands) {
                 QueryTypeIdKey typeId = cand.typeId();
                 QueryTypeIdKey altTypeId = cand.alternativeTypeId();
                 QueryTypeDescriptorImpl desc = cand.descriptor();
 
-                addTypeByName(space, desc);
+                if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
+                    throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                        "in cache '" + space + "'.");
+
                 types.put(typeId, desc);
 
                 if (altTypeId != null)
@@ -190,7 +189,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
-            idx.unregisterCache(space);
+            unregisterCache0(space);
 
             throw e;
         }
@@ -204,17 +203,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
         }
-    }
-
-    /**
-     * @param space Space name.
-     * @param desc Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addTypeByName(String space, QueryTypeDescriptorImpl desc) throws IgniteCheckedException {
-        if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
-            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                "in cache '" + space + "'.");
     }
 
     /** {@inheritDoc} */
@@ -283,25 +271,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            idx.unregisterCache(cctx.name());
+            unregisterCache0(cctx.name());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
 
+    /**
+     * Unregister cache.
+     *
+     * @param space Space.
+     */
+    private void unregisterCache0(String space) {
+        assert idx != null;
+
+        try {
+            idx.unregisterCache(space);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
+        }
+        finally {
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
             while (it.hasNext()) {
                 Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> entry = it.next();
 
-                if (F.eq(cctx.name(), entry.getKey().space())) {
+                if (F.eq(space, entry.getKey().space())) {
                     it.remove();
 
-                    typesByName.remove(new QueryTypeNameKey(cctx.name(), entry.getValue().name()));
+                    typesByName.remove(new QueryTypeNameKey(space, entry.getValue().name()));
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);
-        }
-        finally {
-            busyLock.leaveBusy();
         }
     }
 
