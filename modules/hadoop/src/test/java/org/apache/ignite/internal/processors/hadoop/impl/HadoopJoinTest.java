@@ -69,6 +69,7 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                 RecordWriter<LongWritable, Text> rw = of.getRecordWriter(tac);
                 try {
                     LongWritable lw = new LongWritable();
+
                     Text t = new Text();
 
                     for (int i=0; i<100; i++) {
@@ -102,9 +103,8 @@ public class HadoopJoinTest extends HadoopGenericExampleTest {
                     assert lfs.getLen() > 0;
                 }
 
-                // TODO: Local MR execution works okay, but manual setting of this
-                // TODO: id for some reason is required for Ignite.
-                // TODO: investigate, why this happens.
+                // TODO: remove this workaround when https://issues.apache.org/jira/browse/IGNITE-4813
+                // TODO: is fixed:
                 conf.set(MRJobConfig.TASK_ATTEMPT_ID, "attempt_000000000000_0000_m_000000_0");
             }
 
