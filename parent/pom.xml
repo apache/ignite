@@ -71,7 +71,6 @@
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
         <h2.version>1.4.191</h2.version>
-        <hadoop.version>2.4.1</hadoop.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>
@@ -99,7 +98,6 @@
         <scala211.library.version>2.11.7</scala211.library.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
-        <spring.version>4.1.0.RELEASE</spring.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <tomcat.version>8.0.23</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
