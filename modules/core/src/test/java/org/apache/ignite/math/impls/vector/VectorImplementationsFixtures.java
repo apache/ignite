@@ -62,7 +62,7 @@ class VectorImplementationsFixtures {
     void selfTest() {
         new VectorSizesExtraIterator<>("VectorSizesExtraIterator test",
             (size, shallowCp) -> new DenseLocalOnHeapVector(new double[size], shallowCp),
-            null, new Boolean[] {false, true, null}).selfTest();
+            null, "shallow copy", new Boolean[] {false, true, null}).selfTest();
 
         new VectorSizesIterator("VectorSizesIterator test", DenseLocalOffHeapVector::new, null).selfTest();
     }
@@ -73,7 +73,7 @@ class VectorImplementationsFixtures {
         DenseLocalOnHeapVectorFixture() {
             super("DenseLocalOnHeapVector",
                 (size, shallowCp) -> new DenseLocalOnHeapVector(new double[size], shallowCp),
-                new Boolean[] {false, true, null});
+                "shallow copy", new Boolean[] {false, true, null});
         }
     }
 
@@ -89,7 +89,7 @@ class VectorImplementationsFixtures {
     private static class SparseLocalVectorFixture  extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
-            super("SparseLocalVector", SparseLocalVector::new,
+            super("SparseLocalVector", SparseLocalVector::new, "access mode",
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
     }
@@ -106,7 +106,8 @@ class VectorImplementationsFixtures {
     private static class ConstantVectorFixture extends VectorSizesExtraFixture<Double> {
         /** */
         ConstantVectorFixture() {
-            super("ConstantVector", ConstantVector::new, new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null});
+            super("ConstantVector", ConstantVector::new,
+                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null});
         }
     }
 
@@ -116,7 +117,7 @@ class VectorImplementationsFixtures {
         FunctionVectorFixture() {
             super("FunctionVector",
                 (size, scale) -> new FunctionVectorForTest(new double[size], scale),
-                new Double[] {0.5, 1.0, 2.0, null});
+                "scale", new Double[] {0.5, 1.0, 2.0, null});
         }
     }
 
@@ -128,8 +129,9 @@ class VectorImplementationsFixtures {
         /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
 
         /** */
-        VectorSizesExtraFixture(String vectorKind, BiFunction<Integer, T, Vector> ctor, T[] extras) {
-            iter = () -> new VectorSizesExtraIterator<>(vectorKind, ctor, ctxDescrHolder::set, extras);
+        VectorSizesExtraFixture(String vectorKind, BiFunction<Integer, T, Vector> ctor, String extraParamName,
+            T[] extras) {
+            iter = () -> new VectorSizesExtraIterator<>(vectorKind, ctor, ctxDescrHolder::set, extraParamName, extras);
         }
 
         /** {@inheritDoc} */
@@ -172,19 +174,21 @@ class VectorImplementationsFixtures {
         /** */ private final T[] extras;
         /** */ private int extraIdx = 0;
         /** */ private final BiFunction<Integer, T, Vector> ctor;
+        /** */ private final String extraParamName;
 
         /**
-         *
-         * @param vectorKind Descriptive name to use for context logging.
+         *  @param vectorKind Descriptive name to use for context logging.
          * @param ctor Constructor for objects to iterate over.
          * @param ctxDescrConsumer Context logging consumer.
+         * @param extraParamName Name of extra parameter to iterate over.
          * @param extras Array of extra parameter values to iterate over.
          */
         VectorSizesExtraIterator(String vectorKind, BiFunction<Integer, T, Vector> ctor,
-            Consumer<String> ctxDescrConsumer, T[] extras) {
+            Consumer<String> ctxDescrConsumer, String extraParamName, T[] extras) {
             super(vectorKind, null, ctxDescrConsumer);
 
             this.ctor = ctor;
+            this.extraParamName = extraParamName;
             this.extras = extras;
         }
 
@@ -213,7 +217,7 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return "{" + super.toString() +
-                ", extra param=" + extras[extraIdx] +
+                ", " + extraParamName + "=" + extras[extraIdx] +
                 '}';
         }
 
@@ -369,7 +373,7 @@ class VectorImplementationsFixtures {
         DelegatingVectorFixture() {
             iter = () -> new VectorSizesExtraIterator<>("DelegatingVector with DenseLocalOnHeapVector",
                 (size, shallowCp) -> new DelegatingVector(new DenseLocalOnHeapVector(new double[size], shallowCp)),
-                ctxDescrHolder::set, new Boolean[] {false, true, null});
+                ctxDescrHolder::set, "shallow copy", new Boolean[] {false, true, null});
         }
 
         /** {@inheritDoc} */
