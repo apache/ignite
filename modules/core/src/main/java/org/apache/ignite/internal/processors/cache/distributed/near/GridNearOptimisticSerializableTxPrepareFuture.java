@@ -195,7 +195,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     }
 
     /** {@inheritDoc} */
-    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
+    @Override public void onPrimaryResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
             MiniFuture mini = miniFuture(res.miniId());
 
@@ -885,7 +885,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                             onDone(res);
                     }
                     else {
-                        parent.onPrimaryPrepareResponse(m, res);
+                        parent.processPrimaryPrepareResponse(m, res);
 
                         // Finish this mini future (need result only on client node).
                         onDone(parent.cctx.kernalContext().clientNode() ? res : null);
@@ -899,8 +899,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          */
         private void remap(final GridNearTxPrepareResponse res) {
             parent.prepareOnTopology(true, new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     onDone(res);
                 }
             });

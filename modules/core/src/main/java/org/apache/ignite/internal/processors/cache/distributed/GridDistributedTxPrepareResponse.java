@@ -184,6 +184,18 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 writer.incrementState();
 
+            case 8:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -208,6 +220,22 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
+            case 8:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedTxPrepareResponse.class);
@@ -220,7 +248,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 10;
     }
 
     /** {@inheritDoc} */

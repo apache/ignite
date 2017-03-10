@@ -95,7 +95,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
+    @Override public void onPrimaryResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
             assert res.clientRemapVersion() == null : res;
 
@@ -205,7 +205,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      */
     private void preparePessimistic() {
         // TODO IGNITE-4768: need detect on lock step?
-
         boolean dhtReplyNear = true;
 
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
@@ -473,7 +472,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             else {
                 assert dhtNodes == null;
 
-                onPrimaryPrepareResponse(m, res);
+                processPrimaryPrepareResponse(m, res);
 
                 onDone();
             }

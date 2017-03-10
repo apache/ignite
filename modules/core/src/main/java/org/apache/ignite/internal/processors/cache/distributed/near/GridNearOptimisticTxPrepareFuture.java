@@ -174,7 +174,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /** {@inheritDoc} */
-    @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
+    @Override public void onPrimaryResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
             MiniFuture mini = miniFuture(res.miniId());
 
@@ -918,7 +918,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                             remap();
                     }
                     else {
-                        parent.onPrimaryPrepareResponse(m, res);
+                        parent.processPrimaryPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.
                         if (mappings != null)

@@ -582,7 +582,7 @@ public class IgniteTxHandler {
 
         res.txState(tx.txState());
 
-        fut.onResult(nodeId, res);
+        fut.onPrimaryResponse(nodeId, res);
     }
 
     /**
@@ -607,7 +607,7 @@ public class IgniteTxHandler {
             return;
         }
 
-        fut.onResult(nodeId, res);
+        fut.onPrimaryResponse(nodeId, res);
     }
 
     /**
@@ -650,7 +650,7 @@ public class IgniteTxHandler {
         assert nodeId != null;
         assert res != null;
 
-        if (res.checkCommitted()) {
+        if (res.nearNodeResponse() || res.checkCommitted()) {
             GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
@@ -669,7 +669,7 @@ public class IgniteTxHandler {
                     ", node=" + nodeId + ']');
             }
 
-            fut.onResult(nodeId, res);
+            fut.onDhtResponse(nodeId, res);
         }
         else {
             GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
@@ -803,8 +803,13 @@ public class IgniteTxHandler {
                 ", commit=" + req.commit() + ']');
 
             // Always send finish response.
-            GridCacheMessage res = new GridNearTxFinishResponse(req.version(), req.threadId(), req.futureId(),
-                req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
+            GridCacheMessage res = new GridNearTxFinishResponse(
+                req.partition(),
+                req.version(),
+                req.threadId(),
+                req.futureId(),
+                req.miniId(),
+                new IgniteCheckedException("Transaction has been already completed."));
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
@@ -844,14 +849,9 @@ public class IgniteTxHandler {
         try {
             assert tx != null : "Transaction is null for near finish request [nodeId=" +
                 nodeId + ", req=" + req + "]";
+            assert req.syncMode() != null : req;
 
-            if (req.syncMode() == null) {
-                boolean sync = req.commit() ? req.syncCommit() : req.syncRollback();
-
-                tx.syncMode(sync ? FULL_SYNC : FULL_ASYNC);
-            }
-            else
-                tx.syncMode(req.syncMode());
+            tx.syncMode(req.syncMode());
 
             if (req.commit()) {
                 tx.storeEnabled(req.storeEnabled());
@@ -1121,7 +1121,7 @@ public class IgniteTxHandler {
         if (req.checkCommitted()) {
             boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
-            if (!committed || !req.syncCommit())
+            if (!committed || req.syncMode() != FULL_SYNC)
                 sendReply(nodeId, req, committed, null);
             else {
                 IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
@@ -1359,7 +1359,11 @@ public class IgniteTxHandler {
      */
     private void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
         if (req.replyRequired() || req.checkCommitted()) {
-            GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
+            GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(
+                req.partition(),
+                req.version(),
+                req.futureId(),
+                req.miniId());
 
             if (req.checkCommitted()) {
                 res.checkCommitted(true);

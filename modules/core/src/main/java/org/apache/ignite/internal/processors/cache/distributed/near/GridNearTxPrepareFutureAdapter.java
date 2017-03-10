@@ -152,7 +152,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param nodeId Sender.
      * @param res Result.
      */
-    public abstract void onResult(UUID nodeId, GridNearTxPrepareResponse res);
+    public abstract void onPrimaryResponse(UUID nodeId, GridNearTxPrepareResponse res);
 
     /**
      * @param nodeId Sender.
@@ -197,7 +197,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    final void onPrimaryPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+    final void processPrimaryPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;
 

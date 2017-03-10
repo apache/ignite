@@ -1252,8 +1252,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             if (last) {
                 int miniId = 0;
 
-                assert tx.transactionNodes() != null;
-
                 final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
 
                 // Create mini futures.
@@ -1288,7 +1286,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
                         futId,
-                        fut != null ? fut.futureId() : null,
+                        fut != null ? fut.futureId() : 0,
                         nearFutId,
                         nearMiniId,
                         tx.topologyVersion(),
@@ -1315,8 +1313,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             GridCacheContext<?, ?> cacheCtx = cached.context();
 
                             // Do not invalidate near entry on originating transaction node.
-                            req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
-                                cached.readerId(n.id()) != null);
+                            req.invalidateNearEntry(idx,
+                                !tx.nearNodeId().equals(n.id()) && cached.readerId(n.id()) != null);
 
                             if (cached.isNewLocked()) {
                                 List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
