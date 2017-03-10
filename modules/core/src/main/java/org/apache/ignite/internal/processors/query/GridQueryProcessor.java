@@ -309,7 +309,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(qryEntity.getValueType()));
                     }
 
-                    addTypeByName(ccfg, desc);
+                    addTypeByName(space, desc);
                     types.put(typeId, desc);
 
                     if (altTypeId != null)
@@ -397,7 +397,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         altTypeId = new QueryTypeIdKey(space, ctx.cacheObjects().typeId(meta.getValueType()));
                     }
 
-                    addTypeByName(ccfg, desc);
+                    addTypeByName(space, desc);
                     types.put(typeId, desc);
 
                     if (altTypeId != null)
@@ -442,14 +442,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param space Space name.
      * @param desc Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void addTypeByName(CacheConfiguration<?, ?> ccfg, QueryTypeDescriptorImpl desc) throws IgniteCheckedException {
-        if (typesByName.putIfAbsent(new QueryTypeNameKey(ccfg.getName(), desc.name()), desc) != null)
+    private void addTypeByName(String space, QueryTypeDescriptorImpl desc) throws IgniteCheckedException {
+        if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
             throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                "in cache '" + ccfg.getName() + "'.");
+                "in cache '" + space + "'.");
     }
 
     /** {@inheritDoc} */
