@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 
 /** */
 public class GridDhtAtomicDeferredUpdateResponseTest extends MarshallingAbstractTest {
-
     /**
      * Message marshalling test.
      *

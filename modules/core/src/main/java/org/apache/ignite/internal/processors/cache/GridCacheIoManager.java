@@ -418,7 +418,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 append(", dhtTxId=").append(dhtTxId(cacheMsg)).
                 append(", msg=").append(cacheMsg);
         }
-        else if (atomicFututeId(cacheMsg) != null) {
+        else if (atomicFututeId(cacheMsg) > -1) {
             builder.append("futId=").append(atomicFututeId(cacheMsg)).
                 append(", writeVer=").append(atomicWriteVersion(cacheMsg)).
                 append(", msg=").append(cacheMsg);
@@ -471,7 +471,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param cacheMsg Cache message.
      * @return Atomic future ID if applicable for message.
      */
-    @Nullable private Long atomicFututeId(GridCacheMessage cacheMsg) {
+    @Nullable private long atomicFututeId(GridCacheMessage cacheMsg) {
         if (cacheMsg instanceof GridNearAtomicAbstractUpdateRequest)
             return ((GridNearAtomicAbstractUpdateRequest)cacheMsg).futureVersion();
         else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
@@ -481,7 +481,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
             return ((GridDhtAtomicUpdateResponse) cacheMsg).futureVersion();
 
-        return null;
+        return -1;
     }
 
 

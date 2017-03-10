@@ -60,7 +60,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     private UUID nodeId;
 
     /** Future version. */
-    private Long futVer;
+    private long futVer = -1;
 
     /** Update error. */
     @GridDirectTransient
@@ -124,8 +124,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, Long futVer, boolean addDepInfo) {
-        assert futVer != null;
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, long futVer, boolean addDepInfo) {
+        assert futVer > -1;
 
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -155,7 +155,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Future version.
      */
-    public Long futureVersion() {
+    public long futureVersion() {
         return futVer;
     }
 
@@ -448,12 +448,16 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return partId;
     }
 
-    /** */
+    /**
+     * @return Stripe number.
+     */
     public int stripe() {
         return stripe;
     }
 
-    /** */
+    /**
+     * @param stripe Stripe number.
+     */
     public void stripe(int stripe) {
         this.stripe = stripe;
     }

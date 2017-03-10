@@ -1815,6 +1815,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Node ID.
      * @param req Update request.
      * @param completionCb Completion callback.
+     * @param stripeIdx Stripe number.
+     * @param stripeIdxs Stripe indexes.
      */
     private void updateAllAsyncInternal0(
         UUID nodeId,
@@ -2022,8 +2024,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 res.remapKeys(req.keys());
             else {
                 List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.length);
+
                 for (int i = 0; i < stripeIdxs.length; i++)
                     keys.add(req.key(stripeIdxs[i]));
+
                 res.remapKeys(keys);
             }
 
@@ -2077,6 +2081,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param sndPrevVal If {@code true} sends previous value to backups.
+     * @param stripeIdxs Stripe indexes.
      * @return Deleted entries.
      * @throws GridCacheEntryRemovedException Should not be thrown.
      */
@@ -2507,6 +2512,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param taskName Task name.
      * @param expiry Expiry policy.
      * @param sndPrevVal If {@code true} sends previous value to backups.
+     * @param stripeIdxs Stripe indexes.
      * @return Return value.
      * @throws GridCacheEntryRemovedException Should be never thrown.
      */
@@ -3000,8 +3006,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param topVer Topology version to lock on.
      * @param stripeIdxs Stripe indexes.
      * @return Collection of locked entries.
-     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown, locks
-     * are released.
+     * @throws GridDhtInvalidPartitionException If entry does not belong to local node. If exception is thrown,
+     *      locks are released.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(GridNearAtomicAbstractUpdateRequest req,
@@ -3141,8 +3147,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * @param entry Entry to check.
      * @param req Update request.
-     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method will return
-     * false.
+     * @param res Update response. If filter evaluation failed, key will be added to failed keys and method
+     *      will return false.
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicAbstractUpdateRequest req,
@@ -3234,6 +3240,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param updateReq Update request.
      * @param updateRes Update response.
      * @param completionCb Completion callback to invoke when future is completed.
+     * @param size Keys size.
      * @param force If {@code true} then creates future without optimizations checks.
      * @return Backup update future or {@code null} if there are no backups.
      */
@@ -3274,6 +3281,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /**
      * @param nodeId Sender node ID.
+     * @param stripeIdx Stripe number.
      * @param req Near atomic update request.
      */
     private void processNearAtomicUpdateRequest(UUID nodeId, GridNearAtomicAbstractUpdateRequest req, int stripeIdx) {
@@ -3453,7 +3461,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Node ID to send message to.
      * @param ver Version to ack.
      */
-    private void sendDeferredUpdateResponse(UUID nodeId, Long ver) {
+    private void sendDeferredUpdateResponse(UUID nodeId, long ver) {
         deferredUpdateMsgSnd.sendDeferredAckMessage(nodeId, ver);
     }
 

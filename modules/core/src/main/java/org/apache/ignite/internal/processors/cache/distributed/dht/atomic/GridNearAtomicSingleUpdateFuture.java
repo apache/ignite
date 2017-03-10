@@ -120,7 +120,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    @Override public Long version() {
+    @Override public long version() {
         synchronized (mux) {
             return futVer;
         }
@@ -183,9 +183,9 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            Long futVer = onFutureDone();
+            long futVer = onFutureDone();
 
-            if (futVer != null)
+            if (futVer != -1)
                 cctx.mvcc().removeAtomicFuture(futVer);
 
             return true;
@@ -207,7 +207,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         GridFutureAdapter<?> fut0 = null;
 
         synchronized (mux) {
-            if (!res.futureVersion().equals(futVer))
+            if (res.futureVersion() != futVer)
                 return;
 
             if (!this.req.nodeId().equals(nodeId))
@@ -298,7 +298,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
                 cctx.mvcc().removeAtomicFuture(futVer);
 
-                futVer = null;
+                futVer = -1;
                 topVer = AffinityTopologyVersion.ZERO;
             }
         }
@@ -436,7 +436,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer, Long futVer) {
+    @Override protected void map(AffinityTopologyVersion topVer, long futVer) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
@@ -469,7 +469,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             singleReq0 = mapSingleUpdate(topVer, futVer, updVer);
 
             synchronized (mux) {
-                assert F.eq(futVer, this.futVer) || (this.isDone() && this.error() != null);
+                assert futVer == this.futVer || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
 
                 this.updVer = updVer;
@@ -496,8 +496,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
     /**
      * @return Future version.
      */
-    private Long onFutureDone() {
-        Long ver0;
+    private long onFutureDone() {
+        long ver0;
 
         GridFutureAdapter<Void> fut0;
 
@@ -508,7 +508,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
             ver0 = futVer;
 
-            futVer = null;
+            futVer = -1;
         }
 
         if (fut0 != null)
@@ -525,7 +525,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
      * @throws Exception If failed.
      */
     private GridNearAtomicAbstractUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        Long futVer,
+        long futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         if (key == null)
             throw new NullPointerException("Null key.");

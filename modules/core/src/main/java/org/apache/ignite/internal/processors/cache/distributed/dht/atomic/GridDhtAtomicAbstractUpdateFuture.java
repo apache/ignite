@@ -76,7 +76,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     /** Future version. */
     protected final long futVer;
 
-    /** Future id. */
+    /** Future ID. */
     protected final IgniteUuid futId;
 
     /** Completion callback. */
@@ -117,10 +117,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         GridNearAtomicUpdateResponse updateRes
     ) {
         this.cctx = cctx;
-
-//        this.futVer = cctx.isLocalNode(updateRes.nodeId()) ?
-//            cctx.versions().next(updateReq.topologyVersion()) : // Generate new if request mapped to local.
-//            updateReq.futureVersion();
 
         this.futVer = cctx.versions().nextAtomicFutureVersion();
         this.futId = IgniteUuid.randomUuid();
@@ -311,7 +307,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public final Long version() {
+    @Override public final long version() {
         return futVer;
     }
 
@@ -422,7 +418,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
         ClusterNode node,
-        Long futVer,
+        long futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,

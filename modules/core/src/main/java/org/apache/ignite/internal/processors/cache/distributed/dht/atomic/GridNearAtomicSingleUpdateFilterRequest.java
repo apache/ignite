@@ -77,7 +77,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
         UUID nodeId,
-        Long futVer,
+        long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,

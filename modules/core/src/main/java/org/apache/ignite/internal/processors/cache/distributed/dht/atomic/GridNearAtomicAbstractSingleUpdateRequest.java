@@ -71,7 +71,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     protected UUID nodeId;
 
     /** Future version. */
-    protected Long futVer;
+    protected long futVer = -1;
 
     /** Update version. Set to non-null if fastMap is {@code true}. */
     private GridCacheVersion updateVer;
@@ -128,7 +128,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     protected GridNearAtomicAbstractSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
-        Long futVer,
+        long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
@@ -143,7 +143,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         boolean clientReq,
         boolean addDepInfo
     ) {
-        assert futVer != null;
+        assert futVer > -1;
 
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -200,7 +200,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /**
      * @return Future version.
      */
-    @Override public Long futureVersion() {
+    @Override public long futureVersion() {
         return futVer;
     }
 

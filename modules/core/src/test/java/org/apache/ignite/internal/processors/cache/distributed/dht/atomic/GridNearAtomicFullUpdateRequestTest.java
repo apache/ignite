@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  * Trivial GridNearAtomicFullUpdateRequest tests.
  */
 public class GridNearAtomicFullUpdateRequestTest extends MarshallingAbstractTest {
-
     /**
      * Message marshalling test.
      *
@@ -73,6 +72,6 @@ public class GridNearAtomicFullUpdateRequestTest extends MarshallingAbstractTest
 
         GridNearAtomicFullUpdateRequest received = marshalUnmarshal(msg);
 
-        assertEquals(Long.valueOf(555), received.futureVersion());
+        assertEquals(555, received.futureVersion());
     }
 }

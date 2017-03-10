@@ -126,7 +126,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
     protected CachePartialUpdateCheckedException err;
 
     /** Future ID. */
-    protected Long futVer;
+    protected long futVer = -1;
 
     /** Completion future for a particular topology version. */
     protected GridFutureAdapter<Void> topCompleteFut;
@@ -223,7 +223,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param topVer Topology version.
      * @param futVer Future version
      */
-    protected abstract void map(AffinityTopologyVersion topVer, Long futVer);
+    protected abstract void map(AffinityTopologyVersion topVer, long futVer);
 
     /**
      * Maps future on ready topology.
@@ -331,7 +331,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         long futVer = cctx.versions().nextAtomicFutureVersion();
 
         synchronized (mux) {
-            assert this.futVer == null : this;
+            assert this.futVer == -1 : this;
             assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
             this.topVer = topVer;

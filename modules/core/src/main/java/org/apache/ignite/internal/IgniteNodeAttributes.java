@@ -161,7 +161,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
 
     /** Ignite cache stripe size. */
-    public static final String ATTR_STRIPE_SIZE = ATTR_PREFIX + ".cache.stripe.size";
+    public static final String ATTR_STRIPES_CNT = ATTR_PREFIX + ".cache.stripes.cnt";
 
     /**
      * Enforces singleton.

@@ -26,7 +26,6 @@ import junit.framework.TestCase;
  * Simple tests for {@link GridCacheVersionManager}.
  */
 public class GridCacheVersionManagerTest extends TestCase {
-
     /**
      * Test for for {@link GridCacheVersionManager#nextAtomicFutureVersion()}.
      */

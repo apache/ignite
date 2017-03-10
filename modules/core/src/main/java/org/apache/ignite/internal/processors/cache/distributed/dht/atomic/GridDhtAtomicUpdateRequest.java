@@ -54,7 +54,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     private static final long serialVersionUID = 0L;
 
     /** Future version. */
-    private Long futVer;
+    private long futVer = -1;
 
     /** Write version. */
     private GridCacheVersion writeVer;
@@ -176,7 +176,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     public GridDhtAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
-        Long futVer,
+        long futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
@@ -360,7 +360,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public Long futureVersion() {
+    @Override public long futureVersion() {
         return futVer;
     }
 

@@ -49,7 +49,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future version. */
-    private Long futVer;
+    private long futVer = -1;
 
     /** Failed keys. */
     @GridToStringInclude
@@ -83,7 +83,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      * @param futVer Future version.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, Long futVer, boolean addDepInfo) {
+    public GridDhtAtomicUpdateResponse(int cacheId, long futVer, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.futVer = futVer;
         this.addDepInfo = addDepInfo;
@@ -97,7 +97,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @return Future version.
      */
-    public Long futureVersion() {
+    public long futureVersion() {
         return futVer;
     }
 

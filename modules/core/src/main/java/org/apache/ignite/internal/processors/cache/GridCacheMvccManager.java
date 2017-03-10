@@ -786,7 +786,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param cacheCtx Cache context.
      * @param cand Cache lock candidate to add.
-     * @return {@code True} if added as a result of this operation, {@code false} if was previously added.
+     * @return {@code True} if added as a result of this operation,
+     *      {@code false} if was previously added.
      */
     public boolean addNext(GridCacheContext cacheCtx, GridCacheMvccCandidate cand) {
         assert cand != null;
@@ -948,7 +949,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param threadId Thread id.
      * @param key Key to look up.
-     * @return Last added explicit lock candidate for given thread id and key or {@code null} if no such candidate.
+     * @return Last added explicit lock candidate for given thread id and key or {@code null} if
+     *      no such candidate.
      */
     @Nullable public GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
         if (threadId < 0)

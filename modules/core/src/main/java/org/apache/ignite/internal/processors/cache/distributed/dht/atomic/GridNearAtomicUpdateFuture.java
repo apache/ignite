@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_STRIPE_SIZE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_STRIPES_CNT;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
@@ -155,7 +155,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @Override public Long version() {
+    @Override public long version() {
         synchronized (mux) {
             return futVer;
         }
@@ -245,9 +245,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            Long futVer = onFutureDone();
+            long futVer = onFutureDone();
 
-            if (futVer != null)
+            if (futVer > -1)
                 cctx.mvcc().removeAtomicFuture(futVer);
 
             return true;
@@ -271,7 +271,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         GridFutureAdapter<?> fut0 = null;
 
         synchronized (mux) {
-            if (!res.futureVersion().equals(futVer))
+            if (res.futureVersion() != futVer)
                 return;
 
             if (singleReq != null) {
@@ -399,7 +399,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                     cctx.mvcc().removeAtomicFuture(futVer);
 
-                    futVer = null;
+                    futVer = -1;
                     topVer = AffinityTopologyVersion.ZERO;
                 }
             }
@@ -420,6 +420,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         updateNear(req0, res0);
                     else {
                         Map<Integer, GridNearAtomicUpdateResponse> responces = req0.responses();
+
                         if (responces != null)
                             for (GridNearAtomicUpdateResponse res1 : responces.values()) {
                                 updateNear(req0, res1);
@@ -612,7 +613,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void map(AffinityTopologyVersion topVer, Long futVer) {
+    @Override protected void map(AffinityTopologyVersion topVer, long futVer) {
         map(topVer, futVer, null);
     }
 
@@ -622,7 +623,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param remapKeys Keys to remap.
      */
     void map(AffinityTopologyVersion topVer,
-        Long futVer,
+        long futVer,
         @Nullable Collection<KeyCacheObject> remapKeys) {
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
@@ -679,7 +680,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert F.eq(futVer, this.futVer) || (this.isDone() && this.error() != null);
+                assert futVer == this.futVer || (this.isDone() && this.error() != null);
                 assert this.topVer == topVer;
 
                 this.updVer = updVer;
@@ -718,8 +719,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     /**
      * @return Future version.
      */
-    private Long onFutureDone() {
-        Long ver0;
+    private long onFutureDone() {
+        long ver0;
 
         GridFutureAdapter<Void> fut0;
 
@@ -730,7 +731,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             ver0 = futVer;
 
-            futVer = null;
+            futVer = -1;
         }
 
         if (fut0 != null)
@@ -751,7 +752,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private Map<UUID, GridNearAtomicFullUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
-        Long futVer,
+        long futVer,
         @Nullable GridCacheVersion updVer,
         @Nullable Collection<KeyCacheObject> remapKeys,
         CacheWriteSynchronizationMode syncMode) throws Exception {
@@ -847,7 +848,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 GridNearAtomicFullUpdateRequest mapped = pendingMappings.get(nodeId);
 
                 if (mapped == null) {
-                    int stripes = affNode.attribute(ATTR_STRIPE_SIZE) != null ? (int)affNode.attribute(ATTR_STRIPE_SIZE) : -1;
+                    int stripes = affNode.attribute(ATTR_STRIPES_CNT) != null ? (int)affNode.attribute(ATTR_STRIPES_CNT) : -1;
 
                     mapped = new GridNearAtomicFullUpdateRequest(
                         cctx.cacheId(),
@@ -894,7 +895,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @throws Exception If failed.
      */
     private GridNearAtomicFullUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-        Long futVer,
+        long futVer,
         @Nullable GridCacheVersion updVer) throws Exception {
         Object key = F.first(keys);
 

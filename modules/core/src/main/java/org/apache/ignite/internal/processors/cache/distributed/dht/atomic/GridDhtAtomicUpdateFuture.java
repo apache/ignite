@@ -58,6 +58,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
      * @param writeVer Write version.
      * @param updateReq Update request.
      * @param updateRes Update response.
+     * @param size Keys size.
      */
     GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -128,7 +129,7 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
 
     /** {@inheritDoc} */
     @Override protected GridDhtAtomicAbstractUpdateRequest createRequest(ClusterNode node,
-        Long futVer,
+        long futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,

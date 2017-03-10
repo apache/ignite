@@ -822,10 +822,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (ctx.config().getStripedPoolSize() > 0 &&
             plc == GridIoPolicy.SYSTEM_POOL &&
-            (msg.partition() != Integer.MIN_VALUE || msg.message() instanceof GridNearAtomicFullUpdateRequest)
-            ) {
-
-            Map<Integer, int[]> stripemap = msg.message() instanceof GridNearAtomicFullUpdateRequest ?
+            (msg.partition() != Integer.MIN_VALUE ||
+                msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE)) {
+            Map<Integer, int[]> stripemap = msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE ?
                 ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() : null;
 
             if (stripemap != null) {

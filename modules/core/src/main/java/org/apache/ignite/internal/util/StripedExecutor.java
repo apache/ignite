@@ -577,7 +577,7 @@ public class StripedExecutor implements ExecutorService {
         private volatile boolean parked;
 
         /** */
-        private final LongAdder8 parkCntr = new LongAdder8();
+        private volatile long parkCntr;
 
         /** */
         private final LongAdder8 unparkCntr = new LongAdder8();
@@ -620,7 +620,7 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
-                    parkCntr.increment();
+                    parkCntr++;
                     LockSupport.park();
 
                     if (Thread.interrupted())
@@ -654,7 +654,7 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override public long parkCntr() {
-            return parkCntr.sum();
+            return parkCntr;
         }
 
         /** {@inheritDoc} */

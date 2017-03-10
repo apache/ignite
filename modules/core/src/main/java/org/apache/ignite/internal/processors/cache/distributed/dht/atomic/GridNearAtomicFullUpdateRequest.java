@@ -64,12 +64,15 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public static final byte DIRECT_TYPE = 40;
+
     /** Target node ID. */
     @GridDirectTransient
     private UUID nodeId;
 
     /** Future version. */
-    private Long futVer;
+    private long futVer = -1;
 
     /** Update version. Set to non-null if fastMap is {@code true}. */
     private GridCacheVersion updateVer;
@@ -223,7 +226,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     GridNearAtomicFullUpdateRequest(
         int cacheId,
         UUID nodeId,
-        Long futVer,
+        long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
@@ -243,7 +246,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         int maxEntryCnt,
         int maxStripes
     ) {
-        assert futVer != null;
+        assert futVer > -1;
 
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -305,7 +308,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public Long futureVersion() {
+    @Override public long futureVersion() {
         return futVer;
     }
 
@@ -628,7 +631,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (stripeMap != null && stripeCnt != null) {
-
             for (Integer idx : stripeMap.keySet()) {
                 stripeMap.put(idx, Arrays.copyOf(stripeMap.get(idx), stripeCnt[idx]));
             }
@@ -709,7 +711,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return partId;
     }
 
-    /** */
+    /**
+     * @param partId Partition.
+     */
     public void partition(int partId) {
         this.partId = partId;
     }
@@ -1138,7 +1142,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 40;
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */

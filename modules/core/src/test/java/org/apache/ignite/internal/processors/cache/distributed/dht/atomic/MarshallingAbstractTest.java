@@ -56,7 +56,6 @@ import static org.mockito.Mockito.when;
  *
  */
 public abstract class MarshallingAbstractTest extends TestCase {
-
     /** */
     private static final byte proto = 2;
 

@@ -275,8 +275,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * in the pending set before newer ones, hence preventing starvation.
      *
      * @param topVer Topology version for which new version should be obtained.
-     * @param addTime If {@code true} then adds to the given topology version number of seconds from the start time of
-     * the first grid node.
+     * @param addTime If {@code true} then adds to the given topology version number of seconds
+     *        from the start time of the first grid node.
      * @param dataCenterId Data center id.
      * @return New lock order.
      */
