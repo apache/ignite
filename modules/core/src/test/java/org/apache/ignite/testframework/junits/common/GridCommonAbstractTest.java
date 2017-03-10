@@ -565,7 +565,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 if (cfg == null)
                     continue;
 
-                if (cfg.getCacheMode() == PARTITIONED &&
+                if (cfg.getCacheMode() != LOCAL &&
                     cfg.getRebalanceMode() != NONE &&
                     g.cluster().nodes().size() > 1) {
                     AffinityFunction aff = cfg.getAffinity();

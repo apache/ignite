@@ -271,6 +271,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private Object consistentId;
 
+    /** Discovery spi registered flag. */
+    private boolean registeredDiscoSpi;
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -701,6 +704,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         startSpi();
+
+        registeredDiscoSpi = true;
 
         try {
             U.await(startLatch);
@@ -1393,6 +1398,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         // Stop SPI itself.
         stopSpi();
+
+        // Stop spi if was not add in spi map but port was open.
+        if (!registeredDiscoSpi)
+            getSpi().spiStop();
+
+        registeredDiscoSpi = false;
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());

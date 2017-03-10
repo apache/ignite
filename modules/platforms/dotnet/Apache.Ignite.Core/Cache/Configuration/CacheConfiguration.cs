@@ -102,9 +102,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. </summary>
         public const long DefaultOffHeapMaxMemory = -1;
 
-        /// <summary> Default value for 'swapEnabled' flag. </summary>
-        public const bool DefaultEnableSwap = false;
-
         /// <summary> Default value for 'maxConcurrentAsyncOps'. </summary>
         public const int DefaultMaxConcurrentAsyncOperations = 500;
 
@@ -125,9 +122,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default value for load previous value flag. </summary>
         public const bool DefaultLoadPreviousValue = false;
-
-        /// <summary> Default memory mode. </summary>
-        public const CacheMemoryMode DefaultMemoryMode = CacheMemoryMode.OnheapTiered;
 
         /// <summary> Default value for 'readFromBackup' flag. </summary>
         public const bool DefaultReadFromBackup = true;
@@ -187,7 +181,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             MaxEvictionOverflowRatio = DefaultMaxEvictionOverflowRatio;
-            MemoryMode = DefaultMemoryMode;
             OffHeapMaxMemory = DefaultOffHeapMaxMemory;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
@@ -196,7 +189,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             RebalanceTimeout = DefaultRebalanceTimeout;
             SqlOnheapRowCacheSize = DefaultSqlOnheapRowCacheSize;
             StartSize = DefaultStartSize;
-            EnableSwap = DefaultEnableSwap;
             WriteBehindBatchSize = DefaultWriteBehindBatchSize;
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
@@ -240,7 +232,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             CacheMode = (CacheMode) reader.ReadInt();
             CopyOnRead = reader.ReadBoolean();
             EagerTtl = reader.ReadBoolean();
-            EnableSwap = reader.ReadBoolean();
             EvictSynchronized = reader.ReadBoolean();
             EvictSynchronizedConcurrencyLevel = reader.ReadInt();
             EvictSynchronizedKeyBufferSize = reader.ReadInt();
@@ -252,7 +243,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
             MaxConcurrentAsyncOperations = reader.ReadInt();
             MaxEvictionOverflowRatio = reader.ReadFloat();
-            MemoryMode = (CacheMemoryMode) reader.ReadInt();
             Name = reader.ReadString();
             OffHeapMaxMemory = reader.ReadLong();
             ReadFromBackup = reader.ReadBoolean();
@@ -297,7 +287,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) CacheMode);
             writer.WriteBoolean(CopyOnRead);
             writer.WriteBoolean(EagerTtl);
-            writer.WriteBoolean(EnableSwap);
             writer.WriteBoolean(EvictSynchronized);
             writer.WriteInt(EvictSynchronizedConcurrencyLevel);
             writer.WriteInt(EvictSynchronizedKeyBufferSize);
@@ -309,7 +298,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteFloat(MaxEvictionOverflowRatio);
-            writer.WriteInt((int) MemoryMode);
             writer.WriteString(Name);
             writer.WriteLong(OffHeapMaxMemory);
             writer.WriteBoolean(ReadFromBackup);
@@ -512,14 +500,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public int RebalanceBatchSize { get; set; }
 
         /// <summary>
-        /// Flag indicating whether Ignite should use swap storage by default.
-        /// <para />
-        /// Enabling this requires configured <see cref="IgniteConfiguration.SwapSpaceSpi"/>.
-        /// </summary>
-        [DefaultValue(DefaultEnableSwap)]
-        public bool EnableSwap { get; set; }
-
-        /// <summary>
         /// Gets or sets maximum number of allowed concurrent asynchronous operations, 0 for unlimited.
         /// </summary>
         [DefaultValue(DefaultMaxConcurrentAsyncOperations)]
@@ -603,12 +583,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultOffHeapMaxMemory)]
         public long OffHeapMaxMemory { get; set; }
-
-        /// <summary>
-        /// Gets or sets memory mode for cache.
-        /// </summary>
-        [DefaultValue(DefaultMemoryMode)]
-        public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether data can be read from backup.

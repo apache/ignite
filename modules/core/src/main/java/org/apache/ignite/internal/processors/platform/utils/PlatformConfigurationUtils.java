@@ -80,12 +80,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
-    /** */
-    private static final byte SWAP_TYP_NONE = 0;
-
-    /** */
-    private static final byte SWAP_TYP_FILE = 1;
-
     /**
      * Write .Net configuration to the stream.
      *
@@ -141,8 +135,6 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        // TODO GG-11148.
-        //ccfg.setSwapEnabled(in.readBoolean());
         ccfg.setEvictSynchronized(in.readBoolean());
         ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
         ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
@@ -154,8 +146,6 @@ public class PlatformConfigurationUtils {
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        // TODO GG-11148.
-        //ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
         ccfg.setName(in.readString());
         ccfg.setOffHeapMaxMemory(in.readLong());
         ccfg.setReadFromBackup(in.readBoolean());
@@ -616,8 +606,6 @@ public class PlatformConfigurationUtils {
 
             cfg.setTransactionConfiguration(tx);
         }
-
-        byte swapType = in.readByte(); // TODO GG-11148
     }
 
     /**
@@ -750,8 +738,6 @@ public class PlatformConfigurationUtils {
         writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        // TODO GG-11148.
-//        writer.writeBoolean(ccfg.isSwapEnabled());
         writer.writeBoolean(ccfg.isEvictSynchronized());
         writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
         writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
@@ -763,8 +749,6 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        // TODO GG-11148.
-//        writeEnumInt(writer, ccfg.getMemoryMode(), CacheConfiguration.DFLT_MEMORY_MODE);
         writer.writeString(ccfg.getName());
         writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());
@@ -1026,8 +1010,6 @@ public class PlatformConfigurationUtils {
         }
         else
             w.writeBoolean(false);
-
-        w.writeByte(SWAP_TYP_NONE);
 
         w.writeString(cfg.getIgniteHome());
 
