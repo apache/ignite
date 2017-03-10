@@ -392,23 +392,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(2, spi.size(typeAB.space(), typeAB));
         assertEquals(0, spi.size(typeBA.space(), typeBA));
 
-        boolean h2IdxOffheap = offheap();
-
-        // At the time of this writing index rebuilding is not supported for GridH2Indexing with off-heap storage.
-        if (!h2IdxOffheap) {
-            // Rebuild
-
-            spi.rebuildIndexes(typeAB.space(), typeAB);
-
-            assertEquals(1, spi.size(typeAA.space(), typeAA));
-            assertEquals(2, spi.size(typeAB.space(), typeAB));
-            assertEquals(0, spi.size(typeBA.space(), typeBA));
-
-            // For invalid space name/type should not fail.
-            spi.rebuildIndexes("not_existing_space", typeAA);
-            spi.rebuildIndexes(typeAA.space(), new TypeDesc("C", "C", fieldsAA, null));
-        }
-
         // Unregister.
         spi.unregisterType(typeAA.space(), typeAA);
 

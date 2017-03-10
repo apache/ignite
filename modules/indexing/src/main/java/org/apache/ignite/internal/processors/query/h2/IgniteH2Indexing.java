@@ -1699,19 +1699,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schema.spaceName;
     }
 
-    /** {@inheritDoc} */
-    @Override public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type) {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
-
-        if (tbl == null)
-            return;
-
-        if (tbl.schema.offheap != null)
-            throw new UnsupportedOperationException("Index rebuilding is not supported when off-heap memory is used");
-
-        tbl.tbl.rebuildIndexes();
-    }
-
     /**
      * Gets size (for tests only).
      *

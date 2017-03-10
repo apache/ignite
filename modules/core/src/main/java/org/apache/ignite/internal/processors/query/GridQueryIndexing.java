@@ -208,14 +208,6 @@ public interface GridQueryIndexing {
     public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type.
-     *
-     * @param spaceName Space name.
-     * @param type Type descriptor.
-     */
-    public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
-
-    /**
      * Returns backup filter.
      *
      * @param topVer Topology version.
