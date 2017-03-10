@@ -102,6 +102,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     }
 
     /**
+     * @param part Partition.
      * @param xid Xid version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
@@ -113,6 +114,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareResponse(
+        int part,
         GridCacheVersion xid,
         IgniteUuid futId,
         int miniId,
@@ -123,7 +125,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         AffinityTopologyVersion clientRemapVer,
         boolean addDepInfo
     ) {
-        super(xid, err, addDepInfo);
+        super(part, xid, err, addDepInfo);
 
         assert futId != null;
         assert dhtVer != null;

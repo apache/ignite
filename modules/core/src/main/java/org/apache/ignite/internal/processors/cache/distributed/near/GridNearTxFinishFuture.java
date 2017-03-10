@@ -256,7 +256,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
                     if (f.futureId().equals(res.miniId()))
-                        f.onDhtFinishResponse(nodeId, false);
+                        f.onDhtFinishResponse(nodeId);
                 }
             }
 
@@ -690,6 +690,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.activeCachesDeploymentEnabled()
         );
 
+        boolean dhtReplyNear = tx.dhtReplyNear() && syncMode == FULL_SYNC;
+
         // If this is the primary node for the keys.
         if (n.isLocal()) {
             req.miniId(IgniteUuid.randomUuid());
@@ -701,7 +703,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 add(fut);
         }
         else {
-            FinishMiniFuture fut = new FinishMiniFuture(m);
+            FinishMiniFuture fut = new FinishMiniFuture(m, dhtReplyNear);
 
             req.miniId(fut.futureId());
 
@@ -862,11 +864,22 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         @GridToStringInclude
         private GridDistributedTxMapping m;
 
+        /** */
+        private final Set<UUID> dhtNodes;
+
         /**
          * @param m Mapping.
          */
-        FinishMiniFuture(GridDistributedTxMapping m) {
+        FinishMiniFuture(GridDistributedTxMapping m, boolean dhtReplyNear) {
             this.m = m;
+
+            if (dhtReplyNear) {
+                dhtNodes = new HashSet<>(tx.transactionNodes().get(m.primary().id()));
+
+                assert !dhtNodes.isEmpty();
+            }
+            else
+                dhtNodes = null;
         }
 
         /**
@@ -874,13 +887,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          */
         ClusterNode primary() {
             return m.primary();
-        }
-
-        /**
-         * @return Keys.
-         */
-        public GridDistributedTxMapping mapping() {
-            return m;
         }
 
         /** {@inheritDoc} */
@@ -913,7 +919,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                                mini.onDhtFinishResponse(cctx.localNodeId(), true);
+                                                mini.onDhtFinishResponse(cctx.localNodeId());
                                             }
                                         });
                                     }
@@ -930,7 +936,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                     }
                                 }
                                 else
-                                    mini.onDhtFinishResponse(backupId, true);
+                                    mini.onDhtFinishResponse(backupId);
                             }
                         }
                     }
@@ -948,6 +954,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
          * @param res Result callback.
          */
         void onNearFinishResponse(GridNearTxFinishResponse res) {
+            assert dhtNodes == null || res.error() != null;
+
             if (res.error() != null)
                 onDone(res.error());
             else
@@ -956,7 +964,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(FinishMiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+            return S.toString(FinishMiniFuture.class, this,
+                "done", isDone(),
+                "cancelled", isCancelled(),
+                "err", error());
         }
     }
 
@@ -1055,9 +1066,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         /**
          * @param nodeId Node ID.
-         * @param discoThread {@code True} if executed from discovery thread.
          */
-        void onDhtFinishResponse(UUID nodeId, boolean discoThread) {
+        void onDhtFinishResponse(UUID nodeId) {
             onResponse(nodeId);
         }
 

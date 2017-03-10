@@ -22,9 +22,12 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs transactional put operations.
@@ -58,7 +61,7 @@ public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, 
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        IgniteBenchmarkUtils.doInTransaction(txs, args.txConcurrency(), args.txIsolation(), clo);
+        IgniteBenchmarkUtils.doInTransaction(txs, TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, clo);
 
         return true;
     }

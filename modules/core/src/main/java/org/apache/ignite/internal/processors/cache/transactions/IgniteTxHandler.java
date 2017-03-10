@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -45,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxNearPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -149,12 +149,6 @@ public class IgniteTxHandler {
         ctx.io().addHandler(0, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg);
-            }
-        });
-
-        ctx.io().addHandler(0, GridDhtTxNearPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
-            @Override public void apply(UUID nodeId, GridCacheMessage msg) {
-                processDhtTxNearPrepareResponse(nodeId, (GridDhtTxNearPrepareResponse)msg);
             }
         });
 
@@ -278,6 +272,7 @@ public class IgniteTxHandler {
                         U.error(log, "Failed to prepare DHT transaction: " + locTx, e);
 
                     return new GridNearTxPrepareResponse(
+                        req.partition(),
                         req.version(),
                         req.futureId(),
                         req.miniId(),
@@ -389,6 +384,7 @@ public class IgniteTxHandler {
                     }
 
                     GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                        req.partition(),
                         req.version(),
                         req.futureId(),
                         req.miniId(),
@@ -565,34 +561,6 @@ public class IgniteTxHandler {
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processDhtTxNearPrepareResponse(UUID nodeId, GridDhtTxNearPrepareResponse res) {
-        if (txPrepareMsgLog.isDebugEnabled())
-            txPrepareMsgLog.debug("Received dht near prepare response [txId=" + res.nearTxId() + ", node=" + nodeId + ']');
-
-        GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
-            .<IgniteInternalTx>mvccFuture(res.nearTxId(), res.futureId());
-
-        if (fut == null) {
-            U.warn(log, "Failed to find future for dht near prepare response [txId=" + res.nearTxId() +
-                ", node=" + nodeId +
-                ", res=" + res + ']');
-
-            return;
-        }
-
-        IgniteInternalTx tx = fut.tx();
-
-        assert tx != null;
-
-        res.txState(tx.txState());
-
-        fut.onDhtResponse(nodeId, res);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param res Response.
-     */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         if (txPrepareMsgLog.isDebugEnabled())
             txPrepareMsgLog.debug("Received near prepare response [txId=" + res.version() + ", node=" + nodeId + ']');
@@ -647,7 +615,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().mvccFuture(res.version(), res.futureId());
+        GridCacheMvccFuture<?> fut = ctx.mvcc().mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
             if (txPrepareMsgLog.isDebugEnabled()) {
@@ -668,7 +636,10 @@ public class IgniteTxHandler {
 
         res.txState(tx.txState());
 
-        fut.onResult(nodeId, res);
+        if (res.nearNodeResponse())
+            ((GridNearTxPrepareFutureAdapter)fut).onDhtResponse(nodeId, res);
+        else
+            ((GridDhtTxPrepareFuture)fut).onResult(nodeId, res);
     }
 
     /**
@@ -990,18 +961,21 @@ public class IgniteTxHandler {
         GridNearTxRemote nearTx = null;
 
         GridDhtTxPrepareResponse res = null;
-        GridDhtTxNearPrepareResponse nearRes = null;
+        GridDhtTxPrepareResponse nearRes = null;
 
         try {
             if (req.dhtReplyNear()) {
-                nearRes = new GridDhtTxNearPrepareResponse(
+                nearRes = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.nearXidVersion(),
                     req.nearFutureId(),
-                    req.nearMiniId());
+                    null, //req.nearMiniId(),
+                    req.deployInfo() != null);
             }
             else {
-                res = new GridDhtTxPrepareResponse(req.version(),
+                res = new GridDhtTxPrepareResponse(
+                    req.partition(),
+                    req.version(),
                     req.futureId(),
                     req.miniId(),
                     req.deployInfo() != null);
@@ -1061,7 +1035,11 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 nearTx.rollback();
 
-            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), e,
+            res = new GridDhtTxPrepareResponse(req.partition(),
+                req.version(),
+                req.futureId(),
+                req.miniId(),
+                e,
                 req.deployInfo() != null);
         }
 

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxNearPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -159,7 +158,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param nodeId Sender.
      * @param res Response.
      */
-    public abstract void onDhtResponse(UUID nodeId, GridDhtTxNearPrepareResponse res);
+    public abstract void onDhtResponse(UUID nodeId, GridDhtTxPrepareResponse res);
 
     /**
      * Checks if mapped transaction can be committed on one phase.
@@ -189,8 +188,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param m Mapping.
      * @param res Response.
      */
-    final void onDhtPrepareResponse(GridDistributedTxMapping m, GridDhtTxNearPrepareResponse res) {
-
+    final void processDhtPrepareResponse(GridDistributedTxMapping m, GridDhtTxPrepareResponse res) {
+        // TODO IGNITE-4768.
     }
 
     /**

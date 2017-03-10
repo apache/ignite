@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -34,4 +35,6 @@ public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
      * @return {@code True} if future cares about this entry.
      */
     public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
+
+    public IgniteInternalTx tx();
 }

@@ -174,11 +174,6 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -50:
-                msg = new GridDhtTxNearPrepareResponse();
-
-                break;
-
             case -44:
                 msg = new TcpCommunicationSpi.HandshakeMessage2();
 

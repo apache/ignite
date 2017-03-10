@@ -49,6 +49,9 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int NEAR_RES_FLAG_MASK = 0x01;
+
     /** Evicted readers. */
     @GridToStringInclude
     @GridDirectCollection(IgniteTxKey.class)
@@ -76,13 +79,19 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
+     * @param part Partition.
      * @param xid Xid version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
-        super(xid, addDepInfo);
+    public GridDhtTxPrepareResponse(
+        int part,
+        GridCacheVersion xid,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        boolean addDepInfo) {
+        super(part, xid, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
@@ -92,15 +101,21 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
+     * @param part Partition.
      * @param xid Xid version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param err Error.
      * @param addDepInfo Deployment enabled.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err,
+    public GridDhtTxPrepareResponse(
+        int part,
+        GridCacheVersion xid,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        Throwable err,
         boolean addDepInfo) {
-        super(xid, err, addDepInfo);
+        super(part, xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
@@ -110,9 +125,23 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
+     * @return {@code True} if this is reply for near node.
+     */
+    public boolean nearNodeResponse() {
+        return isFlag(NEAR_RES_FLAG_MASK);
+    }
+
+    /**
+     * @param val {@code True} if this is reply for near node.
+     */
+    void nearNodeResponse(boolean val) {
+        setFlag(val, NEAR_RES_FLAG_MASK);
+    }
+
+    /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey> nearEvicted() {
+    Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
@@ -140,7 +169,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Map from cacheId to an array of invalid partitions.
      */
-    public Map<Integer, int[]> invalidPartitionsByCacheId() {
+    Map<Integer, int[]> invalidPartitionsByCacheId() {
         return invalidParts;
     }
 
@@ -156,7 +185,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      *
      * @return Collection of entry infos need to be preloaded.
      */
-    public Collection<GridCacheEntryInfo> preloadEntries() {
+    Collection<GridCacheEntryInfo> preloadEntries() {
         return preloadEntries == null ? Collections.<GridCacheEntryInfo>emptyList() : preloadEntries;
     }
 

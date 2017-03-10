@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxNearPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -126,7 +126,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public void onDhtResponse(UUID nodeId, GridDhtTxNearPrepareResponse res) {
+    @Override public void onDhtResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
+        assert res.nearNodeResponse() : res;
+
         MiniFuture f = miniFuture(res.miniId());
 
         if (f != null)
@@ -438,6 +440,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             this.m = m;
             this.futId = futId;
 
+            // TODO: IGNITE-4768, check nodes alive.
             if (req.dhtReplyNear()) {
                 dhtNodes = new HashSet<>(req.transactionNodes().get(m.primary().id()));
 
@@ -510,7 +513,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param nodeId Node ID.
          * @param res Response.
          */
-        void onDhtResponse(UUID nodeId, GridDhtTxNearPrepareResponse res) {
+        void onDhtResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
             assert dhtNodes != null;
 
             boolean done;
