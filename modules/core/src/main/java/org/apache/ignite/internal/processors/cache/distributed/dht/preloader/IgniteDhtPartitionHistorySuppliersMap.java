@@ -25,18 +25,31 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
+    /** */
     private Map<UUID, Map<T2<Integer, Integer>, Long>> map;
 
+    /**
+     * @return Empty map.
+     */
     public static IgniteDhtPartitionHistorySuppliersMap empty() {
         return EMPTY;
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @return Supplier UUID.
+     */
     @Nullable public synchronized UUID getSupplier(int cacheId, int partId) {
         if (map == null)
             return null;
@@ -49,6 +62,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         return null;
     }
 
+    /**
+     * @param nodeId Node ID to check.
+     * @return Reservations for the given node.
+     */
     @Nullable public synchronized Map<T2<Integer, Integer>, Long> getReservations(UUID nodeId) {
         if (map == null)
             return null;
@@ -56,6 +73,12 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         return map.get(nodeId);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @param cntr Partition counter.
+     */
     public synchronized void put(UUID nodeId, int cacheId, int partId, long cntr) {
         Map<T2<Integer, Integer>, Long> nodeMap = map.get(nodeId);
 
@@ -68,12 +91,17 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         nodeMap.put(new T2<>(cacheId, partId), cntr);
     }
 
+    /**
+     * @return {@code True} if empty.
+     */
     public synchronized boolean isEmpty() {
         return map == null || map.isEmpty();
     }
 
+    /**
+     * @param that Other map to put.
+     */
     public synchronized void putAll(IgniteDhtPartitionHistorySuppliersMap that) {
         map = that.map;
     }
-
 }

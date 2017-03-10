@@ -222,20 +222,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
             long startVer = discoMgr.localNode().order();
 
             for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v >= startVer; v--) {
-                F.forAll(discoMgr.aliveCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e);
-                        }
-                    });
-
-                F.forAll(discoMgr.aliveRemoteCacheNodes(null, new AffinityTopologyVersion(v)),
-                    new IgnitePredicate<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode e) {
-                            return currTop.contains(e) || g.cluster().localNode().equals(e);
-                        }
-                    });
-
                 GridCacheSharedContext<?, ?> ctx = k.context().cache().context();
 
                 ClusterNode oldest =

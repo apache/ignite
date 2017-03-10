@@ -28,8 +28,13 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private Map<Integer, Map<Integer, T2<Long, Long>>> map;
 
+    /**
+     * @param cacheId Cache ID.
+     * @param cntrMap Counters map.
+     */
     public synchronized void putIfAbsent(int cacheId, Map<Integer, T2<Long, Long>> cntrMap) {
         if (map == null)
             map = new HashMap<>();
@@ -38,6 +43,10 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
             map.put(cacheId, cntrMap);
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @return Counters map.
+     */
     public synchronized Map<Integer, T2<Long, Long>> get(int cacheId) {
         if (map == null)
             map = new HashMap<>();

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -45,8 +46,15 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
      * @param pageId Page ID.
      * @param allocatedIdxCandidate Page Allocated index candidate
      */
-    public MetaPageUpdatePartitionDataRecord(int cacheId, long pageId, long updateCntr, long globalRmvId, int partSize,
-        byte state, int allocatedIdxCandidate) {
+    public MetaPageUpdatePartitionDataRecord(
+        int cacheId,
+        long pageId,
+        long updateCntr,
+        long globalRmvId,
+        int partSize,
+        byte state,
+        int allocatedIdxCandidate
+    ) {
         super(cacheId, pageId);
 
         this.updateCntr = updateCntr;
@@ -103,5 +111,10 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageUpdatePartitionDataRecord.class, this);
     }
 }

@@ -50,7 +50,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,6 +58,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.snapshot.StartSnapshotOperationAckDiscoveryMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
@@ -183,35 +184,33 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /** Discovery listener. */
-    private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(Event evt) {
+    private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
+        @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
             if (!enterBusy())
                 return;
 
             try {
-                DiscoveryEvent e = (DiscoveryEvent)evt;
-
                 ClusterNode loc = cctx.localNode();
 
-                assert e.type() == EVT_NODE_JOINED || e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED ||
-                    e.type() == EVT_DISCOVERY_CUSTOM_EVT;
+                assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ||
+                    evt.type() == EVT_DISCOVERY_CUSTOM_EVT;
 
-                final ClusterNode n = e.eventNode();
+                final ClusterNode n = evt.eventNode();
 
                 GridDhtPartitionExchangeId exchId = null;
                 GridDhtPartitionsExchangeFuture exchFut = null;
 
-                if (e.type() != EVT_DISCOVERY_CUSTOM_EVT) {
+                if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
                     assert !loc.id().equals(n.id());
 
-                    if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
+                    if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                         assert cctx.discovery().node(n.id()) == null;
 
                         // Avoid race b/w initial future add and discovery event.
                         GridDhtPartitionsExchangeFuture initFut = null;
 
                         if (readyTopVer.get().equals(AffinityTopologyVersion.NONE)) {
-                            initFut = exchangeFuture(initialExchangeId(), null, null, null);
+                            initFut = exchangeFuture(initialExchangeId(), null, null, null, null);
 
                             initFut.onNodeLeft(n);
                         }
@@ -222,16 +221,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
 
-                    assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() :
+                    assert evt.type() != EVT_NODE_JOINED || n.order() > loc.order() :
                         "Node joined with smaller-than-local " +
                             "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-                    exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                    exchId = exchangeId(n.id(),
+                        affinityTopologyVersion(evt),
+                        evt.type());
 
-                    exchFut = exchangeFuture(exchId, e, null, null);
+                    exchFut = exchangeFuture(exchId, evt, cache,null, null);
                 }
                 else {
-                    DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)e;
+                    DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)evt;
 
                     if (customEvt.customMessage() instanceof DynamicCacheChangeBatch) {
                         DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)customEvt.customMessage();
@@ -262,9 +263,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         //todo think about refactoring
                         if (!F.isEmpty(valid) && !(valid.size() == 1 && valid.iterator().next().globalStateChange())) {
-                            exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                            exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
-                            exchFut = exchangeFuture(exchId, e, valid, null);
+                            exchFut = exchangeFuture(exchId, evt, cache, valid, null);
                         }
                     }
                     else if (customEvt.customMessage() instanceof CacheAffinityChangeMessage) {
@@ -272,19 +273,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (msg.exchangeId() == null) {
                             if (msg.exchangeNeeded()) {
-                                exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
-                                exchFut = exchangeFuture(exchId, e, null, msg);
+                                exchFut = exchangeFuture(exchId, evt, cache, null, msg);
                             }
                         }
                         else
-                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
+                            exchangeFuture(msg.exchangeId(), null, null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
                     else if (customEvt.customMessage() instanceof StartSnapshotOperationAckDiscoveryMessage
                         && !((StartSnapshotOperationAckDiscoveryMessage)customEvt.customMessage()).hasError()) {
-                        exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                        exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt.type());
 
-                        exchFut = exchangeFuture(exchId, e, null, null);
+                        exchFut = exchangeFuture(exchId, evt, null, null, null);
                     }
                 }
 
@@ -293,7 +294,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         log.debug("Discovery event (will start exchange): " + exchId);
 
                     // Event callback - without this callback future will never complete.
-                    exchFut.onEvent(exchId, e);
+                    exchFut.onEvent(exchId, evt, cache);
 
                     // Start exchange process.
                     addFuture(exchFut);
@@ -315,7 +316,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         exchWorker = new ExchangeWorker();
 
-        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
+        cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
         cctx.io().addHandler(0, GridDhtPartitionsSingleMessage.class,
@@ -373,11 +374,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        T2<DiscoveryEvent, DiscoCache> localJoin = cctx.discovery().localJoin();
+
+        DiscoveryEvent discoEvt = localJoin.get1();
+        DiscoCache discoCache = localJoin.get2();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
-        GridDhtPartitionsExchangeFuture fut = exchangeFuture(exchId, discoEvt, null, null);
+        GridDhtPartitionsExchangeFuture fut = exchangeFuture(exchId, discoEvt, discoCache, null, null);
 
         if (reconnect)
             reconnectExchangeFut = new GridFutureAdapter<>();
@@ -484,7 +488,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        cctx.gridEvents().removeLocalEventListener(discoLsnr);
+        cctx.gridEvents().removeDiscoveryEventListener(discoLsnr);
 
         cctx.io().removeHandler(0, GridDhtPartitionsSingleMessage.class);
         cctx.io().removeHandler(0, GridDhtPartitionsFullMessage.class);
@@ -1087,12 +1091,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
+     * @param cache Discovery data cache.
      * @param reqs Cache change requests.
      * @param affChangeMsg Affinity change message.
      * @return Exchange future.
      */
     private GridDhtPartitionsExchangeFuture exchangeFuture(GridDhtPartitionExchangeId exchId,
         @Nullable DiscoveryEvent discoEvt,
+        @Nullable DiscoCache cache,
         @Nullable Collection<DynamicCacheChangeRequest> reqs,
         @Nullable CacheAffinityChangeMessage affChangeMsg) {
         GridDhtPartitionsExchangeFuture fut;
@@ -1111,7 +1117,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (discoEvt != null)
-            fut.onEvent(exchId, discoEvt);
+            fut.onEvent(exchId, discoEvt, cache);
 
         if (stopErr != null)
             fut.onDone(stopErr);
@@ -1267,7 +1273,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.database().releaseHistoryForPreloading();
             }
             else
-                exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node, msg);
+                exchangeFuture(msg.exchangeId(), null, null, null, null).onReceive(node, msg);
         }
         finally {
             leaveBusy();
@@ -1320,8 +1326,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             else {
                 if (msg.client()) {
-                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(
-                        msg.exchangeId(), null, null, null);
+                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
+                        null,
+                        null,
+                        null,
+                        null);
 
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
@@ -1331,7 +1340,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     });
                 }
                 else
-                    exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node, msg);
+                    exchangeFuture(msg.exchangeId(), null, null, null, null).onReceive(node, msg);
             }
         }
         finally {

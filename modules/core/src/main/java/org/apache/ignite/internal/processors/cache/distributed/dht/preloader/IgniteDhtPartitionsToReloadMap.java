@@ -26,12 +26,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Partition reload map.
+ */
 public class IgniteDhtPartitionsToReloadMap implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private Map<UUID, Map<Integer, Set<Integer>>> map;
 
+    /**
+     * @param nodeId Node ID.
+     * @param cacheId Cache ID.
+     * @return Collection of partitions to reload.
+     */
     public synchronized Set<Integer> get(UUID nodeId, int cacheId) {
         if (map == null)
             return Collections.emptySet();
@@ -49,6 +58,11 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
         return parts;
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     */
     public synchronized void put(UUID nodeId, int cacheId, int partId) {
         if (map == null)
             map = new HashMap<>();

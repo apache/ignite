@@ -1191,7 +1191,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             KeyCacheObject key,
             CacheObject oldVal,
             CacheObject newVal
-        ) throws IgniteCheckedException {
+        ) {
             // In case we deal with IGFS cache, count updated data
             if (cctx.cache().isIgfsDataCache() &&
                 !cctx.isNear() &&

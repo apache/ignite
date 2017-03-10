@@ -59,8 +59,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * the underlying storage.
      *
      * @param ptr Optional pointer to sync. If {@code null}, will sync up to the latest record.
-     * @throws IgniteCheckedException If
-     * @throws StorageException
+     * @throws IgniteCheckedException If failed to fsync.
+     * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
+     *      method, the WAL will be invalidated and the node will be stopped.
      */
     public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException;
 
