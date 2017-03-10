@@ -41,7 +41,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) RandomVectorFixture::new,
         (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
         (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
-        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new
+        (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
+        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new
     );
 
     /** */
@@ -118,6 +119,39 @@ class VectorImplementationsFixtures {
             super("FunctionVector",
                 (size, scale) -> new FunctionVectorForTest(new double[size], scale),
                 "scale", new Double[] {0.5, 1.0, 2.0, null});
+        }
+    }
+
+    /** */
+    private static class SingleElementVectorFixture implements Iterable<Vector> {
+        /** */
+        private final Supplier<TwoParamsIterator<Integer, Double>> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
+        /** */
+        SingleElementVectorFixture() {
+            iter = () -> new TwoParamsIterator<Integer, Double>("SingleElementVector",
+                null, ctxDescrHolder::set,
+                "size", new Integer[] {1, null},
+                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null}) {
+
+                /** {@inheritDoc} */
+                @Override BiFunction<Integer, Double, Vector> ctor() {
+                    return (size, value) -> new SingleElementVector(size, 0, value);
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();//(
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 
@@ -222,8 +256,8 @@ class VectorImplementationsFixtures {
         }
 
         /** {@inheritDoc} */
-        @Override Function<Integer, Vector> ctor() {
-            return (size) -> ctor.apply(size, extras[extraIdx]);
+        @Override BiFunction<Integer, Integer, Vector> ctor() {
+            return (size, delta) -> ctor.apply(size + delta, extras[extraIdx]);
         }
 
         /** */
@@ -254,23 +288,51 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static class VectorSizesIterator implements Iterator<Vector> {
-        /** */ private static final Integer sizes[] = new Integer[] {2, 4, 8, 16, 32, 64, 128, null};
-
-        /** */ private static final Integer deltas[] = new Integer[] {-1, 0, 1, null};
-
-        /** */ private final String vectorKind;
-
+    private static class VectorSizesIterator extends TwoParamsIterator<Integer, Integer> {
         /** */ private final Function<Integer, Vector> ctor;
-
-        /** */ private final Consumer<String> ctxDescrConsumer;
-
-        /** */ private int sizeIdx = 0;
-
-        /** */ private int deltaIdx = 0;
 
         /** */
         VectorSizesIterator(String vectorKind, Function<Integer, Vector> ctor, Consumer<String> ctxDescrConsumer) {
+            super(vectorKind, null, ctxDescrConsumer,
+                "size", new Integer[] {2, 4, 8, 16, 32, 64, 128, null},
+                "size delta", new Integer[] {-1, 0, 1, null});
+
+            this.ctor = ctor;
+        }
+
+        /** {@inheritDoc} */
+        @Override BiFunction<Integer, Integer, Vector> ctor() { return (size, delta) -> ctor.apply(size + delta); }
+    }
+
+    /** */
+    private static class TwoParamsIterator<T, U> implements Iterator<Vector> {
+        /** */ private final T params1[];
+
+        /** */ private final U params2[];
+
+        /** */ private final String vectorKind;
+
+        /** */ private final String param1Name;
+
+        /** */ private final String param2Name;
+
+        /** */ private final BiFunction<T, U, Vector> ctor;
+
+        /** */ private final Consumer<String> ctxDescrConsumer;
+
+        /** */ private int param1Idx = 0;
+
+        /** */ private int param2Idx = 0;
+
+        /** */
+        TwoParamsIterator(String vectorKind, BiFunction<T, U, Vector> ctor,
+            Consumer<String> ctxDescrConsumer, String param1Name, T[] params1, String param2Name, U[] params2) {
+            this.param1Name = param1Name;
+            this.params1 = params1;
+
+            this.param2Name = param2Name;
+            this.params2 = params2;
+
             this.vectorKind = vectorKind;
 
             this.ctor = ctor;
@@ -280,50 +342,23 @@ class VectorImplementationsFixtures {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return hasNextSize(sizeIdx) && hasNextDelta(deltaIdx);
+            return hasNextParam1(param1Idx) && hasNextParam2(param2Idx);
         }
 
         /** {@inheritDoc} */
         @Override public Vector next() {
             if (!hasNext())
-                throw new NoSuchElementException(VectorSizesIterator.this.toString());
+                throw new NoSuchElementException(TwoParamsIterator.this.toString());
 
             if (ctxDescrConsumer != null)
                 ctxDescrConsumer.accept(toString());
 
-            Vector res = ctor().apply(sizes[sizeIdx] + deltas[deltaIdx]);
+            Vector res = ctor().apply(params1[param1Idx], params2[param2Idx]);
 
             nextIdx();
 
             return res;
         }
-
-        /** IMPL NOTE override in subclasses if needed */
-        void nextIdx() {
-            assert sizes[sizeIdx] != null && deltas[deltaIdx] != null
-                : "Index(es) out of bound at " + VectorSizesIterator.this;
-
-            if (hasNextDelta(deltaIdx + 1)) {
-                deltaIdx++;
-
-                return;
-            }
-
-            deltaIdx = 0;
-
-            sizeIdx++;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return vectorKind + "{" + "size=" + sizes[sizeIdx] +
-                ", size delta=" + deltas[deltaIdx] +
-                '}';
-        }
-
-        /** IMPL NOTE override in subclasses if needed */
-        Function<Integer, Vector> ctor() { return ctor; }
 
         /** */
         void selfTest() {
@@ -334,31 +369,58 @@ class VectorImplementationsFixtures {
             while (hasNext()) {
                 assertNotNull("Expect not null vector at " + this, next());
 
-                if (sizes[sizeIdx] != null)
-                    sizeIdxs.add(sizeIdx);
+                if (params1[param1Idx] != null)
+                    sizeIdxs.add(param1Idx);
 
-                if (deltas[deltaIdx] != null)
-                    deltaIdxs.add(deltaIdx);
+                if (params2[param2Idx] != null)
+                    deltaIdxs.add(param2Idx);
 
                 cnt++;
             }
 
-            assertEquals("Sizes tested mismatch.", sizeIdxs.size(), sizes.length - 1);
+            assertEquals("Sizes tested mismatch.", sizeIdxs.size(), params1.length - 1);
 
-            assertEquals("Deltas tested", deltaIdxs.size(), deltas.length - 1);
+            assertEquals("Deltas tested", deltaIdxs.size(), params2.length - 1);
 
             assertEquals("Combinations tested mismatch.",
-                (sizes.length - 1) * (deltas.length - 1), cnt);
+                (params1.length - 1) * (params2.length - 1), cnt);
+        }
+
+        /** IMPL NOTE override in subclasses if needed */
+        void nextIdx() {
+            assert params1[param1Idx] != null && params2[param2Idx] != null
+                : "Index(es) out of bound at " + TwoParamsIterator.this;
+
+            if (hasNextParam2(param2Idx + 1)) {
+                param2Idx++;
+
+                return;
+            }
+
+            param2Idx = 0;
+
+            param1Idx++;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return vectorKind + "{" + param1Name + "=" + params1[param1Idx] +
+                ", " + param2Name + "=" + params2[param2Idx] +
+                '}';
+        }
+
+        /** IMPL NOTE override in subclasses if needed */
+        BiFunction<T, U, Vector> ctor() { return ctor; }
+
+        /** */
+        private boolean hasNextParam1(int idx) {
+            return params1[idx] != null;
         }
 
         /** */
-        private boolean hasNextSize(int idx) {
-            return sizes[idx] != null;
-        }
-
-        /** */
-        private boolean hasNextDelta(int idx) {
-            return deltas[idx] != null;
+        private boolean hasNextParam2(int idx) {
+            return params2[idx] != null;
         }
     }
 

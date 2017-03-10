@@ -103,4 +103,28 @@ public class SingleElementVectorStorage implements VectorStorage {
     @Override public boolean isArrayBased() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SingleElementVectorStorage that = (SingleElementVectorStorage) o;
+
+        return idx == that.idx && Double.compare(that.val, val) == 0 && size == that.size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = idx;
+        long temp = Double.doubleToLongBits(val);
+
+        res = 31 * res + (int) (temp ^ (temp >>> 32));
+        res = 31 * res + size;
+
+        return res;
+    }
 }
