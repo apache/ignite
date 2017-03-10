@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
@@ -105,14 +106,21 @@ public class DistributionSupport {
         int partsCnt = ignite().affinity(cacheName).partitions();
 
         broadcastForCache(cacheName, () -> {
-            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
+            Ignite localIgnite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = localIgnite.getOrCreateCache(cacheName);
+
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            Affinity affinity = localIgnite.affinity(cacheName);
+            ClusterNode localNode = localIgnite.cluster().localNode();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
-            for (int part = 0; part < partsCnt; part++)
+            for (int part = 0; part < partsCnt; part++){
+                int finalPart = part;
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part))) 
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(finalPart) == localNode)))
                     clo.accept(new CacheEntry<K, V>(entry, cache));
+            }
         });
     }
 

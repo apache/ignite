@@ -20,8 +20,6 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.KeyMapper;
@@ -29,8 +27,6 @@ import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-
-import java.util.Collections;
 
 /**
  * Tests for {@link CacheMatrix}.
@@ -55,9 +51,8 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 1; i <= NODE_COUNT; i++) {
-            IgniteEx igniteEx = startGrid(i);
-        }
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
     }
 
     /** {@inheritDoc} */
@@ -129,7 +124,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 //        assertFalse("Like matrix should be not equal to original.", like.equals(cacheMatrix));
 //    }
 
-    /** TODO: wip, currently test fails. */
+    /** */
     public void testPlus(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
 
@@ -147,6 +142,27 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
                 assertEquals(plusVal, cacheMatrix.get(i, j));
+    }
+
+    /** */
+    public void testDivide(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        double divVal = 2;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        cacheMatrix.assign(1);
+        cacheMatrix.divide(divVal);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                assertTrue(Double.compare(cacheMatrix.get(i, j), 1 / divVal) == 0);
     }
 
     /** */
