@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -1698,6 +1696,27 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param req Update request.
+     * @param completionCb Completion callback.
+     * @param e Error.
+     */
+    private void onForceKeysError(final UUID nodeId,
+        final GridNearAtomicAbstractUpdateRequest req,
+        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        IgniteCheckedException e
+    ) {
+        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+            nodeId,
+            req.futureVersion(),
+            ctx.deploymentEnabled());
+
+        res.addFailedKeys(req.keys(), e);
+
+        completionCb.apply(req, res);
+    }
+
+    /**
      * Executes local update.
      *
      * @param nodeId Node ID.
@@ -1720,116 +1739,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param stripeIdx Stripe index.
      * @param completionCb Completion callback.
      */
-    public void updateAllAsyncInternal(
-        final UUID nodeId,
-        final GridNearAtomicAbstractUpdateRequest req,
-        final int stripeIdx,
-        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
-    ) {
-        IgniteInternalFuture<Object> forceFut;
-
-        final int[] stripeIdxs;
-
-        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED
-            && req instanceof GridNearAtomicFullUpdateRequest
-            && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
-            stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
-            List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.length);
-
-            for (int i = 0; i < stripeIdxs.length; i++)
-                keys.add(req.key(stripeIdxs[i]));
-
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("Striped near request [futId=" + req.futureVersion() +
-                    "], processed_keys=" + stripeIdxs.length);
-            }
-
-            forceFut = preldr.request(keys, req.topologyVersion());
-        }
-        else {
-            forceFut = preldr.request(req, req.topologyVersion());
-            stripeIdxs = null;
-        }
-
-        if (forceFut == null || forceFut.isDone()) {
-            try {
-                if (forceFut != null)
-                    forceFut.get();
-            }
-            catch (NodeStoppingException ignored) {
-                return;
-            }
-            catch (IgniteCheckedException e) {
-                onForceKeysError(nodeId, req, completionCb, e);
-
-                return;
-            }
-
-            updateAllAsyncInternal0(nodeId, req, stripeIdx, stripeIdxs, completionCb);
-        }
-        else {
-            forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> fut) {
-                    try {
-                        fut.get();
-                    }
-                    catch (NodeStoppingException ignored) {
-                        return;
-                    }
-                    catch (IgniteCheckedException e) {
-                        onForceKeysError(nodeId, req, completionCb, e);
-
-                        return;
-                    }
-
-                    updateAllAsyncInternal0(nodeId, req, stripeIdx, stripeIdxs, completionCb);
-                }
-            });
-        }
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param req Update request.
-     * @param completionCb Completion callback.
-     * @param e Error.
-     */
-    private void onForceKeysError(final UUID nodeId,
-        final GridNearAtomicAbstractUpdateRequest req,
-        final CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
-        IgniteCheckedException e
-    ) {
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
-            nodeId,
-            req.futureVersion(),
-            ctx.deploymentEnabled());
-
-        res.addFailedKeys(req.keys(), e);
-
-        completionCb.apply(req, res);
-    }
-
-    /**
-     * Executes local update after preloader fetched values.
-     *
-     * @param nodeId Node ID.
-     * @param req Update request.
-     * @param completionCb Completion callback.
-     * @param stripeIdx Stripe number.
-     * @param stripeIdxs Stripe indexes.
-     */
-    private void updateAllAsyncInternal0(
+    private void updateAllAsyncInternal(
         UUID nodeId,
         GridNearAtomicAbstractUpdateRequest req,
         int stripeIdx,
-        int[] stripeIdxs,
         CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
+        int[] stripeIdxs = null;
+
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
-        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED)
+        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED
+            && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
+            && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
+            stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
+
             res.stripe(stripeIdx);
+        }
 
         res.partition(req.partition());
 
@@ -2659,13 +2586,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (!ctx.affinity().partitionBelongs(node, entry.partition(), topVer)) {
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue()) {
-                                res.addNearValue(i,
+                                res.addNearValue(trueIdx,
                                     updRes.newValue(),
                                     updRes.newTtl(),
                                     updRes.conflictExpireTime());
                             }
                             else
-                                res.addNearTtl(i, updRes.newTtl(), updRes.conflictExpireTime());
+                                res.addNearTtl(trueIdx, updRes.newTtl(), updRes.conflictExpireTime());
 
                             if (updRes.newValue() != null) {
                                 IgniteInternalFuture<Boolean> f = entry.addReader(node.id(), req.messageId(), topVer);
@@ -2676,10 +2603,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         else if (F.contains(readers, node.id())) // Reader became primary or backup.
                             entry.removeReader(node.id(), req.messageId());
                         else
-                            res.addSkippedIndex(i);
+                            res.addSkippedIndex(trueIdx);
                     }
                     else
-                        res.addSkippedIndex(i);
+                        res.addSkippedIndex(trueIdx);
                 }
 
                 if (updRes.removeVersion() != null) {
