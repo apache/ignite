@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -456,27 +455,5 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         @Override public void decrementRefCount() {
             throw new IllegalStateException();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2TreeIndex rebuild() throws InterruptedException {
-        IndexColumn[] cols = getIndexColumns();
-
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), getTable(),
-            getIndexType().isUnique(), F.asList(cols));
-
-        Thread thread = Thread.currentThread();
-
-        long i = 0;
-
-        for (GridH2Row row : tree.values()) {
-            // Check for interruptions every 1000 iterations.
-            if (++i % 1000 == 0 && thread.isInterrupted())
-                throw new InterruptedException();
-
-            idx.tree.put(row, row);
-        }
-
-        return idx;
     }
 }
