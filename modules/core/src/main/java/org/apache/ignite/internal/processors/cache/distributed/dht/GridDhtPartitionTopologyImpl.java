@@ -99,7 +99,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private volatile boolean stopping;
 
     /** A future that will be completed when topology with version topVer will be ready to use. */
-    private GridDhtTopologyFuture topReadyFut;
+    private volatile GridDhtTopologyFuture topReadyFut;
 
     /** */
     private final GridAtomicLong updateSeq = new GridAtomicLong(1);
@@ -210,7 +210,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             break;
                         }
-                        catch (IgniteFutureTimeoutCheckedException e) {
+                        catch (IgniteFutureTimeoutCheckedException ignored) {
                             if (dumpCnt++ < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
                                 U.warn(log, "Failed to wait for partition eviction [" +
                                     "topVer=" + topVer +
@@ -311,16 +311,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyVersionFuture() {
-        lock.readLock().lock();
+        assert topReadyFut != null;
 
-        try {
-            assert topReadyFut != null;
-
-            return topReadyFut;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return topReadyFut;
     }
 
     /** {@inheritDoc} */
@@ -568,7 +561,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             for (int p = 0; p < num; p++) {
                 GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
-                if (cctx.affinity().localNode(p, topVer)) {
+                if (cctx.affinity().partitionLocalNode(p, topVer)) {
                     // This partition will be created during next topology event,
                     // which obviously has not happened at this point.
                     if (locPart == null) {
@@ -691,7 +684,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             loc = locParts.get(p);
 
-            boolean belongs = cctx.affinity().localNode(p, topVer);
+            boolean belongs = cctx.affinity().partitionLocalNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts.set(p, loc = null);
@@ -752,6 +745,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (part != null)
                 list.add(part);
         }
+
         return list;
     }
 

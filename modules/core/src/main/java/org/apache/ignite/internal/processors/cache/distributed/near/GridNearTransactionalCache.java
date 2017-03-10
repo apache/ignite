@@ -445,6 +445,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
+        long createTtl,
         long accessTtl
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -455,6 +456,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             isRead,
             retval,
             timeout,
+            createTtl,
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
@@ -474,7 +476,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
-        return ctx.affinity().belongs(ctx.localNode(), e.partition(), topVer);
+        return ctx.affinity().partitionBelongs(ctx.localNode(), e.partition(), topVer);
     }
 
     /**
@@ -546,7 +548,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             topVer = cand.topologyVersion();
 
                             // Send request to remove from remote nodes.
-                            ClusterNode primary = ctx.affinity().primary(key, topVer);
+                            ClusterNode primary = ctx.affinity().primaryByKey(key, topVer);
 
                             if (primary == null) {
                                 if (log.isDebugEnabled())
@@ -666,7 +668,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     map = U.newHashMap(affNodes.size());
                                 }
 
-                                ClusterNode primary = ctx.affinity().primary(key, cand.topologyVersion());
+                                ClusterNode primary = ctx.affinity().primaryByKey(key, cand.topologyVersion());
 
                                 if (primary == null) {
                                     if (log.isDebugEnabled())

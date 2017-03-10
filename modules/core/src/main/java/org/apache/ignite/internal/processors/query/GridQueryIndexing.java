@@ -103,6 +103,7 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param qry Query.
+     * @param alias Table alias used in Query.
      * @param params Query parameters.
      * @param type Query return type.
      * @param filter Space name and key filter.
@@ -110,7 +111,8 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalSql(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String alias, Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filter)
+        throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -206,14 +208,6 @@ public interface GridQueryIndexing {
     public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type.
-     *
-     * @param spaceName Space name.
-     * @param type Type descriptor.
-     */
-    public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
-
-    /**
      * Returns backup filter.
      *
      * @param topVer Topology version.
@@ -237,6 +231,21 @@ public interface GridQueryIndexing {
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
      */
     public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+
+    /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration);
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries);
 
     /**
      * Cancels all executing queries.

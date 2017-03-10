@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
 import org.apache.ignite.cache.store.jdbc.model.Person;
@@ -208,7 +209,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         cache.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                     else
                         cache.put(new PersonKey(id), new Person(id, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + id, 1));
+                            new Date(System.currentTimeMillis()), "Name" + id, 1, Gender.random()));
                 }
 
                 return null;
@@ -228,7 +229,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         cache.putIfAbsent(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                     else
                         cache.putIfAbsent(new PersonKey(id), new Person(id, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + id, i));
+                            new Date(System.currentTimeMillis()), "Name" + id, i, Gender.random()));
                 }
 
                 return null;
@@ -268,7 +269,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                             map.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
                         else
                             map.put(new PersonKey(id), new Person(id, rnd.nextInt(),
-                                new Date(System.currentTimeMillis()), "Name" + id, 1));
+                                new Date(System.currentTimeMillis()), "Name" + id, 1, Gender.random()));
                     }
 
                     IgniteCache<Object, Object> cache = jcache();
@@ -294,11 +295,11 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
                     try (Transaction tx = grid().transactions().txStart()) {
                         cache.put(new PersonKey(1), new Person(1, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 1, 1));
+                            new Date(System.currentTimeMillis()), "Name" + 1, 1, Gender.random()));
                         cache.put(new PersonKey(2), new Person(2, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 2, 2));
+                            new Date(System.currentTimeMillis()), "Name" + 2, 2, Gender.random()));
                         cache.put(new PersonKey(3), new Person(3, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 3, 3));
+                            new Date(System.currentTimeMillis()), "Name" + 3, 3, Gender.random()));
 
                         cache.get(new PersonKey(1));
                         cache.get(new PersonKey(4));
@@ -306,9 +307,9 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                         Map<PersonKey, Person> map =  U.newHashMap(2);
 
                         map.put(new PersonKey(5), new Person(5, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 5, 5));
+                            new Date(System.currentTimeMillis()), "Name" + 5, 5, Gender.random()));
                         map.put(new PersonKey(6), new Person(6, rnd.nextInt(),
-                            new Date(System.currentTimeMillis()), "Name" + 6, 6));
+                            new Date(System.currentTimeMillis()), "Name" + 6, 6, Gender.random()));
 
                         cache.putAll(map);
 

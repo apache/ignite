@@ -201,7 +201,7 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
                 try {
                     barrier.await(10, SECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     err = "Operations hang or fail with unexpected error.";
 
                     break;

@@ -32,7 +32,16 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        hnd(hnds->target); \
+    { \
+        try \
+        { \
+            hnd(hnds->target); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+        } \
+    } \
     else \
         ThrowOnMissingHandler(jniEnv); \
 }
@@ -41,7 +50,16 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        hnd(hnds->target, __VA_ARGS__); \
+    { \
+        try \
+        { \
+            hnd(hnds->target, __VA_ARGS__); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+        } \
+    } \
     else \
         ThrowOnMissingHandler(jniEnv); \
 }
@@ -50,7 +68,17 @@
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
     type hnd = hnds->field; \
     if (hnd) \
-        return hnd(hnds->target, __VA_ARGS__); \
+    { \
+        try \
+        { \
+            return hnd(hnds->target, __VA_ARGS__); \
+        } \
+        catch (std::exception& err) \
+        { \
+            ThrowToJava(jniEnv, err.what()); \
+            return 0; \
+        } \
+    } \
     else \
     { \
         ThrowOnMissingHandler(jniEnv); \
@@ -212,6 +240,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_EVENTS = JniMethod("events", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
+            JniMethod M_PLATFORM_PROCESSOR_EXTENSION = JniMethod("extension", "(I)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTargetProxy;", false);
@@ -355,6 +384,21 @@ namespace ignite
                 env->ThrowNew(cls, "Callback handler is not set in native platform.");
 
                 return 0;
+            }
+
+            /**
+             * Throw generic exception to Java in case of native exception. As JniContext is not available at
+             * this point, we have to obtain exception details from scratch. This is not critical from performance
+             * perspective because such exception is usually denotes fatal condition.
+             *
+             * @param env JNI environment.
+             * @param msg Message.
+             */
+            void ThrowToJava(JNIEnv* env, const char* msg)
+            {
+                jclass cls = env->FindClass(C_IGNITE_EXCEPTION);
+
+                env->ThrowNew(cls, msg);
             }
 
             char* StringToChars(JNIEnv* env, jstring str, int* len) {
@@ -528,6 +572,7 @@ namespace ignite
                 m_PlatformProcessor_events = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EVENTS);
                 m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
                 m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
+                m_PlatformProcessor_extension = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSION);
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
                 m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
@@ -935,12 +980,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            jobject JniContext::ProcessorProjection(jobject obj) {
+            jobject JniContext::ProcessorProjection(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject prj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_projection);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, prj);
             }
@@ -1146,6 +1191,17 @@ namespace ignite
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extensions);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            jobject JniContext::ProcessorExtension(jobject obj, int id)
+            {
+                JNIEnv* env = Attach();
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_extension, id);
 
                 ExceptionCheck(env);
 

@@ -1,0 +1,55 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin ignite-form-field-datepicker(label, model, name, disabled, required, placeholder, tip)
+    mixin form-field-input()
+        input.form-control(
+            id='{{ #{name} }}Input'
+            name='{{ #{name} }}'
+
+            placeholder=placeholder
+            
+            data-ng-model=model
+
+            data-ng-required=required && '#{required}'
+            data-ng-disabled=disabled && '#{disabled}'
+
+            bs-datepicker
+            data-date-format='MMM yyyy'
+            data-start-view='1'
+            data-min-view='1' 
+            data-max-date='today'
+
+            data-container='body > .wrapper'
+
+            tabindex='0'
+
+            onkeydown="return false"
+
+            data-ignite-form-panel-field=''
+        )&attributes(attributes.attributes)
+
+    .ignite-form-field
+        +ignite-form-field__label(label, name, required)
+        .ignite-form-field__control
+            if tip
+                i.tipField.icon-help(bs-tooltip='' data-title=tip)
+
+            if block
+                block
+
+            .input-tip
+                +form-field-input(attributes=attributes)

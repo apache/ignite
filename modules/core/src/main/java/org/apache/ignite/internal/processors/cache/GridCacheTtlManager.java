@@ -43,7 +43,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
             !cctx.config().isEagerTtl() ||
             CU.isAtomicsCache(cctx.name()) ||
-            CU.isMarshallerCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
             (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
 
@@ -141,7 +140,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                             break;
                         }
-                        catch (GridCacheEntryRemovedException e0) {
+                        catch (GridCacheEntryRemovedException ignored) {
                             entry = entry.context().cache().entryEx(entry.key());
 
                             touch = true;

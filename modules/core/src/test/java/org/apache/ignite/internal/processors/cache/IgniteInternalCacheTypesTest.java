@@ -29,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 
@@ -113,14 +112,6 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ignite.cache(CU.MARSH_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
                 ignite.cache(CU.ATOMICS_CACHE_NAME);
 
                 return null;
@@ -128,8 +119,6 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
         }, IllegalStateException.class, null);
 
         checkCache(ignite, CU.UTILITY_CACHE_NAME, UTILITY_CACHE_POOL, false, true);
-
-        checkCache(ignite, CU.MARSH_CACHE_NAME, MARSH_CACHE_POOL, false, false);
 
         checkCache(ignite, CU.ATOMICS_CACHE_NAME, SYSTEM_POOL, false, true);
 

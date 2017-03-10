@@ -88,7 +88,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             try {
                 l.close();
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignored) {
                 U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
             }
         }

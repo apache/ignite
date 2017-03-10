@@ -369,6 +369,8 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
 
         Map<String, String> props = LocalFileSystemUtils.posixAttributesToMap(attrs);
 
+        BasicFileAttributes basicAttrs = LocalFileSystemUtils.basicAttributes(file);
+
         if (isDir) {
             return new LocalFileSystemIgfsFile(path, false, true, 0,
                 aTime, mTime, 0, props);

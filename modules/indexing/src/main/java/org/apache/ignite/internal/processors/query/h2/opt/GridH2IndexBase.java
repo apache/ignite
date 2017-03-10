@@ -178,16 +178,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * If the index supports rebuilding it has to creates its own copy.
-     *
-     * @return Rebuilt copy.
-     * @throws InterruptedException If interrupted.
-     */
-    public GridH2IndexBase rebuild() throws InterruptedException {
-        return this;
-    }
-
-    /**
      * Put row if absent.
      *
      * @param row Row.
@@ -612,7 +602,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
             node = cctx.discovery().node(nodeId);
         }
         else // Get primary node for current topology version.
-            node = cctx.affinity().primary(affKeyObj, qctx.topologyVersion());
+            node = cctx.affinity().primaryByKey(affKeyObj, qctx.topologyVersion());
 
         if (node == null) // Node was not found, probably topology changed and we need to retry the whole query.
             throw new GridH2RetryException("Failed to find node.");
@@ -1228,7 +1218,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 try {
                     res = respQueue.poll(500, TimeUnit.MILLISECONDS);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     throw new GridH2RetryException("Interrupted.");
                 }
 

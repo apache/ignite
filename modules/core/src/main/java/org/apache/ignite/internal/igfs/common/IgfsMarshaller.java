@@ -131,7 +131,7 @@ public class IgfsMarshaller {
                     writePath(out, req.destinationPath());
                     out.writeBoolean(req.flag());
                     out.writeBoolean(req.colocate());
-                    U.writeStringMap(out, req.properties());
+                    IgfsUtils.writeStringMap(out, req.properties());
 
                     // Minor optimization.
                     if (msg.command() == AFFINITY) {
@@ -248,7 +248,7 @@ public class IgfsMarshaller {
                     req.destinationPath(readPath(in));
                     req.flag(in.readBoolean());
                     req.colocate(in.readBoolean());
-                    req.properties(U.readStringMap(in));
+                    req.properties(IgfsUtils.readStringMap(in));
 
                     // Minor optimization.
                     if (cmd == AFFINITY) {

@@ -1281,7 +1281,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node != null)
-                        ctx.io().send(node,
+                        ctx.io().sendToGridTopic(node,
                             TOPIC_JOB_CANCEL,
                             new GridJobCancelRequest(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true),
                             PUBLIC_POOL);
@@ -1293,7 +1293,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                                 nodeId + ", taskName=" + ses.getTaskName() +
                                 ", taskSesId=" + ses.getId() + ", jobSesId=" + res.getJobContext().getJobId() + ']', e);
                     }
-                    catch (IgniteClientDisconnectedCheckedException e0) {
+                    catch (IgniteClientDisconnectedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send cancel request to node, client disconnected [nodeId=" +
                                 nodeId + ", taskName=" + ses.getTaskName() + ']');
@@ -1382,7 +1382,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
                         // Send job execution request.
-                        ctx.io().send(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
+                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');

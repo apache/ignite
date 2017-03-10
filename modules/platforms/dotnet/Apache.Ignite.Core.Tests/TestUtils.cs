@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable S2360 // Optional parameters should not be used
 namespace Apache.Ignite.Core.Tests
 {
     using System;

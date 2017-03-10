@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -90,9 +90,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
 
-    /** Transaction. */
-    private IgniteTxLocalEx tx;
-
     /** Retries because ownership changed. */
     private Collection<Integer> retries;
 
@@ -115,7 +112,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param key Key.
      * @param addRdr Add reader flag.
      * @param readThrough Read through flag.
-     * @param tx Transaction.
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
@@ -129,7 +125,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         KeyCacheObject key,
         Boolean addRdr,
         boolean readThrough,
-        @Nullable IgniteTxLocalEx tx,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -145,7 +140,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.key = key;
         this.addRdr = addRdr;
         this.readThrough = readThrough;
-        this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -154,7 +148,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         futId = IgniteUuid.randomUuid();
 
-        ver = tx == null ? cctx.versions().next() : tx.xidVersion();
+        ver = cctx.versions().next();
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtGetSingleFuture.class);
@@ -306,6 +300,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
         ClusterNode readerNode = cctx.discovery().node(reader);
 
+        ReaderArguments readerArgs = null;
+
         if (readerNode != null && !readerNode.isLocal() && cctx.discovery().cacheNearNode(readerNode, cctx.name())) {
             while (true) {
                 GridDhtCacheEntry e = cache().entryExx(key, topVer);
@@ -314,14 +310,21 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                     if (e.obsolete())
                         continue;
 
-                    boolean addReader = (!e.deleted() && addRdr && !skipVals);
+                    boolean addReader = (!e.deleted() && this.addRdr && !skipVals);
 
-                    if (addReader)
+                    if (addReader) {
                         e.unswap(false);
+
+                        // Entry will be removed on touch() if no data in cache,
+                        // but they could be loaded from store,
+                        // we have to add reader again later.
+                        if (readerArgs == null)
+                            readerArgs = new ReaderArguments(reader, msgId, topVer);
+                    }
 
                     // Register reader. If there are active transactions for this entry,
                     // then will wait for their completion before proceeding.
-                    // TODO: GG-4003:
+                    // TODO: IGNITE-3498:
                     // TODO: What if any transaction we wait for actually removes this entry?
                     // TODO: In this case seems like we will be stuck with untracked near entry.
                     // TODO: To fix, check that reader is contained in the list of readers once
@@ -348,28 +351,19 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
 
         if (rdrFut == null || rdrFut.isDone()) {
-            if (tx == null) {
-                fut = cache().getDhtAllAsync(
-                    Collections.singleton(key),
-                    readThrough,
-                    subjId,
-                    taskName,
-                    expiryPlc,
-                    skipVals,
-                    /*can remap*/true);
-            }
-            else {
-                fut = tx.getAllAsync(cctx,
-                    null,
-                    Collections.singleton(key),
-                    /*deserialize binary*/false,
-                    skipVals,
-                    /*keep cache objects*/true,
-                    /*skip store*/!readThrough,
-                    false);
-            }
+            fut = cache().getDhtAllAsync(
+                Collections.singleton(key),
+                readerArgs,
+                readThrough,
+                subjId,
+                taskName,
+                expiryPlc,
+                skipVals,
+                /*can remap*/true);
         }
         else {
+            final ReaderArguments args = readerArgs;
+
             rdrFut.listen(
                 new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                     @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -381,29 +375,16 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                             return;
                         }
 
-                        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut0;
-
-                        if (tx == null) {
-                            fut0 = cache().getDhtAllAsync(
+                        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut0 =
+                            cache().getDhtAllAsync(
                                 Collections.singleton(key),
+                                args,
                                 readThrough,
                                 subjId,
                                 taskName,
                                 expiryPlc,
                                 skipVals,
                                 /*can remap*/true);
-                        }
-                        else {
-                            fut0 = tx.getAllAsync(cctx,
-                                null,
-                                Collections.singleton(key),
-                                /*deserialize binary*/false,
-                                skipVals,
-                                /*keep cache objects*/true,
-                                /*skip store*/!readThrough,
-                                false
-                            );
-                        }
 
                         fut0.listen(createGetFutureListener());
                     }
@@ -445,7 +426,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             try {
                 onDone(toEntryInfo(fut.get()));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignored) {
                 assert false; // Should never happen.
             }
         }
