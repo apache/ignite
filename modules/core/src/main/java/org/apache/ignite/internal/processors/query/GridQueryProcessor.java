@@ -663,12 +663,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(space).context();
 
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, clause, cctx, new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, clause, cctx,
+                new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                 @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                    QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, resType));
-
-                    if (type == null || !type.registered())
-                        throw new CacheException("Failed to find SQL table for type: " + resType);
+                    QueryTypeDescriptorImpl type = type(space, resType);
 
                     return idx.queryLocalSql(space, clause, null, params, type, filters);
                 }
@@ -754,13 +752,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String sqlQry = qry.getSql();
                         Object[] params = qry.getArgs();
 
-                        QueryTypeDescriptorImpl typeDesc = typesByName.get(
-                            new QueryTypeNameKey(
-                                space,
-                                type));
-
-                        if (typeDesc == null || !typeDesc.registered())
-                            throw new CacheException("Failed to find SQL table for type: " + type);
+                        QueryTypeDescriptorImpl typeDesc = type(space, type);
 
                         final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
                             space,
@@ -1056,16 +1048,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                        QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, resType));
+                        QueryTypeDescriptorImpl type = type(space, resType);
 
-                        if (type == null || !type.registered())
-                            throw new CacheException("Failed to find SQL table for type: " + resType);
-
-                        return idx.queryLocalText(
-                            space,
-                            clause,
-                            type,
-                            filters);
+                        return idx.queryLocalText(space, clause, type, filters);
                     }
                 }, true);
         }
@@ -1629,8 +1614,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String space) {
-        Collection<GridQueryTypeDescriptor> spaceTypes = new ArrayList<>(
-            Math.min(10, types.size()));
+        Collection<GridQueryTypeDescriptor> spaceTypes = new ArrayList<>();
 
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
             QueryTypeDescriptorImpl desc = e.getValue();
@@ -1650,11 +1634,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridQueryTypeDescriptor type(@Nullable String space, String typeName) throws IgniteCheckedException {
+    public QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
         if (type == null || !type.registered())
-            throw new IgniteCheckedException("Failed to find type descriptor for type name: " + typeName);
+            throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
 
         return type;
     }
@@ -1666,8 +1650,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param clo Closure.
      * @param complete Complete.
      */
-    public <R> R executeQuery(GridCacheQueryType qryType, String qry, GridCacheContext<?, ?> cctx, IgniteOutClosureX<R> clo, boolean complete)
-        throws IgniteCheckedException {
+    public <R> R executeQuery(GridCacheQueryType qryType, String qry, GridCacheContext<?, ?> cctx,
+        IgniteOutClosureX<R> clo, boolean complete) throws IgniteCheckedException {
         final long startTime = U.currentTimeMillis();
 
         Throwable err = null;
