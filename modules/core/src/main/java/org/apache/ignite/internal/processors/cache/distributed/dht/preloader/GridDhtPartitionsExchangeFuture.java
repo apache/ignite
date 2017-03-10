@@ -709,7 +709,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                 if (updateTop && clientTop != null)
-                    cacheCtx.topology().update(this, clientTop.partitionMap(true), clientTop.updateCounters(false), Collections.<Integer>emptySet());
+                    cacheCtx.topology().update(exchId, clientTop.partitionMap(true), clientTop.updateCounters(false), Collections.<Integer>emptySet());
             }
 
             top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
@@ -829,7 +829,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (updateTop) {
                         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                             if (top.cacheId() == cacheCtx.cacheId()) {
-                                cacheCtx.topology().update(this,
+                                cacheCtx.topology().update(exchId,
                                     top.partitionMap(true),
                                     top.updateCounters(false),
                                     Collections.<Integer>emptySet());
@@ -1956,13 +1956,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             if (cacheCtx != null)
-                cacheCtx.topology().update(this, entry.getValue(), cntrMap,
+                cacheCtx.topology().update(exchId, entry.getValue(), cntrMap,
                     msg.partsToReload(cctx.localNodeId(), cacheId));
             else {
                 ClusterNode oldest = cctx.discovery().oldestAliveCacheServerNode(AffinityTopologyVersion.NONE);
 
                 if (oldest != null && oldest.isLocal())
-                    cctx.exchange().clientTopology(cacheId, this).update(this, entry.getValue(), cntrMap, Collections.<Integer>emptySet());
+                    cctx.exchange().clientTopology(cacheId, this).update(exchId, entry.getValue(), cntrMap, Collections.<Integer>emptySet());
             }
         }
     }
