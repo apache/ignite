@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -725,7 +726,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 TransactionState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
-                    throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
+                    throw new TransactionCheckedException("Invalid transaction state for commit [state=" + state() +
                         ", tx=" + this + ']');
                 else {
                     if (log.isDebugEnabled())
@@ -781,7 +782,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     if (!state(COMMITTED)) {
                         state(UNKNOWN);
 
-                        throw new IgniteCheckedException("Invalid transaction state for commit: " + this);
+                        throw new TransactionCheckedException("Invalid transaction state for commit: " + this);
                     }
                 }
             }
@@ -789,7 +790,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 if (!state(ROLLED_BACK)) {
                     state(UNKNOWN);
 
-                    throw new IgniteCheckedException("Invalid transaction state for rollback: " + this);
+                    throw new TransactionCheckedException("Invalid transaction state for rollback: " + this);
                 }
             }
         }

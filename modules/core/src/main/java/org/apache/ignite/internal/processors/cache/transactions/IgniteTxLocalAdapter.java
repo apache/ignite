@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -548,7 +549,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" +
+            throw new TransactionCheckedException("Invalid transaction state for prepare [state=" +
                 state + ", tx=" + this + ']');
         }
 
@@ -566,7 +567,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             if (e instanceof Error)
                 throw e;
 
-            throw new IgniteCheckedException("Transaction validation produced a runtime exception: " + this, e);
+            throw new TransactionCheckedException("Transaction validation produced a runtime exception: " + this, e);
         }
     }
 
@@ -629,7 +630,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
+            throw new TransactionCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -1009,9 +1010,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
-     * @throws IgniteCheckedException If failed.
+     * @throws TransactionCheckedException If failed.
      */
-    public void tmFinish(boolean commit) throws IgniteCheckedException {
+    public void tmFinish(boolean commit) throws TransactionCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
@@ -1071,7 +1072,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
+            throw new TransactionCheckedException("Invalid transaction state for rollback [state=" + state +
                 ", tx=" + this + ']');
         }
 
@@ -2402,7 +2403,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     // Check if lock is being explicitly acquired by the same thread.
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                         entry.lockedByThread(threadId, xidVer)) {
-                        throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
+                        throw new TransactionCheckedException("Cannot access key within transaction if lock is " +
                             "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
                             ", entry=" + entry +
                             ", xidVer=" + xidVer +
@@ -2601,7 +2602,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
         else {
             if (entryProcessor == null && txEntry.op() == TRANSFORM)
-                throw new IgniteCheckedException("Failed to enlist write value for key (cannot have update value in " +
+                throw new TransactionCheckedException("Failed to enlist write value for key (cannot have update value in " +
                     "transaction after EntryProcessor is applied): " + CU.value(cacheKey, cacheCtx, false));
 
             GridCacheEntryEx entry = txEntry.cached();
@@ -2724,7 +2725,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             IgniteTxEntry txEntry = entry(cacheCtx.txKey(k));
 
             if (txEntry == null)
-                throw new IgniteCheckedException("Transaction entry is null (most likely collection of keys passed into cache " +
+                throw new TransactionCheckedException("Transaction entry is null (most likely collection of keys passed into cache " +
                     "operation was changed before operation completed) [missingKey=" + k + ", tx=" + this + ']');
 
             while (true) {
@@ -2890,9 +2891,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /**
      * @param cacheCtx Cache context.
-     * @throws IgniteCheckedException If updates are not allowed.
+     * @throws IgniteTxRollbackCheckedException If updates are not allowed.
      */
-    private void checkUpdatesAllowed(GridCacheContext cacheCtx) throws IgniteCheckedException {
+    private void checkUpdatesAllowed(GridCacheContext cacheCtx) throws TransactionCheckedException {
         if (!cacheCtx.updatesAllowed()) {
             throw new IgniteTxRollbackCheckedException(new CacheException(
                 "Updates are not allowed for transactional cache: " + cacheCtx.name() + ". Configure " +
@@ -2906,7 +2907,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param retval Return value flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void beforePut(GridCacheContext cacheCtx, boolean retval) throws IgniteCheckedException {
+    private void beforePut(GridCacheContext cacheCtx, boolean retval) throws TransactionCheckedException {
         checkUpdatesAllowed(cacheCtx);
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
@@ -3601,9 +3602,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * Checks transaction expiration.
      *
-     * @throws IgniteCheckedException If transaction check failed.
+     * @throws TransactionCheckedException If transaction check failed.
      */
-    protected void checkValid() throws IgniteCheckedException {
+    protected void checkValid() throws TransactionCheckedException {
         if (local() && !dht() && remainingTime() == -1)
             state(MARKED_ROLLBACK, true);
 
@@ -3621,7 +3622,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
-            throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
+            throw new TransactionCheckedException("Cache transaction marked as rollback-only: " + this);
         }
     }
 
