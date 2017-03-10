@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +52,7 @@ public class QueryIndexHandler {
 
     /** Client futures. */
     // TODO: Special future which is aware of index key, handle it during cache, type undeploy and disconnect.
-    private final Map<UUID, GridFutureAdapter> cliFuts = new ConcurrentHashMap<>();
+    private final Map<UUID, QueryIndexClientFuture> cliFuts = new ConcurrentHashMap<>();
 
     /** RW lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -135,14 +135,15 @@ public class QueryIndexHandler {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<QueryIndexKey, Descriptor>> iter = idxs.entrySet().iterator();
+            // Find matching indexes.
+            Collection<QueryIndexKey> rmvIdxKeys = new HashSet<>();
 
-            while (iter.hasNext()) {
-                Map.Entry<QueryIndexKey, Descriptor> entry = iter.next();
-
-                if (F.eq(space, entry.getValue().type().space()))
-                    iter.remove();
+            for (QueryIndexKey key : idxs.keySet()) {
+                if (F.eq(space, key.space()))
+                    rmvIdxKeys.add(key);
             }
+
+            removeIndexes(rmvIdxKeys, false);
         }
         finally {
             lock.writeLock().unlock();
@@ -158,17 +159,55 @@ public class QueryIndexHandler {
         lock.writeLock().lock();
 
         try {
-            Iterator<Map.Entry<QueryIndexKey, Descriptor>> iter = idxs.entrySet().iterator();
+            // Find matching indexes.
+            Collection<QueryIndexKey> rmvKeys = new HashSet<>();
 
-            while (iter.hasNext()) {
-                Map.Entry<QueryIndexKey, Descriptor> entry = iter.next();
+            for (Map.Entry<QueryIndexKey, Descriptor> idxEntry : idxs.entrySet()) {
+                QueryIndexKey idxKey = idxEntry.getKey();
+                Descriptor idxDesc = idxEntry.getValue();
 
-                if (F.eq(desc, entry.getValue().type()))
-                    iter.remove();
+                if (F.eq(desc, idxDesc.type()))
+                    rmvKeys.add(idxKey);
             }
+
+            removeIndexes(rmvKeys, true);
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Remove indexes locally. Invoked when cache is either destroyed or type is unregistered.
+     *
+     * @param rmvIdxKeys Index keys to be removed.
+     * @param typUnregister {@code True} if type was undeployed, {@code false} if cache was undeployed.
+     */
+    private void removeIndexes(Collection<QueryIndexKey> rmvIdxKeys, boolean typUnregister) {
+        // Remove matched indexes
+        for (QueryIndexKey rmvIdxKey : rmvIdxKeys) {
+            // TODO: Callback to indexing SPI should be done from here
+            idxs.remove(rmvIdxKey);
+        }
+
+        // Complete pending futures.
+        Collection<UUID> rmvCliFutIds = new HashSet<>();
+
+        for (Map.Entry<UUID, QueryIndexClientFuture> cliFutEntry : cliFuts.entrySet()) {
+            UUID cliFutId = cliFutEntry.getKey();
+            QueryIndexClientFuture cliFut = cliFutEntry.getValue();
+
+            if (rmvIdxKeys.contains(cliFut.getKey()))
+                rmvCliFutIds.add(cliFutId);
+        }
+
+        for (UUID rmvCliFutId : rmvCliFutIds) {
+            QueryIndexClientFuture rmvCliFut = cliFuts.remove(rmvCliFutId);
+
+            if (typUnregister)
+                rmvCliFut.onTypeUnregistered();
+            else
+                rmvCliFut.onCacheStop();
         }
     }
 
@@ -217,9 +256,9 @@ public class QueryIndexHandler {
             }
 
             UUID opId = UUID.randomUUID();
-            GridFutureAdapter fut = new GridFutureAdapter();
+            QueryIndexClientFuture fut = new QueryIndexClientFuture(opId, idxKey);
 
-            GridFutureAdapter oldFut = cliFuts.put(opId, fut);
+            QueryIndexClientFuture oldFut = cliFuts.put(opId, fut);
 
             assert oldFut == null;
 
