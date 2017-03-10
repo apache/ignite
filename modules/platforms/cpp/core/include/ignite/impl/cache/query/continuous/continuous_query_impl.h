@@ -28,7 +28,9 @@
 #include <ignite/reference.h>
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
+#include <ignite/cache/event/cache_entry_event_filter.h>
 #include <ignite/binary/binary_raw_reader.h>
+#include <ignite/impl/cache/event/cache_entry_event_filter_holder.h>
 
 namespace ignite
 {
@@ -80,10 +82,11 @@ namespace ignite
                          *
                          * @param loc Whether query should be executed locally.
                          */
-                        explicit ContinuousQueryImplBase(bool loc) :
+                        explicit ContinuousQueryImplBase(bool loc, InputOperation* filterOp) :
                             local(loc),
                             bufferSize(DEFAULT_BUFFER_SIZE),
-                            timeInterval(DEFAULT_TIME_INTERVAL)
+                            timeInterval(DEFAULT_TIME_INTERVAL),
+                            filterOp(filterOp)
                         {
                             // No-op.
                         }
@@ -183,6 +186,16 @@ namespace ignite
                         }
 
                         /**
+                         * Get remote filter input operation.
+                         *
+                         * @return Filter input operation.
+                         */
+                        InputOperation& GetFilterInputOp() const
+                        {
+                            return *filterOp;
+                        }
+
+                        /**
                          * Callback that reads and processes cache events.
                          *
                          * @param reader Reader to use.
@@ -221,6 +234,9 @@ namespace ignite
                          * sent only when buffer is full.
                          */
                         int64_t timeInterval;
+
+                        /** Cache entry event filter holder. */
+                        std::auto_ptr<InputOperation> filterOp;
                     };
 
                     /**
@@ -252,11 +268,13 @@ namespace ignite
                         /**
                          * Constructor.
                          *
-                         * @param lsnr Event listener. Invoked on the node where
+                         * @param lsnr Event listener Invoked on the node where
                          *     continuous query execution has been started.
+                         * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr) :
-                            ContinuousQueryImplBase(false),
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc) :
+                            ContinuousQueryImplBase(loc, new CacheEntryEventFilterHolder<void>()),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -269,8 +287,10 @@ namespace ignite
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
                          */
-                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr, bool loc) :
-                            ContinuousQueryImplBase(loc),
+                        template<typename F>
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc, const Reference<F>& filter) :
+                            ContinuousQueryImplBase(loc, new CacheEntryEventFilterHolder<F>(filter)),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -335,7 +355,7 @@ namespace ignite
                             for (int32_t i = 0; i < cnt; ++i)
                                 events[i].Read(reader);
 
-                            lsnr.Get().OnEvent(events.data(), cnt);
+                            lsnr.Get()->OnEvent(events.data(), cnt);
                         }
 
                     private:

@@ -1482,8 +1482,11 @@ namespace ignite
                 const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
             {
                 using namespace impl::cache::query::continuous;
+                using namespace common::concurrent;
 
-                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                const SharedPointer<ContinuousQueryImpl<K, V> >& qryImpl = qry.impl;
+
+                if (!qryImpl.IsValid() || !qryImpl.Get()->HasListener())
                 {
                     err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Event listener is not set for ContinuousQuery instance");
@@ -1491,11 +1494,7 @@ namespace ignite
                     return query::continuous::ContinuousQueryHandle<K, V>();
                 }
 
-                ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
-
-                if (cqImpl)
-                    cqImpl->SetQuery(qry.impl);
+                ContinuousQueryHandleImpl* cqImpl = impl.Get()->QueryContinuous(qryImpl, err);
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
@@ -1535,8 +1534,11 @@ namespace ignite
                 const Q& initialQry, IgniteError& err)
             {
                 using namespace impl::cache::query::continuous;
+                using namespace common::concurrent;
 
-                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                const SharedPointer<ContinuousQueryImpl<K, V> >& qryImpl = qry.impl;
+
+                if (!qryImpl.IsValid() || !qryImpl.Get()->HasListener())
                 {
                     err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Event listener is not set for ContinuousQuery instance");
@@ -1544,11 +1546,7 @@ namespace ignite
                     return query::continuous::ContinuousQueryHandle<K, V>();
                 }
 
-                ContinuousQueryHandleImpl* cqImpl;
-                cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);
-
-                if (cqImpl)
-                    cqImpl->SetQuery(qry.impl);
+                ContinuousQueryHandleImpl* cqImpl = impl.Get()->QueryContinuous(qryImpl, initialQry, err);
 
                 return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }

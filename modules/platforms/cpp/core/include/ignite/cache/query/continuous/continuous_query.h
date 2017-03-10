@@ -85,7 +85,7 @@ namespace ignite
                      *     continuous query execution has been started.
                      */
                     ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr) :
-                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr))
+                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, false))
                     {
                         // No-op.
                     }
@@ -111,8 +111,9 @@ namespace ignite
                      * @param remoteFilter Remote filter.
                      */
                     template<typename F>
-                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr, const F& remoteFilter) :
-                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr))
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr,
+                        const Reference<F>& remoteFilter) :
+                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, false, remoteFilter))
                     {
                         // No-op.
                     }
@@ -126,9 +127,9 @@ namespace ignite
                      * @param loc Whether query should be executed locally.
                      */
                     template<typename F>
-                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr, const F& remoteFilter,
-                        bool loc) :
-                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc))
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr,
+                        const Reference<F>& remoteFilter, bool loc) :
+                        impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc, remoteFilter))
                     {
                         // No-op.
                     }
