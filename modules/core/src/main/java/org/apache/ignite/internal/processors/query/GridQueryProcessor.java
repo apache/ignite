@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -52,7 +51,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -76,16 +74,12 @@ import org.apache.ignite.internal.processors.query.property.QueryPropertyAccesso
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -140,9 +134,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap8<>();
 
     /** */
-    private ExecutorService execSvc;
-
-    /** */
     private final GridQueryIndexing idx;
 
     /** Index handler. */
@@ -177,8 +168,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null) {
             ctx.resource().injectGeneric(idx);
-
-            execSvc = ctx.getExecutorService();
 
             idx.start(ctx, busyLock);
         }
@@ -586,97 +575,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear indexing on cache stop (will ignore): " + cctx.name(), e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * Rebuilds all search indexes of given value type for given space of spi.
-     *
-     * @param space Space.
-     * @param valTypeName Value type name.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
-
-        try {
-            return rebuildIndexes(
-                space,
-                typesByName.get(
-                    new QueryTypeNameKey(
-                        space,
-                        valTypeName)));
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param space Space.
-     * @param desc Type descriptor.
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final QueryTypeDescriptorImpl desc) {
-        if (idx == null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Indexing is disabled."));
-
-        if (desc == null || !desc.registered())
-            return new GridFinishedFuture<Void>();
-
-        final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
-
-        GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
-            @Override protected void body() {
-                try {
-                    idx.rebuildIndexes(space, desc);
-
-                    fut.onDone();
-                }
-                catch (Exception e) {
-                    fut.onDone(e);
-                }
-                catch (Throwable e) {
-                    log.error("Failed to rebuild indexes for type: " + desc.name(), e);
-
-                    fut.onDone(e);
-
-                    if (e instanceof Error)
-                        throw e;
-                }
-            }
-        };
-
-        fut.setWorker(w);
-
-        execSvc.execute(w);
-
-        return fut;
-    }
-
-    /**
-     * Rebuilds all search indexes for given spi.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> rebuildAllIndexes() {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to get space size (grid is stopping).");
-
-        try {
-            GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>();
-
-            for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet())
-                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space(), e.getValue()));
-
-            fut.markInitialized();
-
-            return fut;
         }
         finally {
             busyLock.leaveBusy();
