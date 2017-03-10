@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -75,7 +74,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -235,7 +233,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
 
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+        Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
@@ -276,11 +274,8 @@ public class DmlStatementsProcessor {
                 }
             }, null);
 
-            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
-
             if (plan.rowsNum == 1) {
-                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next().toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next(), plan);
 
                 streamer.addData(t.getKey(), t.getValue());
 
@@ -290,8 +285,7 @@ public class DmlStatementsProcessor {
             Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum);
 
             for (List<?> row : cur) {
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
             }
@@ -391,7 +385,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private UpdatePlan getPlanForStatement(String spaceName, PreparedStatement prepStmt,
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+        Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
         spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
 
@@ -894,7 +888,7 @@ public class DmlStatementsProcessor {
      * @param rows Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private static PageProcessingResult processPage(GridCacheContext cctx,
@@ -927,17 +921,17 @@ public class DmlStatementsProcessor {
         Object key = plan.keySupplier.apply(row);
 
         if (GridQueryProcessor.isSqlType(desc.keyClass())) {
-            assert keyColIdx != -1;
+            assert plan.keyColIdx != -1;
 
-            key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[keyColIdx]);
+            key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
         }
 
         Object val = plan.valSupplier.apply(row);
 
         if (GridQueryProcessor.isSqlType(desc.valueClass())) {
-            assert valColIdx != -1;
+            assert plan.valColIdx != -1;
 
-            val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[valColIdx]);
+            val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
         }
 
         if (key == null)
@@ -960,8 +954,7 @@ public class DmlStatementsProcessor {
 
             Class<?> expCls = prop.type();
 
-            newColVals.put(colName, convert(row.get(i), plan.colNames[i],
-                rowDesc, expCls, plan.colTypes[i]));
+            newColVals.put(colName, convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
         }
 
         // We update columns in the order specified by the table for a reason - table's

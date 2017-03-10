@@ -754,7 +754,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         QueryTypeDescriptorImpl typeDesc = typesByName.get(
                             new QueryTypeNameKey(
-                                space,
+                                cctx.name(),
                                 type));
 
                         if (typeDesc == null || !typeDesc.registered())
