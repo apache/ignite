@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -715,7 +716,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return iter;
     }
 
-    @Nullable protected GridCloseableIterator<CacheDataRow> historicalIterator(Map<Integer, T2<Long, Long>> partCntrs)
+    @Nullable protected IgniteHistoricalIterator historicalIterator(Map<Integer, T2<Long, Long>> partCntrs)
         throws IgniteCheckedException {
         return null;
     }

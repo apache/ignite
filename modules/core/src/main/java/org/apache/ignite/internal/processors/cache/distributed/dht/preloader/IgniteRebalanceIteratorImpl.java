@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +36,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
     @Nullable private final NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators;
 
-    @Nullable private final GridCloseableIterator<CacheDataRow> historicalIterator;
+    @Nullable private final IgniteHistoricalIterator historicalIterator;
 
     private final Set<Integer> missingParts = new HashSet<>();
 
@@ -51,7 +50,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
     public IgniteRebalanceIteratorImpl(
         NavigableMap<Integer, GridIterator<CacheDataRow>> fullIterators,
-        GridCloseableIterator<CacheDataRow> historicalIterator,
+        IgniteHistoricalIterator historicalIterator,
         IgniteRunnable closeRunnable) throws IgniteCheckedException {
         this.fullIterators = fullIterators;
         this.historicalIterator = historicalIterator;
@@ -79,10 +78,13 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     }
 
     @Override public synchronized boolean historical(int partId) {
-        return false;
+        return historicalIterator != null && historicalIterator.includes(partId);
     }
 
     @Override public synchronized boolean isPartitionDone(int partId) {
+        if (historical(partId))
+            return historicalIterator.isDone(partId);
+
         return current == null || current.getKey() > partId;
     }
 
@@ -95,10 +97,16 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     }
 
     @Override public synchronized boolean hasNextX() throws IgniteCheckedException {
+        if (historicalIterator != null && historicalIterator.hasNextX())
+            return true;
+
         return current != null && current.getValue().hasNextX();
     }
 
     @Override public synchronized CacheDataRow nextX() throws IgniteCheckedException {
+        if (historicalIterator != null && historicalIterator.hasNextX())
+            return historicalIterator.nextX();
+
         if (current == null || !current.getValue().hasNextX())
             throw new NoSuchElementException();
 
@@ -114,6 +122,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     }
 
     @Override public synchronized void close() throws IgniteCheckedException {
+        if (historicalIterator != null)
+            historicalIterator.close();
+
         closeRunnable.run();
 
         closed = true;

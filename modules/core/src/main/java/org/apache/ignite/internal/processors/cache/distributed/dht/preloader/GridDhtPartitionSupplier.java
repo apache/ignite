@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -228,16 +230,25 @@ class GridDhtPartitionSupplier {
 
             IgniteRebalanceIterator iter;
 
-            if (sctx == null || sctx.entryIt == null)
+            Set<Integer> sentLast;
+
+            if (sctx == null || sctx.entryIt == null) {
                 iter = cctx.offheap().rebalanceIterator(d.partitions(), d.topologyVersion());
-            else
+
+                sentLast = new HashSet<>();
+            }
+            else {
                 iter = sctx.entryIt;
+
+                sentLast = sctx.sentLast;
+            }
 
             while (iter.hasNext()) {
                 if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
                     if (++bCnt >= maxBatchesCnt) {
                         saveSupplyContext(scId,
                             iter,
+                            sentLast,
                             d.topologyVersion(),
                             d.updateSequence());
 
@@ -279,6 +290,8 @@ class GridDhtPartitionSupplier {
 
                     continue;
                 }
+                else if (sentLast.contains(part))
+                    continue;
 
                 GridCacheEntryInfo info = new GridCacheEntryInfo();
 
@@ -295,17 +308,27 @@ class GridDhtPartitionSupplier {
                             "cache entry): " + info);
                 }
 
-                if (iter.isPartitionDone(part))
+                if (iter.isPartitionDone(part)) {
                     s.last(part);
+
+                    sentLast.add(part);
+                }
 
                 // Need to manually prepare cache message.
                 // TODO GG-11141.
             }
 
             for (Integer p : d.partitions().fullSet()) {
-                if (iter.isPartitionDone(p))
+                if (iter.isPartitionDone(p) && !sentLast.contains(p)) {
                     s.last(p);
+
+                    sentLast.add(p);
+                }
             }
+
+            assert sentLast.size() == d.partitions().size();
+
+            iter.close();
 
             reply(node, d, s, scId);
 
@@ -369,6 +392,7 @@ class GridDhtPartitionSupplier {
     private void saveSupplyContext(
         T3<UUID, Integer, AffinityTopologyVersion> t,
         IgniteRebalanceIterator entryIt,
+        Set<Integer> sentLast,
         AffinityTopologyVersion topVer,
         long updateSeq) {
         synchronized (scMap) {
@@ -376,8 +400,7 @@ class GridDhtPartitionSupplier {
                 assert scMap.get(t) == null;
 
                 scMap.put(t,
-                    new SupplyContext(entryIt,
-                        updateSeq));
+                    new SupplyContext(entryIt, sentLast, updateSeq));
             }
         }
     }
@@ -390,6 +413,8 @@ class GridDhtPartitionSupplier {
         @GridToStringExclude
         private final IgniteRebalanceIterator entryIt;
 
+        private final Set<Integer> sentLast;
+
         /** Update seq. */
         private final long updateSeq;
 
@@ -397,8 +422,9 @@ class GridDhtPartitionSupplier {
          * @param updateSeq Update sequence.
          * @param entryIt Entry iterator.
          */
-        public SupplyContext(IgniteRebalanceIterator entryIt, long updateSeq) {
+        public SupplyContext(IgniteRebalanceIterator entryIt, Set<Integer> sentLast, long updateSeq) {
             this.entryIt = entryIt;
+            this.sentLast = sentLast;
             this.updateSeq = updateSeq;
         }
 
