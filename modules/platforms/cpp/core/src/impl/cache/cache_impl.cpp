@@ -355,9 +355,9 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), &err);
+                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), err);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             void CacheImpl::LocalLoadCache(IgniteError & err)
@@ -376,9 +376,9 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), &err);
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), err);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             struct DummyQry { void Write(BinaryRawWriter&) const { }};
