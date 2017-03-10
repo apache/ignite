@@ -302,6 +302,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         rmtNodes.clear();
 
+        log.error("!!!! U.interrupt(msgWorker);");
         U.interrupt(msgWorker);
         U.interrupt(sockWriter);
         U.interrupt(sockReader);
@@ -401,6 +402,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void disconnect() throws IgniteSpiException {
+        log.error("!!!! U.interrupt(msgWorker);");
         U.interrupt(msgWorker);
         U.interrupt(sockWriter);
         U.interrupt(sockReader);
@@ -1886,16 +1888,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (joining()) {
                     Map<UUID, Map<Integer, byte[]>> dataMap = msg.clientDiscoData();
 
-                    try {
-                        if (dataMap != null) {
-                            for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                                spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
-                                    U.resolveClassLoader(spi.ignite().configuration()));
-                        }
-                    }
-                    catch (Throwable e) {
-                        int z = 0;
-                        ++z;
+                    if (dataMap != null) {
+                        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
+                                U.resolveClassLoader(spi.ignite().configuration()));
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());

@@ -519,6 +519,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 IgniteInternalFuture<Object> rejoin = cctx.discovery().rejoin();
 
                 try {
+                    log.error("!!! Try to reconnect.");
+
                     rejoin.get();
                 }
                 catch (IgniteCheckedException e0) {

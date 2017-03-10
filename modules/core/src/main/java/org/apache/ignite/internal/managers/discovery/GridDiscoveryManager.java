@@ -336,6 +336,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
         CachePredicate p = registeredCaches.get(cacheName);
 
+        if (p == null) {
+            int z = 0;
+
+            ++z;
+        }
+
         assert p != null : cacheName;
 
         return p.addClientNode(clientNodeId, nearEnabled);

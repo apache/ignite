@@ -972,6 +972,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         registeredCaches.clear();
 
         registeredTemplates.clear();
+
+        log.error("!!!!!!!!!!!!!!!!! Disconnected registeredCaches.clear().");
     }
 
     /** {@inheritDoc} */
@@ -1038,7 +1040,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : reconnected)
             cache.context().gate().reconnected(false);
 
-        cachesOnDisconnect = null;
+        //cachesOnDisconnect = null;
+
+        U.dumpStack("!!!!!!!!!!!!!!!!! Reconnected cachesOnDisconnect = null.");
 
         if (stopFut != null)
             stopFut.markInitialized();
@@ -1896,6 +1900,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
         boolean reconnect = ctx.localNodeId().equals(nodeId) && cachesOnDisconnect != null;
+
+        if (ctx.clientNode())
+            log.error("!!!! rec=" + reconnect + ", cacheOnDisc=" + cachesOnDisconnect);
 
         // Collect dynamically started caches to a single object.
         Collection<DynamicCacheChangeRequest> reqs;

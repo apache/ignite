@@ -161,15 +161,15 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid("client");
 
-        final IgniteCache<Integer, Integer> cache = client.getOrCreateCache(CACHE_NAME);
+        //final IgniteCache<Integer, Integer> cache = client.getOrCreateCache(CACHE_NAME);
 
-        final Integer keyOnCrd = primaryKey(srv1.cache(CACHE_NAME));
+        //final Integer keyOnCrd = primaryKey(srv1.cache(CACHE_NAME));
 
-        for (int i = 0; i < 100; i++) {
-            cache.put(i, i);
-
-            assertEquals(i, (int)cache.get(i));
-        }
+//        for (int i = 0; i < 100; i++) {
+//            cache.put(i, i);
+//
+//            assertEquals(i, (int)cache.get(i));
+//        }
 
         awaitPartitionMapExchange();
 
@@ -221,6 +221,8 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         startGrid("server3");
 
         fut.get();
+
+        U.sleep(100_000);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
