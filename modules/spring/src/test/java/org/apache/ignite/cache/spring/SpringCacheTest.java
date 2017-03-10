@@ -125,7 +125,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     public void testGetValueByCallableNotKey() throws Exception {
         String key = "key";
         String value = "value";
-        String loadedValue = "loadedValue";
+        final String loadedValue = "loadedValue";
 
         Callable<String> callable = new Callable<String>() {
             @Override public String call() throws Exception {
