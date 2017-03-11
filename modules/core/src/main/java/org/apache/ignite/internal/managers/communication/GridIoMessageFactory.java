@@ -111,8 +111,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaSnapshotMessage;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
@@ -546,11 +544,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 60:
-                msg = new GridClockDeltaSnapshotMessage();
-
-                break;
-
             case 61:
                 msg = new GridContinuousMessage();
 
@@ -618,11 +611,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 82:
                 msg = new JobStealingRequest();
-
-                break;
-
-            case 83:
-                msg = new GridClockDeltaVersion();
 
                 break;
 
