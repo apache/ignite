@@ -138,6 +138,12 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public Vector sort() {
+        return dlg.sort();
+    }
+
+    /** {@inheritDoc} */
     @Override public Spliterator<Double> allSpliterator() {
         return dlg.allSpliterator();
     }

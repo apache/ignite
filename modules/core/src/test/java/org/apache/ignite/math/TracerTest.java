@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.*;
 import org.junit.*;
 import java.io.*;
 
@@ -58,5 +58,6 @@ public class TracerTest {
         Vector vec1 = makeRandomVector(1000);
 
         Tracer.showHtml(vec1);
+        Tracer.showHtml(vec1.sort());
     }
 }

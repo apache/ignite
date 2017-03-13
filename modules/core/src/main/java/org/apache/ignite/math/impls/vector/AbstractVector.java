@@ -151,6 +151,16 @@ public abstract class AbstractVector implements Vector {
         return sto.isArrayBased();
     }
 
+    @Override
+    public Vector sort() {
+        if (isArrayBased())
+            Arrays.parallelSort(sto.data());
+        else
+            throw new UnsupportedOperationException();
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public Vector map(DoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {

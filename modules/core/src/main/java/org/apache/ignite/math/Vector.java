@@ -114,6 +114,11 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     Spliterator<Double> nonZeroSpliterator();
 
     /**
+     * Sorts this vector in ascending order.
+     */
+    Vector sort();
+
+    /**
      * Gets element at the given index.
      *
      * NOTE: implementation can choose to reuse {@link Element} instance so you need to copy it
