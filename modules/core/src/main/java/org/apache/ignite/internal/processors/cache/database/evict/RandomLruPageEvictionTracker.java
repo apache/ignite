@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.evict;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -53,18 +54,22 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     private final int trackingSize;
 
     /**
-     * @param pageMem Page mem.
+     * @param pageMem
      * @param sharedCtx Shared context.
      */
-    public RandomLruPageEvictionTracker(PageMemory pageMem, GridCacheSharedContext sharedCtx) {
-        super(pageMem, sharedCtx);
+    public RandomLruPageEvictionTracker(
+        PageMemory pageMem,
+        MemoryPolicyConfiguration plcCfg,
+        GridCacheSharedContext sharedCtx
+    ) {
+        super(pageMem, plcCfg, sharedCtx);
 
         MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
 
         baseCompactTs = (System.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
         // We subtract day to avoid fail in case of daylight shift or timezone change.
 
-        assert memCfg.getPageCacheSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
+        assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
         trackingSize = segmentPageCount << segBits;
 

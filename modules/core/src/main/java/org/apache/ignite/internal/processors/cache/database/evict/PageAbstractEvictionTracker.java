@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -53,7 +54,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * @param pageMem Page mem.
      * @param sharedCtx Shared context.
      */
-    PageAbstractEvictionTracker(PageMemory pageMem, GridCacheSharedContext sharedCtx) {
+    PageAbstractEvictionTracker(
+        PageMemory pageMem,
+        MemoryPolicyConfiguration plcCfg,
+        GridCacheSharedContext sharedCtx
+    ) {
         this.pageMem = pageMem;
 
         this.sharedCtx = sharedCtx;
@@ -68,7 +73,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         int pageSize = memCfg.getPageSize();
 
-        long segSize = memCfg.getPageCacheSize() / concurrencyLevel;
+        long segSize = plcCfg.getSize() / concurrencyLevel;
 
         if (segSize < 1024 * 1024)
             segSize = 1024 * 1024;

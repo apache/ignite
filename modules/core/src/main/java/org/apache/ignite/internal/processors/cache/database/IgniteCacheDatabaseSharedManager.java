@@ -72,9 +72,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     private int pageSize;
 
-    /** */
-    private PageEvictionTracker evictionTracker;
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (!cctx.kernalContext().clientNode())
@@ -155,18 +152,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         memPlcMap = U.newHashMap(memPlcs.length + 1);
 
-        for (MemoryPolicyConfiguration memPlc : memPlcs) {
-            PageMemory pageMem = initMemory(dbCfg, memPlc);
+        for (MemoryPolicyConfiguration memPlcCfg : memPlcs) {
+            MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg);
 
-            memPlcMap.put(memPlc.getName(), new MemoryPolicy(pageMem, memPlc));
+            memPlcMap.put(memPlcCfg.getName(), memPlc);
 
-            if (memPlc.isDefault())
-                dfltMemPlc = new MemoryPolicy(pageMem, memPlc);
+            if (memPlcCfg.isDefault())
+                dfltMemPlc = memPlc;
         }
 
         MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
 
-        memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, new MemoryPolicy(initMemory(dbCfg, sysPlcCfg), sysPlcCfg));
+        memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, initMemory(dbCfg, sysPlcCfg));
     }
 
     /**
@@ -418,9 +415,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param dbCfg memory configuration with common parameters.
      * @param plc memory policy with PageMemory specific parameters.
-     * @return Page memory instance.
+     * @return Memory policy instance.
      */
-    private PageMemory initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc) {
+    private MemoryPolicy initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc) {
         long[] sizes = calculateFragmentSizes(
                 dbCfg.getConcurrencyLevel(),
                 plc.getSize());
@@ -435,7 +432,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 true,
                 sizes);
 
-        return createPageMemory(memProvider, dbCfg.getPageSize());
+        PageMemory pageMem = createPageMemory(memProvider, dbCfg.getPageSize());
+
+        return new MemoryPolicy(pageMem, plc, new RandomLruPageEvictionTracker(pageMem, plc, cctx));
+
     }
 
     /**

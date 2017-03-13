@@ -108,7 +108,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
-        readRowData(cctx.shared().database().pageMemory(), rowData, cctx.cacheId());
+        readRowData(cctx.memoryPolicy().pageMemory(), rowData, cctx.cacheId());
 
         CacheObjectContext cacheObjCtx = cctx.cacheObjectContext();
 

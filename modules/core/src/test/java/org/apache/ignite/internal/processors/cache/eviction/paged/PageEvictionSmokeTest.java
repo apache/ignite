@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -39,7 +40,12 @@ public class PageEvictionSmokeTest extends GridCommonAbstractTest {
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
 
-        dbCfg.setPageCacheSize(64 * 1024 * 1024);
+        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+        plc.setDefault(true);
+        plc.setSize(64 * 1024 * 1024);
+
+        dbCfg.setMemoryPolicies(plc);
 
         cfg.setMemoryConfiguration(dbCfg);
 
@@ -80,7 +86,7 @@ public class PageEvictionSmokeTest extends GridCommonAbstractTest {
         System.out.println(">>> Before eviction: " + cnt);
 
         for (int i = 0; i < 20; i++)
-            internalCache(cache1).context().shared().database().evictionTracker().evictDataPage();
+            internalCache(cache1).context().memoryPolicy().evictionTracker().evictDataPage();
 
         int afterCnt = 0;
         for (int i = 0; i < SIZE; i++) {
