@@ -80,8 +80,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
 

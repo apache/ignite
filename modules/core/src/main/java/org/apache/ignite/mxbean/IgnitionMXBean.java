@@ -69,26 +69,26 @@ public interface IgnitionMXBean {
     public boolean stop(boolean cancel);
 
     /**
-     * Stops named grid. If {@code cancel} flag is set to {@code true} then
+     * Stops named Ignite instance. If {@code cancel} flag is set to {@code true} then
      * all jobs currently executing on local node will be interrupted. If
-     * grid name is {@code null}, then default no-name grid will be stopped.
+     * Ignite instance name is {@code null}, then default no-name Ignite instance will be stopped.
      * It does not wait for the tasks to finish their execution.
      *
-     * @param name Grid name. If {@code null}, then default no-name grid will
-     *      be stopped.
+     * @param name Ignite instance name. If {@code null}, then default no-name
+     *      Ignite instance will be stopped.
      * @param cancel If {@code true} then all jobs currently will be cancelled
      *      by calling {@link org.apache.ignite.compute.ComputeJob#cancel()} method. Note that just like with
      *      {@link Thread#interrupt()}, it is up to the actual job to exit from
      *      execution. If {@code false}, then jobs currently running will not be
      *      canceled. In either case, grid node will wait for completion of all
      *      jobs running on it before stopping.
-     * @return {@code true} if named grid instance was indeed found and stopped,
+     * @return {@code true} if named Ignite instance instance was indeed found and stopped,
      *      {@code false} otherwise (the instance with given {@code name} was
      *      not found).
      * @see org.apache.ignite.Ignition#stop(String, boolean)
      */
-    @MXBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
-        "grid instance was indeed found and stopped, false otherwise.")
+    @MXBeanDescription("Stops Ignite instance by name. Cancels running jobs if cancel is true. Returns true if named " +
+        "Ignite instance was indeed found and stopped, false otherwise.")
     @MXBeanParametersNames(
         {
             "name",

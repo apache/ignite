@@ -60,7 +60,7 @@ public class StripedExecutor implements ExecutorService {
      * @param poolName Pool name.
      * @param log Logger.
      */
-    public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log) {
         A.ensure(cnt > 0, "cnt > 0");
 
         boolean success = false;
@@ -76,7 +76,7 @@ public class StripedExecutor implements ExecutorService {
         try {
             for (int i = 0; i < cnt; i++) {
                 stripes[i] = new StripeConcurrentQueue(
-                    gridName,
+                    igniteInstanceName,
                     poolName,
                     i,
                     log);
@@ -390,7 +390,7 @@ public class StripedExecutor implements ExecutorService {
      */
     private static abstract class Stripe implements Runnable {
         /** */
-        private final String gridName;
+        private final String igniteInstanceName;
 
         /** */
         private final String poolName;
@@ -414,18 +414,18 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public Stripe(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            this.gridName = gridName;
+            this.igniteInstanceName = igniteInstanceName;
             this.poolName = poolName;
             this.idx = idx;
             this.log = log;
@@ -435,7 +435,7 @@ public class StripedExecutor implements ExecutorService {
          * Starts the stripe.
          */
         void start() {
-            thread = new IgniteThread(gridName, poolName + "-stripe-" + idx, this);
+            thread = new IgniteThread(igniteInstanceName, poolName + "-stripe-" + idx, this);
 
             thread.start();
         }
@@ -537,18 +537,18 @@ public class StripedExecutor implements ExecutorService {
         private volatile boolean parked;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentQueue(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);
@@ -617,18 +617,18 @@ public class StripedExecutor implements ExecutorService {
         private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentQueueNoPark(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);
@@ -673,18 +673,18 @@ public class StripedExecutor implements ExecutorService {
         private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
          */
         public StripeConcurrentBlockingQueue(
-            String gridName,
+            String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log
         ) {
-            super(gridName,
+            super(igniteInstanceName,
                 poolName,
                 idx,
                 log);

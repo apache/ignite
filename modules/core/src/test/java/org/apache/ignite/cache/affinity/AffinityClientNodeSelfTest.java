@@ -61,8 +61,8 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     private static final String CACHE5 = "cache5";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -97,7 +97,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         ccfg5.setBackups(1);
         ccfg5.setName(CACHE5);
 
-        if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration(ccfg5);

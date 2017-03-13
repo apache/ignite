@@ -838,7 +838,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
                 ", topVer2=" + this.topVer +
-                ", node=" + cctx.gridName() +
+                ", node=" + cctx.igniteInstanceName() +
                 ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
@@ -968,7 +968,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", started=" + cctx.started() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + cctx.localNode().id() +
-                ", locName=" + cctx.gridName() + ']';
+                ", locName=" + cctx.igniteInstanceName() + ']';
 
             GridDhtPartitionFullMap m = node2part;
 
@@ -1551,7 +1551,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", started=" + cctx.started() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + cctx.localNode().id() +
-                ", locName=" + cctx.gridName() + ']';
+                ", locName=" + cctx.igniteInstanceName() + ']';
 
             for (GridDhtPartitionMap2 map : node2part.values()) {
                 if (map.hasMovingPartitions())
@@ -1567,7 +1567,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
-        X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>>  Cache partition topology stats [igniteInstanceName=" + cctx.igniteInstanceName() +
+            ", cache=" + cctx.name() + ']');
 
         lock.readLock().lock();
 
