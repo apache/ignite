@@ -535,7 +535,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
                 ", locNodeId=" + cctx.localNodeId() +
-                ", gridName=" + cctx.gridName() + ']';
+                ", igniteInstanceName=" + cctx.igniteInstanceName() + ']';
 
             GridDhtPartitionFullMap m = node2part;
 
@@ -916,7 +916,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             assert node2part != null && node2part.valid() : "Invalid node2part [node2part: " + node2part +
                 ", locNodeId=" + cctx.localNodeId() +
-                ", gridName=" + cctx.gridName() + ']';
+                ", igniteInstanceName=" + cctx.igniteInstanceName() + ']';
 
             for (GridDhtPartitionMap2 map : node2part.values()) {
                 if (map.hasMovingPartitions())
@@ -932,7 +932,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
-        X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cacheId=" + cacheId + ']');
+        X.println(">>>  Cache partition topology stats [igniteInstanceName=" + cctx.igniteInstanceName() +
+            ", cacheId=" + cacheId + ']');
     }
 
     /**

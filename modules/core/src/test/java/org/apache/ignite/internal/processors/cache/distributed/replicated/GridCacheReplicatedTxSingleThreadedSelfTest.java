@@ -44,8 +44,8 @@ public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleT
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 

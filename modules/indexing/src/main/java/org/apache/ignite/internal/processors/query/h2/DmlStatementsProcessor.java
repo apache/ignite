@@ -55,10 +55,10 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
@@ -920,7 +920,7 @@ public class DmlStatementsProcessor {
 
         Object key = plan.keySupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.keyClass())) {
+        if (QueryUtils.isSqlType(desc.keyClass())) {
             assert plan.keyColIdx != -1;
 
             key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
@@ -928,7 +928,7 @@ public class DmlStatementsProcessor {
 
         Object val = plan.valSupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.valueClass())) {
+        if (QueryUtils.isSqlType(desc.valueClass())) {
             assert plan.valColIdx != -1;
 
             val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);

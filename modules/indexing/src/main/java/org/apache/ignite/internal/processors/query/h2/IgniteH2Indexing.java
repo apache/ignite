@@ -2027,7 +2027,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
-        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
+        // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**
@@ -2202,14 +2202,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(GridCacheContext<?, ?> cctx, CacheConfiguration<?,?> ccfg)
+    @Override public void registerCache(String spaceName, GridCacheContext<?, ?> cctx, CacheConfiguration<?,?> ccfg)
         throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema, cctx, ccfg)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
+        if (schemas.putIfAbsent(schema, new Schema(spaceName, schema, cctx, ccfg)) != null)
+            throw new IgniteCheckedException("Cache already registered: " + U.maskName(spaceName));
 
-        space2schema.put(emptyIfNull(ccfg.getName()), schema);
+        space2schema.put(emptyIfNull(spaceName), schema);
 
         createSchema(schema);
 
@@ -2217,13 +2217,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
-        String schema = schema(ccfg.getName());
+    @Override public void unregisterCache(String spaceName) {
+        String schema = schema(spaceName);
         Schema rmv = schemas.remove(schema);
 
         if (rmv != null) {
             space2schema.remove(emptyIfNull(rmv.spaceName));
-            mapQryExec.onCacheStop(ccfg.getName());
+            mapQryExec.onCacheStop(spaceName);
 
             rmv.onDrop();
 
@@ -2231,14 +2231,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 dropSchema(schema);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
+                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(spaceName), e);
             }
 
             for (Iterator<Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery>> it = twoStepCache.entrySet().iterator();
                 it.hasNext();) {
                 Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery> e = it.next();
 
-                if (F.eq(e.getKey().space, ccfg.getName()))
+                if (F.eq(e.getKey().space, spaceName))
                     it.remove();
             }
         }

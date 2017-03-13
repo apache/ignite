@@ -100,16 +100,16 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** */
-    private static final String NO_CACHE_GRID_NAME = "noCacheGrid";
+    private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
-        if (!gridName.equals(NO_CACHE_GRID_NAME)) {
+        if (!igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME)) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(cacheMode());
@@ -987,7 +987,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
 
         try {
-            try (Ignite ignite = startGrid(NO_CACHE_GRID_NAME)) {
+            try (Ignite ignite = startGrid(NO_CACHE_IGNITE_INSTANCE_NAME)) {
                 log.info("Started node without cache: " + ignite);
             }
 

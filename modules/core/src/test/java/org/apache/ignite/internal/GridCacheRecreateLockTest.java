@@ -55,7 +55,7 @@ public class GridCacheRecreateLockTest extends GridCommonAbstractTest {
     private Ignite startNodeAndLock(String name) {
         try {
             IgniteConfiguration cfg = new IgniteConfiguration();
-            cfg.setGridName(name);
+            cfg.setIgniteInstanceName(name);
 
             Ignite ignite = Ignition.start(cfg);
 

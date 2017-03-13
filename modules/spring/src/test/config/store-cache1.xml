@@ -28,7 +28,7 @@
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="gridName" value="ignite1"/>
+        <property name="igniteInstanceName" value="ignite1"/>
 
         <property name="cacheConfiguration">
             <list>

@@ -207,7 +207,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             lsnrsCnt += lsnrs0.size();
 
         X.println(">>>");
-        X.println(">>> Event storage manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Event storage manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  Total listeners: " + lsnrsCnt);
         X.println(">>>  Recordable events size: " + recordableEvts.length);
         X.println(">>>  User recordable events size: " + userRecordableEvts.length);
