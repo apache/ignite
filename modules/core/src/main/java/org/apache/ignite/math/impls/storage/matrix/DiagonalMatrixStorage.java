@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.storage.matrix;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import java.io.*;
+import org.apache.ignite.math.impls.matrix.AbstractMatrix;
 
 /**
  * TODO: add description.
@@ -52,10 +53,12 @@ public class DiagonalMatrixStorage implements MatrixStorage {
         return diagonal;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return x == y ? diagonal.get(x) : 0.0;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         if (x == y)
             diagonal.set(x, v);
@@ -63,26 +66,32 @@ public class DiagonalMatrixStorage implements MatrixStorage {
             throw new UnsupportedOperationException("Can't set off-diagonal element.");
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return diagonal.size();
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return diagonal.size();
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
        out.writeObject(diagonal);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         diagonal = (Vector)in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return diagonal.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return diagonal.isDense();
     }
@@ -97,7 +106,30 @@ public class DiagonalMatrixStorage implements MatrixStorage {
         return diagonal.isDistributed();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + diagonal.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        DiagonalMatrixStorage that = (DiagonalMatrixStorage) o;
+
+        return diagonal.equals(that.diagonal);
     }
 }

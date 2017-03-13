@@ -47,8 +47,6 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         new MatrixImplementationFixtures().consumeSampleMatrix(null, consumer);
     }
 
-
-
     /** */
     @Test
     public void externalizeTest(){

@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.impls.matrix.AbstractMatrix;
 import org.apache.ignite.math.impls.storage.vector.MatrixVectorStorage;
 
 import java.io.*;
@@ -97,5 +98,35 @@ public class MatrixVectorView extends AbstractVector {
         col = in.readInt();
         rowStride = in.readInt();
         colStride = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + (parent == null ? 0 : parent.hashCode());
+        res = res * 37 + row;
+        res = res * 37 + col;
+        res = res * 37 + rowStride;
+        res = res * 37 + colStride;
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        MatrixVectorView that = (MatrixVectorView) o;
+
+        return (parent != null ? parent.equals(that.parent) : that.parent == null) &&
+            row == that.row &&
+            col == that.col &&
+            rowStride == that.rowStride&&
+            colStride == that.colStride;
     }
 }
