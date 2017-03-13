@@ -50,6 +50,7 @@
     .ui-grid-header-span {
         position: relative;
         border-right: 0;
+        background: #f5f5f5;
 
         .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
             height: 58px;
