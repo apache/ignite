@@ -557,6 +557,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
+                    req.partition(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -697,6 +698,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
                 GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                    req.partition(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
