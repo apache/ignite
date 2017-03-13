@@ -1276,7 +1276,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     MiniFuture fut = null;
 
-                    if (!tx.dhtReplyNear()) {
+                    if (!dhtReplyNear) {
                         fut = new MiniFuture(n.id(), ++miniId, dhtMapping, nearMapping);
 
                         add(fut); // Append new future.
@@ -1285,10 +1285,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     assert txNodes != null;
 
                     GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                        futId,
-                        fut != null ? fut.futureId() : 0,
-                        nearFutId,
-                        nearMiniId,
+                        dhtReplyNear ? nearFutId : futId,
+                        dhtReplyNear ? nearMiniId : fut.futureId(),
                         tx.topologyVersion(),
                         tx,
                         timeout,
@@ -1405,10 +1403,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         add(fut); // Append new future.
 
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                            futId,
-                            fut.futureId(),
-                            nearFutId,
-                            nearMiniId,
+                            dhtReplyNear ? nearFutId : futId,
+                            dhtReplyNear ? nearMiniId : fut.futureId(),
                             tx.topologyVersion(),
                             tx,
                             timeout,

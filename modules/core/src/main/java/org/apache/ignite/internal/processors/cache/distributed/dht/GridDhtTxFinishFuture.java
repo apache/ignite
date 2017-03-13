@@ -236,7 +236,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
-                if (this.tx.syncMode() != PRIMARY_SYNC)
+                if (this.tx.syncMode() != PRIMARY_SYNC && !this.tx.dhtReplyNear())
                     this.tx.sendFinishReply(finishErr);
 
                 // Don't forget to clean up.
@@ -322,7 +322,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.commitVersion(),
                 tx.threadId(),
                 tx.isolation(),
-                false,
+                /*dhtReplyNear*/false, // TODO IGNITE-4768.
+                /*commit*/false,
                 tx.isInvalidate(),
                 tx.system(),
                 tx.ioPolicy(),
@@ -387,6 +388,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         boolean sync = tx.syncMode() == FULL_SYNC;
 
+        boolean dhtReplyNear = tx.dhtReplyNear() && tx.syncMode() == FULL_SYNC;
+
         if (tx.explicitLock())
             sync = true;
 
@@ -406,9 +409,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 // Nothing to send.
                 continue;
 
-            MiniFuture fut = new MiniFuture(++miniId, dhtMapping, nearMapping);
+            MiniFuture fut = null;
 
-            add(fut); // Append new future.
+            if (!dhtReplyNear) {
+                fut = new MiniFuture(++miniId, dhtMapping, nearMapping);
+
+                add(fut); // Append new future.
+            }
 
             Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
 
@@ -417,13 +424,14 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
-                futId,
-                fut.futureId(),
+                dhtReplyNear ? tx.nearFutureId() : futId,
+                dhtReplyNear ? 0 : fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),
                 tx.threadId(),
                 tx.isolation(),
+                dhtReplyNear,
                 commit,
                 tx.isInvalidate(),
                 tx.system(),
@@ -455,22 +463,24 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
                 if (sync)
                     res = true;
-                else
+                else if (fut != null)
                     fut.onDone();
             }
             catch (IgniteCheckedException e) {
-                // Fail the whole thing.
-                if (e instanceof ClusterTopologyCheckedException)
-                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                else {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
-                            ", dhtTxId=" + tx.xidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
-                    }
+                if (fut != null) {
+                    if (e instanceof ClusterTopologyCheckedException)
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                    else {
+                        if (msgLog.isDebugEnabled()) {
+                            msgLog.debug("DHT finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + n.id() +
+                                ", err=" + e + ']');
+                        }
 
-                    fut.onResult(e);
+                        // TODO IGNITE-4768: reply on near with error?
+                        fut.onResult(e);
+                    }
                 }
             }
         }
@@ -481,19 +491,24 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     // Nothing to send.
                     continue;
 
-                MiniFuture fut = new MiniFuture(++miniId, null, nearMapping);
+                MiniFuture fut = null;
 
-                add(fut); // Append new future.
+                if (!dhtReplyNear) {
+                    fut = new MiniFuture(++miniId, null, nearMapping);
+
+                    add(fut); // Append new future.
+                }
 
                 GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                     tx.nearNodeId(),
                     futId,
-                    fut.futureId(),
+                    fut != null ? fut.futureId() : -1,
                     tx.topologyVersion(),
                     tx.xidVersion(),
                     tx.commitVersion(),
                     tx.threadId(),
                     tx.isolation(),
+                    dhtReplyNear,
                     commit,
                     tx.isInvalidate(),
                     tx.system(),
@@ -524,22 +539,24 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
                     if (sync)
                         res = true;
-                    else
+                    else if (fut != null)
                         fut.onDone();
                 }
                 catch (IgniteCheckedException e) {
-                    // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException)
-                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
-                    else {
-                        if (msgLog.isDebugEnabled()) {
-                            msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
-                                ", dhtTxId=" + tx.xidVersion() +
-                                ", node=" + nearMapping.primary().id() +
-                                ", err=" + e + ']');
-                        }
+                    if (fut != null) {
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onNodeLeft((ClusterTopologyCheckedException)e);
+                        else {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
+                                    ", dhtTxId=" + tx.xidVersion() +
+                                    ", node=" + nearMapping.primary().id() +
+                                    ", err=" + e + ']');
+                            }
 
-                        fut.onResult(e);
+                            // TODO IGNITE-4768: reply on near with error?
+                            fut.onResult(e);
+                        }
                     }
                 }
             }

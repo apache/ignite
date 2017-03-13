@@ -63,6 +63,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /** */
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
+    /** */
+    private static final int DHT_REPLY_NEAR_FLAG_MASK = 0x40;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -138,6 +141,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         @NotNull AffinityTopologyVersion topVer,
         @Nullable GridCacheVersion commitVer,
         long threadId,
+        boolean dhtReplyNear,
         boolean commit,
         boolean invalidate,
         boolean sys,
@@ -171,6 +175,15 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.txSize = txSize;
 
         completedVersions(committedVers, rolledbackVers);
+
+        setFlag(dhtReplyNear, DHT_REPLY_NEAR_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if transaction works in mode when DHT nodes reply directly to near node.
+     */
+    public final boolean dhtReplyNear() {
+        return isFlag(DHT_REPLY_NEAR_FLAG_MASK);
     }
 
     /**

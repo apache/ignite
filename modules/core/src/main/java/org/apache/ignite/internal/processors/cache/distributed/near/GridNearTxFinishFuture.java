@@ -716,10 +716,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         // Version to be added in completed versions on primary node.
         GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
 
+        boolean dhtReplyNear = tx.dhtReplyNear() && syncMode == FULL_SYNC;
+
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
             tx.threadId(),
+            dhtReplyNear,
             commit,
             tx.isInvalidate(),
             tx.system(),
@@ -736,8 +739,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.taskNameHash(),
             tx.activeCachesDeploymentEnabled()
         );
-
-        boolean dhtReplyNear = tx.dhtReplyNear() && syncMode == FULL_SYNC;
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
@@ -855,11 +856,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             tx.commitVersion(),
             tx.threadId(),
             tx.isolation(),
-            true,
-            false,
+            /*dhtReplyNear*/false,
+            /*commit*/true,
+            /*invalidate*/false,
             tx.system(),
             tx.ioPolicy(),
-            false,
+            /*sysInvalidate*/false,
             tx.syncMode(),
             null,
             null,

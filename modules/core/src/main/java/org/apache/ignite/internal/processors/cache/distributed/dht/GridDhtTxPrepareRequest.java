@@ -61,12 +61,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Mini future ID. */
     private int miniId;
 
-    /** Future ID. */
-    private IgniteUuid nearFutId;
-
-    /** Mini future ID. */
-    private int nearMiniId;
-
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -113,8 +107,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @param futId Future ID.
      * @param miniId Mini future ID.
-     * @param nearFutId Near node future ID.
-     * @param nearMiniId Near node mini future ID.
      * @param topVer Topology version.
      * @param tx Transaction.
      * @param timeout Transaction timeout.
@@ -129,8 +121,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
         int miniId,
-        IgniteUuid nearFutId,
-        int nearMiniId,
         AffinityTopologyVersion topVer,
         GridDhtTxLocalAdapter tx,
         long timeout,
@@ -156,8 +146,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             onePhaseCommit,
             addDepInfo);
 
-        assert dhtNearReply || (futId != null && miniId != 0);
-        assert !dhtNearReply || (nearFutId != null && nearMiniId != 0);
+        assert futId != null;
+        assert miniId != 0;
 
         this.topVer = topVer;
         this.futId = futId;
@@ -166,8 +156,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearXidVer = nearXidVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
-        this.nearFutId = nearFutId;
-        this.nearMiniId = nearMiniId;
 
         needReturnValue(retVal);
 
@@ -262,21 +250,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     public int miniId() {
         return miniId;
     }
-
-    /**
-     * @return Near future ID.
-     */
-    public IgniteUuid nearFutureId() {
-        return nearFutId;
-    }
-
-    /**
-     * @return Near mini future ID.
-     */
-    public int nearMiniId() {
-        return nearMiniId;
-    }
-
 
     /**
      * @return Topology version.
@@ -395,18 +368,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
-            case 23:
-                if (!writer.writeIgniteUuid("nearFutId", nearFutId))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeInt("nearMiniId", nearMiniId))
-                    return false;
-
-                writer.incrementState();
-
             case 25:
                 if (!writer.writeUuid("nearNodeId", nearNodeId))
                     return false;
@@ -495,22 +456,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
             case 22:
                 miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                nearFutId = reader.readIgniteUuid("nearFutId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                nearMiniId = reader.readInt("nearMiniId");
 
                 if (!reader.isLastRead())
                     return false;

@@ -39,6 +39,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -967,8 +969,8 @@ public class IgniteTxHandler {
                 nearRes = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.nearXidVersion(),
-                    req.nearFutureId(),
-                    req.nearMiniId(),
+                    req.futureId(),
+                    req.miniId(),
                     req.deployInfo() != null);
 
                 nearRes.nearNodeResponse(true);
@@ -1036,6 +1038,7 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 nearTx.rollback();
 
+            // TODO IGNITE-4768.
             res = new GridDhtTxPrepareResponse(
                 req.partition(),
                 req.version(),
@@ -1116,19 +1119,19 @@ public class IgniteTxHandler {
     @SuppressWarnings({"unchecked"})
     private void processDhtTxFinishRequest(final UUID nodeId, final GridDhtTxFinishRequest req) {
         assert nodeId != null;
-        assert req != null;
+        assert req.nearNodeId() != null : req;
 
         if (req.checkCommitted()) {
             boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
             if (!committed || req.syncMode() != FULL_SYNC)
-                sendReply(nodeId, req, committed, null);
+                sendCheckCommittedReply(nodeId, req, committed);
             else {
                 IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
 
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut) {
-                        sendReply(nodeId, req, true, null);
+                        sendCheckCommittedReply(nodeId, req, true);
                     }
                 });
             }
@@ -1181,16 +1184,16 @@ public class IgniteTxHandler {
 
             if (completeFut != null) {
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                        sendReply(nodeId, req, true, nearTxId);
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                        sendFinishReply(nodeId, req, nearTxId);
                     }
                 });
             }
             else
-                sendReply(nodeId, req, true, nearTxId);
+                sendFinishReply(nodeId, req, nearTxId);
         }
         else
-            sendReply(nodeId, req, true, null);
+            sendFinishReply(nodeId, req, null);
 
         assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) : req;
     }
@@ -1350,81 +1353,75 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param nodeId Node id that originated finish request.
+     * @param req Request.
+     * @param committed {@code True} if transaction committed on this node.
+     */
+    private void sendCheckCommittedReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
+        assert req.checkCommitted() : req;
+
+        GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(
+            req.partition(),
+            req.version(),
+            req.futureId(),
+            req.miniId());
+
+        res.checkCommitted(true);
+
+        if (committed) {
+            if (req.needReturnValue()) {
+                try {
+                    GridCacheReturnCompletableWrapper wrapper = ctx.tm().getCommittedTxReturn(req.version());
+
+                    if (wrapper != null)
+                        res.returnValue(wrapper.fut().get());
+                    else
+                        assert !ctx.discovery().alive(nodeId) : nodeId;
+                }
+                catch (IgniteCheckedException ignored) {
+                    if (txFinishMsgLog.isDebugEnabled()) {
+                        txFinishMsgLog.debug("Failed to get return value. [txId=null" +
+                            ", dhtTxId=" + req.version() +
+                            ", node=" + nodeId + ']');
+                    }
+                }
+            }
+        }
+        else {
+            ClusterTopologyCheckedException cause =
+                new ClusterTopologyCheckedException("Primary node left grid.");
+
+            res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                "(transaction has been rolled back on backup node): " + req.version(), cause));
+        }
+
+        sendFinishResponse(nodeId, res, req, null);
+    }
+
+    /**
      * Sends tx finish response to remote node, if response is requested.
      *
      * @param nodeId Node id that originated finish request.
      * @param req Request.
-     * @param committed {@code True} if transaction committed on this node.
      * @param nearTxId Near tx version.
      */
-    private void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed, GridCacheVersion nearTxId) {
-        if (req.replyRequired() || req.checkCommitted()) {
+    private void sendFinishReply(UUID nodeId, GridDhtTxFinishRequest req, GridCacheVersion nearTxId) {
+        assert !req.checkCommitted();
+
+        if (req.replyRequired()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(
                 req.partition(),
                 req.version(),
                 req.futureId(),
                 req.miniId());
 
-            if (req.checkCommitted()) {
-                res.checkCommitted(true);
+            if (req.dhtReplyNear()) {
+                nodeId = req.nearNodeId();
 
-                if (committed) {
-                    if (req.needReturnValue()) {
-                        try {
-                            GridCacheReturnCompletableWrapper wrapper = ctx.tm().getCommittedTxReturn(req.version());
-
-                            if (wrapper != null)
-                                res.returnValue(wrapper.fut().get());
-                            else
-                                assert !ctx.discovery().alive(nodeId) : nodeId;
-                        }
-                        catch (IgniteCheckedException ignored) {
-                            if (txFinishMsgLog.isDebugEnabled()) {
-                                txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
-                                    ", dhtTxId=" + req.version() +
-                                    ", node=" + nodeId + ']');
-                            }
-                        }
-                    }
-                }
-                else {
-                    ClusterTopologyCheckedException cause =
-                        new ClusterTopologyCheckedException("Primary node left grid.");
-
-                    res.checkCommittedError(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                        "(transaction has been rolled back on backup node): " + req.version(), cause));
-                }
+                res.nearNodeResponse(true);
             }
 
-            try {
-                ctx.io().send(nodeId, res, req.policy());
-
-                if (txFinishMsgLog.isDebugEnabled()) {
-                    txFinishMsgLog.debug("Sent dht tx finish response [txId=" + nearTxId +
-                        ", dhtTxId=" + req.version() +
-                        ", node=" + nodeId +
-                        ", checkCommitted=" + req.checkCommitted() + ']');
-                }
-            }
-            catch (Throwable e) {
-                // Double-check.
-                if (ctx.discovery().node(nodeId) == null) {
-                    if (txFinishMsgLog.isDebugEnabled()) {
-                        txFinishMsgLog.debug("Node left while send dht tx finish response [txId=" + nearTxId +
-                            ", dhtTxId=" + req.version() +
-                            ", node=" + nodeId + ']');
-                    }
-                }
-                else {
-                    U.error(log, "Failed to send finish response to node [txId=" + nearTxId +
-                        ", dhtTxId=" + req.version() +
-                        ", nodeId=" + nodeId +
-                        ", res=" + res + ']', e);
-                }
-
-                if (e instanceof Error)
-                    throw (Error)e;
-            }
+            sendFinishResponse(nodeId, res, req, nearTxId);
         }
         else {
             if (txFinishMsgLog.isDebugEnabled()) {
@@ -1432,6 +1429,47 @@ public class IgniteTxHandler {
                     ", dhtTxId=" + req.version() +
                     ", node=" + nodeId + ']');
             }
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     * @param req Request (for debug info logging).
+     * @param nearTxId  (for debug info logging).
+     */
+    private void sendFinishResponse(UUID nodeId,
+        GridDistributedTxFinishResponse res,
+        GridDhtTxFinishRequest req,
+        @Nullable GridCacheVersion nearTxId) {
+        try {
+            ctx.io().send(nodeId, res, req.policy());
+
+            if (txFinishMsgLog.isDebugEnabled()) {
+                txFinishMsgLog.debug("Sent dht tx finish response [txId=" + nearTxId +
+                    ", dhtTxId=" + req.version() +
+                    ", node=" + nodeId +
+                    ", checkCommitted=" + req.checkCommitted() + ']');
+            }
+        }
+        catch (Throwable e) {
+            // Double-check.
+            if (ctx.discovery().node(nodeId) == null) {
+                if (txFinishMsgLog.isDebugEnabled()) {
+                    txFinishMsgLog.debug("Node left while send dht tx finish response [txId=" + nearTxId +
+                        ", dhtTxId=" + req.version() +
+                        ", node=" + nodeId + ']');
+                }
+            }
+            else {
+                U.error(log, "Failed to send finish response to node [txId=" + nearTxId +
+                    ", dhtTxId=" + req.version() +
+                    ", nodeId=" + nodeId +
+                    ", res=" + res + ']', e);
+            }
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
