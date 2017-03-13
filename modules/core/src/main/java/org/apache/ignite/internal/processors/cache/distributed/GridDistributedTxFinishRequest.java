@@ -229,53 +229,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         return taskNameHash;
     }
 
-    /**
-     * @return Topology version.
-     */
-    @Override public final AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /**
-     * @return Transaction write synchronization mode (can be null is message sent from old nodes).
-     */
-    public final CacheWriteSynchronizationMode syncMode() {
-        return syncMode;
-    }
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    protected final void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reags flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    protected final boolean isFlag(int mask) {
-        return (flags & mask) != 0;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public final UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * @return Task name hash.
-     */
-    public final int taskNameHash() {
-        return taskNameHash;
-    }
 
     /**
      * @return Topology version.
