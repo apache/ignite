@@ -1425,7 +1425,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getMemoryPolicyName();
 
-        MemoryPolicy memPlc = new MemoryPolicy(sharedCtx.database().pageMemory(memPlcName));
+        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 

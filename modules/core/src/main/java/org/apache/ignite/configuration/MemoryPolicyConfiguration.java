@@ -18,9 +18,10 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 
 /**
- * Configuration bean used for creating {@link PageMemory} instances.
+ * Configuration bean used for creating {@link MemoryPolicy} instances.
  */
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
