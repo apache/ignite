@@ -42,10 +42,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -57,8 +59,11 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -68,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,6 +111,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Index create/drop client futures. */
     private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
 
+    /** ID history for index create/drop discovery messages. */
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> idxDiscoMsgIdHist =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
+
     /** */
     private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
 
@@ -135,6 +145,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx, busyLock);
         }
+
+        ctx.discovery().setCustomEventListener(IndexAbstractDiscoveryMessage.class,
+            new CustomEventListener<IndexAbstractDiscoveryMessage>() {
+                /** {@inheritDoc} */
+                @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                    IndexAbstractDiscoveryMessage msg) {
+                    if (notDuplicate(msg)) {
+                        if (msg instanceof IndexInitDiscoveryMessage)
+                            onIndexInitDiscoveryMessage((IndexInitDiscoveryMessage)msg);
+                        if (msg instanceof IndexAckDiscoveryMessage)
+                            onIndexAckDiscoveryMessage((IndexAckDiscoveryMessage)msg);
+                        else
+                            U.warn(log, "Unexpected custom discovery message [msg=" + msg + ']');
+                    }
+                }
+            });
 
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
@@ -280,6 +307,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Handle index init discovery message.
+     *
+     * @param msg Message.
+     */
+    private void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
+        // TODO
+    }
+
+    /**
+     * Handle index ack discovery message.
+     *
+     * @param msg Message.
+     */
+    private void onIndexAckDiscoveryMessage(IndexAckDiscoveryMessage msg) {
+        // TODO
     }
 
     /**
@@ -1091,6 +1136,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         ", fail=" + failed + ", res=" + res + ']');
             }
         }
+    }
+
+    /**
+     * Ensuret that arrived discovery message is not duplicate.
+     *
+     * @param msg Message.
+     * @return {@code True} if message is not duplicated and should be processed further.
+     */
+    private boolean notDuplicate(IndexAbstractDiscoveryMessage msg) {
+        IgniteUuid id = msg.id();
+
+        return idxDiscoMsgIdHist.add(id);
     }
 
     /**

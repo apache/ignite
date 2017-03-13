@@ -544,6 +544,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
 
+    /**
+     * Indexing discovery history size. Protects from duplicate messages maintaining the list of IDs of recently
+     * arrived discovery messages.
+     * <p>
+     * Defaults to {@code 1000}.
+     */
+    public static final String IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {

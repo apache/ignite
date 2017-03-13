@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -55,12 +56,17 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.ignite.IgniteSystemProperties.*;
+
 /**
  * Utility methods for queries.
  */
 public class QueryUtils {
     /** */
     public static final String _VAL = "_val";
+
+    /** Discovery history size. */
+    private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
 
     /** */
     private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
@@ -969,6 +975,15 @@ public class QueryUtils {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
             !F.isEmpty(ccfg.getTypeMetadata()) ||
             !F.isEmpty(ccfg.getQueryEntities());
+    }
+
+    /**
+     * Discovery history size.
+     *
+     * @return Discovery history size.
+     */
+    public static int discoveryHistorySize() {
+        return DISCO_HIST_SIZE;
     }
 
     /**
