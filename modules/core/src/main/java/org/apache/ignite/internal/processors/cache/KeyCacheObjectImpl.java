@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,7 +31,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridDirectTransient
     private int part = -1;
 
     /**
@@ -37,14 +38,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      */
     public KeyCacheObjectImpl() {
         // No-op.
-    }
-
-    /**
-     * @param val Value.
-     * @param valBytes Value bytes.
-     */
-    public KeyCacheObjectImpl(Object val, byte[] valBytes) {
-        this(val, valBytes, -1);
     }
 
     /**
@@ -130,7 +123,57 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 1:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(KeyCacheObjectImpl.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 1:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

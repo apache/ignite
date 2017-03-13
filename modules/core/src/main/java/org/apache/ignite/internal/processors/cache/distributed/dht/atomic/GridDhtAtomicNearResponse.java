@@ -17,53 +17,53 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest.DHT_ATOMIC_HAS_RESULT_MASK;
 
 /**
- * DHT atomic cache backup update response.
+ * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
-public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridDhtAtomicNearResponse extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    /** Future version. */
-    private long futId;
-
-    /** */
-    private UpdateErrors errs;
-
-    /** Evicted readers. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearEvicted;
-
     /** */
     private int partId;
 
+    /** */
+    private long futId;
+
+    /** */
+    private UUID primaryId;
+
+    /** */
+    @GridToStringExclude
+    private byte flags;
+
+    /** */
+    @GridToStringInclude
+    private UpdateErrors errs;
+
     /**
-     * Empty constructor required by {@link Externalizable}.
+     *
      */
-    public GridDhtAtomicUpdateResponse() {
+    public GridDhtAtomicNearResponse() {
         // No-op.
     }
 
@@ -71,56 +71,43 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      * @param cacheId Cache ID.
      * @param partId Partition.
      * @param futId Future ID.
-     * @param addDepInfo Deployment info.
+     * @param primaryId Primary node ID.
+     * @param flags Flags.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId, boolean addDepInfo) {
+    public GridDhtAtomicNearResponse(int cacheId,
+        int partId,
+        long futId,
+        UUID primaryId,
+        byte flags)
+    {
+        assert primaryId != null;
+
         this.cacheId = cacheId;
         this.partId = partId;
         this.futId = futId;
-        this.addDepInfo = addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int lookupIndex() {
-        return CACHE_MSG_IDX;
+        this.primaryId = primaryId;
+        this.flags = flags;
     }
 
     /**
-     * @return Future version.
+     * @return Errors.
      */
-    public long futureId() {
-        return futId;
+    @Nullable UpdateErrors errors() {
+        return errs;
     }
 
     /**
-     * Sets update error.
-     *
-     * @param err Error.
+     * @param errs Errors.
      */
-    public void onError(IgniteCheckedException err){
-        if (errs == null)
-            errs = new UpdateErrors();
-
-        errs.onError(err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return errs != null ? errs.error() : null;
+    public void errors(UpdateErrors errs) {
+        this.errs = errs;
     }
 
     /**
-     * @return Evicted readers.
+     * @return Primary node ID.
      */
-    Collection<KeyCacheObject> nearEvicted() {
-        return nearEvicted;
-    }
-
-    /**
-     * @param nearEvicted Evicted near cache keys.
-     */
-    void nearEvicted(List<KeyCacheObject> nearEvicted) {
-        this.nearEvicted = nearEvicted;
+    UUID primaryId() {
+        return primaryId;
     }
 
     /** {@inheritDoc} */
@@ -128,38 +115,84 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         return partId;
     }
 
+    /**
+     * @param key Key.
+     * @param e Error.
+     */
+    public void addFailedKey(KeyCacheObject key, Throwable e) {
+        if (errs == null)
+            errs = new UpdateErrors();
+
+        errs.addFailedKey(key, e);
+    }
+
+    /**
+     * @return Operation result.
+     */
+    public GridCacheReturn result() {
+        assert hasResult() : this;
+
+        return new GridCacheReturn(true, true);
+    }
+
+    /**
+     * @return {@code True} if response contains operation result.
+     */
+    boolean hasResult() {
+        return isFlag(DHT_ATOMIC_HAS_RESULT_MASK);
+    }
+
+    /**
+     * Reads flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return -45;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 8;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObjects(nearEvicted, cctx);
-
         if (errs != null)
-            errs.prepareMarshal(this, cctx);
+            errs.prepareMarshal(this, ctx.cacheContext(cacheId));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
-
         if (errs != null)
-            errs.finishUnmarshal(this, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.atomicMessageLogger();
+            errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -184,19 +217,25 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
                 if (!writer.writeInt("partId", partId))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeUuid("primaryId", primaryId))
                     return false;
 
                 writer.incrementState();
@@ -226,7 +265,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 4:
-                futId = reader.readLong("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -234,7 +273,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 5:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,23 +288,27 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
+            case 7:
+                primaryId = reader.readUuid("primaryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(GridDhtAtomicUpdateResponse.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 39;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 7;
+        return reader.afterMessageRead(GridDhtAtomicNearResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateResponse.class, this);
+        StringBuilder flags = new StringBuilder();
+
+        if (hasResult())
+            appendFlag(flags, "hasRes");
+
+        return S.toString(GridDhtAtomicNearResponse.class, this,
+            "flags", flags.toString());
     }
 }
