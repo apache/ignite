@@ -889,11 +889,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param snapshotOperationMsg Snapshot operation message.
+     * @param snapOpMsg Snapshot operation message.
      */
-    private void startLocalSnasphotOperation(StartSnapshotOperationAckDiscoveryMessage snapshotOperationMsg
+    private void startLocalSnasphotOperation(StartSnapshotOperationAckDiscoveryMessage snapOpMsg
     ) throws IgniteCheckedException {
-        IgniteInternalFuture fut = cctx.database().startLocalSnapshotOperation(snapshotOperationMsg);
+        IgniteInternalFuture fut = cctx.database()
+            .startLocalSnapshotOperation(snapOpMsg.initiatorNodeId(), snapOpMsg.snapshotOperation());
 
         if (fut != null)
             fut.get();
