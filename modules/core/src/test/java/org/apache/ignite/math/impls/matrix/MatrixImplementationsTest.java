@@ -17,9 +17,16 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.ExternalizeTest;
-import org.junit.Ignore;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.math.impls.vector.RandomVector;
 import org.junit.Test;
 
 import java.util.function.BiConsumer;
@@ -32,7 +39,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */
-    private void consumeSampleVectors(BiConsumer<Matrix, String> consumer) {
+    private static final Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap = typesMap();
+
+    /** */
+    private void consumeSampleMatrix(BiConsumer<Matrix, String> consumer) {
         new MatrixImplementationFixtures().consumeSampleMatrix(null, consumer);
     }
 
@@ -44,9 +54,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    @Ignore("Skip test for not yet implemented 'like' method of SparseLocalOnHeapMatrix.")
     public void likeTest(){
-        consumeSampleVectors((m, desc) -> {
+        consumeSampleMatrix((m, desc) -> {
             Matrix like = m.like(m.rowSize(), m.columnSize());
 
             assertEquals("Wrong \"like\" matrix for "+ desc + "; Unexpected class: " + like.getClass().toString(),
@@ -62,9 +71,8 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
-    @Ignore("Skip test for not yet implemented 'copy' method of SparseLocalOnHeapMatrix.")
     public void copyTest(){
-        consumeSampleVectors((m, desc) -> {
+        consumeSampleMatrix((m, desc) -> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
@@ -74,10 +82,195 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
 
+    /** */ @Test
+    public void testHaveLikeVector() throws InstantiationException, IllegalAccessException {
+        for (Class<? extends Matrix> key : typesMap.keySet()) {
+            Class<? extends Vector> val = typesMap.get(key);
+
+            if (val == null && !ignore(key))
+                System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
+        }
+    }
+
+    /** */
+    @Test
+    public void testAssignSingleElement(){
+        consumeSampleMatrix((m,desc) -> {
+            final double assignVal = Math.random();
+
+            m.assign(assignVal);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(m.get(i, j), assignVal) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testAssignArray(){
+        consumeSampleMatrix((m,desc) -> {
+            double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+
+            for (int i = 0; i < m.rowSize(); i++) {
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(m.get(i, j), arr[i][j]) == 0);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testPlus(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+
+            double plusVal = Math.random();
+
+            Matrix plus = m.plus(plusVal);
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                  assertTrue("Unexpected value.", Double.compare(plus.get(i, j), m.get(i, j) + plusVal) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testTimes(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+
+            double timeVal = Math.random();
+
+            Matrix times = m.times(timeVal);
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(times.get(i, j), m.get(i, j) * timeVal) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testDivide(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+
+            double divVal = Math.random();
+
+            Matrix divide = m.divide(divVal);
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(divide.get(i, j), arr[i][j] / divVal) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testTranspose(){
+        consumeSampleMatrix((m, desc)->{
+            fillMatrix(m);
+
+            Matrix transpose = m.transpose();
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(m.get(i, j), transpose.get(j, i)) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testMap(){
+        consumeSampleMatrix((m, desc)->{
+            fillMatrix(m);
+
+            m.map(x -> 0d);
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    assertTrue("Unexpected value.", Double.compare(m.get(i, j), 0d) == 0);
+        });
+    }
+
+    /** */
+    @Test
+    public void testSum(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+
+            double sum = m.sum();
+
+            double rawSum = 0;
+            for(int i = 0; i < arr.length; i++)
+                for(int j = 0; j < arr[0].length; j++)
+                    rawSum += arr[i][j];
+
+            assertTrue("Unexpected value.", Double.compare(sum, rawSum) == 0);
+        });
+    }
+
     /** */
     private void fillMatrix(Matrix m){
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, Math.random());
+    }
+
+    /** Ignore test for given vector type. */
+    private boolean ignore(Class<? extends Matrix> clazz){
+        boolean isIgnored = false;
+        List<Class<? extends Vector>> ignoredClasses = Arrays.asList();
+
+        for (Class<? extends Vector> ignoredClass : ignoredClasses) {
+            if (ignoredClass.isAssignableFrom(clazz)){
+                isIgnored = true;
+                break;
+            }
+        }
+
+        return isIgnored;
+    }
+
+    /** */
+    private static Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap() {
+        return new LinkedHashMap<Class<? extends Matrix>, Class<? extends Vector>> () {{
+            put(DenseLocalOnHeapMatrix.class, DenseLocalOnHeapVector.class);
+            put(DenseLocalOffHeapMatrix.class, DenseLocalOffHeapVector.class);
+            put(RandomMatrix.class, RandomVector.class);
+            // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
+        }};
     }
 }

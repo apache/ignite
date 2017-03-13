@@ -17,6 +17,8 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.apache.ignite.math.Matrix;
 
 import java.util.Arrays;
@@ -25,13 +27,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import org.apache.ignite.math.StorageConstants;
 
 /** */
 public class MatrixImplementationFixtures {
     /** */
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Matrix>>)SparseLocalMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)SparseLocalOffHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new
     );
 
@@ -50,67 +51,44 @@ public class MatrixImplementationFixtures {
     }
 
     /** */
-    private static class SparseLocalMatrixFixture implements Iterable<Matrix>{
-        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
-        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private final Integer[] randomAccess = new Integer[] {0, 1, null};
-        private int sizeIdx = 0;
-        private int modeIdx = 0;
-
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                @Override public boolean hasNext() {
-                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx) && hasNextMode(modeIdx);
-                }
-
-                @Override public Matrix next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalMatrixFixture.this.toString());
-
-                    Matrix storage = null; // new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx], randomAccess[modeIdx]);
-
-                    nextIdx();
-
-                    return storage;
-                }
-
-                private void nextIdx(){
-                    if (hasNextMode(modeIdx + 1)){
-                        modeIdx++;
-
-                        return;
-                    }
-
-                    modeIdx = 0;
-                    sizeIdx++;
-                }
-            };
-        }
-
-        @Override public String toString() {
-            return "SparseLocalRowMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] +
-                    " ,mode=" + randomAccess[modeIdx] + "}";
-        }
-
-        private boolean hasNextRow(int idx){
-            return rows[idx] != null;
-        }
-
-        private boolean hasNextCol(int idx){
-            return cols[idx] != null;
-        }
-
-        private boolean hasNextMode(int idx){
-            return randomAccess[idx] != null;
+    private static class DenseLocalOnHeapMatrixFixture extends MatrixSizeIterator{
+        /** */
+        DenseLocalOnHeapMatrixFixture() {
+            super(DenseLocalOnHeapMatrix::new, "DenseLocalOnHeapMatrix");
         }
     }
 
     /** */
-    private static class SparseLocalOffHeapMatrixFixture implements Iterable<Matrix>{
+    private static class MatrixSizeIterator implements Iterable<Matrix>{
         private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
         private int sizeIdx = 0;
 
+        private BiFunction<Integer, Integer, ? extends Matrix> constructor;
+        private String desc;
+
+        /** */
+        MatrixSizeIterator(BiFunction<Integer,Integer, ? extends Matrix> constructor, String desc){
+            this.constructor = constructor;
+            this.desc = desc;
+        }
+
+        /** */
+        @Override public String toString() {
+            return desc + "{rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
+        }
+
+        /** */
+        private boolean hasNextRow(int idx){
+            return rows[idx] != null;
+        }
+
+        /** */
+        private boolean hasNextCol(int idx){
+            return cols[idx] != null;
+        }
+
+        /** */
         @Override public Iterator<Matrix> iterator() {
             return new Iterator<Matrix>() {
                 @Override public boolean hasNext() {
@@ -118,73 +96,18 @@ public class MatrixImplementationFixtures {
                 }
 
                 @Override public Matrix next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(MatrixImplementationFixtures.SparseLocalOffHeapMatrixFixture.this.toString());
-
-                    Matrix storage = null; // new SparseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
+                    Matrix matrix = constructor.apply(rows[sizeIdx], cols[sizeIdx]);
 
                     nextIdx();
 
-                    return storage;
-                }
-
-                private void nextIdx(){
-                    sizeIdx++;
+                    return matrix;
                 }
             };
         }
 
-        @Override public String toString() {
-            return "SparseLocalRowMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + "}";
-        }
-
-        private boolean hasNextRow(int idx){
-            return rows[idx] != null;
-        }
-
-        private boolean hasNextCol(int idx){
-            return cols[idx] != null;
-        }
-    }
-
-    private static class DenseLocalOnHeapMatrixFixture implements Iterable<Matrix>{
-        private final Integer[] rows = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 512, 1024, null};
-        private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
-        private int sizeIdx = 0;
-
-        @Override public Iterator<Matrix> iterator() {
-            return new Iterator<Matrix>() {
-                @Override public boolean hasNext() {
-                    return hasNextCol(sizeIdx) && hasNextRow(sizeIdx);
-                }
-
-                @Override public Matrix next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException(MatrixImplementationFixtures.DenseLocalOnHeapMatrixFixture.this.toString());
-
-                    Matrix storage = new DenseLocalOnHeapMatrix(rows[sizeIdx], cols[sizeIdx]);
-
-                    nextIdx();
-
-                    return storage;
-                }
-
-                private void nextIdx(){
-                    sizeIdx++;
-                }
-            };
-        }
-
-        @Override public String toString() {
-            return "DenseLocalOnHeapMatrixFixture{" + "rows=" + rows[sizeIdx] + ", cols=" + cols[sizeIdx] + "}";
-        }
-
-        private boolean hasNextRow(int idx){
-            return rows[idx] != null;
-        }
-
-        private boolean hasNextCol(int idx){
-            return cols[idx] != null;
+        /** */
+        private void nextIdx() {
+            sizeIdx++;
         }
     }
 }

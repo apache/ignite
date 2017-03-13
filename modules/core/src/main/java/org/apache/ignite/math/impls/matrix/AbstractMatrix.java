@@ -24,7 +24,6 @@ import org.apache.ignite.math.impls.*;
 import org.apache.ignite.math.impls.vector.*;
 import java.io.*;
 import java.util.*;
-import java.util.function.*;
 
 /**
  * TODO: add description.
@@ -200,9 +199,8 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     }
 
     /** {@inheritDoc} */
-    @Override
     @SuppressWarnings("unchecked")
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
@@ -225,10 +223,12 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         return this;
     }
 
+    /** */
     private void checkCardinality(Matrix mtx) {
         checkCardinality(mtx.rowSize(), mtx.columnSize());
     }
 
+    /** */
     private void checkCardinality(int rows, int cols) {
         if (rows != sto.rowSize())
             throw new CardinalityException(rowSize(), rows);
@@ -451,11 +451,11 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public Matrix plus(double x) {
-        Matrix copy = copy();
+        Matrix cp = copy();
 
-        copy.map(Functions.plus(x));
+        cp.map(Functions.plus(x));
 
-        return copy;
+        return cp;
     }
 
     /** {@inheritDoc} */
@@ -531,11 +531,11 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public Matrix times(double x) {
-        Matrix copy = copy();
+        Matrix cp = copy();
 
-        copy.map(Functions.mult(x));
+        cp.map(Functions.mult(x));
 
-        return copy;
+        return cp;
     }
 
     /** {@inheritDoc} */
@@ -592,9 +592,8 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
             for (int y = 0; y < mtxCols; y++) {
                 double sum = 0.0;
 
-                for (int k = 0; k < cols; k++) {
+                for (int k = 0; k < cols; k++)
                     sum += getX(x, k) * mtx.getX(k, y);
-                }
 
                 res.setX(x, y, sum);
             }
@@ -712,22 +711,22 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        Matrix copy = like(rowSize(), columnSize());
+        Matrix cp = like(rowSize(), columnSize());
 
-        copy.assign(this);
+        cp.assign(this);
 
-        return copy;
+        return cp;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + guid.hashCode();
-        result = result * 37 + sto.hashCode();
-        result = result * 37 + meta.hashCode();
+        res = res * 37 + guid.hashCode();
+        res = res * 37 + sto.hashCode();
+        res = res * 37 + meta.hashCode();
 
-        return result;
+        return res;
     }
 
 
