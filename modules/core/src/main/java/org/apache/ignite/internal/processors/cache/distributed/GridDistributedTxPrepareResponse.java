@@ -49,6 +49,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** Transient TX state. */
     @GridDirectTransient
+    @GridToStringExclude
     private IgniteTxState txState;
 
     /** */

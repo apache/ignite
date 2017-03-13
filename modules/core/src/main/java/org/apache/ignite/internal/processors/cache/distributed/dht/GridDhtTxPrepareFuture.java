@@ -175,9 +175,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Trackable flag. */
     private boolean trackable = true;
 
-    /** Near mini future id. */
-    private int nearMiniId;
-
     /** DHT versions map. */
     private Map<IgniteTxKey, GridCacheVersion> dhtVerMap;
 
@@ -213,7 +210,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param cctx Context.
      * @param tx Transaction.
      * @param timeout Timeout.
-     * @param nearMiniId Near mini future id.
      * @param dhtVerMap DHT versions map.
      * @param last {@code True} if this is last prepare operation for node.
      * @param retVal Return value flag.
@@ -222,12 +218,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         GridCacheSharedContext cctx,
         final GridDhtTxLocalAdapter tx,
         long timeout,
-        int nearMiniId,
         Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
         boolean retVal
     ) {
         super(REDUCER);
+
+        assert tx.nearPrepareFutureId() != null;
+        assert tx.nearPrepareMiniId() != 0;
 
         this.cctx = cctx;
         this.tx = tx;
@@ -235,8 +233,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.last = last;
 
         futId = IgniteUuid.randomUuid();
-
-        this.nearMiniId = nearMiniId;
 
         if (log == null) {
             msgLog = cctx.txPrepareMessageLogger();
@@ -263,7 +259,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return Near mini future id.
      */
     int nearMiniId() {
-        return nearMiniId;
+        return tx.nearPrepareMiniId();
     }
 
     /** {@inheritDoc} */
@@ -860,8 +856,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
             -1,
             tx.nearXidVersion(),
-            tx.colocated() ? tx.xid() : tx.nearFutureId(),
-            nearMiniId,
+            tx.nearPrepareFutureId(),
+            nearMiniId(),
             tx.xidVersion(),
             tx.writeVersion(),
             ret,
@@ -1223,17 +1219,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             final boolean dhtReplyNear = tx.dhtReplyNear();
 
-            Collection<UUID> backupNodes;
-            IgniteUuid nearFutId;
-
-            if (dhtReplyNear) {
-                backupNodes = tx.transactionNodes().get(cctx.localNodeId());
-                nearFutId = tx.colocated() ? tx.xid() : tx.nearFutureId();
-            }
-            else {
-                backupNodes = null;
-                nearFutId = null;
-            }
+            Collection<UUID> backupNodes = dhtReplyNear ? tx.transactionNodes().get(cctx.localNodeId()) : null;
 
             // Assign keys to primary nodes.
             if (!F.isEmpty(writes)) {
@@ -1285,8 +1271,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     assert txNodes != null;
 
                     GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                        dhtReplyNear ? nearFutId : futId,
-                        dhtReplyNear ? nearMiniId : fut.futureId(),
+                        dhtReplyNear ? tx.nearPrepareFutureId() : futId,
+                        dhtReplyNear ? tx.nearPrepareMiniId() : fut.futureId(),
                         tx.topologyVersion(),
                         tx,
                         timeout,
@@ -1403,8 +1389,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         add(fut); // Append new future.
 
                         GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                            dhtReplyNear ? nearFutId : futId,
-                            dhtReplyNear ? nearMiniId : fut.futureId(),
+                            dhtReplyNear ? tx.nearPrepareFutureId() : futId,
+                            dhtReplyNear ? tx.nearPrepareMiniId() : fut.futureId(),
                             tx.topologyVersion(),
                             tx,
                             timeout,
@@ -1503,6 +1489,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /**
      * @param entry Transaction entry.
+     * @param backupNodes Node IDs collection if tx was mapped on near node.
      */
     private void map(IgniteTxEntry entry, @Nullable Collection<UUID> backupNodes) {
         if (entry.cached().isLocal())

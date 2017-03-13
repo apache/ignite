@@ -312,6 +312,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * TODO IGNITE-4768.
+     */
+    public int activeFuturesCount() {
+        return mvccFuts.size();
+    }
+
+    /**
      * @param leftNodeId Left node ID.
      * @param topVer Topology version.
      */

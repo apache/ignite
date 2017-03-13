@@ -356,10 +356,6 @@ public class IgniteTxHandler {
             if (tx == null)
                 U.warn(log, "Missing local transaction for mapped near version [nearVer=" + req.version()
                     + ", mappedVer=" + mappedVer + ']');
-            else {
-                if (req.concurrency() == PESSIMISTIC)
-                    tx.nearFutureId(req.futureId());
-            }
         }
         else {
             GridDhtPartitionTopology top = null;
@@ -470,6 +466,7 @@ public class IgniteTxHandler {
                 tx.explicitLock(true);
 
             tx.transactionNodes(req.transactionNodes());
+            tx.nearPrepareFutureId(req.futureId(), req.miniId());
 
             tx.dhtReplyNear(req.dhtReplyNear());
 
@@ -490,7 +487,6 @@ public class IgniteTxHandler {
                 req.writes(),
                 req.dhtVersions(),
                 req.messageId(),
-                req.miniId(),
                 req.transactionNodes(),
                 req.last());
 
@@ -771,8 +767,10 @@ public class IgniteTxHandler {
      * @param req Finish request.
      * @return Finish future.
      */
-    private IgniteInternalFuture<IgniteInternalTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal locTx,
-        GridNearTxFinishRequest req) {
+    private IgniteInternalFuture<IgniteInternalTx> finishDhtLocal(UUID nodeId,
+        @Nullable GridNearTxLocal locTx,
+        GridNearTxFinishRequest req)
+    {
         GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
         GridDhtTxLocal tx = null;
@@ -853,6 +851,7 @@ public class IgniteTxHandler {
             assert req.syncMode() != null : req;
 
             tx.syncMode(req.syncMode());
+            tx.nearFinishFutureId(req.futureId(), req.miniId());
 
             if (req.commit()) {
                 tx.storeEnabled(req.storeEnabled());
@@ -864,9 +863,6 @@ public class IgniteTxHandler {
                     return null;
                 }
 
-                tx.nearFinishFutureId(req.futureId());
-                tx.nearFinishMiniId(req.miniId());
-
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
@@ -875,9 +871,6 @@ public class IgniteTxHandler {
                 return commitFut;
             }
             else {
-                tx.nearFinishFutureId(req.futureId());
-                tx.nearFinishMiniId(req.miniId());
-
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.

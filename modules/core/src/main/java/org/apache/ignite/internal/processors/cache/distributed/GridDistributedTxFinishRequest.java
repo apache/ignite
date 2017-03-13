@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -110,6 +111,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
     /** Transient TX state. */
     @GridDirectTransient
+    @GridToStringExclude
     private IgniteTxState txState;
 
     /**
@@ -571,7 +573,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
 
     /** {@inheritDoc} */
     @Override public String toString() {
+        StringBuilder flags = new StringBuilder();
+
+        if (dhtReplyNear())
+            appendFlag(flags, "dht2near");
+
         return GridToStringBuilder.toString(GridDistributedTxFinishRequest.class, this,
+            "flags", flags.toString(),
             "super", super.toString());
     }
 }

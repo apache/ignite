@@ -137,7 +137,7 @@ public class GridCacheTxFinishSync<K, V> {
         /**
          * @param nodeId Node ID request being sent to.
          */
-        public void onSend(UUID nodeId) {
+        void onSend(UUID nodeId) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null) {
@@ -169,7 +169,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID to wait ack from.
          * @return {@code null} if ack has been received or future that will be completed when ack is received.
          */
-        public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId) {
+        IgniteInternalFuture<?> awaitAckAsync(UUID nodeId) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null)
@@ -191,7 +191,7 @@ public class GridCacheTxFinishSync<K, V> {
         /**
          * @param nodeId Node ID response received from.
          */
-        public void onReceive(UUID nodeId) {
+        void onReceive(UUID nodeId) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync != null)

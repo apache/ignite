@@ -68,18 +68,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** */
     private UUID nearNodeId;
 
-    /** Near future ID. */
-    private IgniteUuid nearFutId;
-
-    /** Near future ID. */
-    private int nearMiniId;
-
-    /** Near future ID. */
-    private IgniteUuid nearFinFutId;
-
-    /** Near future ID. */
-    private int nearFinMiniId;
-
     /** Near XID. */
     private GridCacheVersion nearXidVer;
 
@@ -164,8 +152,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         this.nearNodeId = nearNodeId;
         this.nearXidVer = nearXidVer;
-        this.nearFutId = nearFutId;
-        this.nearMiniId = nearMiniId;
+        this.nearPrepFutId = nearFutId;
+        this.nearPrepMiniId = nearMiniId;
         this.txNodes = txNodes;
 
         threadId = nearThreadId;
@@ -219,18 +207,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteUuid nearFutureId() {
-        return nearFutId;
-    }
-
-    /**
-     * @param nearFutId Near future ID.
-     */
-    public void nearFutureId(IgniteUuid nearFutId) {
-        this.nearFutId = nearFutId;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
     }
@@ -238,27 +214,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** {@inheritDoc} */
     @Override protected boolean updateNearCache(GridCacheContext cacheCtx, KeyCacheObject key, AffinityTopologyVersion topVer) {
         return cacheCtx.isDht() && isNearEnabled(cacheCtx) && !cctx.localNodeId().equals(nearNodeId());
-    }
-
-    /**
-     * @return Near future ID.
-     */
-    public IgniteUuid nearFinishFutureId() {
-        return nearFinFutId;
-    }
-
-    /**
-     * @param nearFinFutId Near future ID.
-     */
-    public void nearFinishFutureId(IgniteUuid nearFinFutId) {
-        this.nearFinFutId = nearFinFutId;
-    }
-
-    /**
-     * @param nearFinMiniId Near future mini ID.
-     */
-    public void nearFinishMiniId(int nearFinMiniId) {
-        this.nearFinMiniId = nearFinMiniId;
     }
 
     /** {@inheritDoc} */
@@ -301,7 +256,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 null,
                 Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 0,
-                nearMiniId,
                 null,
                 true);
         }
@@ -317,7 +271,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 cctx,
                 this,
                 timeout,
-                nearMiniId,
                 Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 true,
                 needReturnValue()))) {
@@ -377,7 +330,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param writes Write entries.
      * @param verMap Version map.
      * @param msgId Message ID.
-     * @param nearMiniId Near mini future ID.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this is last prepare request.
      * @return Future that will be completed when locks are acquired.
@@ -387,7 +339,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         @Nullable Collection<IgniteTxEntry> writes,
         Map<IgniteTxKey, GridCacheVersion> verMap,
         long msgId,
-        int nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,
         boolean last
     ) {
@@ -404,14 +355,13 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 cctx,
                 this,
                 timeout,
-                nearMiniId,
                 verMap,
                 last,
                 needReturnValue()))) {
                 GridDhtTxPrepareFuture f = prepFut;
 
-                assert f.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
-                    "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
+                assert f.nearMiniId() == nearPrepMiniId : "Wrong near mini id on existing future " +
+                    "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearPrepMiniId + ", fut=" + f + ']';
 
                 if (timeout == -1)
                     f.onError(timeoutException());
@@ -420,8 +370,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             }
         }
         else {
-            assert fut.nearMiniId() == nearMiniId : "Wrong near mini id on existing future " +
-                "[futMiniId=" + fut.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + fut + ']';
+            assert fut.nearMiniId() == nearPrepMiniId : "Wrong near mini id on existing future " +
+                "[futMiniId=" + fut.nearMiniId() + ", miniId=" + nearPrepMiniId + ", fut=" + fut + ']';
 
             // Prepare was called explicitly.
             return chainOnePhasePrepare(fut);
@@ -619,7 +569,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             "Invalid state [nearFinFutId=" + nearFinFutId + ", isInvalidate=" + isInvalidate() + ", commit=" + commit +
             ", sysInvalidate=" + isSystemInvalidate() + ", state=" + state() + ']';
 
-        assert nearMiniId != 0;
+        assert nearPrepMiniId != 0;
 
         return super.finish(commit);
     }

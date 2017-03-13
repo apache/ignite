@@ -1029,8 +1029,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 done = dhtNodes.remove(nodeId) && dhtNodes.isEmpty();
             }
 
-            if (done)
+            if (done) {
+                cctx.tm().onFinishedRemote(primary().id(), tx.threadId());
+
                 onDone(tx);
+            }
         }
 
         /**

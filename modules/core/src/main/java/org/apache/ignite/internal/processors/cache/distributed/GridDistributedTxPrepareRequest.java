@@ -151,6 +151,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** Transient TX state. */
     @GridDirectTransient
+    @GridToStringExclude
     private IgniteTxState txState;
 
     /** */
@@ -699,15 +700,17 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         StringBuilder flags = new StringBuilder();
 
         if (needReturnValue())
-            flags.append("retVal");
+            appendFlag(flags, "retVal");
         if (isInvalidate())
-            flags.append("invalidate");
+            appendFlag(flags, "invalidate");
         if (onePhaseCommit())
-            flags.append("onePhase");
+            appendFlag(flags, "onePhase");
         if (last())
-            flags.append("last");
+            appendFlag(flags, "last");
         if (system())
-            flags.append("sys");
+            appendFlag(flags, "sys");
+        if (dhtReplyNear())
+            appendFlag(flags, "dht2near");
 
         return GridToStringBuilder.toString(GridDistributedTxPrepareRequest.class, this,
             "flags", flags.toString(),

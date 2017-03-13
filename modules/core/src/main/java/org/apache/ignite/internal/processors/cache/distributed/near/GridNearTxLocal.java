@@ -214,13 +214,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteUuid nearFutureId() {
-        assert false : "nearFutureId should not be called for colocated transactions.";
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<Boolean> addReader(
         long msgId,
         GridDhtCacheEntry cached,
@@ -1002,7 +995,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             cctx,
             this,
             timeout,
-            0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
             needReturnValue() && implicit());
@@ -1065,7 +1057,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         // Do not create finish future if there are no remote nodes.
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
             if (prep != null)
-                return (IgniteInternalFuture<IgniteInternalTx>)(IgniteInternalFuture)prep;
+                return (IgniteInternalFuture<IgniteInternalTx>)prep;
 
             return new GridFinishedFuture<IgniteInternalTx>(this);
         }

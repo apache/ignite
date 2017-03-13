@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -48,6 +49,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
     /** Transient TX state. */
     @GridDirectTransient
+    @GridToStringExclude
     private IgniteTxState txState;
 
     /**

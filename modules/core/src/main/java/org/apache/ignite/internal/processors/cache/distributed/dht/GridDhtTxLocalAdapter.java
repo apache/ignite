@@ -97,6 +97,18 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
+    /** Near future ID. */
+    protected IgniteUuid nearPrepFutId;
+
+    /** Prepare future mini ID. */
+    protected int nearPrepMiniId;
+
+    /** Near future ID. */
+    protected IgniteUuid nearFinFutId;
+
+    /** Prepare future mini ID. */
+    protected int nearFinMiniId;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -159,9 +171,55 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Near future ID.
+     */
+    final IgniteUuid nearPrepareFutureId() {
+        return nearPrepFutId;
+    }
+
+    /**
+     * @param futId Near future ID.
+     * @param miniId Near mini future ID.
+     */
+    public final void nearPrepareFutureId(IgniteUuid futId, int miniId) {
+        this.nearPrepFutId = futId;
+        this.nearPrepMiniId = miniId;
+    }
+
+    /**
+     * @return Near prepare mini future ID.
+     */
+    final int nearPrepareMiniId() {
+        return nearPrepMiniId;
+    }
+
+    /**
+     * @return Near future ID.
+     */
+    final IgniteUuid nearFinishFutureId() {
+        return nearFinFutId;
+    }
+
+    /**
+     * @param futId Near future ID.
+     * @param miniId Near mini future ID.
+     */
+    public final void nearFinishFutureId(IgniteUuid futId, int miniId) {
+        nearFinFutId = futId;
+        nearFinMiniId = miniId;
+    }
+
+    /**
+     * @return Near future mini ID.
+     */
+    public final int nearFinishMiniId() {
+        return nearFinMiniId;
+    }
+
+    /**
      * @param node Node.
      */
-    public void addLockTransactionNode(ClusterNode node) {
+    void addLockTransactionNode(ClusterNode node) {
         assert node != null;
         assert !node.isLocal();
 
@@ -214,11 +272,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Near node id.
      */
     protected abstract UUID nearNodeId();
-
-    /**
-     * @return Near future ID.
-     */
-    protected abstract IgniteUuid nearFutureId();
 
     /**
      * Adds reader to cached entry.

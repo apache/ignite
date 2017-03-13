@@ -100,6 +100,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter tx, boolean commit) {
         super(F.<IgniteInternalTx>identityReducer(tx));
 
+        assert tx.nearFinishFutureId() != null : tx;
+        assert tx.nearFinishMiniId() != 0 : tx;
+
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
@@ -424,8 +427,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
-                dhtReplyNear ? tx.nearFutureId() : futId,
-                dhtReplyNear ? 0 : fut.futureId(),
+                dhtReplyNear ? tx.nearFinishFutureId() : futId,
+                dhtReplyNear ? tx.nearFinishMiniId() : fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),

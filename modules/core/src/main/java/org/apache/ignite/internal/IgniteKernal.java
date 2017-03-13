@@ -1155,6 +1155,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             String msg = NL +
                                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
+                                "Futures " + ctx.cache().context().mvcc().activeFuturesCount()+ NL +
                                 "    ^-- Node [id=" + id + ", name=" + name() + ", uptime=" + getUpTimeFormatted() + "]" + NL +
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +

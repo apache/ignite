@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -200,13 +203,18 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null)
-                mini.onResult(res);
+                mini.onPrimaryResponse(res);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onDhtResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        assert false; // TODO IGNITE-4768.
+        assert res.nearNodeResponse() : res;
+
+        MiniFuture mini = miniFuture(res.miniId());
+
+        if (mini != null)
+            mini.onDhtResponse(nodeId, res);
     }
 
     /** {@inheritDoc} */
@@ -347,11 +355,13 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
+        boolean dhtReplyNear = true;
+
         for (IgniteTxEntry write : writes)
-            map(write, topVer, mappings, txMapping, remap, topLocked);
+            dhtReplyNear = map(write, topVer, mappings, txMapping, remap, topLocked, dhtReplyNear);
 
         for (IgniteTxEntry read : reads)
-            map(read, topVer, mappings, txMapping, remap, topLocked);
+            dhtReplyNear = map(read, topVer, mappings, txMapping, remap, topLocked, dhtReplyNear);
 
         if (keyLockFut != null)
             keyLockFut.onAllKeysAdded();
@@ -371,10 +381,25 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         checkOnePhase(txMapping);
 
+        if (tx.onePhaseCommit())
+            dhtReplyNear = false;
+
+        tx.dhtReplyNear(dhtReplyNear);
+
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            add(new MiniFuture(this, m, ++miniId));
+            Set<UUID> dhtNodes;
+
+            if (dhtReplyNear) {
+                dhtNodes = new HashSet<>(txMapping.transactionNodes().get(m.primary().id()));
+
+                assert !dhtNodes.isEmpty();
+            }
+            else
+                dhtNodes = null;
+
+            add(new MiniFuture(this, m, ++miniId, dhtNodes));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
@@ -389,7 +414,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             MiniFuture fut = (MiniFuture)fut0;
 
-            IgniteCheckedException err = prepare(fut, txMapping);
+            IgniteCheckedException err = prepare(fut, txMapping, dhtReplyNear);
 
             if (err != null) {
                 while (it.hasNext()) {
@@ -425,7 +450,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param fut Mini future.
      * @return Prepare error if any.
      */
-    @Nullable private IgniteCheckedException prepare(final MiniFuture fut, GridDhtTxMapping txMapping) {
+    @Nullable private IgniteCheckedException prepare(final MiniFuture fut,
+        GridDhtTxMapping txMapping,
+        boolean dhtReplyNear) {
         GridDistributedTxMapping m = fut.mapping();
 
         final ClusterNode primary = m.primary();
@@ -449,7 +476,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.writes(),
             m.near(),
             txMapping.transactionNodes(),
-            false,
+            dhtReplyNear,
             m.last(),
             tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),
@@ -490,7 +517,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                 @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
                     try {
-                        fut.onResult(prepFut.get());
+                        fut.onPrimaryResponse(prepFut.get());
                     }
                     catch (IgniteCheckedException e) {
                         fut.onResult(e);
@@ -526,19 +553,30 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param remap Remap flag.
      * @param topLocked Topology locked flag.
      */
-    private void map(
+    private boolean map(
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> curMapping,
         GridDhtTxMapping txMapping,
         boolean remap,
-        boolean topLocked
+        boolean topLocked,
+        boolean dhtReplyNear
     ) {
         GridCacheContext cacheCtx = entry.context();
 
-        List<ClusterNode> nodes = cacheCtx.isLocal() ?
-            cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
-            cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
+        List<ClusterNode> nodes;
+
+        if (!cacheCtx.isLocal()) {
+            GridDhtPartitionTopology top = cacheCtx.topology();
+
+            nodes = top.nodes(cacheCtx.affinity().partition(entry.key()), topVer);
+
+            if (dhtReplyNear &&
+                (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer) || nodes.size() == 1))
+                dhtReplyNear = false;
+        }
+        else
+            nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
 
@@ -620,6 +658,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 }
             }
         }
+
+        return dhtReplyNear;
     }
 
     /** {@inheritDoc} */
@@ -711,15 +751,24 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         @SuppressWarnings("UnusedDeclaration")
         private volatile int rcvRes;
 
+        /** */
+        private final Set<UUID> dhtNodes;
+
         /**
          * @param parent Parent future.
          * @param m Mapping.
          * @param futId Mini future ID.
          */
-        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m, int futId) {
+        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent,
+            GridDistributedTxMapping m,
+            int futId,
+            Set<UUID> dhtNodes) {
+            assert dhtNodes == null || !dhtNodes.isEmpty();
+
             this.parent = parent;
             this.m = m;
             this.futId = futId;
+            this.dhtNodes = dhtNodes;
         }
 
         /**
@@ -779,10 +828,27 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         }
 
         /**
+         * @param nodeId Node ID.
+         * @param res Response.
+         */
+        void onDhtResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
+            assert dhtNodes != null;
+
+            boolean done;
+
+            synchronized (dhtNodes) {
+                done = dhtNodes.remove(nodeId) && dhtNodes.isEmpty();
+            }
+
+            if (done)
+                onDone();
+        }
+
+        /**
          * @param res Result callback.
          */
         @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-        void onResult(final GridNearTxPrepareResponse res) {
+        void onPrimaryResponse(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
 
@@ -885,6 +951,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                             onDone(res);
                     }
                     else {
+                        assert dhtNodes == null;
+
                         parent.processPrimaryPrepareResponse(m, res);
 
                         // Finish this mini future (need result only on client node).

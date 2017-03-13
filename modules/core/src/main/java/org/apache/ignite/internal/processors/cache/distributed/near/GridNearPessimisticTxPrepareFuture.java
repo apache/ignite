@@ -104,7 +104,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (f != null) {
                 assert f.primary().id().equals(nodeId);
 
-                f.onPrimaryResult(res);
+                f.onPrimaryResponse(res);
             }
             else {
                 if (msgLog.isDebugEnabled()) {
@@ -223,12 +223,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionTopology top = cacheCtx.topology();
 
-                if (dhtReplyNear && (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer)))
-                    dhtReplyNear = false;
-
                 nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 
-                if (nodes.size() == 1)
+                if (dhtReplyNear &&
+                    (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer) || nodes.size() == 1))
                     dhtReplyNear = false;
             }
             else
@@ -319,7 +317,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                     @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
                         try {
-                            fut.onPrimaryResult(prepFut.get());
+                            fut.onPrimaryResponse(prepFut.get());
                         }
                         catch (IgniteCheckedException e) {
                             fut.onError(e);
@@ -466,7 +464,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         /**
          * @param res Response.
          */
-        void onPrimaryResult(GridNearTxPrepareResponse res) {
+        void onPrimaryResponse(GridNearTxPrepareResponse res) {
             if (res.error() != null)
                 onError(res.error());
             else {
