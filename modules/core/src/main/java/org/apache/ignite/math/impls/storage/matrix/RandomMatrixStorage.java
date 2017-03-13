@@ -21,6 +21,7 @@ import org.apache.ignite.math.*;
 import org.apache.ignite.math.UnsupportedOperationException;
 import java.io.*;
 import java.nio.*;
+import org.apache.ignite.math.impls.storage.vector.RandomVectorStorage;
 
 /**
  *
@@ -50,6 +51,7 @@ public class RandomMatrixStorage implements MatrixStorage {
         this.fastHash = fastHash;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         if (!fastHash) {
             ByteBuffer buf = ByteBuffer.allocate(8);
@@ -72,18 +74,22 @@ public class RandomMatrixStorage implements MatrixStorage {
         return fastHash;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         throw new UnsupportedOperationException("Random matrix storage is a read-only storage.");
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return cols;
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
@@ -91,6 +97,7 @@ public class RandomMatrixStorage implements MatrixStorage {
         out.writeBoolean(fastHash);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
@@ -98,10 +105,12 @@ public class RandomMatrixStorage implements MatrixStorage {
         fastHash = in.readBoolean();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
@@ -116,7 +125,33 @@ public class RandomMatrixStorage implements MatrixStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = 1;
+
+        result = result * 37 + Boolean.hashCode(fastHash);
+        result = result * 37 + seed;
+        result = result * 37 + cols;
+        result = result * 37 + rows;
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        RandomMatrixStorage that = (RandomMatrixStorage) o;
+
+        return rows == that.rows && cols == that.cols && seed == that.seed && fastHash == that.fastHash;
     }
 }

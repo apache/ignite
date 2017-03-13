@@ -46,8 +46,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         new MatrixImplementationFixtures().consumeSampleMatrix(null, consumer);
     }
 
-    /** */
 
+
+    /** */
     @Override public void externalizeTest() {
         System.out.println("Skip test for not yet implemented Externalizable methods of SparseLocalOnHeapMatrix.");
     }
@@ -76,8 +77,12 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             Matrix cp = m.copy();
             assertTrue("Incorrect copy for empty matrix " + desc, cp.equals(m));
 
+            if (ignore(m.getClass()))
+                return;
+
             fillMatrix(m);
             cp = m.copy();
+
             assertTrue("Incorrect copy for matrix " + desc, cp.equals(m));
         });
     }
@@ -96,6 +101,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testAssignSingleElement(){
         consumeSampleMatrix((m,desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
             final double assignVal = Math.random();
 
             m.assign(assignVal);
@@ -110,6 +118,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testAssignArray(){
         consumeSampleMatrix((m,desc) -> {
+            if (ignore(m.getClass()))
+                return;
+
             double[][] arr = new double[m.rowSize()][m.columnSize()];
 
             for (int i = 0; i < m.rowSize(); i++)
@@ -129,13 +140,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testPlus(){
         consumeSampleMatrix((m, desc)->{
-            double[][] arr = new double[m.rowSize()][m.columnSize()];
+            if (ignore(m.getClass()))
+                return;
 
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
-
-            m.assign(arr);
+            double[][] arr = fillAndReturn(m);
 
             double plusVal = Math.random();
 
@@ -151,13 +159,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testTimes(){
         consumeSampleMatrix((m, desc)->{
-            double[][] arr = new double[m.rowSize()][m.columnSize()];
+            if (ignore(m.getClass()))
+                return;
 
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
-
-            m.assign(arr);
+            double[][] arr = fillAndReturn(m);
 
             double timeVal = Math.random();
 
@@ -173,13 +178,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testDivide(){
         consumeSampleMatrix((m, desc)->{
-            double[][] arr = new double[m.rowSize()][m.columnSize()];
+            if (ignore(m.getClass()))
+                return;
 
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
-
-            m.assign(arr);
+            double[][] arr = fillAndReturn(m);
 
             double divVal = Math.random();
 
@@ -195,6 +197,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testTranspose(){
         consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
             fillMatrix(m);
 
             Matrix transpose = m.transpose();
@@ -209,6 +214,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testMap(){
         consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
             fillMatrix(m);
 
             m.map(x -> 0d);
@@ -223,13 +231,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     @Test
     public void testSum(){
         consumeSampleMatrix((m, desc)->{
-            double[][] arr = new double[m.rowSize()][m.columnSize()];
-
-            for (int i = 0; i < m.rowSize(); i++)
-                for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
-
-            m.assign(arr);
+            double[][] arr = fillAndReturn(m);
 
             double sum = m.sum();
 
@@ -242,6 +244,24 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
 
+    private double[][] fillAndReturn(Matrix m) {
+        double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+        if (m instanceof RandomMatrix){
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = m.get(i, j);
+
+        } else {
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = Math.random();
+
+            m.assign(arr);
+        }
+        return arr;
+    }
+
     /** */
     private void fillMatrix(Matrix m){
         for (int i = 0; i < m.rowSize(); i++)
@@ -252,9 +272,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** Ignore test for given vector type. */
     private boolean ignore(Class<? extends Matrix> clazz){
         boolean isIgnored = false;
-        List<Class<? extends Vector>> ignoredClasses = Arrays.asList();
+        List<Class<? extends Matrix>> ignoredClasses = Arrays.asList(RandomMatrix.class);
 
-        for (Class<? extends Vector> ignoredClass : ignoredClasses) {
+        for (Class<? extends Matrix> ignoredClass : ignoredClasses) {
             if (ignoredClass.isAssignableFrom(clazz)){
                 isIgnored = true;
                 break;

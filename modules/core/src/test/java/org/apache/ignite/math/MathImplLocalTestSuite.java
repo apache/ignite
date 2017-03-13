@@ -17,7 +17,6 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrixTest;
 import org.apache.ignite.math.impls.matrix.MatrixImplementationsTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixOffHeapStorageTest;
@@ -61,7 +60,6 @@ import org.junit.runners.Suite;
     MatrixArrayStorageTest.class,
     // Matrix tests.
     MatrixImplementationsTest.class,
-    DenseLocalOffHeapMatrixTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

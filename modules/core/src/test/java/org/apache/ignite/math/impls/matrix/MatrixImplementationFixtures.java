@@ -33,7 +33,9 @@ import org.apache.ignite.math.StorageConstants;
 public class MatrixImplementationFixtures {
     /** */
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
-        (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)DenseLocalOffHeapMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new
     );
 
     /** */
@@ -41,11 +43,13 @@ public class MatrixImplementationFixtures {
         for (Supplier<Iterable<Matrix>> fixtureSupplier : suppliers) {
             final Iterable<Matrix> fixture = fixtureSupplier.get();
 
-            for (Matrix matrixStorage : fixture) {
+            for (Matrix matrix : fixture) {
                 if (paramsConsumer != null)
-                    paramsConsumer.accept(matrixStorage.rowSize(), matrixStorage.columnSize());
+                    paramsConsumer.accept(matrix.rowSize(), matrix.columnSize());
 
-                consumer.accept(matrixStorage, fixture.toString());
+                consumer.accept(matrix, fixture.toString());
+
+                matrix.destroy();
             }
         }
     }
@@ -55,6 +59,22 @@ public class MatrixImplementationFixtures {
         /** */
         DenseLocalOnHeapMatrixFixture() {
             super(DenseLocalOnHeapMatrix::new, "DenseLocalOnHeapMatrix");
+        }
+    }
+
+    /** */
+    private static class DenseLocalOffHeapMatrixFixture extends MatrixSizeIterator{
+        /** */
+        DenseLocalOffHeapMatrixFixture() {
+            super(DenseLocalOffHeapMatrix::new, "DenseLocalOffHeapMatrix");
+        }
+    }
+
+    /** */
+    private static class RandomMatrixFixture extends MatrixSizeIterator{
+        /** */
+        RandomMatrixFixture() {
+            super(RandomMatrix::new, "RandomMatrix");
         }
     }
 

@@ -74,7 +74,7 @@ public class DenseLocalOffHeapMatrix extends AbstractMatrix {
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        DenseLocalOffHeapMatrix copy = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().rowSize());
+        DenseLocalOffHeapMatrix copy = new DenseLocalOffHeapMatrix(getStorage().rowSize(), getStorage().columnSize());
 
         copy.assign(this);
 
