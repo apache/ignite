@@ -29,16 +29,27 @@
 
 namespace ignite
 {
+    class IgniteBinding;
+
     namespace cache
     {
         namespace event
         {
             /**
              * Cache entry event filter.
+             *
+             * All templated types should be default-constructable,
+             * copy-constructable and assignable.
+             *
+             * @tparam F The filter itself which inherits from CacheEntryEventFilter.
+             * @tparam K Key type.
+             * @tparam V Value type.
              */
-            template<typename K, typename V>
+            template<typename F, typename K, typename V>
             class CacheEntryEventFilter
             {
+                friend class ignite::IgniteBinding;
+
             public:
                 /**
                  * Default constructor.
@@ -63,6 +74,20 @@ namespace ignite
                  * @return True if the event passes filter.
                  */
                 virtual bool Process(const CacheEntryEvent<K, V>& event) = 0;
+
+            private:
+                /**
+                 * Process input streaming data to produce output streaming data.
+                 *
+                 * Deserializes cache entry and filter using provided reader, invokes
+                 * filter, gets result and serializes it using provided writer.
+                 *
+                 * @param reader Reader.
+                 * @param writer Writer.
+                 */
+                static void InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
+                {
+                }
             };
         }
     }
