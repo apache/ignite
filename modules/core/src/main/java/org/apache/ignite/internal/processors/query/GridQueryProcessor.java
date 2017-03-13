@@ -193,11 +193,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         // Register candidates.
-        Collection<QueryTypeDescriptorImpl> typeDescs = new ArrayList<>();
-
         idx.registerCache(space, cctx, cctx.config());
 
         try {
+            Collection<QueryTypeDescriptorImpl> typeDescs = new ArrayList<>();
+
             for (QueryTypeCandidate cand : cands) {
                 QueryTypeIdKey typeId = cand.typeId();
                 QueryTypeIdKey altTypeId = cand.alternativeTypeId();
@@ -216,14 +216,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 typeDescs.add(desc);
             }
+
+            idxHnd.onCacheCreated(cctx.name(), typeDescs);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             unregisterCache0(space);
 
             throw e;
         }
-
-        idxHnd.onCacheCreated(cctx.name(), typeDescs);
 
         // Warn about possible implicit deserialization.
         if (!mustDeserializeClss.isEmpty()) {
