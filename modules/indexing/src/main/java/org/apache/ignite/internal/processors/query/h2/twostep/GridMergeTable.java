@@ -18,35 +18,55 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
+import org.h2.table.TableFilter;
 
 /**
  * Merge table for distributed queries.
  */
 public class GridMergeTable extends TableBase {
     /** */
-    private final GridKernalContext ctx;
-
-    /** */
-    private final GridMergeIndex idx;
+    private ArrayList<Index> idxs;
 
     /**
      * @param data Data.
-     * @param ctx Kernal context.
      */
-    public GridMergeTable(CreateTableData data, GridKernalContext ctx) {
+    public GridMergeTable(CreateTableData data) {
         super(data);
+    }
 
-        this.ctx = ctx;
-        idx = new GridMergeIndexUnsorted(ctx, this, "merge_scan");
+    /**
+     * @param idxs Indexes.
+     */
+    public void indexes(ArrayList<Index> idxs) {
+        assert !F.isEmpty(idxs);
+
+        this.idxs = idxs;
+    }
+
+    /**
+     * @return Merge index.
+     */
+    public GridMergeIndex getMergeIndex() {
+        return (GridMergeIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
+    }
+
+    /**
+     * @param idx Index.
+     * @return Scan index.
+     */
+    public static GridH2ScanIndex<GridMergeIndex> createScanIndex(GridMergeIndex idx) {
+        return new ScanIndex(idx);
     }
 
     /** {@inheritDoc} */
@@ -56,7 +76,7 @@ public class GridMergeTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public void close(Session ses) {
-        idx.close(ses);
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -96,8 +116,8 @@ public class GridMergeTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridMergeIndex getScanIndex(Session session) {
-        return idx;
+    @Override public Index getScanIndex(Session session) {
+        return idxs.get(0); // Must be always at 0.
     }
 
     /** {@inheritDoc} */
@@ -107,7 +127,7 @@ public class GridMergeTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public ArrayList<Index> getIndexes() {
-        return null;
+        return idxs;
     }
 
     /** {@inheritDoc} */
@@ -137,12 +157,12 @@ public class GridMergeTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return idx.getRowCount(ses);
+        return getScanIndex(ses).getRowCount(ses);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return idx.getRowCountApproximation();
+        return getScanIndex(null).getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
@@ -153,5 +173,25 @@ public class GridMergeTable extends TableBase {
     /** {@inheritDoc} */
     @Override public void checkRename() {
         throw DbException.getUnsupportedException("rename");
+    }
+
+    /**
+     * Scan index wrapper.
+     */
+    private static class ScanIndex extends GridH2ScanIndex<GridMergeIndex> {
+        /**
+         * @param delegate Delegate.
+         */
+        public ScanIndex(GridMergeIndex delegate) {
+            super(delegate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
+            SortOrder sortOrder) {
+            long rows = getRowCountApproximation();
+
+            return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true);
+        }
     }
 }

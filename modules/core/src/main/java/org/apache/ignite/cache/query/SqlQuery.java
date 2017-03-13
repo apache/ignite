@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -178,7 +178,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @return {@code this} For chaining.
      */
     public SqlQuery<K, V> setTimeout(int timeout, TimeUnit timeUnit) {
-        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
 
         return this;
     }
@@ -198,7 +198,7 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @return {@code this} For chaining.
      */
     public SqlQuery setType(Class<?> type) {
-        return setType(GridQueryProcessor.typeName(type));
+        return setType(QueryUtils.typeName(type));
     }
 
     /**
