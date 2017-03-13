@@ -99,124 +99,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReconnect() throws Exception {
-        Ignite srv1 = startGrid("server1");
-
-        crd = ((IgniteKernal)srv1).localNode();
-
-        Ignite srv2 = startGrid("server2");
-
-        block = true;
-
-        IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
-                Random rnd = new Random();
-
-                U.sleep((rnd.nextInt(15) + 30) * 1000);
-
-                block = false;
-
-                System.out.println("ALLOW connection to coordinator.");
-
-                return true;
-            }
-        });
-
-        Ignite client = startGrid("client");
-
-        assert fut.get();
-
-        IgniteCache<Integer, Integer> cache = client.getOrCreateCache("some");
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
-
-        for (int i = 0; i < 100; i++)
-            assert i == cache.get(i);
-
-        Collection<ClusterNode> clients = client.cluster().forClients().nodes();
-
-        assertEquals("Clients: " + clients, 1, clients.size());
-        assertEquals(1, srv1.cluster().forClients().nodes().size());
-        assertEquals(1, srv2.cluster().forClients().nodes().size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReconnectAfterStart() throws Exception {
-        Ignite srv1 = startGrid("server1");
-
-        crd = ((IgniteKernal)srv1).localNode();
-
-        Ignite srv2 = startGrid("server2");
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        Ignite client = startGrid("client");
-
-        blockAll = true;
-
-        GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                U.sleep(5_000);
-
-                block = true;
-                blockAll = false;
-
-                System.out.println(">>> Allow with blocked coordinator.");
-
-                latch.countDown();
-
-                return null;
-            }
-        });
-
-        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                latch.await();
-
-                Random rnd = new Random();
-
-                U.sleep((rnd.nextInt(15) + 30) * 1000);
-
-                block = false;
-
-                System.out.println(">>> Allow coordinator.");
-
-                return null;
-            }
-        });
-
-        fut.get();
-
-        while (true) {
-            try {
-                IgniteCache<Integer, Integer> cache = client.getOrCreateCache("some");
-
-                for (int i = 0; i < 100; i++)
-                    cache.put(i, i);
-
-                for (int i = 0; i < 100; i++)
-                    assert i == cache.get(i);
-
-                break;
-            }
-            catch (IgniteClientDisconnectedException e) {
-               U.sleep(500);
-            }
-        }
-
-        Collection<ClusterNode> clients = client.cluster().forClients().nodes();
-
-        assertEquals("Clients: " + clients, 1, clients.size());
-        assertEquals(1, srv1.cluster().forClients().nodes().size());
-        assertEquals(1, srv2.cluster().forClients().nodes().size());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testManyClientsReconnectAfterStart() throws Exception {
         Ignite srv1 = startGrid("server1");
 
@@ -237,7 +119,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                U.sleep(5_000);
+                U.sleep(2_000);
 
                 block = true;
                 blockAll = false;
@@ -265,8 +147,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         });
 
         fut.get();
-
-        U.sleep(5_000);
 
         for (Ignite client : clientNodes) {
             while (true) {
