@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -286,8 +287,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
-            if (err != null)
+            boolean nodeStop = false;
+
+            if (err != null) {
                 tx.setRollbackOnly();
+
+                nodeStop = err instanceof NodeStoppingException;
+            }
 
             if (commit) {
                 if (tx.commitError() != null)
@@ -297,7 +303,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (initialized() || err != null) {
-                if (tx.needCheckBackup()) {
+                if (tx.needCheckBackup() && !nodeStop) {
                     assert tx.onePhaseCommit();
 
                     if (err != null)
@@ -317,7 +323,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (tx.onePhaseCommit()) {
                     boolean commit = this.commit && err == null;
 
-                    finishOnePhase(commit);
+                    if (!nodeStop)
+                        finishOnePhase(commit);
 
                     try {
                         tx.tmFinish(commit);
@@ -401,7 +408,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
                         if (mapping != null) {
-                            assert !hasFutures();
+                            assert !hasFutures() : futures();
 
                             finish(1, mapping, commit);
                         }
@@ -652,7 +659,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param commit Commit flag.
      */
     private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
-        assert !hasFutures();
+        assert !hasFutures() : futures();
 
         int miniId = 0;
 
