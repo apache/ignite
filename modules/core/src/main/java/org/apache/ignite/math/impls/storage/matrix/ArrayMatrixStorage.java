@@ -78,14 +78,17 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return data[x][y];
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return true;
+        return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
     }
@@ -100,22 +103,27 @@ public class ArrayMatrixStorage implements MatrixStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         data[x][y] = v;
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return cols;
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public double[][] data() {
         return data;
     }

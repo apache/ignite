@@ -36,7 +36,7 @@ public class MatrixArrayStorageTest extends MatrixBaseStorageTest<ArrayMatrixSto
     /** */
     @Test
     public void isSequentialAccess() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.isSequentialAccess());
+        assertFalse(UNEXPECTED_VALUE, storage.isSequentialAccess());
     }
 
     /** */
