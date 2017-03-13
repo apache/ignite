@@ -39,13 +39,19 @@ namespace ignite
             typedef void (Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
 
         public:
+            enum CallbackType
+            {
+                CACHE_ENTRY_PROCESSOR_APPLY = 1,
+
+                CACHE_ENTRY_FILTER_CREATE = 2,
+
+                CACHE_ENTRY_FILTER_APPLY = 3,
+            };
+
             /**
              * Default constructor.
              */
-            IgniteBindingImpl() : callbacks()
-            {
-                // No-op.
-            }
+            IgniteBindingImpl();
 
             /**
              * Invoke callback using provided ID.
@@ -53,31 +59,14 @@ namespace ignite
              * Deserializes data and callback itself, invokes callback and
              * serializes processing result using providede reader and writer.
              *
-             * @param id Processor ID.
+             * @param type Callback Type.
+             * @param id Callback ID.
              * @param reader Reader.
              * @param writer Writer.
              * @return True if callback is registered and false otherwise.
              */
-            bool InvokeCallbackById(int64_t id, binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer)
-            {
-                common::concurrent::CsLockGuard guard(lock);
-
-                std::map<int64_t, Callback*>::iterator it = callbacks.find(id);
-
-                if (it != callbacks.end())
-                {
-                    Callback* callback = it->second;
-
-                    // We have found callback and does not need lock here anymore.
-                    guard.Reset();
-
-                    callback(reader, writer);
-
-                    return true;
-                }
-
-                return false;
-            }
+            bool InvokeCallback(int32_t type, int32_t id,
+                binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer);
 
             /**
              * Register cache entry processor and associate it with provided ID.
@@ -85,29 +74,39 @@ namespace ignite
              * @throw IgniteError another processor is already associated with
              *     the given ID.
              *
-             * @param id Identifier for processor to be associated with.
-             * @param proc Callback.
+             * @param type Callback type.
+             * @param id Callback identifier.
+             * @param callback Callback.
+             * @param err Error.
              */
-            void RegisterCallback(int64_t id, Callback* proc, IgniteError& err)
-            {
-                common::concurrent::CsLockGuard guard(lock);
-
-                bool inserted = callbacks.insert(std::make_pair(id, proc)).second;
-
-                guard.Reset();
-
-                if (!inserted)
-                {
-                    std::stringstream builder;
-
-                    builder << "Trying to register multiple PRC callbacks with the same ID. [id=" << id << ']';
-
-                    err = IgniteError(IgniteError::IGNITE_ERR_ENTRY_PROCESSOR, builder.str().c_str());
-                }
-            }
+            void RegisterCallback(int32_t type, int32_t id, Callback* callback, IgniteError& err);
+            
+            /**
+             * Register cache entry processor and associate it with provided ID.
+             *
+             * @throw IgniteError another processor is already associated with
+             *     the given ID.
+             *
+             * @param type Callback type.
+             * @param id Callback identifier.
+             * @param callback Callback.
+             */
+            void RegisterCallback(int32_t type, int32_t id, Callback* callback);
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(IgniteBindingImpl);
+
+            /**
+             * Make key out of callback's type and ID.
+             *
+             * @param type Callback Type.
+             * @param id Callback ID.
+             * @return Key for callback.
+             */
+            int64_t makeKey(int32_t type, int32_t id)
+            {
+                return (static_cast<int64_t>(type) << 32) | id;
+            }
 
             /** Registered callbacks. */
             std::map<int64_t, Callback*> callbacks;

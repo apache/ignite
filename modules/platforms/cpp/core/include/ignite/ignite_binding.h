@@ -83,7 +83,10 @@ namespace ignite
             impl::IgniteBindingImpl *im = impl.Get();
 
             if (im)
-                im->RegisterCallback(bt.GetTypeId(), &P::CacheEntryProcessor::InternalProcess, err);
+            {
+                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_PROCESSOR_APPLY,
+                    bt.GetTypeId(), &P::CacheEntryProcessor::InternalProcess, err);
+            }
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
@@ -100,20 +103,24 @@ namespace ignite
         template<typename F>
         void RegisterCacheEntryEventFilter()
         {
-            IgniteError err;
-
             binary::BinaryType<F> bt;
             impl::IgniteBindingImpl *im = impl.Get();
 
+            int32_t typeId = bt.GetTypeId();
+
             if (im)
-                im->RegisterCallback(bt.GetTypeId(), &F::CacheEntryEventFilter::InternalProcess, err);
+            {
+                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE,
+                    typeId, &F::CacheEntryEventFilter::InternalFilterCreate);
+
+                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_APPLY,
+                    typeId, &F::CacheEntryEventFilter::InternalProcess);
+            }
             else
             {
                 throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                     "Instance is not usable (did you check for error?).");
             }
-
-            IgniteError::ThrowIfNeeded(err);
         }
 
         /**

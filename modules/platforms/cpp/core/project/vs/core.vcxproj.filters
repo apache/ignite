@@ -52,6 +52,9 @@
     <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp">
       <Filter>Code\impl\cluster</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">

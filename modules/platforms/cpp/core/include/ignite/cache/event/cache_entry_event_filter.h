@@ -88,6 +88,10 @@ namespace ignite
                 static void InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
                 {
                 }
+
+                static void InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
+                {
+                }
             };
         }
     }

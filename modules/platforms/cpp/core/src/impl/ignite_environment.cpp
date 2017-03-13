@@ -42,6 +42,8 @@ namespace ignite
         {
             CACHE_INVOKE = 8,
             CONTINUOUS_QUERY_LISTENER_APPLY = 18,
+            CONTINUOUS_QUERY_FILTER_CREATE = 19,
+            CONTINUOUS_QUERY_FILTER_APPLY = 20,
             CONTINUOUS_QUERY_FILTER_RELEASE = 21,
             REALLOC = 36,
             ON_START = 49,
@@ -74,6 +76,21 @@ namespace ignite
 
                     env->Get()->OnContinuousQueryListenerApply(mem);
 
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_CREATE:
+                {
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->OnContinuousQueryListenerApply(mem);
+
+                    break;
+                }
+
+                case CONTINUOUS_QUERY_FILTER_APPLY:
+                {
+                    // No-op.
                     break;
                 }
 
@@ -319,6 +336,16 @@ namespace ignite
             }
         }
 
+        void IgniteEnvironment::OnContinuousQueryFilterCreate(SharedPointer<InteropMemory>& mem)
+        {
+            InteropInputStream stream(mem.Get());
+            BinaryReaderImpl reader(&stream);
+
+            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), stream.Position());
+
+            int32_t filterId = binFilter.GetTypeId();
+        }
+
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
         {
             if (!binding.Get())
@@ -338,7 +365,7 @@ namespace ignite
             BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
             BinaryObjectImpl binProc = binProcHolder.GetField(0);
 
-            int64_t procId = binProc.GetTypeId();
+            int32_t procId = binProc.GetTypeId();
 
             bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
 

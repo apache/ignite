@@ -110,6 +110,13 @@ namespace ignite
             void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
+             * Continuous query filter create callback.
+             *
+             * @param mem Memory with data.
+             */
+            void OnContinuousQueryFilterCreate(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
              * Cache Invoke callback.
              *
              * @param mem Input-output memory.
