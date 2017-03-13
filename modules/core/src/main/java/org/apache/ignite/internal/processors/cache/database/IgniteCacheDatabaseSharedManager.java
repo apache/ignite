@@ -56,10 +56,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private static final long MIN_PAGE_MEMORY_SIZE = 1024 * 1024;
 
     /** */
-    protected Map<String, PageMemory> pageMemMap;
+    protected Map<String, MemoryPolicy> memPlcMap;
 
     /** */
-    protected PageMemory dfltPageMem;
+    protected MemoryPolicy dfltMemPlc;
 
     /** */
     private Map<String, FreeListImpl> freeListMap;
@@ -80,7 +80,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     public void init() throws IgniteCheckedException {
-        if (pageMemMap == null) {
+        if (memPlcMap == null) {
             MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
             if (dbCfg == null) {
@@ -104,12 +104,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database config.
      */
     protected void initPageMemoryDataStructures(MemoryConfiguration dbCfg) throws IgniteCheckedException {
-        freeListMap = U.newHashMap(pageMemMap.size());
+        freeListMap = U.newHashMap(memPlcMap.size());
 
         for (MemoryPolicyConfiguration memPlc : dbCfg.getMemoryPolicies()) {
             String plcName = memPlc.getName();
 
-            FreeListImpl freeList = new FreeListImpl(0, cctx.gridName(), pageMemMap.get(plcName), null, cctx.wal(), 0L, true);
+            FreeListImpl freeList = new FreeListImpl(0, cctx.gridName(), pageMemory(plcName), null, cctx.wal(), 0L, true);
 
             freeListMap.put(plcName, freeList);
 
@@ -120,7 +120,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         freeListMap.put(SYSTEM_MEMORY_POLICY_NAME,
                 new FreeListImpl(0,
                         cctx.gridName(),
-                        pageMemMap.get(SYSTEM_MEMORY_POLICY_NAME),
+                        pageMemory(SYSTEM_MEMORY_POLICY_NAME),
                         null,
                         cctx.wal(),
                         0L,
@@ -136,18 +136,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      *
-     * @return
-     */
-    public Collection<PageMemory> pageMemories() {
-        return pageMemMap != null ? pageMemMap.values() : null;
-    }
-
-    /**
-     *
      */
     private void startPageMemoryPools() {
-        for (PageMemory pageMem : pageMemMap.values())
-            pageMem.start();
+        for (MemoryPolicy memPlc : memPlcMap.values())
+            memPlc.pageMemory().start();
     }
 
     /**
@@ -156,20 +148,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initPageMemoryPools(MemoryConfiguration dbCfg) {
         MemoryPolicyConfiguration[] memPlcs = dbCfg.getMemoryPolicies();
 
-        pageMemMap = U.newHashMap(memPlcs.length + 1);
+        memPlcMap = U.newHashMap(memPlcs.length + 1);
 
         for (MemoryPolicyConfiguration memPlc : memPlcs) {
             PageMemory pageMem = initMemory(dbCfg, memPlc);
 
-            pageMemMap.put(memPlc.getName(), pageMem);
+            memPlcMap.put(memPlc.getName(), new MemoryPolicy(pageMem, memPlc));
 
             if (memPlc.isDefault())
-                dfltPageMem = pageMem;
+                dfltMemPlc = new MemoryPolicy(pageMem, memPlc);
         }
 
-        pageMemMap.put(
-                SYSTEM_MEMORY_POLICY_NAME,
-                initMemory(dbCfg, createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize())));
+        MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
+
+        memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, new MemoryPolicy(initMemory(dbCfg, sysPlcCfg), sysPlcCfg));
     }
 
     /**
@@ -272,10 +264,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return {@link PageMemory} instance associated with a given {@link MemoryPolicyConfiguration}.
      */
     public PageMemory pageMemory(String memPlcName) {
-        if (memPlcName == null)
-            return dfltPageMem;
+        MemoryPolicy memPlc = memoryPolicy(memPlcName);
 
-        return pageMemMap != null ? pageMemMap.get(memPlcName) : null;
+        return memPlc == null ? null : memPlc.pageMemory();
+    }
+
+    /**
+     * @param memPlcName Memory policy name.
+     * @return {@link MemoryPolicy} instance associated with a given {@link MemoryPolicyConfiguration}.
+     */
+    public MemoryPolicy memoryPolicy(String memPlcName) {
+        if (memPlcName == null)
+            return dfltMemPlc;
+
+        return memPlcMap != null ? memPlcMap.get(memPlcName) : null;
     }
 
     /**
@@ -302,9 +304,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        if (pageMemMap != null) {
-            for (PageMemory pageMem : pageMemMap.values())
-                pageMem.stop();
+        if (memPlcMap != null) {
+            for (MemoryPolicy memPlc : memPlcMap.values())
+                memPlc.pageMemory().stop();
         }
     }
 

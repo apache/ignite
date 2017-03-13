@@ -24,13 +24,17 @@ import org.apache.ignite.internal.pagemem.PageMemory;
  */
 public class MemoryPolicy {
     /** */
-    private PageMemory pageMem;
+    private final PageMemory pageMem;
+
+    /** */
+    private final MemoryPolicyConfiguration cfg;
 
     /**
      * @param pageMem Page mem.
      */
-    public MemoryPolicy(PageMemory pageMem) {
+    public MemoryPolicy(PageMemory pageMem, MemoryPolicyConfiguration cfg) {
         this.pageMem = pageMem;
+        this.cfg = cfg;
     }
 
     /**
@@ -38,5 +42,12 @@ public class MemoryPolicy {
      */
     public PageMemory pageMemory() {
         return pageMem;
+    }
+
+    /**
+     * @return Config.
+     */
+    public MemoryPolicyConfiguration config() {
+        return cfg;
     }
 }
