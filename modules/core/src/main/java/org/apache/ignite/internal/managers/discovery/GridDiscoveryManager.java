@@ -1260,7 +1260,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> +----------------+" + U.nl() +
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
-                ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
+                ">>> Ignite instance name: " +
+                (ctx.igniteInstanceName() == null ? "default" : ctx.igniteInstanceName()) + U.nl() +
                 ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
@@ -2036,7 +2037,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 @Override public void run() {
                     ctx.markSegmented();
 
-                    G.stop(ctx.gridName(), true);
+                    G.stop(ctx.igniteInstanceName(), true);
                 }
             }
         ).start();
@@ -2064,7 +2065,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private SegmentCheckWorker() {
-            super(ctx.gridName(), "disco-net-seg-chk-worker", GridDiscoveryManager.this.log);
+            super(ctx.igniteInstanceName(), "disco-net-seg-chk-worker", GridDiscoveryManager.this.log);
 
             assert hasRslvrs;
             assert segChkFreq > 0;
@@ -2149,7 +2150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private DiscoveryWorker() {
-            super(ctx.gridName(), "disco-event-worker", GridDiscoveryManager.this.log);
+            super(ctx.igniteInstanceName(), "disco-event-worker", GridDiscoveryManager.this.log);
         }
 
         /**

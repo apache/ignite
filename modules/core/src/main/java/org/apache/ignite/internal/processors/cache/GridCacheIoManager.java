@@ -1321,7 +1321,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache IO manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Cache IO manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
         X.println(">>>   clsHandlersSize: " + clsHandlers.size());
         X.println(">>>   orderedHandlersSize: " + orderedHandlers.size());
     }

@@ -81,16 +81,16 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setDataCacheConfiguration(cacheConfiguration(gridName, "data"));
-        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(gridName, "meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data"));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta"));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -121,10 +121,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName, String cacheName) {
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName, String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

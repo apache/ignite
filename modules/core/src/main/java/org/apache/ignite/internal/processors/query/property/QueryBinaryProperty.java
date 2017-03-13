@@ -69,19 +69,19 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param log Logger.
      * @param propName Property name.
      * @param parent Parent property.
      * @param type Result type.
      * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
      * @param alias Field alias.
      */
-    public QueryBinaryProperty(GridKernalContext ctx, IgniteLogger log, String propName, QueryBinaryProperty parent,
+    public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
         Class<?> type, @Nullable Boolean key, String alias) {
         super();
 
         this.ctx = ctx;
-        this.log = log;
+
+        log = ctx.log(QueryBinaryProperty.class);
 
         this.propName = propName;
         this.alias = F.isEmpty(alias) ? propName : alias;

@@ -49,12 +49,12 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     private static final int NODES = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (getTestGridName(SRV_CNT).equals(gridName))
+        if (getTestIgniteInstanceName(SRV_CNT).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         cfg.setMarshaller(null);

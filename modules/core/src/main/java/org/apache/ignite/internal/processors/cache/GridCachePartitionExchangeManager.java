@@ -402,7 +402,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        new IgniteThread(cctx.gridName(), "exchange-worker", exchWorker).start();
+        new IgniteThread(cctx.igniteInstanceName(), "exchange-worker", exchWorker).start();
 
         if (reconnect) {
             fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
@@ -479,8 +479,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
-                "Client node disconnected: " + cctx.gridName()) :
-            new IgniteInterruptedCheckedException("Node is stopping: " + cctx.gridName());
+                "Client node disconnected: " + cctx.igniteInstanceName()) :
+            new IgniteInterruptedCheckedException("Node is stopping: " + cctx.igniteInstanceName());
 
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
@@ -1602,7 +1602,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          *
          */
         private ExchangeWorker() {
-            super(cctx.gridName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log);
+            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log);
         }
 
         /**
