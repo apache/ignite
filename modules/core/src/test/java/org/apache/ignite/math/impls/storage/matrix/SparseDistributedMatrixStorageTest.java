@@ -18,7 +18,6 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.impls.MathTestConstants;
@@ -34,6 +33,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
+    public static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
     /** Grid instance. */
     private Ignite ignite;
 
@@ -94,6 +94,27 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
                 assert Double.compare(v, storage.get(i,j)) == 0;
             }
         }
+    }
+
+    /** */
+    public void testAttibutes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.rowSize(), rows);
+        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.columnSize(), cols);
+
+        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, storage.isArrayBased());
+        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, storage.isDense());
+        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, storage.isDistributed());
+
+        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.isRandomAccess(), !storage.isSequentialAccess());
+        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, storage.isRandomAccess());
+
     }
 
 }
