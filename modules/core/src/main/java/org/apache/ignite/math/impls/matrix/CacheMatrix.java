@@ -94,16 +94,12 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
 
     /** {@inheritDoc} */
     @Override public Matrix copy() {
-        CacheMatrixStorage<K, V> sto = storage();
-
-        return new CacheMatrix<K, V>(rowSize(), columnSize(), sto.cache(), sto.keyMapper(), sto.valueMapper());
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        CacheMatrixStorage<K, V> sto = storage();
-
-        return new CacheMatrix<K, V>(rows, cols, sto.cache(), sto.keyMapper(), sto.valueMapper());
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

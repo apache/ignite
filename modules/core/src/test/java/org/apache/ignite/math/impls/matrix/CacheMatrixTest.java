@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.KeyMapper;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.UnsupportedOperationException;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -100,29 +101,50 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         fillMatrix(cacheMatrix);
 
-        Matrix cp = cacheMatrix.copy();
+        try {
+            cacheMatrix.copy();
 
-        assertTrue("Copy of cache matrix is not equal to original.", cp.equals(cacheMatrix));
+            fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e){
+            // No-op.
+        }
     }
 
-//  TODO: wait for right like/copy
-//    /** */
-//    public void testLike() throws Exception{
-//        final int rows = MathTestConstants.STORAGE_SIZE;
-//        final int cols = MathTestConstants.STORAGE_SIZE;
-//
-//        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
-//        IgniteCache<Integer, Double> cache = getCache();
-//        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
-//
-//        Matrix like = cacheMatrix.like(rows, cols);
-//
-//        assertTrue("Like matrix of empty cache matrix is not equal to original.", like.equals(cacheMatrix));
-//
-//        fillMatrix(cacheMatrix);
-//
-//        assertFalse("Like matrix should be not equal to original.", like.equals(cacheMatrix));
-//    }
+    /** */
+    public void testLike() throws Exception{
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        try {
+            cacheMatrix.like(rows, cols);
+
+            fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e){
+            // No-op.
+        }
+    }
+
+    /** */
+    public void testLikeVector() throws Exception{
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        IgniteCache<Integer, Double> cache = getCache();
+        CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        try {
+            cacheMatrix.likeVector(cols);
+
+            fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e){
+            // No-op.
+        }
+    }
 
     /** */
     public void testPlus(){
