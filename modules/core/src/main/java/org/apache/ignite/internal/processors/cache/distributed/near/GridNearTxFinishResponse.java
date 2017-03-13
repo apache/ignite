@@ -67,7 +67,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
      */
     public GridNearTxFinishResponse(GridCacheVersion xid, long nearThreadId, IgniteUuid futId, int miniId,
         @Nullable Throwable err) {
-        super(xid, futId);
+        super(miniId, xid, futId);
 
         assert miniId != 0;
 

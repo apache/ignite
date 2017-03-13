@@ -252,7 +252,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         if (fut.getClass() == FinishMiniFuture.class) {
                             FinishMiniFuture f = (FinishMiniFuture)fut;
 
-                            if (f.futureId().equals(res.miniId())) {
+                            if (f.futureId() == res.miniId()) {
                                 foundFut = (MinFuture)fut;
 
                                 break;

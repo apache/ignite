@@ -39,6 +39,9 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int NEAR_RES_FLAG_MASK = 0x01;
+
     /** Mini future ID. */
     private int miniId;
 
@@ -68,11 +71,25 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
      * @param miniId Mini future ID.
      */
     public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, int miniId) {
-        super(xid, futId);
+        super(miniId, xid, futId);
 
         assert miniId != 0;
 
         this.miniId = miniId;
+    }
+
+    /**
+     * @return {@code True} if this is reply for near node.
+     */
+    public boolean nearNodeResponse() {
+        return isFlag(NEAR_RES_FLAG_MASK);
+    }
+
+    /**
+     * @param val {@code True} if this is reply for near node.
+     */
+    public void nearNodeResponse(boolean val) {
+        setFlag(val, NEAR_RES_FLAG_MASK);
     }
 
     /**
