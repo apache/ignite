@@ -184,7 +184,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     incomplete = readFragment(buf, keyOnly, incomplete);
 
-                    if (keyOnly && key != null)
+                    if (keyOnly && marshalledKey != null)
                         return;
                 }
                 finally {
@@ -489,7 +489,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return ver != null && val != null && key != null;
+        return ver != null && marshalledKey != null && marshalledVal != null;
     }
 
     /** {@inheritDoc} */

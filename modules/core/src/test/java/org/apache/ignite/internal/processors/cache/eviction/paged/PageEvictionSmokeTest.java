@@ -39,7 +39,7 @@ public class PageEvictionSmokeTest extends GridCommonAbstractTest {
 
         MemoryConfiguration dbCfg = new MemoryConfiguration();
 
-        dbCfg.setPageCacheSize(8 * 1024 * 1024);
+        dbCfg.setPageCacheSize(64 * 1024 * 1024);
 
         cfg.setMemoryConfiguration(dbCfg);
 
@@ -62,12 +62,11 @@ public class PageEvictionSmokeTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache1 = ignite.cache("name1");
 
         for (int i = 0; i < SIZE; i++) {
-//            if (i % 10 == 0) {
-//                cache1.put(i, new Bigger(i));
-//
-//                continue;
-//            }
-//          TODO IGNITE-4534: Bigger objects cause BufferUnderflowException sometimes.
+            if (i % 10 == 0) {
+                cache1.put(i, new Bigger(i));
+
+                continue;
+            }
 
             cache1.put(i, new Small(i));
         }
