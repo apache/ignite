@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -147,7 +147,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} For chaining.
      */
     public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
-        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
 
         return this;
     }

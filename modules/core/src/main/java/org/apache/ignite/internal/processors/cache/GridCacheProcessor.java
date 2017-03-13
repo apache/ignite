@@ -63,6 +63,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -99,9 +100,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactio
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -493,7 +492,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cc.getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES) {
-            if (GridQueryProcessor.isEnabled(cc))
+            if (QueryUtils.isEnabled(cc))
                 throw new IgniteCheckedException("Cannot have query indexing enabled while values are stored off-heap. " +
                     "You must either disable query indexing or disable off-heap values only flag for cache: " +
                     U.maskName(cc.getName()));
@@ -1570,7 +1569,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             String cacheName = ccfg.getName();
 
-            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && GridQueryProcessor.isEnabled(ccfg))
+            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && QueryUtils.isEnabled(ccfg))
                 return publicJCache(cacheName);
         }
 
@@ -1580,7 +1579,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 CacheConfiguration ccfg = desc.cacheConfiguration();
 
-                if (ccfg.getCacheMode() != LOCAL && GridQueryProcessor.isEnabled(ccfg)) {
+                if (ccfg.getCacheMode() != LOCAL && QueryUtils.isEnabled(ccfg)) {
                     dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
 
                     return publicJCache(ccfg.getName());
@@ -3534,7 +3533,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
             CacheConfiguration ccfg = e.getValue().cacheConfiguration();
 
-            if (!caches.containsKey(maskNull(ccfg.getName())) && GridQueryProcessor.isEnabled(ccfg))
+            if (!caches.containsKey(maskNull(ccfg.getName())) && QueryUtils.isEnabled(ccfg))
                 dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
         }
     }
