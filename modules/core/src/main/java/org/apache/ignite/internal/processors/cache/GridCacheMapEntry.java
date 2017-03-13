@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -86,6 +87,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -1687,7 +1689,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return updateRes;
             }
 
-            assert updateRes.outcome() == UpdateOutcome.SUCCESS || updateRes.outcome() == UpdateOutcome.REMOVE_NO_VAL;
+            assert updateRes.outcome() == SUCCESS || updateRes.outcome() == REMOVE_NO_VAL;
 
             CacheObject evtOld = null;
 
@@ -4089,7 +4091,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!pass) {
                     initResultOnCancelUpdate(storeLoadedVal, !cctx.putIfAbsentFilter(filter));
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.FILTER_FAILED,
+                    updateRes = new GridCacheUpdateAtomicResult(FILTER_FAILED,
                         oldVal,
                         null,
                         invokeRes,
@@ -4107,7 +4109,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!invokeEntry.modified()) {
                     initResultOnCancelUpdate(storeLoadedVal, true);
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INVOKE_NO_OP,
+                    updateRes = new GridCacheUpdateAtomicResult(INVOKE_NO_OP,
                         oldVal,
                         null,
                         invokeRes,
@@ -4291,7 +4293,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (interceptorVal == null) {
                     treeOp = IgniteTree.OperationType.NOOP;
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INTERCEPTOR_CANCEL,
+                    updateRes = new GridCacheUpdateAtomicResult(INTERCEPTOR_CANCEL,
                         oldVal,
                         null,
                         invokeRes,
@@ -4352,7 +4354,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             entry.update(updated, newExpireTime, newTtl, newVer, true);
 
-            updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.SUCCESS,
+            updateRes = new GridCacheUpdateAtomicResult(SUCCESS,
                 oldVal,
                 updated,
                 invokeRes,
@@ -4394,7 +4396,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (cctx.cancelRemove(interceptRes)) {
                     treeOp = IgniteTree.OperationType.NOOP;
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INTERCEPTOR_CANCEL,
+                    updateRes = new GridCacheUpdateAtomicResult(INTERCEPTOR_CANCEL,
                         cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2())),
                         null,
                         invokeRes,
@@ -4442,7 +4444,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             treeOp = (oldVal == null || readFromStore) ? IgniteTree.OperationType.NOOP :
                 IgniteTree.OperationType.REMOVE;
 
-            UpdateOutcome outcome = oldVal != null ? UpdateOutcome.SUCCESS : UpdateOutcome.REMOVE_NO_VAL;
+            GridCacheUpdateAtomicResult.UpdateOutcome outcome = oldVal != null ?
+                SUCCESS : REMOVE_NO_VAL;
 
             if (interceptRes != null)
                 oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -4530,7 +4533,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     treeOp = IgniteTree.OperationType.NOOP;
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.CONFLICT_USE_OLD,
+                    updateRes = new GridCacheUpdateAtomicResult(CONFLICT_USE_OLD,
                         entry.val,
                         null,
                         invokeRes,
@@ -4598,7 +4601,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     treeOp = IgniteTree.OperationType.NOOP;
 
-                    updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.VERSION_CHECK_FAILED,
+                    updateRes = new GridCacheUpdateAtomicResult(VERSION_CHECK_FAILED,
                         entry.val,
                         null,
                         invokeRes,

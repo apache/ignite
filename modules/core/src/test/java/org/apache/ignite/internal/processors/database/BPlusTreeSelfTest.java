@@ -65,6 +65,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.NOOP;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
 import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
 
 /**
  */

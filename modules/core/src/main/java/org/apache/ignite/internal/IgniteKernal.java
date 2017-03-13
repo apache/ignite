@@ -1161,7 +1161,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             log.info(msg);
 
-                            ctx.cache().context().database().dumpStatistics(log);
+                            ctx.cache().context().persistentStore().dumpStatistics(log);
                         }
                         catch (IgniteClientDisconnectedException ignore) {
                             // No-op.

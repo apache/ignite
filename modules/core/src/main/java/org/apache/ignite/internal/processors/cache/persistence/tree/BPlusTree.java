@@ -742,8 +742,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
      */
-    protected void setIos(IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos) {
+    protected void setIos(
+        IOVersions<? extends BPlusInnerIO<L>> innerIos,
+        IOVersions<? extends BPlusLeafIO<L>> leafIos
+    ) {
         assert innerIos != null;
         assert leafIos != null;
 
