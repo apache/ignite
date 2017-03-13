@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
-import org.apache.ignite.*;
+import java.io.Serializable;
+import java.util.function.Function;
 
 /**
- * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
+ * Serializable function.
+ *
+ * @see java.util.function.Function
  */
-public class IndexException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
 
-    /**
-     *
-     * @param idx Index value that caused this exception.
-     */
-    public IndexException(int idx) {
-        super("Invalid (out of bound) index: " + idx);
-    }
 }

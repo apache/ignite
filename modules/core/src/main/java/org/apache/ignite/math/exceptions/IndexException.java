@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
 
-import java.io.Serializable;
-import java.util.function.Consumer;
+import org.apache.ignite.*;
 
 /**
- * Serializable consumer.
- *
- * @see java.util.function.Consumer
+ * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
  */
-public interface IgniteConsumer<T> extends Consumer<T>, Serializable {
+public class IndexException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     * @param idx Index value that caused this exception.
+     */
+    public IndexException(int idx) {
+        super("Invalid (out of bound) index: " + idx);
+    }
 }

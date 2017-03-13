@@ -17,7 +17,7 @@
 
 package org.apache.ignite.math;
 
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import java.io.*;
 import java.util.*;
 
@@ -31,7 +31,7 @@ public interface MathProvider extends Externalizable {
      * @param flavor Matrix flavor.
      * @param args Initialization parameters for the new matrix.
      * @return Newly created matrix or an empty option in case given flavor is not supported.
-     * @throws UnsupportedOperationException Thrown when given {@code flavor} or cluster group are not compatible.
+     * @throws org.apache.ignite.math.exceptions.UnsupportedOperationException Thrown when given {@code flavor} or cluster group are not compatible.
      */
     Optional<Matrix> matrix(String flavor, Map<String, Object> args);
 

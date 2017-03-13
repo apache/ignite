@@ -18,9 +18,9 @@
 package org.apache.ignite.math.impls.storage.vector;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.*;
 import java.io.*;
-import java.util.function.*;
 
 /**
  * Read-only or read-write function-based vector storage.

@@ -15,15 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
 
-import java.io.Serializable;
-import java.util.function.BiFunction;
+import org.apache.ignite.*;
 
 /**
- * Serializable bi function.
- *
- * @see java.util.function.BiFunction
+ * TODO: add description.
  */
-public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
+public class ColumnIndexException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     * @param idx Index value that caused this exception.
+     */
+    public ColumnIndexException(int idx) {
+        super("Invalid (out of bound) column index: " + idx);
+    }
 }

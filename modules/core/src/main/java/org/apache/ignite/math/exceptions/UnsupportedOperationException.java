@@ -15,22 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
 
 import org.apache.ignite.*;
 
 /**
- * TODO: add description.
+ * Indicate that a specific operation is not supported by the underlying implementation.
+ * In some cases, an operation may be unsupported only in certain cases where, for example,
+ * it could not be deterministically completed in polynomial time.
  */
-public class RowIndexException extends IgniteException {
+public class UnsupportedOperationException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      *
-     * @param idx Index value that caused this exception.
+     * @param errMsg Error message.
      */
-    public RowIndexException(int idx) {
-        super("Invalid (out of bound) row index: " + idx);
+    public UnsupportedOperationException(String errMsg) {
+        super(errMsg);
+    }
+
+    /**
+     *
+     */
+    public UnsupportedOperationException() {
+        this("Unsupported operation.");
     }
 }

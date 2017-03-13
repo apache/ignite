@@ -20,6 +20,8 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.*;
 import org.apache.ignite.math.impls.vector.*;
 import java.io.*;

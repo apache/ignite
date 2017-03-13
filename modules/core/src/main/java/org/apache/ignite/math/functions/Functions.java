@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
 /**
  * Compatibility with Apache Mahout.

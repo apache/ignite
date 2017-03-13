@@ -18,7 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.vector.DelegateVectorStorage;
 
 import java.io.*;

@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
-
-import java.io.Serializable;
+package org.apache.ignite.math.functions;
 
 /**
- * Setter function for matrices.
+ * Setter function for the vector.
  */
-public interface IntIntDoubleToVoidFunction extends Serializable {
-    public void apply(int x, int y, double v);
+public interface IntDoubleToVoidFunction extends IgniteBiConsumer<Integer, Double> {
+
 }

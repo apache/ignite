@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.storage.vector;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.exceptions.*;
 import java.io.*;
 
 /**

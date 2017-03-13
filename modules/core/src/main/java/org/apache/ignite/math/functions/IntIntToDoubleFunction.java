@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
-
-import java.io.Serializable;
-import java.util.function.DoubleFunction;
+package org.apache.ignite.math.functions;
 
 /**
- * Serializable double function.
- *
- * @see java.util.function.DoubleFunction
+ * Getters functions for matrices.
  */
-public interface IgniteDoubleFunction<R> extends DoubleFunction<R>, Serializable {
+public interface IntIntToDoubleFunction extends IgniteBiFunction<Integer, Integer, Double> {
 }

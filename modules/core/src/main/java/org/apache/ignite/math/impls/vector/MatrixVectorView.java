@@ -18,7 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.impls.matrix.AbstractMatrix;
+import org.apache.ignite.math.exceptions.*;
 import org.apache.ignite.math.impls.storage.vector.MatrixVectorStorage;
 
 import java.io.*;

@@ -18,6 +18,7 @@
 package org.apache.ignite.math.decompositions;
 
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.functions.*;
 
 /**
  * For an <tt>m x n</tt> matrix <tt>A</tt> with {@code m >= n}, the QR decomposition

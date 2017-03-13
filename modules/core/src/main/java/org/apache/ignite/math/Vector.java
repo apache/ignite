@@ -18,6 +18,8 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.lang.*;
+import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;

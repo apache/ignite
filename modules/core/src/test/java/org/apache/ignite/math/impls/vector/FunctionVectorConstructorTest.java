@@ -17,8 +17,9 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.IgniteFunction;
-import org.apache.ignite.math.IntDoubleToVoidFunction;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.functions.IntDoubleToVoidFunction;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -31,13 +32,13 @@ import static org.junit.Assert.assertEquals;
 public class FunctionVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
+    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
             new FunctionVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
-    /** */ @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
+    /** */ @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("size",  1);

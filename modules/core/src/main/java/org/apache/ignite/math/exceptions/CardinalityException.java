@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
 
 import org.apache.ignite.*;
 
 /**
- * TODO: add description.
+ * Indicates a cardinality mismatch in matrix or vector operations.
  */
-public class ColumnIndexException extends IgniteException {
+public class CardinalityException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
-
+    
     /**
+     * Creates new cardinality violation exception.
      *
-     * @param idx Index value that caused this exception.
+     * @param exp Expected cardinality.
+     * @param act Actual cardinality.
      */
-    public ColumnIndexException(int idx) {
-        super("Invalid (out of bound) column index: " + idx);
+    public CardinalityException(int exp, int act) {
+        super("Cardinality violation [expected=" + exp + ", actual=" + act + "]");
     }
 }

@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
 import java.io.Serializable;
-import java.util.function.Function;
+import java.util.function.DoubleFunction;
 
 /**
- * Serializable function.
+ * Serializable double function.
  *
- * @see java.util.function.Function
+ * @see java.util.function.DoubleFunction
  */
-public interface IgniteFunction<T, R> extends Function<T, R>, Serializable {
-
+public interface IgniteDoubleFunction<R> extends DoubleFunction<R>, Serializable {
 }

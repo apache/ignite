@@ -15,11 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
+
+import org.apache.ignite.*;
 
 /**
- * Setter function for the vector.
+ * TODO: add description.
  */
-public interface IntDoubleToVoidFunction extends IgniteBiConsumer<Integer, Double> {
+public class RowIndexException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
+    /**
+     *
+     * @param idx Index value that caused this exception.
+     */
+    public RowIndexException(int idx) {
+        super("Invalid (out of bound) row index: " + idx);
+    }
 }

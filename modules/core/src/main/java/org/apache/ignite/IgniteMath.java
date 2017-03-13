@@ -19,8 +19,9 @@ package org.apache.ignite;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.*;
 import java.util.*;
 
 /**

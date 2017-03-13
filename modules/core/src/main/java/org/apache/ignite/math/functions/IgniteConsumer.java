@@ -15,24 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
-import org.apache.ignite.*;
+import java.io.Serializable;
+import java.util.function.Consumer;
 
 /**
- * Indicates a cardinality mismatch in matrix or vector operations.
+ * Serializable consumer.
+ *
+ * @see java.util.function.Consumer
  */
-public class CardinalityException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-    
-    /**
-     * Creates new cardinality violation exception.
-     *
-     * @param exp Expected cardinality.
-     * @param act Actual cardinality.
-     */
-    public CardinalityException(int exp, int act) {
-        super("Cardinality violation [expected=" + exp + ", actual=" + act + "]");
-    }
+public interface IgniteConsumer<T> extends Consumer<T>, Serializable {
 }

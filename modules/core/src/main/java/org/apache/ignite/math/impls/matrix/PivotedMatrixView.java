@@ -18,7 +18,8 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.matrix.PivotedMatrixStorage;
 import org.apache.ignite.math.impls.vector.PivotedVectorView;
 import java.io.*;

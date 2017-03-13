@@ -18,9 +18,8 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.UnsupportedOperationException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import java.io.*;
-import org.apache.ignite.math.impls.matrix.AbstractMatrix;
 
 /**
  * TODO: add description.

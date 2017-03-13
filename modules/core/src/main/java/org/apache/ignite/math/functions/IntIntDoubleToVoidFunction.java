@@ -15,31 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
-import org.apache.ignite.*;
+import java.io.Serializable;
 
 /**
- * Indicate that a specific operation is not supported by the underlying implementation.
- * In some cases, an operation may be unsupported only in certain cases where, for example,
- * it could not be deterministically completed in polynomial time.
+ * Setter function for matrices.
  */
-public class UnsupportedOperationException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     *
-     * @param errMsg Error message.
-     */
-    public UnsupportedOperationException(String errMsg) {
-        super(errMsg);
-    }
-
-    /**
-     *
-     */
-    public UnsupportedOperationException() {
-        this("Unsupported operation.");
-    }
+public interface IntIntDoubleToVoidFunction extends Serializable {
+    public void apply(int x, int y, double v);
 }

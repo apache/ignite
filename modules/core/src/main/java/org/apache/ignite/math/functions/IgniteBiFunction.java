@@ -15,22 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
-import org.apache.ignite.*;
+import java.io.Serializable;
+import java.util.function.BiFunction;
 
 /**
- * Indicates that no provider has been found for a given vector or matrix flavor.
+ * Serializable bi function.
+ *
+ * @see java.util.function.BiFunction
  */
-public class UnknownProviderException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     *
-     * @param flavor Flavor (a.k.a. operation performance hints) that has no registered provider for.
-     */
-    public UnknownProviderException(String flavor) {
-        super("No provider has been found for the flavor: " + flavor);
-    }
+public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
 }

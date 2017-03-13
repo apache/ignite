@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -89,7 +90,7 @@ public class VectorViewTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
+    @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
     public void testLike() throws Exception {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
             consumeSampleVectors((v, desc) -> {
@@ -111,7 +112,7 @@ public class VectorViewTest {
     }
 
     /** See also {@link VectorToMatrixTest#testLikeMatrix()}. */
-    @Test(expected = org.apache.ignite.math.UnsupportedOperationException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void testLikeMatrix() throws Exception {
         final Set<String> untested = new LinkedHashSet<>();
 

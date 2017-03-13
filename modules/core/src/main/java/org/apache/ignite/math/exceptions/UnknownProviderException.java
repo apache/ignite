@@ -15,12 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math;
+package org.apache.ignite.math.exceptions;
 
-import java.util.function.*;
+import org.apache.ignite.*;
 
 /**
- * Getters functions for matrices.
+ * Indicates that no provider has been found for a given vector or matrix flavor.
  */
-public interface IntIntToDoubleFunction extends IgniteBiFunction<Integer, Integer, Double> {
+public class UnknownProviderException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     * @param flavor Flavor (a.k.a. operation performance hints) that has no registered provider for.
+     */
+    public UnknownProviderException(String flavor) {
+        super("No provider has been found for the flavor: " + flavor);
+    }
 }

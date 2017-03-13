@@ -1,4 +1,4 @@
-package org.apache.ignite.math;
+package org.apache.ignite.math.functions;
 
 import java.io.Serializable;
 import java.util.function.BiConsumer;
