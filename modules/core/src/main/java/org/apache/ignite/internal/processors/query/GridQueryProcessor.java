@@ -58,7 +58,9 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
@@ -315,7 +317,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
-        // TODO
+        // Return message with existing error.
+        if (msg.hasError())
+            return;
+
+        // Validate.
+        idxLock.writeLock().lock();
+
+        try {
+            AbstractIndexOperation op = msg.operation();
+
+            if (op instanceof CreateIndexOperation) {
+                CreateIndexOperation op0 = (CreateIndexOperation)op;
+
+                // TODO
+            }
+            else if (op instanceof DropIndexOperation) {
+                DropIndexOperation op0 = (DropIndexOperation)op;
+
+                // TODO
+            }
+            else
+                msg.onError(ctx.localNodeId(), "Unsupported operation: " + op);
+        }
+        finally {
+            idxLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Index operation context. Represents pending operations
+     */
+    private class IndexOperationContext {
+
     }
 
     /**

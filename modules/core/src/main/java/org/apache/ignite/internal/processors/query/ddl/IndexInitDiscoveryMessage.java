@@ -24,6 +24,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 /**
  * {@code INIT} part of a distributed index create/drop operation.
  */
@@ -34,6 +36,12 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
     /** Kernal context. */
     @GridToStringExclude
     private transient GridKernalContext ctx;
+
+    /** Node reported an error. */
+    private UUID errNodeId;
+
+    /** Error message. */
+    private String errMsg;
 
     /**
      * Constructor.
@@ -59,6 +67,40 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
     /** {@inheritDoc} */
     @Override public void context(GridKernalContext ctx) {
         this.ctx = ctx;
+    }
+
+    /**
+     * Set error.
+     *
+     * @param errNodeId Error node ID.
+     * @param errMsg Error message.
+     */
+    public void onError(UUID errNodeId, String errMsg) {
+        if (!hasError()) {
+            this.errNodeId = errNodeId;
+            this.errMsg = errMsg;
+        }
+    }
+
+    /**
+     * @return {@code True} if error was reported during init.
+     */
+    public boolean hasError() {
+        return errNodeId != null;
+    }
+
+    /**
+     * @return ID of the node reported an error (if any).
+     */
+    @Nullable public UUID errorNodeId() {
+        return errNodeId;
+    }
+
+    /**
+     * @return Error message (if any).
+     */
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */
