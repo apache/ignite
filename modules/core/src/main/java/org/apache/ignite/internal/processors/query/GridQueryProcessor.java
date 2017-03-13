@@ -56,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -703,11 +705,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             UUID opId = UUID.randomUUID();
             QueryIndexClientFuture fut = new QueryIndexClientFuture(opId, idxKey);
 
+            CreateIndexOperation op = new CreateIndexOperation(ctx.localNodeId(), opId, space, tblName, idx,
+                ifNotExists);
+
+            try {
+                ctx.discovery().sendCustomEvent(new IndexInitDiscoveryMessage(op));
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(new IgniteException("Failed to start index create opeartion due to " +
+                    "unexpected exception [space=" + space + ", idxName=" + idxName + ']'));
+            }
+
             QueryIndexClientFuture oldFut = idxCliFuts.put(opId, fut);
 
             assert oldFut == null;
-
-            // TODO: Start discovery.
 
             return fut;
         }

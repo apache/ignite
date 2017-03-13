@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.ddl;
 
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.UUID;
@@ -26,73 +24,59 @@ import java.util.UUID;
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class DdlCreateIndexOperation extends DdlAbstractIndexOperation {
+public class DropIndexOperation extends AbstractIndexOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Space. */
     private final String space;
 
-    /** Table name. */
-    private final String tblName;
+    /** Index name. */
+    private final String idxName;
 
-    /** Index. */
-    @GridToStringInclude
-    private final QueryIndex idx;
-
-    /** Ignore operation if index exists. */
-    private final boolean ifNotExists;
+    /** Ignore operation if index doesn't exist. */
+    private final boolean ifExists;
 
     /**
      * Constructor.
      *
-     * @param cliNodeId Id of node that initiated this operation.
+     * @param cliNodeId Client node ID.
      * @param opId Operation id.
      * @param space Space.
-     * @param tblName Table name.
-     * @param idx Index params.
-     * @param ifNotExists Ignore operation if index exists.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index doesn't exist.
      */
-    DdlCreateIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
-        boolean ifNotExists) {
+    DropIndexOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
         super(cliNodeId, opId);
 
         this.space = space;
-        this.tblName = tblName;
-        this.idx = idx;
-        this.ifNotExists = ifNotExists;
+        this.idxName = idxName;
+        this.ifExists = ifExists;
     }
 
     /**
-     * @return Index params.
-     */
-    public QueryIndex index() {
-        return idx;
-    }
-
-    /**
-     * @return Schema name.
+     * @return Space.
      */
     public String space() {
         return space;
     }
 
     /**
-     * @return Table name.
+     * @return Index name.
      */
-    public String tableName() {
-        return tblName;
+    public String indexName() {
+        return idxName;
     }
 
     /**
-     * @return Ignore operation if index exists.
+     * @return Ignore operation if index doesn't exist.
      */
-    public boolean ifNotExists() {
-        return ifNotExists;
+    public boolean ifExists() {
+        return ifExists;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DdlCreateIndexOperation.class, this);
+        return S.toString(DropIndexOperation.class, this);
     }
 }

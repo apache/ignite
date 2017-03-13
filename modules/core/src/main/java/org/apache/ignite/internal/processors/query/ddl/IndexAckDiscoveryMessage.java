@@ -17,44 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.ddl;
 
-import java.io.Serializable;
-import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * DDL index operation.
+ * {@code ACK} message which triggers local index create/drop.
  */
-public abstract class DdlAbstractIndexOperation implements Serializable {
+public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** ID of node that initiated this operation. */
-    private final UUID cliNodeId;
-
-    /** Operation ID. */
-    private final UUID opId;
 
     /**
      * Constructor.
      *
-     * @param cliNodeId Client node ID.
-     * @param opId Operation ID.
+     * @param op Original operation.
      */
-    public DdlAbstractIndexOperation(UUID cliNodeId, UUID opId) {
-        this.cliNodeId = cliNodeId;
-        this.opId = opId;
+    public IndexAckDiscoveryMessage(AbstractIndexOperation op) {
+        super(op);
     }
 
-    /**
-     * @return Client node ID.
-     */
-    public UUID clientNodeId() {
-        return cliNodeId;
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
     }
 
-    /**
-     * @return Operation id.
-     */
-    public UUID operationId() {
-        return opId;
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IndexAckDiscoveryMessage.class, this);
     }
 }
