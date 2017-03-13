@@ -68,7 +68,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
-    private static final String NEW_GRID_NAME = "newGrid";
+    private static final String NEW_IGNITE_INSTANCE_NAME = "newGrid";
 
     /** */
     private static final String STRUCTURE_NAME = "structure";
@@ -120,8 +120,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -182,13 +182,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicLongTopologyChange() throws Exception {
         try (IgniteAtomicLong atomic = grid(0).atomicLong(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(10, g.atomicLong(STRUCTURE_NAME, 10, false).get());
 
             assertEquals(20, g.atomicLong(STRUCTURE_NAME, 10, false).addAndGet(10));
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(20, grid(0).atomicLong(STRUCTURE_NAME, 10, true).get());
         }
@@ -244,13 +244,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicReferenceTopologyChange() throws Exception {
         try (IgniteAtomicReference atomic = grid(0).atomicReference(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals((Integer)10, g.atomicReference(STRUCTURE_NAME, 10, false).get());
 
             g.atomicReference(STRUCTURE_NAME, 10, false).set(20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals((Integer)20, grid(0).atomicReference(STRUCTURE_NAME, 10, true).get());
         }
@@ -306,7 +306,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicStampedTopologyChange() throws Exception {
         try (IgniteAtomicStamped atomic = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteBiTuple<Integer, Integer> t = g.atomicStamped(STRUCTURE_NAME, 10, 10, false).get();
 
@@ -315,7 +315,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             g.atomicStamped(STRUCTURE_NAME, 10, 10, false).set(20, 20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             t = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, false).get();
 
@@ -387,13 +387,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     public void testCountDownLatchTopologyChange() throws Exception {
         try (IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 20, true, true)) {
             try {
-                Ignite g = startGrid(NEW_GRID_NAME);
+                Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 assertEquals(20, g.countDownLatch(STRUCTURE_NAME, 20, true, false).count());
 
                 g.countDownLatch(STRUCTURE_NAME, 20, true, false).countDown(10);
 
-                stopGrid(NEW_GRID_NAME);
+                stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 assertEquals(10, grid(0).countDownLatch(STRUCTURE_NAME, 20, true, false).count());
             }
@@ -408,7 +408,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testSemaphoreFailoverSafe() throws Exception {
         try (IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteSemaphore semaphore2 = g.semaphore(STRUCTURE_NAME, 20, true, false);
 
@@ -416,7 +416,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             semaphore2.acquire(10);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(10, semaphore.availablePermits());
         }
@@ -427,7 +427,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testSemaphoreNonFailoverSafe() throws Exception {
         try (IgniteSemaphore sem = grid(0).semaphore(STRUCTURE_NAME, 20, false, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteSemaphore sem2 = g.semaphore(STRUCTURE_NAME, 20, false, false);
 
@@ -437,7 +437,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             new Timer().schedule(new TimerTask() {
                 @Override public void run() {
-                    stopGrid(NEW_GRID_NAME);
+                    stopGrid(NEW_IGNITE_INSTANCE_NAME);
                 }
             }, 2000);
 
@@ -844,13 +844,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try {
             grid(0).queue(STRUCTURE_NAME, 0, config(false)).put(10);
 
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(10, (int)g.<Integer>queue(STRUCTURE_NAME, 0, null).poll());
 
             g.queue(STRUCTURE_NAME, 0, null).put(20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(20, (int)grid(0).<Integer>queue(STRUCTURE_NAME, 0, null).peek());
         }
@@ -1050,13 +1050,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicSequenceTopologyChange() throws Exception {
         try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(1010, g.atomicSequence(STRUCTURE_NAME, 10, false).get());
 
             assertEquals(1020, g.atomicSequence(STRUCTURE_NAME, 10, false).addAndGet(10));
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
         }
     }
 
@@ -1116,7 +1116,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Ignite g = startGrid(NEW_GRID_NAME);
+                Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 try {
                     g.transactions().txStart();
@@ -1126,7 +1126,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     assertEquals(val + 1, g.atomicLong(STRUCTURE_NAME, val, false).incrementAndGet());
                 }
                 finally {
-                    stopGrid(NEW_GRID_NAME);
+                    stopGrid(NEW_IGNITE_INSTANCE_NAME);
                 }
 
                 return null;
@@ -1184,10 +1184,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             int idx = nodeIdx.getAndIncrement();
 
-                            Thread.currentThread().setName("thread-" + getTestGridName(idx));
+                            Thread.currentThread().setName("thread-" + getTestIgniteInstanceName(idx));
 
                             try {
-                                log.info("Start node: " + getTestGridName(idx));
+                                log.info("Start node: " + getTestIgniteInstanceName(idx));
 
                                 Ignite g = startGrid(idx);
 

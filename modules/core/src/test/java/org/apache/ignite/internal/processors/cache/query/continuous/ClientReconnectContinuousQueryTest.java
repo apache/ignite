@@ -70,7 +70,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         commSpi.setSlowClientQueueLimit(50);
         commSpi.setIdleConnectionTimeout(300_000);
 
-        if (getTestGridName(CLIENT_IDX).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT_IDX).equals(gridName))
             cfg.setClientMode(true);
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();

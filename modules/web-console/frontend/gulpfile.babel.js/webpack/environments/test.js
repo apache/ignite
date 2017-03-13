@@ -19,34 +19,26 @@ import webpack from 'webpack';
 
 const NODE_ENV = process.env.NODE_ENV || 'production';
 
-export default () => {
+export default {
+    cache: true,
+    node: {
+        fs: 'empty'
+    },
 
-    return {
-        cache: true,
-        node: {
-            fs: 'empty'
-        },
+    // Entry points.
+    entry: null,
 
-        module: {
-            preLoaders: null
-        },
+    // Output system.
+    output: null,
 
-        // Entry points.
-        entry: null,
-
-        // Output system.
-        output: null,
-        eslint: null,
-
-        // Load plugins.
-        plugins: [
-            new webpack.ProvidePlugin({
-                $: 'jquery',
-                jQuery: 'jquery',
-                _: 'lodash',
-                nv: 'nvd3'
-            }),
-            new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)})
-        ]
-    };
+    // Load plugins.
+    plugins: [
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery',
+            _: 'lodash',
+            nv: 'nvd3'
+        }),
+        new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)})
+    ]
 };

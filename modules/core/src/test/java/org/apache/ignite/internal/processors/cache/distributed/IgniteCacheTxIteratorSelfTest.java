@@ -44,8 +44,8 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "testCache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         final TransactionConfiguration txCfg = new TransactionConfiguration();
 

@@ -263,7 +263,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"BusyWait"})
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -351,7 +351,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
 
         timeoutWrk.start();
 
-        registerMBean(gridName, this, S3CheckpointSpiMBean.class);
+        registerMBean(igniteInstanceName, this, S3CheckpointSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

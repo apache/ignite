@@ -51,7 +51,7 @@ public abstract class IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (getTestGridIndex(gridName) == 0)
+        if (getTestIgniteInstanceIndex(gridName) == 0)
             cfg.setClientMode(true);
 
         return cfg;
@@ -62,7 +62,7 @@ public abstract class IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTes
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
         endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
-        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        endpointCfg.setPort(DFLT_IPC_PORT + getTestIgniteInstanceIndex(gridName));
 
         return endpointCfg;
     }

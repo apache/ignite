@@ -510,7 +510,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -523,7 +523,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
         initializeTemporaryDirectoryPath();
 
-        registerMBean(gridName, this, UriDeploymentSpiMBean.class);
+        registerMBean(igniteInstanceName, this, UriDeploymentSpiMBean.class);
 
         FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -621,7 +621,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
             for (UriDeploymentScanner scanner : scanners) {
                 if (scanner.acceptsURI(uri)) {
-                    mgr = new UriDeploymentScannerManager(gridName, uri, file, freq > 0 ? freq :
+                    mgr = new UriDeploymentScannerManager(igniteInstanceName, uri, file, freq > 0 ? freq :
                         scanner.getDefaultScanFrequency(), filter, lsnr, log, scanner);
 
                     break;

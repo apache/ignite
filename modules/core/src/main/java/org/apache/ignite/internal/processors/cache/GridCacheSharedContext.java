@@ -393,10 +393,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName() {
-        return kernalCtx.gridName();
+    public String igniteInstanceName() {
+        return kernalCtx.igniteInstanceName();
     }
 
     /**
