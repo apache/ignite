@@ -508,7 +508,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 Prepared p = parse(sql);
 
-                return new GridSqlQueryParser().parse(p);
+                return new GridSqlQueryParser(false).parse(p);
             }
         }, exCls, msg);
     }
@@ -519,7 +519,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertCreateIndexEquals(GridSqlCreateIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
@@ -532,7 +532,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertDropIndexEquals(GridSqlDropIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 

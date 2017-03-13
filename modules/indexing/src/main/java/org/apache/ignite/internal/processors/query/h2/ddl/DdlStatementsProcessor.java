@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.sql.PreparedStatement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +39,11 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.ddl.DdlOperationNodeResult;
 import org.apache.ignite.internal.processors.query.ddl.DdlOperationResult;
-import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.h2.ddl.msg.DdlInitDiscoveryMessage;
@@ -60,6 +61,8 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.DropIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
 /**
  * DDL statements processor.<p>
@@ -368,6 +371,7 @@ public class DdlStatementsProcessor {
      *
      * @param stmt H2 statement to parse and execute.
      */
+    @SuppressWarnings("unchecked")
     public QueryCursor<List<?>> runDdlStatement(PreparedStatement stmt)
         throws IgniteCheckedException {
         if (isStopped.get())
@@ -375,8 +379,7 @@ public class DdlStatementsProcessor {
 
         assert stmt instanceof JdbcPreparedStatement;
 
-        GridSqlStatement gridStmt = new GridSqlQueryParser().parse(GridSqlQueryParser
-            .prepared((JdbcPreparedStatement) stmt));
+        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
 
         DdlAbstractOperation op;
 
@@ -405,7 +408,12 @@ public class DdlStatementsProcessor {
             operations.remove(op.operationId());
         }
 
-        return DmlStatementsProcessor.cursorForUpdateResult(0L);
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+            (Collections.singletonList(0L)), null, false);
+
+        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+        return resCur;
     }
 
     /**

@@ -106,7 +106,7 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -226,7 +226,7 @@ public class QueryUtils {
             meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
             return null;
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl();
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -416,13 +416,14 @@ public class QueryUtils {
             if (idxName == null)
                 idxName = propName + "_idx";
 
-            if (idxOrder == 0) // Add index only on the first field.
-                d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-
             if (idxType == IndexType.TEXT)
                 d.addFieldToTextIndex(propName);
-            else
+            else {
+                if (idxOrder == 0) // Add index only on the first field.
+                    d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
                 d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
+            }
         }
     }
     
@@ -482,19 +483,23 @@ public class QueryUtils {
 
                 LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
 
-                int order = 0;
+                if (!idxFields.isEmpty()) {
+                    d.addIndex(idxName, QueryIndexType.SORTED);
 
-                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    QueryBinaryProperty prop = buildBinaryProperty(ctx, idxField.getKey(), idxField.getValue().get1(),
-                        aliases, null);
+                    int order = 0;
 
-                    d.addProperty(prop, false);
+                    for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                        QueryBinaryProperty prop = buildBinaryProperty(ctx, idxField.getKey(),
+                            idxField.getValue().get1(), aliases, null);
 
-                    Boolean descending = idxField.getValue().get2();
+                        d.addProperty(prop, false);
 
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+                        Boolean descending = idxField.getValue().get2();
 
-                    order++;
+                        d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+
+                        order++;
+                    }
                 }
             }
         }

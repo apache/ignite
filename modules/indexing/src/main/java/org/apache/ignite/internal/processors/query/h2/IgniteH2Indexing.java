@@ -95,7 +95,6 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
@@ -222,7 +221,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 //        ";TRACE_LEVEL_SYSTEM_OUT=3";
 
     /** Dummy metadata for update result. */
-    static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
+    public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META = Collections.<GridQueryFieldMetadata>
         singletonList(new SqlFieldMetadata(null, null, "UPDATED", Long.class.getName()));
 
     /** */
@@ -878,7 +877,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+        Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
             SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
@@ -1434,6 +1433,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .distributedJoinMode(distributedJoinMode));
 
             PreparedStatement stmt = null;
+            Prepared prepared;
 
             boolean cachesCreated = false;
 
@@ -1464,7 +1464,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
 
-                    Prepared prepared = GridSqlQueryParser.prepared(stmt);
+                    prepared = GridSqlQueryParser.prepared(stmt);
 
                     if (qry instanceof JdbcSqlFieldsQuery && ((JdbcSqlFieldsQuery) qry).isQuery() != prepared.isQuery())
                         throw new IgniteSQLException("Given statement type does not match that declared by JDBC driver",
@@ -1490,8 +1490,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             return dmlProc.updateSqlFieldsTwoStep(cctx.namexx(), stmt, qry, cancel);
                         }
                         catch (IgniteCheckedException e) {
-                            throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry + ", params=" +
-                                Arrays.deepToString(qry.getArgs()) + "]", e);
+                            throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
+                                ", params=" + Arrays.deepToString(qry.getArgs()) + "]", e);
                         }
                     }
 
@@ -1500,7 +1500,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             return ddlProc.runDdlStatement(stmt);
                         }
                         catch (IgniteCheckedException e) {
-                            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
+                            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']',
+                                e);
                         }
                     }
                 }
@@ -2852,13 +2853,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     cols = treeIndexColumns(cols, keyCol, affCol);
 
-                        idxs.add(createTreeIndex(name, tbl, false, cols));
-                    }
-                    else if (idx.type() == QueryIndexType.GEOSPATIAL)
-                        idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
-                    else
-                        throw new IllegalStateException("Index type: " + idx.type());
+                    idxs.add(createTreeIndex(name, tbl, false, cols));
                 }
+                else if (idx.type() == QueryIndexType.GEOSPATIAL)
+                    idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
+                else
+                    throw new IllegalStateException("Index type: " + idx.type());
             }
 
             // Add explicit affinity key index if nothing alike was found.

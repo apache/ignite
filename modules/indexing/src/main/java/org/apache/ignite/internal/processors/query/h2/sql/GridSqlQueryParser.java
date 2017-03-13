@@ -30,6 +30,8 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -832,17 +834,11 @@ public class GridSqlQueryParser {
         if (stmt instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)stmt)).explain(true);
 
-        if (qry instanceof Update)
-            return parseUpdate((Update)qry);
+        if (stmt instanceof CreateIndex)
+            return parseCreateIndex((CreateIndex)stmt);
 
-        if (stmt instanceof Explain)
-            return parse(EXPLAIN_COMMAND.get((Explain)stmt)).explain(true);
-
-        if (qry instanceof CreateIndex)
-            return parseCreateIndex((CreateIndex) qry);
-
-        if (qry instanceof DropIndex)
-            return parseDropIndex((DropIndex) qry);
+        if (stmt instanceof DropIndex)
+            return parseDropIndex((DropIndex)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }
