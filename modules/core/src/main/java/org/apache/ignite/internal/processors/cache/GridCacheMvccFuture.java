@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Distributed future aware of MVCC locking.
@@ -36,5 +37,8 @@ public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
      */
     public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
 
-    public IgniteInternalTx tx();
+    /**
+     * @return Transaction related to future if any.
+     */
+    @Nullable public IgniteInternalTx tx();
 }

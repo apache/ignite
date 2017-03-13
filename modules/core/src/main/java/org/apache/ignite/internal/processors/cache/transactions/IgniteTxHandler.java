@@ -1438,7 +1438,7 @@ public class IgniteTxHandler {
     /**
      * @param nodeId Node ID.
      * @param req Request.
-     * @param res Response.
+     * @param res Response or {@code null} if should not reply to primary.
      * @return Remote transaction.
      * @throws IgniteCheckedException If failed.
      */
