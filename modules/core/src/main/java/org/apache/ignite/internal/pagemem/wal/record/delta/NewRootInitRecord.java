@@ -35,9 +35,6 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
     private long leftChildId;
 
     /** */
-    private L row;
-
-    /** */
     private byte[] rowBytes;
 
     /** */
@@ -57,7 +54,6 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         long newRootId,
         BPlusInnerIO<L> io,
         long leftChildId,
-        L row,
         byte[] rowBytes,
         long rightChildId
     ) {
@@ -68,14 +64,13 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         this.newRootId = newRootId;
         this.io = io;
         this.leftChildId = leftChildId;
-        this.row = row;
         this.rowBytes = rowBytes;
         this.rightChildId = rightChildId;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        io.initNewRoot(pageAddr, newRootId, leftChildId, row, rowBytes, rightChildId, pageMem.pageSize());
+        io.initNewRoot(pageAddr, newRootId, leftChildId, null, rowBytes, rightChildId, pageMem.pageSize(), false);
     }
 
     /** {@inheritDoc} */
@@ -83,23 +78,38 @@ public class NewRootInitRecord<L> extends PageDeltaRecord {
         return RecordType.BTREE_INIT_NEW_ROOT;
     }
 
+    /**
+     * @return IO.
+     */
     public BPlusInnerIO<L> io() {
         return io;
     }
 
+    /**
+     * @return Root page ID.
+     */
     public long rootId() {
         return newRootId;
     }
 
+    /**
+     * @return Left child ID.
+     */
     public long leftId() {
         return leftChildId;
     }
 
+    /**
+     * @return Right child ID.
+     */
     public long rightId() {
         return rightChildId;
     }
 
-    public L row() {
-        return row;
+    /**
+     * @return Row bytes.
+     */
+    public byte[] rowBytes() {
+        return rowBytes;
     }
 }

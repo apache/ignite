@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
- namespace Apache.Ignite.Core
+namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
@@ -39,10 +39,8 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -328,9 +326,6 @@
             }
             else
                 writer.WriteBoolean(false);
-
-            // Swap space
-            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
         }
 
         /// <summary>
@@ -437,9 +432,6 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
-
-            // Swap
-            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
         }
 
         /// <summary>
@@ -851,10 +843,5 @@
             get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
             set { _failureDetectionTimeout = value; }
         }
-
-        /// <summary>
-        /// Gets or sets the swap space SPI.
-        /// </summary>
-        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
     }
 }

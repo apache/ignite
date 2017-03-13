@@ -136,6 +136,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
+    /** Default maximum inline size for sql indexes. */
+    public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
+
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
 
@@ -321,6 +324,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
 
+    /** Maximum inline size for sql indexes. */
+    private int sqlIndexMaxInlineSize = DFLT_SQL_INDEX_MAX_INLINE_SIZE;
+
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
 
@@ -461,6 +467,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
+        sqlIndexMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -1283,6 +1290,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
 
         return this;
+    }
+
+    /**
+     * Gets maximum inline size for sql indexes. If -1 returned then
+     * {@code IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE} system property is used.
+     * <p>
+     * If not set, default value is {@link #DFLT_SQL_INDEX_MAX_INLINE_SIZE}.
+     *
+     * @return Maximum payload size for offheap indexes.
+     */
+    public int getSqlIndexMaxInlineSize() {
+        return sqlIndexMaxInlineSize;
+    }
+
+    /**
+     * Sets maximum inline size for sql indexes.
+     *
+     * @param sqlIndexMaxInlineSize Maximum inline size for sql indexes.
+     */
+    public void setSqlIndexMaxInlineSize(int sqlIndexMaxInlineSize) {
+        this.sqlIndexMaxInlineSize = sqlIndexMaxInlineSize;
     }
 
     /**
@@ -2456,15 +2484,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          *
          * @param idxName Index name.
          * @param type Index type.
+         * @param inlineSize Inline size.
          * @return Index descriptor.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
-            IndexDescriptor idx = new IndexDescriptor(type);
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type, int inlineSize) {
+            IndexDescriptor idx = new IndexDescriptor(type, inlineSize);
 
             if (indexes.put(idxName, idx) != null)
                 throw new CacheException("Index with name '" + idxName + "' already exists.");
 
             return idx;
+        }
+
+        /**
+         * Adds index.
+         *
+         * @param idxName Index name.
+         * @param type Index type.
+         * @return Index descriptor.
+         */
+        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
+            return addIndex(idxName, type, -1);
         }
 
         /**
@@ -2594,13 +2634,25 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         private final GridQueryIndexType type;
 
+        /** */
+        private final int inlineSize;
+
+        /**
+         * @param type Type.
+         * @param inlineSize Inline size.
+         */
+        private IndexDescriptor(GridQueryIndexType type, int inlineSize) {
+            assert type != null;
+
+            this.type = type;
+            this.inlineSize = inlineSize;
+        }
+
         /**
          * @param type Type.
          */
         private IndexDescriptor(GridQueryIndexType type) {
-            assert type != null;
-
-            this.type = type;
+            this(type, -1);
         }
 
         /** {@inheritDoc} */
@@ -2639,6 +2691,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** {@inheritDoc} */
         @Override public GridQueryIndexType type() {
             return type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int inlineSize() {
+            return inlineSize;
         }
 
         /** {@inheritDoc} */

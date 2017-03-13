@@ -329,21 +329,9 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
-            log.info("Size [node=" + i +
-                ", heap=" + cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP) +
-                ", offheap=" + cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP) + ']');
+            log.info("Size [node=" + i + ", " + cache.localSize(PRIMARY, BACKUP, NEAR) + ']');
 
-            if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
-                assertEquals("Unexpected size, node: " + i, 0, cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
-                assertEquals("Unexpected size, node: " + i, size, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
-            }
-            else {
-                assertEquals("Unexpected size, node: " + i, size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size,
-                    cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
-
-                assertEquals("Unexpected size, node: " + i,
-                    size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
-            }
+            assertEquals("Unexpected size, node: " + i, size, cache.localSize(PRIMARY, BACKUP, NEAR));
 
             for (int key = 0; key < size; key++)
                 assertNotNull(cache.localPeek(key));

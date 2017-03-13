@@ -460,10 +460,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     List<GridDhtLocalPartition> locs = top.localPartitions();
 
                     for (GridDhtLocalPartition loc : locs) {
-                        assertTrue("Wrong local partition state part=" + loc.id() +
-                                ", should be OWNING [state=" + loc.state() + "], node="
-                                + g0.name() + " cache=" + c.getName(),
-                            loc.state() == GridDhtPartitionState.OWNING);
+                        GridDhtPartitionState actl = loc.state();
+
+                        boolean res = GridDhtPartitionState.OWNING.equals(actl);
+
+                        if (!res)
+                            printPartitionState(c);
+
+                        assertTrue("Wrong local partition state part=" +
+                            loc.id() + ", should be OWNING [state=" + actl +
+                            "], node=" + g0.name() + " cache=" + c.getName(), res);
 
                         Collection<ClusterNode> affNodes =
                             g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(loc.id());

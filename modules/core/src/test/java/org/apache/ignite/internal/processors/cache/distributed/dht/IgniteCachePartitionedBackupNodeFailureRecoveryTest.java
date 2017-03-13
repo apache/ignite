@@ -157,17 +157,15 @@ public class IgniteCachePartitionedBackupNodeFailureRecoveryTest extends IgniteC
                         try {
                             boolean res = waitForCondition(new PA() {
                                 @Override public boolean apply() {
-                                    return cache3.localPeek(finalKey) != null;
+                                    Integer actl = cache3.localPeek(finalKey);
+
+                                    Integer exp = cntr.get();
+
+                                    return exp.equals(actl);
                                 }
                             }, 1000);
 
                             assertTrue(res);
-
-                            Integer backUpVal = cache3.localPeek(finalKey);
-
-                            Integer exp = cntr.get();
-
-                            assertEquals(exp, backUpVal);
                         }
                         finally {
                             lock.unlock();

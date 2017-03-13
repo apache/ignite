@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 
 /**
@@ -42,4 +43,9 @@ public interface FreeList {
      * @throws IgniteCheckedException If failed.
      */
     public void removeDataRowByLink(long link) throws IgniteCheckedException;
+
+    /**
+     * @param log Logger.
+     */
+    public void dumpStatistics(IgniteLogger log);
 }

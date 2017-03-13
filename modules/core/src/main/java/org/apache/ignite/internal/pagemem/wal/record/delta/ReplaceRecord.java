@@ -29,9 +29,6 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
     private BPlusIO<L> io;
 
     /** */
-    private L row;
-
-    /** */
     private byte[] rowBytes;
 
     /** */
@@ -41,15 +38,13 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
      * @param cacheId Cache ID.
      * @param pageId  Page ID.
      * @param io IO.
-     * @param row Row.
      * @param rowBytes Row bytes.
      * @param idx Index.
      */
-    public ReplaceRecord(int cacheId, long pageId, BPlusIO<L> io, L row, byte[] rowBytes, int idx) {
+    public ReplaceRecord(int cacheId, long pageId, BPlusIO<L> io, byte[] rowBytes, int idx) {
         super(cacheId, pageId);
 
         this.io = io;
-        this.row = row;
         this.rowBytes = rowBytes;
         this.idx = idx;
     }
@@ -60,7 +55,7 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
         if (io.getCount(pageAddr) < idx)
             throw new DeltaApplicationException("Index is greater than count: " + idx);
 
-        io.store(pageAddr, idx, row, rowBytes);
+        io.store(pageAddr, idx, null, rowBytes, false);
     }
 
     /** {@inheritDoc} */
@@ -68,15 +63,24 @@ public class ReplaceRecord<L> extends PageDeltaRecord {
         return RecordType.BTREE_PAGE_REPLACE;
     }
 
+    /**
+     * @return IO.
+     */
     public BPlusIO<L> io() {
         return io;
     }
 
+    /**
+     * @return Index.
+     */
     public int index() {
         return idx;
     }
 
-    public L row() {
-        return row;
+    /**
+     * @return Row bytes.
+     */
+    public byte[] rowBytes() {
+        return rowBytes;
     }
 }

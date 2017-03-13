@@ -66,6 +66,11 @@ public abstract class GridH2Row extends Row implements GridSearchRowPointer, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject value() {
         return val;
     }

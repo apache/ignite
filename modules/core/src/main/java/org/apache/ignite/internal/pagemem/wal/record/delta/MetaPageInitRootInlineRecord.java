@@ -19,24 +19,32 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 
 /**
- * Initialize new meta page.
+ *
  */
-public class MetaPageInitRootRecord extends PageDeltaRecord {
+public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
+
     /** */
-    protected long rootId;
+    private final int inlineSize;
 
     /**
+     * @param cacheId
      * @param pageId Meta page ID.
+     * @param rootId
+     * @param inlineSize Inline size.
      */
-    public MetaPageInitRootRecord(int cacheId, long pageId, long rootId) {
-        super(cacheId, pageId);
+    public MetaPageInitRootInlineRecord(int cacheId, long pageId, long rootId, int inlineSize) {
+        super(cacheId, pageId, rootId);
+        this.inlineSize = inlineSize;
+    }
 
-        assert pageId != rootId;
-
-        this.rootId = rootId;
+    /**
+     * @return Inline size.
+     */
+    public int inlineSize() {
+        return inlineSize;
     }
 
     /** {@inheritDoc} */
@@ -44,18 +52,11 @@ public class MetaPageInitRootRecord extends PageDeltaRecord {
         BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
         io.initRoot(pageAddr, rootId, pageMem.pageSize());
-        io.setInlineSize(pageAddr, 0);
+        io.setInlineSize(pageAddr, inlineSize);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_META_PAGE_INIT_ROOT;
-    }
-
-    /**
-     * @return Root ID.
-     */
-    public long rootId() {
-        return rootId;
+        return RecordType.BTREE_META_PAGE_INIT_ROOT2;
     }
 }

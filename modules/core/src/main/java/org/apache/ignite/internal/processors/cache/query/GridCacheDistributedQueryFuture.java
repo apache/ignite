@@ -270,10 +270,11 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override void clear() {
+        assert isDone() : this;
+
         GridCacheDistributedQueryManager<K, V> qryMgr = (GridCacheDistributedQueryManager<K, V>)cctx.queries();
 
-        assert qryMgr != null;
-
-        qryMgr.removeQueryFuture(reqId);
+        if (qryMgr != null)
+            qryMgr.removeQueryFuture(reqId);
     }
 }

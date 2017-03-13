@@ -499,6 +499,11 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         }
 
         /** {@inheritDoc} */
+        @Override public void invoke(GridSearchRowPointer key, Object x, InvokeClosure<GridH2Row> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public GridH2Row put(GridH2Row val) {
             return tree.put(val, val);
         }

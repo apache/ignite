@@ -35,7 +35,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.SwapSpace.File;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -81,7 +80,6 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new LruEvictionPolicy());
             CheckDefaultValueAttributes(new AtomicConfiguration());
             CheckDefaultValueAttributes(new TransactionConfiguration());
-            CheckDefaultValueAttributes(new FileSwapSpaceSpi());
         }
 
         /// <summary>
@@ -174,14 +172,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
 
                 Assert.AreEqual(cfg.FailureDetectionTimeout, resCfg.FailureDetectionTimeout);
-
-                var swap = (FileSwapSpaceSpi) cfg.SwapSpaceSpi;
-                var resSwap = (FileSwapSpaceSpi) resCfg.SwapSpaceSpi;
-                Assert.AreEqual(swap.MaximumSparsity, resSwap.MaximumSparsity);
-                Assert.AreEqual(swap.BaseDirectory, resSwap.BaseDirectory);
-                Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
-                Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
-                Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
 
                 var binCfg = cfg.BinaryConfiguration;
                 Assert.IsFalse(binCfg.CompactFooter);
@@ -469,7 +459,7 @@ namespace Apache.Ignite.Core.Tests
                     TopologyHistorySize = 1234567
                 },
                 GridName = "gridName1",
-                IncludedEventTypes = EventType.SwapspaceAll,
+                IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
                 MetricsLogFrequency = TimeSpan.FromMinutes(8),
@@ -519,14 +509,6 @@ namespace Apache.Ignite.Core.Tests
                     UnacknowledgedMessagesBufferSize = 3450
                 },
                 FailureDetectionTimeout = TimeSpan.FromSeconds(3.5),
-                SwapSpaceSpi = new FileSwapSpaceSpi
-                {
-                    ReadStripesNumber = 64,
-                    MaximumWriteQueueSize = 8,
-                    WriteBufferSize = 9,
-                    BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 11.22f
-                },
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,

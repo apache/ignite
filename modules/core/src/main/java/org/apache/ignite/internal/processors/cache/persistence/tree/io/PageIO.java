@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -75,6 +77,15 @@ public abstract class PageIO {
 
     /** */
     private static IOVersions<? extends BPlusLeafIO<?>> h2LeafIOs;
+
+    /** Maximum payload size. */
+    public static final short MAX_PAYLOAD_SIZE = 2048;
+
+    /** */
+    private static List<IOVersions<? extends BPlusInnerIO<?>>> h2ExtraInnerIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
+
+    /** */
+    private static List<IOVersions<? extends BPlusLeafIO<?>>> h2ExtraLeafIOs = new ArrayList<>(MAX_PAYLOAD_SIZE);
 
     /** */
     public static final int TYPE_OFF = 0;
@@ -146,6 +157,18 @@ public abstract class PageIO {
 
     /** */
     public static final short T_PAGE_UPDATE_TRACKING = 15;
+
+    /** Index for payload == 1. */
+    public static final short T_H2_EX_REF_LEAF_START = 10000;
+
+    /** */
+    public static final short T_H2_EX_REF_LEAF_END = T_H2_EX_REF_LEAF_START + MAX_PAYLOAD_SIZE - 1;
+
+    /** */
+    public static final short T_H2_EX_REF_INNER_START = 20000;
+
+    /** */
+    public static final short T_H2_EX_REF_INNER_END = T_H2_EX_REF_INNER_START + MAX_PAYLOAD_SIZE - 1;
 
     /** */
     private final int ver;
@@ -290,6 +313,40 @@ public abstract class PageIO {
     }
 
     /**
+     * Registers extra inner IO versions.
+     *
+     * @param innerExtIOs Extra versions.
+     */
+    public static void registerH2ExtraInner(IOVersions<? extends BPlusInnerIO<?>> innerExtIOs) {
+        h2ExtraInnerIOs.add(innerExtIOs);
+    }
+
+    /**
+     * Registers extra inner IO versions.
+     *
+     * @param leafExtIOs Extra versions.
+     */
+    public static void registerH2ExtraLeaf(IOVersions<? extends BPlusLeafIO<?>> leafExtIOs) {
+        h2ExtraLeafIOs.add(leafExtIOs);
+    }
+
+    /**
+     * @param idx Index.
+     * @return IOVersions for given idx.
+     */
+    public static IOVersions<? extends BPlusInnerIO<?>> getInnerVersions(int idx) {
+        return h2ExtraInnerIOs.get(idx);
+    }
+
+    /**
+     * @param idx Index.
+     * @return IOVersions for given idx.
+     */
+    public static IOVersions<? extends BPlusLeafIO<?>> getLeafVersions(int idx) {
+        return h2ExtraLeafIOs.get(idx);
+    }
+
+    /**
      * Registers IOs for testing.
      *
      * @param innerIO Inner IO.
@@ -402,6 +459,13 @@ public abstract class PageIO {
      */
     @SuppressWarnings("unchecked")
     public static <Q extends BPlusIO<?>> Q getBPlusIO(int type, int ver) throws IgniteCheckedException {
+
+        if (type >= T_H2_EX_REF_LEAF_START && type <= T_H2_EX_REF_LEAF_END)
+            return (Q)h2ExtraLeafIOs.get(type - T_H2_EX_REF_LEAF_START).forVersion(ver);
+
+        if (type >= T_H2_EX_REF_INNER_START && type <= T_H2_EX_REF_INNER_END)
+            return (Q)h2ExtraInnerIOs.get(type - T_H2_EX_REF_INNER_START).forVersion(ver);
+
         switch (type) {
             case T_H2_REF_INNER:
                 if (h2InnerIOs == null)

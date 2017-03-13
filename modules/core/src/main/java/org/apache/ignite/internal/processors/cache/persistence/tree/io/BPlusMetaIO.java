@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
@@ -25,20 +26,38 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 public class BPlusMetaIO extends PageIO {
     /** */
     public static final IOVersions<BPlusMetaIO> VERSIONS = new IOVersions<>(
-        new BPlusMetaIO(1)
+        new BPlusMetaIO(1), new BPlusMetaIO(2)
     );
 
     /** */
     private static final int LVLS_OFF = COMMON_HEADER_END;
 
     /** */
-    private static final int REFS_OFF = LVLS_OFF + 1;
+    private final int refsOff;
+
+    /** */
+    private final int inlineSizeOff;
 
     /**
      * @param ver Page format version.
      */
     private BPlusMetaIO(int ver) {
         super(T_BPLUS_META, ver);
+
+        switch (ver) {
+            case 1:
+                inlineSizeOff = -1;
+                refsOff = LVLS_OFF + 1;
+                break;
+
+            case 2:
+                inlineSizeOff = LVLS_OFF + 1;
+                refsOff = inlineSizeOff + 2;
+                break;
+
+            default:
+                throw new IgniteException("invalid IO version: " + ver);
+        }
     }
 
     /**
@@ -65,7 +84,7 @@ public class BPlusMetaIO extends PageIO {
      * @return Max levels possible for this page size.
      */
     private int getMaxLevels(long pageAddr, int pageSize) {
-        return (pageSize - REFS_OFF) / 8;
+        return (pageSize - refsOff) / 8;
     }
 
     /**
@@ -85,8 +104,8 @@ public class BPlusMetaIO extends PageIO {
      * @param lvl Level.
      * @return Offset for page reference.
      */
-    private static int offset(int lvl) {
-        return lvl * 8 + REFS_OFF;
+    private int offset(int lvl) {
+        return lvl * 8 + refsOff;
     }
 
     /**
@@ -143,5 +162,21 @@ public class BPlusMetaIO extends PageIO {
         int lvl = getRootLevel(pageAddr);
 
         setLevelsCount(pageAddr, lvl, pageSize); // Decrease tree height.
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param size Offset size.
+     */
+    public void setInlineSize(long pageAddr, int size) {
+        if (getVersion() > 1)
+            PageUtils.putShort(pageAddr, inlineSizeOff, (short)size);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public int getInlineSize(long pageAddr) {
+        return getVersion() > 1 ? PageUtils.getShort(pageAddr, inlineSizeOff) : 0;
     }
 }
