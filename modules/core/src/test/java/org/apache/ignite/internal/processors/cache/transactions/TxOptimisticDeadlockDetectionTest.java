@@ -94,8 +94,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -289,7 +289,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     key = keys.get(1);
 
                     ClusterNode primaryNode =
-                        ((IgniteCacheProxy)cache).context().affinity().primary(key, NONE);
+                        ((IgniteCacheProxy)cache).context().affinity().primaryByKey(key, NONE);
 
                     List<Integer> primaryKeys =
                         primaryKeys(grid(primaryNode).cache(CACHE_NAME), 5, key + (100 * threadNum));

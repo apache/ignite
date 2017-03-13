@@ -21,10 +21,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -43,7 +45,9 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
@@ -51,6 +55,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous task test.
@@ -195,6 +200,80 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testClosureWithNestedInternalTask() throws Exception {
+        try {
+            IgniteEx ignite = startGrid(0);
+
+            ComputeTaskInternalFuture<String> fut = ignite.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
+                /** */
+                @IgniteInstanceResource
+                private IgniteEx g;
+
+                @Override public String call() throws Exception {
+                    return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                }
+            }, ignite.cluster().nodes());
+
+            assertEquals("DONE", fut.get(3000));
+        }
+        finally {
+            stopGrid(0, true);
+        }
+    }
+
+    /** Test task with continuation. */
+    @GridInternal
+    public static class NestedHoldccTask extends ComputeTaskAdapter<String, String> {
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable String arg) throws IgniteException {
+            Map<ComputeJob, ClusterNode> map = new HashMap<>();
+
+            for (ClusterNode node : subgrid)
+                map.put(new NestedHoldccJob(), node);
+
+            return map;
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String reduce(List<ComputeJobResult> results) throws IgniteException {
+            return results.get(0).getData();
+        }
+    }
+
+    /** Test job. */
+    public static class NestedHoldccJob extends ComputeJobAdapter {
+        /** */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        /** */
+        private int cnt = 0;
+
+        /** {@inheritDoc} */
+        @Override public Object execute() throws IgniteException {
+            if (cnt < 1) {
+                cnt++;
+
+                jobCtx.holdcc();
+
+                new Timer().schedule(new TimerTask() {
+                    @Override public void run() {
+                        jobCtx.callcc();
+                    }
+                }, 500);
+
+                return "NOT DONE";
+            }
+
+            return "DONE";
+        }
+    }
+
     /** */
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestMultipleHoldccCallsClosure implements IgniteClosure<Object, Boolean> {
@@ -223,7 +302,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
             try {
                 jobCtx.holdcc();
             }
-            catch (IllegalStateException e) {
+            catch (IllegalStateException ignored) {
                 success = true;
                 log.info("Second holdcc() threw IllegalStateException as expected.");
             }

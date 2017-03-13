@@ -486,7 +486,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             MiniFuture f = (MiniFuture)fut;
 
             if (f.node().id().equals(nodeId)) {
-                f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
+                f.onResult();
 
                 found = true;
             }
@@ -947,7 +947,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
                         if (e instanceof ClusterTopologyCheckedException)
-                            fut.onResult((ClusterTopologyCheckedException)e);
+                            fut.onResult();
                         else {
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("DHT lock fut, failed to send request [txId=" + nearLockVer +
@@ -1196,9 +1196,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         }
 
         /**
-         * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onResult() {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT lock fut, mini future node left [txId=" + nearLockVer +
                     ", dhtTxId=" + lockVer +

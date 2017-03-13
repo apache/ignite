@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -343,6 +344,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService qryExecSvc;
+
+    /** */
+    @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
@@ -400,6 +405,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
+     * @param callbackExecSvc Callback executor service.
+     * @param qryExecSvc Query executor service.
      * @param plugins Plugin providers.
      * @throws IgniteCheckedException In case of error.
      */
@@ -421,6 +428,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
+        ExecutorService qryExecSvc,
         List<PluginProvider> plugins
     ) {
         assert grid != null;
@@ -442,6 +450,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.affExecSvc = affExecSvc;
         this.idxExecSvc = idxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
+        this.qryExecSvc = qryExecSvc;
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -609,8 +618,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public String gridName() {
-        return cfg.getGridName();
+    @Override public String igniteInstanceName() {
+        return cfg.getIgniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -876,7 +885,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Grid memory stats [grid=" + gridName() + ']');
+        X.println(">>> Grid memory stats [igniteInstanceName=" + igniteInstanceName() + ']');
 
         for (GridComponent comp : comps)
             comp.printMemoryStats();
@@ -1002,6 +1011,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override @Nullable public ExecutorService getIndexingExecutorService() {
         return idxExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getQueryExecutorService() {
+        return qryExecSvc;
     }
 
     /** {@inheritDoc} */

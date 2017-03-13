@@ -178,7 +178,6 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
         this.log = log.getLogger(HadoopShuffleJob.class);
         this.embedded = embedded;
 
-        // No stripes for combiner.
         boolean stripeMappers0 = get(job.info(), SHUFFLE_MAPPER_STRIPED_OUTPUT, true);
 
         if (stripeMappers0) {
@@ -247,11 +246,11 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, IgniteInClosure2X<T, HadoopMessage> io) {
+    public void startSending(String igniteInstanceName, IgniteInClosure2X<T, HadoopMessage> io) {
         assert snd == null;
         assert io != null;
 
@@ -259,7 +258,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         if (!stripeMappers) {
             if (!flushed) {
-                snd = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
+                snd = new GridWorker(igniteInstanceName, "hadoop-shuffle-" + job.id(), log) {
                     @Override protected void body() throws InterruptedException {
                         try {
                             while (!isCancelled()) {

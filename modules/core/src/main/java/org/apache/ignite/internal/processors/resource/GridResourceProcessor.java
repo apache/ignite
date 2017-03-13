@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -569,7 +570,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Resource processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Resource processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
 
         ioc.printMemoryStats();
     }

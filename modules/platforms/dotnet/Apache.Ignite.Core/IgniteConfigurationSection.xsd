@@ -1217,6 +1217,11 @@
                                             <xs:documentation>Assembly-qualified type name.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="pluginConfigurationClosureFactoryId" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Id to locate PlatformPluginConfigurationClosureFactory on Java side.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

@@ -1725,7 +1725,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -1819,7 +1819,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
+        registerMBean(igniteInstanceName, this, TcpDiscoverySpiMBean.class);
 
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
@@ -1830,7 +1830,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         cfgNodeId = ignite.configuration().getNodeId();
 
-        impl.spiStart(gridName);
+        impl.spiStart(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -1989,7 +1989,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        MarshallerUtils.setNodeName(marsh, gridName);
+        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         return marsh;
     }

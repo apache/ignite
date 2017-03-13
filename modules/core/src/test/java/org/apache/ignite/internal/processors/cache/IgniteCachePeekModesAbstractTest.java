@@ -73,8 +73,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     private static final int HEAP_ENTRIES = 30;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setSwapSpaceSpi(spi());
 
@@ -102,8 +102,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
@@ -1009,9 +1009,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }
@@ -1081,9 +1081,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.backupByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }

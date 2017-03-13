@@ -120,10 +120,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private volatile CyclicBarrier updateBarrier;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
@@ -538,7 +538,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 
@@ -671,7 +671,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block2.");
 
@@ -704,7 +704,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private IgniteBiTuple<Integer, Integer> findKeys(Ignite ignite, ClusterNode...nodes) {
         ClusterNode newNode = new TcpDiscoveryNode();
 
-        GridTestUtils.setFieldValue(newNode, "consistentId", getTestGridName(4));
+        GridTestUtils.setFieldValue(newNode, "consistentId", getTestIgniteInstanceName(4));
         GridTestUtils.setFieldValue(newNode, "id", UUID.randomUUID());
 
         List<ClusterNode> topNodes = new ArrayList<>();
@@ -853,13 +853,13 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         GridCacheAffinityManager aff = ignite0.context().cache().internalCache(null).context().affinity();
 
-        List<ClusterNode> nodes1 = aff.nodes(key1, topVer1);
-        List<ClusterNode> nodes2 = aff.nodes(key1, topVer2);
+        List<ClusterNode> nodes1 = aff.nodesByKey(key1, topVer1);
+        List<ClusterNode> nodes2 = aff.nodesByKey(key1, topVer2);
 
         assertEquals(nodes1, nodes2);
 
-        nodes1 = aff.nodes(key2, topVer1);
-        nodes2 = aff.nodes(key2, topVer2);
+        nodes1 = aff.nodesByKey(key2, topVer1);
+        nodes2 = aff.nodesByKey(key2, topVer2);
 
         assertFalse(nodes1.get(0).equals(nodes2.get(0)));
 
@@ -1098,7 +1098,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        ignite3 = startGrid(3);
+        startGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -1208,7 +1208,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         client = false;
 
-        IgniteEx ignite3 = startGrid(3);
+        startGrid(3);
 
         log.info("Stop block.");
 
@@ -1895,7 +1895,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
@@ -1935,7 +1935,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     log.error("Failed to wait for update.");
 
                     for (Ignite ignite : G.allGrids())
@@ -2055,8 +2055,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -2118,7 +2118,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     ClusterNode node = msg.get1();
 
-                    log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                    log.info("Send blocked message: [node=" +
+                        node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                         ", msg=" + msg.get2().message() + ']');
 
                     super.sendMessage(msg.get1(), msg.get2());

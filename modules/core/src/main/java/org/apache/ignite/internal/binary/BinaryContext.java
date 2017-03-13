@@ -79,12 +79,13 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProces
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -98,6 +99,7 @@ import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -193,6 +195,11 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
 
+        sysClss.add(IgniteUuid.class.getName());
+
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
@@ -261,7 +268,7 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getIgniteInstanceName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -277,6 +284,7 @@ public class BinaryContext {
 
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
+        registerPredefinedType(Object.class, GridBinaryMarshaller.OBJECT);
         registerPredefinedType(Byte.class, GridBinaryMarshaller.BYTE);
         registerPredefinedType(Boolean.class, GridBinaryMarshaller.BOOLEAN);
         registerPredefinedType(Short.class, GridBinaryMarshaller.SHORT);
@@ -289,6 +297,7 @@ public class BinaryContext {
         registerPredefinedType(BigDecimal.class, GridBinaryMarshaller.DECIMAL);
         registerPredefinedType(Date.class, GridBinaryMarshaller.DATE);
         registerPredefinedType(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        registerPredefinedType(Time.class, GridBinaryMarshaller.TIME);
         registerPredefinedType(UUID.class, GridBinaryMarshaller.UUID);
 
         registerPredefinedType(byte[].class, GridBinaryMarshaller.BYTE_ARR);
@@ -304,6 +313,7 @@ public class BinaryContext {
         registerPredefinedType(UUID[].class, GridBinaryMarshaller.UUID_ARR);
         registerPredefinedType(Date[].class, GridBinaryMarshaller.DATE_ARR);
         registerPredefinedType(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        registerPredefinedType(Time[].class, GridBinaryMarshaller.TIME_ARR);
         registerPredefinedType(Object[].class, GridBinaryMarshaller.OBJ_ARR);
 
         // Special collections.
@@ -365,7 +375,7 @@ public class BinaryContext {
                 return false;
 
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
-                GridQueryProcessor.isGeometryClass(cls);
+                QueryUtils.isGeometryClass(cls);
         }
         else
             return desc.useOptimizedMarshaller();

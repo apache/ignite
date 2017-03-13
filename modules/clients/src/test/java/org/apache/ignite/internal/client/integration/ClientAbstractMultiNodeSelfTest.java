@@ -154,8 +154,8 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setLocalHost(HOST);
 
@@ -268,12 +268,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         final GridClientCompute singleNodePrj = dflt.projection(Collections.singletonList(iter.next()));
 
         final GridClientNode second = iter.next();
-
-        final GridClientPredicate<GridClientNode> noneFilter = new GridClientPredicate<GridClientNode>() {
-            @Override public boolean apply(GridClientNode node) {
-                return false;
-            }
-        };
 
         final GridClientPredicate<GridClientNode> targetFilter = new GridClientPredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode node) {

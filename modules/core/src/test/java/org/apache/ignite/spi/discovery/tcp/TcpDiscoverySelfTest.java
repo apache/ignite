@@ -134,21 +134,21 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         TcpDiscoverySpi spi = nodeSpi.get();
 
         if (spi == null) {
-            spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
+            spi = igniteInstanceName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
                 new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
         }
         else
             nodeSpi.set(null);
 
-        discoMap.put(gridName, spi);
+        discoMap.put(igniteInstanceName, spi);
 
         spi.setIpFinder(ipFinder);
 
@@ -173,10 +173,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        if (!gridName.contains("LoopbackProblemTest"))
+        if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
-        if (gridName.contains("testFailureDetectionOnNodePing")) {
+        if (igniteInstanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
             spi.setHeartbeatFrequency(40000);
         }
@@ -186,14 +186,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (nodeId != null)
             cfg.setNodeId(nodeId);
 
-        if (gridName.contains("NonSharedIpFinder")) {
+        if (igniteInstanceName.contains("NonSharedIpFinder")) {
             TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
             finder.setAddresses(Arrays.asList("127.0.0.1:47501"));
 
             spi.setIpFinder(finder);
         }
-        else if (gridName.contains("MulticastIpFinder")) {
+        else if (igniteInstanceName.contains("MulticastIpFinder")) {
             TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
             finder.setAddressRequestAttempts(5);
@@ -207,16 +207,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (U.isMacOs())
                 spi.setLocalAddress(F.first(U.allLocalIps()));
         }
-        else if (gridName.contains("testPingInterruptedOnNodeFailedPingingNode"))
+        else if (igniteInstanceName.contains("testPingInterruptedOnNodeFailedPingingNode"))
             cfg.setFailureDetectionTimeout(30_000);
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode"))
+        else if (igniteInstanceName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode"))
             cfg.setFailureDetectionTimeout(3_000);
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
+        else if (igniteInstanceName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLog = new GridStringLogger());
         }
-        else if (gridName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (igniteInstanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
             cfg.setGridLogger(strLog = new GridStringLogger());
 
         cfg.setClientMode(client);
@@ -302,11 +302,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            final AtomicInteger gridNameIdx = new AtomicInteger(1);
+            final AtomicInteger igniteInstanceNameIdx = new AtomicInteger(1);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    startGrid(gridNameIdx.incrementAndGet());
+                    startGrid(igniteInstanceNameIdx.incrementAndGet());
 
                     return null;
                 }
@@ -1332,7 +1332,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 nodeSpi.set(new TestCustomEventRaceSpi());
 
-                Ignite ignite2 = startGrid(2);
+                startGrid(2);
 
                 return null;
             }
@@ -2078,7 +2078,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return false;
                 }
-                catch (IgniteIllegalStateException e) {
+                catch (IgniteIllegalStateException ignored) {
                     return true;
                 }
             }
@@ -2495,8 +2495,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     try {
                         Thread.sleep(5_000);
                     }
-                    catch (InterruptedException e) {
-                        // Ignore.
+                    catch (InterruptedException ignored) {
+                        // No-op.
                     }
                 }
 
@@ -2534,17 +2534,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If anything failed.
      */
     private Ignite startGridNoOptimize(int idx) throws Exception {
-        return startGridNoOptimize(getTestGridName(idx));
+        return startGridNoOptimize(getTestIgniteInstanceName(idx));
     }
 
     /**
      * Starts new grid with given name. Method optimize is not invoked.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    private Ignite startGridNoOptimize(String gridName) throws Exception {
-        return G.start(getConfiguration(gridName));
+    private Ignite startGridNoOptimize(String igniteInstanceName) throws Exception {
+        return G.start(getConfiguration(igniteInstanceName));
     }
 }

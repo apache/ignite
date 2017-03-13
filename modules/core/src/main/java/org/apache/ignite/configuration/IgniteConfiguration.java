@@ -169,6 +169,9 @@ public class IgniteConfiguration {
     @Deprecated
     public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default size of query thread pool. */
+    public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
     /** Default keep alive time for system thread pool. */
     @Deprecated
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -224,8 +227,8 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
-    /** Optional grid name. */
-    private String gridName;
+    /** Optional local Ignite instance name. */
+    private String igniteInstanceName;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -265,6 +268,9 @@ public class IgniteConfiguration {
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
+
+    /** Query pool size. */
+    private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -503,26 +509,26 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
-        connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
+        connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
+        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        gridName = cfg.getGridName();
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         igniteHome = cfg.getIgniteHome();
+        igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -534,8 +540,8 @@ public class IgniteConfiguration {
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
-        metricsHistSize = cfg.getMetricsHistorySize();
         metricsExpTime = cfg.getMetricsExpireTime();
+        metricsHistSize = cfg.getMetricsHistorySize();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
@@ -549,6 +555,7 @@ public class IgniteConfiguration {
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
+        qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -574,12 +581,27 @@ public class IgniteConfiguration {
     /**
      * Gets optional grid name. Returns {@code null} if non-default grid name was not
      * provided.
+     * <p>The name only works locally and has no effect on topology</p>
      *
      * @return Optional grid name. Can be {@code null}, which is default grid name, if
      *      non-default grid name was not provided.
+     * @deprecated Use {@link #getIgniteInstanceName()} instead.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
+    }
+
+    /**
+     * Gets optional local instance name. Returns {@code null} if non-default local instance
+     * name was not provided.
+     * <p>The name only works locally and has no effect on topology</p>
+     *
+     * @return Optional local instance name. Can be {@code null}, which is default local
+     * instance name, if non-default local instance name was not provided.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
@@ -628,9 +650,22 @@ public class IgniteConfiguration {
      * @param gridName Grid name to set. Can be {@code null}, which is default
      *      grid name.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setIgniteInstanceName(String)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setGridName(String gridName) {
-        this.gridName = gridName;
+        return setIgniteInstanceName(gridName);
+    }
+
+    /**
+     * Sets of local instance name. Note that {@code null} is a default local instance name.
+     *
+     * @param instanceName Local instance name to set. Can be {@code null}. which is default
+     * local instance name.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setIgniteInstanceName(String instanceName) {
+        this.igniteInstanceName = instanceName;
 
         return this;
     }
@@ -869,6 +904,17 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Size of thread pool that is in charge of processing query messages.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_QUERY_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size to be used in grid for query messages.
+     */
+    public int getQueryThreadPoolSize() {
+        return qryPoolSize;
+    }
+
+    /**
      * Sets thread pool size to use within grid.
      *
      * @param poolSize Thread pool size to use within grid.
@@ -970,6 +1016,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setUtilityCachePoolSize(int poolSize) {
         utilityCachePoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets query thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getQueryThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setQueryThreadPoolSize(int poolSize) {
+        qryPoolSize = poolSize;
 
         return this;
     }

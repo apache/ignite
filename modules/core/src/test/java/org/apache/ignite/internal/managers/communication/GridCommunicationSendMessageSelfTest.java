@@ -61,8 +61,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -129,7 +129,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         long time = System.nanoTime();
 
         for (int i = 1; i <= SAMPLE_CNT; i++) {
-            mgr0.send(grid(1).localNode(), topic, new TestMessage(), GridIoPolicy.PUBLIC_POOL);
+            mgr0.sendToCustomTopic(grid(1).localNode(), topic, new TestMessage(), GridIoPolicy.PUBLIC_POOL);
 
             if (i % 500 == 0)
                 info("Sent messages count: " + i);

@@ -181,7 +181,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         try {
             if (stopping) {
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T1.class,
-                    new IgniteCheckedException("Closure processor cannot be used on stopped grid: " + ctx.gridName()));
+                    new IgniteCheckedException("Closure processor cannot be used on stopped grid: " + ctx.igniteInstanceName()));
             }
 
             if (F.isEmpty(nodes))
@@ -776,7 +776,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture fut = new GridWorkerFuture();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         if (ldr != null)
@@ -902,7 +902,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
+    public <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, byte plc)
         throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
@@ -918,7 +918,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "closure-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         if (ldr != null)

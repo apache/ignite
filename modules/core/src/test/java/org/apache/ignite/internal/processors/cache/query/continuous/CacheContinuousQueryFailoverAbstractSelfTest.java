@@ -133,8 +133,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     private int backups = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -998,7 +998,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                             tx.commit();
                         }
-                        catch (CacheException | ClusterTopologyException e) {
+                        catch (CacheException | ClusterTopologyException ignored) {
                             log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
 
                             continue;
@@ -1014,7 +1014,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                             tx.commit();
                         }
-                        catch (CacheException | ClusterTopologyException e) {
+                        catch (CacheException | ClusterTopologyException ignored) {
                             log.warning("Failed put. [Key=" + key + ", val=" + key + "]");
 
                             continue;
@@ -2408,7 +2408,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             U.sleep(sleepTime);
         }
-        catch (IgniteInterruptedCheckedException e) {
+        catch (IgniteInterruptedCheckedException ignored) {
             Thread.interrupted();
         }
     }

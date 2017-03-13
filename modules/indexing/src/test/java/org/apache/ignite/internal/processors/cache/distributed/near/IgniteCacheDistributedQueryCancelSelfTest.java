@@ -22,9 +22,7 @@ import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -63,8 +61,8 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
@@ -73,7 +71,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg);
 
-        if ("client".equals(gridName))
+        if ("client".equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;

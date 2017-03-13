@@ -343,8 +343,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         catch (GridCacheEntryRemovedException ignore) {
             return false;
         }
-        catch (BinaryInvalidTypeException ignore) {
-            log.error("An attempt to undeploy cache with binary objects.", ignore);
+        catch (BinaryInvalidTypeException ex) {
+            log.error("An attempt to undeploy cache with binary objects.", ex);
 
             return false;
         }
@@ -746,7 +746,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache deployment manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Cache deployment manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ']');
         X.println(">>>   Undeploys: " + undeploys.size());
         X.println(">>>   Cached deployments: " + deps.size());
         X.println(">>>   All participants: " + allParticipants.size());

@@ -87,10 +87,12 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Common\ExceptionFactory.cs" />
     <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
@@ -189,6 +191,7 @@
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
     <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
@@ -454,6 +457,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\IPlatformTarget.cs" />
     <Compile Include="Interop\JavaObject.cs" />
     <Compile Include="Interop\Package-Info.cs" />
     <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
@@ -488,6 +492,7 @@
     <Compile Include="Plugin\IPluginConfiguration.cs" />
     <Compile Include="Plugin\IPluginContext.cs" />
     <Compile Include="Plugin\IPluginProvider.cs" />
+    <Compile Include="Plugin\PluginCallback.cs" />
     <Compile Include="Plugin\PluginNotFoundException.cs" />
     <Compile Include="Plugin\PluginProviderTypeAttribute.cs" />
     <Compile Include="Plugin\Cache\ICachePluginConfiguration.cs" />

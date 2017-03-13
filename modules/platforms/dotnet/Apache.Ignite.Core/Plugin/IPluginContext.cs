@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Plugin
 {
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Interop;
+
     /// <summary>
     /// Plugin execution context.
     /// </summary>
@@ -36,5 +39,30 @@ namespace Apache.Ignite.Core.Plugin
         /// Gets the plugin configuration.
         /// </summary>
         T PluginConfiguration { get; }
+
+        /// <summary>
+        /// Gets a reference to plugin extension on Java side.
+        /// <para />
+        /// Extensions on Java side are configured via PluginProvider.initExtensions().
+        /// Extension should implement PlatformExtension interface to be accessible from this method.
+        /// </summary>
+        /// <param name="id">Extension id. Equal to PlatformExtension.id().</param>
+        /// <returns>Reference to a plugin extension on Java side.</returns>
+        IPlatformTarget GetExtension(int id);
+
+        /// <summary>
+        /// Registers custom exception mapping: when Java exception of specified class occurs, it will be mapped
+        /// using provided factory delegate.
+        /// </summary>
+        /// <param name="className">Name of the Java exception class to be mapped.</param>
+        /// <param name="factory">Exception factory delegate.</param>
+        void RegisterExceptionMapping(string className, ExceptionFactory factory);
+
+        /// <summary>
+        /// Registers Java->.NET callback.
+        /// </summary>
+        /// <param name="callbackId">Callback id.</param>
+        /// <param name="callback">Callback delegate.</param>
+        void RegisterCallback(long callbackId, PluginCallback callback);
     }
 }

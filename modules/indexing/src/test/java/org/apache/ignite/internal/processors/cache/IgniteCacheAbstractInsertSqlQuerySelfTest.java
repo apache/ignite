@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryAbstractIdentityResolver;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
@@ -45,6 +46,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
 /**
  *
@@ -77,8 +80,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
@@ -126,23 +129,28 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             createCaches();
         else
             createBinaryCaches();
+
+        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
      *
      */
-    protected void createCaches() {
+    void createCaches() {
         ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
         ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
         ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
         ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
         ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
+        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
     }
 
     /**
      *
      */
     final void createBinaryCaches() {
+        ignite(0).createCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
+
         {
             CacheConfiguration s2pCcfg = cacheConfig("S2P", true, false);
 

@@ -24,8 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -131,22 +129,20 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         stopGrid(1);
 
-        if (!getMarshCtxFileStoreExecutorSrvc((GridKernalContext) U.field(cl1, "ctx"))
-                .awaitTermination(5000, TimeUnit.MILLISECONDS))
-            fail("Failed to wait for executor service used by MarshallerContext to shutdown");
-
         File[] files = Paths.get(TMP_DIR, "marshaller").toFile().listFiles();
 
         assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
-        assertEquals(TMP_DIR + "/marshaller directory should contain exactly one file", 1, files.length);
-        assertEquals(clsName, new String(Files.readAllBytes(files[0].toPath())));
-    }
 
-    /**
-     * @param ctx Context.
-     */
-    private ExecutorService getMarshCtxFileStoreExecutorSrvc(GridKernalContext ctx) {
-        return U.field(U.field(ctx, "marshCtx"), "execSrvc");
+        boolean orgClsMarshalled = false;
+
+        for (File f : files) {
+            if (clsName.equals(new String(Files.readAllBytes(f.toPath())))) {
+                orgClsMarshalled = true;
+                break;
+            }
+        }
+
+        assertTrue(clsName + " should be marshalled and stored to disk", orgClsMarshalled);
     }
 
 

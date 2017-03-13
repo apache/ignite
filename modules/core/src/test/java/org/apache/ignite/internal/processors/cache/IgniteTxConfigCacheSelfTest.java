@@ -66,8 +66,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     private static final long TX_TIMEOUT = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -168,7 +168,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
             fail("Timeout exception must be thrown");
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
         finally {

@@ -103,6 +103,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -153,8 +154,8 @@ public abstract class GridAbstractTest extends TestCase {
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
-    /** Starting grid name. */
-    protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
+    /** Starting Ignite instance name. */
+    protected static final ThreadLocal<String> startingIgniteInstanceName = new ThreadLocal<>();
 
     /** Force failure flag. */
     private boolean forceFailure;
@@ -174,6 +175,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
 
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
@@ -359,7 +361,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void multithreaded(Runnable r, int threadNum) throws Exception {
-        multithreaded(r, threadNum, getTestGridName());
+        multithreaded(r, threadNum, getTestIgniteInstanceName());
     }
 
     /**
@@ -387,7 +389,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
-        return multithreadedAsync(r, threadNum, getTestGridName());
+        return multithreadedAsync(r, threadNum, getTestIgniteInstanceName());
     }
 
     /**
@@ -414,7 +416,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void multithreaded(Callable<?> c, int threadNum) throws Exception {
-        multithreaded(c, threadNum, getTestGridName());
+        multithreaded(c, threadNum, getTestIgniteInstanceName());
     }
 
     /**
@@ -440,7 +442,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Future.
      */
     protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
-        return multithreadedAsync(c, threadNum, getTestGridName());
+        return multithreadedAsync(c, threadNum, getTestIgniteInstanceName());
     }
 
     /**
@@ -623,7 +625,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If anything failed.
      */
     protected Ignite startGrid() throws Exception {
-        return startGrid(getTestGridName());
+        return startGrid(getTestIgniteInstanceName());
     }
 
     /**
@@ -730,7 +732,7 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** */
     protected void stopGrid() {
-        stopGrid(getTestGridName());
+        stopGrid(getTestIgniteInstanceName());
     }
 
     /**
@@ -741,7 +743,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startGrid(int idx) throws Exception {
-        return (IgniteEx)startGrid(getTestGridName(idx));
+        return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
     }
 
     /**
@@ -753,43 +755,43 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If anything failed.
      */
     protected Ignite startGrid(int idx, GridSpringResourceContext ctx) throws Exception {
-        return startGrid(getTestGridName(idx), ctx);
+        return startGrid(getTestIgniteInstanceName(idx), ctx);
     }
 
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName) throws Exception {
-        return startGrid(gridName, (GridSpringResourceContext)null);
+    protected Ignite startGrid(String igniteInstanceName) throws Exception {
+        return startGrid(igniteInstanceName, (GridSpringResourceContext)null);
     }
 
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
+    protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
+        return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+    protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        if (!isRemoteJvm(gridName)) {
-            startingGrid.set(gridName);
+        if (!isRemoteJvm(igniteInstanceName)) {
+            startingIgniteInstanceName.set(igniteInstanceName);
 
             try {
                 Ignite node = IgnitionEx.start(cfg, ctx);
@@ -804,30 +806,48 @@ public abstract class GridAbstractTest extends TestCase {
                 return node;
             }
             finally {
-                startingGrid.set(null);
+                startingIgniteInstanceName.set(null);
             }
         }
         else
-            return startRemoteGrid(gridName, null, ctx);
+            return startRemoteGrid(igniteInstanceName, null, ctx);
     }
 
     /**
      * Starts new grid at another JVM with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfg Ignite configuration.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+    protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
+        return startRemoteGrid(igniteInstanceName, cfg, ctx, grid(0), true);
+    }
+
+    /**
+     * Starts new grid at another JVM with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfg Ignite configuration.
+     * @param ctx Spring context.
+     * @param locNode Local node.
+     * @param resetDiscovery Reset DiscoverySpi.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx,
+        IgniteEx locNode, boolean resetDiscovery)
         throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
 
         if (cfg == null)
-            cfg = optimize(getConfiguration(gridName));
+            cfg = optimize(getConfiguration(igniteInstanceName));
 
-        return new IgniteProcessProxy(cfg, log, grid(0));
+        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
     }
 
     /**
@@ -835,6 +855,7 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @param cfg Configuration.
      * @return Optimized configuration (by modifying passed in one).
+     * @throws IgniteCheckedException On error.
      */
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
@@ -857,36 +878,36 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      */
-    protected void stopGrid(@Nullable String gridName) {
-        stopGrid(gridName, true);
+    protected void stopGrid(@Nullable String igniteInstanceName) {
+        stopGrid(igniteInstanceName, true);
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
     @SuppressWarnings({"deprecation"})
-    protected void stopGrid(@Nullable String gridName, boolean cancel) {
+    protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         try {
-            Ignite ignite = grid(gridName);
+            Ignite ignite = grid(igniteInstanceName);
 
-            assert ignite != null : "Ignite returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
                 ((IgniteKernal)ignite).context().localNodeId() + ']');
 
-            if (!isRemoteJvm(gridName))
-                G.stop(gridName, cancel);
+            if (!isRemoteJvm(igniteInstanceName))
+                G.stop(igniteInstanceName, cancel);
             else
-                IgniteProcessProxy.stop(gridName, cancel);
+                IgniteProcessProxy.stop(igniteInstanceName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
         catch (Throwable e) {
-            error("Failed to stop grid [gridName=" + gridName + ", cancel=" + cancel + ']', e);
+            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
         }
@@ -968,8 +989,8 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(100);
             }
             catch (InterruptedException ignored) {
-                throw new IgniteCheckedException("Interrupted while waiting for remote nodes [gridName=" + ignite.name() +
-                    ", count=" + cnt + ']');
+                throw new IgniteCheckedException("Interrupted while waiting for remote nodes [igniteInstanceName=" +
+                    ignite.name() + ", count=" + cnt + ']');
             }
         }
     }
@@ -1010,7 +1031,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(int idx) {
-        return grid(getTestGridName(idx));
+        return grid(getTestIgniteInstanceName(idx));
     }
 
     /**
@@ -1028,7 +1049,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected IgniteEx grid() {
         if (!isMultiJvm())
-            return (IgniteEx)G.ignite(getTestGridName());
+            return (IgniteEx)G.ignite(getTestIgniteInstanceName());
         else
             throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
@@ -1052,36 +1073,36 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Starts grid using provided grid name and spring config location.
+     * Starts grid using provided Ignite instance name and spring config location.
      * <p>
      * Note that grids started this way should be stopped with {@code G.stop(..)} methods.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param springCfgPath Path to config file.
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, String springCfgPath) throws Exception {
-        return startGrid(gridName, loadConfiguration(springCfgPath));
+    protected Ignite startGrid(String igniteInstanceName, String springCfgPath) throws Exception {
+        return startGrid(igniteInstanceName, loadConfiguration(springCfgPath));
     }
 
     /**
-     * Starts grid using provided grid name and config.
+     * Starts grid using provided Ignite instance name and config.
      * <p>
      * Note that grids started this way should be stopped with {@code G.stop(..)} methods.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param cfg Config.
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
-        cfg.setGridName(gridName);
+    protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg) throws Exception {
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
-        if (!isRemoteJvm(gridName))
+        if (!isRemoteJvm(igniteInstanceName))
             return G.start(cfg);
         else
-            return startRemoteGrid(gridName, cfg, null);
+            return startRemoteGrid(igniteInstanceName, cfg, null);
     }
 
     /**
@@ -1139,7 +1160,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param idx Index of the grid to stop.
      */
     protected void stopGrid(int idx) {
-        stopGrid(getTestGridName(idx), false);
+        stopGrid(getTestIgniteInstanceName(idx), false);
     }
 
     /**
@@ -1148,22 +1169,22 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected void stopGrid(int idx, boolean cancel) {
-        String gridName = getTestGridName(idx);
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
 
         try {
-            Ignite ignite = G.ignite(gridName);
+            Ignite ignite = G.ignite(igniteInstanceName);
 
-            assert ignite != null : "Ignite returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            G.stop(gridName, cancel);
+            G.stop(igniteInstanceName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
         catch (Throwable e) {
-            error("Failed to stop grid [gridName=" + gridName + ", cancel=" + cancel + ']', e);
+            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
         }
@@ -1173,7 +1194,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param idx Index of the grid to stop.
      */
     protected void stopAndCancelGrid(int idx) {
-        stopGrid(getTestGridName(idx), true);
+        stopGrid(getTestIgniteInstanceName(idx), true);
     }
 
     /**
@@ -1181,20 +1202,20 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected IgniteConfiguration getConfiguration() throws Exception {
-        // Generate unique grid name.
-        return getConfiguration(getTestGridName());
+        // Generate unique Ignite instance name.
+        return getConfiguration(getTestIgniteInstanceName());
     }
 
     /**
      * This method should be overridden by subclasses to change configuration parameters.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration used for starting of grid.
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(gridName, getTestResources());
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(igniteInstanceName, getTestResources());
 
         cfg.setNodeId(null);
 
@@ -1224,11 +1245,11 @@ public abstract class GridAbstractTest extends TestCase {
             bCfg.setNameMapper(new BinaryBasicNameMapper(true));
         }
 
-        if (gridName != null && gridName.matches(".*\\d")) {
+        if (igniteInstanceName != null && igniteInstanceName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
 
-            if (gridName.startsWith(getTestGridName())) {
-                String idxStr = String.valueOf(getTestGridIndex(gridName));
+            if (igniteInstanceName.startsWith(getTestIgniteInstanceName())) {
+                String idxStr = String.valueOf(getTestIgniteInstanceIndex(igniteInstanceName));
 
                 while (idxStr.length() < 5)
                     idxStr = '0' + idxStr;
@@ -1243,12 +1264,12 @@ public abstract class GridAbstractTest extends TestCase {
             else {
                 char[] chars = idStr.toCharArray();
 
-                chars[0] = gridName.charAt(gridName.length() - 1);
+                chars[0] = igniteInstanceName.charAt(igniteInstanceName.length() - 1);
                 chars[1] = '0';
 
                 chars[chars.length - 3] = '0';
                 chars[chars.length - 2] = '0';
-                chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+                chars[chars.length - 1] = igniteInstanceName.charAt(igniteInstanceName.length() - 1);
 
                 cfg.setNodeId(UUID.fromString(new String(chars)));
             }
@@ -1261,30 +1282,30 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return Generated unique test grid name.
+     * @return Generated unique test Ignite instance name.
      */
-    public String getTestGridName() {
+    public String getTestIgniteInstanceName() {
         String[] parts = getClass().getName().split("\\.");
 
         return parts[parts.length - 2] + '.' + parts[parts.length - 1];
     }
 
     /**
-     * @param idx Index of the grid.
-     * @return Indexed grid name.
+     * @param idx Index of the Ignite instance.
+     * @return Indexed Ignite instance name.
      */
-    public String getTestGridName(int idx) {
-        return getTestGridName() + idx;
+    public String getTestIgniteInstanceName(int idx) {
+        return getTestIgniteInstanceName() + idx;
     }
 
     /**
-     * Parses test grid index from test grid name.
+     * Parses test Ignite instance index from test Ignite instance name.
      *
-     * @param testGridName Test grid name, returned by {@link #getTestGridName(int)}.
-     * @return Test grid index.
+     * @param testIgniteInstanceName Test Ignite instance name, returned by {@link #getTestIgniteInstanceName(int)}.
+     * @return Test Ignite instance index.
      */
-    public int getTestGridIndex(String testGridName) {
-        return Integer.parseInt(testGridName.substring(getTestGridName().length()));
+    public int getTestIgniteInstanceIndex(String testIgniteInstanceName) {
+        return Integer.parseInt(testIgniteInstanceName.substring(getTestIgniteInstanceName().length()));
     }
 
     /**
@@ -1325,15 +1346,16 @@ public abstract class GridAbstractTest extends TestCase {
      * This method should be overridden by subclasses to change configuration parameters.
      *
      * @return Grid configuration used for starting of grid.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs)
+        throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(rsrcs.getLogger());
         cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
@@ -1465,7 +1487,7 @@ public abstract class GridAbstractTest extends TestCase {
                 afterTestsStopped();
 
                 if (startGrid)
-                    G.stop(getTestGridName(), true);
+                    G.stop(getTestIgniteInstanceName(), true);
 
                 // Remove counters.
                 tests.remove(getClass());
@@ -1547,19 +1569,19 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return {@code True} if the name of the grid indicates that it was the first started (on this JVM).
      */
-    protected boolean isFirstGrid(String gridName) {
-        return "0".equals(gridName.substring(getTestGridName().length()));
+    protected boolean isFirstGrid(String igniteInstanceName) {
+        return "0".equals(igniteInstanceName.substring(getTestIgniteInstanceName().length()));
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return <code>True</code> if test was run in multi-JVM mode and grid with this name was started at another JVM.
      */
-    protected boolean isRemoteJvm(String gridName) {
-        return isMultiJvm() && !isFirstGrid(gridName);
+    protected boolean isRemoteJvm(String igniteInstanceName) {
+        return isMultiJvm() && !isFirstGrid(igniteInstanceName);
     }
 
     /**
@@ -1723,7 +1745,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void runTest() throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new IgniteThread(getTestGridName(), "test-runner", new Runnable() {
+        Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
                     runTestInternal();
