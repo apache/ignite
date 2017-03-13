@@ -106,12 +106,26 @@ public class PivotedVectorViewConstructorTest {
         assertSame("Base vector differs from expected.", sampleParams.vec, pvv.getBaseVector());
 
         for (int idx = 0; idx < size; idx++) {
+            assertEquals("Sample pivot and unpivot differ from expected",
+                idx, sampleParams.unpivot[sampleParams.pivot[idx]]);
+
             assertEquals("Pivot differs from expected at index " + idx,
                 sampleParams.pivot[idx], pvv.pivot(idx));
+
+            assertEquals("Default unpivot differs from expected at index " + idx,
+                sampleParams.unpivot[idx], pvv.unpivot(idx));
 
             final Metric metric = new Metric(sampleParams.vec.get(idx), pvv.get(pvv.pivot(idx)));
 
             assertTrue("Not close enough at index " + idx + ", " + metric, metric.closeEnough());
+        }
+
+        for (int idx = 0; idx < size; idx++) {
+            sampleParams.vec.set(idx, sampleParams.vec.get(idx) + idx + 1);
+
+            final Metric metric = new Metric(sampleParams.vec.get(idx), pvv.get(pvv.pivot(idx)));
+
+            assertTrue("Modified value not close enough at index " + idx + ", " + metric, metric.closeEnough());
         }
     }
 
@@ -127,7 +141,7 @@ public class PivotedVectorViewConstructorTest {
             assertEquals("Unpivot differs from expected at index " + idx,
                 sampleParams.unpivot[idx], pvv.unpivot(idx));
 
-            final Metric metric = new Metric(sampleParams.vec.get(idx), pvv.get(pvv.pivot(pvv.unpivot(idx))));
+            final Metric metric = new Metric(sampleParams.vec.get(idx), pvv.get(pvv.unpivot(idx)));
 
             assertTrue("Not close enough at index " + idx + ", " + metric, metric.closeEnough());
         }
@@ -138,7 +152,7 @@ public class PivotedVectorViewConstructorTest {
         /** */ final double[] data = new double[] {0, 1};
         /** */ final Vector vec = new DenseLocalOnHeapVector(data);
         /** */ final int[] pivot = new int[] {1, 0};
-        /** */ final int[] unpivot = new int[] {0, 1};
+        /** */ final int[] unpivot = new int[] {1, 0};
     }
 
     /** */
