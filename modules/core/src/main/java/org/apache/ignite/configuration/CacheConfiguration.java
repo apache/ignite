@@ -136,6 +136,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default cache size to use with eviction policy. */
     public static final int DFLT_CACHE_SIZE = 100000;
 
+    /** Default maximum inline size for sql indexes. */
+    public static final int DFLT_SQL_INDEX_MAX_INLINE_SIZE = -1;
+
     /** Initial default near cache size. */
     public static final int DFLT_NEAR_START_SIZE = DFLT_START_SIZE / 4;
 
@@ -223,6 +226,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Cache name. */
     private String name;
+
+    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    private String memPlcName;
 
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
     private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
@@ -320,6 +326,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
+
+    /** Maximum inline size for sql indexes. */
+    private int sqlIndexMaxInlineSize = DFLT_SQL_INDEX_MAX_INLINE_SIZE;
 
     /** Write-behind feature. */
     private boolean writeBehindEnabled = DFLT_WRITE_BEHIND_ENABLED;
@@ -461,6 +470,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
+        memPlcName = cc.getMemoryPolicyName();
+        sqlIndexMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -516,6 +527,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
 
         this.name = name;
+
+        return this;
+    }
+
+    /**
+     * @return {@link MemoryPolicyConfiguration} name.
+     */
+    public String getMemoryPolicyName() {
+        return memPlcName;
+    }
+
+    /**
+     * Sets name of {@link MemoryPolicyConfiguration} for this cache.
+     *
+     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used) but should not be empty.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
+        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+
+        this.memPlcName = memPlcName;
 
         return this;
     }
@@ -1283,6 +1315,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
 
         return this;
+    }
+
+    /**
+     * Gets maximum inline size for sql indexes. If -1 returned then
+     * {@code IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE} system property is used.
+     * <p>
+     * If not set, default value is {@link #DFLT_SQL_INDEX_MAX_INLINE_SIZE}.
+     *
+     * @return Maximum payload size for offheap indexes.
+     */
+    public int getSqlIndexMaxInlineSize() {
+        return sqlIndexMaxInlineSize;
+    }
+
+    /**
+     * Sets maximum inline size for sql indexes.
+     *
+     * @param sqlIndexMaxInlineSize Maximum inline size for sql indexes.
+     */
+    public void setSqlIndexMaxInlineSize(int sqlIndexMaxInlineSize) {
+        this.sqlIndexMaxInlineSize = sqlIndexMaxInlineSize;
     }
 
     /**

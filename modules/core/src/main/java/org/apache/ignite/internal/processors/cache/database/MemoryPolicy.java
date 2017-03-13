@@ -14,17 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.database;
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.pagemem.PageMemory;
 
 /**
- * Ignite benchmark that performs transactional putAll operations.
+ * Memory policy provides access to objects configured with {@link MemoryPolicyConfiguration} configuration.
  */
-public class IgnitePutAllTxBenchmark extends IgnitePutAllBenchmark {
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("tx");
+public class MemoryPolicy {
+    /** */
+    private PageMemory pageMem;
+
+    /**
+     * @param pageMem Page mem.
+     */
+    public MemoryPolicy(PageMemory pageMem) {
+        this.pageMem = pageMem;
+    }
+
+    /**
+     *
+     */
+    public PageMemory pageMemory() {
+        return pageMem;
     }
 }

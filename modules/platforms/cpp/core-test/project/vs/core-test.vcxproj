@@ -33,7 +33,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\cache-query-32.xml" />
     <None Include="..\..\config\cache-query.xml" />
+    <None Include="..\..\config\cache-test-32.xml" />
     <None Include="..\..\config\cache-test.xml" />
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>

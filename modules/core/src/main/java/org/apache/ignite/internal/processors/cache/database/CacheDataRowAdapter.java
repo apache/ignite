@@ -559,7 +559,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
+        return cctx.memoryPolicy().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /**
