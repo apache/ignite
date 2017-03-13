@@ -42,6 +42,7 @@ import org.junit.runners.Suite;
     ConstantVectorConstructorTest.class,
     FunctionVectorConstructorTest.class,
     SingleElementVectorConstructorTest.class,
+    PivotedVectorViewConstructorTest.class,
     // Common vectors tests.
     AbstractVectorTest.class,
     VectorImplementationsTest.class,
