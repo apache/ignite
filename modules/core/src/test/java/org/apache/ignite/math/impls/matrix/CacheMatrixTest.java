@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * Tests for {@link CacheMatrix}.
- *
- * TODO: wip
  */
 @GridCommonTest(group = "Distributed Models")
 public class CacheMatrixTest extends GridCommonAbstractTest {

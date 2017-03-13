@@ -18,6 +18,10 @@
 package org.apache.ignite.math.impls.storage.matrix;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.math.StorageConstants;
+import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -58,6 +62,38 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
         ignite = grid(NODE_COUNT);
 
         ignite.configuration().setPeerClassLoadingEnabled(true);
+    }
+
+    /** */
+    public void testCacheCreation() throws Exception {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        assertNotNull("SparseDistributedMatrixStorage cache is null.", storage.cache());
+    }
+
+    /** */
+    public void testSetGet() throws Exception {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int rows = MathTestConstants.STORAGE_SIZE;
+        final int cols = MathTestConstants.STORAGE_SIZE;
+
+        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                double v = Math.random();
+                storage.set(i, j, v);
+
+                assert Double.compare(v, storage.get(i, j)) == 0;
+                assert Double.compare(v, storage.get(i,j)) == 0;
+            }
+        }
     }
 
 }

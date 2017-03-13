@@ -13,6 +13,7 @@ import it.unimi.dsi.fastutil.ints.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.impls.*;
 import java.io.*;
@@ -89,7 +90,10 @@ public class SparseDistributedMatrixStorage extends DistributionSupport implemen
         // Cache is partitioned.
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
-        return Ignition.ignite().getOrCreateCache(cfg);
+        // Random cache name.
+        cfg.setName(new IgniteUuid().shortString());
+
+        return Ignition.localIgnite().getOrCreateCache(cfg);
     }
 
     /**
@@ -116,16 +120,16 @@ public class SparseDistributedMatrixStorage extends DistributionSupport implemen
         return stoMode;
     }
 
-    @Override
-    public double get(int x, int y) {
+    /** {@inheritDoc} */
+    @Override public double get(int x, int y) {
         if (stoMode == ROW_STORAGE_MODE)
             return matrixGet(cache.getName(), x, y);
         else
             return matrixGet(cache.getName(), y, x);
     }
 
-    @Override
-    public void set(int x, int y, double v) {
+    /** {@inheritDoc} */
+    @Override public void set(int x, int y, double v) {
         if (stoMode == ROW_STORAGE_MODE)
             matrixSet(cache.getName(), x, y, v);
         else
@@ -178,18 +182,18 @@ public class SparseDistributedMatrixStorage extends DistributionSupport implemen
         });
     }
 
-    @Override
-    public int columnSize() {
+    /** {@inheritDoc} */
+    @Override public int columnSize() {
         return cols;
     }
 
-    @Override
-    public int rowSize() {
+    /** {@inheritDoc} */
+    @Override public int rowSize() {
         return rows;
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
         out.writeInt(acsMode);
@@ -197,8 +201,8 @@ public class SparseDistributedMatrixStorage extends DistributionSupport implemen
         out.writeUTF(cache.getName());
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
         cols = in.readInt();
         acsMode = in.readInt();
@@ -206,28 +210,28 @@ public class SparseDistributedMatrixStorage extends DistributionSupport implemen
         cache = ignite().getOrCreateCache(in.readUTF());
     }
 
-    @Override
-    public boolean isSequentialAccess() {
+    /** {@inheritDoc} */
+    @Override public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
-    @Override
-    public boolean isDense() {
+    /** {@inheritDoc} */
+    @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public boolean isRandomAccess() {
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
         return acsMode == RANDOM_ACCESS_MODE;
     }
 
-    @Override
-    public boolean isDistributed() {
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
         return true;
     }
 
-    @Override
-    public boolean isArrayBased() {
+    /** {@inheritDoc} */
+    @Override public boolean isArrayBased() {
         return false; 
     }
 }
