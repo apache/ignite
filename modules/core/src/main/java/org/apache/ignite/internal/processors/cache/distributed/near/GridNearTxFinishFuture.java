@@ -303,7 +303,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (initialized() || err != null) {
-                if (tx.needCheckBackup() && !nodeStop) {
+                if (tx.needCheckBackup()) {
                     assert tx.onePhaseCommit();
 
                     if (err != null)
@@ -478,7 +478,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void checkBackup() {
-        assert !hasFutures();
+        assert !hasFutures() : futures();
 
         GridDistributedTxMapping mapping = mappings.singleMapping();
 

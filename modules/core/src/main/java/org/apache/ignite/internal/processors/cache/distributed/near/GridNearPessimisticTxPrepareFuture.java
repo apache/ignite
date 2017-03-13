@@ -200,7 +200,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (!cacheCtx.isLocal()) {
                 GridDhtPartitionTopology top = cacheCtx.topology();
 
-                nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
+                nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
             }
             else
                 nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
