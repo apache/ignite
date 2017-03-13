@@ -51,7 +51,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private TransactionIsolation isolation;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Pending versions with order less than one for this message (needed for commit ordering). */
     @GridToStringInclude
@@ -100,7 +100,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
@@ -142,7 +142,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             txSize,
             addDepInfo);
 
-        assert miniId != null;
+        assert miniId != 0;
         assert nearNodeId != null;
         assert isolation != null;
 
@@ -184,7 +184,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
@@ -251,7 +251,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Mini ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -361,7 +361,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -419,7 +419,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 22:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

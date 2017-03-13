@@ -39,14 +39,8 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final int NEAR_RES_FLAG_MASK = 0x01;
-
-    /** Flag indicating if this is a check-committed response. */
-    private static final int CHECK_COMMITTED_FLAG_MASK = 0x02;
-
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Error. */
     @GridDirectTransient
@@ -54,6 +48,9 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
     /** Serialized error. */
     private byte[] checkCommittedErrBytes;
+
+    /** Flag indicating if this is a check-committed response. */
+    private boolean checkCommitted;
 
     /** Cache return value. */
     private GridCacheReturn retVal;
@@ -66,37 +63,22 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /**
-     * @param part Partition.
      * @param xid Xid version.
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridDhtTxFinishResponse(int part, GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
-        super(part, xid, futId);
+    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, int miniId) {
+        super(xid, futId);
 
-        assert miniId != null;
+        assert miniId != 0;
 
         this.miniId = miniId;
     }
 
     /**
-     * @return {@code True} if this is reply for near node.
-     */
-    public boolean nearNodeResponse() {
-        return isFlag(NEAR_RES_FLAG_MASK);
-    }
-
-    /**
-     * @param val {@code True} if this is reply for near node.
-     */
-    public void nearNodeResponse(boolean val) {
-        setFlag(val, NEAR_RES_FLAG_MASK);
-    }
-
-    /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -118,14 +100,14 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
      * @return Check committed flag.
      */
     public boolean checkCommitted() {
-        return isFlag(CHECK_COMMITTED_FLAG_MASK);
+        return checkCommitted;
     }
 
     /**
      * @param checkCommitted Check committed flag.
      */
     public void checkCommitted(boolean checkCommitted) {
-        setFlag(checkCommitted, CHECK_COMMITTED_FLAG_MASK);
+        this.checkCommitted = checkCommitted;
     }
 
     /** {@inheritDoc} */
@@ -176,6 +158,11 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtTxFinishResponse.class, this, super.toString());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -190,19 +177,25 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         }
 
         switch (writer.state()) {
-            case 7:
+            case 5:
+                if (!writer.writeBoolean("checkCommitted", checkCommitted))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeByteArray("checkCommittedErrBytes", checkCommittedErrBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+            case 7:
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeMessage("retVal", retVal))
                     return false;
 
@@ -224,7 +217,15 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
             return false;
 
         switch (reader.state()) {
-            case 7:
+            case 5:
+                checkCommitted = reader.readBoolean("checkCommitted");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 checkCommittedErrBytes = reader.readByteArray("checkCommittedErrBytes");
 
                 if (!reader.isLastRead())
@@ -232,15 +233,15 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
                 reader.incrementState();
 
-            case 8:
-                miniId = reader.readIgniteUuid("miniId");
+            case 7:
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 retVal = reader.readMessage("retVal");
 
                 if (!reader.isLastRead())
@@ -260,20 +261,6 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        StringBuilder flags = new StringBuilder();
-
-        if (checkCommitted())
-            appendFlag(flags, "checkComm");
-        if (nearNodeResponse())
-            appendFlag(flags, "nearRes");
-
-        return S.toString(GridDhtTxFinishResponse.class, this,
-            "flags", flags.toString(),
-            "super", super.toString());
+        return 9;
     }
 }

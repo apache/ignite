@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -197,7 +198,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     if (fut.getClass() == FinishMiniFuture.class) {
                         FinishMiniFuture f = (FinishMiniFuture)fut;
 
-                        if (f.futureId().equals(res.miniId())) {
+                        if (f.futureId() == res.miniId()) {
                             assert f.primary().id().equals(nodeId);
 
                             finishFut = f;
@@ -264,7 +265,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         if (fut.getClass() == CheckBackupMiniFuture.class) {
                             CheckBackupMiniFuture f = (CheckBackupMiniFuture)fut;
 
-                            if (f.futureId().equals(res.miniId())) {
+                            if (f.futureId() == res.miniId()) {
                                 assert f.node().id().equals(nodeId);
 
                                 foundFut = f;
@@ -278,7 +279,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         else if (fut.getClass() == CheckRemoteTxMiniFuture.class) {
                             CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
-                            if (f.futureId().equals(res.miniId())) {
+                            if (f.futureId() == res.miniId()) {
                                 foundFut = f;
 
                                 break;
@@ -316,8 +317,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
-            if (err != null)
+            boolean nodeStop = false;
+
+            if (err != null) {
                 tx.setRollbackOnly();
+
+                nodeStop = err instanceof NodeStoppingException;
+            }
 
             if (commit) {
                 if (tx.commitError() != null)
@@ -347,7 +353,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (tx.onePhaseCommit()) {
                     boolean commit = this.commit && err == null;
 
-                    finishOnePhase(commit);
+                    if (!nodeStop)
+                        finishOnePhase(commit);
 
                     try {
                         tx.tmFinish(commit);
@@ -430,8 +437,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
-                        if (mapping != null)
-                            finish(mapping, commit);
+                        if (mapping != null) {
+                            assert !hasFutures() : futures();
+
+                            finish(1, mapping, commit);
+                        }
                     }
                     else
                         finish(mappings.mappings(), commit);
@@ -498,6 +508,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      *
      */
     private void checkBackup() {
+        assert !hasFutures() : futures();
+
         GridDistributedTxMapping mapping = mappings.singleMapping();
 
         if (mapping != null) {
@@ -525,7 +537,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         "(backup has left grid): " + tx.xidVersion(), cause));
                 }
                 else {
-                    final CheckBackupMiniFuture mini = new CheckBackupMiniFuture(backup, mapping);
+                    final CheckBackupMiniFuture mini = new CheckBackupMiniFuture(1, backup, mapping);
 
                     add(mini);
 
@@ -677,16 +689,21 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param commit Commit flag.
      */
     private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
+        assert !hasFutures() : futures();
+
+        int miniId = 0;
+
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(m, commit);
+            finish(++miniId, m, commit);
     }
 
     /**
+     * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
      */
-    private void finish(GridDistributedTxMapping m, boolean commit) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
         ClusterNode n = m.primary();
 
         assert !m.empty();
@@ -724,7 +741,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
+            req.miniId(miniId);
 
             IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
@@ -733,7 +750,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 add(fut);
         }
         else {
-            FinishMiniFuture fut = new FinishMiniFuture(m, dhtReplyNear);
+            FinishMiniFuture fut = new FinishMiniFuture(miniId, m, dhtReplyNear);
 
             req.miniId(fut.futureId());
 
@@ -828,7 +845,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param waitRemoteTxs Wait for remote txs.
      * @return Finish request.
      */
-    private GridDhtTxFinishRequest checkCommittedRequest(IgniteUuid miniId, boolean waitRemoteTxs) {
+    private GridDhtTxFinishRequest checkCommittedRequest(int miniId, boolean waitRemoteTxs) {
         GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
             cctx.localNodeId(),
             futureId(),
@@ -865,7 +882,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     private abstract class MinFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
+
+        /**
+         * @param futId Future ID.
+         */
+        MinFuture(int futId) {
+            this.futId = futId;
+        }
 
         /**
          * @param nodeId Node ID.
@@ -882,7 +906,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Future ID.
          */
-        final IgniteUuid futureId() {
+        final int futureId() {
             return futId;
         }
     }
@@ -902,9 +926,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private final Set<UUID> dhtNodes;
 
         /**
+         * @param futId Future ID.
          * @param m Mapping.
          */
-        FinishMiniFuture(GridDistributedTxMapping m, boolean dhtReplyNear) {
+        FinishMiniFuture(int futId, GridDistributedTxMapping m, boolean dhtReplyNear) {
+            super(futId);
+
             this.m = m;
 
             if (dhtReplyNear) {
@@ -938,9 +965,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         Collection<UUID> backups = txNodes.get(nodeId);
 
                         if (!F.isEmpty(backups)) {
-                            final CheckRemoteTxMiniFuture mini = new CheckRemoteTxMiniFuture(new HashSet<>(backups));
+                            final CheckRemoteTxMiniFuture mini;
 
-                            add(mini);
+                            synchronized (sync) {
+                                int futId = Integer.MIN_VALUE + futuresCountNoLock();
+
+                                mini = new CheckRemoteTxMiniFuture(futId, new HashSet<>(backups));
+
+                                add(mini);
+                            }
 
                             GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId(), true);
 
@@ -1031,10 +1064,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private ClusterNode backup;
 
         /**
+         * @param futId Future ID.
          * @param backup Backup to check.
          * @param m Mapping associated with the backup.
          */
-        CheckBackupMiniFuture(ClusterNode backup, GridDistributedTxMapping m) {
+        CheckBackupMiniFuture(int futId, ClusterNode backup, GridDistributedTxMapping m) {
+            super(futId);
+
             this.backup = backup;
             this.m = m;
         }
@@ -1090,9 +1126,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private Set<UUID> nodes;
 
         /**
+         * @param futId Future ID.
          * @param nodes Backup nodes.
          */
-        CheckRemoteTxMiniFuture(Set<UUID> nodes) {
+        CheckRemoteTxMiniFuture(int futId, Set<UUID> nodes) {
+            super(futId);
+
             this.nodes = nodes;
         }
 

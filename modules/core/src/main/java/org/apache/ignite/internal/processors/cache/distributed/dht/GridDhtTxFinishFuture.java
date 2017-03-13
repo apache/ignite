@@ -179,7 +179,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
-                    if (f.futureId().equals(res.miniId())) {
+                    if (f.futureId() == res.miniId()) {
                         found = true;
 
                         assert f.node().id().equals(nodeId);
@@ -304,10 +304,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         boolean res = false;
 
+        int miniId = 0;
+
         for (ClusterNode n : nodes) {
             assert !n.isLocal();
 
-            MiniFuture fut = new MiniFuture(n);
+            MiniFuture fut = new MiniFuture(++miniId, n);
 
             add(fut); // Append new future.
 
@@ -390,6 +392,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         boolean res = false;
 
+        int miniId = 0;
+
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
             ClusterNode n = dhtMapping.primary();
@@ -402,7 +406,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 // Nothing to send.
                 continue;
 
-            MiniFuture fut = new MiniFuture(dhtMapping, nearMapping);
+            MiniFuture fut = new MiniFuture(++miniId, dhtMapping, nearMapping);
 
             add(fut); // Append new future.
 
@@ -477,7 +481,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     // Nothing to send.
                     continue;
 
-                MiniFuture fut = new MiniFuture(null, nearMapping);
+                MiniFuture fut = new MiniFuture(++miniId, null, nearMapping);
 
                 add(fut); // Append new future.
 
@@ -570,7 +574,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** DHT mapping. */
         @GridToStringInclude
@@ -585,19 +589,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         private ClusterNode node;
 
         /**
+         * @param futId Future ID.
          * @param node Node.
          */
-        private MiniFuture(ClusterNode node) {
+        private MiniFuture(int futId, ClusterNode node) {
+            this.futId = futId;
             this.node = node;
         }
 
         /**
+         * @param futId Future ID.
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
-        MiniFuture(GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
+        MiniFuture(int futId, GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
             assert dhtMapping == null || nearMapping == null || dhtMapping.primary().equals(nearMapping.primary());
 
+            this.futId = futId;
             this.dhtMapping = dhtMapping;
             this.nearMapping = nearMapping;
         }
@@ -605,7 +613,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

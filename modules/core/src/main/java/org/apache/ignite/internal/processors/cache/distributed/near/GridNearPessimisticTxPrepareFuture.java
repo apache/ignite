@@ -226,7 +226,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 if (dhtReplyNear && (!top.rebalanceFinished(topVer) || cctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer)))
                     dhtReplyNear = false;
 
-                nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
+                nodes = top.nodes(cacheCtx.affinity().partition(txEntry.key()), topVer);
 
                 if (nodes.size() == 1)
                     dhtReplyNear = false;

@@ -203,8 +203,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         preloadEntries.add(info);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
