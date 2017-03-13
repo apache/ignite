@@ -25,7 +25,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,9 +56,9 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.index.QueryIndexHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -64,7 +68,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -83,16 +86,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Type descriptors. */
-    private final Map<QueryTypeIdKey, QueryTypeDescriptorImpl> types = new ConcurrentHashMap8<>();
+    private final Map<QueryTypeIdKey, QueryTypeDescriptorImpl> types = new ConcurrentHashMap<>();
 
     /** Type descriptors. */
-    private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<QueryTypeNameKey, QueryTypeDescriptorImpl> typesByName = new ConcurrentHashMap<>();
 
     /** */
     private final GridQueryIndexing idx;
 
-    /** Index handler. */
-    private final QueryIndexHandler idxHnd;
+    /** RW lock for dynamic index create. */
+    private final ReadWriteLock idxLock = new ReentrantReadWriteLock();
+
+    /** All indexes. */
+    private final ConcurrentMap<QueryIndexKey, QueryIndexDescriptorImpl> idxs = new ConcurrentHashMap<>();
+
+    /** Index create/drop client futures. */
+    private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
 
     /** */
     private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
@@ -113,8 +122,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
-
-        idxHnd = new QueryIndexHandler(ctx);
     }
 
     /** {@inheritDoc} */
@@ -127,8 +134,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
-        idxHnd.onStart();
-
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
@@ -136,11 +141,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     cache.context().queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        idxHnd.onKernalStart();
     }
 
     /**
@@ -192,38 +192,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        // Register candidates.
-        idx.registerCache(space, cctx, cctx.config());
-
-        try {
-            Collection<QueryTypeDescriptorImpl> typeDescs = new ArrayList<>();
-
-            for (QueryTypeCandidate cand : cands) {
-                QueryTypeIdKey typeId = cand.typeId();
-                QueryTypeIdKey altTypeId = cand.alternativeTypeId();
-                QueryTypeDescriptorImpl desc = cand.descriptor();
-
-                if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
-                    throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                        "in cache '" + space + "'.");
-
-                types.put(typeId, desc);
-
-                if (altTypeId != null)
-                    types.put(altTypeId, desc);
-
-                desc.registered(idx.registerType(space, desc));
-
-                typeDescs.add(desc);
-            }
-
-            idxHnd.onCacheCreated(cctx.name(), typeDescs);
-        }
-        catch (IgniteCheckedException | RuntimeException e) {
-            unregisterCache0(space);
-
-            throw e;
-        }
+        registerCache0(space, cctx, cands);
 
         // Warn about possible implicit deserialization.
         if (!mustDeserializeClss.isEmpty()) {
@@ -253,16 +222,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        idxHnd.onKernalStop();
-
         busyLock.block();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
-
-        idxHnd.onStop();
 
         if (idx != null)
             idx.stop();
@@ -272,10 +237,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        idxHnd.onDisconnected();
-
         if (idx != null)
             idx.onDisconnected(reconnectFut);
+
+        // TODO: Complete index client futures, clear pending index state.
     }
 
     /**
@@ -316,6 +281,64 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Register cache in indexing SPI.
+     *
+     * @param space Space.
+     * @param cctx Cache context.
+     * @param cands Candidates.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void registerCache0(String space, GridCacheContext<?, ?> cctx, Collection<QueryTypeCandidate> cands)
+        throws IgniteCheckedException {
+        idxLock.writeLock().lock();
+
+        try {
+            idx.registerCache(space, cctx, cctx.config());
+
+            try {
+                for (QueryTypeCandidate cand : cands) {
+                    QueryTypeIdKey typeId = cand.typeId();
+                    QueryTypeIdKey altTypeId = cand.alternativeTypeId();
+                    QueryTypeDescriptorImpl desc = cand.descriptor();
+
+                    if (typesByName.putIfAbsent(new QueryTypeNameKey(space, desc.name()), desc) != null)
+                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                            "in cache '" + space + "'.");
+
+                    types.put(typeId, desc);
+
+                    if (altTypeId != null)
+                        types.put(altTypeId, desc);
+
+                    for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
+                        QueryIndexKey idxKey = new QueryIndexKey(space, idx.name());
+
+                        QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
+
+                        if (oldIdx != null) {
+                            throw new IgniteException("Duplicate index name [space=" + space + ", idxName=" + idx.name() +
+                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+                                ", table=" + desc.tableName() + ']');
+                        }
+                    }
+
+                    boolean registered = idx.registerType(space, desc);
+
+                    desc.registered(registered);
+                }
+            }
+            catch (IgniteCheckedException | RuntimeException e) {
+                unregisterCache0(space);
+
+                throw e;
+            }
+        }
+        finally {
+            idxLock.writeLock().unlock();
+        }
+    }
+
+    /**
      * Unregister cache.
      *
      * @param space Space.
@@ -323,15 +346,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void unregisterCache0(String space) {
         assert idx != null;
 
-        try {
-            idxHnd.onCacheStopped(space);
+        idxLock.writeLock().lock();
 
-            idx.unregisterCache(space);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
-        }
-        finally {
+        try {
+            // Clear types.
             Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
             while (it.hasNext()) {
@@ -342,6 +360,65 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     typesByName.remove(new QueryTypeNameKey(space, entry.getValue().name()));
                 }
+            }
+
+            // Clear indexes.
+            removeIndexesOnSpaceUnregister(space);
+
+            completeIndexClientFuturesOnSpaceUnregister(space, true);
+
+            // Notify indexing.
+            try {
+                idx.unregisterCache(space);
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + space, e);
+            }
+        }
+        finally {
+            idxLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Remove indexes during complete space unregister.
+     *
+     * @param space Space.
+     */
+    private void removeIndexesOnSpaceUnregister(String space) {
+        Iterator<Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl>> idxIt = idxs.entrySet().iterator();
+
+        while (idxIt.hasNext()) {
+            Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> idxEntry = idxIt.next();
+
+            QueryIndexKey idxKey = idxEntry.getKey();
+
+            if (F.eq(space, idxKey.space()))
+                idxIt.remove();
+        }
+    }
+
+    /**
+     * Complete index client futures in case of cache stop or type unregistration.
+     *
+     * @param space Space.
+     * @param cacheStop {@code True} if completion caused by cache stop.
+     */
+    private void completeIndexClientFuturesOnSpaceUnregister(String space, boolean cacheStop) {
+        Iterator<Map.Entry<UUID, QueryIndexClientFuture>> idxCliFutIt = idxCliFuts.entrySet().iterator();
+
+        while (idxCliFutIt.hasNext()) {
+            Map.Entry<UUID, QueryIndexClientFuture> idxCliFutEntry = idxCliFutIt.next();
+
+            QueryIndexClientFuture idxCliFut = idxCliFutEntry.getValue();
+
+            if (F.eq(space, idxCliFut.key().space())) {
+                if (cacheStop)
+                    idxCliFut.onCacheStopped();
+                else
+                    idxCliFut.onTypeUnregistered();
+
+                idxCliFutIt.remove();
             }
         }
     }
@@ -597,7 +674,46 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future completed when index is created.
      */
     public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
-        return idxHnd.onCreateIndex(space, tblName, idx, ifNotExists);
+        String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
+
+        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+        idxLock.readLock().lock();
+
+        try {
+            QueryIndexDescriptorImpl oldIdxDesc = idxs.get(idxKey);
+
+            if (oldIdxDesc != null) {
+                // Make sure that index is bound to the same table.
+                String oldTblName = oldIdxDesc.typeDescriptor().tableName();
+
+                if (!F.eq(oldTblName, tblName)) {
+                    return new GridFinishedFuture<>(new IgniteException("Index already exists and is bound to " +
+                        "another table [space=" + space + ", idxName=" + idxName + ", expTblName=" + oldTblName +
+                        ", actualTblName=" + tblName + ']'));
+                }
+
+                if (ifNotExists)
+                    return new GridFinishedFuture<>();
+                else
+                    return new GridFinishedFuture<>(new IgniteException("Index already exists [space=" + space +
+                        ", idxName=" + idxName + ']'));
+            }
+
+            UUID opId = UUID.randomUUID();
+            QueryIndexClientFuture fut = new QueryIndexClientFuture(opId, idxKey);
+
+            QueryIndexClientFuture oldFut = idxCliFuts.put(opId, fut);
+
+            assert oldFut == null;
+
+            // TODO: Start discovery.
+
+            return fut;
+        }
+        finally {
+            idxLock.readLock().unlock();
+        }
     }
 
     /**
@@ -834,24 +950,38 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
 
         try {
-            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
+            idxLock.writeLock().lock();
 
-            while (it.hasNext()) {
-                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e = it.next();
+            try {
+                Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
 
-                if (!F.eq(e.getKey().space(), space))
-                    continue;
+                while (it.hasNext()) {
+                    Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> entry = it.next();
 
-                QueryTypeDescriptorImpl desc = e.getValue();
+                    if (!F.eq(entry.getKey().space(), space))
+                        continue;
 
-                if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
-                    ldr.equals(U.detectClassLoader(desc.keyClass()))) {
-                    idxHnd.onTypeUnregistered(desc);
+                    QueryTypeDescriptorImpl desc = entry.getValue();
 
-                    idx.unregisterType(e.getKey().space(), desc);
+                    if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
+                        ldr.equals(U.detectClassLoader(desc.keyClass()))) {
+                        it.remove();
 
-                    it.remove();
+                        removeIndexesOnSpaceUnregister(space);
+
+                        completeIndexClientFuturesOnSpaceUnregister(space, false);
+
+                        try {
+                            idx.unregisterType(entry.getKey().space(), desc);
+                        }
+                        catch (Exception e) {
+                            U.error(log, "Failed to clear indexing on type unregister (will ignore): " + space, e);
+                        }
+                    }
                 }
+            }
+            finally {
+                idxLock.writeLock().unlock();
             }
         }
         finally {

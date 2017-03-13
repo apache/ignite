@@ -45,6 +45,9 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     /** Fields which should be indexed in descending order. */
     private Collection<String> descendings;
 
+    /** Type descriptor. */
+    private final QueryTypeDescriptorImpl typDesc;
+
     /** Index name. */
     private final String name;
 
@@ -52,14 +55,25 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     private final QueryIndexType type;
 
     /**
+     * Constructor.
+     *
+     * @param typDesc Type descriptor.
      * @param name Index name.
      * @param type Type.
      */
-    public QueryIndexDescriptorImpl(String name, QueryIndexType type) {
+    public QueryIndexDescriptorImpl(QueryTypeDescriptorImpl typDesc, String name, QueryIndexType type) {
         assert type != null;
 
+        this.typDesc = typDesc;
         this.name = name;
         this.type = type;
+    }
+
+    /**
+     * @return Type descriptor.
+     */
+    public QueryTypeDescriptorImpl typeDescriptor() {
+        return typDesc;
     }
 
     /**

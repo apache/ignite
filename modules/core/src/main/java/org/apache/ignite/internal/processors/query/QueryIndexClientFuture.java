@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -54,14 +54,14 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
     /**
      * @return Index key.
      */
-    public QueryIndexKey getKey() {
+    public QueryIndexKey key() {
         return key;
     }
 
     /**
      * Handle cache stop.
      */
-    public void onCacheStop() {
+    public void onCacheStopped() {
         onDone(new IgniteException("Operation failed because cache was stopped."));
     }
 

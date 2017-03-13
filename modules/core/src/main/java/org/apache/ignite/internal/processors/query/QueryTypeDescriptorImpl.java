@@ -218,7 +218,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(idxName, type);
+        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(this, idxName, type);
 
         if (indexes.put(idxName, idx) != null)
             throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
@@ -251,7 +251,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void addFieldToTextIndex(String field) {
         if (fullTextIdx == null)
-            fullTextIdx = new QueryIndexDescriptorImpl(null, QueryIndexType.FULLTEXT);
+            fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT);
 
         fullTextIdx.addField(field, 0, false);
     }
