@@ -41,7 +41,6 @@ import org.h2.mvstore.rtree.SpatialKey;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
-import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
@@ -67,7 +66,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     private boolean closed;
 
     /** */
-    private final MVRTreeMap<Long> treeMap;
+    private final MVRTreeMap<Long>[] segments;
 
     /** */
     private final Map<Long, GridH2Row> idToRow = new HashMap<>();
@@ -83,7 +82,17 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param idxName Index name.
      * @param cols Columns.
      */
-    public GridH2SpatialIndex(Table tbl, String idxName, IndexColumn... cols) {
+    public GridH2SpatialIndex(GridH2Table tbl, String idxName, IndexColumn... cols) {
+        this(tbl, idxName, 1, cols);
+    }
+
+    /**
+     * @param tbl Table.
+     * @param idxName Index name.
+     * @param segmentsCnt Index segments count.
+     * @param cols Columns.
+     */
+    public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
 
@@ -107,7 +116,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         // Index in memory
         store = MVStore.open(null);
-        treeMap = store.openMap("spatialIndex", new MVRTreeMap.Builder<Long>());
+
+        segments = new MVRTreeMap[segmentsCnt];
+
+        for (int i = 0; i < segmentsCnt; i++)
+            segments[i] = store.openMap("spatialIndex-" + i, new MVRTreeMap.Builder<Long>());
+
+        ctx = tbl.rowDescriptor().context();
     }
 
     /**
@@ -116,6 +131,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     private void checkClosed() {
         if (closed)
             throw DbException.throwInternalError();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int segmentsCount() {
+        return segments.length;
     }
 
     /** {@inheritDoc} */
@@ -138,10 +158,12 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert key != null;
 
+            final int seg = segmentForRow(row);
+
             Long rowId = keyToId.get(key);
 
             if (rowId != null) {
-                Long oldRowId = treeMap.remove(getEnvelope(idToRow.get(rowId), rowId));
+                Long oldRowId = segments[seg].remove(getEnvelope(idToRow.get(rowId), rowId));
 
                 assert rowId.equals(oldRowId);
             }
@@ -153,7 +175,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             GridH2Row old = idToRow.put(rowId, row);
 
-            treeMap.put(getEnvelope(row, rowId), rowId);
+            segments[seg].put(getEnvelope(row, rowId), rowId);
 
             if (old == null)
                 rowCnt++; // No replace.
@@ -200,7 +222,9 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert oldRow != null;
 
-            if (!treeMap.remove(getEnvelope(row, rowId), rowId))
+            final int seg = segmentForRow(row);
+
+            if (!segments[seg].remove(getEnvelope(row, rowId), rowId))
                 throw DbException.throwInternalError("row not found");
 
             rowCnt--;
@@ -258,7 +282,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            return new GridH2Cursor(rowIterator(treeMap.keySet().iterator(), filter));
+            final int seg = threadLocalSegment();
+
+            final MVRTreeMap<Long> segment = segments[seg];
+
+            return new GridH2Cursor(rowIterator(segment.keySet().iterator(), filter));
         }
         finally {
             l.unlock();
@@ -305,7 +333,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (!first)
                 throw DbException.throwInternalError("Spatial Index can only be fetch by ascending order");
 
-            Iterator<GridH2Row> iter = rowIterator(treeMap.keySet().iterator(), null);
+            final int seg = threadLocalSegment();
+
+            final MVRTreeMap<Long> segment = segments[seg];
+
+            Iterator<GridH2Row> iter = rowIterator(segment.keySet().iterator(), null);
 
             return new SingleRowCursor(iter.hasNext() ? iter.next() : null);
         }
@@ -334,7 +366,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (intersection == null)
                 return find(filter.getSession(), null, null);
 
-            return new GridH2Cursor(rowIterator(treeMap.findIntersectingKeys(getEnvelope(intersection, 0)), filter));
+            final int seg = threadLocalSegment();
+
+            final MVRTreeMap<Long> segment = segments[seg];
+
+            return new GridH2Cursor(rowIterator(segment.findIntersectingKeys(getEnvelope(intersection, 0)), filter));
         }
         finally {
             l.unlock();

@@ -197,6 +197,9 @@ public class BinaryContext {
 
         sysClss.add(IgniteUuid.class.getName());
 
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());

@@ -35,7 +35,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
@@ -237,12 +237,12 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
-            DataFrame df =
+            Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
 
             df.printSchema();
 
-            Row[] res = df.collect();
+            Row[] res = (Row[])df.collect();
 
             assertEquals("Invalid result length", 1, res.length);
             assertEquals("Invalid result", 50, res[0].get(0));
@@ -251,11 +251,11 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             Column exp = new Column("NAME").equalTo("name50").and(new Column("SALARY").equalTo(5000));
 
-            DataFrame df0 = cache.sql("select id, name, salary from Entity").where(exp);
+            Dataset<Row> df0 = cache.sql("select id, name, salary from Entity").where(exp);
 
             df.printSchema();
 
-            Row[] res0 = df0.collect();
+            Row[] res0 = (Row[])df0.collect();
 
             assertEquals("Invalid result length", 1, res0.length);
             assertEquals("Invalid result", 50, res0[0].get(0));

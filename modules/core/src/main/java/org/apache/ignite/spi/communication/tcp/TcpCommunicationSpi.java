@@ -2776,6 +2776,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
+        Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
+
+        for (InetSocketAddress addr : addrs)
+            allInetAddrs.add(addr.getAddress());
+
+        List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
+
+        if (reachableInetAddrs.size() < allInetAddrs.size()) {
+            LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
+
+            for (InetSocketAddress addr : addrs) {
+                if (reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+            }
+            for (InetSocketAddress addr : addrs) {
+                if (!reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+            }
+
+            addrs = addrs0;
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+
         boolean conn = false;
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
