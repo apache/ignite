@@ -46,11 +46,11 @@ public class IgniteThread extends Thread {
     /** The name of the Ignite instance this thread belongs to. */
     protected final String igniteInstanceName;
 
-    /** Group index. */
-    private final int grpIdx;
-
     /** */
     private int compositeRwLockIdx;
+
+    /** */
+    private final int stripe;
 
     /**
      * Creates thread with given worker.
@@ -58,7 +58,7 @@ public class IgniteThread extends Thread {
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED);
+        this(DFLT_GRP, worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
@@ -69,7 +69,7 @@ public class IgniteThread extends Thread {
      * @param r Runnable to execute.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
-        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED);
+        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
@@ -79,9 +79,10 @@ public class IgniteThread extends Thread {
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx) {
-        this(DFLT_GRP, igniteInstanceName, threadName, r, grpIdx);
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
+        this(DFLT_GRP, igniteInstanceName, threadName, r, grpIdx, stripe);
     }
 
     /**
@@ -93,14 +94,16 @@ public class IgniteThread extends Thread {
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Thread index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(ThreadGroup grp, String igniteInstanceName, String threadName, Runnable r, int grpIdx) {
+    public IgniteThread(ThreadGroup grp, String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
         super(grp, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
 
         A.ensure(grpIdx >= -1, "grpIdx >= -1");
 
         this.igniteInstanceName = igniteInstanceName;
-        this.grpIdx = compositeRwLockIdx = grpIdx;
+        this.compositeRwLockIdx = grpIdx;
+        this.stripe = stripe;
     }
 
     /**
@@ -112,18 +115,15 @@ public class IgniteThread extends Thread {
         super(threadGrp, threadName);
 
         this.igniteInstanceName = igniteInstanceName;
-        this.grpIdx = compositeRwLockIdx = GRP_IDX_UNASSIGNED;
+        this.compositeRwLockIdx = GRP_IDX_UNASSIGNED;
+        this.stripe = -1;
     }
 
     /**
-     * Gets name of the grid this thread belongs to.
-     *
-     * @return Name of the grid this thread belongs to.
-     * @deprecated use {@link #getIgniteInstanceName()}
+     * @return Non-negative stripe number if this thread is striped pool thread.
      */
-    @Deprecated
-    public String getGridName() {
-        return getIgniteInstanceName();
+    public int stripe() {
+        return stripe;
     }
 
     /**
@@ -133,13 +133,6 @@ public class IgniteThread extends Thread {
      */
     public String getIgniteInstanceName() {
         return igniteInstanceName;
-    }
-
-    /**
-     * @return Group index.
-     */
-    public int groupIndex() {
-        return grpIdx;
     }
 
     /**

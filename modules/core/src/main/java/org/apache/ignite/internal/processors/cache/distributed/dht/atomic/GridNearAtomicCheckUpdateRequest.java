@@ -17,69 +17,71 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Deferred dht atomic update response.
+ *
  */
-public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicCheckUpdateRequest extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Message index. */
+    /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
-
-    /** ACK future versions. */
-    private GridLongList futIds;
 
     /** */
     @GridDirectTransient
-    @GridToStringExclude
-    private GridTimeoutObject timeoutSnd;
+    private GridNearAtomicAbstractUpdateRequest updateReq;
+
+    /** */
+    private int partId;
+
+    /** */
+    private long futId;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     *
      */
-    public GridDhtAtomicDeferredUpdateResponse() {
+    public GridNearAtomicCheckUpdateRequest() {
         // No-op.
     }
 
     /**
-     * Constructor.
-     *
-     * @param cacheId Cache ID.
-     * @param futIds Future IDs.
+     * @param updateReq Related update request.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, GridLongList futIds) {
-        this.cacheId = cacheId;
-        this.futIds = futIds;
+    GridNearAtomicCheckUpdateRequest(GridNearAtomicAbstractUpdateRequest updateReq) {
+        assert updateReq != null && updateReq.fullSync() : updateReq;
+
+        this.updateReq = updateReq;
+        this.cacheId = updateReq.cacheId();
+        this.partId = updateReq.partition();
+        this.futId = updateReq.futureId();
+
+        assert partId >= 0;
     }
 
     /**
-     * @param timeoutSnd Callback sending response on timeout.
+     * @return Future ID on near node.
      */
-    void timeoutSender(@Nullable GridTimeoutObject timeoutSnd) {
-        this.timeoutSnd = timeoutSnd;
+    public final long futureId() {
+        return futId;
     }
 
     /**
-     * @return Callback sending response on timeout.
+     * @return Related update request.
      */
-    @Nullable GridTimeoutObject timeoutSender() {
-        return timeoutSnd;
+    GridNearAtomicAbstractUpdateRequest updateRequest() {
+        return updateReq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
     }
 
     /** {@inheritDoc} */
@@ -92,16 +94,14 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
         return false;
     }
 
-    /**
-     * @return List of ACKed future ids.
-     */
-    GridLongList futureIds() {
-        return futIds;
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return -47;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.atomicMessageLogger();
+    @Override public byte fieldsCount() {
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -120,7 +120,13 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeMessage("futIds", futIds))
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
@@ -142,7 +148,15 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (reader.state()) {
             case 3:
-                futIds = reader.readMessage("futIds");
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,21 +165,11 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicDeferredUpdateResponse.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte directType() {
-        return 37;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
+        return reader.afterMessageRead(GridNearAtomicCheckUpdateRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicDeferredUpdateResponse.class, this);
+        return S.toString(GridNearAtomicCheckUpdateRequest.class, this);
     }
 }

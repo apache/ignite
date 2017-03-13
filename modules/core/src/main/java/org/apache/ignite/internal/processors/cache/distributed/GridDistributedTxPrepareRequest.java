@@ -171,6 +171,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param reads Read entries.
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
+     * @param retVal Return value flag.
+     * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
      * @param addDepInfo Deployment info flag.
      */
