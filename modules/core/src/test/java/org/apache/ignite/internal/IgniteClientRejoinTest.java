@@ -31,11 +31,10 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -53,6 +52,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** Block. */
     private volatile boolean block;
+
+    /** Block all. */
+    private volatile boolean blockAll;
 
     /** Coordinator. */
     private volatile ClusterNode crd;
@@ -85,6 +87,8 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
             dspi.setIpFinder(spi.getIpFinder());
 
             cfg.setDiscoverySpi(dspi);
+
+            dspi.setJoinTimeout(60_000);
 
             cfg.setClientMode(true);
         }
@@ -120,7 +124,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         Ignite client = startGrid("client");
 
-
         assert fut.get();
 
         IgniteCache<Integer, Integer> cache = client.getOrCreateCache("some");
@@ -136,6 +139,158 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         assertEquals("Clients: " + clients, 1, clients.size());
         assertEquals(1, srv1.cluster().forClients().nodes().size());
         assertEquals(1, srv2.cluster().forClients().nodes().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectAfterStart() throws Exception {
+        Ignite srv1 = startGrid("server1");
+
+        crd = ((IgniteKernal)srv1).localNode();
+
+        Ignite srv2 = startGrid("server2");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Ignite client = startGrid("client");
+
+        blockAll = true;
+
+        GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                U.sleep(5_000);
+
+                block = true;
+                blockAll = false;
+
+                System.out.println(">>> Allow with blocked coordinator.");
+
+                latch.countDown();
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                latch.await();
+
+                Random rnd = new Random();
+
+                U.sleep((rnd.nextInt(15) + 30) * 1000);
+
+                block = false;
+
+                System.out.println(">>> Allow coordinator.");
+
+                return null;
+            }
+        });
+
+        fut.get();
+
+        while (true) {
+            try {
+                IgniteCache<Integer, Integer> cache = client.getOrCreateCache("some");
+
+                for (int i = 0; i < 100; i++)
+                    cache.put(i, i);
+
+                for (int i = 0; i < 100; i++)
+                    assert i == cache.get(i);
+
+                break;
+            }
+            catch (IgniteClientDisconnectedException e) {
+               U.sleep(500);
+            }
+        }
+
+        Collection<ClusterNode> clients = client.cluster().forClients().nodes();
+
+        assertEquals("Clients: " + clients, 1, clients.size());
+        assertEquals(1, srv1.cluster().forClients().nodes().size());
+        assertEquals(1, srv2.cluster().forClients().nodes().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testManyClientsReconnectAfterStart() throws Exception {
+        Ignite srv1 = startGrid("server1");
+
+        crd = ((IgniteKernal)srv1).localNode();
+
+        Ignite srv2 = startGrid("server2");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        List<Ignite> clientNodes = new ArrayList<>();
+
+        final int CLIENTS_NUM = 5;
+
+        for (int i = 0; i < CLIENTS_NUM; i++)
+            clientNodes.add(startGrid("client" + i));
+
+        blockAll = true;
+
+        GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                U.sleep(5_000);
+
+                block = true;
+                blockAll = false;
+
+                System.out.println(">>> Allow with blocked coordinator.");
+
+                latch.countDown();
+
+                return null;
+            }
+        });
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                latch.await();
+
+                U.sleep((new Random().nextInt(15) + 30) * 1000);
+
+                block = false;
+
+                System.out.println(">>> Allow coordinator.");
+
+                return null;
+            }
+        });
+
+        fut.get();
+
+        U.sleep(5_000);
+
+        for (Ignite client : clientNodes) {
+            while (true) {
+                try {
+                    IgniteCache<Integer, Integer> cache = client.getOrCreateCache("some");
+
+                    for (int i = 0; i < 100; i++)
+                        cache.put(i, i);
+
+                    for (int i = 0; i < 100; i++)
+                        assert i == cache.get(i);
+
+                    cache.clear();
+
+                    break;
+                }
+                catch (IgniteClientDisconnectedException e) {
+                    U.sleep(500);
+                }
+            }
+        }
+
+        assertEquals(CLIENTS_NUM, srv1.cluster().forClients().nodes().size());
+        assertEquals(CLIENTS_NUM, srv2.cluster().forClients().nodes().size());
     }
 
     /**
@@ -204,7 +359,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 2 * 60_000;
+        return 3 * 60_000;
     }
 
     /**
@@ -213,7 +368,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     private class TcpCommunicationSpi extends org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-            if (block && node.id().equals(crd.id()))
+            if (blockAll || block && node.id().equals(crd.id()))
                 throw new IgniteSpiException(new SocketException("Test communication exception"));
 
             super.sendMessage(node, msg);
@@ -222,7 +377,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
             IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (block && node.id().equals(crd.id()))
+            if (blockAll || block && node.id().equals(crd.id()))
                 throw new IgniteSpiException(new SocketException("Test communication exception"));
 
             super.sendMessage(node, msg, ackC);
@@ -236,7 +391,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
-            if (block && sock.getPort() == 47500)
+            if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
             super.writeToSocket(sock, msg, data, timeout);
@@ -245,7 +400,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (block && sock.getPort() == 47500)
+            if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
             super.writeToSocket(sock, msg, timeout);
@@ -254,7 +409,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (block && sock.getPort() == 47500)
+            if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
             super.writeToSocket(sock, out, msg, timeout);
@@ -263,7 +418,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
-            if (block && sock.getPort() == 47500)
+            if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
             super.writeToSocket(msg, sock, res, timeout);
@@ -272,7 +427,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
-            if (block && sock.getPort() == 47500)
+            if (blockAll || block && sock.getPort() == 47500)
                 throw new SocketException("Test discovery exception");
 
             return super.openSocket(sock, remAddr, timeoutHelper);

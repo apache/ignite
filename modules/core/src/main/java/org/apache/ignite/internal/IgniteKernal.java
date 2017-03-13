@@ -156,6 +156,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -174,6 +175,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -327,6 +329,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
+
+    /** Reconnector. */
+    private volatile IgniteThread reconnector;
 
     /**
      * No-arg constructor is required by externalization.
@@ -959,25 +964,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
-            while (recon) {
-                try {
-                    ctx.discovery().rejoin().get(); // TODO timeout?
+            if (recon) {
+                Reconnector reconnector = new Reconnector(ctx.gridName(), log);
 
-                    IgniteFuture<?> reconFut = ctx.cluster().clientReconnectFuture();
+                IgniteThread thread = new IgniteThread(reconnector);
 
-                    reconFut.get();
+                this.reconnector = thread;
 
-                    recon = false;
-                }
-                catch (IgniteException e) {
-                    if (X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedException.class)) {
-                        log.warning("Rejoin failed, retry. locNodeId=" + ctx.localNodeId() + ']');
+                thread.start();
 
-                        continue;
-                    }
+                reconnector.future().get();
 
-                    throw e;
-                }
+                this.reconnector = null;
             }
 
             // Register MBeans.
@@ -1968,6 +1966,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
+        stopReconnector();
+
         gw.compareAndSet(null, new GridKernalGatewayImpl(gridName));
 
         GridKernalGateway gw = this.gw.get();
@@ -3143,7 +3143,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
+        stopReconnector();
+
         Ignition.stop(gridName, true);
+    }
+
+    /**
+     * Stop reconnector.
+     */
+    private void stopReconnector() {
+        IgniteThread reconnector = this.reconnector;
+
+        if (reconnector != null) {
+            U.interrupt(reconnector);
+
+            try {
+                U.join(reconnector);
+            }
+            catch (IgniteInterruptedCheckedException ignore) {
+                // No-op
+            }
+            finally {
+                this.reconnector = null;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -3432,6 +3455,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId() + ']', e);
 
                             ctx.gateway().onReconnectFailed(e);
+
+                            if (reconnector == null) {
+                                Reconnector rec = new Reconnector(ctx.gridName(), log);
+
+                                rec.future().listen(new CI1<IgniteInternalFuture<?>>() {
+                                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                                        reconnector = null;
+                                    }
+                                });
+
+                                IgniteThread thread = new IgniteThread(rec);
+
+                                reconnector = thread;
+
+                                thread.start();
+                            }
                         }
                     }
                 }
@@ -3614,5 +3653,58 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
+    }
+
+    /**
+     * Rejoins node to the cluster.
+     */
+    private class Reconnector extends GridWorker {
+        /** Complete future. */
+        private final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+
+        /**
+         * @param gridName Grid name.
+         * @param log Logger.
+         */
+        protected Reconnector(@Nullable String gridName, IgniteLogger log) {
+            super(gridName, "client-kernal-reconnector", log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                try {
+                    ctx.discovery().rejoin().get(); // TODO timeout?
+
+                    IgniteFuture<?> reconFut = ctx.cluster().clientReconnectFuture();
+
+                    reconFut.get();
+
+                    fut.onDone();
+
+                    break;
+                }
+                catch (Throwable e) {
+                    if (X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedException.class)) {
+                        log.warning("Rejoin failed, retry. [locNodeId=" + ctx.localNodeId() + ']');
+
+                        continue;
+                    }
+
+                    U.error(log, "Unable to process error, stopping grid. locNodeId=" + ctx.localNodeId() + ']', e);
+
+                    stop(true);
+
+                    fut.onDone(e);
+                }
+            }
+        }
+
+        /**
+         * @return Complete future.
+         */
+        IgniteInternalFuture<?> future() {
+            return fut;
+        }
     }
 }
