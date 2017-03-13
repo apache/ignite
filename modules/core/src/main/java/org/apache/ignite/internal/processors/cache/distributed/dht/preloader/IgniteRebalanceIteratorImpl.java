@@ -32,6 +32,8 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
 public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     @Nullable private final NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators;
 
