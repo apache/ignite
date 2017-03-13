@@ -37,6 +37,13 @@ public class RandomMatrixStorage implements MatrixStorage {
     private boolean fastHash;
 
     /**
+     * For externalization.
+     */
+    public RandomMatrixStorage(){
+        // No-op.
+    }
+
+    /**
      *
      * @param rows
      * @param cols

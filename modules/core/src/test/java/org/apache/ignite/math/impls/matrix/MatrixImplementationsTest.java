@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -49,8 +50,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
 
     /** */
-    @Override public void externalizeTest() {
-        System.out.println("Skip test for not yet implemented Externalizable methods of SparseLocalOnHeapMatrix.");
+    @Test
+    public void externalizeTest(){
+        consumeSampleMatrix((m, desc)->{
+            externalizeTest(m);
+        });
     }
 
     /** */
@@ -95,6 +99,19 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (val == null && !ignore(key))
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
+    }
+
+    /** */
+    @Test
+    public void testLikeVector(){
+        consumeSampleMatrix((m, desc)->{
+            if (typesMap().containsKey(m.getClass())){
+                Vector likeVector = m.likeVector(m.columnSize());
+
+                assertNotNull(likeVector);
+                assertEquals("Unexpected value.", likeVector.size(), m.columnSize());
+            }
+        });
     }
 
     /** */
@@ -244,6 +261,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
 
+    /** */
     private double[][] fillAndReturn(Matrix m) {
         double[][] arr = new double[m.rowSize()][m.columnSize()];
 
