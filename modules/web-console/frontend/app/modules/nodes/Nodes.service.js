@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import nodesDialogTemplate from './nodes-dialog.jade';
+import nodesDialogTplUrl from './nodes-dialog.tpl.pug';
 
 const DEFAULT_OPTIONS = {
     grid: {
@@ -41,7 +41,7 @@ class Nodes {
         options.target = cacheName;
 
         const modalInstance = $modal({
-            templateUrl: nodesDialogTemplate,
+            templateUrl: nodesDialogTplUrl,
             show: true,
             resolve: {
                 nodes: () => nodes || [],

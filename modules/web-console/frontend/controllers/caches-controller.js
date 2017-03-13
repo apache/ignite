@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import infoMessageTemplateUrl from 'views/templates/message.tpl.pug';
+
 // Controller for Caches screen.
 export default ['cachesController', [
     '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable',
@@ -542,7 +544,7 @@ export default ['cachesController', [
                         ];
 
                         // Show a basic modal from a controller
-                        $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
+                        $modal({scope, templateUrl: infoMessageTemplateUrl, placement: 'center', show: true});
                     }
 
                     save(item);

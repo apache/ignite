@@ -18,7 +18,7 @@
 import generator from '../../app/modules/configuration/generator/PlatformGenerator';
 import transformer from '../../app/modules/configuration/generator/SharpTransformer.service';
 
-import { assert } from 'chai';
+import { suite, test } from 'mocha';
 
 suite.skip('SharpTransformerTestsSuite', () => {
     test('AtomicConfiguration', () => {
