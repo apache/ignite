@@ -100,18 +100,18 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("server");
+            return igniteInstanceName != null && igniteInstanceName.contains("server");
         }
     };
 
     /** */
     private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("client");
+            return igniteInstanceName != null && igniteInstanceName.contains("client");
         }
     };
 
@@ -122,8 +122,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private boolean cacheOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
@@ -611,8 +611,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                                 GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
                                 GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
-                                X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
-                                X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
+                                X.println("Near entry [igniteInstanceName="+ g.name() + ", key=" + k + ", entry=" +
+                                    nearEntry);
+                                X.println("DHT entry [igniteInstanceName=" + g.name() + ", key=" + k + ", entry=" +
+                                    dhtEntry);
                             }
                         }
                     }

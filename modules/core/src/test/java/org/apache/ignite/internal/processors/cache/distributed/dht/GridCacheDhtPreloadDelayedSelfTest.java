@@ -75,8 +75,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         assert preloadMode != null;
 
@@ -326,8 +326,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
                             Collection<UUID> nodeIds = U.nodeIds(nodes);
 
                             assert nodeIds.contains(nodeId) : "Invalid affinity mapping [nodeId=" + nodeId +
-                                ", part=" + p + ", state=" + state + ", grid=" + G.ignite(nodeId).name() +
-                                ", affNames=" + U.nodes2names(nodes) + ", affIds=" + nodeIds + ']';
+                                ", part=" + p + ", state=" + state + ", igniteInstanceName=" +
+                                G.ignite(nodeId).name() + ", affNames=" + U.nodes2names(nodes) +
+                                ", affIds=" + nodeIds + ']';
                         }
                     }
                 }

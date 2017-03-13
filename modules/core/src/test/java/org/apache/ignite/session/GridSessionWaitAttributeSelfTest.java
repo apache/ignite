@@ -90,8 +90,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -207,8 +207,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 
-        Ignite ignite1 = G.ignite(getTestGridName() + '1');
-        Ignite ignite2 = G.ignite(getTestGridName() + '2');
+        Ignite ignite1 = G.ignite(getTestIgniteInstanceName() + '1');
+        Ignite ignite2 = G.ignite(getTestIgniteInstanceName() + '2');
 
         assert ignite1 != null;
         assert ignite2 != null;

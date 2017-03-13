@@ -44,7 +44,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -475,10 +475,10 @@ public class IgfsUtils {
 
             CacheConfiguration ccfgMeta = cfg.getMetaCacheConfiguration();
 
-            if (GridQueryProcessor.isEnabled(ccfgData))
+            if (QueryUtils.isEnabled(ccfgData))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            if (GridQueryProcessor.isEnabled(ccfgMeta))
+            if (QueryUtils.isEnabled(ccfgMeta))
                 throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
             if (ccfgMeta.getAtomicityMode() != TRANSACTIONAL)

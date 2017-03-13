@@ -105,7 +105,7 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setIgniteInstanceName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -167,7 +167,7 @@ public class IgniteHadoopFileSystemSecondaryFileSystemInitializationSelfTest ext
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid-secondary");
+        cfg.setIgniteInstanceName("igfs-grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

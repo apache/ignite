@@ -149,16 +149,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean reconnectDisabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 
         disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
-        if (gridName.startsWith("server"))
+        if (igniteInstanceName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
-        else if (gridName.startsWith("client")) {
+        else if (igniteInstanceName.startsWith("client")) {
             cfg.setClientMode(true);
 
             TcpDiscoveryVmIpFinder ipFinder;
@@ -196,9 +196,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 disco.setSocketTimeout(2000);
             }
             else {
-                disco.setAckTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_ACK_TIMEOUT_CLIENT :
+                disco.setAckTimeout(igniteInstanceName.startsWith("client") ? TcpDiscoverySpi.DFLT_ACK_TIMEOUT_CLIENT :
                     TcpDiscoverySpi.DFLT_ACK_TIMEOUT);
-                disco.setSocketTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_SOCK_TIMEOUT_CLIENT :
+                disco.setSocketTimeout(igniteInstanceName.startsWith("client") ? TcpDiscoverySpi.DFLT_SOCK_TIMEOUT_CLIENT :
                     TcpDiscoverySpi.DFLT_SOCK_TIMEOUT);
             }
         }
@@ -1346,7 +1346,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 else if (evt.type() == EVT_NODE_JOINED) {
                     TcpDiscoveryNode node = (TcpDiscoveryNode)evt0.eventNode();
 
-                    if ("client-0".equals(node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME))) {
+                    if ("client-0".equals(node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME))) {
                         assertEquals(changeTop ? 5L : 4L, node.order());
 
                         joinLatch.countDown();
@@ -2258,7 +2258,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             if (delayJoinAckFor != null && msg instanceof TcpDiscoveryJoinRequestMessage) {
                 TcpDiscoveryJoinRequestMessage msg0 = (TcpDiscoveryJoinRequestMessage)msg;
 
-                if (delayJoinAckFor.equals(msg0.node().attribute(IgniteNodeAttributes.ATTR_GRID_NAME))) {
+                if (delayJoinAckFor.equals(msg0.node().attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME))) {
                     log.info("Delay response [sock=" + sock + ", msg=" + msg0 + ", res=" + res + ']');
 
                     delayJoinAckFor = null;

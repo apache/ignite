@@ -34,7 +34,7 @@ public class GridSqlAlias extends GridSqlElement {
      * @param alias Alias.
      * @param expr Expr.
      */
-    public GridSqlAlias(String alias, GridSqlElement expr) {
+    public GridSqlAlias(String alias, GridSqlAst expr) {
         this(alias, expr, false);
     }
 
@@ -43,8 +43,8 @@ public class GridSqlAlias extends GridSqlElement {
      * @param expr Expr.
      * @param useAs Use 'AS' keyword.
      */
-    public GridSqlAlias(String alias, GridSqlElement expr, boolean useAs) {
-        super(new ArrayList<GridSqlElement>(1));
+    public GridSqlAlias(String alias, GridSqlAst expr, boolean useAs) {
+        super(new ArrayList<GridSqlAst>(1));
 
         addChild(expr);
 
@@ -56,17 +56,18 @@ public class GridSqlAlias extends GridSqlElement {
      * @param el Element.
      * @return Unwrapped from alias element.
      */
-    public static GridSqlElement unwrap(GridSqlElement el) {
+    @SuppressWarnings("unchecked")
+    public static <X extends GridSqlAst> X unwrap(GridSqlAst el) {
         el = el instanceof GridSqlAlias ? el.child() : el;
 
         assert el != null;
 
-        return el;
+        return (X)el;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return child().getSQL() + (useAs ? " AS " : " ") + Parser.quoteIdentifier(alias);
+        return child(0).getSQL() + (useAs ? " AS " : " ") + Parser.quoteIdentifier(alias);
     }
 
     /**

@@ -67,10 +67,10 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     private static volatile boolean loadedFromClient;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        boolean client = gridName != null && gridName.startsWith("client");
+        boolean client = igniteInstanceName != null && igniteInstanceName.startsWith("client");
 
         cfg.setClientMode(client);
 

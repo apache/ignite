@@ -107,15 +107,15 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
         cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
@@ -124,10 +124,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration for grid with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -369,7 +369,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                         GridDhtPartitionState state = e.getValue();
 
                         assert state == OWNING || state == MOVING || state == RENTING :
-                            "Invalid state [grid=" + g.name() + ", part=" + p + ", state=" + state +
+                            "Invalid state [igniteInstanceName=" + g.name() + ", part=" + p + ", state=" + state +
                                 ", parts=" + parts + ']';
 
                         assert state.active();
@@ -462,7 +462,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             if (DEBUG)
                 g.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
+                        info("\n>>> Preload event [igniteInstanceName=" + g.name() + ", evt=" + evt + ']');
 
                         return true;
                     }
@@ -651,7 +651,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 boolean primary = primaryNode.equals(loc);
 
-                assert Integer.toString(i).equals(val) : "Key check failed [grid=" + ignite.name() +
+                assert Integer.toString(i).equals(val) : "Key check failed [igniteInstanceName=" + ignite.name() +
                     ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
                     ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
                     ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']';

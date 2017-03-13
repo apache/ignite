@@ -78,11 +78,11 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
         IgniteConfiguration cfg = getConfig(type);
 
-        // Generate unique for this VM grid name.
-        String gridName = cfg.getGridName() + " (" + UUID.randomUUID() + ")";
+        // Generate unique for this VM Ignite instance name.
+        String igniteInstanceName = cfg.getIgniteInstanceName() + " (" + UUID.randomUUID() + ")";
 
-        // Update grid name (required to be unique).
-        cfg.setGridName(gridName);
+        // Update Ignite instance name (required to be unique).
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         // Start new node in current VM.
         Ignite g =  G.start(cfg);
@@ -178,11 +178,11 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         // Wait for node stops.
         //U.sleep(1000);
 
-        Collection<String> gridNames = new ArrayList<>();
+        Collection<String> igniteInstanceNames = new ArrayList<>();
 
         for (Ignite g : G.allGrids())
-            gridNames.add(g.name());
+            igniteInstanceNames.add(g.name());
 
-        parent.log().info(">>> Available grids: " + gridNames);
+        parent.log().info(">>> Available Ignite instances: " + igniteInstanceNames);
     }
 }

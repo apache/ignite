@@ -83,7 +83,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCancelledJobs() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
@@ -199,7 +199,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

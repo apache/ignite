@@ -273,7 +273,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            cfg.setGridName("grid_secondary");
+            cfg.setIgniteInstanceName("grid_secondary");
 
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
             discoSpi.setLocalPort(47510);
@@ -339,28 +339,28 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Get primary IPC endpoint configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String igniteInstanceName);
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "grid";
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setMarshaller(new OptimizedMarshaller());
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
+        cfg.setFileSystemConfiguration(igfsConfiguration(igniteInstanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         return cfg;
@@ -369,10 +369,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration dataCacheConfiguration(String gridName) {
+    protected CacheConfiguration dataCacheConfiguration(String igniteInstanceName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName("partitioned");
@@ -389,10 +389,10 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration metaCacheConfiguration(String gridName) {
+    protected CacheConfiguration metaCacheConfiguration(String igniteInstanceName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName("replicated");
@@ -406,14 +406,14 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets IGFS configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IGFS configuration.
      */
-    protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
+    protected FileSystemConfiguration igfsConfiguration(String igniteInstanceName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setDataCacheConfiguration(dataCacheConfiguration(gridName));
-        cfg.setMetaCacheConfiguration(metaCacheConfiguration(gridName));
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(igniteInstanceName));
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(igniteInstanceName));
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
         cfg.setDefaultMode(mode);
@@ -433,7 +433,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
             cfg.setSecondaryFileSystem(sec);
         }
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(igniteInstanceName));
 
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
