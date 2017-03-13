@@ -59,15 +59,16 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /**
+     * @param part Partition.
      * @param xid Xid version.
      * @param nearThreadId Near tx thread ID.
      * @param futId Future ID.
      * @param miniId Mini future Id.
      * @param err Error.
      */
-    public GridNearTxFinishResponse(GridCacheVersion xid, long nearThreadId, IgniteUuid futId, int miniId,
+    public GridNearTxFinishResponse(int part, GridCacheVersion xid, long nearThreadId, IgniteUuid futId, int miniId,
         @Nullable Throwable err) {
-        super(xid, futId);
+        super(part, xid, futId);
 
         assert miniId != 0;
 
