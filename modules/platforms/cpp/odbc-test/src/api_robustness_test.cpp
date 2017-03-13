@@ -143,7 +143,7 @@ struct ApiRobustnessTestSuiteFixture
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        char* config = NULL;
+        const char* config = NULL;
 
 #ifdef IGNITE_TESTS_32
         config = "queries-test-noodbc-32.xml";
@@ -163,7 +163,7 @@ struct ApiRobustnessTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
-        char* config = NULL;
+        const char* config = NULL;
 
 #ifdef IGNITE_TESTS_32
           config = "queries-test-32.xml";

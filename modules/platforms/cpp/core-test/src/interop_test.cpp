@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 {
     IgniteConfiguration cfg;
 
-    char* config = NULL;
+    const char* config = NULL;
 
 #ifdef IGNITE_TESTS_32
     config = "cache-test-32.xml";
