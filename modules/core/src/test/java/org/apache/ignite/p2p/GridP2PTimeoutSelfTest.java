@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,6 +49,8 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
         cfg.setDeploymentMode(depMode);
 
         cfg.setNetworkTimeout(1000);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         return cfg;
     }

@@ -36,6 +36,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadEventsAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
@@ -56,6 +57,8 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         // 'testForcePreload' is not valid with late assignment.
         cfg.setLateAffinityAssignment(false);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         return cfg;
     }

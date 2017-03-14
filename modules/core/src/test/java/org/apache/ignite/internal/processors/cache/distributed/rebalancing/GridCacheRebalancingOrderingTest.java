@@ -58,6 +58,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
@@ -128,6 +129,8 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
             cfg.setServiceConfiguration(getServiceConfiguration());
 
         cfg.setCacheConfiguration(getCacheConfiguration());
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         return cfg;
     }

@@ -65,7 +65,7 @@ import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
-import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.FailoverSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
@@ -1543,7 +1543,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return fully configured event SPI implementation. If not provided,
-     * {@link MemoryEventStorageSpi} will be used.
+     * {@link NoopEventStorageSpi} will be used.
      *
      * @return Grid event SPI implementation or {@code null} to use default implementation.
      */

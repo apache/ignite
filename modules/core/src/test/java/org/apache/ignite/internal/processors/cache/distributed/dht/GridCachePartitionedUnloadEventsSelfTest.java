@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,6 +57,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration());
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         return cfg;
     }
