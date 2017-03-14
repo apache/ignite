@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
@@ -837,6 +839,81 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("dump partitions state for <" + cacheName + ">:\n" + sb.toString());
+    }
+
+    /**
+     * @param id Node id.
+     * @param major Major ver.
+     * @param minor Minor ver.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void waitForRebalancing(int id, int major, int minor) throws IgniteCheckedException {
+        waitForRebalancing(grid(id), new AffinityTopologyVersion(major, minor));
+    }
+
+    /**
+     * @param id Node id.
+     * @param major Major ver.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void waitForRebalancing(int id, int major) throws IgniteCheckedException {
+        waitForRebalancing(grid(id), new AffinityTopologyVersion(major));
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void waitForRebalancing() throws IgniteCheckedException {
+        for (Ignite ignite : G.allGrids())
+            waitForRebalancing((IgniteEx)ignite, null);
+    }
+
+    /**
+     * @param ignite Node.
+     * @param top Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void waitForRebalancing(IgniteEx ignite, AffinityTopologyVersion top) throws IgniteCheckedException {
+        if (ignite.configuration().isClientMode())
+            return;
+
+        boolean finished = false;
+
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        while (!finished && (System.currentTimeMillis() < stopTime)) {
+            finished = true;
+
+            if (top == null)
+                top = ignite.context().discovery().topologyVersionEx();
+
+            for (GridCacheAdapter c : ignite.context().cache().internalCaches()) {
+                GridDhtPartitionDemander.RebalanceFuture fut =
+                    (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
+
+                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
+                    finished = false;
+
+                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
+                        ", expVer=" + top + ']');
+
+                    U.sleep(100);
+
+                    break;
+                }
+                else if (!fut.get()) {
+                    finished = false;
+
+                    log.warning("Rebalancing finished with missed partitions.");
+
+                    U.sleep(100);
+
+                    break;
+                }
+            }
+        }
+
+        assertTrue(finished);
     }
 
     /**

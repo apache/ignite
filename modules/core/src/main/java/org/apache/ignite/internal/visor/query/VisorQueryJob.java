@@ -131,7 +131,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 if (scanWithFilter) {
                     boolean caseSensitive = qryTxt.startsWith(SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE);
 
-                    String ptrn = qryTxt.substring(caseSensitive
+                    String ptrn =  qryTxt.substring(caseSensitive
                         ? SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE.length()
                         : SCAN_CACHE_WITH_FILTER.length());
 
@@ -162,6 +162,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 qry.setPageSize(arg.pageSize());
                 qry.setLocal(arg.local());
                 qry.setDistributedJoins(arg.distributedJoins());
+                qry.setEnforceJoinOrder(arg.enforceJoinOrder());
 
                 long start = U.currentTimeMillis();
 

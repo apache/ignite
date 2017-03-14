@@ -351,7 +351,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         if (cacheMode() == PARTITIONED) {
             assertEquals(2, res.size());
 
-            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.table(0).getSQL()));
+            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.mergeTableIdentifier(0)));
         }
         else
             assertEquals(1, res.size());

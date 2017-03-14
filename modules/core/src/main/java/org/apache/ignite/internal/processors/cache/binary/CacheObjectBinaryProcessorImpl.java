@@ -386,7 +386,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 try {
                     res = BinaryUtils.mergeMetadata(oldMeta0, newMeta);
                 }
-                catch (BinaryObjectException e) {
+                catch (BinaryObjectException ignored) {
                     res = oldMeta0;
                 }
 

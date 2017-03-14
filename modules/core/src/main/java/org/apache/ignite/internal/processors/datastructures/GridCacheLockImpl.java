@@ -107,6 +107,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
     /** Flag indicating that every operation on this lock should be interrupted. */
     private volatile boolean interruptAll;
 
+    /** Re-create flag. */
+    private volatile boolean reCreate;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -524,7 +527,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
                                 GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
-                                    throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+                                    if (reCreate) {
+                                        val = new GridCacheLockState(0, ctx.nodeId(), 0, failoverSafe, fair);
+
+                                        lockView.put(key, val);
+                                    }
+                                    else
+                                        throw new IgniteCheckedException("Failed to find reentrant lock with " +
+                                            "the given name: " + name);
 
                                 final long newThreadID = newThread.getId();
 
@@ -1050,12 +1060,14 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
      * @param key Reentrant lock key.
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
+     * @param reCreate If {@code true} reentrant lock will be re-created in case it is not in cache.
      */
     @SuppressWarnings("unchecked")
     public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
-        GridCacheContext ctx) {
+        GridCacheContext ctx,
+        boolean reCreate) {
         assert name != null;
         assert key != null;
         assert ctx != null;
@@ -1065,6 +1077,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, IgniteChangeGlo
         this.key = key;
         this.lockView = lockView;
         this.ctx = ctx;
+        this.reCreate = reCreate;
 
         log = ctx.logger(getClass());
     }

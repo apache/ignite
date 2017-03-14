@@ -39,12 +39,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Query;
-import org.h2.command.dml.Update;
 import org.h2.engine.Session;
-import org.h2.expression.Expression;
 import org.h2.jdbc.JdbcConnection;
-import org.h2.util.StringUtils;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -55,6 +51,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class GridQueryParsingTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String TEST_SCHEMA = "SCH";
+
+    /** */
+    private static final String TEST_CACHE = "my-cache";
 
     /** */
     private static Ignite ignite;
@@ -92,6 +94,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setNearConfiguration(null);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
+        cc.setSqlSchema(TEST_SCHEMA);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
         cc.setIndexedTypes(clsK, clsV);
 
@@ -175,7 +178,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select avg(old) from Person, \"addr\".Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
 
-        checkQuery("select name, date from Person");
+        checkQuery("select name, name, date, date d from Person");
         checkQuery("select distinct name, date from Person");
         checkQuery("select * from Person p");
         checkQuery("select * from Person");
@@ -262,17 +265,17 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select addr.street from Person p, (select a.street from \"addr\".Address a " +
             "where a.street is not null) addr");
 
-        checkQuery("select p.name n from \"\".Person p order by p.old + 10");
+        checkQuery("select p.name n from sch.Person p order by p.old + 10");
 
-        checkQuery("select case when p.name is null then 'Vasya' end x from \"\".Person p");
-        checkQuery("select case when p.name like 'V%' then 'Vasya' else 'Other' end x from \"\".Person p");
+        checkQuery("select case when p.name is null then 'Vasya' end x from sch.Person p");
+        checkQuery("select case when p.name like 'V%' then 'Vasya' else 'Other' end x from sch.Person p");
         checkQuery("select case when upper(p.name) = 'VASYA' then 'Vasya' " +
-            "when p.name is not null then p.name else 'Other' end x from \"\".Person p");
+            "when p.name is not null then p.name else 'Other' end x from sch.Person p");
 
-        checkQuery("select case p.name when 'Vasya' then 1 end z from \"\".Person p");
-        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 end z from \"\".Person p");
-        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 else 3 end z from \"\".Person p");
-        checkQuery("select case p.name when 'Vasya' then 1 else 3 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 end z from sch.Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 end z from sch.Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 else 3 end z from sch.Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 else 3 end z from sch.Person p");
 
         checkQuery("select count(*) as a from Person union select count(*) as a from \"addr\".Address");
         checkQuery("select old, count(*) as a from Person group by old union select 1, count(*) as a " +
@@ -287,6 +290,48 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
             "UNION (select street from \"addr\".Address limit 1) limit ? offset ?");
         checkQuery("(select 2 a) union all (select 1) order by 1");
         checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
+
+        checkQuery("select public.\"#\".\"@\" from (select 1 as \"@\") \"#\"");
+//        checkQuery("select sch.\"#\".\"@\" from (select 1 as \"@\") \"#\""); // Illegal query.
+        checkQuery("select \"#\".\"@\" from (select 1 as \"@\") \"#\"");
+        checkQuery("select \"@\" from (select 1 as \"@\") \"#\"");
+        checkQuery("select sch.\"#\".old from sch.Person \"#\"");
+        checkQuery("select sch.\"#\".old from Person \"#\"");
+        checkQuery("select \"#\".old from Person \"#\"");
+        checkQuery("select old from Person \"#\"");
+//        checkQuery("select Person.old from Person \"#\""); // Illegal query.
+        checkQuery("select sch.\"#\".* from Person \"#\"");
+    }
+
+    /**
+     * Query AST transformation heavily depends on this behavior.
+     *
+     * @throws Exception If failed.
+     */
+    public void testParseTableFilter() throws Exception {
+        Prepared prepared = parse("select Person.old, p1.old from Person, Person p1");
+
+        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
+
+        GridSqlJoin join = (GridSqlJoin)select.from();
+
+        GridSqlTable tbl1 = (GridSqlTable)join.leftTable();
+        GridSqlAlias tbl2Alias = (GridSqlAlias)join.rightTable();
+        GridSqlTable tbl2 = tbl2Alias.child();
+
+        // Must be distinct objects, even if it is the same table.
+        assertNotSame(tbl1, tbl2);
+        assertNotNull(tbl1.dataTable());
+        assertNotNull(tbl2.dataTable());
+        assertSame(tbl1.dataTable(), tbl2.dataTable());
+
+        GridSqlColumn col1 = (GridSqlColumn)select.column(0);
+        GridSqlColumn col2 = (GridSqlColumn)select.column(1);
+
+        assertSame(tbl1, col1.expressionInFrom());
+
+        // Alias in FROM must be included in column.
+        assertSame(tbl2Alias, col2.expressionInFrom());
     }
 
     /** */
@@ -399,7 +444,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
-        return (JdbcConnection)idx.connectionForSpace(null);
+        return (JdbcConnection)idx.connectionForSpace(TEST_CACHE);
     }
 
     /**
@@ -441,7 +486,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlStatement gQry = new GridSqlQueryParser().parse(prepared);
+        GridSqlStatement gQry = new GridSqlQueryParser(false).parse(prepared);
 
         String res = gQry.getSQL();
 

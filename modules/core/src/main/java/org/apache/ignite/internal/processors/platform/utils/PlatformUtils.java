@@ -674,7 +674,7 @@ public class PlatformUtils {
                 try {
                     innerMsg = e.getMessage();
                 }
-                catch (Exception innerErr) {
+                catch (Exception ignored) {
                     innerMsg = "Exception message is not available.";
                 }
 

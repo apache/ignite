@@ -61,6 +61,36 @@ public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Ob
     }
 
     /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+
+        if (args.preloadAmount() > args.range())
+            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") " +
+                "must by less then the range (\"-r\", \"--range\").");
+
+        String cacheName = cache().getName();
+
+        println(cfg, "Loading data for cache: " + cacheName);
+
+        long start = System.nanoTime();
+
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < args.preloadAmount(); i++) {
+                dataLdr.addData(i, new SampleValue(i));
+
+                if (i % 100000 == 0) {
+                    if (Thread.currentThread().isInterrupted())
+                        break;
+
+                    println("Loaded entries: " + i);
+                }
+            }
+        }
+
+        println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 

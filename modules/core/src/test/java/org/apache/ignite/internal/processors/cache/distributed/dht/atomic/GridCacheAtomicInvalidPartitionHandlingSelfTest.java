@@ -389,7 +389,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
                         entry.unswap();
                     }
-                    catch (GridDhtInvalidPartitionException e) {
+                    catch (GridDhtInvalidPartitionException ignored) {
                         // Skip key.
                     }
 

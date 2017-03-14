@@ -515,8 +515,8 @@ public class IgniteTxHandler {
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
 
-            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
-            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
+            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), expVer);
+            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.cacheId(), curVer);
 
             if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
                 return true;
@@ -528,7 +528,7 @@ public class IgniteTxHandler {
                 if (!aff1.equals(aff2))
                     return true;
             }
-            catch (IllegalStateException err) {
+            catch (IllegalStateException ignored) {
                 return true;
             }
         }
@@ -1140,7 +1140,7 @@ public class IgniteTxHandler {
         else
             sendReply(nodeId, req, true, null);
 
-        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null) : req;
     }
 
     /**
@@ -1322,7 +1322,7 @@ public class IgniteTxHandler {
                             else
                                 assert !ctx.discovery().alive(nodeId) : nodeId;
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteCheckedException ignored) {
                             if (txFinishMsgLog.isDebugEnabled()) {
                                 txFinishMsgLog.debug("Failed to gain entry processor return value. [txId=" + nearTxId +
                                     ", dhtTxId=" + req.version() +
@@ -1508,11 +1508,11 @@ public class IgniteTxHandler {
                                         if (val != null)
                                             entry.readValue(val);
 
-                                        break;
-                                    }
-                                    catch (GridCacheEntryRemovedException ignore) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Got entry removed exception, will retry: " + entry.txKey());
+                                    break;
+                                }
+                                catch (GridCacheEntryRemovedException ignored) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
 
                                         entry.cached(cacheCtx.cache().entryEx(entry.key(), req.topologyVersion()));
                                     }

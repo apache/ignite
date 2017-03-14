@@ -217,7 +217,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }
@@ -227,7 +227,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         try {
             return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException ignored) {
             return 0;
         }
     }

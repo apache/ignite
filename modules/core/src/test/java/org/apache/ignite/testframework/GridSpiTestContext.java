@@ -665,10 +665,9 @@ public class GridSpiTestContext implements IgniteSpiContext {
         @Override public void onMessage(UUID nodeId, Object msg) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 
-            ClusterNode node = locNode;
-                Object msgBody = ioMsg.body();
+            Object msgBody = ioMsg.body();
 
-                assert msgBody != null || ioMsg.bodyBytes() != null;
+            assert msgBody != null || ioMsg.bodyBytes() != null;
         }
 
         /** {@inheritDoc} */

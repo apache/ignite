@@ -49,6 +49,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compute\ClosureExample.cs" />
@@ -62,6 +63,7 @@
     <Compile Include="Datagrid\PutGetExample.cs" />
     <Compile Include="Datagrid\LinqExample.cs" />
     <Compile Include="Datagrid\BinaryModeExample.cs" />
+    <Compile Include="Datagrid\QueryDmlExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionDeadlockDetectionExample.cs" />

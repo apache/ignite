@@ -884,7 +884,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         key.prepareMarshal(context().cacheObjectContext());
 
-        val.marshal(ctx, context());
+        val.marshal(context());
 
         if (transferExpiryPlc) {
             if (expiryPlcBytes == null)

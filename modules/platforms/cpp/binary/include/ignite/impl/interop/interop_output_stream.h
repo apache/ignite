@@ -205,6 +205,14 @@ namespace ignite
                  * Synchronize data with underlying memory.
                  */
                 void Synchronize();
+
+                /**
+                 * Get underlying memory.
+                 *
+                 * @return Underlying memory.
+                 */
+                InteropMemory* GetMemory();
+
             private:
                 /** Memory. */
                 InteropMemory* mem; 
@@ -237,7 +245,7 @@ namespace ignite
                 /**
                  * Copy data to the stream shifting it along the way.
                  *
-                 * @param ptr Pointer to data.
+                 * @param src Pointer to data.
                  * @param off Offset.
                  * @param len Length.
                  */

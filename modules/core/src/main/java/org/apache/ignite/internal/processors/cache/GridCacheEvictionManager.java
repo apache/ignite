@@ -155,6 +155,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     /** Stopping flag. */
     private volatile boolean stopping;
 
+    /** Stopped flag. */
+    private boolean stopped;
+
     /** Current future. */
     private final AtomicReference<EvictionFuture> curEvictFut = new AtomicReference<>();
 
@@ -304,19 +307,28 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         busyLock.block();
 
-        // Stop backup worker.
-        if (evictSync && !cctx.isNear() && backupWorker != null) {
-            backupWorker.cancel();
+        try {
+            // Stop backup worker.
+            if (evictSync && !cctx.isNear() && backupWorker != null) {
+                backupWorker.cancel();
 
-            U.join(backupWorkerThread, log);
+                U.join(
+                    backupWorkerThread,
+                    log);
+            }
+
+            // Cancel all active futures.
+            for (EvictionFuture fut : futs.values())
+                fut.cancel();
+
+            if (log.isDebugEnabled())
+                log.debug("Eviction manager stopped on node: " + cctx.nodeId());
         }
+        finally {
+            stopped = true;
 
-        // Cancel all active futures.
-        for (EvictionFuture fut : futs.values())
-            fut.cancel();
-
-        if (log.isDebugEnabled())
-            log.debug("Eviction manager stopped on node: " + cctx.nodeId());
+            busyLock.unblock();
+        }
     }
 
     /**
@@ -338,7 +350,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             log.debug("Processing eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
                 ", res=" + res + ']');
 
-        if (!busyLock.enterBusy())
+        if (!enterBusy())
             return;
 
         try {
@@ -356,6 +368,22 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     }
 
     /**
+     * @return {@code True} if entered busy.
+     */
+    private boolean enterBusy() {
+        if (!busyLock.enterBusy())
+            return false;
+
+        if (stopped) {
+            busyLock.leaveBusy();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param nodeId Sender node ID.
      * @param req Request.
      */
@@ -363,7 +391,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         assert nodeId != null;
         assert req != null;
 
-        if (!busyLock.enterBusy())
+        if (!enterBusy())
             return;
 
         try {
@@ -775,10 +803,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             return;
 
         // Don't track non-primary entries if evicts are synchronized.
-        if (!cctx.isNear() && evictSync && !cctx.affinity().primary(cctx.localNode(), e.partition(), topVer))
+        if (!cctx.isNear() && evictSync && !cctx.affinity().primaryByPartition(cctx.localNode(), e.partition(), topVer))
             return;
 
-        if (!busyLock.enterBusy())
+        if (!enterBusy())
             return;
 
         try {
@@ -867,7 +895,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (evictSyncAgr) {
             assert !cctx.isNear(); // Make sure cache is not NEAR.
 
-            if (cctx.affinity().backups(
+            if (cctx.affinity().backupsByKey(
                     entry.key(),
                     cctx.topology().topologyVersion()).contains(cctx.localNode()) &&
                 evictSync)
@@ -1098,7 +1126,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> f) {
-                                if (!busyLock.enterBusy()) {
+                                if (!enterBusy()) {
                                     if (log.isDebugEnabled())
                                         log.debug("Will not notify eviction future completion (grid is stopping): " +
                                             f);
@@ -1140,7 +1168,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      * @param topVer Topology version on future complete.
      */
     private void onFutureCompleted(EvictionFuture fut, AffinityTopologyVersion topVer) {
-        if (!busyLock.enterBusy())
+        if (!enterBusy())
             return;
 
         try {
@@ -1317,7 +1345,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (!evictSyncAgr)
             return;
 
-        if (!busyLock.enterBusy())
+        if (!enterBusy())
             return;
 
         try {
@@ -1449,7 +1477,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primary(loc, it.next(), topVer))
+                        if (!cctx.affinity().primaryByPartition(loc, it.next(), topVer))
                             it.remove();
                     }
 

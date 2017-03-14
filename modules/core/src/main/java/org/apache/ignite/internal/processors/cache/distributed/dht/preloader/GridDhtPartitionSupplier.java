@@ -287,7 +287,7 @@ class GridDhtPartitionSupplier {
                             iter = (IgniteRebalanceIterator)sctx.entryIt;
 
                         while (iter.hasNext()) {
-                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition,
                                 // so we send '-1' partition and move on.
                                 s.missed(part);

@@ -193,7 +193,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
 
             X.println("___ all keys removed");
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             X.println("___ timeout");
             X.println("___ keys: " + keys.get());
 

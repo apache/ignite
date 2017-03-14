@@ -263,8 +263,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                             tx.commit();
                         }
                     }
-                    catch (CacheException | IgniteException e) {
-                        // Ignore.
+                    catch (CacheException | IgniteException ignored) {
+                        // No-op.
                     }
                 }
             });
@@ -290,10 +290,10 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                             break;
                         }
-                        catch (TransactionOptimisticException e) {
+                        catch (TransactionOptimisticException ignored) {
                            // Retry.
                         }
-                        catch (CacheException | IgniteException e) {
+                        catch (CacheException | IgniteException ignored) {
                             break;
                         }
                     }

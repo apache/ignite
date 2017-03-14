@@ -105,6 +105,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Near expire times. */
     private GridLongList nearExpireTimes;
 
+    /** Partition ID. */
+    private int partId = -1;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -151,6 +154,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      */
     public GridCacheVersion futureVersion() {
         return futVer;
+    }
+
+    /**
+     * @param partId Partition ID for proper striping on near node.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /**
@@ -434,6 +444,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     }
 
     /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
@@ -513,12 +528,18 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("remapKeys", remapKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
             case 13:
+                if (!writer.writeCollection("remapKeys", remapKeys, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
                 if (!writer.writeMessage("ret", ret))
                     return false;
 
@@ -613,7 +634,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 12:
-                remapKeys = reader.readCollection("remapKeys", MessageCollectionItemType.MSG);
+                partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -621,6 +642,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 13:
+                remapKeys = reader.readCollection("remapKeys", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
                 ret = reader.readMessage("ret");
 
                 if (!reader.isLastRead())
@@ -640,7 +669,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 15;
     }
 
     /** {@inheritDoc} */

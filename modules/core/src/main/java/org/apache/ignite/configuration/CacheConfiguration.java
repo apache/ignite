@@ -224,6 +224,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default partition loss policy. */
     public static final PartitionLossPolicy DFLT_PARTITION_LOSS_POLICY = PartitionLossPolicy.IGNORE;
 
+    /** Default query parallelism. */
+    public static final int DFLT_QUERY_PARALLELISM = 1;
+
     /** Cache name. */
     private String name;
 
@@ -408,6 +411,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Partition loss policy. */
     private PartitionLossPolicy partitionLossPolicy = DFLT_PARTITION_LOSS_POLICY;
 
+    /** */
+    private int qryParallelism = DFLT_QUERY_PARALLELISM;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -460,6 +466,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
+        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
@@ -791,7 +798,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether expired cache entries will be eagerly removed from cache. When
+     * Gets flag indicating whether expired cache entries will be eagerly removed from cache.
+     * If there is at least one cache configured with this flag set to {@code true}, Ignite
+     * will create a single thread to clean up expired entries in background. When flag is
      * set to {@code false}, expired entries will be removed on next entry access.
      * <p>
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
@@ -2091,6 +2100,40 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!found)
                 this.qryEntities.add(entity);
         }
+
+        return this;
+    }
+
+    /**
+     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
+     * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
+     * certain restrictions on parallelism depending on query type and/or cache type.
+     * <p>
+     * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
+     * <ul>
+     *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
+     *     otherwise</li>
+     *     <li>All queries on the given cache will follow provided degree of parallelism</li>
+     * </ul>
+     * These restrictions will be removed in future versions of Apache Ignite.
+     * <p>
+     * Defaults to {@link #DFLT_QUERY_PARALLELISM}.
+     *
+     * @return Query parallelism.
+     */
+    public int getQueryParallelism() {
+        return qryParallelism;
+    }
+
+    /**
+     * Sets query parallelism.
+     *
+     * @param qryParallelism Query parallelism.
+     * @see #getQueryParallelism()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+        this.qryParallelism = qryParallelism;
 
         return this;
     }

@@ -237,8 +237,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         int waitMinorVer = ignite.configuration().isLateAffinityAssignment() ? 1 : 0;
 
-        waitForRebalancing(0, new AffinityTopologyVersion(2, waitMinorVer));
-        waitForRebalancing(1, new AffinityTopologyVersion(2, waitMinorVer));
+        waitForRebalancing(0, 2, waitMinorVer);
+        waitForRebalancing(1, 2, waitMinorVer);
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -258,8 +258,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        waitForRebalancing(1, new AffinityTopologyVersion(4, waitMinorVer));
-        waitForRebalancing(2, new AffinityTopologyVersion(4, waitMinorVer));
+        waitForRebalancing(1, 4, waitMinorVer);
+        waitForRebalancing(2, 4, waitMinorVer);
 
         awaitPartitionMapExchange(true, true, null, true);
 
@@ -349,69 +349,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         long spend = (System.currentTimeMillis() - start) / 1000;
 
         info("Time to rebalance entries: " + spend);
-    }
-
-    /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @param minor Minor ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major, int minor) throws IgniteCheckedException {
-        waitForRebalancing(id, new AffinityTopologyVersion(major, minor));
-    }
-
-    /**
-     * @param id Node id.
-     * @param major Major ver.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, int major) throws IgniteCheckedException {
-        waitForRebalancing(id, new AffinityTopologyVersion(major));
-    }
-
-    /**
-     * @param id Node id.
-     * @param top Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void waitForRebalancing(int id, AffinityTopologyVersion top) throws IgniteCheckedException {
-        boolean finished = false;
-
-        long stopTime = System.currentTimeMillis() + 60_000;
-
-        while (!finished && (System.currentTimeMillis() < stopTime)) {
-            finished = true;
-
-            for (GridCacheAdapter c : grid(id).context().cache().internalCaches()) {
-                GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
-                    finished = false;
-
-                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
-                        ", expVer=" + top + ']');
-
-                    U.sleep(1000);
-
-                    break;
-                }
-                else {
-                    finished = fut.get();
-
-                    if (!finished) {
-                        log.warning("Rebalancing finished with missed partitions: " + fut.topologyVersion());
-
-                        U.sleep(100);
-                    }
-                    else
-                        break;
-                }
-            }
-        }
-
-        assertTrue(finished);
-
-        log.info("waitForRebalancing finished " + top);
     }
 
     /**
