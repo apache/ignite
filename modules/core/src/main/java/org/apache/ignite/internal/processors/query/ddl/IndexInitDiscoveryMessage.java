@@ -33,6 +33,7 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
     /** */
     private static final long serialVersionUID = 0L;
 
+    // TODO: Do we really need it?
     /** Kernal context. */
     @GridToStringExclude
     private transient GridKernalContext ctx;
@@ -54,9 +55,7 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        // TODO: Ask indexing for ack message
-
-        return null;
+        return new IndexAckDiscoveryMessage(op, errNodeId, errMsg);
     }
 
     /** {@inheritDoc} */

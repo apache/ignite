@@ -31,18 +31,23 @@ public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     private static final long serialVersionUID = 0L;
 
     /** Node reported an error. */
-    private UUID errNodeId;
+    private final UUID errNodeId;
 
     /** Error message. */
-    private String errMsg;
+    private final String errMsg;
 
     /**
      * Constructor.
      *
      * @param op Original operation.
+     * @param errNodeId Node reported an error.
+     * @param errMsg Error message.
      */
-    public IndexAckDiscoveryMessage(AbstractIndexOperation op) {
+    public IndexAckDiscoveryMessage(AbstractIndexOperation op, UUID errNodeId, String errMsg) {
         super(op);
+
+        this.errNodeId = errNodeId;
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

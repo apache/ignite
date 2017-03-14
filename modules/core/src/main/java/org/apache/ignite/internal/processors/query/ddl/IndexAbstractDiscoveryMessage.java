@@ -34,7 +34,7 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
 
     /** Operation. */
     @GridToStringInclude
-    private final AbstractIndexOperation op;
+    protected final AbstractIndexOperation op;
 
     /**
      * Constructor.
