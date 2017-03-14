@@ -712,8 +712,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -729,7 +729,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi);
 
-        if (gridName.startsWith("master")) {
+        if (igniteInstanceName.startsWith("master")) {
             cfg.setClientMode(true);
 
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
@@ -739,7 +739,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cfg.setFailoverSpi(failoverSpi);
         }
-        else if (gridName.startsWith("worker")) {
+        else if (igniteInstanceName.startsWith("worker")) {
             cfg.setUserAttributes(ImmutableMap.of("segment", "worker"));
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -759,7 +759,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(cacheCfg);
         }
         else
-            throw new IllegalStateException("Unexpected grid name: " + gridName);
+            throw new IllegalStateException("Unexpected Ignite instance name: " + igniteInstanceName);
 
         return cfg;
     }

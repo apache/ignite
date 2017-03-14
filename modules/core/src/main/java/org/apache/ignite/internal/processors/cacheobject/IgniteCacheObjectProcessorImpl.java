@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -231,8 +231,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 cctx.affinity().partition(obj, false) :
                 ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
-        catch (IgniteCheckedException ignored) {
-            U.error(log, "Failed to get partition");
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get partition", e);
 
             return  -1;
         }
@@ -245,7 +245,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         CacheMemoryMode memMode = ccfg.getMemoryMode();
 
         boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
-            (GridQueryProcessor.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
+            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getName(),
@@ -327,13 +327,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param key Key.
-         */
-        UserKeyCacheObjectImpl(Object key) {
-            this(key, -1);
-        }
-
-        /**
-         * @param key Key.
+         * @param part Partition.
          */
         UserKeyCacheObjectImpl(Object key, int part) {
             super(key, null, part);
@@ -341,6 +335,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         /**
          * @param key Key.
+         * @param valBytes Marshalled key.
+         * @param part Partition.
          */
         UserKeyCacheObjectImpl(Object key, byte[] valBytes, int part) {
             super(key, valBytes, part);
@@ -366,10 +362,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                     Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
-                    return new KeyCacheObjectImpl(val, valBytes);
+                    return new KeyCacheObjectImpl(val, valBytes, partition());
                 }
 
-                return new KeyCacheObjectImpl(val, valBytes);
+                return new KeyCacheObjectImpl(val, valBytes, partition());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);

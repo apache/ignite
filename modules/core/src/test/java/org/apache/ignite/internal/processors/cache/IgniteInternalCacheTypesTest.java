@@ -46,12 +46,12 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(0))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0))) {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
             ccfg.setName(CACHE1);

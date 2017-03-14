@@ -28,10 +28,12 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -60,7 +62,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -476,10 +477,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             GridCacheVersion ver;
 
             if (needVer) {
-                T2<Object, GridCacheVersion> t = (T2)val;
+                EntryGetResult getRes = (EntryGetResult)val;
 
-                v = t.get1();
-                ver = t.get2();
+                v = getRes.value();
+                ver = getRes.version();
             }
             else {
                 v = val;
@@ -577,12 +578,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
         if (!F.isEmpty(maps)) {
             for (GridDistributedTxMapping map : maps) {
-                ClusterNode n = map.node();
+                ClusterNode primary = map.primary();
 
-                GridDistributedTxMapping m = mappings.get(n.id());
+                GridDistributedTxMapping m = mappings.get(primary.id());
 
                 if (m == null) {
-                    mappings.put(m = new GridDistributedTxMapping(n));
+                    mappings.put(m = new GridDistributedTxMapping(primary));
 
                     m.near(map.near());
 
@@ -605,7 +606,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param entry Entry.
      */
     void addSingleEntryMapping(GridDistributedTxMapping map, IgniteTxEntry entry) {
-        ClusterNode n = map.node();
+        ClusterNode n = map.primary();
 
         GridDistributedTxMapping m = new GridDistributedTxMapping(n);
 
@@ -883,7 +884,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
-                    fut0.finish(false);
+                    if (!(e instanceof NodeStoppingException))
+                        fut0.finish(false);
                 }
             }
         });
@@ -959,7 +961,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && (optimistic() || readMap().isEmpty());
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
     }
 
     /**
@@ -1000,7 +1002,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             cctx,
             this,
             timeout,
-            IgniteUuid.randomUuid(),
+            0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
             needReturnValue() && implicit());

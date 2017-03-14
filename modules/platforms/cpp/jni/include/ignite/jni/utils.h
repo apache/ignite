@@ -150,6 +150,15 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool LoadJvmLibrary(const std::string& path);
 
         /**
+         * Helper function to create classpath based on Ignite home directory.
+         *
+         * @param home Home directory; expected to be valid.
+         * @param forceTest Force test classpath.
+         * @return Classpath.
+         */
+        IGNITE_IMPORT_EXPORT std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest);
+
+        /**
          * Create Ignite classpath based on user input directory.
          *
          * @param usrCp User's classpath.

@@ -50,13 +50,13 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     public static final String CACHE_PARAMS = "PPRB_PARAMS";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
-        if (getTestGridName(CLIENT_ID).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
             cfg.setClientMode(true);
         else {
             CacheConfiguration ccfg = getCacheConfiguration();

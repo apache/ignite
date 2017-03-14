@@ -79,8 +79,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
 

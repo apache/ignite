@@ -45,8 +45,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -63,7 +63,7 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        if (getTestGridName(1).equals(gridName) || cfg.getMarshaller() instanceof BinaryMarshaller)
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
 
         return cfg;

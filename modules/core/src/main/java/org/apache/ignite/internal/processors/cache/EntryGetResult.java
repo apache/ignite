@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class EntryGetResult {
     /** */
-    private final CacheObject val;
+    private Object val;
 
     /** */
     private final GridCacheVersion ver;
@@ -35,18 +35,34 @@ public class EntryGetResult {
     /**
      * @param val Value.
      * @param ver Version.
+     * @param reserved Reserved flag.
      */
-    EntryGetResult(CacheObject val, GridCacheVersion ver, boolean reserved) {
+    public EntryGetResult(Object val, GridCacheVersion ver, boolean reserved) {
         this.val = val;
         this.ver = ver;
         this.reserved = reserved;
     }
 
     /**
+     * @param val Value.
+     * @param ver Version.
+     */
+    public EntryGetResult(Object val, GridCacheVersion ver) {
+        this(val, ver, false);
+    }
+
+    /**
      * @return Value.
      */
-    public CacheObject value() {
-        return val;
+    public <T> T value() {
+        return (T)val;
+    }
+
+    /**
+     * @param val Value.
+     */
+    public void value(Object val) {
+        this.val = val;
     }
 
     /**
@@ -57,9 +73,23 @@ public class EntryGetResult {
     }
 
     /**
-     * @return Reserved flag,
+     * @return Reserved flag.
      */
     public boolean reserved() {
         return reserved;
+    }
+
+    /**
+     * @return Entry expire time.
+     */
+    public long expireTime() {
+        return 0L;
+    }
+
+    /**
+     * @return Entry time to live.
+     */
+    public long ttl() {
+        return 0L;
     }
 }

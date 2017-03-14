@@ -39,8 +39,8 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);

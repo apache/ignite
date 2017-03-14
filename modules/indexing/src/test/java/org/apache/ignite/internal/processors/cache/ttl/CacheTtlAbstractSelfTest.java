@@ -72,8 +72,8 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     private static final long DEFAULT_TIME_TO_LIVE = 2000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 

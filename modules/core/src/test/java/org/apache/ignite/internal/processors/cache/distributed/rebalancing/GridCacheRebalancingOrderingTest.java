@@ -114,10 +114,10 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     public static final boolean TRANSACTIONAL = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(gridName)) {
+        if (isFirstGrid(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();

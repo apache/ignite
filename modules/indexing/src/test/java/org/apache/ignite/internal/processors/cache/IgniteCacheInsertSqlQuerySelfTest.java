@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -38,8 +39,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -203,6 +204,19 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
 
         assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
+    }
+
+    /**
+     *
+     */
+    public void testUuidHandling() {
+        IgniteCache<UUID, Integer> p = ignite(0).cache("U2I");
+
+        UUID id = UUID.randomUUID();
+
+        p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(id, 1));
+
+        assertEquals(1, (int)p.get(id));
     }
 
     /**
