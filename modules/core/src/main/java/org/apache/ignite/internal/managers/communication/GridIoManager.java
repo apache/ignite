@@ -201,7 +201,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     };
 
-    private final Map<Integer, Integer> part2stripe = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<Integer, Integer> part2stripe = new ConcurrentHashMap8<>();
 
     private final AtomicInteger curStripe = new AtomicInteger();
 
@@ -873,12 +873,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             int stripe;
 
-            if (!part2stripe.containsKey(part)) {
-                stripe = curStripe.incrementAndGet() % stripes;
-                part2stripe.put(part, stripe);
-            }
-            else
-                stripe = part2stripe.get(part);
+            if (!part2stripe.containsKey(part))
+                part2stripe.putIfAbsent(part, curStripe.incrementAndGet() % stripes);
+
+            stripe = part2stripe.get(part);
 
             int[] idxs = map.get(stripe);
 
