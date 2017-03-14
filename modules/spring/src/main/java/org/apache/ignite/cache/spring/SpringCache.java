@@ -79,14 +79,15 @@ class SpringCache implements Cache {
     @Override public <T> T get(Object key, Callable<T> valueLoader) {
         Object val = cache.get(key);
 
-        if (val == null) {
+        if (val == null || NULL.equals(val)) {
             try {
                 val = valueLoader.call();
-                put(key, val);
             }
             catch (Exception e) {
                 throw new ValueRetrievalException(key, valueLoader, e);
             }
+
+            put(key, val);
         }
 
         return (T)val;

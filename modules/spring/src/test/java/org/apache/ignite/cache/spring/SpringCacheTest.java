@@ -30,7 +30,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        gridName = getTestGridName();
+        gridName = getTestIgniteInstanceName();
         ignite = startGrid(gridName);
     }
 
@@ -114,7 +114,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
         springCache.put(key, value);
         assertEquals(value, springCache.get(key, new Callable<String>() {
             @Override public String call() throws Exception {
-                return "wrongValue";
+                throw new IllegalStateException("Should not have been invoked");
             }
         }));
     }
@@ -139,10 +139,10 @@ public class SpringCacheTest extends GridCommonAbstractTest {
 
         assertEquals(loadedValue, springCache.get(wrongKey, callable));
 
-        // must to be added
+        // must to be added already
         assertEquals(loadedValue, springCache.get(wrongKey, new Callable<String>() {
             @Override public String call() throws Exception {
-                return "wrongValue";
+                throw new IllegalStateException("Should not have been invoked");
             }
         }));
     }
@@ -154,7 +154,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
     public void testGetKeyCallableExceptionType() throws Exception {
         Callable callable = new Callable<String>() {
             @Override public String call() throws Exception {
-                throw new Exception();
+                throw new Exception("Should be invoked");
             }
         };
 
