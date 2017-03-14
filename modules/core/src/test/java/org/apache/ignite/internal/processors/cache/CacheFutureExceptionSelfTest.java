@@ -116,11 +116,9 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         fail = true;
 
-        IgniteFuture f = clientCache.getAsync("key");
-
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        f.listen(new IgniteInClosure<IgniteFuture<Object>>() {
+        clientCache.getAsync("key").listen(new IgniteInClosure<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> fut) {
                 assertTrue(fut.isDone());
 

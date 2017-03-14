@@ -678,6 +678,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                     assertEquals(value(0), deserializeBinary(cache.getAsync(key).get()));
 
                     IgniteFuture f;
+
                     try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         f = cache.invokeAsync(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
@@ -949,8 +950,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                     cache.invokeAllAsync(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode).get();
 
                 checkInvokeAllAsyncResult(cache, resMap, null, value(0), true);
-
-                ;
 
                 resMap = (Map<Object, EntryProcessorResult<Object>>)
                     cache.invokeAllAsync(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode).get();

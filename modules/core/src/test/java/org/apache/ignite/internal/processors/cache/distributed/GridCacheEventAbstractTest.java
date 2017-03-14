@@ -378,8 +378,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 Transaction tx = cache.unwrap(Ignite.class).transactions().txStart();
 
-                ;
-
                 assert cache.getAndPutAsync(key, val).get() == null;
 
                 assert cache.containsKey(key);
@@ -582,9 +580,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 key = e.getKey();
                 val = e.getValue();
 
-                assert ((Boolean)cache.putIfAbsentAsync(key, val).get()).booleanValue();
+                assert cache.putIfAbsentAsync(key, val).get().booleanValue();
 
-                assert !((Boolean)cache.putIfAbsentAsync(key, val).get()).booleanValue();
+                assert !cache.putIfAbsentAsync(key, val).get().booleanValue();
 
                 assert cache.containsKey(key);
             }

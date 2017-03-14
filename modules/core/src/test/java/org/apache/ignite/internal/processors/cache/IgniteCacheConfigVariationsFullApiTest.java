@@ -3392,6 +3392,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
     /**
      * @param async If {@code true} uses asynchronous operation.
+     * @param oldAsync Use old async API.
      * @throws Exception In case of error.
      */
     private void globalRemoveAll(boolean async, boolean oldAsync) throws Exception {
@@ -3862,6 +3863,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
     /**
      * @param async If {@code true} uses async method.
+     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
     protected void globalClearAll(boolean async, boolean oldAsync) throws Exception {
@@ -5430,6 +5432,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
     /**
      * @param async If {@code true} uses async method.
+     * @param oldAsync Use old async API.
      * @param keysToRmv Keys to remove.
      * @throws Exception If failed.
      */

@@ -908,8 +908,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 keys.add(i++);
 
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
-                ;
-
                 Map<Integer, BinaryObject> objs = cache.getAllAsync(keys).get();
 
                 assertEquals(10, objs.size());

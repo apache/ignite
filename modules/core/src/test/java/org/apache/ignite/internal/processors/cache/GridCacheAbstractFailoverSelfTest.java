@@ -203,7 +203,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            IgniteCache<String, Object> cache = g.<String, Object>cache(null);
+                            IgniteCache<String, Object> cache = g.cache(null);
 
                             for (int k = half; k < ENTRY_CNT; k++) {
                                 String key = "key" + k;

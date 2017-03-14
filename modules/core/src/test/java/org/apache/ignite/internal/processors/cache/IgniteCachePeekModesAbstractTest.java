@@ -411,7 +411,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(size, cache0.size(NEAR));
                 assertEquals(size, cache0.size(ALL));
 
-
                 assertEquals(size, (int) cache0.sizeAsync().get());
 
                 assertEquals(size, (int) cache0.sizeAsync(PRIMARY).get());

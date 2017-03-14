@@ -646,8 +646,6 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
         Collection<IgniteFuture<Object>> futsList = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-            ;
-
             IgniteFuture<Object> fut = compute(prj).callAsync(new TestWaitCallable<>());
 
             assertFalse(fut.isDone());

@@ -57,7 +57,6 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 IgniteServices svcs = ignite.services();
 
-
                 IgniteFuture f = svcs.deployClusterSingletonAsync("myClusterSingletonService", new TestServiceImpl());
 
                 depLatch.countDown();
