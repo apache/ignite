@@ -39,6 +39,8 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link Matrix} implementations.
  */
 public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
+    private static final double DEFAULT_DELTA = 0.000000001d;
+
     /** */
     private static final Map<Class<? extends Matrix>, Class<? extends Vector>> typesMap = typesMap();
 
@@ -50,9 +52,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     /** */
     @Test
     public void externalizeTest(){
-        consumeSampleMatrix((m, desc)->{
-            externalizeTest(m);
-        });
+        consumeSampleMatrix((m, desc)-> externalizeTest(m));
     }
 
     /** */
@@ -158,7 +158,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
-            double[][] arr = fillAndReturn(m);
+            fillMatrix(m);
 
             double plusVal = Math.random();
 
@@ -221,6 +221,39 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             for(int i = 0; i < m.rowSize(); i++)
                 for(int j = 0; j < m.columnSize(); j++)
                     assertTrue("Unexpected value.", Double.compare(m.get(i, j), transpose.get(j, i)) == 0);
+        });
+    }
+    
+    /** */
+    @Test
+    public void testDeterminant(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] doubles = fillAndReturn(m);
+
+            if (m.rowSize() == 1)
+                assertEquals("Unexpected value " + desc, m.determinant(), doubles[0][0], 0d);
+            else if (m.rowSize() == 2){
+                double det = doubles[0][0] * doubles[1][1] - doubles[0][1] * doubles[1][0];
+                assertEquals("Unexpected value " + desc, m.determinant(), det, 0d);
+            } else {
+                if (ignore(m.getClass()))
+                    return;
+
+                if (m.rowSize() < 15) { //Otherwise it's takes too long.
+                    Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
+
+                    diagMtx.assign(0);
+                    for (int i = 0; i < m.rowSize(); i++)
+                        diagMtx.set(i, i, m.get(i, i));
+
+                    double det = 1;
+
+                    for (int i = 0; i < diagMtx.rowSize(); i++)
+                        det *= diagMtx.get(i, i);
+
+                    assertEquals("Unexpected value " + desc, diagMtx.determinant(), det, DEFAULT_DELTA);
+                }
+            }
         });
     }
 
@@ -329,7 +362,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             fillMatrix(m);
 
-            Vector foldColumns = m.foldColumns(Vector::sum);
+            Vector foldCols = m.foldColumns(Vector::sum);
 
             for (int j = 0; j < m.columnSize(); j++){
                 Double locSum = 0d;
@@ -337,7 +370,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for (int i = 0; i < m.rowSize(); i++)
                     locSum+=m.get(i, j);
 
-                assertEquals("Unexpected value for " + desc, foldColumns.get(j), locSum, 0d);
+                assertEquals("Unexpected value for " + desc, foldCols.get(j), locSum, 0d);
             }
         });
     }

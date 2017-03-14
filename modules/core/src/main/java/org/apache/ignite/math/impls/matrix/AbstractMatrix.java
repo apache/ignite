@@ -472,7 +472,9 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
         if (rows != cols)
             throw new CardinalityException(rows, cols);
 
-        if (rows == 2)
+        if (rows == 1)
+            return getX(0, 0);
+        else if (rows == 2)
             return getX(0, 0) * getX(1, 1) - getX(0, 1) * getX(1, 0);
         else {
             int sign = 1;
