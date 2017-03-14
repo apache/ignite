@@ -644,9 +644,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject k, CacheObject v,
+    @Override public void store(@Nullable String spaceName, String typeName, CacheObject k, CacheObject v,
         byte[] ver, long expirationTime) throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         removeKey(spaceName, k, tbl);
 
@@ -823,9 +823,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
-        @Nullable String spaceName, String qry, GridQueryTypeDescriptor type,
+        @Nullable String spaceName, String qry, String typeName,
         IndexingQueryFilter filters) throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl != null && tbl.luceneIdx != null) {
             GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, TEXT, spaceName,
@@ -845,9 +845,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type)
+    @Override public void unregisterType(@Nullable String spaceName, String typeName)
         throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+        TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl != null)
             removeTable(tbl);
@@ -1840,17 +1840,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Gets table descriptor by value type.
-     *
-     * @param spaceName Space name.
-     * @param type Value type descriptor.
-     * @return Table descriptor or {@code null} if not found.
-     */
-    @Nullable private TableDescriptor tableDescriptor(@Nullable String spaceName, GridQueryTypeDescriptor type) {
-        return tableDescriptor(type.name(), spaceName);
-    }
-
-    /**
      * Gets table descriptor by type and space names.
      *
      * @param type Type name.
@@ -1928,12 +1917,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Gets size (for tests only).
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
+     * @param typeName Type name.
      * @return Size.
      * @throws IgniteCheckedException If failed or {@code -1} if the type is unknown.
      */
-    long size(@Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
+    long size(@Nullable String spaceName, String typeName) throws IgniteCheckedException {
+        TableDescriptor tbl = tableDescriptor(typeName, spaceName);
 
         if (tbl == null)
             return -1;

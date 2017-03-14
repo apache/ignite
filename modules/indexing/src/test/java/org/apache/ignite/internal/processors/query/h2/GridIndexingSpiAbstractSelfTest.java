@@ -210,28 +210,28 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     public void testSpi() throws Exception {
         IgniteH2Indexing spi = getIndexing();
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA));
+        assertEquals(-1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(-1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(-1, spi.size(typeBA.space(), typeBA.name()));
 
         spi.registerType(typeAA.space(), typeAA);
 
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(-1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(-1, spi.size(typeBA.space(), typeBA.name()));
 
         spi.registerType(typeAB.space(), typeAB);
 
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(0, spi.size(typeAB.space(), typeAB));
-        assertEquals(-1, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(0, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(-1, spi.size(typeBA.space(), typeBA.name()));
 
         spi.registerType(typeBA.space(), typeBA);
 
         // Initially all is empty.
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(0, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(0, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
         assertFalse(spi.queryLocalSql(typeAA.space(), "select * from A.A", null, Collections.emptySet(), typeAA.name(), null, null).hasNext());
         assertFalse(spi.queryLocalSql(typeAB.space(), "select * from A.B", null, Collections.emptySet(), typeAB.name(), null, null).hasNext());
@@ -260,51 +260,51 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         spi.remove("A", key(1), aa(1, "", 10));
         spi.remove("B", key(1), ba(1, "", 10, true));
 
-        spi.store(typeAA.space(), typeAA, key(1), aa(1, "Vasya", 10), "v1".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA.name(), key(1), aa(1, "Vasya", 10), "v1".getBytes(), 0);
 
-        assertEquals(1, spi.size(typeAA.space(), typeAA));
-        assertEquals(0, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(0, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeAB.space(), typeAB, key(1), ab(1, "Vasya", 20, "Some text about Vasya goes here."),
+        spi.store(typeAB.space(), typeAB.name(), key(1), ab(1, "Vasya", 20, "Some text about Vasya goes here."),
             "v2".getBytes(), 0);
 
         // In one space all keys must be unique.
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(1, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Petya", 25, true), "v3".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA.name(), key(1), ba(2, "Petya", 25, true), "v3".getBytes(), 0);
 
         // No replacement because of different space.
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(1, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA.name(), key(1), ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
 
         // Replacement in the same table.
-        assertEquals(0, spi.size(typeAA.space(), typeAA));
-        assertEquals(1, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(0, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeAA.space(), typeAA, key(2), aa(2, "Valera", 19), "v5".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA.name(), key(2), aa(2, "Valera", 19), "v5".getBytes(), 0);
 
-        assertEquals(1, spi.size(typeAA.space(), typeAA));
-        assertEquals(1, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeAA.space(), typeAA, key(3), aa(3, "Borya", 18), "v6".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA.name(), key(3), aa(3, "Borya", 18), "v6".getBytes(), 0);
 
-        assertEquals(2, spi.size(typeAA.space(), typeAA));
-        assertEquals(1, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(2, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.store(typeAB.space(), typeAB, key(4), ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
+        spi.store(typeAB.space(), typeAB.name(), key(4), ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
 
-        assertEquals(2, spi.size(typeAA.space(), typeAA));
-        assertEquals(2, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(2, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(2, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
         // Query data.
         Iterator<IgniteBiTuple<Integer, Map<String, Object>>> res =
@@ -351,7 +351,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         // Text queries
         Iterator<IgniteBiTuple<Integer, Map<String, Object>>> txtRes = spi.queryLocalText(typeAB.space(), "good",
-            typeAB, null);
+            typeAB.name(), null);
 
         assertTrue(txtRes.hasNext());
         assertEquals(ab(4, "Vitalya", 20, "Very Good guy").value(null, false), value(txtRes.next()));
@@ -385,35 +385,35 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         // Remove
         spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
 
-        assertEquals(1, spi.size(typeAA.space(), typeAA));
-        assertEquals(2, spi.size(typeAB.space(), typeAB));
-        assertEquals(1, spi.size(typeBA.space(), typeBA));
+        assertEquals(1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(2, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(1, spi.size(typeBA.space(), typeBA.name()));
 
         spi.remove(typeBA.space(), key(1), ba(2, "Kolya", 25, true));
 
-        assertEquals(1, spi.size(typeAA.space(), typeAA));
-        assertEquals(2, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(2, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
         // Unregister.
-        spi.unregisterType(typeAA.space(), typeAA);
+        spi.unregisterType(typeAA.space(), typeAA.name());
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA));
-        assertEquals(2, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(-1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(2, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.unregisterType(typeAB.space(), typeAB);
+        spi.unregisterType(typeAB.space(), typeAB.name());
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA));
-        assertEquals(-1, spi.size(typeAB.space(), typeAB));
-        assertEquals(0, spi.size(typeBA.space(), typeBA));
+        assertEquals(-1, spi.size(typeAA.space(), typeAA.name()));
+        assertEquals(-1, spi.size(typeAB.space(), typeAB.name()));
+        assertEquals(0, spi.size(typeBA.space(), typeBA.name()));
 
-        spi.unregisterType(typeBA.space(), typeBA);
+        spi.unregisterType(typeBA.space(), typeBA.name());
 
         // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, key(10), aa(1, "Fail", 100500), "v220".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA.name(), key(10), aa(1, "Fail", 100500), "v220".getBytes(), 0);
 
-        assertEquals(-1, spi.size(typeAA.space(), typeAA));
+        assertEquals(-1, spi.size(typeAA.space(), typeAA.name()));
     }
 
     /**

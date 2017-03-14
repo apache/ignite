@@ -124,13 +124,13 @@ public interface GridQueryIndexing {
      *
      * @param spaceName Space name.
      * @param qry Text query.
-     * @param type Query return type.
+     * @param typeName Type name.
      * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Registers cache.
@@ -165,24 +165,24 @@ public interface GridQueryIndexing {
      * Unregisters type and removes all corresponding data.
      *
      * @param spaceName Space name.
-     * @param type Type descriptor.
+     * @param typeName Type name.
      * @throws IgniteCheckedException If failed.
      */
-    public void unregisterType(@Nullable String spaceName, GridQueryTypeDescriptor type) throws IgniteCheckedException;
+    public void unregisterType(@Nullable String spaceName, String typeName) throws IgniteCheckedException;
 
     /**
      * Updates index. Note that key is unique for space, so if space contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
      * @param spaceName Space name.
-     * @param type Value type.
+     * @param typeName Type name.
      * @param key Key.
      * @param val Value.
      * @param ver Version.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
+    public void store(@Nullable String spaceName, String typeName, CacheObject key, CacheObject val,
         byte[] ver, long expirationTime) throws IgniteCheckedException;
 
     /**

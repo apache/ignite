@@ -291,6 +291,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param space Space.
      * @param msg Message.
      */
+    // TODO: This should be done during accept phase.
     public void onIndexProposeMessage(String space, IndexProposeDiscoveryMessage msg) {
         // Validate.
         idxLock.writeLock().lock();
@@ -590,7 +591,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
 
-            idx.store(space, desc, key, val, ver, expirationTime);
+            idx.store(space, desc.name(), key, val, ver, expirationTime);
         }
         finally {
             busyLock.leaveBusy();
@@ -974,7 +975,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         QueryTypeDescriptorImpl type = type(space, resType);
 
-                        return idx.queryLocalText(space, clause, type, filters);
+                        return idx.queryLocalText(space, clause, type.name(), filters);
                     }
                 }, true);
         }
@@ -1077,7 +1078,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         completeIndexClientFuturesOnSpaceUnregister(space, false);
 
                         try {
-                            idx.unregisterType(entry.getKey().space(), desc);
+                            idx.unregisterType(entry.getKey().space(), desc.name());
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to clear indexing on type unregister (will ignore): " + space, e);
