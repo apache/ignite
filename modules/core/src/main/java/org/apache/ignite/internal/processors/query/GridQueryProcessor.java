@@ -59,8 +59,8 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -291,7 +291,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param space Space.
      * @param msg Message.
      */
-    public void onIndexInitDiscoveryMessage(String space, IndexInitDiscoveryMessage msg) {
+    public void onIndexProposeMessage(String space, IndexProposeDiscoveryMessage msg) {
         // Validate.
         idxLock.writeLock().lock();
 
@@ -372,7 +372,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexAckDiscoveryMessage(String space, IndexAckDiscoveryMessage msg) {
+    private void onIndexAckDiscoveryMessage(String space, IndexAcceptDiscoveryMessage msg) {
         // TODO
     }
 
@@ -803,7 +803,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ifNotExists);
 
             try {
-                ctx.discovery().sendCustomEvent(new IndexInitDiscoveryMessage(op));
+                ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(new IgniteException("Failed to start index create opeartion due to " +

@@ -82,8 +82,8 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
-    /** Index operation in init phase. */
-    private AbstractIndexOperation idxInitOp;
+    /** Pending index operation in propose phase. */
+    private AbstractIndexOperation idxProposeOp;
 
     /**
      * @param ctx Context.
@@ -307,17 +307,17 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Pending index init operation.
+     * @return Pending index propose operation.
      */
-    public AbstractIndexOperation indexInitOperation() {
-        return idxInitOp;
+    public AbstractIndexOperation indexProposeOperation() {
+        return idxProposeOp;
     }
 
     /**
-     * @param idxInitOp Pending index init operation.
+     * @param idxProposeOp Pending index propose operation.
      */
-    public void indexInitOperation(AbstractIndexOperation idxInitOp) {
-        this.idxInitOp = idxInitOp;
+    public void indexProposeOperation(AbstractIndexOperation idxProposeOp) {
+        this.idxProposeOp = idxProposeOp;
     }
 
     /** {@inheritDoc} */

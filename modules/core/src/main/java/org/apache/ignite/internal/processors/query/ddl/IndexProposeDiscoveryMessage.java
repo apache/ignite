@@ -27,9 +27,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * {@code INIT} part of a distributed index create/drop operation.
+ * Propose part of a distributed index create/drop operation.
  */
-public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage implements ContextAware {
+public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage implements ContextAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,13 +49,15 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
      *
      * @param op Operation.
      */
-    public IndexInitDiscoveryMessage(AbstractIndexOperation op) {
+    public IndexProposeDiscoveryMessage(AbstractIndexOperation op) {
         super(op);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return new IndexAckDiscoveryMessage(op, errNodeId, errMsg);
+        return hasError() ?
+            new IndexFinishDiscoveryMessage(op, errNodeId, errMsg) :
+            new IndexAcceptDiscoveryMessage(op);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +106,6 @@ public class IndexInitDiscoveryMessage extends IndexAbstractDiscoveryMessage imp
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexInitDiscoveryMessage.class, this);
+        return S.toString(IndexProposeDiscoveryMessage.class, this);
     }
 }

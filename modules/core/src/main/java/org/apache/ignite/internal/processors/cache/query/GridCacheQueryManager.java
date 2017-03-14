@@ -86,7 +86,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -541,8 +541,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param msg Message.
      */
-    public void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
-        qryProc.onIndexInitDiscoveryMessage(space, msg);
+    public void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
+        qryProc.onIndexProposeMessage(space, msg);
     }
 
     /**

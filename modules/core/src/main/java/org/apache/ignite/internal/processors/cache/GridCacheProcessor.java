@@ -67,8 +67,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -1984,7 +1985,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
-            req.indexInitOperation(desc.indexInitOperation());
+            req.indexInitOperation(desc.indexProposeOperation());
 
             reqs.add(req);
         }
@@ -2022,7 +2023,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
-            req.indexInitOperation(desc.indexInitOperation());
+            req.indexInitOperation(desc.indexProposeOperation());
 
             reqs.add(req);
 
@@ -2128,7 +2129,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                     ccfg.getCacheMode());
                         }
 
-                        existing.indexInitOperation(req.indexInitOperation());
+                        existing.indexProposeOperation(req.indexInitOperation());
                     }
                     else {
                         assert req.cacheType() != null : req;
@@ -2140,7 +2141,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 false,
                                 req.deploymentId());
 
-                        desc.indexInitOperation(req.indexInitOperation());
+                        desc.indexProposeOperation(req.indexInitOperation());
 
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
@@ -2684,14 +2685,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer) {
-        if (msg instanceof IndexInitDiscoveryMessage) {
-            onIndexInitDiscoveryMessage((IndexInitDiscoveryMessage)msg);
+        if (msg instanceof IndexAbstractDiscoveryMessage) {
+            IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
 
-            return false;
-        }
+            IgniteUuid id = msg0.id();
 
-        if (msg instanceof IndexAckDiscoveryMessage) {
-            onIndexAckDiscoveryMessage((IndexAckDiscoveryMessage)msg);
+            boolean res = idxDiscoMsgIdHist.add(id);
+
+            if (!idxDiscoMsgIdHist.add(id))
+                U.warn(log, "Received duplicate index change discovery message (will ignore): " + msg);
+            else {
+                if (msg instanceof IndexProposeDiscoveryMessage)
+                    onIndexProposeMessage((IndexProposeDiscoveryMessage)msg);
+                else if (msg instanceof IndexAcceptDiscoveryMessage)
+                    onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
+                else if (msg instanceof IndexFinishDiscoveryMessage)
+                    onIndexfinishMessage((IndexFinishDiscoveryMessage)msg);
+                else
+                    U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
+            }
 
             return false;
         }
@@ -2707,11 +2719,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
+    private void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
         UUID locNodeId = ctx.localNodeId();
-
-        if (!indexMessageValid(msg))
-            return;
 
         AbstractIndexOperation op = msg.operation();
 
@@ -2734,7 +2743,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // Validate request at descriptor level.
-        AbstractIndexOperation oldOp = desc.indexInitOperation();
+        AbstractIndexOperation oldOp = desc.indexProposeOperation();
 
         if (oldOp != null) {
             msg.onError(locNodeId, "Failed to create/drop cache index because another pending operation is in " +
@@ -2745,11 +2754,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // For already started cache we must make sure that indexing manager will be able to accommodate it.
         if (!isMissingQueryCache(desc))
-            cache(op.space()).context().queries().onIndexInitDiscoveryMessage(msg);
+            cache(op.space()).context().queries().onIndexProposeMessage(msg);
 
         // Finally, set init operation to cache descriptor.
         if (!msg.hasError())
-            desc.indexInitOperation(op);
+            desc.indexProposeOperation(op);
     }
 
     /**
@@ -2757,16 +2766,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexAckDiscoveryMessage(IndexAckDiscoveryMessage msg) {
-        if (!indexMessageValid(msg))
-            return;
-
-        if (msg.hasError()) {
-            // TODO: Delegate to indexing to handle error and complete client futures!
-
-            return;
-        }
-
+    private void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
         // TODO: Remove init operation from descriptor!
 
         // TODO: Handle concurrent cache stop!
@@ -2777,20 +2777,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Ensure that arrived discovery message is not duplicate.
+     * Handle cache index ack discovery message.
      *
      * @param msg Message.
-     * @return {@code True} if message is not duplicated and should be processed further.
      */
-    private boolean indexMessageValid(IndexAbstractDiscoveryMessage msg) {
-        IgniteUuid id = msg.id();
+    private void onIndexfinishMessage(IndexFinishDiscoveryMessage msg) {
+        // TODO: Clear dynamic descriptors!
 
-        boolean res = idxDiscoMsgIdHist.add(id);
-
-        if (!res)
-            U.warn(log, "Received duplicate index change discovery message (will ignore): " + msg);
-
-        return res;
+        // TODO: Delegate to indexing to handle result and complete client futures!
     }
 
     /**
@@ -2862,7 +2856,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
-                        startDesc.indexInitOperation(req.indexInitOperation());
+                        startDesc.indexProposeOperation(req.indexInitOperation());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
@@ -3926,7 +3920,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     req.deploymentId(desc.deploymentId());
                     req.startCacheConfiguration(descCfg);
-                    req.indexInitOperation(desc.indexInitOperation());
+                    req.indexInitOperation(desc.indexProposeOperation());
                 }
             }
             else {

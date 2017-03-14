@@ -24,9 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * {@code ACK} message which triggers local index create/drop.
+ * Index creation finished discovery message.
  */
-public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
+public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +35,6 @@ public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
 
     /** Error message. */
     private final String errMsg;
-
     /**
      * Constructor.
      *
@@ -43,7 +42,7 @@ public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
      * @param errNodeId Node reported an error.
      * @param errMsg Error message.
      */
-    public IndexAckDiscoveryMessage(AbstractIndexOperation op, UUID errNodeId, String errMsg) {
+    public IndexFinishDiscoveryMessage(AbstractIndexOperation op, UUID errNodeId, String errMsg) {
         super(op);
 
         this.errNodeId = errNodeId;
@@ -83,6 +82,7 @@ public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAckDiscoveryMessage.class, this);
+        return S.toString(IndexFinishDiscoveryMessage.class, this);
     }
+
 }
