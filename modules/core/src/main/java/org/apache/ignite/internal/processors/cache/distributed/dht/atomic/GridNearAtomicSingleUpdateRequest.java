@@ -69,12 +69,10 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
     /**
      * Constructor.
-     *
-     * @param cacheId Cache ID.
+     *  @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futVer Future version.
      * @param fastMap Fast map scheme flag.
-     * @param updateVer Update version set if fast map is performed.
      * @param topVer Topology version.
      * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
@@ -92,7 +90,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         UUID nodeId,
         GridCacheVersion futVer,
         boolean fastMap,
-        @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
         boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
@@ -110,7 +107,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             nodeId,
             futVer,
             fastMap,
-            updateVer,
             topVer,
             topLocked,
             syncMode,

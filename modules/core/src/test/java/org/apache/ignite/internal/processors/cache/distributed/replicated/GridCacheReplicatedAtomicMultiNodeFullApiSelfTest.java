@@ -40,11 +40,4 @@ public class GridCacheReplicatedAtomicMultiNodeFullApiSelfTest extends GridCache
     @Override protected boolean lockingEnabled() {
         return false;
     }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        return ccfg;
-    }
 }

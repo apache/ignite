@@ -47,11 +47,4 @@ public class GridCacheAtomicMultiNodeP2PDisabledFullApiSelfTest
     @Override protected boolean txEnabled() {
         return false;
     }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        return ccfg;
-    }
 }

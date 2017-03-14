@@ -87,14 +87,14 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedPrimary() throws Exception {
+    public void testPartitioned() throws Exception {
         checkMessages(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClientPrimary() throws Exception {
+    public void testClient() throws Exception {
         checkMessages(true);
     }
 

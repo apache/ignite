@@ -46,7 +46,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -87,8 +86,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = false;
 
         assertEquals(0, interceptor.invokeCnt.get());
-
-        atomicClockModeDelay(jcache(0));
     }
 
     /** {@inheritDoc} */
@@ -889,8 +886,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         // Put from grid 1 to be sure grid 0 does not have value for near key.
         jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
-
-        atomicClockModeDelay(jcache(1));
 
         interceptor.disabled = false;
 

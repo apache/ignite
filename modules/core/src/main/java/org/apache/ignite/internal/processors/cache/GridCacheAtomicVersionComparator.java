@@ -28,10 +28,9 @@ public class GridCacheAtomicVersionComparator {
      *
      * @param one First version.
      * @param other Second version.
-     * @param ignoreTime {@code True} if global time should be ignored.
      * @return Comparison value.
      */
-    public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
+    public int compare(GridCacheVersion one, GridCacheVersion other) {
         int topVer = one.topologyVersion();
         int otherTopVer = other.topologyVersion();
 

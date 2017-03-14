@@ -2873,8 +2873,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        atomicClockModeDelay(cache);
-
         IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         if (async) {
@@ -2896,8 +2894,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
-        atomicClockModeDelay(cache);
-
         if (async) {
             IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
@@ -2916,8 +2912,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
-
-        atomicClockModeDelay(cache);
 
         if (async) {
             asyncCache.removeAll();

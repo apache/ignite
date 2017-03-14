@@ -65,7 +65,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClockSyncFrequency(300000);
         cfg.setFailureDetectionTimeout(1000);
 
         TestCommunicationSpi spi = new TestCommunicationSpi();

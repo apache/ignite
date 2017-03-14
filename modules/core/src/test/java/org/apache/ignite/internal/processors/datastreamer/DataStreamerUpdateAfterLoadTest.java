@@ -115,9 +115,6 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
 
                 IgniteCache<Integer, Integer> cache = updateIgnite.cache(cacheName);
 
-                if (allowOverwrite)
-                    atomicClockModeDelay(cache);
-
                 updateIgnite.cache(cacheName).put(key, key + 1);
 
                 checkValue(key, key + 1, cacheName);

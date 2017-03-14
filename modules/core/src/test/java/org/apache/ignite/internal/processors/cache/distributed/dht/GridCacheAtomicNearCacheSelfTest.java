@@ -99,7 +99,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoBackups() throws Exception {
-        startGridsLocal(0);
+        doStartGrids(0);
 
         checkNearCache();
     }
@@ -108,7 +108,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithBackups() throws Exception {
-        startGridsLocal(2);
+        doStartGrids(2);
 
         checkNearCache();
     }
@@ -207,8 +207,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
 
-            atomicClockModeDelay(cache);
-
             for (Integer key : nearKeys.keySet())
                 nearKeys.put(key, val);
 
@@ -292,8 +290,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
-
-            atomicClockModeDelay(cache);
 
             log.info("Transform [grid=" + grid(i).name() + ", val=" + val + ']');
 
@@ -385,8 +381,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
-
-            atomicClockModeDelay(cache);
 
             for (Integer key : nearKeys)
                 nearKeys.add(key);
@@ -507,8 +501,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid(i).cache(null);
 
-            atomicClockModeDelay(cache);
-
             log.info("Put [grid=" + grid(i).name() + ", val=" + val + ']');
 
             cache.put(nearKey, val);
@@ -610,8 +602,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> primaryCache = G.ignite(
             (String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME)).cache(null);
 
-        atomicClockModeDelay(cache0);
-
         primaryCache.put(nearKey, 2); // This put should see that near entry evicted on grid0 and remove reader.
 
         for (int i = 0; i < GRID_CNT; i++)
@@ -657,8 +647,6 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         Ignite primaryNode = G.ignite((String) aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
 
         IgniteCache<Integer, Integer> primaryCache = primaryNode.cache(null);
-
-        atomicClockModeDelay(primaryCache);
 
         primaryCache.put(nearKey, 2); // Put from primary, check there are no readers.
 
@@ -770,7 +758,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @param backups Backups number.
      * @throws Exception If failed.
      */
-    private void startGridsLocal(int backups) throws Exception {
+    private void doStartGrids(int backups) throws Exception {
         this.backups = backups;
 
         startGrids(GRID_CNT);

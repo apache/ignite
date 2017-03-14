@@ -173,7 +173,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
      * @return Version represented as {@code GridUuid}
      */
     public IgniteUuid asGridUuid() {
-        return new IgniteUuid(new UUID(nodeOrderDrId << 32, topVer << 32), order);
+        return new IgniteUuid(new UUID(topVer, nodeOrderDrId ), order);
     }
 
     /** {@inheritDoc} */
