@@ -434,7 +434,12 @@ public class PlatformUtils {
      * @param val Values.
      */
     public static void writeIgniteUuid(BinaryRawWriterEx writer, IgniteUuid val) {
-        writer.writeObject(val);
+        if (val == null)
+            writer.writeUuid(null);
+        else {
+            writer.writeUuid(val.globalId());
+            writer.writeLong(val.localId());
+        }
     }
 
     /**
