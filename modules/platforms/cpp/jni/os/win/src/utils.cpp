@@ -209,12 +209,6 @@ namespace ignite
             return res;
         }
 
-        /**
-         * Helper function to create classpath based on Ignite home directory.
-         *
-         * @param home Home directory; expected to be valid.
-         * @param forceTest Force test classpath.
-         */
         std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest)
         {
             std::string res;

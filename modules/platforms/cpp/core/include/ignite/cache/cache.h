@@ -30,20 +30,20 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/cache/query/continuous/continuous_query_handle.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/cache/cache_entry_processor_holder.h"
-#include "ignite/impl/operations.h"
-#include "ignite/impl/module_manager.h"
-#include "ignite/ignite_error.h"
+#include <ignite/cache/cache_peek_mode.h>
+#include <ignite/cache/query/query_cursor.h>
+#include <ignite/cache/query/query_fields_cursor.h>
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/cache/cache_entry_processor_holder.h>
+#include <ignite/impl/operations.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/ignite_error.h>
 
 namespace ignite
 {
@@ -60,6 +60,9 @@ namespace ignite
          * of this class instance will only create another reference to the same
          * underlying object. Underlying object released automatically once all
          * the instances are destructed.
+         *
+         * @tparam K Cache key type.
+         * @tparam V Cache value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -1565,6 +1568,35 @@ namespace ignite
             bool IsValid() const
             {
                 return impl.IsValid();
+            }
+
+            /**
+             * Executes LocalLoadCache on all cache nodes.
+             */
+            void LoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Loads state from the underlying persistent storage.
+             *
+             * This method is not transactional and may end up loading a stale value into
+             * cache if another thread has updated the value immediately after it has been
+             * loaded. It is mostly useful when pre-loading the cache from underlying
+             * data store before start, or for read-only caches.
+             */
+            void LocalLoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LocalLoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
         private:

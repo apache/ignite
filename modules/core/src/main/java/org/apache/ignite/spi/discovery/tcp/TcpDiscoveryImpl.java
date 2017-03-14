@@ -231,10 +231,10 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
-    public abstract void spiStart(@Nullable String gridName) throws IgniteSpiException;
+    public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
      * @throws IgniteSpiException If failed.

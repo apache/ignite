@@ -1334,7 +1334,7 @@ object visor extends VisorTag {
         val t = VisorTextTable()
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
-        t += ("Grid name",
+        t += ("Ignite instance name",
             if (ignite == null)
                 NA
             else {
@@ -1495,20 +1495,20 @@ object visor extends VisorTag {
     /**
      * Connects Visor console to configuration with path.
      *
-     * @param gridName Name of grid instance.
+     * @param igniteInstanceName Name of Ignite instance.
      * @param cfgPath Configuration path.
      */
-    def open(gridName: String, cfgPath: String) {
+    def open(igniteInstanceName: String, cfgPath: String) {
         this.cfgPath = cfgPath
 
         ignite =
             try
-                Ignition.ignite(gridName).asInstanceOf[IgniteEx]
+                Ignition.ignite(igniteInstanceName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteException("Named grid unavailable: " + gridName)
+                    throw new IgniteException("Named Ignite instance unavailable: " + igniteInstanceName)
             }
 
         assert(cfgPath != null)

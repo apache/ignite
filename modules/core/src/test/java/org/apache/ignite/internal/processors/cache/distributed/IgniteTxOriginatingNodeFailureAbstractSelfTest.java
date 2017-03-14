@@ -248,8 +248,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
@@ -265,8 +265,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);

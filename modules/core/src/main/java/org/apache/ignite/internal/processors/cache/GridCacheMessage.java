@@ -50,7 +50,7 @@ public abstract class GridCacheMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of cache lookup indexes. */
-    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 5;
+    public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 7;
 
     /** Cache message index field name. */
     public static final String CACHE_MSG_INDEX_FIELD_NAME = "CACHE_MSG_IDX";
@@ -501,7 +501,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void prepareMarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx) throws IgniteCheckedException {
         if (col == null)
             return;
@@ -553,7 +553,7 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    protected final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
+    public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx,
         ClassLoader ldr)
         throws IgniteCheckedException
@@ -699,6 +699,17 @@ public abstract class GridCacheMessage implements Message {
         }
 
         return reader.afterMessageRead(GridCacheMessage.class);
+    }
+
+    /**
+     * @param str Bulder.
+     * @param name Flag name.
+     */
+    protected final void appendFlag(StringBuilder str, String name) {
+        if (str.length() > 0)
+            str.append('|');
+
+        str.append(name);
     }
 
     /** {@inheritDoc} */

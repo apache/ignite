@@ -115,8 +115,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -124,11 +124,11 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         cfg.setDeploymentMode(CONTINUOUS);
 
-        cfg.setUserAttributes(F.asMap("EVEN", !gridName.endsWith("0") && !gridName.endsWith("2")));
+        cfg.setUserAttributes(F.asMap("EVEN", !igniteInstanceName.endsWith("0") && !igniteInstanceName.endsWith("2")));
 
         MemoryEventStorageSpi spi = new MemoryEventStorageSpi();
 
@@ -139,7 +139,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         if (disableP2p)
             cfg.setPeerClassLoadingEnabled(false);
 
-        if (getTestGridName(1).equals(gridName) || useExtClassLoader ||
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || useExtClassLoader ||
             cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
 
@@ -162,10 +162,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration for grid with specified name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    CacheConfiguration cacheConfiguration(String gridName) {
+    CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
