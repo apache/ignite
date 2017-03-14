@@ -971,6 +971,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        // TODO Clean indexing data properly.
+
         cachesOnDisconnect = new HashMap<>(registeredCaches);
 
         IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
@@ -2125,6 +2127,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                     ccfg.getNearConfiguration() != null,
                                     ccfg.getCacheMode());
                         }
+
+                        existing.indexInitOperation(req.indexInitOperation());
                     }
                     else {
                         assert req.cacheType() != null : req;
@@ -2740,7 +2744,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // For already started cache we must make sure that indexing manager will be able to accommodate it.
-        if (isMissingQueryCache(desc))
+        if (!isMissingQueryCache(desc))
             cache(op.space()).context().queries().onIndexInitDiscoveryMessage(msg);
 
         // Finally, set init operation to cache descriptor.
@@ -2757,7 +2761,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!indexMessageValid(msg))
             return;
 
-        // TODO: Implement ack routine.
+        if (msg.hasError()) {
+            // TODO: Delegate to indexing to handle error and complete client futures!
+
+            return;
+        }
+
+        // TODO: Remove init operation from descriptor!
+
+        // TODO: Handle concurrent cache stop!
+
+        // TODO: Enlist cache operation to descriptor!
+
+        // TODO: Initiate exchange-like routine!
     }
 
     /**
