@@ -229,6 +229,9 @@ public class InlineIndexHelper {
         if (size > 0 && size + 1 > maxSize)
             return null;
 
+        if (maxSize < 1)
+            return null;
+
         int type = PageUtils.getByte(pageAddr, off);
 
         if (type == Value.UNKNOWN)
