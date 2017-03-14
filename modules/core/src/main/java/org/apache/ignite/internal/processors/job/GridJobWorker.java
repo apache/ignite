@@ -197,7 +197,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobHoldListener holdLsnr,
         GridReservable partsReservation,
         AffinityTopologyVersion reqTopVer) {
-        super(ctx.gridName(), "grid-job-worker", ctx.log(GridJobWorker.class));
+        super(ctx.igniteInstanceName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
         assert ses != null;

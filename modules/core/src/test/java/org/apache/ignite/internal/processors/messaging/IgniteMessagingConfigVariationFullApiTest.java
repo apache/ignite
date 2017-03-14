@@ -47,9 +47,9 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(3).equals(testGridName)
-            || getTestGridName(5).equals(testGridName);
+        return getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestIgniteInstanceName(3).equals(testGridName)
+            || getTestIgniteInstanceName(5).equals(testGridName);
     }
 
     /**

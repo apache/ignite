@@ -96,8 +96,8 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = cacheConfiguration(CACHE_NAME);
 
@@ -107,7 +107,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         commSpi.setTcpNoDelay(true);
 
-        if (gridName.endsWith(String.valueOf(CLN_GRD)))
+        if (igniteInstanceName.endsWith(String.valueOf(CLN_GRD)))
             cfg.setClientMode(true);
 
         cacheCfg.setRebalanceMode(SYNC);

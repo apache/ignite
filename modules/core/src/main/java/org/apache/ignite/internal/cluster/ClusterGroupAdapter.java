@@ -83,8 +83,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Services. */
     private transient IgniteServices svcs;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -188,7 +188,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ctx = ctx;
 
-        gridName = ctx.gridName();
+        igniteInstanceName = ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -699,7 +699,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
         U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
@@ -712,7 +712,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        igniteInstanceName = U.readString(in);
         subjId = U.readUuid(in);
 
         if (in.readBoolean())

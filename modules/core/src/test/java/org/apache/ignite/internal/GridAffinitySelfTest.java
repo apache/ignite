@@ -44,8 +44,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -54,10 +54,10 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.endsWith("1"))
+        if (igniteInstanceName.endsWith("1"))
             cfg.setClientMode(true);
         else {
-            assert gridName.endsWith("2");
+            assert igniteInstanceName.endsWith("2");
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

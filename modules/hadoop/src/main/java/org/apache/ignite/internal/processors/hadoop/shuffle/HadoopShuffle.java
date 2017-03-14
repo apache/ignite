@@ -187,7 +187,7 @@ public class HadoopShuffle extends HadoopComponent {
      * @param shuffleJob Job to start sending for.
      */
     private void startSending(HadoopShuffleJob<UUID> shuffleJob) {
-        shuffleJob.startSending(ctx.kernalContext().gridName(),
+        shuffleJob.startSending(ctx.kernalContext().igniteInstanceName(),
             new IgniteInClosure2X<UUID, HadoopMessage>() {
                 @Override public void applyx(UUID dest, HadoopMessage msg) throws IgniteCheckedException {
                     send0(dest, msg);

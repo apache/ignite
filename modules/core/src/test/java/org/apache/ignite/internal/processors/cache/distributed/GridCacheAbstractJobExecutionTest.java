@@ -55,8 +55,8 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
     private static final int GRID_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -94,8 +94,8 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             if (cache.context().isNear())
                 info("DHT entries: " + cache.context().near().dht().entries());
 
-            assertEquals("Cache is not empty, node [entries=" + c.localEntries() + ", grid=" + g.name() + ']',
-                0, c.localSize());
+            assertEquals("Cache is not empty, node [entries=" + c.localEntries() + ", igniteInstanceName=" +
+                    g.name() + ']', 0, c.localSize());
         }
     }
 

@@ -227,8 +227,8 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
-    /** Optional grid name. */
-    private String gridName;
+    /** Optional local Ignite instance name. */
+    private String igniteInstanceName;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -509,26 +509,26 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
-        daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         callbackPoolSize = cfg.getAsyncCallbackPoolSize();
-        connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
+        connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
+        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        gridName = cfg.getGridName();
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         igniteHome = cfg.getIgniteHome();
+        igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -540,8 +540,8 @@ public class IgniteConfiguration {
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
         mbeanSrv = cfg.getMBeanServer();
-        metricsHistSize = cfg.getMetricsHistorySize();
         metricsExpTime = cfg.getMetricsExpireTime();
+        metricsHistSize = cfg.getMetricsHistorySize();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
@@ -581,12 +581,27 @@ public class IgniteConfiguration {
     /**
      * Gets optional grid name. Returns {@code null} if non-default grid name was not
      * provided.
+     * <p>The name only works locally and has no effect on topology</p>
      *
      * @return Optional grid name. Can be {@code null}, which is default grid name, if
      *      non-default grid name was not provided.
+     * @deprecated Use {@link #getIgniteInstanceName()} instead.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return getIgniteInstanceName();
+    }
+
+    /**
+     * Gets optional local instance name. Returns {@code null} if non-default local instance
+     * name was not provided.
+     * <p>The name only works locally and has no effect on topology</p>
+     *
+     * @return Optional local instance name. Can be {@code null}, which is default local
+     * instance name, if non-default local instance name was not provided.
+     */
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
@@ -635,9 +650,22 @@ public class IgniteConfiguration {
      * @param gridName Grid name to set. Can be {@code null}, which is default
      *      grid name.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setIgniteInstanceName(String)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setGridName(String gridName) {
-        this.gridName = gridName;
+        return setIgniteInstanceName(gridName);
+    }
+
+    /**
+     * Sets of local instance name. Note that {@code null} is a default local instance name.
+     *
+     * @param instanceName Local instance name to set. Can be {@code null}. which is default
+     * local instance name.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setIgniteInstanceName(String instanceName) {
+        this.igniteInstanceName = instanceName;
 
         return this;
     }

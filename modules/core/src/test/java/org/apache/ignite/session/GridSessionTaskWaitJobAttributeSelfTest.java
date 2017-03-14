@@ -61,7 +61,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     public void testSetAttribute() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
@@ -73,7 +73,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     public void testMultiThreaded() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
@@ -104,7 +104,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
      * @param num Number.
      */
     private void checkTask(int num) {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), num);
 

@@ -19,7 +19,6 @@ import '../public/stylesheets/style.scss';
 import '../app/components/ui-grid-header/ui-grid-header.scss';
 import '../app/components/ui-grid-settings/ui-grid-settings.scss';
 import '../app/components/form-field-datepicker/form-field-datepicker.scss';
-import './helpers/jade/mixins.jade';
 
 import './app.config';
 
@@ -122,7 +121,7 @@ import IgniteActivitiesUserDialog from './components/activities-user-dialog';
 // Inject external modules.
 import 'ignite_modules_temp/index';
 
-import baseTemplate from '../views/base.jade';
+import baseTemplate from 'views/base.pug';
 
 angular
 .module('ignite-console', [
@@ -242,12 +241,12 @@ angular
         .state('base', {
             url: '',
             abstract: true,
-            templateUrl: baseTemplate
+            template: baseTemplate
         })
         .state('settings', {
             url: '/settings',
             abstract: true,
-            templateUrl: baseTemplate
+            template: baseTemplate
         });
 
     $urlRouterProvider.otherwise('/404');

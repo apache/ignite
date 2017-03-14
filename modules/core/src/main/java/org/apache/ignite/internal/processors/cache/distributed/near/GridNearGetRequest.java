@@ -73,10 +73,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
-    /** Partition IDs. */
-    @GridDirectCollection(int.class)
-    private List<Integer> partIds;
-
     /** */
     @GridDirectCollection(boolean.class)
     private Collection<Boolean> flags;
@@ -154,12 +150,10 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
         this.keys = new ArrayList<>(keys.size());
         flags = new ArrayList<>(keys.size());
-        partIds = new ArrayList<>(keys.size());
 
         for (Map.Entry<KeyCacheObject, Boolean> entry : keys.entrySet()) {
             this.keys.add(entry.getKey());
             flags.add(entry.getValue());
-            partIds.add(entry.getKey().partition());
         }
 
         this.readThrough = readThrough;
@@ -259,7 +253,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
     /**
@@ -301,13 +295,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
             while (keysIt.hasNext())
                 keyMap.put(keysIt.next(), flagsIt.next());
-        }
-
-        if (partIds != null && !partIds.isEmpty()) {
-            assert partIds.size() == keys.size();
-
-            for (int i = 0; i < keys.size(); i++)
-                keys.get(i).partition(partIds.get(i));
         }
     }
 
@@ -368,48 +355,42 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
                 if (!writer.writeBoolean("readThrough", readThrough))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeBoolean("reload", reload))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeBoolean("skipVals", skipVals))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -480,14 +461,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
                 reader.incrementState();
 
             case 9:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
                 readThrough = reader.readBoolean("readThrough");
 
                 if (!reader.isLastRead())
@@ -495,7 +468,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 reload = reader.readBoolean("reload");
 
                 if (!reader.isLastRead())
@@ -503,7 +476,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 skipVals = reader.readBoolean("skipVals");
 
                 if (!reader.isLastRead())
@@ -511,7 +484,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -519,7 +492,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -527,7 +500,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -535,7 +508,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -555,7 +528,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 17;
+        return 16;
     }
 
     /** {@inheritDoc} */

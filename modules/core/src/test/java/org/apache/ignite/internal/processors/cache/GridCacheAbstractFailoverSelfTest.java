@@ -51,7 +51,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
-    private static final String NEW_GRID_NAME = "newGrid";
+    private static final String NEW_IGNITE_INSTANCE_NAME = "newGrid";
 
     /** */
     private static final int ENTRY_CNT = 100;
@@ -73,12 +73,10 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(60_000);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
@@ -94,8 +92,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(SYNC);
 
@@ -152,7 +150,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         else
             put(jcache(), ENTRY_CNT);
 
-        Ignite g = startGrid(NEW_GRID_NAME);
+        Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
         check(cache(g), ENTRY_CNT);
 
@@ -167,7 +165,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             put(cache(g), half);
         }
 
-        stopGrid(NEW_GRID_NAME);
+        stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
         check(jcache(), ENTRY_CNT);
     }

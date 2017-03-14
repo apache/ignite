@@ -248,7 +248,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(name);
+        cfg.setIgniteInstanceName(name);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
