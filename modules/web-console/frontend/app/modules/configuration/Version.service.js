@@ -22,7 +22,10 @@ const VERSION_MATCHER = /(\d+)\.(\d+)\.(\d+)([-.]([^0123456789][^-]+)(-SNAPSHOT)
 
 const numberComparator = (a, b) => a > b ? 1 : a < b ? -1 : 0;
 
-export default class Version {
+export default class IgniteVersion {
+    /** Current product version. */
+    static ignite = '1.8.0';
+
     /**
      * Tries to parse product version from it's string representation.
      *
@@ -70,26 +73,38 @@ export default class Version {
         if (res !== 0)
             return res;
 
-        return numberComparator(pa.revTs, pb.maintenance);
+        return numberComparator(pa.revTs, pb.revTs);
     }
 
     /**
-     * Return current product version.
-     * @returns {{ignite: string}}
+     * Check if node version in range
+     * @param {String} nodeVer Node version.
+     * @param {Array.<String>} ranges Version ranges to compare with.
+     * @returns {Boolean} `True` if node version is equal or greater than specified range.
      */
-    productVersion() {
-        return {
-            ignite: '1.7.0'
-        };
+    includes(nodeVer, ...ranges) {
+        return !!_.find(ranges, ([after, before]) =>
+            this.compare(nodeVer, after) >= 0 && (_.isNil(before) || this.compare(nodeVer, before) < 0)
+        );
     }
 
     /**
      * Check if node version is newer or same
-     * @param {String} nodeVer
-     * @param {String} sinceVer
-     * @returns {Boolean}
+     * @param {String} nodeVer Node version.
+     * @param {String} sinceVer Version to compare with.
+     * @returns {Boolean} `True` if node version is equal or greater than specified version.
      */
     since(nodeVer, sinceVer) {
-        return this.compare(nodeVer, sinceVer) >= 0;
+        return this.includes(nodeVer, [sinceVer]);
+    }
+
+    /**
+     * Check whether node version before than specified version.
+     * @param {String} nodeVer Node version.
+     * @param {String} sinceVer Version to compare with.
+     * @return {Boolean} `True` if node version before than specified version.
+     */
+    before(nodeVer, sinceVer) {
+        return !this.since(nodeVer, sinceVer);
     }
 }

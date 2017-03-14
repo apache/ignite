@@ -37,7 +37,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 libignite_la_LIBADD = \
     @top_srcdir@/jni/libignite-jni.la \
@@ -59,6 +59,7 @@ libignite_la_SOURCES = \
     src/impl/ignite_environment.cpp \
     src/impl/binary/binary_type_updater_impl.cpp \
     src/impl/handle_registry.cpp \
+    src/impl/cache/query/continuous/continuous_query_handle_impl.cpp \
     src/impl/cache/query/query_impl.cpp \
     src/impl/cache/cache_impl.cpp \
     src/impl/cache/query/query_batch.cpp \

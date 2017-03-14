@@ -323,14 +323,14 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 try {
                     Thread.sleep(timeout + 1000);
                 }
-                catch (InterruptedException e) {
-                    // Ignore
+                catch (InterruptedException ignored) {
+                    // No-op.
                 }
 
                 try {
                     timeoutHelper.nextTimeoutChunk(0);
                 }
-                catch (IgniteSpiOperationTimeoutException e) {
+                catch (IgniteSpiOperationTimeoutException ignored) {
                     throw (err = new IgniteSpiOperationTimeoutException("Timeout: openSocketTimeoutWait"));
                 }
             }
@@ -340,8 +340,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
             try {
                 Thread.sleep(1500);
             }
-            catch (InterruptedException e) {
-                // Ignore
+            catch (InterruptedException ignored) {
+                // No-op.
             }
 
             return sock;
@@ -369,8 +369,8 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 try {
                     Thread.sleep(timeout);
                 }
-                catch (InterruptedException e) {
-                    // Ignore
+                catch (InterruptedException ignored) {
+                    // No-op.
                 }
             }
             else

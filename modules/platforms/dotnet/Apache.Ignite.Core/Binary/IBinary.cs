@@ -72,8 +72,7 @@ namespace Apache.Ignite.Core.Binary
         IBinaryObjectBuilder GetBuilder(Type type);
 
         /// <summary>
-        /// Create builder for the given binary object type name. Note that this
-        /// type name must be specified in <see cref="BinaryConfiguration"/>.
+        /// Create builder for the given binary object type name.
         /// </summary>
         /// <param name="typeName">Type name.</param>
         /// <returns>Builder.</returns>

@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Date date = BinaryUtils::MakeDateGmt(1999, 2, 22);
+    Date date = common::MakeDateGmt(1999, 2, 22);
 
     appBuf.PutDate(date);
 
@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Timestamp date = BinaryUtils::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
+    Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
 
     appBuf.PutTimestamp(date);
 
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
+    Date date = common::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 
@@ -456,7 +456,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -475,7 +475,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -499,7 +499,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
+    Date date = common::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 
@@ -823,7 +823,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
 
     tm tmDate;
 
-    bool success = BinaryUtils::DateToCTm(date, tmDate);
+    bool success = common::DateToCTm(date, tmDate);
 
     BOOST_REQUIRE(success);
 
@@ -849,7 +849,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 
     tm tmDate;
 
-    bool success = BinaryUtils::TimestampToCTm(date, tmDate);
+    bool success = common::TimestampToCTm(date, tmDate);
 
     BOOST_REQUIRE(success);
 
@@ -880,7 +880,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 
     tm tmDate;
 
-    bool success = BinaryUtils::DateToCTm(date, tmDate);
+    bool success = common::DateToCTm(date, tmDate);
 
     BOOST_REQUIRE(success);
 
@@ -911,7 +911,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 
     tm tmDate;
 
-    bool success = BinaryUtils::TimestampToCTm(ts, tmDate);
+    bool success = common::TimestampToCTm(ts, tmDate);
 
     BOOST_REQUIRE(success);
 
@@ -946,7 +946,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 
     tm tmDate;
 
-    bool success = BinaryUtils::TimestampToCTm(ts, tmDate);
+    bool success = common::TimestampToCTm(ts, tmDate);
 
     BOOST_REQUIRE(success);
 
@@ -982,7 +982,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 
     tm tmDate;
 
-    bool success = BinaryUtils::DateToCTm(date, tmDate);
+    bool success = common::DateToCTm(date, tmDate);
 
     BOOST_REQUIRE(success);
 

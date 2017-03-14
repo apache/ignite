@@ -1961,6 +1961,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Reinterprets int bits as a float.
+        /// </summary>
+        public static unsafe float IntToFloatBits(int val)
+        {
+            return *(float*) &val;
+        }
+
+        /// <summary>
+        /// Reinterprets long bits as a double.
+        /// </summary>
+        public static unsafe double LongToDoubleBits(long val)
+        {
+            return *(double*) &val;
+        }
+
+        /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
         private static T CreateInstance<T>(BinaryReader reader)

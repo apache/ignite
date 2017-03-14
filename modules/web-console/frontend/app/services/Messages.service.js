@@ -24,6 +24,9 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
         prefix = prefix || '';
 
         if (err) {
+            if (err.hasOwnProperty('data'))
+                err = err.data;
+
             if (err.hasOwnProperty('message'))
                 return prefix + err.message;
 
@@ -38,26 +41,26 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
             msgModal.hide();
     };
 
-    const _showMessage = (err, type, duration, icon) => {
+    const _showMessage = (message, err, type, duration) => {
         hideAlert();
 
-        const title = errorMessage(null, err);
+        const title = err ? errorMessage(message, err) : errorMessage(null, message);
 
         msgModal = $alert({type, title, duration});
 
-        msgModal.$scope.icon = icon;
+        msgModal.$scope.icon = `icon-${type}`;
     };
 
     return {
         errorMessage,
         hideAlert,
-        showError(err) {
-            _showMessage(err, 'danger', 10, 'fa-exclamation-triangle');
+        showError(message, err) {
+            _showMessage(message, err, 'danger', 10);
 
             return false;
         },
-        showInfo(err) {
-            _showMessage(err, 'success', 3, 'fa-check-circle-o');
+        showInfo(message) {
+            _showMessage(message, null, 'success', 3);
         }
     };
 }]];

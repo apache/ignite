@@ -156,7 +156,7 @@ public enum GridSqlOperationType {
         @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 1;
 
-            return '(' + text + ' ' + operation.child().getSQL() + ')';
+            return '(' + text + ' ' + operation.child(0).getSQL() + ')';
         }
     }
 
@@ -178,7 +178,7 @@ public enum GridSqlOperationType {
         @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 1;
 
-            return '(' + operation.child().getSQL() + ' ' + text + ')';
+            return '(' + operation.child(0).getSQL() + ' ' + text + ')';
         }
     }
 

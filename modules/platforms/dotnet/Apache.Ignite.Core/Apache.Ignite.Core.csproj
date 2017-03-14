@@ -21,6 +21,7 @@
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -30,6 +31,7 @@
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -39,6 +41,7 @@
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x86\Debug\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -48,6 +51,7 @@
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x86\Release\Apache.Ignite.Core.XML</DocumentationFile>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -67,6 +71,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
@@ -76,14 +81,18 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DebugType>none</DebugType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryArrayEqualityComparer.cs" />
+    <Compile Include="Impl\Binary\BinaryFieldEqualityComparer.cs" />
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Common\JavaException.cs" />
     <Compile Include="DataStructures\Configuration\Package-Info.cs" />
@@ -91,8 +100,10 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryEqualityComparerSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
+    <Compile Include="Impl\Binary\IBinaryEqualityComparer.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
@@ -175,12 +186,15 @@
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
+    <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
     <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
+    <Compile Include="Impl\Common\Listenable.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
@@ -428,6 +442,7 @@
     <Compile Include="Impl\Unmanaged\IgniteJniNativeMethods.cs" />
     <Compile Include="Impl\Unmanaged\IUnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbackHandlers.cs" />
+    <Compile Include="Impl\Unmanaged\UnmanagedCallbackOp.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedCallbacks.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedContext.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
@@ -512,10 +527,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\x64\$(Configuration)\ignite.jni.dll">
-      <Link>resources\$(Configuration)\x64\ignite.jni.dll</Link>
+      <Link>resources\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll')">
-      <Link>resources\$(Configuration)\x86\ignite.jni.dll</Link>
+      <Link>resources\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -534,12 +549,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Impl\Common\JavaObjects\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\cpp\jni\project\vs\jni.vcxproj">
-      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
-      <Name>jni</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">

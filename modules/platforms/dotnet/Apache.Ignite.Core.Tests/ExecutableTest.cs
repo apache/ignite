@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
@@ -309,6 +310,55 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests invalid command arguments.
+        /// </summary>
+        [Test]
+        public void TestInvalidCmdArgs()
+        {
+            Action<string, string> checkError = (args, err) =>
+            {
+                var reader = new ListDataReader();
+                var proc = new IgniteProcess(reader, args);
+
+                int exitCode;
+                Assert.IsTrue(proc.Join(30000, out exitCode));
+                Assert.AreEqual(-1, exitCode);
+
+                lock (reader.List)
+                {
+                    Assert.AreEqual(err, reader.List.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
+                }
+            };
+
+            checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                                 "'blabla'. See 'Apache.Ignite.exe /help'");
+
+            checkError("blabla=foo", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                     "Unknown argument: 'blabla'. See 'Apache.Ignite.exe /help'");
+
+            checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
+                                 "'assembly'. See 'Apache.Ignite.exe /help'");
+
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
+                                         "Failed to load assembly: x.dll");
+
+            checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
+                                                      "Specified config file does not exist: wrong.config");
+
+            checkError("configSectionName=wrongSection", "ERROR: System.Configuration.ConfigurationErrorsException: " +
+                                                         "Could not find IgniteConfigurationSection " +
+                                                         "in current application configuration");
+
+            checkError("JvmInitialMemoryMB=A_LOT", "ERROR: System.InvalidOperationException: Failed to configure " +
+                                                   "Ignite: property 'JvmInitialMemoryMB' has value 'A_LOT', " +
+                                                   "which is not an integer.");
+
+            checkError("JvmMaxMemoryMB=ALL_OF_IT", "ERROR: System.InvalidOperationException: Failed to configure " +
+                                                   "Ignite: property 'JvmMaxMemoryMB' has value 'ALL_OF_IT', " +
+                                                   "which is not an integer.");
+        }
+
+        /// <summary>
         /// Get remote node configuration.
         /// </summary>
         /// <returns>Configuration.</returns>
@@ -405,7 +455,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = (Ignite) ((IgniteProxy) _grid).Target;
+                var grid0 = ((IgniteProxy) _grid).Target;
 
                 var cfg = grid0.Configuration;
 
@@ -471,7 +521,19 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
+        }
 
+        private class ListDataReader : IIgniteProcessOutputReader
+        {
+            public readonly List<string> List = new List<string>();
+
+            public void OnOutput(System.Diagnostics.Process proc, string data, bool err)
+            {
+                lock (List)
+                {
+                    List.Add(data);
+                }
+            }
         }
     }
 }

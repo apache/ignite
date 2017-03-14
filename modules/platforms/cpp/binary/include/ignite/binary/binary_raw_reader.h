@@ -398,6 +398,27 @@ namespace ignite
             {
                 return impl->ReadObject<T>();
             }
+
+            /**
+             * Try read object.
+             * Reads value, stores it to res and returns true if the value is
+             * not null. Otherwise just returns false.
+             *
+             * @param res Read value is placed here if non-null.
+             * @return True if the non-null value has been read and false
+             *     otherwise.
+             */
+            template<typename T>
+            bool TryReadObject(T& res)
+            {
+                if (impl->SkipIfNull())
+                    return false;
+
+                res = impl->ReadObject<T>();
+
+                return true;
+            }
+
         private:
             /** Implementation delegate. */
             ignite::impl::binary::BinaryReaderImpl* impl;  

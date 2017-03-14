@@ -28,7 +28,9 @@ namespace Apache.Ignite.Core.Transactions
     public interface ITransactions
     {
         /// <summary>
-        /// Starts a transaction with default isolation, concurrency, timeout, and invalidation policy.
+        /// Starts a transaction with default isolation (<see cref="DefaultTransactionIsolation"/>, 
+        /// concurrency (<see cref="DefaultTransactionConcurrency"/>), timeout (<see cref="DefaultTimeout"/>), 
+        /// and invalidation policy.
         /// All defaults are set in CacheConfiguration at startup.
         /// </summary>
         /// <returns>New transaction.</returns>
@@ -60,6 +62,21 @@ namespace Apache.Ignite.Core.Transactions
         /// Transaction started by this thread or null if this thread does not have a transaction.
         /// </value>
         ITransaction Tx { get; }
+
+        /// <summary>
+        /// Gets the default transaction concurrency.
+        /// </summary>
+        TransactionConcurrency DefaultTransactionConcurrency { get; }
+        
+        /// <summary>
+        /// Gets the default transaction isolation.
+        /// </summary>
+        TransactionIsolation DefaultTransactionIsolation { get; }
+
+        /// <summary>
+        /// Gets the default transaction timeout.
+        /// </summary>
+        TimeSpan DefaultTimeout { get; }
 
         /// <summary>
         /// Gets the metrics.

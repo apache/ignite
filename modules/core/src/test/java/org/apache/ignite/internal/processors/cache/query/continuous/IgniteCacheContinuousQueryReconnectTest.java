@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -30,7 +29,6 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -141,11 +139,11 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 0); // 0 remote listeners.
 
-        QueryCursor<Cache.Entry<Object, Object>> cur = (clientQuery ? clCache : cache1).query(qry);
+        (clientQuery ? clCache : cache1).query(qry);
 
         putAndCheck(clCache, 1); // 1 remote listener.
 
-        final Ignite srv2 = startGrid(2);
+        startGrid(2);
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
@@ -169,7 +167,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 1); // 1 remote listener.
 
-        Ignite srv3 = startGrid(3);
+        startGrid(3);
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
@@ -185,7 +183,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 
-        Ignite srv4 = startGrid(5);
+        startGrid(5);
 
         putAndCheck(clCache, 3); // 3 remote listeners.
     }

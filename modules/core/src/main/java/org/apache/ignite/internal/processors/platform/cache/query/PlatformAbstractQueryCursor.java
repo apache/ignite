@@ -71,7 +71,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_BATCH: {
                 assert iter != null : "iterator() has not been called";
@@ -136,7 +136,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_ITERATOR:
                 iter = cursor.iterator();

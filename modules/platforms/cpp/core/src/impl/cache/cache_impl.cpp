@@ -26,9 +26,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -68,8 +70,14 @@ namespace ignite
             /** Operation: GetAndReplace. */
             const int32_t OP_GET_AND_REPLACE = 10;
 
+            /** Operation: LoadCache */
+            const int32_t OP_LOAD_CACHE = 15;
+
             /** Operation: LocalEvict. */
             const int32_t OP_LOCAL_EVICT = 16;
+
+            /** Operation: LocalLoadCache */
+            const int32_t OP_LOC_LOAD_CACHE = 17;
 
             /** Operation: LocalClear. */
             const int32_t OP_LOCAL_CLEAR = 20;
@@ -88,6 +96,9 @@ namespace ignite
 
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
+
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
 
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
@@ -300,6 +311,75 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const SqlQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const TextQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                const ScanQuery& initialQry, IgniteError& err)
+            {
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
+            }
+
+            void CacheImpl::LoadCache(IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), &err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+            }
+
+            void CacheImpl::LocalLoadCache(IgniteError & err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropOutputStream out(mem.Get());
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+
+                // Predicate. Always null for now.
+                writer.WriteNull();
+
+                // Arguments. No arguments supported for now.
+                writer.WriteInt32(0);
+
+                out.Synchronize();
+
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), &err);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+            }
+
+            struct DummyQry { void Write(BinaryRawWriter&) const { }};
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const SharedPointer<ContinuousQueryImplBase> qry,
+                IgniteError& err)
+            {
+                DummyQry dummy;
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
         }
     }

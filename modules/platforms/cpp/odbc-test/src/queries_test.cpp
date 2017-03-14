@@ -44,6 +44,7 @@ using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -113,39 +114,9 @@ struct QueriesTestSuiteFixture
         SQLFreeHandle(SQL_HANDLE_ENV, env);
     }
 
-    static Ignite StartNode(const char* name, const char* config)
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/").append(config);
-
-        IgniteError err;
-
-        return Ignition::Start(cfg, name);
-    }
-
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartNode(name, "queries-test-noodbc.xml");
+        return StartNode("queries-test-noodbc.xml", name);
     }
 
     /**
@@ -158,7 +129,7 @@ struct QueriesTestSuiteFixture
         dbc(NULL),
         stmt(NULL)
     {
-        grid = StartNode("NodeMain", "queries-test.xml");
+        grid = StartNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -181,11 +152,11 @@ struct QueriesTestSuiteFixture
 
         SQLRETURN ret;
 
-        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-            BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+            common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-            BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+            common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
         cache1.Put(1, in1);
         cache1.Put(2, in2);
@@ -448,11 +419,11 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
@@ -548,8 +519,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
@@ -614,8 +585,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     cache1.Put(1, in);
 
@@ -722,11 +693,11 @@ BOOST_AUTO_TEST_CASE(TestDataAtExecution)
 
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12),
-        BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), common::MakeDateGmt(1976, 1, 12),
+        common::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     cache1.Put(1, in1);
     cache1.Put(2, in2);
@@ -845,8 +816,8 @@ BOOST_AUTO_TEST_CASE(TestNullFields)
 
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5),
-        BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), common::MakeDateGmt(1987, 6, 5),
+        common::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     TestType inNull;
 
@@ -1340,6 +1311,82 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
     }
 
     BOOST_CHECK_EQUAL(recordsNum, selectedRecordsNum);
+}
+
+template<size_t n, size_t k>
+void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
+{
+    std::string catalog(columns[0], columnsLen[0]);
+    std::string schema(columns[1], columnsLen[1]);
+    std::string table(columns[2], columnsLen[2]);
+    std::string tableType(columns[3], columnsLen[3]);
+
+    BOOST_CHECK_EQUAL(catalog, std::string(""));
+    BOOST_CHECK_EQUAL(tableType, std::string("TABLE"));
+    BOOST_CHECK_EQUAL(columnsLen[4], SQL_NULL_DATA);
+
+    if (schema == "\"cache\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("TestType"));
+    }
+    else if (schema == "\"cache2\"")
+    {
+        BOOST_CHECK_EQUAL(table, std::string("ComplexType"));
+    }
+    else
+    {
+        BOOST_FAIL("Unknown schema: " + schema);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(TestTablesMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache2");
+
+    SQLRETURN ret;
+
+    enum { COLUMNS_NUM = 5 };
+
+    // Five collumns: TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS
+    char columns[COLUMNS_NUM][ODBC_BUFFER_SIZE];
+    SQLLEN columnsLen[COLUMNS_NUM];
+
+    // Binding columns.
+    for (size_t i = 0; i < COLUMNS_NUM; ++i)
+    {
+        columnsLen[i] = ODBC_BUFFER_SIZE;
+
+        ret = SQLBindCol(stmt, static_cast<SQLSMALLINT>(i + 1), SQL_C_CHAR, columns[i], columnsLen[i], &columnsLen[i]);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    SQLCHAR catalogPattern[] = "";
+    SQLCHAR schemaPattern[] = "";
+    SQLCHAR tablePattern[] = "";
+    SQLCHAR tableTypePattern[] = "";
+
+    ret = SQLTables(stmt, catalogPattern, SQL_NTS, schemaPattern,
+        SQL_NTS, tablePattern, SQL_NTS, tableTypePattern, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckMeta<COLUMNS_NUM, ODBC_BUFFER_SIZE>(columns, columnsLen);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

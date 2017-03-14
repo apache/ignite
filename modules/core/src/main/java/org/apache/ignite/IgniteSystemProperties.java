@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,6 +65,9 @@ public final class IgniteSystemProperties {
      * be allowed.
      */
     public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
+
+    /** Defines reconnect delay in milliseconds for client node that was failed forcible. */
+    public static final String IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY = "IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY";
 
     /**
      * If this system property is set to {@code false} - no checks for new versions will
@@ -131,6 +135,11 @@ public final class IgniteSystemProperties {
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
+
+    /**
+     * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
+     */
+    public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -274,6 +283,9 @@ public final class IgniteSystemProperties {
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
+    /** Ttl of removed cache entries (ms). */
+    public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
+
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
@@ -311,6 +323,14 @@ public final class IgniteSystemProperties {
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
     public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
+
+    /**
+     * This property allows to specify user defined port which H2 indexing SPI will use
+     * to start H2 debug console on. If this property is not set or set to 0, H2 debug
+     * console will use system-provided dynamic port.
+     * This property is only relevant when {@link #IGNITE_H2_DEBUG_CONSOLE} property is set.
+     */
+    public static final String IGNITE_H2_DEBUG_CONSOLE_PORT = "IGNITE_H2_DEBUG_CONSOLE_PORT";
 
     /**
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
@@ -382,6 +402,12 @@ public final class IgniteSystemProperties {
      * otherwise only one pass (e.g. only result streaming is possible).
      */
     public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
+
+    /**
+     * Property controlling number of SQL result rows that will be fetched into a merge table at once before
+     * applying binary search for the bounds.
+     */
+    public static final String IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE = "IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
@@ -509,6 +535,23 @@ public final class IgniteSystemProperties {
      * Defaults to 0, meaning that threshold is disabled.
      */
     public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * When set to {@code true} BinaryObject will be unwrapped before passing to IndexingSpi to preserve
+     * old behavior query processor with IndexingSpi.
+     * <p>
+     * @deprecated Should be removed in Apache Ignite 2.0.
+     */
+    public static final String IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI = "IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI";
+
+    /** Returns true for system properties only avoiding sending sensitive information. */
+    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
+        @Override public boolean apply(final Map.Entry<String, String> entry) {
+            final String key = entry.getKey();
+
+            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
+        }
+    };
 
     /**
      * Enforces singleton.
@@ -682,5 +725,27 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
+    }
+
+    /**
+     * Does the same as {@link #snapshot()} but filters out
+     * possible sensitive user data.
+     *
+     * @return Snapshot of system properties.
+     */
+    @SuppressWarnings("unchecked")
+    public static Properties safeSnapshot() {
+        final Properties props = snapshot();
+
+        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            final Map.Entry entry = iter.next();
+
+            if (!PROPS_FILTER.apply(entry))
+                iter.remove();
+        }
+
+        return props;
     }
 }

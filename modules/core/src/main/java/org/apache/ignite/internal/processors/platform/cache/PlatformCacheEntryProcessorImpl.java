@@ -17,15 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -35,6 +29,13 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Platform cache entry processor. Delegates processing to native platform.
@@ -65,7 +66,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     private transient long ptr;
 
     /**
-     * {@link java.io.Externalizable} support.
+     * {@link Externalizable} support.
      */
     public PlatformCacheEntryProcessorImpl() {
         // No-op.
@@ -86,7 +87,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     @Override public Object process(MutableEntry entry, Object... args)
         throws EntryProcessorException {
         try {
-            IgniteKernal ignite = (IgniteKernal)entry.unwrap(Ignite.class);
+            Ignite ignite = (Ignite)entry.unwrap(Ignite.class);
 
             PlatformProcessor interopProc;
 
@@ -112,12 +113,10 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param ctx Context.
      * @param entry Entry.
      * @return Processing result.
-     * @throws org.apache.ignite.IgniteCheckedException
      */
-    private Object execute0(PlatformContext ctx, MutableEntry entry)
-        throws IgniteCheckedException {
-        try (PlatformMemory outMem = ctx.memory().allocate()) {
-            PlatformOutputStream out = outMem.output();
+    private Object execute0(PlatformContext ctx, MutableEntry entry) {
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
 
             BinaryRawWriterEx writer = ctx.writer(out);
 
@@ -125,17 +124,15 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
             out.synchronize();
 
-            try (PlatformMemory inMem = ctx.memory().allocate()) {
-                PlatformInputStream in = inMem.input();
+            ctx.gateway().cacheInvoke(mem.pointer());
 
-                ctx.gateway().cacheInvoke(outMem.pointer(), inMem.pointer());
+            PlatformInputStream in = mem.input();
 
-                in.synchronize();
+            in.synchronize();
 
-                BinaryRawReaderEx reader = ctx.reader(in);
+            BinaryRawReaderEx reader = ctx.reader(in);
 
-                return readResultAndUpdateEntry(ctx, entry, reader);
-            }
+            return readResultAndUpdateEntry(ctx, entry, reader);
         }
     }
 
@@ -145,7 +142,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param entry Entry to process.
      * @param writer Writer.
      */
-    private void writeEntryAndProcessor(MutableEntry entry, BinaryRawWriterEx writer) {
+    private void writeEntryAndProcessor(MutableEntry entry, BinaryRawWriter writer) {
         writer.writeObject(entry.getKey());
         writer.writeObject(entry.getValue());
 
@@ -167,7 +164,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param entry Mutable entry to update.
      * @param reader Reader.
      * @return Entry processing result
-     * @throws javax.cache.processor.EntryProcessorException If processing has failed in user code.
+     * @throws EntryProcessorException If processing has failed in user code.
      */
     @SuppressWarnings("unchecked")
     private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, BinaryRawReaderEx reader) {

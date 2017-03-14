@@ -330,43 +330,6 @@ object visor extends VisorTag {
     )
 
     addHelp(
-        name = "mclear",
-        shortInfo = "Clears Visor console memory variables.",
-        spec = Seq(
-            "mclear",
-            "mclear <name>|-ev|-al|-ca|-no|-tn|-ex"
-        ),
-        args = Seq(
-            "<name>" -> Seq(
-                "Variable name to clear.",
-                "Note that name doesn't include '@' symbol used to reference variable."
-            ),
-            "-ev" ->
-                "Clears all 'event' variables.",
-            "-al" ->
-                "Clears all 'alert' variables.",
-            "-ca" ->
-                "Clears all 'cache' variables.",
-            "-no" ->
-                "Clears all 'node' variables.",
-            "-tn" ->
-                "Clears all 'task name' variables.",
-            "-ex" ->
-                "Clears all 'task execution' variables."
-        ),
-        examples = Seq(
-            "mclear" ->
-                "Clears all Visor console variables.",
-            "mclear -ca" ->
-                "Clears all Visor console cache variables.",
-            "mclear n2" ->
-                "Clears 'n2' Visor console variable."
-        ),
-        emptyArgs = mclear,
-        withArgs = mclear
-    )
-
-    addHelp(
         name = "mget",
         shortInfo = "Gets Visor console memory variable.",
         longInfo = Seq(
@@ -385,6 +348,23 @@ object visor extends VisorTag {
         ),
         emptyArgs = mget,
         withArgs = mget
+    )
+
+    addHelp(
+        name = "mcompact",
+        shortInfo = "Fills gap in Visor console memory variables.",
+        longInfo = Seq(
+            "Finds and fills gap in Visor console memory variables."
+        ),
+        spec = Seq(
+            "mcompact"
+        ),
+        examples = Seq(
+            "mcompact" ->
+                "Fills gap in Visor console memory variables."
+        ),
+        emptyArgs = mcompact,
+        withArgs = _ => wrongArgs("mcompact")
     )
 
     addHelp(
@@ -616,6 +596,28 @@ object visor extends VisorTag {
     }
 
     /**
+      * ==Command==
+      * Fills gap in Visor console memory variables.
+      *
+      * ==Examples==
+      * <ex>mcompact</ex>
+      * Fills gap in Visor console memory variables.
+      */
+    def mcompact() {
+        val namespaces = Array("a", "c", "e", "n", "s", "t")
+        
+        for (namespace <- namespaces) {
+            val vars = mem.filter { case (k, _) => k.matches(s"$namespace\\d+") }
+
+            if (vars.nonEmpty) {
+                clearNamespace(namespace)
+                
+                vars.toSeq.sortBy(_._1).foreach { case (_, v) => setVar(v, namespace) }
+            }
+        }
+    }
+
+    /**
      * Clears given Visor console variable or the whole namespace.
      *
      * @param arg Variable host or namespace mnemonic.
@@ -643,15 +645,8 @@ object visor extends VisorTag {
         assert(namespace != null)
 
         mem.keySet.foreach(k => {
-            if (k.startsWith(namespace))
-                try {
-                    k.substring(1).toInt
-
-                    mem.remove(k)
-                }
-                catch {
-                    case ignored: Throwable => // No-op.
-                }
+            if (k.matches(s"$namespace\\d+"))
+                mem.remove(k)
         })
     }
 
@@ -1677,13 +1672,37 @@ object visor extends VisorTag {
             val n = ignite.cluster.node(id)
 
             val id8 = nid8(id)
-            val v = mfindHead(id8)
+            var v = mfindHead(id8)
+
+            if(!v.isDefined){
+               v = assignNodeValue(n)
+            }
 
             id8 +
-                (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
+                (if (v.isDefined) "(@" + v.get._1 + ")" else "" )+
                 ", " +
                 (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
+    }
+
+    def assignNodeValue(node: ClusterNode): Option[(String, String)] = {
+        assert(node != null)
+
+        val id8 = nid8(node.id())
+
+        setVarIfAbsent(id8, "n")
+
+        val alias = if (U.sameMacs(ignite.localNode(), node)) "nl" else "nr"
+
+        if (mgetOpt(alias).isEmpty)
+            msetOpt(alias, nid8(node.id()))
+
+        val ip = sortAddresses(node.addresses).headOption
+
+        if (ip.isDefined)
+            setVarIfAbsent(ip.get, "h")
+
+        mfindHead(id8)
     }
 
     /**

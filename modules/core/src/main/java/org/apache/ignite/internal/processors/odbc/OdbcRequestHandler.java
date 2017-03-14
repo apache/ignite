@@ -202,7 +202,7 @@ public class OdbcRequestHandler {
 
             if (cache0 == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                        "Cache doesn't exist (did you configure it?): " + req.cacheName());
+                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
 
             IgniteCache<Object, Object> cache = cache0.withKeepBinary();
 
@@ -388,7 +388,7 @@ public class OdbcRequestHandler {
                     if (!matches("TABLE", req.tableType()))
                         continue;
 
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName, table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, cacheName, table.name(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);

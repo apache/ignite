@@ -18,41 +18,21 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
-import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsDistributedSelfTest;
-import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsDistributedSelfTest;
-import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheQueryNewClientSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheQueryOffheapEvictDataLostTest;
-import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMetricsDistributedSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryDetailMetricsLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDistributedSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheFieldsQueryNoDataSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheNoClassQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQueryErrorTest;
-import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryCancelSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapTieredMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryOffheapMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheClientQueryReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryCancelOrTimeoutSelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSwapScanQuerySelfTest;
-import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
-import org.apache.ignite.internal.processors.query.h2.sql.H2CompareBigQueryTest;
-import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeFailTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryNodeRestartSelfTest2;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -66,60 +46,21 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
 
-        // Scan queries.
+        suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryMultiThreadedOffHeapTieredSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheOffheapTieredMultithreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheCrossCacheJoinRandomTest.class);
+        suite.addTestSuite(IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryNodeFailTest.class);
+        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest2.class);
+        suite.addTestSuite(IgniteCacheSqlQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
         suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
-
-        // Fields queries.
-        suite.addTestSuite(SqlFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest.class);
-        suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest.class);
-        suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
-
-        suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
-
-        suite.addTestSuite(GridCacheSwapScanQuerySelfTest.class);
-
-        suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
-
-        suite.addTestSuite(CacheQueryOffheapEvictDataLostTest.class);
-
-        // Ignite cache and H2 comparison.
-        suite.addTestSuite(BaseH2CompareQueryTest.class);
-        suite.addTestSuite(H2CompareBigQueryTest.class);
-
-        // Cache query metrics.
-        suite.addTestSuite(CacheLocalQueryMetricsSelfTest.class);
-        suite.addTestSuite(CachePartitionedQueryMetricsDistributedSelfTest.class);
-        suite.addTestSuite(CachePartitionedQueryMetricsLocalSelfTest.class);
-        suite.addTestSuite(CacheReplicatedQueryMetricsDistributedSelfTest.class);
-        suite.addTestSuite(CacheReplicatedQueryMetricsLocalSelfTest.class);
-
-        // Cache query metrics.
-        suite.addTestSuite(CacheLocalQueryDetailMetricsSelfTest.class);
-        suite.addTestSuite(CachePartitionedQueryDetailMetricsDistributedSelfTest.class);
-        suite.addTestSuite(CachePartitionedQueryDetailMetricsLocalSelfTest.class);
-        suite.addTestSuite(CacheReplicatedQueryDetailMetricsDistributedSelfTest.class);
-        suite.addTestSuite(CacheReplicatedQueryDetailMetricsLocalSelfTest.class);
-
-        // Unmarshalling query test.
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
-        suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);
-
-        // Cancellation.
         suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheDistributedQueryCancelSelfTest.class);
-        suite.addTestSuite(IgniteCacheLocalQueryCancelOrTimeoutSelfTest.class);
-        suite.addTestSuite(IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class);
-
-        // Other.
-        suite.addTestSuite(CacheQueryNewClientSelfTest.class);
-        suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
-        suite.addTestSuite(CacheSqlQueryValueCopySelfTest.class);
 
         return suite;
     }

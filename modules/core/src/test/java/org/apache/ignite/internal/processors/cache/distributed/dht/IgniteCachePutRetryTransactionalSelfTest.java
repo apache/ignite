@@ -249,7 +249,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                         for (int i = 0; i < keysCnt; i++)
                             cache.invoke(i, new SetEntryProcessor(val));
                     }
-                    catch (Exception e) {
+                    catch (Exception ignored) {
                         // No-op.
                     }
                 }
