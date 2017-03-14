@@ -17,6 +17,10 @@
 
 package org.apache.ignite.math;
 
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import java.awt.*;
@@ -105,8 +109,10 @@ public class Tracer {
      * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
-    static void saveAsCsv(Vector vec, String fmt, String filePath) {
-        // TODO.
+    static void saveAsCsv(Vector vec, String fmt, String filePath) throws IOException {
+        String s = mkString(vec, fmt);
+
+        Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
     /**
@@ -116,8 +122,10 @@ public class Tracer {
      * @param fmt Format to use.
      * @param filePath Path of the file to save to.
      */
-    static void saveAsCsv(Matrix mtx, String fmt, String filePath) {
-        // TODO.
+    static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
+        String s = mkString(mtx, fmt);
+
+        Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
     /**
@@ -296,7 +304,23 @@ public class Tracer {
 
         StringBuffer buf = new StringBuffer();
 
-        // TODO
+        for(int i = 0; i < mtx.rowSize(); i++) {
+            if (!first)
+                buf.append("\n");
+
+            for (int j = 0; j < mtx.columnSize(); j++) {
+                String s = String.format(fmt, mtx.get(i, j));
+
+                if (!first) {
+                    buf.append(", ");
+                    buf.append(s);
+                }
+                else {
+                    buf.append(s);
+                    first = false;
+                }
+            }
+        }
 
         return buf.toString();
     }
