@@ -150,7 +150,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -645,7 +644,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             String masked = maskNull(cfg.getName());
 
-            if (registeredCaches.containsKey(masked)) {
+            if (cacheDescriptor(cfg.getName()) != null) {
                 String cacheName = cfg.getName();
 
                 if (cacheName != null)
@@ -675,7 +674,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.receivedFrom(ctx.localNodeId());
 
             if (!template) {
-                registeredCaches.put(masked, desc);
+                cacheDescriptor(cfg.getName(), desc);
 
                 ctx.discovery().setCacheFilter(
                     cfg.getName(),
@@ -763,7 +762,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     CU.checkAttributeMismatch(log, null, n.id(), "deploymentMode", "Deployment mode",
                         locDepMode, rmtDepMode, true);
 
-                    for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                    for (DynamicCacheDescriptor desc : cacheDescriptors()) {
                         CacheConfiguration rmtCfg = desc.remoteConfiguration(n.id());
 
                         if (rmtCfg != null) {
@@ -781,7 +780,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             // Start dynamic caches received from collect discovery data.
-            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            for (DynamicCacheDescriptor desc : cacheDescriptors()) {
                 if (ctx.config().isDaemon())
                     continue;
 
@@ -838,7 +837,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.service().onUtilityCacheStarted();
 
         // Wait for caches in SYNC preload mode.
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+        for (DynamicCacheDescriptor desc : cacheDescriptors()) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 
             IgnitePredicate filter = cfg.getNodeFilter();
@@ -1014,7 +1013,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 assert oldDesc != null : "No descriptor for cache: " + name;
 
-                DynamicCacheDescriptor newDesc = registeredCaches.get(maskNull(name));
+                DynamicCacheDescriptor newDesc = cacheDescriptor(name);
 
                 stopped = newDesc == null || !oldDesc.deploymentId().equals(newDesc.deploymentId());
             }
@@ -1543,7 +1542,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of started cache names.
      */
     public Collection<String> cacheNames() {
-        return F.viewReadOnly(registeredCaches.values(),
+        return F.viewReadOnly(cacheDescriptors(),
             new IgniteClosure<DynamicCacheDescriptor, String>() {
                 @Override public String apply(DynamicCacheDescriptor desc) {
                     return desc.cacheConfiguration().getName();
@@ -1598,7 +1597,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Collection of currently started public cache names
      */
     public Collection<String> publicCacheNames() {
-        return F.viewReadOnly(registeredCaches.values(),
+        return F.viewReadOnly(cacheDescriptors(),
             new IgniteClosure<DynamicCacheDescriptor, String>() {
                 @Override public String apply(DynamicCacheDescriptor desc) {
                     return desc.cacheConfiguration().getName();
@@ -1619,7 +1618,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache mode.
      */
     public CacheMode cacheMode(String cacheName) {
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+        DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         return desc != null ? desc.cacheConfiguration().getCacheMode() : null;
     }
@@ -1644,7 +1643,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             topVer
         );
 
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+        DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
 
         if (desc != null)
             desc.onStart();
@@ -1661,7 +1660,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         List<DynamicCacheDescriptor> started = null;
 
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+        for (DynamicCacheDescriptor desc : cacheDescriptors()) {
             if (!desc.started() && desc.staticallyConfigured() && !desc.locallyConfigured()) {
                 if (desc.receivedFrom() != null) {
                     AffinityTopologyVersion startVer = desc.receivedFromStartVersion();
@@ -1967,7 +1966,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param reqs requests.
      */
     private void collectDataOnGridNode(Collection<DynamicCacheChangeRequest> reqs) {
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+        for (DynamicCacheDescriptor desc : cacheDescriptors()) {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
             req.startCacheConfiguration(desc.cacheConfiguration());
@@ -2100,7 +2099,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     continue;
                 }
 
-                DynamicCacheDescriptor existing = registeredCaches.get(maskNull(req.cacheName()));
+                DynamicCacheDescriptor existing = cacheDescriptor(req.cacheName());
 
                 if (req.start() && !req.clientStartOnly()) {
                     CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -2141,7 +2140,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         desc.receivedFrom(req.receivedFrom());
 
-                        DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
+                        DynamicCacheDescriptor old = cacheDescriptor(req.cacheName(), desc);
 
                         assert old == null : old;
 
@@ -2182,7 +2181,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             boolean sysCache = CU.isUtilityCache(name) || CU.isAtomicsCache(name);
 
             if (!sysCache) {
-                DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+                DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
 
                 if (desc != null && desc.deploymentId().equals(req.deploymentId())) {
                     Map<UUID, Boolean> nodes = batch.clientNodes().get(name);
@@ -2553,7 +2552,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             try {
                 if (req.stop() || req.close()) {
-                    DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+                    DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
 
                     if (desc == null)
                         // No-op.
@@ -2657,7 +2656,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
         if (type == EVT_NODE_JOINED) {
-            for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+            for (DynamicCacheDescriptor cacheDesc : cacheDescriptors()) {
                 if (node.id().equals(cacheDesc.receivedFrom()))
                     cacheDesc.receivedFromStartVersion(topVer);
             }
@@ -2673,8 +2672,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
      */
-    public boolean onCustomEvent(DiscoveryCustomMessage msg,
-        AffinityTopologyVersion topVer) {
+    public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
@@ -2721,7 +2719,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
             }
 
-            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+            DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
 
             boolean needExchange = false;
 
@@ -2757,7 +2755,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         startDesc.startTopologyVersion(newTopVer);
 
-                        DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
+                        DynamicCacheDescriptor old = cacheDescriptor(ccfg.getName(), startDesc);
 
                         assert old == null :
                             "Dynamic cache map was concurrently modified [new=" + startDesc + ", old=" + old + ']';
@@ -2894,7 +2892,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         if (!node.isClient()) {
-            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            for (DynamicCacheDescriptor desc : cacheDescriptors()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
                 if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
@@ -3269,7 +3267,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
 
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+        DynamicCacheDescriptor desc = cacheDescriptor(name);
 
         if (desc == null)
             throw new IllegalArgumentException("Cache is not started: " + name);
@@ -3315,7 +3313,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(masked);
 
-        DynamicCacheDescriptor desc = registeredCaches.get(masked);
+        DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
@@ -3336,12 +3334,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache configuration.
      */
     public CacheConfiguration cacheConfiguration(String name) {
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+        DynamicCacheDescriptor desc = cacheDescriptor(name);
 
         if (desc == null)
             throw new IllegalStateException("Cache doesn't exist: " + name);
         else
             return desc.cacheConfiguration();
+    }
+
+    /**
+     * Get registered cache descriptor.
+     *
+     * @param name Name.
+     * @return Descriptor.
+     */
+    private DynamicCacheDescriptor cacheDescriptor(String name) {
+        return registeredCaches.get(maskNull(name));
+    }
+
+    /**
+     * Put registered cache descriptor.
+     *
+     * @param name Name.
+     * @param desc Descriptor.
+     * @return Old descriptor (if any).
+     */
+    private DynamicCacheDescriptor cacheDescriptor(String name, DynamicCacheDescriptor desc) {
+        return registeredCaches.put(maskNull(name), desc);
     }
 
     /**
@@ -3356,7 +3375,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache descriptor.
      */
     @Nullable public DynamicCacheDescriptor cacheDescriptor(int cacheId) {
-        for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+        for (DynamicCacheDescriptor cacheDesc : cacheDescriptors()) {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
             assert ccfg != null : cacheDesc;
@@ -3500,7 +3519,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if specified cache is system, {@code false} otherwise.
      */
     public boolean systemCache(@Nullable String name) {
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+        DynamicCacheDescriptor desc = cacheDescriptor(name);
 
         return desc != null && !desc.cacheType().userCache();
     }
@@ -3743,7 +3762,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean failIfNotStarted
     ) throws IgniteCheckedException {
-        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
+        DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
 
