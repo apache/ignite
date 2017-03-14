@@ -89,6 +89,7 @@
         <module>modules/cassandra</module>
         <module>modules/flink</module>
         <module>modules/kubernetes</module>
+        <module>modules/zeromq</module>
     </modules>
 
     <profiles>

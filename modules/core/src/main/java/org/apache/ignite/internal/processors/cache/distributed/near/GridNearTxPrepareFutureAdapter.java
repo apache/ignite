@@ -95,9 +95,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
-    /** Full information about transaction nodes mapping. */
-    protected GridDhtTxMapping txMapping;
-
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -160,8 +157,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /**
      * Checks if mapped transaction can be committed on one phase.
      * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
+     *
+     * @param txMapping Transaction mapping.
      */
-    protected final void checkOnePhase() {
+    protected final void checkOnePhase(GridDhtTxMapping txMapping) {
         if (tx.storeUsed())
             return;
 
@@ -184,14 +183,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param res Response.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    protected final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+    final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;
 
         assert res.error() == null : res;
-        assert F.isEmpty(res.invalidPartitions()) : res;
 
-        UUID nodeId = m.node().id();
+        UUID nodeId = m.primary().id();
 
         for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
             IgniteTxEntry txEntry = tx.entry(entry.getKey());
@@ -207,8 +205,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
                         CacheVersionedValue tup = entry.getValue();
 
-                        nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                            tup.version(), nodeId, tx.topologyVersion());
+                        nearEntry.resetFromPrimary(tup.value(),
+                            tx.xidVersion(),
+                            tup.version(),
+                            nodeId,
+                            tx.topologyVersion());
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();

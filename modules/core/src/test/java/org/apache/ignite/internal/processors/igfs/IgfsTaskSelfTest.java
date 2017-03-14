@@ -143,7 +143,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setGridName("node-" + idx);
+        cfg.setIgniteInstanceName("node-" + idx);
 
         return cfg;
     }

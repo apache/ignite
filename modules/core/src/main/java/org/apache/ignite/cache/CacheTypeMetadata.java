@@ -25,7 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -212,7 +212,7 @@ public class CacheTypeMetadata implements Serializable {
 
         Class<?> cls = U.classForName(valType, null);
 
-        simpleValType = cls == null ? valType : GridQueryProcessor.typeName(cls);
+        simpleValType = cls == null ? valType : QueryUtils.typeName(cls);
     }
 
     /**

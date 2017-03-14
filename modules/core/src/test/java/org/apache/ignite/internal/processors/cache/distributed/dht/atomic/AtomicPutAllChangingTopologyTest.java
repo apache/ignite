@@ -203,7 +203,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
             locSize2 = cache.localSize(PRIMARY, BACKUP);
         }
 
-        assertEquals("Wrong cache size on node [node=" + node.configuration().getGridName() +
+        assertEquals("Wrong cache size on node [node=" + node.configuration().getIgniteInstanceName() +
             ", expected= " + CACHE_SIZE +
             ", actual=" + locSize +
             ", actual2=" + locSize2 + "]",

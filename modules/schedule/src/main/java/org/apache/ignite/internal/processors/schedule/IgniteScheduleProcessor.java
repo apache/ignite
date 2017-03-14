@@ -126,7 +126,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Schedule processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Schedule processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   schedFutsSize: " + schedFuts.size());
     }
 }

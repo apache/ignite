@@ -159,7 +159,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
 
         val basic = cfg.basic()
 
-        cmnT += ("Grid name", escapeName(basic.gridName()))
+        cmnT += ("Ignite instance name", escapeName(basic.igniteInstanceName()))
         cmnT += ("Ignite home", safe(basic.ggHome()))
         cmnT += ("Localhost", safe(basic.localHost()))
         cmnT += ("Node ID", safe(basic.nodeId()))

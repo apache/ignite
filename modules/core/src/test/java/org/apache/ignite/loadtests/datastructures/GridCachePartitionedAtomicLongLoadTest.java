@@ -54,8 +54,8 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     private static final AtomicInteger idx = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
 

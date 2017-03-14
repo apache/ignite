@@ -120,7 +120,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         Object[] expArgs = {1, 2, 3};
 
         for (int i = 0; i < gridCount(); i++) {
-            Object[] args = map.get(getTestGridName(i));
+            Object[] args = map.get(getTestIgniteInstanceName(i));
 
             Assert.assertArrayEquals(expArgs, args);
         }
@@ -159,7 +159,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         expArgs = new Object[]{1, 2, 3, 4, 5, 6};
 
         for (int i = 0; i < gridCount(); i++) {
-            Object[] args = map.get(getTestGridName(i));
+            Object[] args = map.get(getTestIgniteInstanceName(i));
 
             Assert.assertArrayEquals(expArgs, args);
         }

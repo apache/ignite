@@ -61,7 +61,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     /** Predicate to exclude the second node from topology */
     private final IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode e) {
-            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
+            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME));
         }
     };
 
@@ -72,8 +72,8 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     private final AtomicBoolean failed = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setFailoverSpi(new AlwaysFailoverSpi() {
             /** {@inheritDoc} */

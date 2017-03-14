@@ -87,8 +87,8 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -267,25 +267,27 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      */
     private void testConcurrentOptimisticTxGet(final IgniteCache<Integer, TestValue> cache,
         final TransactionIsolation txIsolation) throws Exception {
+        final int key1 = 42;
+        final int key2 = 43;
+
+        cache.put(key1, new TestValue(key1));
+
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                final int key = 42;
-
                 IgniteTransactions txs = grid(0).transactions();
 
-                cache.put(key, new TestValue(key));
+                cache.put(key2, new TestValue(key2));
 
                 long stopTime = System.currentTimeMillis() + 3000;
 
                 while (System.currentTimeMillis() < stopTime) {
                     try (Transaction tx = txs.txStart(OPTIMISTIC, txIsolation)) {
-                        cache.get(key);
+                        cache.get(key1);
 
                         tx.commit();
                     }
-                    catch (TransactionOptimisticException ignored) {
-                        assertTrue("Should not throw optimistic exception in only read TX. Tx isolation: "
-                            + txIsolation, false);
+                    catch (Exception ignored) {
+                        fail("Unexpected exception: " + ignored);
                     }
                 }
             }
