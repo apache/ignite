@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -72,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -303,12 +301,63 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (op instanceof CreateIndexOperation) {
                 CreateIndexOperation op0 = (CreateIndexOperation)op;
 
-                // TODO
+                QueryIndex idx = op0.index();
+
+                // Check conflict with other indexes.
+                String idxName = op0.index().getName();
+
+                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
+
+                if (oldIdx != null) {
+                    if (!op0.ifNotExists())
+                        msg.onError(ctx.localNodeId(), "Index already exists [space=" + space + ", index=" + idxName);
+
+                    return;
+                }
+
+                // Make sure table exists.
+                String tblName = op0.tableName();
+
+                QueryTypeDescriptorImpl typeDesc = null;
+
+                for (QueryTypeDescriptorImpl type : types.values()) {
+                    if (F.eq(tblName, type.tableName())) {
+                        typeDesc = type;
+
+                        break;
+                    }
+                }
+
+                if (typeDesc == null) {
+                    msg.onError(ctx.localNodeId(), "Table doesn't exist: " + tblName);
+
+                    return;
+                }
+
+                // Make sure that index can be applied to the given table.
+                for (String idxField : idx.getFieldNames()) {
+                    if (!typeDesc.fields().containsKey(idxField)) {
+                        msg.onError(ctx.localNodeId(), "Field doesn't exist: " + idxField);
+
+                        return;
+                    }
+                }
             }
             else if (op instanceof DropIndexOperation) {
                 DropIndexOperation op0 = (DropIndexOperation)op;
 
-                // TODO
+                String idxName = op0.indexName();
+
+                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
+
+                if (oldIdx == null) {
+                    if (!op0.ifExists())
+                        msg.onError(ctx.localNodeId(), "Index doesn't exist: " + idxName);
+                }
             }
             else
                 msg.onError(ctx.localNodeId(), "Unsupported operation: " + op);
@@ -319,18 +368,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Index operation context. Represents pending operations
-     */
-    private class IndexOperationContext {
-
-    }
-
-    /**
      * Handle index ack discovery message.
      *
      * @param msg Message.
      */
-    private void onIndexAckDiscoveryMessage(IndexAckDiscoveryMessage msg) {
+    private void onIndexAckDiscoveryMessage(String space, IndexAckDiscoveryMessage msg) {
         // TODO
     }
 

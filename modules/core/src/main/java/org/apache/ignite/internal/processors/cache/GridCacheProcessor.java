@@ -66,8 +66,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
@@ -2734,7 +2732,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
         }
 
-        // Validate request on descriptor level.
+        // Validate request at descriptor level.
         AbstractIndexOperation oldOp = desc.indexInitOperation();
 
         if (oldOp != null) {
@@ -2743,19 +2741,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return;
         }
-
-        if (op instanceof CreateIndexOperation) {
-            CreateIndexOperation op0 = (CreateIndexOperation)op;
-
-            // TODO
-        }
-        else if (op instanceof DropIndexOperation) {
-            DropIndexOperation op0 = (DropIndexOperation)op;
-
-            // TODO
-        }
-        else
-            U.warn(log, "Received index init message with unsupported operation (will ignore): " + msg);
 
         // For already started cache we must make sure that indexing manager will be able to accommodate it.
         if (isMissingQueryCache(desc))
