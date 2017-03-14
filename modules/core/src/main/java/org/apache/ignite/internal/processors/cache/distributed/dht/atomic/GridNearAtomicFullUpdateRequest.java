@@ -364,7 +364,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean completed() {
-        return res != null || (resMap != null && stripeMap() != null && resMap.size() == maxStripes);
+        return res != null || (resMap != null && resMap.size() == maxStripes);
     }
 
     /** {@inheritDoc} */
