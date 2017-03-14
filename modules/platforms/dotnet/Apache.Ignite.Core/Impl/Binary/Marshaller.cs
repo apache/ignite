@@ -610,7 +610,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AffinityKey(r), "affKey");
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
-            AddSystemType(0, r => new IgniteGuid(r));
+            AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
         }
     }
 }

@@ -190,6 +190,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: platform object proxy. */
         public const byte TypePlatformJavaObjectFactoryProxy = 99;
 
+        /** Type: platform object proxy. */
+        public const int TypeIgniteUuid = 2018070327;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
