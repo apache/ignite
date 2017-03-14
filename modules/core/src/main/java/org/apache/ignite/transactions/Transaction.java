@@ -114,6 +114,12 @@ import org.apache.ignite.lang.IgniteUuid;
  *     tx.commit();
  * }
  * </pre>
+ *
+ * <p>
+ * <h1 class="header">Note</h1>
+ * Remember that all changes inside transaction stay visible inside the same transaction. For example, if you try
+ * to 'get' values after successful put operation - you will get the value, which you 'put', but not value,
+ * which another transaction committed between this 'put' and 'get'.
  */
 public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**

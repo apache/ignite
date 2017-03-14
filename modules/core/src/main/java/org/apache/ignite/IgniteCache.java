@@ -588,7 +588,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public V getAndPut(K key, V val);
+    @Override public V getAndPut(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}

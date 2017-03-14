@@ -16,8 +16,7 @@ public class TransactionException extends IgniteException {
 	/** Serial version UID. */
 	private static final long serialVersionUID = 0L;
 
-	public TransactionException() {
-	}
+	public TransactionException() {}
 
 	public TransactionException(String msg) {
 		super(msg);

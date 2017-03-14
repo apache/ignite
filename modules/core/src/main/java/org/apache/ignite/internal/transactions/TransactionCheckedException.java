@@ -15,8 +15,7 @@ public class TransactionCheckedException  extends IgniteCheckedException {
 	/** Serial version UID. */
 	private static final long serialVersionUID = 0L;
 
-	public TransactionCheckedException() {
-	}
+	public TransactionCheckedException() {}
 
 	public TransactionCheckedException(String msg) {
 		super(msg);
