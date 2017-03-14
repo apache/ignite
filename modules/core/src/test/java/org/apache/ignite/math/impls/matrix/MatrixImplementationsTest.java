@@ -177,10 +177,9 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             if (ignore(m.getClass()))
                 return;
 
-            double[][] arr = fillAndReturn(m);
+            fillMatrix(m);
 
             double timeVal = Math.random();
-
             Matrix times = m.times(timeVal);
 
             for(int i = 0; i < m.rowSize(); i++)
@@ -244,6 +243,107 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
     /** */
     @Test
+    public void testMapMatrix(){
+        consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            double[][] doubles = fillAndReturn(m);
+
+            Matrix cp = m.copy();
+
+            m.map(cp, (m1, m2) -> m1 + m2);
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    assertEquals("Unexpected value.", m.get(i, j), doubles[i][j] * 2, 0d);
+        });
+    }
+
+    /** */
+    @Test
+    public void testViewRow(){
+        consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            for (int i = 0; i < m.rowSize(); i++) {
+                Vector vector = m.viewRow(i);
+                assert vector != null;
+
+                for (int j = 0; j < m.columnSize(); j++)
+                    assertEquals("Unexpected value for " + desc, m.get(i, j), vector.get(j), 0d);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testViewCol(){
+        consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            for (int i = 0; i < m.columnSize(); i++) {
+                Vector vector = m.viewColumn(i);
+                assert vector != null;
+
+                for (int j = 0; j < m.rowSize(); j++)
+                    assertEquals("Unexpected value for " + desc, m.get(j, i), vector.get(j), 0d);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testFoldRow(){
+        consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            Vector foldRows = m.foldRows(Vector::sum);
+
+            for (int i = 0; i < m.rowSize(); i++){
+                Double locSum = 0d;
+
+                for (int j = 0; j < m.columnSize(); j++)
+                    locSum+=m.get(i, j);
+
+                assertEquals("Unexpected value for " + desc, foldRows.get(i), locSum, 0d);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testFoldCol(){
+        consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            fillMatrix(m);
+
+            Vector foldColumns = m.foldColumns(Vector::sum);
+
+            for (int j = 0; j < m.columnSize(); j++){
+                Double locSum = 0d;
+
+                for (int i = 0; i < m.rowSize(); i++)
+                    locSum+=m.get(i, j);
+
+                assertEquals("Unexpected value for " + desc, foldColumns.get(j), locSum, 0d);
+            }
+        });
+    }
+
+    /** */
+    @Test
     public void testSum(){
         consumeSampleMatrix((m, desc)->{
             double[][] arr = fillAndReturn(m);
@@ -260,6 +360,36 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
+    @Test
+    public void testMax(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] doubles = fillAndReturn(m);
+            double max = Double.NEGATIVE_INFINITY;
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    max = max < doubles[i][j] ? doubles[i][j] : max;
+
+            assertEquals("Unexpected value for " + desc, m.maxValue().get(), max, 0d);
+        });
+    }
+
+    /** */
+    @Test
+    public void testMin(){
+        consumeSampleMatrix((m, desc)->{
+            double[][] doubles = fillAndReturn(m);
+            double min = Double.MAX_VALUE;
+
+            for(int i = 0; i < m.rowSize(); i++)
+                for(int j = 0; j < m.columnSize(); j++)
+                    min = min > doubles[i][j] ? doubles[i][j] : min;
+
+            assertEquals("Unexpected value for " + desc, m.minValue().get(), min, 0d);
+        });
+    }
+
+    /** */
     private double[][] fillAndReturn(Matrix m) {
         double[][] arr = new double[m.rowSize()][m.columnSize()];
 
@@ -271,7 +401,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         } else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = Math.random();
+                    arr[i][j] = -0.5d + Math.random();
 
             m.assign(arr);
         }
