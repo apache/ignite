@@ -86,7 +86,8 @@ namespace ignite
             if (im)
             {
                 im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_PROCESSOR_APPLY,
-                    bt.GetTypeId(), &P::CacheEntryProcessor::InternalProcess, err);
+                    bt.GetTypeId(), impl::binding::ListenerApply<P, typename P::KeyType,
+                        typename P::ValueType, typename P::ReturnType, typename P::ArgumentType>, err);
             }
             else
             {

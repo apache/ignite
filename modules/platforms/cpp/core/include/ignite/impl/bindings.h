@@ -51,6 +51,42 @@ namespace ignite
 
                 return env.GetHandleRegistry().Allocate(qry);
             }
+
+            /**
+             * Process input streaming data to produce output streaming data.
+             *
+             * Deserializes cache entry and processor using provided reader, invokes
+             * cache entry processor, gets result and serializes it using provided
+             * writer.
+             *
+             * @param reader Reader.
+             * @param writer Writer.
+             */
+            template<typename P, typename K, typename V, typename R, typename A>
+            int64_t ListenerApply(binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer, IgniteEnvironment&)
+            {
+                typedef cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
+
+                ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
+
+                K key = reader.ReadObject<K>();
+
+                V value;
+                bool exists = reader.TryReadObject<V>(value);
+
+                cache::MutableCacheEntryState entryState;
+
+                R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
+
+                writer.WriteInt8(static_cast<int8_t>(entryState));
+
+                if (entryState == cache::ENTRY_STATE_VALUE_SET)
+                    writer.WriteTopObject(value);
+
+                writer.WriteTopObject(res);
+
+                return 0;
+            }
         }
     }
 }
