@@ -91,7 +91,7 @@ public class DdlOperationResult implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -45;
+        return -48;
     }
 
     /** {@inheritDoc} */

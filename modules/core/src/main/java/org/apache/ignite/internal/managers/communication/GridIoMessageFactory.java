@@ -858,12 +858,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case -45:
+            case -48:
                 msg = new DdlOperationResult();
 
                 break;
 
-            case -46:
+            case -49:
                 msg = new DdlOperationNodeResult();
 
                 break;
