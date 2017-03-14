@@ -109,12 +109,27 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheMapEntry getOrCreateEntry(KeyCacheObject key, AffinityTopologyVersion topVer) {
+        GridCacheMapEntry cur = getEntry(key);
+
+        if (cur == null || cur.obsolete()) {
+            cur = putEntryIfObsoleteOrAbsent(
+                topVer,
+                key,
+                null,
+                true,
+                false);
+        }
+
+        return cur;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable final CacheObject val,
         final boolean create,
-        final boolean touch)
-    {
+        final boolean touch) {
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;

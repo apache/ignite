@@ -326,6 +326,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /** {@inheritDoc} */
+    @Override public GridDhtCacheEntry getOrCreateEntry(KeyCacheObject key, AffinityTopologyVersion topVer) {
+        GridCacheMapEntry entry = map.getOrCreateEntry(key, topVer);
+
+        assert entry instanceof GridDhtCacheEntry;
+
+        return (GridDhtCacheEntry)entry;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
         return map.removeEntry(entry);
     }
@@ -945,7 +954,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     try {
                         CacheDataRow row = it0.next();
 
-                        GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
+                        GridDhtCacheEntry cached = getOrCreateEntry(row.key(), cctx.affinity().affinityTopologyVersion());
 
                         cctx.shared().database().checkpointReadLock();
 
