@@ -112,9 +112,6 @@ namespace ignite
             {
                 im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE,
                     typeId, &F::CacheEntryEventFilter::InternalFilterCreate);
-
-                im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_APPLY,
-                    typeId, &F::CacheEntryEventFilter::InternalProcess);
             }
             else
             {

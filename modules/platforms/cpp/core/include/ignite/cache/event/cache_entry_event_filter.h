@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include <ignite/cache/event/cache_entry_event.h>
+#include <ignite/impl/cache/event/cache_entry_event_filter_base.h>
 
 namespace ignite
 {
@@ -46,7 +47,7 @@ namespace ignite
              * @tparam V Value type.
              */
             template<typename F, typename K, typename V>
-            class CacheEntryEventFilter
+            class CacheEntryEventFilter : public impl::cache::event::CacheEntryEventFilterBase
             {
                 friend class ignite::IgniteBinding;
 
@@ -77,22 +78,23 @@ namespace ignite
 
             private:
                 /**
-                 * Process input streaming data to produce output streaming data.
+                 * Process serialized events.
                  *
-                 * Deserializes cache entry and filter using provided reader, invokes
-                 * filter, gets result and serializes it using provided writer.
-                 *
-                 * @param reader Reader.
-                 * @param writer Writer.
+                 * @param reader Reader for a serialized event.
+                 * @return Filter evaluation result.
                  */
-                static int64_t InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer, impl::IgniteEnvironment& env)
+                virtual bool ReadAndProcessEvent(binary::BinaryRawReader& reader)
                 {
-                    return 0;
+                    CacheEntryEvent<K, V> event;
+
+                    event.Read(reader);
+
+                    return Process(event);
                 }
 
                 static int64_t InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl&, impl::IgniteEnvironment& env)
                 {
-                    common::concurrent::SharedPointer<F> filter(new F(reader.ReadObject<F>()));
+                    common::concurrent::SharedPointer<CacheEntryEventFilterBase> filter(new F(reader.ReadObject<F>()));
 
                     return env.GetHandleRegistry().Allocate(filter);
                 }

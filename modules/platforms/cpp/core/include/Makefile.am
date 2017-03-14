@@ -49,6 +49,7 @@ nobase_include_HEADERS = \
     ignite/impl/binary/binary_type_updater_impl.h \
     ignite/impl/cache/cache_entry_processor_holder.h \
     ignite/impl/cache/cache_impl.h \
+    ignite/impl/cache/event/cache_entry_event_filter_base.h \
     ignite/impl/cache/event/cache_entry_event_filter_holder.h \
     ignite/impl/cache/query/continuous/continuous_query_handle_impl.h \
     ignite/impl/cache/query/continuous/continuous_query_impl.h \

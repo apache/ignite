@@ -122,7 +122,7 @@ namespace ignite
              *
              * @param mem Memory with data.
              */
-            void OnContinuousQueryFilterApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+            int64_t OnContinuousQueryFilterApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Cache Invoke callback.

@@ -198,6 +198,9 @@
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_filter.h">
       <Filter>Code\cache\event</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h">
+      <Filter>Code\impl\cache\event</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h">
       <Filter>Code\impl\cache\event</Filter>
     </ClInclude>

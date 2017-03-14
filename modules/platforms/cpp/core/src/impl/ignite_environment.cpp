@@ -93,7 +93,7 @@ namespace ignite
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
-                    env->Get()->OnContinuousQueryFilterApply(mem);
+                    res = env->Get()->OnContinuousQueryFilterApply(mem);
 
                     break;
                 }
@@ -372,9 +372,23 @@ namespace ignite
             return res;
         }
 
-        void IgniteEnvironment::OnContinuousQueryFilterApply(SharedPointer<InteropMemory>& mem)
+        int64_t IgniteEnvironment::OnContinuousQueryFilterApply(SharedPointer<InteropMemory>& mem)
         {
-            // TODO
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+            BinaryRawReader rawReader(&reader);
+
+            int64_t handle = rawReader.ReadInt64();
+
+            SharedPointer<cache::event::CacheEntryEventFilterBase> filter =
+                StaticPointerCast<cache::event::CacheEntryEventFilterBase>(registry.Get(handle));
+
+            if (!filter.Get())
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Null filter for handle.", "handle", handle);
+            
+            bool res = filter.Get()->ReadAndProcessEvent(rawReader);
+
+            return res ? 1 : 0;
         }
 
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
