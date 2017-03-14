@@ -333,6 +333,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Reconnector. */
     private volatile IgniteThread reconnector;
 
+    /** Rejoin future. */
+    private volatile GridFutureAdapter rejoinFut;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -965,18 +968,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             if (recon) {
-                // TODO IGNITE-4473: just wait for global reconnect flag.
-                Reconnector reconnector = new Reconnector(ctx.gridName(), log);
+                rejoinFut = new GridFutureAdapter();
 
-                IgniteThread thread = new IgniteThread(reconnector);
+                ctx.discovery().rejoin();
 
-                this.reconnector = thread;
-
-                thread.start();
-
-                reconnector.future().get();
-
-                this.reconnector = null;
+                rejoinFut.get();
             }
 
             // Register MBeans.
@@ -3448,10 +3444,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         fut.get();
 
                         ctx.gateway().onReconnected();
+
+                        GridFutureAdapter rejoinFut0 = rejoinFut;
+
+                        if (rejoinFut0 != null) {
+                            rejoinFut0.onDone();
+
+                            rejoinFut = null;
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node", e);
+
+                            GridFutureAdapter rejoinFut0 = rejoinFut;
+
+                            if (rejoinFut0 != null) {
+                                rejoinFut0.onDone(e);
+
+                                rejoinFut = null;
+                            }
 
                             close();
                         }
@@ -3460,22 +3472,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             ctx.gateway().onReconnectFailed(e);
 
-                            // TODO IGNITE-4473: just call rejoin?
-                            if (reconnector == null) {
-                                Reconnector rec = new Reconnector(ctx.gridName(), log);
-
-                                rec.future().listen(new CI1<IgniteInternalFuture<?>>() {
-                                    @Override public void apply(IgniteInternalFuture<?> fut) {
-                                        reconnector = null;
-                                    }
-                                });
-
-                                IgniteThread thread = new IgniteThread(rec);
-
-                                reconnector = thread;
-
-                                thread.start();
-                            }
+                            ctx.discovery().rejoin();
                         }
                     }
                 }
@@ -3658,60 +3655,5 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
-    }
-
-    /**
-     * TODO IGNITE-4473 thread not needed.
-     *
-     * Rejoins node to the cluster.
-     */
-    private class Reconnector extends GridWorker {
-        /** Complete future. */
-        private final GridFutureAdapter<?> fut = new GridFutureAdapter<>();
-
-        /**
-         * @param gridName Grid name.
-         * @param log Logger.
-         */
-        protected Reconnector(@Nullable String gridName, IgniteLogger log) {
-            super(gridName, "client-kernal-reconnector", log);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                try {
-                    ctx.discovery().rejoin().get(); // TODO timeout?
-
-                    IgniteFuture<?> reconFut = ctx.cluster().clientReconnectFuture();
-
-                    reconFut.get();
-
-                    fut.onDone();
-
-                    break;
-                }
-                catch (Throwable e) {
-                    if (X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedException.class)) {
-                        log.warning("Rejoin failed, retry. [locNodeId=" + ctx.localNodeId() + ']');
-
-                        continue;
-                    }
-
-                    U.error(log, "Unable to process error, stopping grid. locNodeId=" + ctx.localNodeId() + ']', e);
-
-                    stop(true);
-
-                    fut.onDone(e);
-                }
-            }
-        }
-
-        /**
-         * @return Complete future.
-         */
-        IgniteInternalFuture<?> future() {
-            return fut;
-        }
     }
 }

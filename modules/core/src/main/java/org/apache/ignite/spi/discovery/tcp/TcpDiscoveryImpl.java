@@ -262,11 +262,9 @@ abstract class TcpDiscoveryImpl {
     /**
      * Leave cluster and try to join again.
      *
-     * @return Future will be completed with success when node joined cluster
-     * or throw exception if failed.
      * @throws IgniteSpiException If failed.
      */
-    public abstract IgniteInternalFuture<Object> rejoin() throws IgniteSpiException;
+    public abstract void rejoin() throws IgniteSpiException;
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>

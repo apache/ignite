@@ -1922,12 +1922,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return ignite().configuration().getSslContextFactory() != null;
     }
 
-    // TODO
-    // public void rejoin() throws IgniteSpiException
-
-    /** {@inheritDoc} */
-    public IgniteInternalFuture<Object> rejoin() throws IgniteSpiException {
-        return impl.rejoin();
+    /**
+     * Force rejoin to cluster.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public void rejoin() throws IgniteSpiException {
+        impl.rejoin();
     }
 
     /**

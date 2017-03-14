@@ -53,7 +53,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -166,12 +165,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     private final Timer timer = new Timer("TcpDiscoverySpi.timer");
-
-    /** Rejoin future. */
-    private GridFutureAdapter<Object> rejoinFut;
-
-    /** Rejoin mutex. */
-    private final Object rejoinMux = new Object();
 
     /** */
     protected MessageWorker msgWorker;
@@ -799,21 +792,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> rejoin() throws IgniteSpiException {
-        synchronized (rejoinMux) {
-            if (rejoinFut != null)
-                return rejoinFut;
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Rejoining to cluster, [localNodeId=" + getLocalNodeId() + ']');
-
-                rejoinFut = new GridFutureAdapter<>();
-
-                msgWorker.addMessage(SPI_REJOIN);
-
-                return rejoinFut;
-            }
-        }
+    @Override public void rejoin() throws IgniteSpiException {
+        msgWorker.addMessage(SPI_REJOIN);
     }
 
     /** {@inheritDoc} */
@@ -904,6 +884,23 @@ class ClientImpl extends TcpDiscoveryImpl {
                 this.rmtNodeId = rmtNodeId;
 
                 mux.notifyAll();
+            }
+        }
+
+        /**
+         * Force close socket.
+         */
+        private void forceLeave() {
+            synchronized (mux) {
+                SocketStream stream = sockStream;
+
+                if (stream == null)
+                    return;
+
+                U.closeQuiet(stream.socket());
+
+                this.sockStream = null;
+                this.rmtNodeId = null;
             }
         }
 
@@ -1049,6 +1046,10 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         private void forceLeave() {
             synchronized (mux) {
+                // If writer was stopped.
+                if (sock == null)
+                    return;
+
                 forceFut = new GridFutureAdapter<>();
 
                 unackedMsg = null;
@@ -1132,21 +1133,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 sockTimeout);
                         }
                         catch (IOException | IgniteCheckedException e) {
-                            // TODO: debug log.
+                            U.warn(log, "Error sending TcpDiscoveryNodeLeftMessage on force leave. [msg=" + msg
+                                + ", err=" + e.getMessage() + ']');
                         }
 
                         U.closeQuiet(sock);
 
-                        sock = null;
+                        this.sock = null;
 
-                        queue.clear();
-                        unackedMsg = null;
+                        clear();
 
-                        GridFutureAdapter forceFut0 = forceFut;
-
-                        forceFut = null;
-
-                        forceFut0.onDone();
+                        continue;
                     }
                     else {
                         msg = queue.poll();
@@ -1226,8 +1223,28 @@ class ClientImpl extends TcpDiscoveryImpl {
                     synchronized (mux) {
                         if (sock == this.sock)
                             this.sock = null; // Connection has dead.
+
+                        clear();
                     }
                 }
+            }
+        }
+
+        /**
+         *
+         */
+        private void clear() {
+            assert Thread.holdsLock(mux);
+
+            queue.clear();
+            unackedMsg = null;
+
+            GridFutureAdapter forceFut0 = forceFut;
+
+            if (forceFut0 != null) {
+                forceFut = null;
+
+                forceFut0.onDone();
             }
         }
     }
@@ -1484,8 +1501,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             }
 
                             sockWriter.forceLeave();
-                            // TODO IGNITE-4473: wait when reader finish reads.
-                            sockReader.setSocket(null, null);
+                            sockReader.forceLeave();
 
                             currSock = null;
 
@@ -1495,23 +1511,14 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             nodeAdded = false;
 
-                            // TODO: get rid of copy/paste.
-                            IgniteClientDisconnectedCheckedException err =
-                                new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
-                                    "client node disconnected.");
-
-                            for (Map.Entry<UUID, GridFutureAdapter<Boolean>> e : pingFuts.entrySet()) {
-                                GridFutureAdapter<Boolean> fut = e.getValue();
-
-                                if (pingFuts.remove(e.getKey(), fut))
-                                    fut.onDone(err);
-                            }
+                            forceCompletePingFutures();
 
                             notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
 
-                            // TODO: log warning.
-
                             UUID newId = UUID.randomUUID();
+
+                            log.warning("Forcing rejoin to cluster. [locNodeId=" + getLocalNodeId() +
+                                ", newId=" + newId + ']');
 
                             locNode.onClientDisconnected(newId);
 
@@ -1604,16 +1611,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                 nodeAdded = false;
 
-                                IgniteClientDisconnectedCheckedException err =
-                                    new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
-                                    "client node disconnected.");
-
-                                for (Map.Entry<UUID, GridFutureAdapter<Boolean>> e : pingFuts.entrySet()) {
-                                    GridFutureAdapter<Boolean> fut = e.getValue();
-
-                                    if (pingFuts.remove(e.getKey(), fut))
-                                        fut.onDone(err);
-                                }
+                                forceCompletePingFutures();
 
                                 notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
@@ -1691,16 +1689,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
-            catch (Throwable t) {
-                synchronized (rejoinMux) {
-                    if (rejoinFut != null)
-                        rejoinFut.onDone(t);
-
-                    rejoinFut = null;
-                }
-
-                throw t;
-            }
             finally {
                 SocketStream currSock = this.currSock;
 
@@ -1715,6 +1703,22 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     reconnector.join();
                 }
+            }
+        }
+
+        /**
+         * Completes ping futures with IgniteClientDisconnectedCheckedException.
+         */
+        private void forceCompletePingFutures() {
+            IgniteClientDisconnectedCheckedException err =
+                new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
+                    "client node disconnected.");
+
+            for (Map.Entry<UUID, GridFutureAdapter<Boolean>> e : pingFuts.entrySet()) {
+                GridFutureAdapter<Boolean> fut = e.getValue();
+
+                if (pingFuts.remove(e.getKey(), fut))
+                    fut.onDone(err);
             }
         }
 
@@ -1928,14 +1932,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     joinErr.set(null);
 
                     joinLatch.countDown();
-
-                    synchronized (rejoinMux) {
-                        if (rejoinFut != null) {
-                            rejoinFut.onDone();
-
-                            rejoinFut = null;
-                        }
-                    }
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Discarding node add finished message (this message has already been processed) " +

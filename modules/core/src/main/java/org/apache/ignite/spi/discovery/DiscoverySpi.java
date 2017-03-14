@@ -129,17 +129,6 @@ public interface DiscoverySpi extends IgniteSpi {
     public void disconnect() throws IgniteSpiException;
 
     /**
-     * TODO IGNITE-4473 remove.
-     *
-     * Leave cluster and try to join again.
-     *
-     * @return Future will be completed with success when node joined cluster
-     * or throw exception if failed.
-     * @throws IgniteSpiException If failed.
-     */
-    public IgniteInternalFuture<Object> rejoin() throws IgniteSpiException;
-
-    /**
      * Sets discovery SPI node authenticator. This method is called before SPI start() method.
      *
      * @param auth Discovery SPI authenticator.

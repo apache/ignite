@@ -112,6 +112,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1893,12 +1894,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Leave cluster and try to join again.
      *
-     * @return Future will be completed with success when node joined cluster
-     * or throw exception if failed.
      * @throws IgniteSpiException If failed.
      */
-    public IgniteInternalFuture<Object> rejoin() {
-        return getSpi().rejoin();
+    public void rejoin() {
+        DiscoverySpi discoverySpi = getSpi();
+
+        if (discoverySpi instanceof TcpDiscoverySpi)
+            ((TcpDiscoverySpi)discoverySpi).rejoin();
     }
 
     /**
