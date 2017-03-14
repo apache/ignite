@@ -393,12 +393,14 @@ namespace ignite
 
                 int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
 
+                std::cout << "handle  " << handle << std::endl;
+
                 rawWriter.WriteInt64(handle);
                 rawWriter.WriteBool(qry0.GetLocal());
 
-                InputOperation& filterOp = qry0.GetFilterInputOp();
+                event::CacheEntryEventFilterHolderBase& filterOp = qry0.GetFilterHolder();
 
-                filterOp.ProcessInput(writer);
+                filterOp.Write(writer);
 
                 rawWriter.WriteInt32(qry0.GetBufferSize());
                 rawWriter.WriteInt64(qry0.GetTimeInterval());

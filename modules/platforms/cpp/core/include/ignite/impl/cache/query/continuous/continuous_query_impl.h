@@ -82,7 +82,7 @@ namespace ignite
                          *
                          * @param loc Whether query should be executed locally.
                          */
-                        explicit ContinuousQueryImplBase(bool loc, InputOperation* filterOp) :
+                        explicit ContinuousQueryImplBase(bool loc, event::CacheEntryEventFilterHolderBase* filterOp) :
                             local(loc),
                             bufferSize(DEFAULT_BUFFER_SIZE),
                             timeInterval(DEFAULT_TIME_INTERVAL),
@@ -186,11 +186,11 @@ namespace ignite
                         }
 
                         /**
-                         * Get remote filter input operation.
+                         * Get remote filter holder.
                          *
-                         * @return Filter input operation.
+                         * @return Filter holder.
                          */
-                        InputOperation& GetFilterInputOp() const
+                        event::CacheEntryEventFilterHolderBase& GetFilterHolder() const
                         {
                             return *filterOp;
                         }
@@ -236,7 +236,7 @@ namespace ignite
                         int64_t timeInterval;
 
                         /** Cache entry event filter holder. */
-                        std::auto_ptr<InputOperation> filterOp;
+                        std::auto_ptr<event::CacheEntryEventFilterHolderBase> filterOp;
                     };
 
                     /**
@@ -274,7 +274,7 @@ namespace ignite
                          */
                         ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
                             bool loc) :
-                            ContinuousQueryImplBase(loc, new CacheEntryEventFilterHolder<void>()),
+                            ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<void>()),
                             lsnr(lsnr)
                         {
                             // No-op.
@@ -290,7 +290,7 @@ namespace ignite
                         template<typename F>
                         ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
                             bool loc, const Reference<F>& filter) :
-                            ContinuousQueryImplBase(loc, new CacheEntryEventFilterHolder<F>(filter)),
+                            ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<F>(filter)),
                             lsnr(lsnr)
                         {
                             // No-op.

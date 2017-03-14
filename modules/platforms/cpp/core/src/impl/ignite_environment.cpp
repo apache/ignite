@@ -66,6 +66,7 @@ namespace ignite
             {
                 case ON_STOP:
                 {
+                    std::cout << "ON_STOP" << std::endl;
                     delete env;
 
                     break;
@@ -73,6 +74,7 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_LISTENER_APPLY:
                 {
+                    std::cout << "CONTINUOUS_QUERY_LISTENER_APPLY" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     env->Get()->OnContinuousQueryListenerApply(mem);
@@ -82,6 +84,7 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_FILTER_CREATE:
                 {
+                    std::cout << "CONTINUOUS_QUERY_FILTER_CREATE" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     res = env->Get()->OnContinuousQueryFilterCreate(mem);
@@ -91,21 +94,26 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_FILTER_APPLY:
                 {
+                    std::cout << "CONTINUOUS_QUERY_FILTER_APPLY" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     res = env->Get()->OnContinuousQueryFilterApply(mem);
+
+                    std::cout << res << std::endl;
 
                     break;
                 }
 
                 case CONTINUOUS_QUERY_FILTER_RELEASE:
                 {
+                    std::cout << "CONTINUOUS_QUERY_FILTER_RELEASE" << std::endl;
                     // No-op.
                     break;
                 }
 
                 case CACHE_INVOKE:
                 {
+                    std::cout << "CACHE_INVOKE" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     env->Get()->CacheInvokeCallback(mem);
@@ -115,6 +123,7 @@ namespace ignite
 
                 default:
                 {
+                    std::cout << type << std::endl;
                     break;
                 }
             }
@@ -174,9 +183,10 @@ namespace ignite
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
             binding(),
-            moduleMgr(new ModuleManager(GetBindingContext()))
+            moduleMgr()
         {
             binding = SharedPointer<IgniteBindingImpl>(new IgniteBindingImpl(*this));
+            moduleMgr = SharedPointer<ModuleManager>(new ModuleManager(GetBindingContext()));
         }
 
         IgniteEnvironment::~IgniteEnvironment()
@@ -380,13 +390,20 @@ namespace ignite
 
             int64_t handle = rawReader.ReadInt64();
 
-            SharedPointer<cache::event::CacheEntryEventFilterBase> filter =
-                StaticPointerCast<cache::event::CacheEntryEventFilterBase>(registry.Get(handle));
+            std::cout << handle << std::endl;
 
-            if (!filter.Get())
+            SharedPointer<ContinuousQueryImplBase> qry =
+                StaticPointerCast<ContinuousQueryImplBase>(registry.Get(handle));
+
+            if (!qry.Get())
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Null query for handle.", "handle", handle);
+
+            cache::event::CacheEntryEventFilterBase* filter = qry.Get()->GetFilterHolder().GetFilter();
+
+            if (!filter)
                 IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Null filter for handle.", "handle", handle);
-            
-            bool res = filter.Get()->ReadAndProcessEvent(rawReader);
+
+            bool res = filter->ReadAndProcessEvent(rawReader);
 
             return res ? 1 : 0;
         }

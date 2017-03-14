@@ -85,6 +85,8 @@ namespace ignite
                  */
                 virtual bool ReadAndProcessEvent(binary::BinaryRawReader& reader)
                 {
+                    std::cout << "ReadAndProcessEvent" << std::endl;
+
                     CacheEntryEvent<K, V> event;
 
                     event.Read(reader);
@@ -94,9 +96,15 @@ namespace ignite
 
                 static int64_t InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl&, impl::IgniteEnvironment& env)
                 {
-                    common::concurrent::SharedPointer<CacheEntryEventFilterBase> filter(new F(reader.ReadObject<F>()));
+                    F filter = reader.ReadObject<F>();
 
-                    return env.GetHandleRegistry().Allocate(filter);
+                    return 0;
+/*
+                    common::concurrent::SharedPointer<CacheEntryEventFilterBase> filter(new F());
+
+                    std::cout << "InternalFilterCreate " << filter.Get() << std::endl;
+
+                    return env.GetHandleRegistry().Allocate(filter);*/
                 }
             };
         }

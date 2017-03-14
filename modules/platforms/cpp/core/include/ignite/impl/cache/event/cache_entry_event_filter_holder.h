@@ -20,114 +20,164 @@
 
 #include <ignite/reference.h>
 
-#include <ignite/impl/operations.h>
-
 namespace ignite
 {
     namespace impl
     {
         namespace cache
         {
-            /**
-             * Holder for the Cache Entry Event Filter.
-             */
-            template<typename F>
-            class CacheEntryEventFilterHolder : public InputOperation
+            namespace event
             {
-            public:
-                typedef F FilterType;
+                /* Forward declaration. */
+                class CacheEntryEventFilterBase;
 
-                /**
-                 * Default constructor.
-                 */
-                CacheEntryEventFilterHolder() :
-                    filter()
+                class CacheEntryEventFilterHolderBase
                 {
-                    // No-op.
-                }
-
-                /**
-                 * Constructor.
-                 *
-                 * @param filter Filter.
-                 */
-                CacheEntryEventFilterHolder(const Reference<FilterType>& filter) :
-                    filter(filter)
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~CacheEntryEventFilterHolder()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Process input.
-                 *
-                 * @param writer Writer.
-                 */
-                virtual void ProcessInput(binary::BinaryWriterImpl& writer)
-                {
-                    if (!filter.IsNull())
+                public:
+                    /**
+                     * Destructor.
+                     */
+                    virtual ~CacheEntryEventFilterHolderBase()
                     {
-                        writer.WriteBool(true);
-                        writer.WriteObject<FilterType>(*filter.Get());
+                        // No-op.
                     }
-                    else
+
+                    /**
+                     * Write.
+                     *
+                     * @param writer Writer.
+                     */
+                    virtual void Write(binary::BinaryWriterImpl& writer) = 0;
+
+                    /**
+                     * Get filter pointer.
+                     *
+                     * @return Filter.
+                     */
+                    virtual CacheEntryEventFilterBase* GetFilter() = 0;
+                };
+
+                /**
+                 * Holder for the Cache Entry Event Filter.
+                 */
+                template<typename F>
+                class CacheEntryEventFilterHolder : public CacheEntryEventFilterHolderBase
+                {
+                public:
+                    typedef F FilterType;
+
+                    /**
+                     * Default constructor.
+                     */
+                    CacheEntryEventFilterHolder() :
+                        filter()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     *
+                     * @param filter Filter.
+                     */
+                    CacheEntryEventFilterHolder(const Reference<FilterType>& filter) :
+                        filter(filter)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Destructor.
+                     */
+                    virtual ~CacheEntryEventFilterHolder()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Process input.
+                     *
+                     * @param writer Writer.
+                     */
+                    virtual void Write(binary::BinaryWriterImpl& writer)
+                    {
+                        if (!filter.IsNull())
+                        {
+                            writer.WriteBool(true);
+                            writer.WriteObject<FilterType>(*filter.Get());
+                        }
+                        else
+                        {
+                            writer.WriteBool(false);
+                            writer.WriteNull();
+                        }
+                    }
+
+                    /**
+                     * Get filter pointer.
+                     *
+                     * @return Filter.
+                     */
+                    virtual CacheEntryEventFilterBase* GetFilter()
+                    {
+                        return filter.Get();
+                    }
+
+                private:
+                    /** Stored filter. */
+                    Reference<FilterType> filter;
+                };
+
+                template<>
+                class CacheEntryEventFilterHolder<void> : public CacheEntryEventFilterHolderBase
+                {
+                public:
+                    /**
+                     * Default constructor.
+                     */
+                    CacheEntryEventFilterHolder()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     */
+                    CacheEntryEventFilterHolder(const Reference<void>&)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Destructor.
+                     */
+                    virtual ~CacheEntryEventFilterHolder()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Process input.
+                     *
+                     * @param writer Writer.
+                     */
+                    virtual void Write(binary::BinaryWriterImpl& writer)
                     {
                         writer.WriteBool(false);
                         writer.WriteNull();
                     }
-                }
 
-            private:
-                /** Stored filter. */
-                Reference<FilterType> filter;
-            };
-
-            template<>
-            class CacheEntryEventFilterHolder<void> : public InputOperation
-            {
-            public:
-                /**
-                 * Default constructor.
-                 */
-                CacheEntryEventFilterHolder()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Constructor.
-                 */
-                CacheEntryEventFilterHolder(const Reference<void>&)
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Destructor.
-                 */
-                virtual ~CacheEntryEventFilterHolder()
-                {
-                    // No-op.
-                }
-
-                /**
-                 * Process input.
-                 *
-                 * @param writer Writer.
-                 */
-                virtual void ProcessInput(binary::BinaryWriterImpl& writer)
-                {
-                    writer.WriteBool(false);
-                    writer.WriteNull();
-                }
-            };
+                    /**
+                     * Get filter pointer.
+                     *
+                     * @return Filter.
+                     */
+                    virtual CacheEntryEventFilterBase* GetFilter()
+                    {
+                        return 0;
+                    }
+                };
+            }
         }
     }
 }
