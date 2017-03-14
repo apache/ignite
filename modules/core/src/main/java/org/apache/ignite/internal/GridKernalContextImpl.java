@@ -297,6 +297,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService svcExecSvc;
+
+    /** */
+    @GridToStringExclude
     protected ExecutorService sysExecSvc;
 
     /** */
@@ -405,6 +409,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         ExecutorService execSvc,
+        ExecutorService svcExecSvc,
         ExecutorService sysExecSvc,
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -426,6 +431,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.utilityCachePool = utilityCachePool;
         this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
+        this.svcExecSvc = svcExecSvc;
         this.sysExecSvc = sysExecSvc;
         this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
@@ -949,6 +955,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getExecutorService() {
         return execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getServiceExecutorService() {
+        return svcExecSvc;
     }
 
     /** {@inheritDoc} */

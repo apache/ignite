@@ -53,6 +53,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
+import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
@@ -232,6 +233,9 @@ public class IgniteConfiguration {
 
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Service pool size. */
+    private int svcPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** Async Callback pool size. */
     private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
@@ -561,6 +565,7 @@ public class IgniteConfiguration {
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
+        svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
@@ -774,6 +779,18 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Should return a thread pool size to be used in grid.
+     * This executor service will be in charge of processing {@link Service} proxy invocations.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used in grid to process service proxy invocations.
+     */
+    public int getServiceThreadPoolSize() {
+        return svcPoolSize;
+    }
+
+    /**
      * Size of thread pool that is in charge of processing internal system messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
@@ -889,6 +906,19 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPublicThreadPoolSize(int poolSize) {
         pubPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getServiceThreadPoolSize()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setServiceThreadPoolSize(int poolSize) {
+        svcPoolSize = poolSize;
 
         return this;
     }
