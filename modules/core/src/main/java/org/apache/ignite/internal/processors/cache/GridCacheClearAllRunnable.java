@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -96,7 +96,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             }
 
             if (ctx.swap().swapEnabled()) {
-                if (GridQueryProcessor.isEnabled(ctx.config())) {
+                if (QueryUtils.isEnabled(ctx.config())) {
                     Iterator<KeyCacheObject> it = null;
 
                     try {

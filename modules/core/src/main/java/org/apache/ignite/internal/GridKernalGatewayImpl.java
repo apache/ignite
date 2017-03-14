@@ -54,7 +54,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** */
     @GridToStringExclude
-    private final String gridName;
+    private final String igniteInstanceName;
 
     /**
      * User stack trace.
@@ -64,10 +64,10 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     private String stackTrace;
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      */
-    public GridKernalGatewayImpl(String gridName) {
-        this.gridName = gridName;
+    public GridKernalGatewayImpl(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             if (state == GridKernalState.DISCONNECTED) {
                 assert reconnectFut != null;
 
-                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + igniteInstanceName);
             }
 
             throw illegalState();
@@ -104,7 +104,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         rwLock.readLock().lock();
 
         if (state.get() == GridKernalState.DISCONNECTED)
-            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -193,7 +193,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
      */
     private IllegalStateException illegalState() {
         return new IllegalStateException("Grid is in invalid state to perform this operation. " +
-            "It either not started yet or has already being or have stopped [gridName=" + gridName +
+            "It either not started yet or has already being or have stopped [igniteInstanceName=" + igniteInstanceName +
             ", state=" + state + ']');
     }
 

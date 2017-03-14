@@ -69,6 +69,9 @@ public class GridCacheTwoStepQuery {
     /** */
     private List<Integer> extraCaches;
 
+    /** */
+    private boolean local;
+
     /**
      * @param originalSql Original query SQL.
      * @param schemas Schema names in query.
@@ -226,6 +229,20 @@ public class GridCacheTwoStepQuery {
      */
     public Set<String> schemas() {
         return schemas;
+    }
+
+    /**
+     * @return {@code True} If query is local.
+     */
+    public boolean isLocal() {
+        return local;
+    }
+
+    /**
+     * @param local Local query flag.
+     */
+    public void local(boolean local) {
+        this.local = local;
     }
 
     /**
