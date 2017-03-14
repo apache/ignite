@@ -269,7 +269,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorJobResult res,
         VisorNodeDataCollectorTaskArg arg) {
-        res.gridName(ignite.name());
+        res.igniteInstanceName(ignite.name());
 
         res.topologyVersion(ignite.cluster().topologyVersion());
 

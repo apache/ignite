@@ -44,7 +44,7 @@ public abstract class IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelf
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
         endpointCfg.setType(IgfsIpcEndpointType.TCP);
-        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        endpointCfg.setPort(DFLT_IPC_PORT + getTestIgniteInstanceIndex(gridName));
 
         return endpointCfg;
     }
@@ -53,7 +53,7 @@ public abstract class IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelf
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (getTestGridIndex(gridName) == 0)
+        if (getTestIgniteInstanceIndex(gridName) == 0)
             cfg.setClientMode(true);
 
         return cfg;

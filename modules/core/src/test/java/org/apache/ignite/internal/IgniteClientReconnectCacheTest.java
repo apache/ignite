@@ -107,8 +107,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -692,7 +692,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
+                    Ignition.start(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
 
                     fail();
 
@@ -1443,8 +1443,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -1485,7 +1485,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                         ClusterNode node = msg.get1();
 
-                        log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                        log.info("Send blocked message: [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                             ", msg=" + msg.get2().message() + ']');
 
                         super.sendMessage(msg.get1(), msg.get2());

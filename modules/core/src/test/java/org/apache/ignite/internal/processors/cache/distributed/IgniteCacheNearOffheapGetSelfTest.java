@@ -61,10 +61,10 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(gridCount() - 1).equals(gridName)) {
+        if (getTestIgniteInstanceName(gridCount() - 1).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
@@ -75,8 +75,8 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setBackups(1);
         cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
@@ -129,7 +129,7 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
                 assertEquals(key, nearOnly.get(key));
         }
         finally {
-            if (Ignition.state(getTestGridName(gridCount())) == IgniteState.STARTED)
+            if (Ignition.state(getTestIgniteInstanceName(gridCount())) == IgniteState.STARTED)
                 stopGrid(gridCount());
         }
     }
