@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.storage.vector;
 
 import org.apache.ignite.math.*;
 import java.io.*;
+import java.util.Arrays;
 
 /**
  * Pivoted (index mapped) view over another vector storage implementation.
@@ -29,7 +30,7 @@ public class PivotedVectorStorage implements VectorStorage {
     private int[] unpivot;
 
     /**
-     * 
+     *
      * @param pivot
      * @return
      */
@@ -38,7 +39,7 @@ public class PivotedVectorStorage implements VectorStorage {
 
         for (int i = 0; i < pivot.length; i++)
             res[pivot[i]] = i;
-        
+
         return res;
     }
 
@@ -134,5 +135,34 @@ public class PivotedVectorStorage implements VectorStorage {
 
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
+    }
+
+    /** {@inheritDoc} */
+    @Override public double[] data() {
+        return isArrayBased() ? sto.data() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        PivotedVectorStorage that = (PivotedVectorStorage) o;
+
+        return (sto != null ? sto.equals(that.sto) : that.sto == null) && Arrays.equals(pivot, that.pivot)
+            && Arrays.equals(unpivot, that.unpivot);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = sto != null ? sto.hashCode() : 0;
+
+        res = 31 * res + Arrays.hashCode(pivot);
+        res = 31 * res + Arrays.hashCode(unpivot);
+
+        return res;
     }
 }

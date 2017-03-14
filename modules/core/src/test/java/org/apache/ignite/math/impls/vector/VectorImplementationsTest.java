@@ -82,9 +82,12 @@ public class VectorImplementationsTest {
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
             consumeSampleVectors((v, desc) -> {
-                Vector vLike = v.like(card);
-
                 Class<? extends Vector> expType = v.getClass();
+
+                if (skipLikeTest(expType))
+                    return;
+
+                Vector vLike = v.like(card);
 
                 assertNotNull("Expect non-null like vector for " + expType.getSimpleName() + " in " + desc, vLike);
                 assertEquals("Expect size equal to cardinality at " + desc, card, vLike.size());
@@ -226,6 +229,11 @@ public class VectorImplementationsTest {
             assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
                 metric1.closeEnough());
         });
+    }
+
+    /** */
+    private boolean skipLikeTest(Class<?extends Vector> clazz) {
+        return clazz.isAssignableFrom(PivotedVectorView.class);
     }
 
     /** */
