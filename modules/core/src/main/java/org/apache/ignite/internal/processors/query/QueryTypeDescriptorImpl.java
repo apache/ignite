@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,9 +55,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
     private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
 
+    /** Mutex for operations on indexes. */
+    private final Object idxMux = new Object();
+
     /** */
     @GridToStringInclude
-    private final Map<String, QueryIndexDescriptorImpl> indexes = new HashMap<>();
+    private final Map<String, QueryIndexDescriptorImpl> idxs = new HashMap<>();
 
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
@@ -194,14 +198,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-        return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
+        synchronized (idxMux) {
+            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(idxs);
+        }
     }
 
     /**
      * @return Raw index descriptors.
      */
     public Collection<QueryIndexDescriptorImpl> indexes0() {
-        return indexes.values();
+        synchronized (idxMux) {
+            return new ArrayList<>(idxs.values());
+        }
     }
 
     /** {@inheritDoc} */
@@ -218,12 +226,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(this, idxName, type);
+        synchronized (idxMux) {
+            QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(this, idxName, type);
 
-        if (indexes.put(idxName, idx) != null)
-            throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
+            if (idxs.put(idxName, idx) != null)
+                throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
 
-        return idx;
+            return idx;
+        }
     }
 
     /**
@@ -237,11 +247,13 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void addFieldToIndex(String idxName, String field, int orderNum, boolean descending)
         throws IgniteCheckedException {
-        QueryIndexDescriptorImpl desc = indexes.get(idxName);
+        synchronized (idxMux) {
+            QueryIndexDescriptorImpl desc = idxs.get(idxName);
 
-        assert desc != null;
+            assert desc != null;
 
-        desc.addField(field, orderNum, descending);
+            desc.addField(field, orderNum, descending);
+        }
     }
 
     /**

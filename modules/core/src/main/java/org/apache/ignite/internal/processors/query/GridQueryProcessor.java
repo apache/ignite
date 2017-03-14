@@ -1122,7 +1122,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
+    private QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
         if (type == null || !type.registered())
