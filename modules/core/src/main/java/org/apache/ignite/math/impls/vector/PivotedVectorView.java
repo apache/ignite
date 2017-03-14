@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.storage.vector.PivotedVectorStorage;
 
 import java.io.*;
@@ -142,6 +143,14 @@ public class PivotedVectorView extends AbstractVector {
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return null; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return copy().map(Functions.mult(x));
+        else
+            return super.times(x);
     }
 
     /** {@inheritDoc} */

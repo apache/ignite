@@ -66,7 +66,7 @@ public class SingleElementVectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public int nonZeroElements() {
-        return 1;
+        return isZero(getX(storage().index())) ? 0 : 1;
     }
 
     /** {@inheritDoc} */

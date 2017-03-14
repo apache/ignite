@@ -42,7 +42,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) ConstantVectorFixture::new,
         (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
         (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new
+        (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
+        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new
     );
 
     /** */
@@ -152,6 +153,38 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** */
+    private static class PivotedVectorViewFixture extends VectorSizesFixture {
+        /** */
+        PivotedVectorViewFixture() {
+            super("PivotedVectorView", PivotedVectorViewFixture::pivotedVectorView);
+        }
+
+        /** */
+        private static PivotedVectorView pivotedVectorView(int size) {
+            final DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
+
+            final int[] pivot = new int[size];
+
+            for (int idx = 0; idx < size; idx++)
+                pivot[idx] = size - 1 - idx;
+
+            PivotedVectorView tmp = new PivotedVectorView(vec, pivot);
+
+            final int[] unpivot = new int[size];
+
+            for (int idx = 0; idx < size; idx++)
+                unpivot[idx] = tmp.unpivot(idx);
+
+            final int[] idxRecovery = new int[size];
+
+            for (int idx = 0; idx < size; idx++)
+                idxRecovery[idx] = idx;
+
+            return new PivotedVectorView(new PivotedVectorView(tmp, unpivot), idxRecovery);
         }
     }
 
