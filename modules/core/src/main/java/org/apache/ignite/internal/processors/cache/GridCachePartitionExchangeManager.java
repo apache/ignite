@@ -751,6 +751,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
 
+        // Check rebalance state & send CacheAffinityChangeMessage if need.
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (!cacheCtx.isLocal()) {
+                if (cacheCtx == null)
+                    continue;
+
+                GridDhtPartitionTopology top = clientTops.get(cacheCtx.cacheId());
+
+                if (!cacheCtx.isLocal())
+                    top = cacheCtx.topology();
+
+                if (top != null)
+                    cctx.affinity().checkRebalanceState(top, cacheCtx.cacheId());
+            }
+        }
+
         Collection<ClusterNode> rmts;
 
         // If this is the oldest node.

@@ -577,27 +577,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             assignments.add(partAssignment);
         }
 
-//        printAssignment(assignments);
-
         return assignments;
-    }
-
-    /**
-     * @param a ass.
-     */
-    private void printAssignment(List<List<ClusterNode>> a) {
-        int p = 0;
-        log.info("+++ ASS");
-        for (List<ClusterNode> pl : a) {
-            System.out.print(p + ": ");
-
-            for (ClusterNode n : pl)
-                System.out.print(n.id() + " ");
-
-            p++;
-
-            System.out.println("");
-        }
     }
 
     /**
