@@ -102,7 +102,7 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     /** {@inheritDoc} */
     @Override public Element maxValue() {
         if (maxElm == null) {
-            double max = Double.MIN_VALUE;
+            double max = Double.NEGATIVE_INFINITY;
             int row = 0, col = 0;
 
             int rows = sto.rowSize();
@@ -791,12 +791,12 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public Vector viewRow(int row) {
-        return new MatrixVectorView(this, row, 0, 1, 0);
+        return new MatrixVectorView(this, row, 0, 0, 1);
     }
 
     /** {@inheritDoc} */
     @Override public Vector viewColumn(int col) {
-        return new MatrixVectorView(this, 0, col, 0, 1);
+        return new MatrixVectorView(this, 0, col, 1, 0);
     }
 
     /** {@inheritDoc} */

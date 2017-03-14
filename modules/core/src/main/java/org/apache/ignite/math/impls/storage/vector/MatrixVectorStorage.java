@@ -117,22 +117,27 @@ public class MatrixVectorStorage implements VectorStorage {
             return (parent.columnSize() - col) / colStride;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return parent.get(row + i * rowStride, col + i * colStride);
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         parent.set(row + i * rowStride, col + i * colStride, v);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return parent.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return parent.isDense();
     }
@@ -147,10 +152,12 @@ public class MatrixVectorStorage implements VectorStorage {
         return parent.isDistributed();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return parent.isArrayBased();
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(parent);
         out.writeInt(row);
@@ -159,6 +166,7 @@ public class MatrixVectorStorage implements VectorStorage {
         out.writeInt(colStride);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         parent = (Matrix)in.readObject();
         row = in.readInt();
