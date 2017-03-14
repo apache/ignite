@@ -182,7 +182,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Data store.
      */
-
     public CacheDataStore dataStore() {
         return store;
     }

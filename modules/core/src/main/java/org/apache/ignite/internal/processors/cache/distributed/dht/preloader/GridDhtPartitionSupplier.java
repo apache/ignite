@@ -32,17 +32,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
-
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  * Thread pool for supplying partitions to demanding nodes.
@@ -240,7 +236,7 @@ class GridDhtPartitionSupplier {
             else {
                 iter = sctx.entryIt;
 
-                remainingParts = sctx.sentLast;
+                remainingParts = sctx.remainingParts;
             }
 
             while (iter.hasNext()) {
@@ -281,16 +277,17 @@ class GridDhtPartitionSupplier {
                             "[part=" + part + ", nodeId=" + id + ']');
                 }
 
-                if (iter.isPartitionMissing(part)) {
+                if (iter.isPartitionMissing(part) && remainingParts.contains(part)) {
                     s.missed(part);
+
+                    remainingParts.remove(part);
 
                     if (log.isDebugEnabled())
                         log.debug("Requested partition is marked as missing on local node [part=" + part +
                             ", demander=" + id + ']');
-
-                    continue;
                 }
-                else if (!remainingParts.contains(part))
+
+                if (!remainingParts.contains(part))
                     continue;
 
                 GridCacheEntryInfo info = new GridCacheEntryInfo();
@@ -417,7 +414,7 @@ class GridDhtPartitionSupplier {
         @GridToStringExclude
         private final IgniteRebalanceIterator entryIt;
 
-        private final Set<Integer> sentLast;
+        private final Set<Integer> remainingParts;
 
         /** Update seq. */
         private final long updateSeq;
@@ -426,9 +423,9 @@ class GridDhtPartitionSupplier {
          * @param updateSeq Update sequence.
          * @param entryIt Entry iterator.
          */
-        public SupplyContext(IgniteRebalanceIterator entryIt, Set<Integer> sentLast, long updateSeq) {
+        public SupplyContext(IgniteRebalanceIterator entryIt, Set<Integer> remainingParts, long updateSeq) {
             this.entryIt = entryIt;
-            this.sentLast = sentLast;
+            this.remainingParts = remainingParts;
             this.updateSeq = updateSeq;
         }
 
