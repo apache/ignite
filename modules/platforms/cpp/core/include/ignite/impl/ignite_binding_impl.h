@@ -18,6 +18,7 @@
 #ifndef _IGNITE_IMPL_IGNITE_BINDING_IMPL
 #define _IGNITE_IMPL_IGNITE_BINDING_IMPL
 
+#include <stdint.h>
 #include <map>
 
 #include <ignite/common/common.h>
@@ -29,6 +30,9 @@ namespace ignite
 {
     namespace impl
     {
+        /* Forward declaration. */
+        class IgniteEnvironment;
+
         /**
          * Ignite binding implementation.
          *
@@ -36,7 +40,7 @@ namespace ignite
          */
         class IgniteBindingImpl
         {
-            typedef void (Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&);
+            typedef int64_t(Callback)(binary::BinaryReaderImpl&, binary::BinaryWriterImpl&, IgniteEnvironment&);
 
         public:
             enum CallbackType
@@ -49,9 +53,11 @@ namespace ignite
             };
 
             /**
-             * Default constructor.
+             * Constructor.
+             *
+             * @param env Environment.
              */
-            IgniteBindingImpl();
+            IgniteBindingImpl(IgniteEnvironment &env);
 
             /**
              * Invoke callback using provided ID.
@@ -63,10 +69,11 @@ namespace ignite
              * @param id Callback ID.
              * @param reader Reader.
              * @param writer Writer.
-             * @return True if callback is registered and false otherwise.
+             * @param found Output param. True if callback was found and false otherwise.
+             * @return Callback return value.
              */
-            bool InvokeCallback(int32_t type, int32_t id,
-                binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer);
+            IGNITE_IMPORT_EXPORT int64_t InvokeCallback(bool& found, int32_t type, int32_t id, binary::BinaryReaderImpl& reader,
+                binary::BinaryWriterImpl& writer);
 
             /**
              * Register cache entry processor and associate it with provided ID.
@@ -79,7 +86,7 @@ namespace ignite
              * @param callback Callback.
              * @param err Error.
              */
-            void RegisterCallback(int32_t type, int32_t id, Callback* callback, IgniteError& err);
+            IGNITE_IMPORT_EXPORT void RegisterCallback(int32_t type, int32_t id, Callback* callback, IgniteError& err);
             
             /**
              * Register cache entry processor and associate it with provided ID.
@@ -91,7 +98,7 @@ namespace ignite
              * @param id Callback identifier.
              * @param callback Callback.
              */
-            void RegisterCallback(int32_t type, int32_t id, Callback* callback);
+            IGNITE_IMPORT_EXPORT void RegisterCallback(int32_t type, int32_t id, Callback* callback);
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(IgniteBindingImpl);
@@ -107,6 +114,9 @@ namespace ignite
             {
                 return (static_cast<int64_t>(type) << 32) | id;
             }
+
+            /** Ignite environment. */
+            IgniteEnvironment& env;
 
             /** Registered callbacks. */
             std::map<int64_t, Callback*> callbacks;

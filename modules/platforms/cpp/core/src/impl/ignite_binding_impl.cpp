@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/ignite_binding_impl.h"
+#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/ignite_binding_impl.h>
 
 using namespace ignite::common::concurrent;
 
@@ -23,13 +24,14 @@ namespace ignite
 {
     namespace impl
     {
-        IgniteBindingImpl::IgniteBindingImpl() :
+        IgniteBindingImpl::IgniteBindingImpl(IgniteEnvironment &env) :
+            env(env),
             callbacks()
         {
             // No-op.
         }
 
-        bool IgniteBindingImpl::InvokeCallback(int32_t type, int32_t id,
+        int64_t IgniteBindingImpl::InvokeCallback(bool& found, int32_t type, int32_t id,
             binary::BinaryReaderImpl& reader, binary::BinaryWriterImpl& writer)
         {
             int64_t key = makeKey(type, id);
@@ -38,19 +40,19 @@ namespace ignite
 
             std::map<int64_t, Callback*>::iterator it = callbacks.find(key);
 
-            if (it != callbacks.end())
+            found = it != callbacks.end();
+
+            if (found)
             {
                 Callback* callback = it->second;
 
                 // We have found callback and does not need lock here anymore.
                 guard.Reset();
 
-                callback(reader, writer);
-
-                return true;
+                return callback(reader, writer, env);
             }
 
-            return false;
+            return 0;
         }
 
         void IgniteBindingImpl::RegisterCallback(int32_t type, int32_t id, Callback* proc, IgniteError& err)

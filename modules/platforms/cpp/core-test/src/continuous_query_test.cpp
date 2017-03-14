@@ -182,6 +182,16 @@ template<typename K, typename V>
 struct RangeFilter : public CacheEntryEventFilter<RangeFilter<K,V>, K, V>
 {
     /**
+     * Default constructor.
+     */
+    RangeFilter() :
+        rangeBegin(0),
+        rangeEnd(0)
+    {
+        // No-op.
+    }
+
+    /**
      * Constructor.
      *
      * @param from Range beginning. Inclusive.

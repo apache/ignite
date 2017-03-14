@@ -85,12 +85,16 @@ namespace ignite
                  * @param reader Reader.
                  * @param writer Writer.
                  */
-                static void InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
+                static int64_t InternalProcess(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer, impl::IgniteEnvironment& env)
                 {
+                    return 0;
                 }
 
-                static void InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
+                static int64_t InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl&, impl::IgniteEnvironment& env)
                 {
+                    common::concurrent::SharedPointer<F> filter(new F(reader.ReadObject<F>()));
+
+                    return env.GetHandleRegistry().Allocate(filter);
                 }
             };
         }

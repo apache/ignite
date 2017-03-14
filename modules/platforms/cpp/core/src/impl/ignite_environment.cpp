@@ -59,6 +59,7 @@ namespace ignite
          */
         long long IGNITE_CALL InLongOutLong(void* target, int type, long long val)
         {
+            int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
             switch (type)
@@ -83,14 +84,17 @@ namespace ignite
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
-                    env->Get()->OnContinuousQueryListenerApply(mem);
+                    res = env->Get()->OnContinuousQueryFilterCreate(mem);
 
                     break;
                 }
 
                 case CONTINUOUS_QUERY_FILTER_APPLY:
                 {
-                    // No-op.
+                    SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
+
+                    env->Get()->OnContinuousQueryFilterApply(mem);
+
                     break;
                 }
 
@@ -115,7 +119,7 @@ namespace ignite
                 }
             }
 
-            return 0;
+            return res;
         }
 
         /**
@@ -169,10 +173,10 @@ namespace ignite
             registry(DEFAULT_FAST_PATH_CONTAINERS_CAP, DEFAULT_SLOW_PATH_CONTAINERS_CAP),
             metaMgr(new BinaryTypeManager()),
             metaUpdater(0),
-            binding(new IgniteBindingImpl()),
+            binding(),
             moduleMgr(new ModuleManager(GetBindingContext()))
         {
-            // No-op.
+            binding = SharedPointer<IgniteBindingImpl>(new IgniteBindingImpl(*this));
         }
 
         IgniteEnvironment::~IgniteEnvironment()
@@ -336,14 +340,41 @@ namespace ignite
             }
         }
 
-        void IgniteEnvironment::OnContinuousQueryFilterCreate(SharedPointer<InteropMemory>& mem)
+        int64_t IgniteEnvironment::OnContinuousQueryFilterCreate(SharedPointer<InteropMemory>& mem)
         {
-            InteropInputStream stream(mem.Get());
-            BinaryReaderImpl reader(&stream);
+            if (!binding.Get())
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "IgniteBinding is not initialized.");
 
-            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), stream.Position());
+            InteropInputStream inStream(mem.Get());
+            BinaryReaderImpl reader(&inStream);
+
+            InteropOutputStream outStream(mem.Get());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            BinaryObjectImpl binFilter = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
 
             int32_t filterId = binFilter.GetTypeId();
+
+            bool invoked = false;
+
+            int64_t res = binding.Get()->InvokeCallback(invoked,
+                IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE, filterId, reader, writer);
+
+            if (!invoked)
+            {
+                IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ remote filter is not registered on the node (did you compile your program without -rdynamic?).",
+                    "filterId", filterId);
+            }
+
+            outStream.Synchronize();
+
+            return res;
+        }
+
+        void IgniteEnvironment::OnContinuousQueryFilterApply(SharedPointer<InteropMemory>& mem)
+        {
+            // TODO
         }
 
         void IgniteEnvironment::CacheInvokeCallback(SharedPointer<InteropMemory>& mem)
@@ -367,7 +398,9 @@ namespace ignite
 
             int32_t procId = binProc.GetTypeId();
 
-            bool invoked = binding.Get()->InvokeCallbackById(procId, reader, writer);
+            bool invoked = false;
+
+            binding.Get()->InvokeCallback(invoked, IgniteBindingImpl::CACHE_ENTRY_PROCESSOR_APPLY, procId, reader, writer);
 
             if (!invoked)
             {
