@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Ignite guid with additional local ID.
     /// </summary>
+    [Serializable]
     public struct IgniteGuid : IEquatable<IgniteGuid>, IBinaryWriteAware
     {
         /** Global id. */
