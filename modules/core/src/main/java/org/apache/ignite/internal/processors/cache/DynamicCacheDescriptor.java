@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
-import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
+import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -82,8 +82,8 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
-    /** Pending index operation in propose phase. */
-    private AbstractIndexOperation idxProposeOp;
+    /** Dynamic index states. */
+    private QueryIndexStates idxStates;
 
     /**
      * @param ctx Context.
@@ -307,17 +307,17 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Pending index propose operation.
+     * @return Index states.
      */
-    public AbstractIndexOperation indexProposeOperation() {
-        return idxProposeOp;
+    public QueryIndexStates indexStates() {
+        return idxStates;
     }
 
     /**
-     * @param idxProposeOp Pending index propose operation.
+     * @param idxStates Index states.
      */
-    public void indexProposeOperation(AbstractIndexOperation idxProposeOp) {
-        this.idxProposeOp = idxProposeOp;
+    public void indexStates(QueryIndexStates idxStates) {
+        this.idxStates = idxStates;
     }
 
     /** {@inheritDoc} */

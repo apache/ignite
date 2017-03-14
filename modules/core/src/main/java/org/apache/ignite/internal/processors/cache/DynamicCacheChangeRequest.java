@@ -28,8 +28,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -76,11 +74,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** Index operation in init phase. */
-    private AbstractIndexOperation idxInitOp;
-
     /** Dynamic index states. */
-    private Map<String, QueryIndexStates> idxStates;
+    private QueryIndexStates idxStates;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -296,24 +291,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Pending index init operation.
+     * @return Index states.
      */
-    public AbstractIndexOperation indexInitOperation() {
-        return idxInitOp;
+    public QueryIndexStates indexStates() {
+        return idxStates;
     }
 
     /**
-     * @param idxInitOp Pending index init operation.
+     * @param idxStates Index states.
      */
-    public void indexInitOperation(AbstractIndexOperation idxInitOp) {
-        this.idxInitOp = idxInitOp;
-    }
-
-    /**
-     * @return Dynamic index states.
-     */
-    public Map<String, QueryIndexStates> indexStates() {
-        return idxStates == null ? Collections.<String, QueryIndexStates>emptyMap() : idxStates;
+    public void indexStates(QueryIndexStates idxStates) {
+        this.idxStates = idxStates;
     }
 
     /** {@inheritDoc} */

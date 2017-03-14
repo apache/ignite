@@ -64,6 +64,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
@@ -1985,7 +1986,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
-            req.indexInitOperation(desc.indexProposeOperation());
+            req.indexStates(desc.indexStates());
 
             reqs.add(req);
         }
@@ -2023,7 +2024,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.cacheType(desc.cacheType());
             req.deploymentId(desc.deploymentId());
             req.receivedFrom(desc.receivedFrom());
-            req.indexInitOperation(desc.indexProposeOperation());
+            req.indexStates(desc.indexStates());
 
             reqs.add(req);
 
@@ -2129,7 +2130,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                     ccfg.getCacheMode());
                         }
 
-                        existing.indexProposeOperation(req.indexInitOperation());
+                        existing.indexStates(req.indexStates());
                     }
                     else {
                         assert req.cacheType() != null : req;
@@ -2141,7 +2142,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 false,
                                 req.deploymentId());
 
-                        desc.indexProposeOperation(req.indexInitOperation());
+                        desc.indexStates(req.indexStates());
 
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
@@ -2743,22 +2744,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         // Validate request at descriptor level.
-        AbstractIndexOperation oldOp = desc.indexProposeOperation();
+        QueryIndexStates idxStates = desc.indexStates();
 
-        if (oldOp != null) {
-            msg.onError(locNodeId, "Failed to create/drop cache index because another pending operation is in " +
-                "progress [cacheName=" + op.space() + ". newOp=" + op + ", oldOp=" + oldOp + ']');
+        if (idxStates == null)
+            idxStates = new QueryIndexStates();
 
-            return;
-        }
-
-        // For already started cache we must make sure that indexing manager will be able to accommodate it.
-        if (!isMissingQueryCache(desc))
-            cache(op.space()).context().queries().onIndexProposeMessage(msg);
-
-        // Finally, set init operation to cache descriptor.
-        if (!msg.hasError())
-            desc.indexProposeOperation(op);
+        if (idxStates.propose(ctx.localNodeId(), msg))
+            desc.indexStates(idxStates);
     }
 
     /**
@@ -2856,7 +2848,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
-                        startDesc.indexProposeOperation(req.indexInitOperation());
+                        startDesc.indexStates(req.indexStates());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
@@ -3920,7 +3912,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     req.deploymentId(desc.deploymentId());
                     req.startCacheConfiguration(descCfg);
-                    req.indexInitOperation(desc.indexProposeOperation());
+                    req.indexStates(desc.indexStates());
                 }
             }
             else {
