@@ -43,7 +43,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) DelegatingVectorFixture::new,
         (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
         (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
-        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new
+        (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new
     );
 
     /** */
@@ -185,6 +186,39 @@ class VectorImplementationsFixtures {
                 idxRecovery[idx] = idx;
 
             return new PivotedVectorView(new PivotedVectorView(tmp, unpivot), idxRecovery);
+        }
+    }
+
+    /** */
+    private static class SingleElementVectorViewFixture implements Iterable<Vector> {
+        /** */
+        private final Supplier<TwoParamsIterator<Integer, Double>> iter;
+
+        /** */ private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
+
+        /** */
+        SingleElementVectorViewFixture() {
+            iter = () -> new TwoParamsIterator<Integer, Double>("SingleElementVectorView",
+                null, ctxDescrHolder::set,
+                "size", new Integer[] {1, null},
+                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null}) {
+
+                /** {@inheritDoc} */
+                @Override BiFunction<Integer, Double, Vector> ctor() {
+                    return (size, value) -> new SingleElementVectorView(new SingleElementVector(size, 0, value), 0);
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Vector> iterator() {
+            return iter.get();//(
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
+            return ctxDescrHolder.get();
         }
     }
 

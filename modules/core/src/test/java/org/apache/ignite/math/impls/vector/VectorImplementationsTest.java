@@ -233,7 +233,7 @@ public class VectorImplementationsTest {
 
     /** */
     private boolean skipLikeTest(Class<?extends Vector> clazz) {
-        return clazz.isAssignableFrom(PivotedVectorView.class);
+        return clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class);
     }
 
     /** */

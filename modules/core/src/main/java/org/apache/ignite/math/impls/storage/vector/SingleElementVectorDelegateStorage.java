@@ -110,4 +110,26 @@ public class SingleElementVectorDelegateStorage implements VectorStorage {
     @Override public boolean isArrayBased() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SingleElementVectorDelegateStorage that = (SingleElementVectorDelegateStorage) o;
+
+        return idx == that.idx && (vec != null ? vec.equals(that.vec) : that.vec == null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = idx;
+
+        res = 31 * res + (vec != null ? vec.hashCode() : 0);
+
+        return res;
+    }
 }
