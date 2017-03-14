@@ -2030,7 +2030,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 res = entry.innerGetVersioned(
                                     null,
                                     null,
-                                    /*unmarshal*/true,
                                     updateMetrics,
                                     evt,
                                     subjId,

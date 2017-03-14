@@ -138,6 +138,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override protected int segmentsCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
             IndexingQueryFilter f = threadLocalFilter();

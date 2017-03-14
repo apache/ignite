@@ -320,7 +320,6 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * @param readSwap Flag indicating whether to check swap memory.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param subjId Subject ID initiated this read.
@@ -332,8 +331,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @return Cached value, entry version and flag indicating if entry was reserved.
      */
-    public EntryGetResult innerGetAndReserveForLoad(boolean readSwap,
-        boolean updateMetrics,
+    public EntryGetResult innerGetAndReserveForLoad(boolean updateMetrics,
         boolean evt,
         UUID subjId,
         String taskName,

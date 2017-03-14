@@ -2994,28 +2994,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridH2Table tbl,
             List<IndexColumn> cols
         ) {
-            try {
-                GridCacheSharedContext<Object, Object> scctx = ctx.cache().context();
+            GridCacheSharedContext<Object, Object> scctx = ctx.cache().context();
 
-                GridCacheContext cctx = scctx.cacheContext(cacheId);
+            GridCacheContext cctx = scctx.cacheContext(cacheId);
 
-                if (cctx.affinityNode() && cctx.offheapIndex()) {
-                    assert pkHashIdx == null : pkHashIdx;
+            if (cctx.affinityNode() && cctx.offheapIndex()) {
+                assert pkHashIdx == null : pkHashIdx;
 
-                    pkHashIdx = new H2PkHashIndex(
-                        cctx,
-                        tbl,
-                        name,
-                        cols);
+                pkHashIdx = new H2PkHashIndex(
+                    cctx,
+                    tbl,
+                    name,
+                    cols);
 
-                    return pkHashIdx;
-                }
-
-                return new GridH2TreeIndex(name, tbl, true, cols);
+                return pkHashIdx;
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+
+            return new GridH2TreeIndex(name, tbl, true, cols);
         }
 
         /**

@@ -300,8 +300,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             IgniteCacheOffheapManager offheap = ctx.offheap();
 
-            if (ctx.affinity().primary(ctx.localNode(), partition, topVer) && modes.primary ||
-                ctx.affinity().backup(ctx.localNode(), partition, topVer) && modes.backup)
+            if (ctx.affinity().primaryByPartition(ctx.localNode(), partition, topVer) && modes.primary ||
+                ctx.affinity().backupByPartition(ctx.localNode(), partition, topVer) && modes.backup)
                 size += offheap.entriesCount(partition);
         }
 

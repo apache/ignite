@@ -41,16 +41,20 @@ public class VisorQueryArg implements Serializable {
     /** Result batch size. */
     private final int pageSize;
 
+    /** Enforce join order flag. */
+    private final boolean enforceJoinOrder;
+
     /**
      * @param cacheName Cache name for query.
      * @param qryTxt Query text.
      * @param loc Flag whether to execute query locally.
      * @param pageSize Result batch size.
      */
-    public VisorQueryArg(String cacheName, String qryTxt, boolean distributedJoins, boolean loc, int pageSize) {
+    public VisorQueryArg(String cacheName, String qryTxt, boolean distributedJoins, boolean enforceJoinOrder, boolean loc, int pageSize) {
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
         this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder = enforceJoinOrder;
         this.loc = loc;
         this.pageSize = pageSize;
     }
@@ -88,5 +92,12 @@ public class VisorQueryArg implements Serializable {
      */
     public int pageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
     }
 }

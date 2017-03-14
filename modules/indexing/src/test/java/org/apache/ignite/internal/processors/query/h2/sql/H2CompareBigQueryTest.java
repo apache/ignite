@@ -95,7 +95,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     private static IgniteCache<Object, Cancel> cacheCancel;
 
     /** Cache execute. */
-    private static IgniteCache<Integer, Exec> cacheExec;
+    private static IgniteCache<Object, Exec> cacheExec;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

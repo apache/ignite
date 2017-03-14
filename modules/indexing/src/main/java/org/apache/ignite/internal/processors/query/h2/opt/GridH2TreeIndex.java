@@ -191,11 +191,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
     @Override public void destroy() {
         assert threadLocalSnapshot() == null;
 
-        for (int i = 0; i < segments.length; i++) {
-            if (segments[i] instanceof AutoCloseable)
-                U.closeQuiet((AutoCloseable)segments[i]);
-        }
-
         super.destroy();
     }
 

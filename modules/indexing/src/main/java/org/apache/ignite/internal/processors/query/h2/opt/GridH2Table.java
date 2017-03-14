@@ -100,7 +100,7 @@ public class GridH2Table extends TableBase {
     private final H2RowFactory rowFactory;
 
     /** */
-    private volatile boolean rebuildFromHashInProgress = false;
+    private volatile boolean rebuildFromHashInProgress;
 
     /**
      * Creates table.
@@ -947,15 +947,27 @@ public class GridH2Table extends TableBase {
      * Wrapper type for primary key.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
+    class ScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         /** */
         static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
+        /** */
+        private final GridH2IndexBase hashIdx;
+
         /**
-         * @param delegate Delegate.
+         * Constructor.
          */
-        public ScanIndex(GridH2IndexBase delegate) {
-            super(delegate);
+        private ScanIndex(GridH2IndexBase treeIdx, GridH2IndexBase hashIdx) {
+            super(treeIdx);
+
+            this.hashIdx = hashIdx;
+        }
+
+        /**
+         *
+         */
+        @Override protected GridH2IndexBase delegate() {
+            return rebuildFromHashInProgress ? hashIdx : super.delegate();
         }
 
         /** {@inheritDoc} */

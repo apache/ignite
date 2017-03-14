@@ -3041,10 +3041,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 KeyCacheObject key = row.key();
 
-                if (entry.deleted())
-                    continue;
-
-                KeyCacheObject key = entry.key();
                 CacheObject val;
 
                 if (expiryPlc != null) {
