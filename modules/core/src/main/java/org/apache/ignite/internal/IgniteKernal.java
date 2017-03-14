@@ -3447,7 +3447,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedCheckedException.class)) {
-                            U.error(log, "Failed to reconnect, will stop node 2", e);
+                            U.error(log, "Failed to reconnect, will stop node", e);
 
                             close();
                         }
