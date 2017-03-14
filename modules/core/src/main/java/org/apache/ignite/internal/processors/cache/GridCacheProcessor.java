@@ -1084,8 +1084,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        // TODO: Make sure that pending init operation is passed to indexing.
-        // TODO: Make sure that pending operations are cleaned up ocrrectly after reconnect!
         ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
@@ -2759,7 +2757,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (!indexMessageValid(msg))
             return;
 
-        // TODO
+        // TODO: Implement ack routine.
     }
 
     /**
