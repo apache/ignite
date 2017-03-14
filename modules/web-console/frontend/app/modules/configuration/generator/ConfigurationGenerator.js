@@ -1285,9 +1285,7 @@ export default class IgniteConfigurationGenerator {
 
     // Generate time group.
     static clusterTime(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.intProperty('clockSyncSamples')
-            .intProperty('clockSyncFrequency')
-            .intProperty('timeServerPortBase')
+        cfg.intProperty('timeServerPortBase')
             .intProperty('timeServerPortRange');
 
         return cfg;

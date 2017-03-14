@@ -548,8 +548,6 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             compactFooter: Boolean
         },
         caches: [{type: ObjectId, ref: 'Cache'}],
-        clockSyncSamples: Number,
-        clockSyncFrequency: Number,
         deploymentMode: {type: String, enum: ['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']},
         discoveryStartupDelay: Number,
         igfsThreadPoolSize: Number,
