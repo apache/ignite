@@ -23,6 +23,7 @@
 #include <ignite/impl/binary/binary_reader_impl.h>
 #include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
+#include <ignite/impl/cache/cache_entry_processor_holder.h>
 
 namespace ignite
 {

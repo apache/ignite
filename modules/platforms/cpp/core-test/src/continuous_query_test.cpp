@@ -286,27 +286,45 @@ namespace ignite
         template<typename K, typename V>
         struct BinaryType< RangeFilter<K,V> >
         {
-            typedef RangeFilter<K, V> RangeFilter;
+            int32_t GetTypeId()
+            {
+                return GetBinaryStringHashCode("RangeFilter");
+            }
 
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(RangeFilter)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(RangeFilter)
+            std::string GetTypeName()
+            {
+                return "RangeFilter";
+
+            }
             IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(RangeFilter)
-            IGNITE_BINARY_IS_NULL_FALSE(RangeFilter)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(RangeFilter)
 
-            void Write(BinaryWriter& writer, const RangeFilter& obj)
+            int32_t GetHashCode(const RangeFilter<K,V>&)
+            {
+                return 0;
+            }
+
+            bool IsNull(const RangeFilter<K,V>&)
+            {
+                return false;
+            }
+
+            RangeFilter<K,V> GetNull()
+            {
+                return RangeFilter<K,V>();
+            }
+
+            void Write(BinaryWriter& writer, const RangeFilter<K,V>& obj)
             {
                 writer.WriteObject("rangeBegin", obj.rangeBegin);
                 writer.WriteObject("rangeEnd", obj.rangeEnd);
             }
 
-            RangeFilter Read(BinaryReader& reader)
+            RangeFilter<K,V> Read(BinaryReader& reader)
             {
                 K begin = reader.ReadObject<K>("rangeBegin");
                 K end = reader.ReadObject<K>("rangeEnd");
 
-                return RangeFilter(begin, end);
+                return RangeFilter<K,V>(begin, end);
             }
         };
     }
