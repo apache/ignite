@@ -214,6 +214,7 @@
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_entry_processor_holder.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_base.h" />

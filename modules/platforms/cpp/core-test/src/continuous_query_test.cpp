@@ -179,7 +179,7 @@ private:
  * Only lets through keys from the range.
  */
 template<typename K, typename V>
-struct RangeFilter : public CacheEntryEventFilter<RangeFilter<K,V>, K, V>
+struct RangeFilter : CacheEntryEventFilter<K, V>
 {
     /**
      * Default constructor.

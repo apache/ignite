@@ -22,6 +22,7 @@
 #include <ignite/common/concurrent.h>
 
 #include <ignite/impl/ignite_binding_impl.h>
+#include <ignite/impl/bindings.h>
 
 namespace ignite
 {
@@ -111,7 +112,7 @@ namespace ignite
             if (im)
             {
                 im->RegisterCallback(impl::IgniteBindingImpl::CACHE_ENTRY_FILTER_CREATE,
-                    typeId, &F::CacheEntryEventFilter::InternalFilterCreate);
+                    typeId, impl::binding::FilterCreate<F>);
             }
             else
             {

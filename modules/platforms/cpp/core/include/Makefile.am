@@ -47,6 +47,7 @@ nobase_include_HEADERS = \
     ignite/transactions/transaction_consts.h \
     ignite/transactions/transaction_metrics.h \
     ignite/impl/binary/binary_type_updater_impl.h \
+    ignite/impl/bindings.h \
     ignite/impl/cache/cache_entry_processor_holder.h \
     ignite/impl/cache/cache_impl.h \
     ignite/impl/cache/event/cache_entry_event_filter_base.h \

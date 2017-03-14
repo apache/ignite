@@ -23,15 +23,24 @@
 #ifndef _IGNITE_CACHE_EVENT_CACHE_ENTRY_EVENT_FILTER
 #define _IGNITE_CACHE_EVENT_CACHE_ENTRY_EVENT_FILTER
 
-#include <stdint.h>
-
 #include <ignite/cache/event/cache_entry_event.h>
 #include <ignite/impl/cache/event/cache_entry_event_filter_base.h>
-#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 
 namespace ignite
 {
     class IgniteBinding;
+
+    namespace impl
+    {
+        namespace cache
+        {
+            namespace event
+            {
+                template<typename T>
+                class CacheEntryEventFilterHolder;
+            }
+        }
+    }
 
     namespace cache
     {
@@ -43,14 +52,14 @@ namespace ignite
              * All templated types should be default-constructable,
              * copy-constructable and assignable.
              *
-             * @tparam F The filter itself which inherits from CacheEntryEventFilter.
              * @tparam K Key type.
              * @tparam V Value type.
              */
-            template<typename F, typename K, typename V>
-            class CacheEntryEventFilter : public impl::cache::event::CacheEntryEventFilterBase
+            template<typename K, typename V>
+            class CacheEntryEventFilter : private impl::cache::event::CacheEntryEventFilterBase
             {
-                friend class ignite::IgniteBinding;
+                template<typename T>
+                friend class impl::cache::event::CacheEntryEventFilterHolder;
 
             public:
                 /**
@@ -91,18 +100,6 @@ namespace ignite
                     event.Read(reader);
 
                     return Process(event);
-                }
-
-                static int64_t InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl&, impl::IgniteEnvironment& env)
-                {
-                    using namespace common::concurrent;
-                    using namespace impl::cache::query::continuous;
-
-                    F filter = reader.ReadObject<F>();
-
-                    SharedPointer<ContinuousQueryImplBase> qry(new RemoteFilterHolder(MakeReferenceFromCopy(filter)));
-
-                    return env.GetHandleRegistry().Allocate(qry);
                 }
             };
         }

@@ -204,6 +204,9 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\event\cache_entry_event_filter_holder.h">
       <Filter>Code\impl\cache\event</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\bindings.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

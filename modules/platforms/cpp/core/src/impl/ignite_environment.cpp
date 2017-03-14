@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/interop/interop_external_memory.h"
-#include "ignite/impl/binary/binary_reader_impl.h"
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
-#include "ignite/binary/binary.h"
-#include "ignite/impl/binary/binary_type_updater_impl.h"
-#include "ignite/impl/module_manager.h"
-#include "ignite/ignite_binding.h"
+#include <ignite/impl/interop/interop_external_memory.h>
+#include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/impl/binary/binary_type_updater_impl.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/impl/ignite_binding_impl.h>
+
+#include <ignite/binary/binary.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/ignite_binding.h>
+#include <ignite/ignite_binding_context.h>
+
+#include <ignite/impl/ignite_environment.h>
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -177,7 +181,10 @@ namespace ignite
             moduleMgr()
         {
             binding = SharedPointer<IgniteBindingImpl>(new IgniteBindingImpl(*this));
-            moduleMgr = SharedPointer<ModuleManager>(new ModuleManager(GetBindingContext()));
+
+            IgniteBindingContext bindingContext(cfg, GetBinding());
+
+            moduleMgr = SharedPointer<ModuleManager>(new ModuleManager(bindingContext));
         }
 
         IgniteEnvironment::~IgniteEnvironment()
@@ -283,14 +290,9 @@ namespace ignite
             return metaUpdater;
         }
 
-        IgniteBinding IgniteEnvironment::GetBinding() const
+        SharedPointer<IgniteBindingImpl> IgniteEnvironment::GetBinding() const
         {
-            return IgniteBinding(binding);
-        }
-
-        IgniteBindingContext IgniteEnvironment::GetBindingContext() const
-        {
-            return IgniteBindingContext(*cfg, GetBinding());
+            return binding;
         }
 
         void IgniteEnvironment::ProcessorReleaseStart()
