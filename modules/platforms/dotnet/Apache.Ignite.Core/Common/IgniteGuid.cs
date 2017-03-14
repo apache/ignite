@@ -106,20 +106,6 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Reads this object from the given reader.
-        /// </summary> 
-        /// <param name="r">Reader.</param>
-        internal static IgniteGuid? Read(IBinaryRawReader r)
-        {
-            var guid = r.ReadGuid();
-
-            if (guid == null)
-                return null;
-
-            return new IgniteGuid(guid.Value, r.ReadLong());
-        }
-
-        /// <summary>
         /// Implements the operator ==.
         /// </summary>
         /// <param name="a">First item.</param>

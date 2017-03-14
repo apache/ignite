@@ -58,9 +58,7 @@ namespace Apache.Ignite.Core.Events
         /// <param name="r">The reader to read data from.</param>
         protected EventBase(IBinaryRawReader r)
         {
-            var id = IgniteGuid.Read(r);
-            Debug.Assert(id.HasValue);
-            _id = id.Value;
+            _id = r.ReadObject<IgniteGuid>();
 
             _localOrder = r.ReadLong();
 
