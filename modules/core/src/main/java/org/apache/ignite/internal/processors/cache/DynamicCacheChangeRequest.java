@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.QueryIndexState;
+import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Cache start/stop request.
@@ -80,7 +80,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private AbstractIndexOperation idxInitOp;
 
     /** Dynamic index states. */
-    private Map<String, QueryIndexState> idxStates;
+    private Map<String, QueryIndexStates> idxStates;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -312,22 +312,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @return Dynamic index states.
      */
-    public Map<String, QueryIndexState> indexStates() {
-        return idxStates == null ? Collections.<String, QueryIndexState>emptyMap() : idxStates;
-    }
-
-    /**
-     * Add dynamic index state.
-     *
-     * @param idxState Index state.
-     */
-    public void addIndexState(QueryIndexState idxState) {
-        if (idxStates == null)
-            idxStates = new HashMap<>();
-
-        String name = idxState.indexName();
-
-        idxStates.put(name, idxState);
+    public Map<String, QueryIndexStates> indexStates() {
+        return idxStates == null ? Collections.<String, QueryIndexStates>emptyMap() : idxStates;
     }
 
     /** {@inheritDoc} */

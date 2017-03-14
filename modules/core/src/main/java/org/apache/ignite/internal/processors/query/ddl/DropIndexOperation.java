@@ -50,10 +50,8 @@ public class DropIndexOperation extends AbstractIndexOperation {
         this.ifExists = ifExists;
     }
 
-    /**
-     * @return Index name.
-     */
-    public String indexName() {
+    /** {@inheritDoc} */
+    @Override public String indexName() {
         return idxName;
     }
 

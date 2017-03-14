@@ -59,6 +59,11 @@ public class CreateIndexOperation extends AbstractIndexOperation {
         this.ifNotExists = ifNotExists;
     }
 
+    /** {@inheritDoc} */
+    @Override public String indexName() {
+        return idx.getName();
+    }
+
     /**
      * @return Index params.
      */

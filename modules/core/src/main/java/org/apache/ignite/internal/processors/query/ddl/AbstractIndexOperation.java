@@ -69,4 +69,9 @@ public abstract class AbstractIndexOperation implements Serializable {
     public String space() {
         return space;
     }
+
+    /**
+     * @return Index name.
+     */
+    public abstract String indexName();
 }

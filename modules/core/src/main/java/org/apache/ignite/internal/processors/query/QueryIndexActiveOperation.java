@@ -17,61 +17,55 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
 
 /**
- * Query index state.
+ * Active index operation.
  */
-public class QueryIndexState implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Index name. */
-    private final String idxName;
-
-    /** Index. */
+public class QueryIndexActiveOperation {
+    /** Operation. */
     @GridToStringInclude
-    private final QueryIndex idx;
+    private final AbstractIndexOperation op;
+
+    /** Whether operation is accepted. */
+    private boolean accepted;
 
     /**
-     * Query index state.
+     * Constructor.
      *
-     * @param idxName Index name.
-     * @param idx Index.
+     * @param op Operation.
      */
-    public QueryIndexState(String idxName, QueryIndex idx) {
-        this.idxName = idxName;
-        this.idx = idx;
+    public QueryIndexActiveOperation(AbstractIndexOperation op) {
+        this.op = op;
     }
 
     /**
-     * @return Index name.
+     * @return Operation.
      */
-    public String indexName() {
-        return idxName;
+    public AbstractIndexOperation operation() {
+        return op;
     }
 
     /**
-     * @return Index
+     * @return Whether operation is accepted.
      */
-    @Nullable public QueryIndex index() {
-        return idx;
+    public boolean accepted() {
+        return accepted;
     }
 
     /**
-     * @return {@code True} if index is removed.
+     * Accept operation.
      */
-    public boolean removed() {
-        return idx == null;
+    public void accept() {
+        assert !accepted;
+
+        accepted = true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryIndexState.class, this);
+        return S.toString(QueryIndexActiveOperation.class, this);
     }
 }
