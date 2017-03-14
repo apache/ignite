@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -198,6 +200,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // No-op.
         }
     };
+
+    private final Map<Integer, Integer> part2stripe = new ConcurrentHashMap8<>();
+
+    private final AtomicInteger curStripe = new AtomicInteger();
 
     /**
      * @param ctx Grid kernal context.
@@ -824,8 +830,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             plc == GridIoPolicy.SYSTEM_POOL &&
             (msg.partition() != Integer.MIN_VALUE ||
                 msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE)) {
-            Map<Integer, int[]> stripemap = msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE ?
-                ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() : null;
+            Map<Integer, int[]> stripemap = null;
+
+            if (msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE) {
+                GridNearAtomicFullUpdateRequest msg0 = (GridNearAtomicFullUpdateRequest)msg.message();
+
+                stripemap = makeStripeMap(msg0);
+            }
 
             if (stripemap != null) {
                 for (Integer stripe : stripemap.keySet()) {
@@ -848,6 +859,42 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             c.run();
         }
+    }
+
+    private Map<Integer, int[]> makeStripeMap(GridNearAtomicFullUpdateRequest msg) {
+        int stripes = ctx.getStripedExecutorService().stripes();
+
+        Map<Integer, int[]> map = new HashMap<>();
+
+        int[] cnt = new int[stripes];
+
+        for (int i = 0; i < msg.size(); i++) {
+            int part = msg.key(i).partition();
+
+            int stripe;
+
+            if (!part2stripe.containsKey(part)) {
+                stripe = curStripe.incrementAndGet() % stripes;
+                part2stripe.put(part, stripe);
+            }
+            else
+                stripe = part2stripe.get(part);
+
+            int[] idxs = map.get(stripe);
+
+            if (idxs == null)
+                map.put(stripe, idxs = new int[msg.size()]);
+
+            idxs[cnt[stripe]++] = i;
+        }
+
+        for (Integer stripe : map.keySet()) {
+            map.put(stripe, Arrays.copyOf(map.get(stripe), cnt[stripe]));
+        }
+
+        msg.stripeMap(map);
+
+        return map;
     }
 
     /**
