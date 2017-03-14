@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Common
         {
             Debug.Assert(writer != null);
 
-            var stream = ((BinaryWriter) writer).Stream;
+            var stream = ((BinaryWriter) writer.GetRawWriter()).Stream;
 
             stream.WriteLong(_localId);
             BinaryUtils.WriteGuid(_globalId, stream);
