@@ -128,7 +128,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @throws Exception In case of any error.
      */
     protected IgniteConfiguration gridConfiguration() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestGridName());
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -163,7 +163,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @throws Exception In case of any error.
      */
     IgniteConfiguration gridConfigurationManyIgfsCaches(int cacheCtn) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestGridName());
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);

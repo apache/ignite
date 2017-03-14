@@ -557,6 +557,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     public String toString() {
-        return "IgniteCluster [igniteName=" + ctx.gridName() + ']';
+        return "IgniteCluster [igniteInstanceName=" + ctx.igniteInstanceName() + ']';
     }
 }

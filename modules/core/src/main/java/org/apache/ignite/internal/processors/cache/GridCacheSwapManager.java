@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionAware;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -214,7 +214,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         GridOffHeapEvictListener lsnr;
 
-        if (swapEnabled || GridQueryProcessor.isEnabled(cctx.config())) {
+        if (swapEnabled || QueryUtils.isEnabled(cctx.config())) {
             unwindOffheapEvicts = true;
 
             lsnr = new GridOffHeapEvictListener() {

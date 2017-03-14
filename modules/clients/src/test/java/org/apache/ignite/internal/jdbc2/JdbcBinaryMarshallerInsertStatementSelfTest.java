@@ -29,7 +29,7 @@ public class JdbcBinaryMarshallerInsertStatementSelfTest extends JdbcInsertState
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getBinaryConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getBinaryConfiguration(igniteInstanceName);
     }
 }
