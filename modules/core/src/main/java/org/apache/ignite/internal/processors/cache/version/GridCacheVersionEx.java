@@ -88,7 +88,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -106,7 +106,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
         }
 
         switch (writer.state()) {
-            case 4:
+            case 3:
                 if (!writer.writeMessage("drVer", drVer))
                     return false;
 
@@ -128,7 +128,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 3:
                 drVer = reader.readMessage("drVer");
 
                 if (!reader.isLastRead())
