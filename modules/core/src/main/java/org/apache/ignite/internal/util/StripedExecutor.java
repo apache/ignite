@@ -780,7 +780,7 @@ public class StripedExecutor implements ExecutorService {
      */
     private static class StripeMPSCQueue extends Stripe {
         /** Queue. */
-        private final MPSCQueue<Runnable> queue = new MPSCQueue<>(thread);
+        private final MPSCQueue<Runnable> queue = new MPSCQueue<>();
 
         /**
          * @param gridName Grid name.

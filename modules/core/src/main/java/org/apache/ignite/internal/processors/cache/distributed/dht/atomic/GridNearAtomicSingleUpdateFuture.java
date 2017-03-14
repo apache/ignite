@@ -634,7 +634,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 keepBinary,
                 cctx.kernalContext().clientNode(),
                 cctx.deploymentEnabled(),
-                1, 1);
+                1);
         }
 
         req.addUpdateEntry(cacheKey,

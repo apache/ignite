@@ -335,7 +335,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ) {
                     int stripeIdx;
 
-                    if (req instanceof GridNearAtomicFullUpdateRequest && Thread.currentThread() instanceof IgniteStripeThread)
+                    if (req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
+                        && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null)
                         stripeIdx = ((IgniteStripeThread)Thread.currentThread()).stripeIndex();
                     else
                         stripeIdx = IgniteStripeThread.GRP_IDX_UNASSIGNED;
@@ -1753,9 +1754,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED
             && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
             && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
-            stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
+
+            Map<Integer, int[]> stripeMap = ((GridNearAtomicFullUpdateRequest)req).stripeMap();
+            stripeIdxs = stripeMap.get(stripeIdx);
 
             res.stripe(stripeIdx);
+            res.stripes(stripeMap.size());
         }
 
         res.partition(req.partition());

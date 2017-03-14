@@ -61,7 +61,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_STRIPES_CNT;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
@@ -848,8 +847,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 GridNearAtomicFullUpdateRequest mapped = pendingMappings.get(nodeId);
 
                 if (mapped == null) {
-                    int stripes = affNode.attribute(ATTR_STRIPES_CNT) != null ? (int)affNode.attribute(ATTR_STRIPES_CNT) : -1;
-
                     mapped = new GridNearAtomicFullUpdateRequest(
                         cctx.cacheId(),
                         nodeId,
@@ -870,8 +867,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         keepBinary,
                         cctx.kernalContext().clientNode(),
                         cctx.deploymentEnabled(),
-                        keys.size(),
-                        stripes);
+                        keys.size());
 
                     mapped.partition(part);
                     pendingMappings.put(nodeId, mapped);
@@ -975,7 +971,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             keepBinary,
             cctx.kernalContext().clientNode(),
             cctx.deploymentEnabled(),
-            1,
             1);
 
         req.addUpdateEntry(cacheKey,

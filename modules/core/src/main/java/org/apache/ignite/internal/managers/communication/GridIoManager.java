@@ -869,12 +869,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         int[] cnt = new int[stripes];
 
         for (int i = 0; i < msg.size(); i++) {
-            int part = msg.key(i).partition();
+            int part = msg.part(i);
 
             int stripe;
 
             if (!part2stripe.containsKey(part))
-                part2stripe.putIfAbsent(part, curStripe.incrementAndGet() % stripes);
+                part2stripe.putIfAbsent(part, curStripe.getAndIncrement() % stripes);
 
             stripe = part2stripe.get(part);
 
