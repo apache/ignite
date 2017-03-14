@@ -35,6 +35,8 @@ public interface GridCacheConcurrentMap {
      */
     @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key);
 
+    public GridCacheMapEntry getOrCreateEntry(KeyCacheObject key, AffinityTopologyVersion topVer);
+
     /**
      * @param topVer Topology version.
      * @param key Key.

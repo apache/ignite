@@ -252,7 +252,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         futBackup.get(10_000);
         futPrimary.get(10_000);
 
-        assertEquals(0, nearPrimary.size());
+        assertEquals(0, nearPrimary.map().size());
 
         assertNull(nearPrimary.peekEx(key));
         assertNull(dhtPrimary.peekEx(key));

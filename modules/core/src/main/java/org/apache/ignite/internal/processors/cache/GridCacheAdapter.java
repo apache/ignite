@@ -936,7 +936,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry (never {@code null}).
      */
     public final GridCacheEntryEx entryEx(Object key) {
-        return entryEx(ctx.toCacheKeyObject(key), false);
+        return entryEx(ctx.toCacheKeyObject(key));
     }
 
     /**
@@ -944,20 +944,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry (never {@code null}).
      */
     public final GridCacheEntryEx entryEx(KeyCacheObject key) {
-        return entryEx(key, false);
-    }
-
-    /**
-     * @param key Entry key.
-     * @param touch Whether created entry should be touched.
-     * @return Entry (never {@code null}).
-     */
-    public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch) {
-        GridCacheEntryEx e = entry0(key, ctx.affinity().affinityTopologyVersion(), true, touch);
-
-        assert e != null;
-
-        return e;
+        return entryEx(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -966,7 +953,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry (never {@code null}).
      */
     public GridCacheEntryEx entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        GridCacheEntryEx e = entry0(key, topVer, true, false);
+        GridCacheEntryEx e = map.getOrCreateEntry(key, topVer);
 
         assert e != null;
 
@@ -3488,7 +3475,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheObject cacheVal = ctx.toCacheObject(val);
 
-        GridCacheEntryEx entry = entryEx(key, false);
+        GridCacheEntryEx entry = entryEx(key);
 
         try {
             entry.initialValue(cacheVal,
