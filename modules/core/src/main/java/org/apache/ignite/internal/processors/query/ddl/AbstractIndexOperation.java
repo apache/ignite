@@ -33,15 +33,20 @@ public abstract class AbstractIndexOperation implements Serializable {
     /** Operation ID. */
     private final UUID opId;
 
+    /** Space. */
+    private final String space;
+
     /**
      * Constructor.
      *
      * @param cliNodeId Client node ID.
      * @param opId Operation ID.
+     * @param space Space.
      */
-    public AbstractIndexOperation(UUID cliNodeId, UUID opId) {
+    public AbstractIndexOperation(UUID cliNodeId, UUID opId, String space) {
         this.cliNodeId = cliNodeId;
         this.opId = opId;
+        this.space = space;
     }
 
     /**
@@ -56,5 +61,12 @@ public abstract class AbstractIndexOperation implements Serializable {
      */
     public UUID operationId() {
         return opId;
+    }
+
+    /**
+     * @return Space.
+     */
+    public String space() {
+        return space;
     }
 }

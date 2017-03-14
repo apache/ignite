@@ -65,6 +65,12 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexAckDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
@@ -104,6 +110,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -204,6 +211,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** */
     private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
+
+    /** ID history for index create/drop discovery messages. */
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> idxDiscoMsgIdHist =
+        new GridBoundedConcurrentLinkedHashSet<>(QueryUtils.discoveryHistorySize());
 
     /**
      * @param ctx Kernal context.
@@ -1075,6 +1086,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
+        // TODO: Make sure that pending init operation is passed to indexing.
         ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
@@ -2532,7 +2544,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cache == null)
             return new GridFinishedFuture<>(new IgniteException("Cache doesn't exist: " + cacheName));
 
-        return cache.context().queries().createIndex(tblName, idx, ifNotExists);
+        return cache.context().queries().dynamicIndexCreate(tblName, idx, ifNotExists);
     }
 
     /**
@@ -2673,10 +2685,114 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer) {
+        if (msg instanceof IndexInitDiscoveryMessage) {
+            onIndexInitDiscoveryMessage((IndexInitDiscoveryMessage)msg);
+
+            return false;
+        }
+
+        if (msg instanceof IndexAckDiscoveryMessage) {
+            onIndexAckDiscoveryMessage((IndexAckDiscoveryMessage)msg);
+
+            return false;
+        }
+
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+    }
+
+    /**
+     * Handle cache index init discovery message.
+     *
+     * @param msg Message.
+     */
+    private void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
+        UUID locNodeId = ctx.localNodeId();
+
+        if (!indexMessageValid(msg))
+            return;
+
+        AbstractIndexOperation op = msg.operation();
+
+        // Ignore in case error was reported by another node earlier.
+        if (msg.hasError()) {
+            if (log.isDebugEnabled())
+                log.debug("Received index init message with error reported by another node (will ignore): " + msg);
+
+            return;
+        }
+
+        // Ensure cache exists.
+        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
+
+        if (desc == null) {
+            msg.onError(locNodeId, "Cache doesn't exit on node [cacheName=" + op.space() +
+                ". nodeId=" + locNodeId + ']');
+
+            return;
+        }
+
+        // Validate request on descriptor level.
+        AbstractIndexOperation oldOp = desc.indexInitOperation();
+
+        if (oldOp != null) {
+            msg.onError(locNodeId, "Failed to create/drop cache index because another pending operation is in " +
+                "progress [cacheName=" + op.space() + ". newOp=" + op + ", oldOp=" + oldOp + ']');
+
+            return;
+        }
+
+        if (op instanceof CreateIndexOperation) {
+            CreateIndexOperation op0 = (CreateIndexOperation)op;
+
+            // TODO
+        }
+        else if (op instanceof DropIndexOperation) {
+            DropIndexOperation op0 = (DropIndexOperation)op;
+
+            // TODO
+        }
+        else
+            U.warn(log, "Received index init message with unsupported operation (will ignore): " + msg);
+
+        // For already started cache we must make sure that indexing manager will be able to accommodate it.
+        if (isMissingQueryCache(desc))
+            cache(op.space()).context().queries().onIndexInitDiscoveryMessage(msg);
+
+        // Finally, set init operation to cache descriptor.
+        if (!msg.hasError())
+            desc.indexInitOperation(op);
+    }
+
+    /**
+     * Handle cache index ack discovery message.
+     *
+     * @param msg Message.
+     */
+    private void onIndexAckDiscoveryMessage(IndexAckDiscoveryMessage msg) {
+        if (!indexMessageValid(msg))
+            return;
+
+        // TODO
+    }
+
+    /**
+     * Ensure that arrived discovery message is not duplicate.
+     *
+     * @param msg Message.
+     * @return {@code True} if message is not duplicated and should be processed further.
+     */
+    private boolean indexMessageValid(IndexAbstractDiscoveryMessage msg) {
+        IgniteUuid id = msg.id();
+
+        boolean res = idxDiscoMsgIdHist.add(id);
+
+        if (!res)
+            U.warn(log, "Received duplicate index change discovery message (will ignore): " + msg);
+
+        return res;
     }
 
     /**
@@ -3569,13 +3685,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @throws IgniteCheckedException In case of error.
      */
-    public void createMissingCaches() throws IgniteCheckedException {
+    public void createMissingQueryCaches() throws IgniteCheckedException {
         for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
-            CacheConfiguration ccfg = e.getValue().cacheConfiguration();
+            DynamicCacheDescriptor desc = e.getValue();
 
-            if (!caches.containsKey(maskNull(ccfg.getName())) && QueryUtils.isEnabled(ccfg))
-                dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
+            if (isMissingQueryCache(desc))
+                dynamicStartCache(null, desc.cacheConfiguration().getName(), null, false, true, true).get();
         }
+    }
+
+    /**
+     * Whether cache defined by provided descriptor is not yet started and has queries enabled.
+     *
+     * @param desc Descriptor.
+     * @return {@code True} if this is missing query cache.
+     */
+    private boolean isMissingQueryCache(DynamicCacheDescriptor desc) {
+        CacheConfiguration ccfg = desc.cacheConfiguration();
+
+        return !caches.containsKey(maskNull(ccfg.getName())) && QueryUtils.isEnabled(ccfg);
     }
 
     /**

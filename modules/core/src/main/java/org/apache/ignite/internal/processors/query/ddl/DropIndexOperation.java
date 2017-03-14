@@ -28,9 +28,6 @@ public class DropIndexOperation extends AbstractIndexOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Space. */
-    private final String space;
-
     /** Index name. */
     private final String idxName;
 
@@ -47,18 +44,10 @@ public class DropIndexOperation extends AbstractIndexOperation {
      * @param ifExists Ignore operation if index doesn't exist.
      */
     DropIndexOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
-        super(cliNodeId, opId);
+        super(cliNodeId, opId, space);
 
-        this.space = space;
         this.idxName = idxName;
         this.ifExists = ifExists;
-    }
-
-    /**
-     * @return Space.
-     */
-    public String space() {
-        return space;
     }
 
     /**

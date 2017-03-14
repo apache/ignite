@@ -21,12 +21,20 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 /**
  * {@code ACK} message which triggers local index create/drop.
  */
 public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Node reported an error. */
+    private UUID errNodeId;
+
+    /** Error message. */
+    private String errMsg;
 
     /**
      * Constructor.
@@ -45,6 +53,27 @@ public class IndexAckDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * @return {@code True} if error was reported during init.
+     */
+    public boolean hasError() {
+        return errNodeId != null;
+    }
+
+    /**
+     * @return ID of the node reported an error (if any).
+     */
+    @Nullable public UUID errorNodeId() {
+        return errNodeId;
+    }
+
+    /**
+     * @return Error message (if any).
+     */
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /** {@inheritDoc} */

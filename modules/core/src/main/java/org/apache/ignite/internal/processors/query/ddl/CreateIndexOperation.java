@@ -30,9 +30,6 @@ public class CreateIndexOperation extends AbstractIndexOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Space. */
-    private final String space;
-
     /** Table name. */
     private final String tblName;
 
@@ -55,9 +52,8 @@ public class CreateIndexOperation extends AbstractIndexOperation {
      */
     public CreateIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        super(cliNodeId, opId);
+        super(cliNodeId, opId, space);
 
-        this.space = space;
         this.tblName = tblName;
         this.idx = idx;
         this.ifNotExists = ifNotExists;
@@ -68,13 +64,6 @@ public class CreateIndexOperation extends AbstractIndexOperation {
      */
     public QueryIndex index() {
         return idx;
-    }
-
-    /**
-     * @return Schema name.
-     */
-    public String space() {
-        return space;
     }
 
     /**

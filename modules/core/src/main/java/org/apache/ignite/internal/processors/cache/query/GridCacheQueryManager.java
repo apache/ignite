@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.ddl.IndexInitDiscoveryMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -518,7 +519,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param ifNotExists When set to {@code true} operation will fail if index already exists.
      * @return Future completed when index is created.
      */
-    public IgniteInternalFuture<?> createIndex(String tblName, QueryIndex idx, boolean ifNotExists) {
+    public IgniteInternalFuture<?> dynamicIndexCreate(String tblName, QueryIndex idx, boolean ifNotExists) {
         if (!enterBusy())
             return new GridFinishedFuture<>(new IgniteException("Failed to create index because " +
                 "local node is stopping."));
@@ -533,6 +534,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * Validate index init discovery message.
+     *
+     * @param msg Message.
+     */
+    public void onIndexInitDiscoveryMessage(IndexInitDiscoveryMessage msg) {
+        qryProc.onIndexInitDiscoveryMessage(space, msg);
     }
 
     /**

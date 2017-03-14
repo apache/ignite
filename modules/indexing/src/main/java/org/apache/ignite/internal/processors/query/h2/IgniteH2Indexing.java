@@ -1449,7 +1449,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         catch (SQLException e) {
                             if (!cachesCreated && e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1) {
                                 try {
-                                    ctx.cache().createMissingCaches();
+                                    ctx.cache().createMissingQueryCaches();
                                 }
                                 catch (IgniteCheckedException ignored) {
                                     throw new CacheException("Failed to create missing caches.", e);
