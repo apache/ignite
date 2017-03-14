@@ -57,12 +57,6 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
     /** Second node name. */
     private static final String NODE_2_NAME = "node2";
 
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = "data";
-
-    /** Meta cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
     /** Key in data caceh we will use to reproduce the issue. */
     private static final Integer DATA_KEY = 1;
 
@@ -212,13 +206,15 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
      * @throws Exception If failed.
      */
     private GridCacheAdapter dataCache(Ignite node) throws Exception  {
-        return ((IgniteKernal)node).internalCache(DATA_CACHE_NAME);
+        return ((IgniteKernal)node).internalCache(((IgniteKernal)node).igfsx(null).configuration()
+            .getDataCacheConfiguration().getName());
     }
 
     /**
      * Create node configuration.
      *
      * @param name Node name.
+     * @param ipFinder IpFinder.
      * @return Configuration.
      * @throws Exception If failed.
      */
@@ -226,7 +222,6 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         // Data cache configuration.
         CacheConfiguration dataCcfg = new CacheConfiguration();
 
-        dataCcfg.setName(DATA_CACHE_NAME);
         dataCcfg.setCacheMode(CacheMode.REPLICATED);
         dataCcfg.setAtomicityMode(TRANSACTIONAL);
         dataCcfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -236,7 +231,6 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         // Meta cache configuration.
         CacheConfiguration metaCcfg = new CacheConfiguration();
 
-        metaCcfg.setName(META_CACHE_NAME);
         metaCcfg.setCacheMode(CacheMode.REPLICATED);
         metaCcfg.setAtomicityMode(TRANSACTIONAL);
         metaCcfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -245,10 +239,10 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setFragmentizerEnabled(false);
         igfsCfg.setBlockSize(1024);
+        igfsCfg.setDataCacheConfiguration(dataCcfg);
+        igfsCfg.setMetaCacheConfiguration(metaCcfg);
 
         // Ignite configuration.
         IgniteConfiguration cfg = getConfiguration(name);
@@ -258,7 +252,6 @@ public class IgfsBlockMessageSystemPoolStarvationSelfTest extends IgfsCommonAbst
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCcfg, metaCcfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

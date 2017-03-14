@@ -241,7 +241,7 @@ public class WebSessionFilter implements Filter {
     @Override public void init(FilterConfig cfg) throws ServletException {
         ctx = cfg.getServletContext();
 
-        String gridName = U.firstNotNull(
+        String igniteInstanceName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
@@ -277,11 +277,11 @@ public class WebSessionFilter implements Filter {
         if (!F.isEmpty(binParam))
             keepBinary = Boolean.parseBoolean(binParam);
 
-        webSesIgnite = G.ignite(gridName);
+        webSesIgnite = G.ignite(igniteInstanceName);
 
         if (webSesIgnite == null)
-            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
-                gridName);
+            throw new IgniteException("Ignite instance for web sessions caching is not started (is it configured?): " +
+                igniteInstanceName);
 
         txs = webSesIgnite.transactions();
 
@@ -320,8 +320,8 @@ public class WebSessionFilter implements Filter {
         }
 
         if (log.isInfoEnabled())
-            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
-                ", maxRetriesOnFail=" + retries + ']');
+            log.info("Started web sessions caching [igniteInstanceName=" + igniteInstanceName +
+                ", cacheName=" + cacheName + ", maxRetriesOnFail=" + retries + ']');
     }
 
     /**

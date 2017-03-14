@@ -375,11 +375,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
                         throw new InvalidOperationException("Invalid cache configuration: " +
                                                             "ICachePluginConfiguration can't be null.");
 
-                    if (!cachePlugin.GetType().IsSerializable)
-                        throw new InvalidOperationException("Invalid cache configuration: " +
-                                                            "ICachePluginConfiguration should be Serializable.");
+                    if (cachePlugin.CachePluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+                        cachePlugin.WriteBinary(writer);
+                    }
+                    else
+                    {
+                        if (!cachePlugin.GetType().IsSerializable)
+                        {
+                            throw new InvalidOperationException("Invalid cache configuration: " +
+                                                                "ICachePluginConfiguration should be Serializable.");
+                        }
 
-                    writer.WriteObject(cachePlugin);
+                        writer.WriteBoolean(false);
+                        writer.WriteObject(cachePlugin);
+                    }
                 }
             }
             else

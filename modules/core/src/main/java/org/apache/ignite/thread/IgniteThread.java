@@ -18,6 +18,7 @@
 package org.apache.ignite.thread;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
@@ -42,11 +43,14 @@ public class IgniteThread extends Thread {
     /** Number of all grid threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
 
-    /** The name of the grid this thread belongs to. */
-    protected final String gridName;
+    /** The name of the Ignite instance this thread belongs to. */
+    protected final String igniteInstanceName;
 
-    /** Group index. */
-    private final int grpIdx;
+    /** */
+    private int compositeRwLockIdx;
+
+    /** */
+    private final int stripe;
 
     /**
      * Creates thread with given worker.
@@ -54,75 +58,95 @@ public class IgniteThread extends Thread {
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.gridName(), worker.name(), worker, GRP_IDX_UNASSIGNED);
+        this(DFLT_GRP, worker.igniteInstanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
-     * Creates grid thread with given name for a given grid.
+     * Creates grid thread with given name for a given Ignite instance.
      *
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      */
-    public IgniteThread(String gridName, String threadName, Runnable r) {
-        this(gridName, threadName, r, GRP_IDX_UNASSIGNED);
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r) {
+        this(igniteInstanceName, threadName, r, GRP_IDX_UNASSIGNED, -1);
     }
 
     /**
-     * Creates grid thread with given name for a given grid.
+     * Creates grid thread with given name for a given Ignite instance.
      *
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(String gridName, String threadName, Runnable r, int grpIdx) {
-        this(DFLT_GRP, gridName, threadName, r, grpIdx);
+    public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
+        this(DFLT_GRP, igniteInstanceName, threadName, r, grpIdx, stripe);
     }
 
     /**
-     * Creates grid thread with given name for a given grid with specified
+     * Creates grid thread with given name for a given Ignite instance with specified
      * thread group.
      *
      * @param grp Thread group.
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Thread index within a group.
+     * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
-    public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r, int grpIdx) {
-        super(grp, r, createName(cntr.incrementAndGet(), threadName, gridName));
+    public IgniteThread(ThreadGroup grp, String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe) {
+        super(grp, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
 
-        this.gridName = gridName;
-        this.grpIdx = grpIdx;
+        A.ensure(grpIdx >= -1, "grpIdx >= -1");
+
+        this.igniteInstanceName = igniteInstanceName;
+        this.compositeRwLockIdx = grpIdx;
+        this.stripe = stripe;
     }
 
     /**
-     * @param gridName Name of grid this thread is created for.
+     * @param igniteInstanceName Name of the Ignite instance this thread is created for.
      * @param threadGrp Thread group.
      * @param threadName Name of thread.
      */
-    protected IgniteThread(String gridName, ThreadGroup threadGrp, String threadName) {
+    protected IgniteThread(String igniteInstanceName, ThreadGroup threadGrp, String threadName) {
         super(threadGrp, threadName);
 
-        this.gridName = gridName;
-        this.grpIdx = GRP_IDX_UNASSIGNED;
+        this.igniteInstanceName = igniteInstanceName;
+        this.compositeRwLockIdx = GRP_IDX_UNASSIGNED;
+        this.stripe = -1;
     }
 
     /**
-     * Gets name of the grid this thread belongs to.
+     * @return Non-negative stripe number if this thread is striped pool thread.
+     */
+    public int stripe() {
+        return stripe;
+    }
+
+    /**
+     * Gets name of the Ignite instance this thread belongs to.
      *
-     * @return Name of the grid this thread belongs to.
+     * @return Name of the Ignite instance this thread belongs to.
      */
-    public String getGridName() {
-        return gridName;
+    public String getIgniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
-     * @return Group index.
+     * @return Composite RW lock index.
      */
-    public int groupIndex() {
-        return grpIdx;
+    public int compositeRwLockIndex() {
+        return compositeRwLockIdx;
+    }
+
+    /**
+     * @param compositeRwLockIdx Composite RW lock index.
+     */
+    public void compositeRwLockIndex(int compositeRwLockIdx) {
+        this.compositeRwLockIdx = compositeRwLockIdx;
     }
 
     /**
@@ -130,11 +154,11 @@ public class IgniteThread extends Thread {
      *
      * @param num Thread number.
      * @param threadName Thread name.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return New thread name.
      */
-    protected static String createName(long num, String threadName, String gridName) {
-        return threadName + "-#" + num + '%' + gridName + '%';
+    protected static String createName(long num, String threadName, String igniteInstanceName) {
+        return threadName + "-#" + num + '%' + igniteInstanceName + '%';
     }
 
     /** {@inheritDoc} */

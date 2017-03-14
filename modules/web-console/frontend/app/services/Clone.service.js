@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/templates/clone.tpl.pug';
+
 // Service for clone objects.
 export default ['IgniteClone', ['$rootScope', '$q', '$modal', ($root, $q, $modal) => {
     const scope = $root.$new();
@@ -36,7 +38,7 @@ export default ['IgniteClone', ['$rootScope', '$q', '$modal', ($root, $q, $modal
         return tmpName;
     }
 
-    const cloneModal = $modal({templateUrl: '/templates/clone.html', scope, placement: 'center', show: false});
+    const cloneModal = $modal({templateUrl, scope, placement: 'center', show: false});
 
     scope.ok = function(newName) {
         if (!_validator || _validator(newName)) {

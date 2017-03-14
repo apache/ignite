@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -615,7 +614,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         if (needVer) {
             assert ver != null || !res;
 
-            onDone(new T2<>(res, ver));
+            onDone(new EntryGetResult(res, ver));
         }
         else
             onDone(res);
@@ -633,10 +632,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
-                    onDone(needVer ? new T2<>(res, ver) : res);
+                    onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }
                 else
-                    onDone(needVer ? new T2<>(val, ver) : val);
+                    onDone(needVer ? new EntryGetResult(val, ver) : val);
             }
             else
                 onDone(null);
