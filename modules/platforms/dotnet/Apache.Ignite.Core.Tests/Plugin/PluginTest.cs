@@ -173,7 +173,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new[]
                 {
                     "normalPlugin.Start", "errPlugin.Start",
-                    "errPlugin.OnIgniteStop", "normalPlugin.OnIgniteStop",
                     "errPlugin.Stop", "normalPlugin.Stop"
                 }, PluginLog);
         }

@@ -68,8 +68,8 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (customLoadBalancer)
             cfg.setLoadBalancingSpi(new CustomLoadBalancerSpi());
@@ -184,7 +184,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     @IgniteSpiMultipleInstancesSupport(true)
     private static class CustomLoadBalancerSpi extends IgniteSpiAdapter implements LoadBalancingSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

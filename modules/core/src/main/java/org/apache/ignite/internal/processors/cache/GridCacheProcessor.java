@@ -226,7 +226,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         jCacheProxies = new ConcurrentHashMap<>();
         stopSeq = new LinkedList<>();
 
-        marsh = MarshallerUtils.jdkMarshaller(ctx.gridName());
+        marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
     }
 
     /**
@@ -871,7 +871,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!ctx.clientNode() && !ctx.isDaemon())
             addRemovedItemsCleanupTask(Long.getLong(IGNITE_CACHE_REMOVED_ENTRIES_TTL, 10_000));
-
     }
 
     /**
@@ -3639,7 +3638,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         X.println(">>> ");
 
         for (GridCacheAdapter c : caches.values()) {
-            X.println(">>> Cache memory stats [grid=" + ctx.gridName() + ", cache=" + c.name() + ']');
+            X.println(">>> Cache memory stats [igniteInstanceName=" + ctx.igniteInstanceName() +
+                ", cache=" + c.name() + ']');
 
             c.context().printMemoryStats();
         }
@@ -3724,7 +3724,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Class<?> itf : o.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    U.registerCacheMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
+                    U.registerCacheMBean(srvr, ctx.igniteInstanceName(), cacheName, o.getClass().getName(), o,
                         (Class<Object>)itf);
                 }
                 catch (JMException e) {
@@ -3757,7 +3757,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Class<?> itf : o.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    srvr.unregisterMBean(U.makeCacheMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
+                    srvr.unregisterMBean(U.makeCacheMBeanName(ctx.igniteInstanceName(), cacheName, o.getClass().getName()));
                 }
                 catch (JMException e) {
                     U.error(log, "Failed to unregister MBean for component: " + o, e);

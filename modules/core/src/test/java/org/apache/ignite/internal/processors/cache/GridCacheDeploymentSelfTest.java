@@ -49,8 +49,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Name for grid without cache. */
-    protected static final String GRID_NAME = "grid-no-cache";
+    /** Name for Ignite instance without cache. */
+    protected static final String IGNITE_INSTANCE_NAME = "grid-no-cache";
 
     /** First test task name. */
     protected static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask1";
@@ -74,12 +74,12 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     protected DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
-        if (GRID_NAME.equals(gridName))
+        if (IGNITE_INSTANCE_NAME.equals(igniteInstanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -133,7 +133,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -159,7 +159,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -194,7 +194,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -211,7 +211,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
             for (int i = 0; i < 10; i++) {
                 if (g1.cache(null).localSize() == 0 && g2.cache(null).localSize() == 0)
@@ -252,7 +252,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            Ignite g0 = startGrid(GRID_NAME);
+            Ignite g0 = startGrid(IGNITE_INSTANCE_NAME);
 
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());
@@ -275,7 +275,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
-            stopGrid(GRID_NAME);
+            stopGrid(IGNITE_INSTANCE_NAME);
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 

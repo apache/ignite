@@ -45,8 +45,8 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
