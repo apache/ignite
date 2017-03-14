@@ -1085,6 +1085,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         // TODO: Make sure that pending init operation is passed to indexing.
+        // TODO: Make sure that pending operations are cleaned up ocrrectly after reconnect!
         ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
