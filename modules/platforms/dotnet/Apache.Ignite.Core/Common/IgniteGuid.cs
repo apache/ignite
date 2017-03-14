@@ -18,14 +18,15 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Ignite guid with additional local ID.
     /// </summary>
-    [Serializable]
-    public struct IgniteGuid : IEquatable<IgniteGuid>
+    public struct IgniteGuid : IEquatable<IgniteGuid>, IBinaryWriteAware
     {
         /** Global id. */
         private readonly Guid _globalId;
@@ -42,6 +43,20 @@ namespace Apache.Ignite.Core.Common
         {
             _globalId = globalId;
             _localId = localId;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteGuid"/> struct.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal IgniteGuid(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var stream = ((BinaryReader) reader).Stream;
+
+            _localId = stream.ReadLong();
+            _globalId = BinaryUtils.ReadGuid(stream);
         }
 
         /// <summary>
@@ -127,6 +142,21 @@ namespace Apache.Ignite.Core.Common
         public static bool operator !=(IgniteGuid a, IgniteGuid b)
         {
             return !(a == b);
+        }
+
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            var stream = ((BinaryWriter) writer).Stream;
+
+            stream.WriteLong(_localId);
+            BinaryUtils.WriteGuid(_globalId, stream);
         }
     }
 }
