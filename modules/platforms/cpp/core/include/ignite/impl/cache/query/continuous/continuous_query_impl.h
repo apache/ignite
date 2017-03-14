@@ -24,6 +24,7 @@
 #define _IGNITE_IMPL_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_IMPL
 
 #include <stdint.h>
+#include <memory>
 
 #include <ignite/reference.h>
 
