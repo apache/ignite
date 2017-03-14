@@ -72,49 +72,62 @@ public class QueryIndexStates implements Serializable {
      * Process accept message propagating index from proposed to accepted state.
      *
      * @param msg Message.
+     * @return {@code True} if accept succeeded. It may fail in case of concurrent cache stop/start.
      */
-    public void accept(IndexAcceptDiscoveryMessage msg) {
+    public boolean accept(IndexAcceptDiscoveryMessage msg) {
         AbstractIndexOperation op = msg.operation();
 
         String idxName = op.indexName();
 
         QueryIndexActiveOperation curOp = activeOps.get(idxName);
 
-        assert curOp != null && !curOp.accepted(); // Operation is found and is in proposed ("false") state.
-        assert F.eq(curOp.operation().operationId(), op.operationId()); // Operation ID matches.
+        if (curOp != null) {
+            if (F.eq(curOp.operation().operationId(), op.operationId())) {
+                assert !curOp.accepted();
 
-        curOp.accept();
+                curOp.accept();
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Process finish message.
      *
      * @param msg Message.
+     * @return {@code True} if accept succeeded. It may fail in case of concurrent cache stop/start.
      */
-    @SuppressWarnings("ConstantConditions")
-    public void finish(IndexFinishDiscoveryMessage msg) {
+    public boolean finish(IndexFinishDiscoveryMessage msg) {
         AbstractIndexOperation op = msg.operation();
 
         String idxName = op.indexName();
 
         QueryIndexActiveOperation curOp = activeOps.remove(idxName);
 
-        assert curOp != null; // Operation is found.
-        assert F.eq(curOp.operation().operationId(), op.operationId()); // Operation ID matches.
+        if (curOp != null) {
+            if (F.eq(curOp.operation().operationId(), op.operationId())) {
+                if (!msg.hasError()) {
+                    QueryIndexState state;
 
-        if (!msg.hasError()) {
-            QueryIndexState state;
+                    if (op instanceof CreateIndexOperation)
+                        state = new QueryIndexState(idxName, ((CreateIndexOperation)op).index());
+                    else {
+                        assert op instanceof DropIndexOperation;
 
-            if (op instanceof CreateIndexOperation)
-                state = new QueryIndexState(idxName, ((CreateIndexOperation)op).index());
-            else {
-                assert op instanceof DropIndexOperation;
+                        state = new QueryIndexState(idxName, null);
+                    }
 
-                state = new QueryIndexState(idxName, null);
+                    readyOps.put(idxName, state);
+                }
+
+                return true;
             }
-
-            readyOps.put(idxName, state);
         }
+
+        return false;
     }
 
     /**

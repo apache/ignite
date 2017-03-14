@@ -1173,6 +1173,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 mgr.stop(cancel);
         }
 
+        // TODO: Make sure to notify query client futures.
         ctx.kernalContext().query().onCacheStop(ctx);
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
@@ -2702,7 +2703,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 else if (msg instanceof IndexAcceptDiscoveryMessage)
                     onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
                 else if (msg instanceof IndexFinishDiscoveryMessage)
-                    onIndexfinishMessage((IndexFinishDiscoveryMessage)msg);
+                    onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
                 else
                     U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
             }
@@ -2750,7 +2751,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (idxStates == null)
             idxStates = new QueryIndexStates();
 
-        if (idxStates.propose(ctx.localNodeId(), msg))
+        if (idxStates.propose(locNodeId, msg))
             desc.indexStates(idxStates);
     }
 
@@ -2760,11 +2761,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
-        // TODO: Remove init operation from descriptor!
+        AbstractIndexOperation op = msg.operation();
 
-        // TODO: Handle concurrent cache stop!
+        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
-        // TODO: Enlist cache operation to descriptor!
+        if (desc == null)
+            return;
+
+        QueryIndexStates idxStates = desc.indexStates();
+
+        if (idxStates == null || !idxStates.accept(msg))
+            return;
 
         // TODO: Initiate exchange-like routine!
     }
@@ -2774,7 +2781,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexfinishMessage(IndexFinishDiscoveryMessage msg) {
+    private void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
         // TODO: Clear dynamic descriptors!
 
         // TODO: Delegate to indexing to handle result and complete client futures!
