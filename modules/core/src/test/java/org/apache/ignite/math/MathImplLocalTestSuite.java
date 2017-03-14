@@ -48,6 +48,7 @@ import org.junit.runners.Suite;
     AbstractVectorTest.class,
     VectorImplementationsTest.class,
     VectorViewTest.class,
+    MatrixVectorView.class,
     // Vector utils tests.
     VectorIterableTest.class,
     VectorAttributesTest.class,
