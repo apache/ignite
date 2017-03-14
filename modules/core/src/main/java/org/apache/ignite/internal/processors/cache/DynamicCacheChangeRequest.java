@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -70,6 +71,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** */
     private UUID rcvdFrom;
+
+    /** Index operation in init phase. */
+    private AbstractIndexOperation idxInitOp;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -282,6 +286,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public UUID receivedFrom() {
         return rcvdFrom;
+    }
+
+    /**
+     * @return Pending index init operation.
+     */
+    public AbstractIndexOperation indexInitOperation() {
+        return idxInitOp;
+    }
+
+    /**
+     * @param idxInitOp Pending index init operation.
+     */
+    public void indexInitOperation(AbstractIndexOperation idxInitOp) {
+        this.idxInitOp = idxInitOp;
     }
 
     /** {@inheritDoc} */

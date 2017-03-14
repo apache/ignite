@@ -1981,12 +1981,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
             req.startCacheConfiguration(desc.cacheConfiguration());
-
             req.cacheType(desc.cacheType());
-
             req.deploymentId(desc.deploymentId());
-
             req.receivedFrom(desc.receivedFrom());
+            req.indexInitOperation(desc.indexInitOperation());
 
             reqs.add(req);
         }
@@ -2021,12 +2019,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cache.name(), null);
 
             req.startCacheConfiguration(desc.cacheConfiguration());
-
             req.cacheType(desc.cacheType());
-
             req.deploymentId(desc.deploymentId());
-
             req.receivedFrom(desc.receivedFrom());
+            req.indexInitOperation(desc.indexInitOperation());
 
             reqs.add(req);
 
@@ -2141,6 +2137,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.cacheType(),
                                 false,
                                 req.deploymentId());
+
+                        desc.indexInitOperation(req.indexInitOperation());
 
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
@@ -2849,6 +2847,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
+
+                        startDesc.indexInitOperation(req.indexInitOperation());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
@@ -3911,8 +3911,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         req.clientStartOnly(true);
 
                     req.deploymentId(desc.deploymentId());
-
                     req.startCacheConfiguration(descCfg);
+                    req.indexInitOperation(desc.indexInitOperation());
                 }
             }
             else {
