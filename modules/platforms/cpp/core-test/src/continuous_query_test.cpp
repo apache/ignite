@@ -661,7 +661,7 @@ BOOST_AUTO_TEST_CASE(TestPublicPrivateConstantsConsistence)
         static_cast<int>(QueryType::DEFAULT_BUFFER_SIZE));
 }
 
-BOOST_AUTO_TEST_CASE(TestFilter)
+BOOST_AUTO_TEST_CASE(TestFilterSingleNode)
 {
     node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
 
@@ -689,6 +689,53 @@ BOOST_AUTO_TEST_CASE(TestFilter)
     cache.Put(150, TestEntry(1500));
     cache.Put(150, TestEntry(1502));
     cache.Remove(150);
+
+    lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
+    lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));
+
+    lsnr.CheckNextEvent(142, boost::none, TestEntry(1420));
+    lsnr.CheckNextEvent(142, TestEntry(1420), TestEntry(1421));
+    lsnr.CheckNextEvent(142, TestEntry(1421), boost::none);
+
+    lsnr.CheckNextEvent(149, boost::none, TestEntry(1490));
+}
+
+BOOST_AUTO_TEST_CASE(TestFilterMultipleNodes)
+{
+    Ignite node2 = ignite_test::StartNode("cache-query-continuous.xml", "node-02");
+    Ignite node3 = ignite_test::StartNode("cache-query-continuous.xml", "node-03");
+
+    node.GetBinding().RegisterCacheEntryEventFilter< RangeFilter<int, TestEntry> >();
+
+    Listener<int, TestEntry> lsnr;
+    RangeFilter<int, TestEntry> filter(100, 150);
+
+    ContinuousQuery<int, TestEntry> qry(MakeReference(lsnr), MakeReference(filter));
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry);
+
+    Cache<int, TestEntry> cache2 = node2.GetCache<int, TestEntry>("transactional_no_backup");
+
+    cache2.Put(1, TestEntry(10));
+    cache2.Put(1, TestEntry(11));
+
+    cache2.Put(2, TestEntry(20));
+    cache2.Remove(2);
+
+    cache2.Put(100, TestEntry(1000));
+    cache2.Put(101, TestEntry(1010));
+
+    cache2.Put(142, TestEntry(1420));
+    cache2.Put(142, TestEntry(1421));
+    cache2.Remove(142);
+
+    cache2.Put(149, TestEntry(1490));
+    cache2.Put(150, TestEntry(1500));
+    cache2.Put(150, TestEntry(1502));
+    cache2.Remove(150);
+
+    for (int i = 200; i < 250; ++i)
+        cache2.Put(i, TestEntry(i * 10));
 
     lsnr.CheckNextEvent(100, boost::none, TestEntry(1000));
     lsnr.CheckNextEvent(101, boost::none, TestEntry(1010));

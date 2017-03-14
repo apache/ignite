@@ -66,7 +66,6 @@ namespace ignite
             {
                 case ON_STOP:
                 {
-                    std::cout << "ON_STOP" << std::endl;
                     delete env;
 
                     break;
@@ -74,7 +73,6 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_LISTENER_APPLY:
                 {
-                    std::cout << "CONTINUOUS_QUERY_LISTENER_APPLY" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     env->Get()->OnContinuousQueryListenerApply(mem);
@@ -84,7 +82,6 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_FILTER_CREATE:
                 {
-                    std::cout << "CONTINUOUS_QUERY_FILTER_CREATE" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     res = env->Get()->OnContinuousQueryFilterCreate(mem);
@@ -94,26 +91,21 @@ namespace ignite
 
                 case CONTINUOUS_QUERY_FILTER_APPLY:
                 {
-                    std::cout << "CONTINUOUS_QUERY_FILTER_APPLY" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     res = env->Get()->OnContinuousQueryFilterApply(mem);
-
-                    std::cout << res << std::endl;
 
                     break;
                 }
 
                 case CONTINUOUS_QUERY_FILTER_RELEASE:
                 {
-                    std::cout << "CONTINUOUS_QUERY_FILTER_RELEASE" << std::endl;
                     // No-op.
                     break;
                 }
 
                 case CACHE_INVOKE:
                 {
-                    std::cout << "CACHE_INVOKE" << std::endl;
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
 
                     env->Get()->CacheInvokeCallback(mem);
@@ -123,7 +115,6 @@ namespace ignite
 
                 default:
                 {
-                    std::cout << type << std::endl;
                     break;
                 }
             }
@@ -389,8 +380,6 @@ namespace ignite
             BinaryRawReader rawReader(&reader);
 
             int64_t handle = rawReader.ReadInt64();
-
-            std::cout << handle << std::endl;
 
             SharedPointer<ContinuousQueryImplBase> qry =
                 StaticPointerCast<ContinuousQueryImplBase>(registry.Get(handle));

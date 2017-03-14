@@ -27,6 +27,7 @@
 
 #include <ignite/cache/event/cache_entry_event.h>
 #include <ignite/impl/cache/event/cache_entry_event_filter_base.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 
 namespace ignite
 {
@@ -85,8 +86,6 @@ namespace ignite
                  */
                 virtual bool ReadAndProcessEvent(binary::BinaryRawReader& reader)
                 {
-                    std::cout << "ReadAndProcessEvent" << std::endl;
-
                     CacheEntryEvent<K, V> event;
 
                     event.Read(reader);
@@ -96,15 +95,14 @@ namespace ignite
 
                 static int64_t InternalFilterCreate(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl&, impl::IgniteEnvironment& env)
                 {
+                    using namespace common::concurrent;
+                    using namespace impl::cache::query::continuous;
+
                     F filter = reader.ReadObject<F>();
 
-                    return 0;
-/*
-                    common::concurrent::SharedPointer<CacheEntryEventFilterBase> filter(new F());
+                    SharedPointer<ContinuousQueryImplBase> qry(new RemoteFilterHolder(MakeReferenceFromCopy(filter)));
 
-                    std::cout << "InternalFilterCreate " << filter.Get() << std::endl;
-
-                    return env.GetHandleRegistry().Allocate(filter);*/
+                    return env.GetHandleRegistry().Allocate(qry);
                 }
             };
         }

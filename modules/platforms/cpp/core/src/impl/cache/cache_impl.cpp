@@ -393,8 +393,6 @@ namespace ignite
 
                 int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
 
-                std::cout << "handle  " << handle << std::endl;
-
                 rawWriter.WriteInt64(handle);
                 rawWriter.WriteBool(qry0.GetLocal());
 

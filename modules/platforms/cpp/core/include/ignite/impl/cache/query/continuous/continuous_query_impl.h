@@ -28,7 +28,6 @@
 #include <ignite/reference.h>
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
-#include <ignite/cache/event/cache_entry_event_filter.h>
 #include <ignite/binary/binary_raw_reader.h>
 #include <ignite/impl/cache/event/cache_entry_event_filter_holder.h>
 
@@ -361,6 +360,30 @@ namespace ignite
                     private:
                         /** Cache entry event listener. */
                         Reference<ignite::cache::event::CacheEntryEventListener<K, V> > lsnr;
+                    };
+
+                    /**
+                     * Used to store filter on remote nodes where no
+                     * ContinuousQuery instance were really created.
+                     */
+                    class RemoteFilterHolder : public ContinuousQueryImplBase
+                    {
+                    public:
+                        /**
+                         * Constructor.
+                         */
+                        template<typename F>
+                        RemoteFilterHolder(const Reference<F>& filter):
+                            ContinuousQueryImplBase(false, new event::CacheEntryEventFilterHolder<F>(filter))
+                        {
+                            // No-op.
+                        }
+
+                        virtual void ReadAndProcessEvents(ignite::binary::BinaryRawReader&)
+                        {
+                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "No listener is registered for the ContinuousQuery instance");
+                        }
                     };
                 }
             }
