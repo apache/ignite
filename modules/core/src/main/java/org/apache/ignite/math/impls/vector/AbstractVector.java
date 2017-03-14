@@ -48,6 +48,9 @@ public abstract class AbstractVector implements Vector {
     /** Cached value for length squared. */
     private double lenSq = 0.0;
 
+    // Maximum and minimum cached elements.
+    private Element maxElm, minElm = null;
+
     /** Readonly flag (false by default). */
     private boolean readOnly = false;
 
@@ -107,7 +110,9 @@ public abstract class AbstractVector implements Vector {
 
         sto.set(i, v);
 
+        // Reset cached values.
         lenSq = 0.0;
+        maxElm = minElm = null;
     }
 
     /**
@@ -228,26 +233,34 @@ public abstract class AbstractVector implements Vector {
 
     /** {@inheritDoc} */
     @Override public Element minValue() {
-        int minIdx = 0;
-        int len = size();
+        if (minElm == null) {
+            int minIdx = 0;
+            int len = size();
 
-        for (int i = 0; i < len; i++)
-            if (storageGet(i) < storageGet(minIdx))
-                minIdx = i;
+            for (int i = 0; i < len; i++)
+                if (storageGet(i) < storageGet(minIdx))
+                    minIdx = i;
 
-        return makeElement(minIdx);
+            minElm = makeElement(minIdx);
+        }
+
+        return minElm;
     }
 
     /** {@inheritDoc} */
     @Override public Element maxValue() {
-        int maxIdx = 0;
-        int len = size();
+        if (maxElm == null) {
+            int maxIdx = 0;
+            int len = size();
 
-        for (int i = 0; i < len; i++)
-            if (storageGet(i) > storageGet(maxIdx))
-                maxIdx = i;
+            for (int i = 0; i < len; i++)
+                if (storageGet(i) > storageGet(maxIdx))
+                    maxIdx = i;
 
-        return makeElement(maxIdx);
+            maxElm = makeElement(maxIdx);
+        }
+
+        return maxElm;
     }
 
     /** {@inheritDoc} */

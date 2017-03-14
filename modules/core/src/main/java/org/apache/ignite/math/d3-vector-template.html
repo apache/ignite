@@ -28,30 +28,26 @@
         font-family: monospace;
     }
 
-    .blue-swatch, .red-swatch {
+    .swatch {
         display: inline-block;
         width: 25px;
         height: 25px;
         margin-left: 5px;
         vertical-align: bottom;
-        background-color: blue;
-    }
-    .red-swatch {
-        background-color: red;
     }
 </style>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.5.0/d3.min.js"></script>
 <script>
-    /*@DATA@*/var data = [2.256, 0.123, 8.125, 4.199, 1.025 ];
+    /*@DATA@*/var data = [{d: 2.256, r: 128, g: 128, b: 128}, {d: 0.123, r: 228, g: 228, b: 228}];
+    /*@MAX@*/var max = {d: 2.256, r: 128, g: 128, b: 128};
+    /*@MIN@*/var min = {d: 0.123, r: 228, g: 228, b: 228};
     /*@NAME@*/var name = "Vector";
 
     var W = 1000,
         H = 1000;
 
-    var min = d3.min(data),
-        max = d3.max(data),
-        range = max - min;
+    var range = max.d - min.d;
 
     var rw = Math.min(Math.round(W / data.length), 5);
     var rh = 20;
@@ -65,16 +61,18 @@
     d3.selectAll("body")
         .append("p")
         .attr("class", "name")
-        .text("Max: " + max)
+        .text("Max: " + max.d)
         .append("span")
-        .attr("class", "red-swatch");
+        .attr("class", "swatch")
+        .attr("style", "background-color: rgb(" + max.r + ", " + max.g + ", " + max.b + ")");
 
     d3.selectAll("body")
         .append("p")
         .attr("class", "name")
-        .text("Min: " + min)
+        .text("Min: " + min.d)
         .append("span")
-        .attr("class", "blue-swatch");
+        .attr("class", "swatch")
+        .attr("style", "background-color: rgb(" + min.r + ", " + min.g + ", " + min.b + ")");
 
     var svg = d3.select("body").append("svg")
         .attr("width", W)
@@ -87,13 +85,7 @@
             .attr("x", function(d, i) { return i * (rw + rd)})
             .attr("y", 10)
             .attr("fill", function(d) {
-                var p = (d - min) / range;
-
-                var r = Math.round(255 * p);
-                var g = 0;
-                var b = Math.round(255 * (1 - p));
-
-                return "rgb(" + r + ", " + g + ", " + b + ")";
+                return "rgb(" + d.r + ", " + d.g + ", " + d.b + ")";
             })
             .attr("width", rw)
             .attr("height", rh);

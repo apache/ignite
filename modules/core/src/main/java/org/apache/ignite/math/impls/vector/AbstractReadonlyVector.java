@@ -51,7 +51,7 @@ public abstract class AbstractReadonlyVector extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector copy() {
-        return this; // IMPL NOTE this exploits read-only feature of this type vector
+        return this; // This exploits read-only feature of this type vector.
     }
 
     /** {@inheritDoc} */

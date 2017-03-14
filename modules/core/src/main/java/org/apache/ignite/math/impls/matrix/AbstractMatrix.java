@@ -39,6 +39,9 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
     private static final int MAX_SAMPLES = 500;
     private static final int MIN_SAMPLES = 15;
 
+    // Cached maximum and minimum elements.
+    private Element minElm, maxElm = null;
+
     // Matrix storage implementation.
     private MatrixStorage sto;
 
@@ -81,6 +84,9 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
      */
     protected void storageSet(int row, int col, double v) {
         sto.set(row, col, v);
+
+        // Reset cached values.
+        minElm = maxElm = null;
     }
 
     /**
@@ -91,6 +97,93 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
      */
     protected double storageGet(int row, int col) {
         return sto.get(row, col);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Element maxValue() {
+        if (maxElm == null) {
+            double max = Double.MIN_VALUE;
+            int row = 0, col = 0;
+
+            int rows = sto.rowSize();
+            int cols = sto.columnSize();
+
+            for (int x = 0; x < rows; x++)
+                for (int y = 0; y < cols; y++) {
+                    double d = storageGet(x, y);
+
+                    if (d > max) {
+                        max = d;
+                        row = x;
+                        col = y;
+                    }
+                }
+
+            maxElm = mkElement(row, col);
+        }
+
+        return maxElm;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Element minValue() {
+        if (minElm == null) {
+            double min = Double.MAX_VALUE;
+            int row = 0, col = 0;
+
+            int rows = sto.rowSize();
+            int cols = sto.columnSize();
+
+            for (int x = 0; x < rows; x++)
+                for (int y = 0; y < cols; y++) {
+                    double d = storageGet(x, y);
+
+                    if (d < min) {
+                        min = d;
+                        row = x;
+                        col = y;
+                    }
+                }
+
+            minElm = mkElement(row, col);
+        }
+
+        return minElm;
+    }
+
+    /**
+     *
+     * @param row
+     * @param col
+     * @return
+     */
+    private Element mkElement(int row, int col) {
+        return new Element() {
+            @Override
+            public double get() {
+                return storageGet(row, col);
+            }
+
+            @Override
+            public int row() {
+                return row;
+            }
+
+            @Override
+            public int column() {
+                return col;
+            }
+
+            @Override
+            public void set(double d) {
+                storageSet(row, col, d);
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public Element getElement(int row, int col) {
+        return mkElement(row, col);
     }
 
     /** {@inheritDoc} */

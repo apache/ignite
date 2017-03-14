@@ -52,5 +52,4 @@ public interface VectorStorage extends Externalizable, StorageOpsMetrics, Destro
     public default double[] data() {
         return null;
     }
-
 }

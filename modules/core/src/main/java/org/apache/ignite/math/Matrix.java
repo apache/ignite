@@ -39,6 +39,62 @@ import java.io.*;
  */
 public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetrics, Destroyable {
     /**
+     * Holder for matrix's element.
+     */
+    interface Element {
+        /**
+         * Gets element's value.
+         *
+         * @return The value of this matrix element.
+         */
+        double get();
+
+        /**
+         * Gets element's row index.
+         *
+         * @return The row index of this element.
+         */
+        int row();
+
+        /**
+         * Gets element's column index.
+         *
+         * @return The column index of this element.
+         */
+        int column();
+
+        /**
+         * Sets element's value.
+         *
+         * @param value Value to set.
+         */
+        void set(double value);
+    }
+
+    /**
+     * Gets the maximum element in this matrix.
+     *
+     * @return Maximum element in this matrix.
+     */
+    Element maxValue();
+
+    /**
+     * Gets the minimum element in this matrix.
+     *
+     * @return Minimum element in this matrix.
+     */
+    Element minValue();
+
+    /**
+     * Gets the matrix's element at the given coordinates.
+     *
+     * @param row Row index.
+     * @param col Column index.
+     * @return Element at the given coordinates.
+     */
+    Element getElement(int row, int col);
+
+    /**
      * Swaps two rows in this matrix.
      *
      * @param row1 Row #1.

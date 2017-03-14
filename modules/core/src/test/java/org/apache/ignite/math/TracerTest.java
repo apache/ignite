@@ -19,6 +19,7 @@ package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.vector.*;
 import org.junit.*;
+import java.awt.*;
 import java.io.*;
 
 /**
@@ -57,7 +58,23 @@ public class TracerTest {
     public void testHtmlVectorTracer() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
+        // Default color mapping.
         Tracer.showHtml(vec1);
+
+        // Custom color mapping.
+        Tracer.showHtml(vec1, new Tracer.ColorMapper() {
+            @Override
+            public Color apply(Double d) {
+                if (d <= 0.33)
+                    return Color.RED;
+                else if (d <= 0.66)
+                    return Color.GREEN;
+                else
+                    return Color.BLUE;
+            }
+        });
+
+        // Default color mapping with sorted vector.
         Tracer.showHtml(vec1.sort());
     }
 }

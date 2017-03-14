@@ -36,11 +36,11 @@ public class ArrayVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + Arrays.hashCode(data);
+        res = res * 37 + Arrays.hashCode(data);
 
-        return result;
+        return res;
     }
 
     /**

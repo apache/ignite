@@ -22,128 +22,44 @@ import org.apache.ignite.lang.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+import java.util.function.*;
 import java.util.stream.*;
 
 /**
  * This object allows to display matrices and vectors using GUI.
  */
 public class Tracer {
-    public interface MatrixColorPredicate {
-        /**
-         *
-         * @param x Matrix row index.
-         * @param y Matrix column index.
-         * @param v Matrix value at {@code (x, y)}.
-         */
-        boolean apply(int x, int y, double v);
+    /**
+     * Double to color mapper.
+     */
+    interface ColorMapper extends Function<Double, Color> {}
+
+    // Continues red-to-blue color mapping.
+    static private ColorMapper defaultColorMapper(double min, double max) {
+        double range = max - min;
+
+        return new ColorMapper() {
+            @Override
+            public Color apply(Double d) {
+                int r = (int)Math.round(255 * d);
+                int g = 0;
+                int b = (int)Math.round(255 * (1 - d));
+
+                return new Color(r, g, b);
+            }
+        };
     }
 
-    /**
-     * Color selector is a combination of a predicate and the color to use when
-     * that predicate returns true for a given matrix element.
-     */
-    public class MatrixColorSelector {
-        private MatrixColorPredicate pred;
-        private Color clr;
-
-        /**
-         *
-         * @param pred Color predicate.
-         * @param clr Color to use.
-         */
-        public MatrixColorSelector(MatrixColorPredicate pred, Color clr) {
-            this.pred = pred;
-            this.clr = clr;
-        }
-
-        /**
-         *
-         * @param clr Color to use.
-         */
-        public MatrixColorSelector(Color clr) {
-            this.pred = (int x, int y, double v) -> true;
-            this.clr = clr;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public MatrixColorPredicate getPredicate() {
-            return pred;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public Color getColor() {
-            return clr;
-        }
+    // Default vector color mapper implementation that map given double value
+    // to continues red-blue (R_B) specter.
+    static private ColorMapper mkVectorColorMapper(Vector vec) {
+        return defaultColorMapper(vec.minValue().get(), vec.maxValue().get());
     }
 
-    /**
-     *
-     */
-    public class MatrixTracer {
-        private Matrix mtx;
-        private MatrixColorSelector[] selectors;
-
-        /**
-         * Creates matrix tracer with given matrix and set of color selectors.
-         *
-         * @param mtx Matrix.
-         * @param selectors Set of color selector (one or more).
-         */
-        public MatrixTracer(Matrix mtx, MatrixColorSelector... selectors) {
-            assert selectors.length > 0;
-            
-            this.mtx = mtx;
-            this.selectors = selectors;
-        }
-
-        /**
-         * Creates matrix tracer with given matrix and single color for all values.
-         *
-         * @param mtx Matrix.
-         * @param clr Color to use for all matrix values.
-         */
-        public MatrixTracer(Matrix mtx, Color clr) {
-            assert selectors.length > 0;
-
-            this.mtx = mtx;
-            this.selectors = new MatrixColorSelector[] {
-                new MatrixColorSelector((int x, int y, double v) -> true, clr)
-            };
-        }
-
-        /**
-         *
-         * @return
-         */
-        public Matrix getMatrix() {
-            return mtx;
-        }
-
-        /**
-         * 
-         * @return
-         */
-        public MatrixColorSelector[] getSelectors() {
-            return selectors;
-        }
-    }
-
-    /**
-     * Shows one or more given matrices of the same cardinality.
-     *
-     * @param bgCol Background color.
-     * @param tracers Matrix tracers (one or more).
-     */
-    static void showMatrices(Color bgCol, MatrixTracer... tracers) {
-        assert tracers.length > 0;
-
-        // TODO.
+    // Default matrix color mapper implementation that map given double value
+    // to continues red-blue (R_B) specter.
+    static private ColorMapper mkMatrixColorMapper(Matrix mtx) {
+        return defaultColorMapper(mtx.minValue().get(), mtx.maxValue().get());
     }
 
     /**
@@ -183,12 +99,45 @@ public class Tracer {
     }
 
     /**
+     * Saves given vector as CSV file.
+     *
+     * @param vec Vector to save.
+     * @param fmt Format to use.
+     * @param filePath Path of the file to save to.
+     */
+    static void saveAsCsv(Vector vec, String fmt, String filePath) {
+        // TODO.
+    }
+
+    /**
+     * Saves given matrix as CSV file.
+     *
+     * @param mtx Matrix to save.
+     * @param fmt Format to use.
+     * @param filePath Path of the file to save to.
+     */
+    static void saveAsCsv(Matrix mtx, String fmt, String filePath) {
+        // TODO.
+    }
+
+    /**
      * Shows given matrix in the browser with D3-based visualization.
      *
      * @param mtx Matrix to show.
      * @throws IOException Thrown in case of any errors.
      */
     static void showHtml(Matrix mtx) throws IOException {
+        showHtml(mtx, mkMatrixColorMapper(mtx));
+    }
+
+    /**
+     * Shows given matrix in the browser with D3-based visualization.
+     *
+     * @param mtx Matrix to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @throws IOException Thrown in case of any errors.
+     */
+    static void showHtml(Matrix mtx, ColorMapper cm) throws IOException {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-matrix-template.html");
 
@@ -204,14 +153,45 @@ public class Tracer {
      * @throws IOException Thrown in case of any errors.
      */
     static void showHtml(Vector vec) throws IOException {
+        showHtml(vec, mkVectorColorMapper(vec));
+    }
+
+    /**
+     *
+     * @param d
+     * @param clr
+     * @return
+     */
+    static private String dataColorJson(double d, Color clr) {
+        return "{" +
+            "d: " + String.format("%4f", d) +
+            ", r: " + clr.getRed() +
+            ", g: " + clr.getGreen() +
+            ", b: " + clr.getBlue() +
+            "}";
+    }
+
+    /**
+     * Shows given vector in the browser with D3-based visualization.
+     *
+     * @param vec Vector to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @throws IOException Thrown in case of any errors.
+     */
+    static void showHtml(Vector vec, ColorMapper cm) throws IOException {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-vector-template.html");
 
         String cls = vec.getClass().getSimpleName();
 
+        double min = vec.minValue().get();
+        double max = vec.maxValue().get();
+
         openHtmlFile(tmpl.
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
-            replaceAll("/\\*@DATA@\\*/.*\n", "var data = [" + mkString(vec, "%4f") + "];\n")
+            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min))+ ";\n").
+            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max))+ ";\n").
+            replaceAll("/\\*@DATA@\\*/.*\n", "var data = [" + mkJsonString(vec, cm) + "];\n")
         );
     }
 
@@ -260,7 +240,7 @@ public class Tracer {
     static String mkString(Vector vec, String fmt) {
         boolean first = true;
 
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
 
         for (Vector.Element x : vec.all()) {
             String s = String.format(fmt, x.get());
@@ -273,6 +253,33 @@ public class Tracer {
                 buf.append(s);
                 first = false;
             }
+        }
+
+        return buf.toString();
+    }
+
+    /**
+     * Gets JSON string presentation of this vector.
+     *
+     * @param vec Vector to string-ify.
+     * @param cm Color mapper to user.
+     * @return
+     */
+    static String mkJsonString(Vector vec, ColorMapper cm) {
+        boolean first = true;
+
+        StringBuilder buf = new StringBuilder();
+
+        for (Vector.Element x : vec.all()) {
+            double d = x.get();
+
+            String s = dataColorJson(d, cm.apply(d));
+
+            if (!first)
+                buf.append(", ");
+
+            buf.append(s);
+            first = false;
         }
 
         return buf.toString();
