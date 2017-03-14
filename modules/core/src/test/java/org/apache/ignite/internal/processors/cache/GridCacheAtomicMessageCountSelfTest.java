@@ -62,8 +62,8 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     private CacheAtomicWriteOrderMode writeOrderMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -94,22 +94,8 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedClock() throws Exception {
-        checkMessages(false, CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPartitionedPrimary() throws Exception {
         checkMessages(false, PRIMARY);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClientClock() throws Exception {
-        checkMessages(true, CLOCK);
     }
 
     /**
@@ -206,14 +192,14 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 
             if (cntr != null)
                 cntr.incrementAndGet();
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**
@@ -221,7 +207,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
          *
          * @param cls Class to count.
          */
-        public void registerMessage(Class<?> cls) {
+        void registerMessage(Class<?> cls) {
             AtomicInteger cntr = cntMap.get(cls);
 
             if (cntr == null)
@@ -232,7 +218,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
          * @param cls Message type to get count.
          * @return Number of messages of given class.
          */
-        public int messageCount(Class<?> cls) {
+        int messageCount(Class<?> cls) {
             AtomicInteger cntr = cntMap.get(cls);
 
             return cntr == null ? 0 : cntr.get();

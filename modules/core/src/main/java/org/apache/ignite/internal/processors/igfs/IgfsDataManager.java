@@ -130,6 +130,9 @@ public class IgfsDataManager extends IgfsManager {
     /** Async file delete worker. */
     private AsyncDeleteWorker delWorker;
 
+    /** Async file delete worker. */
+    private String dataCacheName;
+
     /** On-going remote reads futures. */
     private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
         new ConcurrentHashMap8<>();
@@ -178,21 +181,23 @@ public class IgfsDataManager extends IgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
+        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().igniteInstanceName(),
             "igfs-" + igfsName + "-delete-worker", log);
+
+        dataCacheName = igfsCtx.configuration().getDataCacheConfiguration().getName();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
+        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(dataCacheName);
 
         assert dataCachePrj != null;
 
         dataCache = (IgniteInternalCache)dataCachePrj;
 
         AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
-            .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
+            .internalCache(dataCacheName).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
             ((IgfsGroupDataBlocksKeyMapper)mapper).getGroupSize() : 1;
@@ -201,7 +206,7 @@ public class IgfsDataManager extends IgfsManager {
 
         assert grpBlockSize != 0;
 
-        igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
+        igfsCtx.kernalContext().cache().internalCache(dataCacheName).preloader()
             .startFuture().listen(new CI1<IgniteInternalFuture<Object>>() {
             @Override public void apply(IgniteInternalFuture<Object> f) {
                 dataCacheStartLatch.countDown();
@@ -1487,12 +1492,12 @@ public class IgfsDataManager extends IgfsManager {
             new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Log.
          */
-        protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected AsyncDeleteWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
 
             stopInfo = IgfsUtils.createDirectory(IgniteUuid.randomUuid());
         }
