@@ -311,8 +311,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.isDaemon())
                 return;
 
-            if (!ctx.clientNode())
-                ctx.event().removeDiscoveryEventListener(topLsnr);
+        busyLock.block();
+
+        U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
+        if (!ctx.clientNode())
+            ctx.event().removeDiscoveryEventListener(topLsnr);
 
             Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
@@ -347,8 +351,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                         ctx.name());
                 }
             }
-
-            U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
             Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -1417,7 +1419,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 return;
 
             try {
-                depExe.execute(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
                     }
@@ -1614,7 +1616,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 else
                     topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
 
-                depExe.execute(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.
                         discoCache.updateAlives(ctx.discovery());
@@ -1819,11 +1821,14 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /**
      *
      */
-    private abstract class BusyRunnable implements Runnable {
+    private abstract class DepRunnable implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!busyLock.enterBusy())
                 return;
+
+            // Won't block ServiceProcessor stopping process.
+            busyLock.leaveBusy();
 
             svcName.set(null);
 
@@ -1837,8 +1842,6 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                     throw t;
             }
             finally {
-                busyLock.leaveBusy();
-
                 svcName.set(null);
             }
         }
