@@ -17,20 +17,23 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Indicates whether node could be rejoined to cluster.
+ * Indicates that node should try reconnect to cluster.
  */
-public class IgniteCouldReconnectCheckedException extends IgniteCheckedException {
+public class IgniteNeedReconnectException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param msg Message.
+     * @param locNode Local node.
      * @param cause Cause.
      */
-    public IgniteCouldReconnectCheckedException(String msg, @Nullable Throwable cause) {
-        super(msg, cause);
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
     }
 }

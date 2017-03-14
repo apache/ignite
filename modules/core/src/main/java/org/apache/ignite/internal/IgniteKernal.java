@@ -54,7 +54,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCouldReconnectCheckedException;
+import org.apache.ignite.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
@@ -958,13 +958,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     try {
                         comp.onKernalStart();
                     }
-                    catch (IgniteCouldReconnectCheckedException e) {
+                    catch (IgniteNeedReconnectException e) {
                         recon = true;
                     }
                 }
             }
 
             if (recon) {
+                // TODO IGNITE-4473: just wait for global reconnect flag.
                 Reconnector reconnector = new Reconnector(ctx.gridName(), log);
 
                 IgniteThread thread = new IgniteThread(reconnector);
@@ -3434,6 +3435,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     reconnectFut.add((IgniteInternalFuture)fut);
             }
 
+            // TODO check flag 'setClientReconnectDisabled'.
+            // TODO: should not complete public API reconnect future if force rejoin.
+
             reconnectFut.add((IgniteInternalFuture)ctx.cache().context().exchange().reconnectExchangeFuture());
 
             reconnectFut.markInitialized();
@@ -3446,7 +3450,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ctx.gateway().onReconnected();
                     }
                     catch (IgniteCheckedException e) {
-                        if (!X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedCheckedException.class)) {
+                        if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node", e);
 
                             close();
@@ -3456,6 +3460,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             ctx.gateway().onReconnectFailed(e);
 
+                            // TODO IGNITE-4473: just call rejoin?
                             if (reconnector == null) {
                                 Reconnector rec = new Reconnector(ctx.gridName(), log);
 
@@ -3656,6 +3661,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * TODO IGNITE-4473 thread not needed.
+     *
      * Rejoins node to the cluster.
      */
     private class Reconnector extends GridWorker {
@@ -3685,7 +3692,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     break;
                 }
                 catch (Throwable e) {
-                    if (X.hasCause(e, IgniteCouldReconnectCheckedException.class, IgniteClientDisconnectedException.class)) {
+                    if (X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedException.class)) {
                         log.warning("Rejoin failed, retry. [locNodeId=" + ctx.localNodeId() + ']');
 
                         continue;

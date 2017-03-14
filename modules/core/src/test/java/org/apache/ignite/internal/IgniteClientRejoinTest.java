@@ -157,7 +157,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                         cache.put(i, i);
 
                     for (int i = 0; i < 100; i++)
-                        assert i == cache.get(i);
+                        assertEquals((Integer)i, cache.get(i));
 
                     cache.clear();
 

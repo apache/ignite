@@ -129,6 +129,8 @@ public interface DiscoverySpi extends IgniteSpi {
     public void disconnect() throws IgniteSpiException;
 
     /**
+     * TODO IGNITE-4473 remove.
+     *
      * Leave cluster and try to join again.
      *
      * @return Future will be completed with success when node joined cluster

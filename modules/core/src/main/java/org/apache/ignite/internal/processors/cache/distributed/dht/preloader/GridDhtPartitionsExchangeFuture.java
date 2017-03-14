@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCouldReconnectCheckedException;
+import org.apache.ignite.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -514,8 +514,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cctx.localNode().isClient() && X.hasCause(e,
                 IOException.class,
                 IgniteClientDisconnectedCheckedException.class))
-                onDone(new IgniteCouldReconnectCheckedException("Local node could be reconnected. [locNodeId="
-                    + cctx.localNodeId() + ']', e));
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
 
@@ -1006,6 +1005,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     ", exchId=" + exchId + ']');
         }
         catch (IgniteCheckedException e) {
+            // TODO IGNITE-4473, need reconnect? + check other places.
             U.error(log, "Failed to send local partitions to oldest node (will retry after timeout) [oldestNodeId=" +
                 oldestNode.id() + ", exchId=" + exchId + ']', e);
         }
