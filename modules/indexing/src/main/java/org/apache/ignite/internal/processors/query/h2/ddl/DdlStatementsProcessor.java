@@ -95,7 +95,7 @@ public class DdlStatementsProcessor {
 
         log = ctx.log(DdlStatementsProcessor.class);
 
-        worker = new DdlWorker(ctx.gridName(), log);
+        worker = new DdlWorker(ctx.igniteInstanceName(), log);
 
         IgniteThread workerThread = new IgniteThread(worker);
 

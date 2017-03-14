@@ -45,7 +45,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
 
         ignite(0).createCache(cacheConfig("S2P", true, false).setIndexedTypes(String.class, Person.class));
 
-        startGrid(getTestGridName(3), getConfiguration().setClientMode(true));
+        startGrid(getTestIgniteInstanceName(3), getConfiguration().setClientMode(true));
     }
 
     /** {@inheritDoc} */
@@ -160,7 +160,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override boolean doInit(DdlAbstractOperation args) {
             // Let's throw an exception on a single node in the ring
-            if ("InitFailure".equals(testName) && ctx.gridName().endsWith("2"))
+            if ("InitFailure".equals(testName) && ctx.igniteInstanceName().endsWith("2"))
                 throw new RuntimeException("Hello from DdlProc Init");
             else
                 try {
@@ -174,7 +174,7 @@ public class GridDdlProtoTest extends GridCommonAbstractTest {
         /** {@inheritDoc}
          * @param args*/
         @Override void doAck(DdlAbstractOperation args) {
-            if ("AckFailure".equals(testName) && ctx.gridName().endsWith("1"))
+            if ("AckFailure".equals(testName) && ctx.igniteInstanceName().endsWith("1"))
                 throw new RuntimeException("Hello from DdlProc Ack");
             else
                 try {
