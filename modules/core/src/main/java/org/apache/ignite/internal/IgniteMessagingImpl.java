@@ -79,6 +79,22 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Object msg) {
+       send0(topic, msg, isAsync());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendAsync(@Nullable Object topic, Object msg) throws IgniteException {
+        send0(topic, msg, true);
+    }
+
+    /**
+     * Implementation of send.
+     * @param topic Topic.
+     * @param msg Message.
+     * @param async Async flag.
+     * @throws IgniteException On error.
+     */
+    private void send0(@Nullable Object topic, Object msg, boolean async) throws IgniteException {
         A.notNull(msg, "msg");
 
         guard();
@@ -89,7 +105,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             if (snapshot.isEmpty())
                 throw U.emptyTopologyException();
 
-            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, isAsync());
+            ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, async);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -101,6 +117,22 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
 
     /** {@inheritDoc} */
     @Override public void send(@Nullable Object topic, Collection<?> msgs) {
+        send0(topic, msgs, isAsync());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendAsync(@Nullable Object topic, Collection<?> msgs) throws IgniteException {
+        send0(topic, msgs, true);
+    }
+
+    /**
+     * Implementation of send.
+     * @param topic Topic.
+     * @param msgs Messages.
+     * @param async Async flag.
+     * @throws IgniteException On error.
+     */
+    private void send0(@Nullable Object topic, Collection<?> msgs, boolean async) throws IgniteException {
         A.ensure(!F.isEmpty(msgs), "msgs cannot be null or empty");
 
         guard();
@@ -114,7 +146,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
             for (Object msg : msgs) {
                 A.notNull(msg, "msg");
 
-                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, isAsync());
+                ctx.io().sendUserMessage(snapshot, msg, topic, false, 0, async);
             }
         }
         catch (IgniteCheckedException e) {

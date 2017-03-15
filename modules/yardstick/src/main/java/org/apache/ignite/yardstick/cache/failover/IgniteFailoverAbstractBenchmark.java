@@ -116,11 +116,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             println("Waiting for partitioned map exchage of all nodes");
 
-                            IgniteCompute asyncCompute = ignite.compute().withAsync();
-
-                            asyncCompute.broadcast(new AwaitPartitionMapExchangeTask());
-
-                            asyncCompute.future().get(args.cacheOperationTimeoutMillis());
+                            ignite.compute().broadcastAsync(new AwaitPartitionMapExchangeTask())
+                                .get(args.cacheOperationTimeoutMillis());
 
                             println("Start servers restarting [numNodesToRestart=" + numNodesToRestart
                                 + ", shuffledIds=" + ids + "]");
@@ -242,10 +239,8 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             ClusterGroup srvs = ignite.cluster().forServers();
 
-            IgniteCompute asyncCompute = ignite.compute(srvs).withAsync();
-
-            asyncCompute.broadcast(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e));
-            asyncCompute.future().get(10_000);
+            ignite.compute(srvs).broadcastAsync(new ThreadDumpPrinterTask(ignite.cluster().localNode().id(), e))
+                .get(10_000);
         }
     }
 
