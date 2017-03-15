@@ -52,6 +52,9 @@ public class QueryEntity implements Serializable {
     /** Collection of query indexes. */
     private Map<String, QueryIndex> idxs = new HashMap<>();
 
+    /** Table name. */
+    private String tableName;
+
     /**
      * Creates an empty query entity.
      */
@@ -211,6 +214,24 @@ public class QueryEntity implements Serializable {
         }
 
         return this;
+    }
+
+
+    /**
+     * Gets table name for this query entity.
+     *
+     * @return table name
+     */
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * Sets table name for this query entity.
+     * @param tableName table name
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     /**
