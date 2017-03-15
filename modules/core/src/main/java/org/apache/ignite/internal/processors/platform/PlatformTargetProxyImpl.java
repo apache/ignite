@@ -113,7 +113,7 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
             long futId = reader.readLong();
             int futTyp = reader.readInt();
 
-            PlatformAsyncResult res = target.processInStreamAsync(type, reader);
+            final PlatformAsyncResult res = target.processInStreamAsync(type, reader);
 
             if (res == null) {
                 throw new IgniteException("PlatformTarget.processInStreamAsync should not return null.");
