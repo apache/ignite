@@ -22,12 +22,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
@@ -35,6 +37,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
@@ -42,10 +45,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -60,6 +65,7 @@ import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -69,6 +75,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -1230,5 +1237,226 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Worker which manages overall dynamic index creation process.
+     */
+    private class DynamicIndexManagerWorker extends GridWorker {
+        /** Tasks queue. */
+        private final LinkedBlockingQueue<DynamicIndexTask> tasks = new LinkedBlockingQueue<>();
+
+        /** Alive nodes. */
+        private Collection<ClusterNode> aliveNodes;
+
+        /** Local node ID. */
+        private UUID locNodeId;
+
+        /** Coordinator node. */
+        private ClusterNode crdNode;
+
+        /**
+         * Constructor.
+         *
+         * @param igniteInstanceName Ignite instance name.
+         * @param log Logger.
+         */
+        public DynamicIndexManagerWorker(String igniteInstanceName, IgniteLogger log) {
+            super(igniteInstanceName, "dynamic-index-manager-worker", log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            // TODO Find coordinator.
+
+            // TODO: Start processing tasks
+        }
+
+        /**
+         * Submit new task.
+         *
+         * @param task Task.
+         */
+        public void submit(DynamicIndexTask task) {
+            tasks.add(task);
+        }
+
+        /**
+         * Update topology in response to node leave event.
+         */
+        private void updateTopology() {
+            boolean crdChanged = true;
+            Collection<ClusterNode> leftNodes = new HashSet<>();
+
+            if (aliveNodes == null) {
+                // First call.
+                aliveNodes = new HashSet<>(ctx.discovery().aliveServerNodes());
+
+                for (ClusterNode aliveNode : aliveNodes) {
+                    if (crdNode == null || crdNode.order() > aliveNode.order()) {
+                        crdNode = aliveNode;
+
+                        crdChanged = true;
+                    }
+                }
+            }
+            else {
+                Collection<ClusterNode> aliveNodes0 = ctx.discovery().aliveServerNodes();
+
+                for (ClusterNode aliveNode : aliveNodes0) {
+                    if (!aliveNodes.contains(aliveNode))
+                        leftNodes.add(aliveNode);
+                }
+
+                aliveNodes = aliveNodes0;
+
+                if (leftNodes.contains(crdNode)) {
+                    crdNode = null;
+
+                    for (ClusterNode aliveNode : aliveNodes) {
+                        if (crdNode == null || crdNode.order() > aliveNode.order()) {
+                            crdNode = aliveNode;
+
+                            crdChanged = true;
+                        }
+                    }
+                }
+            }
+
+            for (ClusterNode leftNode : leftNodes) {
+                // TODO: Process left nodes
+            }
+
+            if (crdChanged) {
+                // TODO: Process new coordinator.
+            }
+        }
+    }
+
+    /**
+     * Marker interface for index-related tasks.
+     */
+    private static interface DynamicIndexTask {
+        // No-op.
+    }
+
+    /**
+     * Change index task.
+     */
+    private static class ChangeIndexTask implements DynamicIndexTask {
+        /** Operation. */
+        private final AbstractIndexOperation op;
+
+        /**
+         * Constructor.
+         *
+         * @param op Operation.
+         */
+        public ChangeIndexTask(AbstractIndexOperation op) {
+            this.op = op;
+        }
+
+        /**
+         * @return Operation.
+         */
+        public AbstractIndexOperation operation() {
+            return op;
+        }
+    }
+
+    /**
+     * Node leave task.
+     */
+    private static class NodeLeaveTask implements DynamicIndexTask {
+        /** Node ID. */
+        private final UUID nodeId;
+
+        /**
+         * Constructor.
+         *
+         * @param nodeId Node ID.
+         */
+        public NodeLeaveTask(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /**
+         * @return Node ID.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+    }
+
+    /**
+     * Type removal task (either due to cache stop or due to type undeploy).
+     */
+    private static class TypeRemoveTask implements DynamicIndexTask {
+        /** Type descriptor. */
+        private final QueryTypeDescriptorImpl typeDesc;
+
+        /**
+         * Constructor.
+         *
+         * @param typeDesc Type descriptor.
+         */
+        public TypeRemoveTask(QueryTypeDescriptorImpl typeDesc) {
+            this.typeDesc = typeDesc;
+        }
+
+        /**
+         * @return Type descriptor.
+         */
+        public QueryTypeDescriptorImpl typeDescriptor() {
+            return typeDesc;
+        }
+    }
+
+    /**
+     * Operation status message received.
+     */
+    private static class OperationStatusTask implements DynamicIndexTask {
+        /** Node ID. */
+        private final UUID nodeId;
+
+        /** Operation ID. */
+        private final UUID opId;
+
+        /** Error message. */
+        private final String errMsg;
+
+        /**
+         * Constructor.
+         *
+         * @param nodeId Node ID.
+         * @param opId Operation ID.
+         * @param errMsg Error message.
+         */
+        public OperationStatusTask(UUID nodeId, UUID opId, String errMsg) {
+            this.nodeId = nodeId;
+            this.opId = opId;
+            this.errMsg = errMsg;
+        }
+
+        /**
+         * @return Node ID.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Operation ID.
+         */
+        public UUID operationId() {
+            return opId;
+        }
+
+        /**
+         * @return Error message (if any).
+         */
+        @Nullable public String errorMessage() {
+            return errMsg;
+        }
     }
 }
