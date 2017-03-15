@@ -92,7 +92,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     *
+     * @return size in bytes of MemoryPolicy used by default.
      */
     public long getDefaultMemoryPolicySize() {
         return dfltMemPlcSize;
@@ -123,7 +123,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     *
+     * @return array of MemoryPolicyConfiguration objects.
      */
     public MemoryPolicyConfiguration[] getMemoryPolicies() {
         return memPlcs;

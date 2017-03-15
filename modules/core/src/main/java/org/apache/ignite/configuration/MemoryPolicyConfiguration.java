@@ -37,9 +37,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Unique name of MemoryPolicy (must be null for default MemoryPolicy). */
     private String name;
 
-    /**
-     * Size in bytes of {@link PageMemory} to be created.
-     */
+    /** Size in bytes of {@link PageMemory} to be created. */
     private long size;
 
     /** */

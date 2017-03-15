@@ -275,12 +275,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param memPlcName Memory policy name.
      * @return {@link MemoryPolicy} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @throws IgniteCheckedException in case of request for unknown MemoryPolicy.
      */
-    public MemoryPolicy memoryPolicy(String memPlcName) {
+    public MemoryPolicy memoryPolicy(String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
             return dfltMemPlc;
 
-        return memPlcMap != null ? memPlcMap.get(memPlcName) : null;
+        if (memPlcMap == null)
+            return null;
+
+        MemoryPolicy plc;
+
+        if ((plc = memPlcMap.get(memPlcName)) == null)
+            throw new IgniteCheckedException("Requested MemoryPolicy is not configured: " + memPlcName);
+
+        return plc;
     }
 
     /**
