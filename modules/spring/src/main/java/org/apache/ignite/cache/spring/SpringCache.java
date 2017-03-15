@@ -19,6 +19,7 @@ package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCache;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -83,14 +84,8 @@ class SpringCache implements Cache {
 
     /** {@inheritDoc} */
     @Override public ValueWrapper putIfAbsent(Object key, Object val) {
-        Object old;
-
-        if (val == null)
-            old = cache.withSkipStore().putIfAbsent(key, NULL);
-        else
-            old = cache.putIfAbsent(key, val);
-
-        return old != null ? fromValue(old) : null;
+        boolean set = cache.putIfAbsent(key, toStoreValue(val));
+        return set ? null : get(key);
     }
 
     /** {@inheritDoc} */
@@ -111,6 +106,14 @@ class SpringCache implements Cache {
         assert val != null;
 
         return new SimpleValueWrapper(NULL.equals(val) ? null : val);
+    }
+
+    /**
+     * @param val User value.
+     * @return Value to store.
+     */
+    private static Object toStoreValue(@Nullable Object val) {
+        return val == null ? NULL : val;
     }
 
     /**
