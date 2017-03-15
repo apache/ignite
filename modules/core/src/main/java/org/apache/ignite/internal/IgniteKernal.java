@@ -156,7 +156,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -175,7 +174,6 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -329,9 +327,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
-
-    /** Reconnector. */
-    private volatile IgniteThread reconnector;
 
     /** Rejoin future. Rejoin process in progress if not null. */
     private volatile GridFutureAdapter rejoinFut;
@@ -963,7 +958,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteNeedReconnectException e) {
                         if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())
-                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry, set" +
+                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry set" +
                                 " TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
 
                         recon = true;
@@ -1965,8 +1960,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
-        stopReconnector();
-
         gw.compareAndSet(null, new GridKernalGatewayImpl(gridName));
 
         GridKernalGateway gw = this.gw.get();
@@ -3142,30 +3135,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        stopReconnector();
-
         Ignition.stop(gridName, true);
-    }
-
-    /**
-     * Stop reconnector.
-     */
-    private void stopReconnector() {
-        IgniteThread reconnector = this.reconnector;
-
-        if (reconnector != null) {
-            U.interrupt(reconnector);
-
-            try {
-                U.join(reconnector);
-            }
-            catch (IgniteInterruptedCheckedException ignore) {
-                // No-op
-            }
-            finally {
-                this.reconnector = null;
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -3484,7 +3454,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             close();
                         }
                         else {
-                            U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId()
+                            U.error(log, "Failed to reconnect, retry [locNodeId=" + ctx.localNodeId()
                                 + ", err=" + e.getMessage() + ']');
                         }
                     }

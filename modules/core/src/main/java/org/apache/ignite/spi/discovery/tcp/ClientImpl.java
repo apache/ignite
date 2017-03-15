@@ -1133,8 +1133,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 sockTimeout);
                         }
                         catch (IOException | IgniteCheckedException e) {
-                            U.warn(log, "Error sending TcpDiscoveryNodeLeftMessage on force leave. [msg=" + msg
-                                + ", err=" + e.getMessage() + ']');
+                            if (log.isDebugEnabled()) {
+                                log.debug("Failed to send TcpDiscoveryNodeLeftMessage on force leave [msg=" + msg +
+                                    ", err=" + e.getMessage() + ']');
+                            }
                         }
 
                         U.closeQuiet(sock);
@@ -1507,18 +1509,16 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             queue.clear();
 
-                            state = DISCONNECTED;
-
-                            nodeAdded = false;
-
-                            forceCompletePingFutures();
+                            onDisconnected();
 
                             notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
 
                             UUID newId = UUID.randomUUID();
 
-                            log.warning("Forcing rejoin to cluster. [locNodeId=" + getLocalNodeId() +
-                                ", newId=" + newId + ']');
+                            U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
+                                "to network problems [newId=" + newId +
+                                ", prevId=" + locNode.id() +
+                                ", locNode=" + locNode+ ']');
 
                             locNode.onClientDisconnected(newId);
 
@@ -1607,11 +1607,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                         ", failMsg=" + forceFailMsg + ']');
                                 }
 
-                                state = DISCONNECTED;
-
-                                nodeAdded = false;
-
-                                forceCompletePingFutures();
+                                onDisconnected();
 
                                 notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
@@ -1707,9 +1703,13 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Completes ping futures with IgniteClientDisconnectedCheckedException.
+         *
          */
-        private void forceCompletePingFutures() {
+        private void onDisconnected() {
+            state = DISCONNECTED;
+
+            nodeAdded = false;
+
             IgniteClientDisconnectedCheckedException err =
                 new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
                     "client node disconnected.");
