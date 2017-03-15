@@ -25,8 +25,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -169,7 +173,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        final IgniteCache<Integer, Object> cache = grid(0).cache(null).withKeepBinary();
+        /* we need to enforce binary marshaller in this test since IGNITE-2693 */
+        final IgniteConfiguration iCfg = new IgniteConfiguration();
+        final Ignite ignite = Ignition.start(iCfg);
+        final IgniteCache<Integer, Object> cache = ignite.cache("test_cache").withKeepBinary();
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {

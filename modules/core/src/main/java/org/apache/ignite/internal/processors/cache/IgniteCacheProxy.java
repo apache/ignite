@@ -64,6 +64,7 @@ import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -340,7 +341,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
-        return keepBinary();
+        if ((ctx.kernalContext().config().getMarshaller() != null) && (ctx.kernalContext().config().getMarshaller() instanceof BinaryMarshaller))
+            return keepBinary();
+        else
+            throw new IgniteException("error: withKeepBinary() cannot be invoked on a cache that has no binary marshaller");
     }
 
     /** {@inheritDoc} */
