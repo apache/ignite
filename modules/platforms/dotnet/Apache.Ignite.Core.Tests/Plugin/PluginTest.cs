@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -67,6 +68,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsNotNull(ctx.Ignite);
                 Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
+                CheckResourceInjection(ctx);
 
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
@@ -79,6 +81,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
             Assert.AreEqual(true, plugin.Provider.IgniteStopped);
+        }
+
+        /// <summary>
+        /// Checks the resource injection.
+        /// </summary>
+        private static void CheckResourceInjection(IPluginContext<TestIgnitePluginConfiguration> ctx)
+        {
+            var obj = new Injectee();
+
+            Assert.IsNull(obj.Ignite);
+
+            ctx.InjectResources(obj);
+
+            Assert.IsNotNull(obj.Ignite);
+            Assert.AreEqual(ctx.Ignite.Name, obj.Ignite.Name);
         }
 
         /// <summary>
@@ -313,6 +330,13 @@ namespace Apache.Ignite.Core.Tests.Plugin
             {
                 PluginLog.Add(Name + ".Start");
             }
+        }
+
+        private class Injectee
+        {
+            [InstanceResource]
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public IIgnite Ignite { get; set; }
         }
     }
 }
