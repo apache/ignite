@@ -101,7 +101,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.thread.IgniteStripeThread;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -280,11 +280,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     GridNearAtomicAbstractUpdateRequest req
                 ) {
                     int stripeIdx;
-
-                    if (req instanceof GridNearAtomicFullUpdateRequest && Thread.currentThread() instanceof IgniteStripeThread)
-                        stripeIdx = ((IgniteStripeThread)Thread.currentThread()).stripeIndex();
+                    Thread curTrd = Thread.currentThread();
+                    if (req instanceof GridNearAtomicFullUpdateRequest && curTrd instanceof IgniteThread)
+                        stripeIdx = ((IgniteThread)curTrd).stripe();
                     else
-                        stripeIdx = IgniteStripeThread.GRP_IDX_UNASSIGNED;
+                        stripeIdx = IgniteThread.GRP_IDX_UNASSIGNED;
 
                     processNearAtomicUpdateRequest(
                         nodeId,
@@ -1660,7 +1660,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final GridNearAtomicAbstractUpdateRequest req,
         final UpdateReplyClosure completionCb
     ) {
-        updateAllAsyncInternal(nodeId, req, IgniteStripeThread.GRP_IDX_UNASSIGNED, completionCb);
+        updateAllAsyncInternal(nodeId, req, IgniteThread.GRP_IDX_UNASSIGNED, completionCb);
     }
 
     /**
@@ -1772,7 +1772,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int[] stripeIdxs = null;
 
-        if (stripeIdx != IgniteStripeThread.GRP_IDX_UNASSIGNED
+        if (stripeIdx != IgniteThread.GRP_IDX_UNASSIGNED
             && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
             && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
             stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
