@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
@@ -116,6 +117,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Returns a copy with same name.
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
+
+            // Async operation.
+            var task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString());
+            Assert.IsFalse(task.IsCompleted);
+            var asyncRes = task.Result;
+            Assert.IsTrue(task.IsCompleted);
+            Assert.AreEqual("FOO", asyncRes);
+
+            // Async operation with exception in entry point.
+            Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
+
+            // Async operation with exception in future.
+            var errTask = target.DoOutOpAsync<object>(3, null, null);
+            Assert.IsFalse(errTask.IsCompleted);
+            var aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
 
             // Throws custom mapped exception.
             var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
