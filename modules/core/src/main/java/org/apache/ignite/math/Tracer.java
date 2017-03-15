@@ -299,7 +299,7 @@ public class Tracer {
      * @param fmt
      * @return
      */
-    public static String mkString(Matrix mtx, String fmt) {
+    static String mkString(Matrix mtx, String fmt) {
         StringBuffer buf = new StringBuffer();
 
         for(int i = 0; i < mtx.rowSize(); i++) {
