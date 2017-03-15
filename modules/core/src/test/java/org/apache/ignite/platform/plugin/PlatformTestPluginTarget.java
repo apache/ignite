@@ -145,8 +145,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
         switch (type) {
             case 1: {
                 // Async upper case.
-                String val = reader.readString();
-                GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+                final String val = reader.readString();
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
 
                 new Thread(new Runnable() {
                     @Override public void run() {
@@ -176,7 +176,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
             }
             case 3: {
                 // Async exception.
-                GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
 
                 new Thread(new Runnable() {
                     @Override public void run() {
