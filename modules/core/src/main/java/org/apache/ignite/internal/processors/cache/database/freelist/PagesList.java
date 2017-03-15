@@ -520,26 +520,31 @@ public abstract class PagesList extends DataStructure {
             for (Stripe tail : tails) {
                 long pageId = tail.tailId;
 
-                try (Page page = page(pageId)) {
-                    long pageAddr = readLock(page); // No correctness guaranties.
+                while (pageId != 0L) {
+                    try (Page page = page(pageId)) {
+                        long pageAddr = readLock(page);
 
-                    try {
-                        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
+                        assert pageAddr != 0L;
 
-                        int cnt = io.getCount(pageAddr);
+                        try {
+                            PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
-                        assert cnt >= 0;
+                            res += io.getCount(pageAddr);
+                            pageId = io.getPreviousId(pageAddr);
 
-                        res += cnt;
-                    }
-                    finally {
-                        readUnlock(page, pageAddr);
+                            // In reuse bucket the page itself can be used as a free page.
+                            if (isReuseBucket(bucket) && pageId != 0L)
+                                res++;
+                        }
+                        finally {
+                            readUnlock(page, pageAddr);
+                        }
                     }
                 }
             }
         }
 
-        assert res == bucketsSize[bucket].get();
+        assert res == bucketsSize[bucket].get() : "res=" + res + ", bucketSize=" + bucketsSize[bucket].get();
 
         return res;
     }
@@ -1014,6 +1019,8 @@ public abstract class PagesList extends DataStructure {
                             Boolean ok = writePage(pageMem, prev, this, cutTail, null, bucket, FALSE);
 
                             assert ok == TRUE : ok;
+
+                            bucketsSize[bucket].decrementAndGet();
                         }
 
                         if (initIoVers != null) {
