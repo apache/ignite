@@ -1,8 +1,6 @@
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,10 +10,10 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link MatrixVectorView}
  */
-public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
-    private static final String UNEXPECTED_VALUE = "Unexpected value.";
-    private static final int SMALL_SIZE = 3;
-    private DenseLocalOnHeapMatrix parent;
+public class MatrixVectorViewTest {
+    /** */ private static final String UNEXPECTED_VALUE = "Unexpected value";
+    /** */ private static final int SMALL_SIZE = 3;
+    /** */ private DenseLocalOnHeapMatrix parent;
 
     /** */
     @Before
@@ -26,11 +24,11 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
 
     /** */
     @Test
-    public void testDiaganal(){
+    public void testDiagonal(){
         Vector vector = parent.viewDiagonal();
 
         for (int i = 0; i < SMALL_SIZE; i++)
-            assertEquals(UNEXPECTED_VALUE, parent.get(i, i), vector.get(i), 0d);
+            assertEquals(UNEXPECTED_VALUE + " at row / col " + i, parent.get(i, i), vector.get(i), 0d);
     }
 
     /** */
@@ -40,7 +38,7 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
             Vector viewRow = parent.viewRow(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE, parent.get(i, j), viewRow.get(j), 0d);
+                assertEquals(UNEXPECTED_VALUE + " at row " + i + " col " + j, parent.get(i, j), viewRow.get(j), 0d);
         }
     }
 
@@ -51,7 +49,7 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
             Vector viewRow = parent.viewColumn(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE, parent.get(j, i), viewRow.get(j), 0d);
+                assertEquals(UNEXPECTED_VALUE+ " at row " + i + " col " + j, parent.get(j, i), viewRow.get(j), 0d);
         }
     }
 
