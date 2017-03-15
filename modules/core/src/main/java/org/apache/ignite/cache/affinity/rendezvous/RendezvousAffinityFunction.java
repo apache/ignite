@@ -429,7 +429,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         List<ClusterNode> nodes,
         int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache,
-        @Nullable Map<ClusterNode, Integer[]> balanceMap,
+        @Nullable Map<ClusterNode, int[]> balanceMap,
         final int replicasCnt) {
         if (nodes.size() <= 1)
             return nodes;
@@ -636,7 +636,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             : Math.min(affCtx.backups() + 1, nodes.size());
 
 
-        Map<ClusterNode, Integer[]> balanceMap =  useBalancer && replCnt < MAX_BALANCED_REPLICAS ?
+        Map<ClusterNode, int[]> balanceMap =  useBalancer && replCnt < MAX_BALANCED_REPLICAS ?
             createBalanceMap(nodes, replCnt) : null;
 
         for (int i = 0; i < parts; i++) {
@@ -654,12 +654,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param replicasCnt Replicas count.
      * @return Balance map. A value array contains desired count of partition for each node and number of replica.
      */
-    @NotNull private Map<ClusterNode, Integer[]> createBalanceMap(List<ClusterNode> nodes, int replicasCnt) {
-        Map<ClusterNode, Integer[]> balanceMap;
-        balanceMap = new HashMap<>();
+    @NotNull private Map<ClusterNode, int[]> createBalanceMap(List<ClusterNode> nodes, int replicasCnt) {
+        Map<ClusterNode, int[]> balanceMap = new HashMap<>();
 
         for (ClusterNode n : nodes) {
-            Integer[] arr = new Integer[replicasCnt];
+            int[] arr = new int[replicasCnt];
 
             Arrays.fill(arr, parts / nodes.size() + 1);
 
@@ -712,7 +711,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         private final Iterable<ClusterNode> nodes;
 
         /** Balance map. */
-        private final Map<ClusterNode, Integer[]> balanceMap;
+        private final Map<ClusterNode, int[]> balanceMap;
 
         /** Balance map. */
         private boolean useBalance = true;
@@ -721,7 +720,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
          * @param nodes Nodes.
          * @param balanceMap Balance map.
          */
-        private PartitionDistributionBalancer(Iterable<ClusterNode> nodes, Map<ClusterNode, Integer[]> balanceMap) {
+        private PartitionDistributionBalancer(Iterable<ClusterNode> nodes, Map<ClusterNode, int[]> balanceMap) {
             this.balanceMap = balanceMap;
             this.nodes = nodes;
         }
