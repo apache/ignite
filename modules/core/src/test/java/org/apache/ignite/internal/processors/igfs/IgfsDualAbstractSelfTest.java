@@ -1587,18 +1587,20 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         if (!timesSupported())
             return;
 
-        create(igfs, paths(DIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         createFile(igfsSecondary, FILE, chunk);
 
-        igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
+        final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
+
+        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND - 1000, MAX_ALIGN_ON_SECOND);
 
         IgfsFile info = igfs.info(FILE);
 
         assert info != null;
 
-        assertEquals(Long.MAX_VALUE - 1, info.accessTime());
-        assertEquals(Long.MAX_VALUE, info.modificationTime());
+        assertEquals(MAX_ALIGN_ON_SECOND - 1000, info.accessTime());
+        assertEquals(MAX_ALIGN_ON_SECOND, info.modificationTime());
 
         T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
@@ -1606,7 +1608,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
 
         try {
-            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+            igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);
 
             fail("Exception is not thrown for missing file.");
         } catch (Exception ignore) {
