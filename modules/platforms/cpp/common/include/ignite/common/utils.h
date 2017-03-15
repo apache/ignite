@@ -190,6 +190,17 @@ namespace ignite
         }
 
         /**
+         * Convert Time type to standard C type time_t.
+         *
+         * @param time Time type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t TimeToCTime(const Time& time)
+        {
+            return static_cast<time_t>(time.GetSeconds());
+        }
+
+        /**
          * Convert Date type to standard C type time_t.
          *
          * @param date Date type value.
@@ -213,6 +224,20 @@ namespace ignite
         inline bool TimestampToCTm(const Timestamp& ts, tm& ctime)
         {
             time_t tmt = TimestampToCTime(ts);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert Time type to standard C type struct tm.
+         *
+         * @param time Time type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool TimeToCTm(const Time& time, tm& ctime)
+        {
+            time_t tmt = TimeToCTime(time);
 
             return common::IgniteGmTime(tmt, ctime);
         }

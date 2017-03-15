@@ -485,6 +485,15 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_TIME:
+                {
+                    Time time = reader.ReadTime();
+
+                    dataBuf.PutTime(time);
+
+                    break;
+                }
+
                 case IGNITE_TYPE_ARRAY_BYTE:
                 {
                     stream->Position(startPos + offset);
