@@ -361,7 +361,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024);
+        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024, false);
 
         affinityDistribution(aff0, aff1);
     }
@@ -372,7 +372,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
      * @param aff1 Affinity function to compare.
      */
     private void affinityDistribution(AffinityFunction aff0, AffinityFunction aff1) {
-        int[] nodesCnts = {4, 5, 8, 64, 100, 128, 200, 256, 300, 400, 500, 600};
+        int[] nodesCnts = {3, 4, 8, 16, 64, 100, 128, 200, 256, 300, 400, 500, 600};
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
