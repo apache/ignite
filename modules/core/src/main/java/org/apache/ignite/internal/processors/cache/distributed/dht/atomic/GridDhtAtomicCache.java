@@ -336,7 +336,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     int stripeIdx;
 
                     if (req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
-                        && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null)
+                        && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null
+                        && Thread.currentThread() instanceof IgniteStripeThread)
                         stripeIdx = ((IgniteStripeThread)Thread.currentThread()).stripeIndex();
                     else
                         stripeIdx = IgniteStripeThread.GRP_IDX_UNASSIGNED;

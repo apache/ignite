@@ -194,11 +194,14 @@ public final class MPSCQueue<E> extends AbstractQueue<E> implements BlockingQueu
 
     /** */
     private void takeAll() throws InterruptedException {
+        if (consumerThread == null)
+            return;
+
         long iteration = 0;
         AtomicReference<Node> putStack = this.putStack;
 
         for (; ; ) {
-            if (consumerThread != null && consumerThread.isInterrupted()) {
+            if (consumerThread.isInterrupted()) {
                 putStack.compareAndSet(BLOCKED, null);
                 throw new InterruptedException();
             }
