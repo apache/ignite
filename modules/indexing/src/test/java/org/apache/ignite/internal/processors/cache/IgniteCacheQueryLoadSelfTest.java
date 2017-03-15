@@ -138,11 +138,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheAsync() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(null, 0);
-
-        asyncCache.future().get();
+        cache.loadCacheAsync(null, 0).get();
 
         assert cache.size() == PUT_CNT;
 
@@ -183,16 +179,12 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheAsyncFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(new P2<Integer, ValueObject>() {
+        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
             @Override
             public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
-
-        asyncCache.future().get();
+        }, 0).get();
 
         assert cache.localSize() == PUT_CNT - 5;
 
@@ -212,11 +204,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, ValueObject> cache = jcache();
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.get(1);
-
-        assert ((ValueObject)asyncCache.future().get()).value() == 1;
+        assert cache.getAsync(1).get().value() == 1;
 
         assert cache.size() == 1;
 
