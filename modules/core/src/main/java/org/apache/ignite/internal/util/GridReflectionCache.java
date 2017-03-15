@@ -30,7 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REFLECTION_CACHE_SIZE;
@@ -68,10 +68,10 @@ public class GridReflectionCache implements Externalizable {
         CACHE_SIZE, CACHE_SIZE);
 
     /** Field predicate. */
-    private IgnitePredicate<Field> fp;
+    private IgniteBiPredicate<Class, Field> fp;
 
     /** Method predicate. */
-    private IgnitePredicate<Method> mp;
+    private IgniteBiPredicate<Class, Method> mp;
 
     /**
      * Reflection cache without any method or field predicates.
@@ -85,7 +85,7 @@ public class GridReflectionCache implements Externalizable {
      * @param fp Field predicate.
      * @param mp Method predicate.
      */
-    public GridReflectionCache(@Nullable IgnitePredicate<Field> fp, @Nullable IgnitePredicate<Method> mp) {
+    public GridReflectionCache(@Nullable IgniteBiPredicate<Class, Field> fp, @Nullable IgniteBiPredicate<Class, Method> mp) {
         this.fp = fp;
         this.mp = mp;
     }
@@ -184,7 +184,7 @@ public class GridReflectionCache implements Externalizable {
                 List<Field> l = new ArrayList<>();
 
                 for (Field f : c.getDeclaredFields()) {
-                    if (fp == null || fp.apply(f)) {
+                    if (fp == null || fp.apply(cls, f)) {
                         f.setAccessible(true);
 
                         l.add(f);
@@ -223,7 +223,7 @@ public class GridReflectionCache implements Externalizable {
                 List<Method> l = new ArrayList<>();
 
                 for (Method m : c.getDeclaredMethods()) {
-                    if (mp == null || mp.apply(m)) {
+                    if (mp == null || mp.apply(cls, m)) {
                         m.setAccessible(true);
 
                         l.add(m);
@@ -251,7 +251,7 @@ public class GridReflectionCache implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        fp = (IgnitePredicate<Field>)in.readObject();
-        mp = (IgnitePredicate<Method>)in.readObject();
+        fp = (IgniteBiPredicate<Class, Field>)in.readObject();
+        mp = (IgniteBiPredicate<Class, Method>)in.readObject();
     }
 }

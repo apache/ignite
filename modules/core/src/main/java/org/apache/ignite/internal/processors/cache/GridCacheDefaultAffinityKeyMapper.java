@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
@@ -30,7 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.GridReflectionCache;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -56,14 +58,24 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
-        new P1<Field>() {
-            @Override public boolean apply(Field f) {
+        new P2<Class, Field>() {
+            @Override public boolean apply(Class cls, Field f) {
                 // Account for anonymous inner classes.
+
+                String className = cls.getName();
+                CacheKeyConfiguration[] keyConfigurations = ignite.configuration().getCacheKeyConfiguration();
+                if (keyConfigurations != null) {
+                    for (CacheKeyConfiguration keyCfg : keyConfigurations) {
+                        if (keyCfg.getTypeName().equals(className))
+                            return keyCfg.getAffinityKeyFieldName().equals(f.getName());
+                    }
+                }
+
                 return f.getAnnotation(AffinityKeyMapped.class) != null;
             }
         },
-        new P1<Method>() {
-            @Override public boolean apply(Method m) {
+        new P2<Class, Method>() {
+            @Override public boolean apply(Class cls, Method m) {
                 // Account for anonymous inner classes.
                 Annotation ann = m.getAnnotation(AffinityKeyMapped.class);
 

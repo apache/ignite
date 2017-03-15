@@ -364,6 +364,43 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether callable throws exception with expected cause or not.
+     *
+     * @param call Callable.
+     * @param cls Expected cause exception class.
+     * @param msg Expected cause exception message (optional). If provided exception message isn't null
+     *            found exception message must contain it.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrowsWithCause(Callable<?> call, Class<? extends Throwable> cls, @Nullable String msg) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            Throwable ex = e;
+            boolean found = false;
+
+            while (ex != null) {
+                if ((ex.getClass() == cls) && (msg == null || ((ex.getMessage() != null && ex.getMessage().contains(msg))))) {
+                    found = true;
+                    break;
+                }
+                ex = ex.getCause();
+            }
+            if (!found) {
+                fail("Exception doesn't contains expected cause exception", e);
+            }
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
      * Throw assertion error with specified error message and initialized cause.
      *
      * @param msg Error message.

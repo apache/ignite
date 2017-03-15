@@ -775,7 +775,9 @@ public class BinaryContext {
 
         BinarySerializer serializer = serializerForClass(cls);
 
-        String affFieldName = affinityFieldName(cls);
+        String affFieldName = affKeyFieldNames.get(typeId);
+        if (null == affFieldName)
+            affFieldName = affinityFieldName(cls);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(this,
             cls,

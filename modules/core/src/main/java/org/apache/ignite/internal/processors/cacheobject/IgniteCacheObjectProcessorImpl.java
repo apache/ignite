@@ -22,12 +22,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
@@ -40,11 +48,18 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
@@ -80,6 +95,95 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      */
     public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        CacheKeyConfiguration[] keyCfgs = ctx.config().getCacheKeyConfiguration();
+
+        validateCacheKeyConfigurations(keyCfgs);
+
+        if (keyCfgs != null) {
+            Map<Object, Object> keyCfgsMap = new HashMap<>();
+            for (CacheKeyConfiguration keyCfg: keyCfgs) {
+                keyCfgsMap.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+            }
+
+            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_CACHE_KEYS, keyCfgsMap);
+        }
+    }
+
+    /**
+     * Validates local CacheKeyConfigurations (see {@link org.apache.ignite.cache.CacheKeyConfiguration}).
+     *
+     * @param keyCfgs Local CacheKeyConfigurations.
+     * @throws IgniteCheckedException If any CacheKeyConfiguration is invalid.
+     * */
+    protected void validateCacheKeyConfigurations(CacheKeyConfiguration[] keyCfgs) throws IgniteCheckedException {
+        if (null != keyCfgs) {
+            Set<String> cls = new HashSet<>();
+            for (CacheKeyConfiguration keyCfg : keyCfgs) {
+                A.notNullOrEmpty(keyCfg.getTypeName(), "type name in cache key configuration");
+                A.notNullOrEmpty(keyCfg.getAffinityKeyFieldName(), "affinity key field name in cache key configuration");
+
+                if (cls.contains(keyCfg.getTypeName()))
+                    throw new IgniteCheckedException("Duplicate cache key configuration for class " + keyCfg.getTypeName());
+                cls.add(keyCfg.getTypeName());
+            }
+        }
+    }
+
+    /**
+     * Indicates is remote cache key configuration validation enabled.
+     * <p></p>
+     * It is enabled by default, but subclasses may disable it if necessary.
+     *
+     * @return true, if remote cache key configuration validation is enabled.
+     * */
+    protected boolean remoteCacheKeyConfigurationValidationEnabled() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode) {
+        IgniteNodeValidationResult res = super.validateNode(rmtNode);
+
+        if (res != null)
+            return res;
+
+        if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK))
+            return null;
+
+        Object rmtCacheKeyCfgs = rmtNode.attribute(IgniteNodeAttributes.ATTR_CACHE_KEYS);
+
+        ClusterNode locNode = ctx.discovery().localNode();
+        Object locCacheKeyCfgs = locNode.attribute(IgniteNodeAttributes.ATTR_CACHE_KEYS);
+
+        if ((rmtCacheKeyCfgs != null) && (null != locCacheKeyCfgs)) {
+            String msg = "Local node's cache keys configuration is not compatible with remote node's cache keys configuration%s " +
+                "[locNodeId=%s, rmtNodeId=%s, locCacheKeysCfg=%s, rmtCacheKeysCfg=%s]";
+
+            if (!(rmtCacheKeyCfgs instanceof Map)) {
+                return new IgniteNodeValidationResult(rmtNode.id(),
+                    String.format(msg, "", locNode.id(), rmtNode.id(), locCacheKeyCfgs, rmtCacheKeyCfgs),
+                    String.format(msg, "", rmtNode.id(), locNode.id(), rmtCacheKeyCfgs, locCacheKeyCfgs));
+            }
+
+            Map<Object, Object> locAffKeyMap = (Map<Object, Object>) locCacheKeyCfgs;
+            Map<Object, Object> rmtAffKeyMap = (Map<Object, Object>) rmtCacheKeyCfgs;
+
+            for (Map.Entry<Object, Object> entry: locAffKeyMap.entrySet()) {
+                Object rmtVal = rmtAffKeyMap.get(entry.getKey());
+                if (null != rmtVal && !entry.getValue().equals(rmtVal)) {
+                    String details = ": different affinity key fields for " + entry.getValue();
+                    return new IgniteNodeValidationResult(rmtNode.id(),
+                        String.format(msg, details, locNode.id(), rmtNode.id(), locCacheKeyCfgs, rmtCacheKeyCfgs),
+                        String.format(msg, details, rmtNode.id(), locNode.id(), rmtCacheKeyCfgs, locCacheKeyCfgs));
+                }
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */

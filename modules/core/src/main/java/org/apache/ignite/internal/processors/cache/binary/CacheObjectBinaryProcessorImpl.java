@@ -179,6 +179,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         if (marsh instanceof BinaryMarshaller) {
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
@@ -363,7 +365,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     if (bcfg == null || bcfg.getNameMapper() == null) {
                         throw new IgniteCheckedException("When BinaryMarshaller is used and topology contains old " +
                             "nodes, then " + BinaryBasicNameMapper.class.getName() + " mapper have to be set " +
-                            "explicitely into binary configuration and 'simpleName' property of the mapper " +
+                            "explicitly into binary configuration and 'simpleName' property of the mapper " +
                             "have to be set to 'true'.");
                     }
 
@@ -371,7 +373,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         || !((BinaryBasicNameMapper)bcfg.getNameMapper()).isSimpleName()) {
                         U.quietAndWarn(log, "When BinaryMarshaller is used and topology contains old" +
                             " nodes, it's strongly recommended, to set " + BinaryBasicNameMapper.class.getName() +
-                            " mapper into binary configuration explicitely " +
+                            " mapper into binary configuration explicitly " +
                             " and 'simpleName' property of the mapper set to 'true' (fix configuration or set " +
                             "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property).");
                     }
