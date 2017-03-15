@@ -2775,7 +2775,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (idxStates == null || !idxStates.accept(msg))
             return;
 
-        // TODO: Initiate exchange-like routine!
+        ctx.query().onIndexAccept(op.space(), op);
     }
 
     /**

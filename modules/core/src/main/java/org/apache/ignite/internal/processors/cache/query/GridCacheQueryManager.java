@@ -537,15 +537,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Validate index init discovery message.
-     *
-     * @param msg Message.
-     */
-    public void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
-        qryProc.onIndexProposeMessage(space, msg);
-    }
-
-    /**
      * Undeploys given class loader.
      *
      * @param ldr Class loader to undeploy.

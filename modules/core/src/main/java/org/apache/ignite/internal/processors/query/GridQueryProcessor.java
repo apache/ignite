@@ -201,9 +201,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Apply dynamic changes to candidates.
         if (idxStates != null) {
-            for (QueryTypeCandidate cand : cands) {
+            for (QueryTypeCandidate cand : cands)
                 applyInitialDelta(cand.descriptor(), idxStates);
-            }
         }
 
         // Ready to register at this point.
@@ -321,79 +320,78 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Handle index init discovery message.
      *
      * @param space Space.
-     * @param msg Message.
+     * @param op Operation.
      */
-    // TODO: This should be done during accept phase.
-    public void onIndexProposeMessage(String space, IndexProposeDiscoveryMessage msg) {
-        // Validate.
+    public void onIndexAccept(String space, AbstractIndexOperation op) {
         idxLock.writeLock().lock();
 
+        // TODO
+
         try {
-            AbstractIndexOperation op = msg.operation();
-
-            if (op instanceof CreateIndexOperation) {
-                CreateIndexOperation op0 = (CreateIndexOperation)op;
-
-                QueryIndex idx = op0.index();
-
-                // Check conflict with other indexes.
-                String idxName = op0.index().getName();
-
-                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
-
-                if (oldIdx != null) {
-                    if (!op0.ifNotExists())
-                        msg.onError(ctx.localNodeId(), "Index already exists [space=" + space + ", index=" + idxName);
-
-                    return;
-                }
-
-                // Make sure table exists.
-                String tblName = op0.tableName();
-
-                QueryTypeDescriptorImpl typeDesc = null;
-
-                for (QueryTypeDescriptorImpl type : types.values()) {
-                    if (F.eq(tblName, type.tableName())) {
-                        typeDesc = type;
-
-                        break;
-                    }
-                }
-
-                if (typeDesc == null) {
-                    msg.onError(ctx.localNodeId(), "Table doesn't exist: " + tblName);
-
-                    return;
-                }
-
-                // Make sure that index can be applied to the given table.
-                for (String idxField : idx.getFieldNames()) {
-                    if (!typeDesc.fields().containsKey(idxField)) {
-                        msg.onError(ctx.localNodeId(), "Field doesn't exist: " + idxField);
-
-                        return;
-                    }
-                }
-            }
-            else if (op instanceof DropIndexOperation) {
-                DropIndexOperation op0 = (DropIndexOperation)op;
-
-                String idxName = op0.indexName();
-
-                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
-
-                if (oldIdx == null) {
-                    if (!op0.ifExists())
-                        msg.onError(ctx.localNodeId(), "Index doesn't exist: " + idxName);
-                }
-            }
-            else
-                msg.onError(ctx.localNodeId(), "Unsupported operation: " + op);
+//            // Validate.
+//            if (op instanceof CreateIndexOperation) {
+//                CreateIndexOperation op0 = (CreateIndexOperation)op;
+//
+//                QueryIndex idx = op0.index();
+//
+//                // Check conflict with other indexes.
+//                String idxName = op0.index().getName();
+//
+//                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+//
+//                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
+//
+//                if (oldIdx != null) {
+//                    if (!op0.ifNotExists())
+//                        msg.onError(ctx.localNodeId(), "Index already exists [space=" + space + ", index=" + idxName);
+//
+//                    return;
+//                }
+//
+//                // Make sure table exists.
+//                String tblName = op0.tableName();
+//
+//                QueryTypeDescriptorImpl typeDesc = null;
+//
+//                for (QueryTypeDescriptorImpl type : types.values()) {
+//                    if (F.eq(tblName, type.tableName())) {
+//                        typeDesc = type;
+//
+//                        break;
+//                    }
+//                }
+//
+//                if (typeDesc == null) {
+//                    msg.onError(ctx.localNodeId(), "Table doesn't exist: " + tblName);
+//
+//                    return;
+//                }
+//
+//                // Make sure that index can be applied to the given table.
+//                for (String idxField : idx.getFieldNames()) {
+//                    if (!typeDesc.fields().containsKey(idxField)) {
+//                        msg.onError(ctx.localNodeId(), "Field doesn't exist: " + idxField);
+//
+//                        return;
+//                    }
+//                }
+//            }
+//            else if (op instanceof DropIndexOperation) {
+//                DropIndexOperation op0 = (DropIndexOperation)op;
+//
+//                String idxName = op0.indexName();
+//
+//                QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+//
+//                QueryIndexDescriptorImpl oldIdx = idxs.get(idxKey);
+//
+//                if (oldIdx == null) {
+//                    if (!op0.ifExists())
+//                        msg.onError(ctx.localNodeId(), "Index doesn't exist: " + idxName);
+//                }
+//            }
+//            else
+//                msg.onError(ctx.localNodeId(), "Unsupported operation: " + op);
         }
         finally {
             idxLock.writeLock().unlock();
