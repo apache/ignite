@@ -89,10 +89,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     @GridToStringExclude
     protected byte flags;
 
-    /** */
-    @GridDirectTransient
-    private GridNearAtomicUpdateResponse res;
-
     /**
      *
      */
@@ -246,41 +242,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      */
     public final CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
-    }
-
-    /**
-     * @param res Response.
-     * @return {@code True} if current response was {@code null}.
-     */
-    public boolean onResponse(GridNearAtomicUpdateResponse res) {
-        if (this.res == null) {
-            this.res = res;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     *
-     */
-    void resetResponse() {
-        this.res = null;
-    }
-
-    /**
-     * @return Response.
-     */
-    @Nullable public GridNearAtomicUpdateResponse response() {
-        return res;
-    }
-
-    /**
-     * @return {@code True} if received notification about primary fail.
-     */
-    boolean nodeFailedResponse() {
-        return res != null && res.nodeLeftResponse();
     }
 
     /**
@@ -449,6 +410,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @return Keys size.
      */
     public abstract int size();
+
+    /**
+     * @return Number of stripes.
+     */
+    public int stripes() {
+        return 0;
+    }
 
     /**
      * @param idx Key index.

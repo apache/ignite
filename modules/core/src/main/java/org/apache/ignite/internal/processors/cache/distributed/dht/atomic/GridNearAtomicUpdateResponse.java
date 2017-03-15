@@ -96,6 +96,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Partition ID. */
     private int partId = -1;
 
+    /** Stripe. */
+    private int stripe = -1;
+
     /** */
     @GridDirectCollection(UUID.class)
     @GridToStringInclude
@@ -179,6 +182,13 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      */
     public long futureId() {
         return futId;
+    }
+
+    /**
+     * @param partId Partition ID for proper striping on near node.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /**
@@ -427,6 +437,20 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return partId;
     }
 
+    /**
+     * @return Stripe number.
+     */
+    public int stripe() {
+        return stripe;
+    }
+
+    /**
+     * @param stripe Stripe number.
+     */
+    public void stripe(int stripe) {
+        this.stripe = stripe;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
@@ -520,6 +544,12 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
             case 14:
                 if (!writer.writeMessage("ret", ret))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeInt("stripe", stripe))
                     return false;
 
                 writer.incrementState();
@@ -636,6 +666,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
+            case 15:
+                stripe = reader.readInt("stripe");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
@@ -648,7 +686,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 16;
     }
 
     /** {@inheritDoc} */

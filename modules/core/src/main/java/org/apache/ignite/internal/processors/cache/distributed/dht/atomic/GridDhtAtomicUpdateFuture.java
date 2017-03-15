@@ -49,11 +49,12 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
     GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
         GridCacheVersion writeVer,
-        GridNearAtomicAbstractUpdateRequest updateReq
+        GridNearAtomicAbstractUpdateRequest updateReq,
+        int size
     ) {
         super(cctx, writeVer, updateReq);
 
-        mappings = U.newHashMap(updateReq.size());
+        mappings = U.newHashMap(size);
     }
 
     /** {@inheritDoc} */

@@ -38,8 +38,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.IgniteStripeThread;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.LongAdder8;
 
 /**
  * Striped executor.
@@ -75,7 +76,7 @@ public class StripedExecutor implements ExecutorService {
 
         try {
             for (int i = 0; i < cnt; i++) {
-                stripes[i] = new StripeConcurrentQueue(
+                stripes[i] = new StripeMPSCQueue(
                     igniteInstanceName,
                     poolName,
                     i,
@@ -143,6 +144,31 @@ public class StripedExecutor implements ExecutorService {
             if (active || completedCnt > 0)
                 completedCntrs[i] = completedCnt;
         }
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public String getMetrics() {
+        GridStringBuilder sb = new GridStringBuilder();
+        sb.a("completed");
+        GridStringBuilder sb2 = new GridStringBuilder();
+        sb2.a("park");
+        GridStringBuilder sb3 = new GridStringBuilder();
+        sb3.a("unpark");
+        GridStringBuilder sb4 = new GridStringBuilder();
+        sb4.a("queue");
+
+        for (int i = 0; i < stripes.length; i++) {
+            Stripe stripe = stripes[i];
+
+            sb.a(':').a(stripe.completedCnt);
+            sb2.a(':').a(stripe.parkCntr());
+            sb3.a(':').a(stripe.unparkCntr());
+            sb4.a(':').a(stripe.queueSize());
+        }
+
+        return sb.a(' ').a(sb2).a(' ').a(sb3).a(' ').a(sb4).toString();
     }
 
     /**
@@ -435,10 +461,9 @@ public class StripedExecutor implements ExecutorService {
          * Starts the stripe.
          */
         void start() {
-            thread = new IgniteThread(igniteInstanceName,
+            thread = new IgniteStripeThread(igniteInstanceName,
                 poolName + "-stripe-" + idx,
                 this,
-                IgniteThread.GRP_IDX_UNASSIGNED,
                 idx);
 
             thread.start();
@@ -524,6 +549,20 @@ public class StripedExecutor implements ExecutorService {
          */
         abstract String queueToString();
 
+        /**
+         * @return Number of park ops.
+         */
+        public long parkCntr() {
+            return 0;
+        }
+
+        /**
+         * @return Number of unpark ops.
+         */
+        public long unparkCntr() {
+            return 0;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(Stripe.class, this);
@@ -539,6 +578,12 @@ public class StripedExecutor implements ExecutorService {
 
         /** */
         private volatile boolean parked;
+
+        /** */
+        private volatile long parkCntr;
+
+        /** */
+        private final LongAdder8 unparkCntr = new LongAdder8();
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -578,6 +623,7 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
+                    parkCntr++;
                     LockSupport.park();
 
                     if (Thread.interrupted())
@@ -593,8 +639,10 @@ public class StripedExecutor implements ExecutorService {
         void execute(Runnable cmd) {
             queue.add(cmd);
 
-            if (parked)
+            if (parked) {
+                unparkCntr.increment();
                 LockSupport.unpark(thread);
+            }
         }
 
         /** {@inheritDoc} */
@@ -605,6 +653,16 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long parkCntr() {
+            return parkCntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long unparkCntr() {
+            return unparkCntr.sum();
         }
 
         /** {@inheritDoc} */
@@ -717,6 +775,63 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StripeConcurrentBlockingQueue.class, this, super.toString());
+        }
+    }
+
+    /**
+     * Stripe.
+     */
+    private static class StripeMPSCQueue extends Stripe {
+        /** Queue. */
+        private final MPSCQueue<Runnable> queue = new MPSCQueue<>();
+
+        /**
+         * @param gridName Grid name.
+         * @param poolName Pool name.
+         * @param idx Stripe index.
+         * @param log Logger.
+         */
+        public StripeMPSCQueue(
+            String gridName,
+            String poolName,
+            int idx,
+            IgniteLogger log
+        ) {
+            super(gridName,
+                poolName,
+                idx,
+                log);
+        }
+
+        /** {@inheritDoc} */
+        @Override void start() {
+            super.start();
+            queue.setConsumerThread(thread);
+        }
+
+        /** {@inheritDoc} */
+        @Override Runnable take() throws InterruptedException {
+            return queue.take();
+        }
+
+        /** {@inheritDoc} */
+        void execute(Runnable cmd) {
+            queue.add(cmd);
+        }
+
+        /** {@inheritDoc} */
+        @Override int queueSize() {
+            return queue.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override String queueToString() {
+            return String.valueOf(queue);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(StripeMPSCQueue.class, this, super.toString());
         }
     }
 }

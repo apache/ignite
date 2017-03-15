@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -138,7 +139,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
 
     /** Future ID. */
     @GridToStringInclude
-    protected Long futId;
+    protected long futId = -1;
 
     /** Operation result. */
     protected GridCacheReturn opRes;
@@ -356,7 +357,6 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @return Response to notify about primary failure.
      */
     final GridNearAtomicUpdateResponse primaryFailedResponse(GridNearAtomicAbstractUpdateRequest req) {
-        assert req.response() == null : req;
         assert req.nodeId() != null : req;
 
         if (msgLog.isDebugEnabled()) {
@@ -423,6 +423,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         final GridNearAtomicAbstractUpdateRequest req;
 
         /** */
+        private GridNearAtomicUpdateResponse res;
+
+        /** */
+        private Map<Integer, GridNearAtomicUpdateResponse> resMap;
+
+        /** */
         @GridToStringInclude
         Set<UUID> dhtNodes;
 
@@ -431,7 +437,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         private Set<UUID> rcvd;
 
         /** */
-        private boolean hasRes;
+        private boolean hasDhtRes;
 
         /**
          * @param req Request.
@@ -516,13 +522,24 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         }
 
         /**
+         * @return {@code True} if all near results gathered.
+         */
+        private boolean hasAllNearResults() {
+            return res != null || (resMap != null && resMap.size() == req.stripes());
+        }
+
+        public String state() {
+            return resMap != null ? resMap.size() + "/" + req.stripes() : res != null ? "res" : "no";
+        }
+
+        /**
          * @return {@code True} if all expected responses are received.
          */
         private boolean finished() {
             if (req.writeSynchronizationMode() == PRIMARY_SYNC)
-                return hasRes;
+                return hasAllNearResults();
 
-            return (dhtNodes != null && dhtNodes.isEmpty()) && hasRes;
+            return (dhtNodes != null && dhtNodes.isEmpty()) && hasDhtRes;
         }
 
         /**
@@ -536,13 +553,13 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
              * When primary failed, even if primary response is received, it is possible it failed to send
              * request to backup(s), need remap operation.
              */
-            if (req.fullSync() && !req.nodeFailedResponse()) {
-                req.resetResponse();
+            if (req.fullSync() && !nodeFailedResponse()) {
+                resetResponse();
 
                 return req;
             }
 
-            return req.response() == null ? req : null;
+            return hasAllNearResults() ? req : null;
         }
 
         /**
@@ -559,7 +576,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             if (finished())
                 return null;
 
-            return req.response() == null ? req : null;
+            return !hasAllNearResults() ? req : null;
         }
 
         /**
@@ -571,7 +588,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
                 return DhtLeftResult.NOT_DONE;
 
             if (dhtNodes.remove(nodeId) && dhtNodes.isEmpty()) {
-                if (hasRes)
+                if (hasDhtRes)
                     return DhtLeftResult.DONE;
                 else
                     return !req.needPrimaryResponse() ? DhtLeftResult.ALL_RCVD_CHECK_PRIMARY : DhtLeftResult.NOT_DONE;
@@ -592,7 +609,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
                 return false;
 
             if (res.hasResult())
-                hasRes = true;
+                hasDhtRes = true;
 
             if (dhtNodes == null) {
                 if (rcvd == null)
@@ -614,9 +631,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
         boolean onPrimaryResponse(GridNearAtomicUpdateResponse res, GridCacheContext cctx) {
             assert !finished() : this;
 
-            hasRes = true;
-
-            boolean onRes = req.onResponse(res);
+            boolean onRes = storeResponse(res);
 
             assert onRes;
 
@@ -639,7 +654,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
          * @param cctx Context.
          */
         private void initDhtNodes(List<UUID> nodeIds, GridCacheContext cctx) {
-            assert dhtNodes == null || req.initMappingLocally();
+            assert F.isEmpty(dhtNodes) || req.initMappingLocally();
 
             Set<UUID> dhtNodes0 = dhtNodes;
 
@@ -664,12 +679,67 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
                 dhtNodes = Collections.emptySet();
         }
 
+        /**
+         * @return {@code True} if received notification about primary fail.
+         */
+        boolean nodeFailedResponse() {
+            return res != null && res.nodeLeftResponse();
+        }
+
+        /**
+         * @param res Response.
+         * @return {@code True} if current response was {@code null}.
+         */
+        private boolean storeResponse(GridNearAtomicUpdateResponse res) {
+            if (res.stripe() > -1) {
+                if (resMap == null)
+                    resMap = U.newHashMap(req.stripes());
+
+                if (!resMap.containsKey(res.stripe())) {
+                    resMap.put(res.stripe(), res);
+                    return true;
+                }
+            }
+            else {
+                if (this.res == null) {
+                    this.res = res;
+//                    this.resMap = null;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         *
+         */
+        void resetResponse() {
+            res = null;
+            resMap = null;
+        }
+
+        /**
+         * @return Response.
+         */
+        @Nullable public GridNearAtomicUpdateResponse response() {
+            return res;
+        }
+
+        /**
+         * @return Response.
+         */
+        @Nullable public Map<Integer, GridNearAtomicUpdateResponse> responses() {
+            return resMap;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PrimaryRequestState.class, this,
                 "primary", primaryId(),
                 "needPrimaryRes", req.needPrimaryResponse(),
-                "primaryRes", req.response() != null,
+                "primaryRes", this.res != null,
                 "done", finished());
         }
     }

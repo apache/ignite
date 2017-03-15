@@ -132,7 +132,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     };
 
     /** Logger. */
-    @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
+    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
 
     /** */
@@ -256,9 +256,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
                 if (cacheFut.isCancelled() || cacheFut.isDone()) {
-                    Long futId = cacheFut.id();
+                    long futId = cacheFut.id();
 
-                    if (futId != null)
+                    if (futId > -1)
                         atomicFuts.remove(futId, cacheFut);
                 }
             }
@@ -437,7 +437,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param fut Future.
      * @return {@code False} if future was forcibly completed with error.
      */
-    public boolean addAtomicFuture(Long futId, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(long futId, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futId, fut);
 
         assert old == null : "Old future is not null [futId=" + futId + ", fut=" + fut + ", old=" + old + ']';
@@ -472,7 +472,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> atomicFuture(Long futId) {
+    @Nullable public IgniteInternalFuture<?> atomicFuture(long futId) {
         return atomicFuts.get(futId);
     }
 
@@ -480,7 +480,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(Long futId) {
+    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(long futId) {
         return atomicFuts.remove(futId);
     }
 
@@ -509,8 +509,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         return fut;
     }
-
-    /**
 
     /**
      * Adds future.

@@ -21,13 +21,16 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -40,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +63,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** */
     private static final long serialVersionUID = 0L;
 
+    public static final int DIRECT_TYPE = 40;
+
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -69,6 +73,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Values to update. */
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> vals;
+
+    /** Stripe to index mapping. */
+    @GridDirectTransient
+    private int[] stripeCnt;
+
+    /** Stripe to index mapping bytes. */
+    @GridDirectMap(keyType = int.class, valueType = int[].class)
+    private Map<Integer, int[]> stripeMap;
 
     /** Entry processors. */
     @GridDirectTransient
@@ -108,6 +120,17 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
     private int initSize;
+
+    /** Maximum number of keys. */
+    @GridDirectTransient
+    private int maxEntryCnt;
+
+    /** Number of stripes on remote node. */
+    @GridDirectTransient
+    private int maxStripes;
+
+    /** Partition Id */
+    private int partId;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -155,7 +178,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         boolean skipStore,
         boolean keepBinary,
         boolean addDepInfo,
-        int maxEntryCnt
+        int maxEntryCnt,
+        int maxStripes
     ) {
         super(cacheId,
             nodeId,
@@ -181,6 +205,9 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         // than 10, we use it.
         initSize = Math.min(maxEntryCnt, 10);
 
+        this.maxEntryCnt = maxEntryCnt;
+        this.maxStripes = maxStripes;
+
         keys = new ArrayList<>(initSize);
     }
 
@@ -199,6 +226,25 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         }
 
         assert val != null || op == DELETE;
+
+        if (maxStripes > 1) {
+            int stripe = key.partition() % maxStripes;
+
+            if (stripeCnt == null)
+                stripeCnt = new int[maxStripes];
+
+            if (stripeMap == null)
+                stripeMap = new HashMap<>(maxStripes);
+
+            int[] idxs = stripeMap.get(stripe);
+
+            if (idxs == null)
+                stripeMap.put(stripe, idxs = new int[maxEntryCnt]);
+
+            int idx = stripeCnt[stripe];
+            idxs[idx] = keys.size();
+            stripeCnt[stripe] = idx + 1;
+        }
 
         keys.add(key);
 
@@ -264,6 +310,11 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         assert keys != null;
 
         return keys != null ? keys.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int stripes() {
+        return stripeMap.size();
     }
 
     /** {@inheritDoc} */
@@ -353,6 +404,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return expiryPlc;
     }
 
+    /**
+     * @return Stripe mapping.
+     */
+    @Nullable public Map<Integer, int[]> stripeMap() {
+        return stripeMap;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -361,6 +419,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
+
+        if (stripeMap != null && stripeCnt != null) {
+            for (Integer idx : stripeMap.keySet()) {
+                stripeMap.put(idx, Arrays.copyOf(stripeMap.get(idx), stripeCnt[idx]));
+            }
+
+            stripeCnt = null;
+        }
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -425,9 +491,14 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        assert !F.isEmpty(keys);
+        return partId;
+    }
 
-        return keys.get(0).partition();
+    /**
+     * @param partId Partition.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
@@ -494,6 +565,18 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 writer.incrementState();
 
             case 18:
+                if (!writer.writeInt("partId", partId))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
+                if (!writer.writeMap("stripeMap", stripeMap, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 20:
                 if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
                     return false;
 
@@ -580,6 +663,22 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 18:
+                partId = reader.readInt("partId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 19:
+                stripeMap = reader.readMap("stripeMap", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 20:
                 vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -594,24 +693,24 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKeys) {
-        vals = null;
-        entryProcessors = null;
-        entryProcessorsBytes = null;
-        invokeArgs = null;
-        invokeArgsBytes = null;
-
-        if (clearKeys)
-            keys = null;
+//            vals = null;
+//            entryProcessors = null;
+//            entryProcessorsBytes = null;
+//            invokeArgs = null;
+//            invokeArgsBytes = null;
+//
+//            if (clearKeys)
+//                keys = null;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 40;
+        return DIRECT_TYPE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 21;
     }
 
     /** {@inheritDoc} */

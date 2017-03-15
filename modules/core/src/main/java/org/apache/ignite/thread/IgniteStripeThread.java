@@ -15,25 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.thread;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Update future for atomic cache.
+ * Class for use within {@link IgniteThreadPoolExecutor} class.
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return Future ID.
-     */
-    public long id();
+public class IgniteStripeThread extends IgniteThread {
+
+    /** Group index. */
+    private final int stripeIdx;
+
+    /** {@inheritDoc} */
+    public IgniteStripeThread(String gridName, String threadName, Runnable r, int stripeIdx) {
+        super(gridName, threadName, r);
+        this.stripeIdx = stripeIdx;
+    }
 
     /**
-     * Gets future that will be completed when it is safe when update is finished on the given version of topology.
-     *
-     * @param topVer Topology version to finish.
-     * @return Future or {@code null} if no need to wait.
+     * @return Group index.
      */
-    public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer);
+    public int stripeIndex() {
+        return stripeIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteStripeThread.class, this, "name", getName());
+    }
 }
