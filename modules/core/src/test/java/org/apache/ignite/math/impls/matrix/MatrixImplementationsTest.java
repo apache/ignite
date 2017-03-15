@@ -224,11 +224,14 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
     
-    /** */
+    /**
+     * Old version up to 12 x 12 = 153 sec. (profiler)
+     * Current version 17 sec. (profiler)
+     */
     @Test
     public void testDeterminant(){
         consumeSampleMatrix((m, desc)->{
-            double[][] doubles = fillAndReturn(m);
+            double[][] doubles = fillIntAndReturn(m);
 
             if (m.rowSize() == 1)
                 assertEquals("Unexpected value " + desc, m.determinant(), doubles[0][0], 0d);
@@ -251,7 +254,12 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                     for (int i = 0; i < diagMtx.rowSize(); i++)
                         det *= diagMtx.get(i, i);
 
-                    assertEquals("Unexpected value " + desc, diagMtx.determinant(), det, DEFAULT_DELTA);
+                    try {
+                        assertEquals("Unexpected value " + desc, det, diagMtx.determinant(), DEFAULT_DELTA);
+                    } catch (Exception e){
+                        System.out.println(desc);
+                        throw e;
+                    }
                 }
             }
         });
@@ -420,6 +428,25 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             assertEquals("Unexpected value for " + desc, m.minValue().get(), min, 0d);
         });
+    }
+
+    /** */
+    private double[][] fillIntAndReturn(Matrix m) {
+        double[][] arr = new double[m.rowSize()][m.columnSize()];
+
+        if (m instanceof RandomMatrix){
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = m.get(i, j);
+
+        } else {
+            for (int i = 0; i < m.rowSize(); i++)
+                for (int j = 0; j < m.columnSize(); j++)
+                    arr[i][j] = i * m.rowSize() + j;
+
+            m.assign(arr);
+        }
+        return arr;
     }
 
     /** */

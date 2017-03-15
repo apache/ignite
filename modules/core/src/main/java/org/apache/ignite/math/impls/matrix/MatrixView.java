@@ -66,16 +66,19 @@ public class MatrixView extends AbstractMatrix {
         return (MatrixDelegateStorage)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         MatrixDelegateStorage sto = storage();
 
         return new MatrixView(sto.delegate(), sto.rowOffset(), sto.columnOffset(), sto.rowSize(), sto.columnSize());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
         throw new UnsupportedOperationException();
     }

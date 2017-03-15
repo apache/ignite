@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import java.util.stream.IntStream;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
@@ -466,44 +467,63 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        int rows = rowSize();
-        int cols = columnSize();
+        return recDet(null, null, this, this::getX);
+    }
+
+    /**
+     * @param idxX Index x.
+     * @param idxY Index y.
+     */
+    private double recDet(int[] idxX, int[] idxY, Matrix origin, IntIntToDoubleFunction getter){
+        int rows = idxX == null ? rowSize() : idxX.length;
+        int cols = idxX == null ? columnSize() : idxX.length;
 
         if (rows != cols)
             throw new CardinalityException(rows, cols);
 
         if (rows == 1)
-            return getX(0, 0);
-        else if (rows == 2)
-            return getX(0, 0) * getX(1, 1) - getX(0, 1) * getX(1, 0);
-        else {
-            int sign = 1;
-            double ret = 0.0;
+            return getter.apply(0, 0);
 
-            for (int i = 0; i < cols; i++) {
-                Matrix minor = like(rows - 1, cols - 1);
+        if (rows == 2)
+            return getter.apply(0, 0) * getter.apply(1, 1) - getter.apply(0, 1) * getter.apply(1, 0);
 
-                for (int j = 1; j < rows; j++) {
-                    boolean flag = false;
+        if (rows == 3)
+            return getter.apply(0, 0) * (getter.apply(1, 1) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 1))
+                - getter.apply(0, 1) * (getter.apply(1, 0) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 0))
+                + getter.apply(0, 2) * (getter.apply(1, 0) * getter.apply(2, 1) - getter.apply(1, 1) * getter.apply(2, 0));
 
-                    for (int k = 0; k < cols; k++) {
-                        if (k == i) {
-                            flag = true;
-
-                            continue;
-                        }
-
-                        minor.set(j - 1, flag ? k - 1 : k, getX(j, k));
-                    }
-                }
-
-                ret += getX(0, i) * sign * minor.determinant();
-                sign *= -1;
-
-            }
-
-            return ret;
+        if (idxX == null){
+            idxX = IntStream.range(0, rows).toArray();
+            idxY = IntStream.range(0, cols).toArray();
         }
+
+        double det = 0;
+
+        for (int i = 0; i < rows; i++) {
+            int[] finalIdxX = skipIdx(idxX, 0);
+            int[] finalIdxY = skipIdx(idxY, i);
+
+            IntIntToDoubleFunction get = (x, y) -> origin.getX(finalIdxX[x], finalIdxY[y]);
+
+            det += Math.pow(-1, i) * getX(0, i) * recDet(finalIdxX, finalIdxY, origin, get);
+        }
+
+        return det;
+    }
+
+    /**
+     * @param idxs Idxs.
+     * @param idx Index.
+     */
+    private int[] skipIdx(int[] idxs, int idx){
+        int[] res = new int[idxs.length -1];
+        int j = 0;
+
+        for (int i = 0; i < idxs.length; i++)
+            if (i != idx)
+                res[j++] = idxs[i];
+        
+        return res;
     }
 
     /** {@inheritDoc} */
