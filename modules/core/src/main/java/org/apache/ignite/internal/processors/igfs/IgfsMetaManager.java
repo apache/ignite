@@ -140,7 +140,7 @@ public class IgfsMetaManager extends IgfsManager {
     private GridEventStorageManager evts;
 
     /** Local node. */
-    private ClusterNode locNode;
+    private volatile ClusterNode locNode;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -152,7 +152,7 @@ public class IgfsMetaManager extends IgfsManager {
     private final boolean client;
 
     /** Compute facade for client tasks. */
-    private IgniteCompute cliCompute;
+    private IgniteCompute rmtCompute;
 
     /**
      * Constructor.
@@ -235,10 +235,34 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * @return Client flag.
+     * Check whether remote task execution is needed for read-only operation.
+     *
+     * @return {@code True} if remote task execution is needed.
      */
-    boolean isClient() {
-        return client;
+    boolean isReadRemote() {
+        return client ||
+            cfg.isColocateMetadata() && !metaCache.affinity().isPrimaryOrBackup(localNode(), IgfsUtils.ROOT_ID);
+    }
+
+    /**
+     * Check whether remote task execution is needed.
+     *
+     * @return {@code True} if remote task execution is needed.
+     */
+    boolean isModifyRemote() {
+        return client || cfg.isColocateMetadata() && !metaCache.affinity().isPrimary(localNode(), IgfsUtils.ROOT_ID);
+    }
+
+    /**
+     * Check whether remote task execution is needed for the given ID.
+     *
+     * @param fileId Identifier of the modified file.
+     * @return {@code True} if remote task execution is needed.
+     */
+    private boolean isModifyRemote(IgniteUuid fileId) {
+        assert fileId != null;
+
+        return client || !metaCache.affinity().isPrimary(localNode(), fileId);
     }
 
     /**
@@ -247,27 +271,22 @@ public class IgfsMetaManager extends IgfsManager {
      * @param task Task.
      * @return Result.
      */
-    <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
-        try {
-            return runClientTask(IgfsUtils.ROOT_ID, task);
-        }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
-        }
+    <T> T runRemote(IgfsClientAbstractCallable<T> task) {
+        return runRemote(IgfsUtils.ROOT_ID, task);
     }
 
     /**
      * Run client task.
      *
-     * @param affinityFileId Affinity fileId.
+     * @param affKey Affinity fileId.
      * @param task Task.
      * @return Result.
      */
-    <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
+    <T> T runRemote(IgniteUuid affKey, IgfsClientAbstractCallable<T> task) {
         try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
-                clientCompute().call(task);
+                remoteCompute().affinityCall(cfg.getMetaCacheName(), affKey, task) :
+                remoteCompute().call(task);
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -279,24 +298,36 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return Compute facade.
      */
-    private IgniteCompute clientCompute() {
-        assert client;
+    private IgniteCompute remoteCompute() {
+        IgniteCompute remoteCompute0 = rmtCompute;
 
-        IgniteCompute cliCompute0 = cliCompute;
-
-        if (cliCompute0 == null) {
+        if (remoteCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
             ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
 
-            cliCompute0 = ignite.compute(cluster);
+            remoteCompute0 = ignite.compute(cluster);
 
-            cliCompute = cliCompute0;
+            rmtCompute = remoteCompute0;
         }
 
-        assert cliCompute0 != null;
+        assert remoteCompute0 != null;
 
-        return cliCompute0;
+        return remoteCompute0;
+    }
+
+    /**
+     * Get local node.
+     *
+     * @return Local node.
+     */
+    private ClusterNode localNode() {
+        ClusterNode locNode0 = locNode;
+
+        if (locNode0 == null)
+            locNode0 = igfsCtx.kernalContext().discovery().localNode();
+
+        return locNode0;
     }
 
     /**
@@ -423,7 +454,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Get IDs.
         if (client) {
-            List<IgniteUuid> ids = runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
+            List<IgniteUuid> ids = runRemote(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path));
 
             return new IgfsPathIds(path, parts, ids.toArray(new IgniteUuid[ids.size()]));
         }
@@ -635,7 +666,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (del)
             return IgfsUtils.DELETE_LOCK_ID;
 
-        return IgniteUuid.fromUuid(locNode.id());
+        return IgniteUuid.fromUuid(localNode().id());
     }
 
     /**
@@ -666,8 +697,8 @@ public class IgfsMetaManager extends IgfsManager {
         final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
 
-        if(client) {
-            runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
+        if(isModifyRemote(fileId)) {
+            runRemote(new IgfsClientMetaUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
                 updateSpace, space, affRange));
 
             return;
@@ -1534,6 +1565,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param space Space.
      * @param affRange Affinity range.
      * @return New file info.
+     * @throws IgniteCheckedException If failed.
      */
     public IgfsEntryInfo reserveSpace(IgniteUuid fileId, long space, IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
@@ -1897,8 +1929,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgfsPath evtPath = parent0;
 
                 while (!parentPath.equals(evtPath)) {
-                    pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
-                        EventType.EVT_IGFS_DIR_CREATED));
+                    pendingEvts.addFirst(new IgfsEvent(evtPath, localNode(), EventType.EVT_IGFS_DIR_CREATED));
 
                     evtPath = evtPath.parent();
 
@@ -1955,7 +1986,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         // Record CREATE event if needed.
         if (oldId == null && evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
-            pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
+            pendingEvts.add(new IgfsEvent(path, localNode(), EventType.EVT_IGFS_FILE_CREATED));
 
         return new IgfsCreateResult(newInfo, out);
     }
@@ -2032,7 +2063,7 @@ public class IgfsMetaManager extends IgfsManager {
                             }
 
                             if (evts.isRecordable(EventType.EVT_IGFS_FILE_OPENED_WRITE))
-                                pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_OPENED_WRITE));
+                                pendingEvts.add(new IgfsEvent(path, localNode(), EventType.EVT_IGFS_FILE_OPENED_WRITE));
 
                             return new IgfsCreateResult(lockedInfo, outT1.get());
                         }
@@ -2073,7 +2104,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+        return client ? runRemote(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
     }
 
     /**
@@ -2084,7 +2115,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
-        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+        return client ? runRemote(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
     }
 
     /**
@@ -2257,7 +2288,8 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsPath evtPath = path;
 
                             while (!parentPath.equals(evtPath)) {
-                                pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EventType.EVT_IGFS_DIR_CREATED));
+                                pendingEvts.addFirst(new IgfsEvent(evtPath, localNode(),
+                                    EventType.EVT_IGFS_DIR_CREATED));
 
                                 evtPath = evtPath.parent();
 
@@ -2354,11 +2386,11 @@ public class IgfsMetaManager extends IgfsManager {
                                 pendingEvts.add(new IgfsEvent(
                                     src,
                                     destInfo == null ? dest : new IgfsPath(dest, src.name()),
-                                    locNode,
+                                    localNode(),
                                     EventType.EVT_IGFS_FILE_RENAMED));
                         }
                         else if (evts.isRecordable(EventType.EVT_IGFS_DIR_RENAMED))
-                            pendingEvts.add(new IgfsEvent(src, dest, locNode, EventType.EVT_IGFS_DIR_RENAMED));
+                            pendingEvts.add(new IgfsEvent(src, dest, localNode(), EventType.EVT_IGFS_DIR_RENAMED));
 
                         return true;
                     }
@@ -2714,7 +2746,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     strict,
                                     created);
 
-                                assert strict && info != null || !strict;
+                                assert !strict || info != null;
 
                                 if (info != null)
                                     infos.put(path, info);
@@ -2723,7 +2755,7 @@ public class IgfsMetaManager extends IgfsManager {
                                     if (parentPath.equals(firstParentPath))
                                         infos.put(firstParentPath, idToInfo.get(pathToId.get(firstParentPath)));
                                     else {
-                                        assert strict && created.get(parentPath) != null || !strict;
+                                        assert !strict || created.get(parentPath) != null;
 
                                         if (created.get(parentPath) != null)
                                             infos.put(parentPath, created.get(parentPath));
