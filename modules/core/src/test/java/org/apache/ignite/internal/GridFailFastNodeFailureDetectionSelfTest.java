@@ -113,7 +113,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
         failNode(ignite1);
 
-        assert failLatch.await(1000, MILLISECONDS);
+        assert failLatch.await(1500, MILLISECONDS);
     }
 
     /**
