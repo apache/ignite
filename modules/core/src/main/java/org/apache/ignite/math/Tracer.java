@@ -125,8 +125,6 @@ public class Tracer {
     static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
         String s = mkString(mtx, fmt);
 
-        System.out.println(s);
-
         Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
