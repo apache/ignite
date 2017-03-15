@@ -125,6 +125,8 @@ public class Tracer {
     static void saveAsCsv(Matrix mtx, String fmt, String filePath) throws IOException {
         String s = mkString(mtx, fmt);
 
+        System.out.println(s);
+
         Files.write(Paths.get(filePath),s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
     }
 
@@ -300,25 +302,19 @@ public class Tracer {
      * @return
      */
     static String mkString(Matrix mtx, String fmt) {
-        boolean first = true;
-
         StringBuffer buf = new StringBuffer();
 
         for(int i = 0; i < mtx.rowSize(); i++) {
-            if (!first)
-                buf.append("\n");
-
             for (int j = 0; j < mtx.columnSize(); j++) {
                 String s = String.format(fmt, mtx.get(i, j));
 
-                if (!first) {
+                if (j != 0)
                     buf.append(", ");
-                    buf.append(s);
-                }
-                else {
-                    buf.append(s);
-                    first = false;
-                }
+
+                buf.append(s);
+
+                if (j == mtx.columnSize() - 1)
+                    buf.append(",\n");
             }
         }
 
