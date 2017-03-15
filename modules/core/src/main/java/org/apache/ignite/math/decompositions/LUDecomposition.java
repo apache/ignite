@@ -17,10 +17,80 @@
 
 package org.apache.ignite.math.decompositions;
 
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+
 /**
  * Calculates the LU-decomposition of a square matrix.
  *
  * TODO: add description.
+ * TODO: WIP
  */
 public class LUDecomposition {
+    /** Pivot permutation associated with LU decomposition. */
+    private final Vector pivot;
+    /** Cached value of L. */
+    private Matrix cachedL;
+    /** Cached value of U. */
+    private Matrix cachedU;
+    /** Cached value of P. */
+    private Matrix cachedP;
+    /** Original matrix. */
+    private Matrix matrix;
+    /** Entries of LU decomposition. */
+    private Matrix luMatrix;
+
+    /**
+     * Calculates the LU-decomposition of the given matrix.
+     *
+     * @param matrix Matrix to decompose.
+     * @throws CardinalityException if matrix is not square.
+     */
+    public LUDecomposition(Matrix matrix){
+        int rows = matrix.rowSize();
+        int cols = matrix.columnSize();
+
+        if (rows != cols)
+            throw new CardinalityException(rows, cols);
+
+        this.matrix = matrix;
+
+        luMatrix = matrix.copy();
+        pivot = matrix.likeVector(cols);
+        cachedL = null;
+        cachedU = null;
+        cachedP = null;
+
+        for (int col = 0; col < cols; col++) {
+            for (int row = 0; row < col; row++) {
+                double sum = 0;
+
+                for (int i = 0; i < row; i++)
+                    sum -= luMatrix.getX(col, i) * luMatrix.getX(i, col);
+
+                luMatrix.setX(row, col, sum);
+            }
+
+            for (int row = col; row < rows; row++) {
+                //TODO
+            }
+        }
+    }
+
+    public Matrix getCachedL() {
+        return cachedL;
+    }
+
+    public Matrix getCachedU() {
+        return cachedU;
+    }
+
+    public Matrix getCachedP(){
+        return cachedP;
+    }
+
+    public double determinant(){
+        return 0d;
+    }
 }
