@@ -678,6 +678,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         out.writeBoolean(exclNeighbors);
         out.writeObject(hashIdRslvr);
         out.writeObject(backupFilter);
+        out.writeBoolean(useBalancer);
     }
 
     /** {@inheritDoc} */
@@ -687,6 +688,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
+        useBalancer = in.readBoolean();
     }
 
     /**
