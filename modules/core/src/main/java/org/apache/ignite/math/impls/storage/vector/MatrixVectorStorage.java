@@ -51,7 +51,8 @@ public class MatrixVectorStorage implements VectorStorage {
         assert parent != null;
         assert rowStride >= 0;
         assert colStride >= 0;
-        
+        assert rowStride > 0 || colStride > 0;
+
         if (row < 0 || row >= parent.rowSize())
             throw new IndexException(row);
         if (col < 0 || col >= parent.columnSize())
@@ -101,7 +102,7 @@ public class MatrixVectorStorage implements VectorStorage {
     }
 
     /**
-     * 
+     *
      * @return
      */
     private int getSize() {
