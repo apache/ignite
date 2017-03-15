@@ -227,17 +227,27 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
          * @param {String} cacheName Cache name.
          * @param {String} query Query.
          * @param {Boolean} nonCollocatedJoins Flag whether to execute non collocated joins.
+         * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
          * @param {Boolean} local Flag whether to execute query locally.
          * @param {int} pageSize Page size.
          * @returns {Promise}
          */
-        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, local, pageSize) {
+        fieldsQuery(demo, nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, local, pageSize) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.query.VisorQueryTask');
 
-            if (nonCollocatedJoins) {
+            if (enforceJoinOrder) {
+                cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV3')
+                    .addParam('p4', cacheName)
+                    .addParam('p5', query)
+                    .addParam('p6', nonCollocatedJoins)
+                    .addParam('p7', enforceJoinOrder)
+                    .addParam('p8', local)
+                    .addParam('p9', pageSize);
+            }
+            else if (nonCollocatedJoins) {
                 cmd.addParam('p3', 'org.apache.ignite.internal.visor.query.VisorQueryArgV2')
                     .addParam('p4', cacheName)
                     .addParam('p5', query)
