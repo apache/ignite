@@ -57,17 +57,12 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     /** */
     private static final AtomicBoolean restarterStarted = new AtomicBoolean();
 
-    /** Async Cache. */
-    protected IgniteCache<K, V> asyncCache;
-
     /** */
     private final AtomicBoolean firtsExProcessed = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
-
-        asyncCache = cache.withAsync();
     }
 
     /** {@inheritDoc} */

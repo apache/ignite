@@ -4932,6 +4932,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param cache Cache.
      * @param cnt Keys count.
+     * @param startFrom Begin value ofthe key.
      * @return Collection of keys for which given cache is primary.
      */
     protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom) {
@@ -6152,27 +6153,32 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteCache<String, Integer> cache = jcache();
         Ignite ignite = ignite(0);
 
-        doTransformResourceInjection(ignite, cache);
-        doTransformResourceInjection(ignite, cache.withAsync());
+        doTransformResourceInjection(ignite, cache, false, false);
+        doTransformResourceInjection(ignite, cache, true, false);
+        doTransformResourceInjection(ignite, cache, true, true);
 
         if (txEnabled()) {
-            doTransformResourceInjectionInTx(ignite, cache);
-            doTransformResourceInjectionInTx(ignite, cache.withAsync());
+            doTransformResourceInjectionInTx(ignite, cache, false, false);
+            doTransformResourceInjectionInTx(ignite, cache, true, false);
+            doTransformResourceInjectionInTx(ignite, cache, true, true);
         }
     }
 
     /**
      * @param ignite Node.
      * @param cache Cache.
+     * @param async Use async API.
+     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
-    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    private void doTransformResourceInjectionInTx(Ignite ignite, IgniteCache<String, Integer> cache, boolean async,
+        boolean oldAsync) throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 IgniteTransactions txs = ignite.transactions();
 
                 try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                    doTransformResourceInjection(ignite, cache);
+                    doTransformResourceInjection(ignite, cache, async, oldAsync);
 
                     tx.commit();
                 }
@@ -6183,9 +6189,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param ignite Node.
      * @param cache Cache.
+     * @param async Use async API.
+     * @param oldAsync Use old async API.
      * @throws Exception If failed.
      */
-    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+    private void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache, boolean async,
+        boolean oldAsync) throws Exception {
         final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
             ResourceType.CACHE_NAME,
             ResourceType.LOGGER,
@@ -6198,11 +6207,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
 
         try {
-            checkResourceInjectionOnInvoke(cache, required);
+            checkResourceInjectionOnInvoke(cache, required, async, oldAsync);
 
-            checkResourceInjectionOnInvokeAll(cache, required);
+            checkResourceInjectionOnInvokeAll(cache, required, async, oldAsync);
 
-            checkResourceInjectionOnInvokeAllMap(cache, required);
+            checkResourceInjectionOnInvokeAllMap(cache, required, async, oldAsync);
         }
         finally {
             evts.stopRemoteListen(opId);
@@ -6214,9 +6223,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @param cache Cache.
      * @param required Expected injected resources.
+     * @param async Use async API.
+     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvokeAllMap(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required) {
+        Collection<ResourceType> required, boolean async, boolean oldAsync) {
         Map<String, EntryProcessorResult<Integer>> results;
 
         Map<String, EntryProcessor<String, Integer, Integer>> map = new HashMap<>();
@@ -6226,10 +6237,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
         map.put(UUID.randomUUID().toString(), new ResourceInjectionEntryProcessor());
 
-        results = cache.invokeAll(map);
+        if (async) {
+            if (oldAsync) {
+                IgniteCache<String, Integer> acache = cache.withAsync();
 
-        if (cache.isAsync())
-            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+                acache.invokeAll(map);
+
+                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+            }
+            else
+                results = cache.invokeAllAsync(map).get();
+        }
+        else
+            results = cache.invokeAll(map);
 
         assertEquals(map.size(), results.size());
 
@@ -6246,19 +6266,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @param cache Cache.
      * @param required Expected injected resources.
+     * @param async Use async API.
+     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvokeAll(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required) {
+        Collection<ResourceType> required, boolean async, boolean oldAsync) {
         Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString()));
 
-        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys,
-            new ResourceInjectionEntryProcessor());
+        Map<String, EntryProcessorResult<Integer>> results;
 
-        if (cache.isAsync())
-            results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+        if (async) {
+            if (oldAsync) {
+                IgniteCache<String, Integer> acache = cache.withAsync();
+
+                acache.invokeAll(keys, new ResourceInjectionEntryProcessor());
+
+                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+            }
+            else
+                results = cache.invokeAllAsync(keys, new ResourceInjectionEntryProcessor()).get();
+        }
+        else
+            results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
 
         assertEquals(keys.size(), results.size());
 
@@ -6275,13 +6307,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @param cache Cache.
      * @param required Expected injected resources.
+     * @param async Use async API.
+     * @param oldAsync Use old async API.
      */
     private void checkResourceInjectionOnInvoke(IgniteCache<String, Integer> cache,
-        Collection<ResourceType> required) {
+        Collection<ResourceType> required, boolean async, boolean oldAsync) {
 
         String key = UUID.randomUUID().toString();
 
-        Integer flags = cache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+        Integer flags;
+
+        if (async) {
+            if (oldAsync) {
+                IgniteCache<String, Integer> acache = cache.withAsync();
+
+                acache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
+
+                flags = cache.<Integer>future().get();
+            }
+            else
+                flags = cache.invokeAsync(key,
+                    new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor()).get();
+        }
+        else
+            flags = cache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
 
         if (cache.isAsync())
             flags = cache.<Integer>future().get();
