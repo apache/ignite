@@ -199,6 +199,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
+        // Apply dynamic changes to candidates.
+        if (idxStates != null) {
+            for (QueryTypeCandidate cand : cands) {
+                applyInitialDelta(cand.descriptor(), idxStates);
+            }
+        }
+
+        // Ready to register at this point.
         registerCache0(space, cctx, cands);
 
         // Warn about possible implicit deserialization.
@@ -209,6 +217,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 "all nodes have these classes in classpath. To enable binary serialization either implement " +
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+        }
+    }
+
+    /**
+     * Apply dynamic index states to not-yet-registered descriptor.
+     *
+     * @param desc Descriptor.
+     * @param idxStates Index states.
+     */
+    private void applyInitialDelta(QueryTypeDescriptorImpl desc, QueryIndexStates idxStates)
+        throws IgniteCheckedException {
+        Map<String, QueryIndex> delta = idxStates.initialDelta(desc.tableName());
+
+        if (!F.isEmpty(delta)) {
+            for (Map.Entry<String, QueryIndex> deltaEntry : delta.entrySet()) {
+                String idxName = deltaEntry.getKey();
+                QueryIndex idx = deltaEntry.getValue();
+
+                QueryUtils.processDynamicIndexChange(idxName, idx, desc);
+            }
         }
     }
 

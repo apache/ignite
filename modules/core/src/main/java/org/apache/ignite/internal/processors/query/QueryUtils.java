@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -47,7 +46,6 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,7 +54,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
  * Utility methods for queries.
@@ -113,6 +112,8 @@ public class QueryUtils {
         CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
+
+        desc.aliases(qryEntity.getAliases());
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
@@ -234,6 +235,8 @@ public class QueryUtils {
 
         QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(space);
 
+        desc.aliases(meta.getAliases());
+
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
         Class<?> keyCls = U.classForName(meta.getKeyType(), null);
@@ -315,11 +318,6 @@ public class QueryUtils {
     @SuppressWarnings("deprecation")
     private static void processClassMeta(CacheTypeMetadata meta, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
-        Map<String,String> aliases = meta.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
         Class<?> keyCls = d.keyClass();
         Class<?> valCls = d.valueClass();
 
@@ -327,13 +325,13 @@ public class QueryUtils {
         assert valCls != null;
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases, coCtx);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, d.aliases(), coCtx);
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases, coCtx);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, d.aliases(), coCtx);
 
         for (String txtField : meta.getTextFields())
-            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases, coCtx);
+            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, d.aliases(), coCtx);
 
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -352,7 +350,7 @@ public class QueryUtils {
                         descending = false;
 
                     addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
-                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases, coCtx);
+                        descending ? IndexType.DESC : IndexType.ASC, idxName, d.aliases(), coCtx);
 
                     order++;
                 }
@@ -365,7 +363,7 @@ public class QueryUtils {
                 valCls,
                 entry.getKey(),
                 entry.getValue(),
-                aliases,
+                d.aliases(),
                 coCtx);
 
             d.addProperty(prop, false);
@@ -444,13 +442,8 @@ public class QueryUtils {
     @SuppressWarnings("deprecation")
     public static void processBinaryMeta(GridKernalContext ctx, CacheTypeMetadata meta, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
-        Map<String,String> aliases = meta.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
 
             d.addProperty(prop, false);
 
@@ -462,7 +455,7 @@ public class QueryUtils {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
 
             d.addProperty(prop, false);
 
@@ -474,7 +467,7 @@ public class QueryUtils {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, txtIdx, String.class, aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, txtIdx, String.class, d.aliases(), null);
 
             d.addProperty(prop, false);
 
@@ -496,7 +489,7 @@ public class QueryUtils {
 
                     for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
                         QueryBinaryProperty prop = buildBinaryProperty(ctx, idxField.getKey(),
-                            idxField.getValue().get1(), aliases, null);
+                            idxField.getValue().get1(), d.aliases(), null);
 
                         d.addProperty(prop, false);
 
@@ -511,7 +504,7 @@ public class QueryUtils {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), aliases, null);
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(), entry.getValue(), d.aliases(), null);
 
             if (!d.properties().containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -528,11 +521,6 @@ public class QueryUtils {
      */
     public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
-        Map<String,String> aliases = qryEntity.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
         Set<String> keyFields = qryEntity.getKeyFields();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
@@ -561,7 +549,7 @@ public class QueryUtils {
                 isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true), aliases, isKeyField);
+                U.classForName(entry.getValue(), Object.class, true), d.aliases(), isKeyField);
 
             d.addProperty(prop, false);
         }
@@ -578,18 +566,13 @@ public class QueryUtils {
      */
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
-        Map<String,String> aliases = qryEntity.getAliases();
-
-        if (aliases == null)
-            aliases = Collections.emptyMap();
-
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
             QueryClassProperty prop = buildClassProperty(
                 d.keyClass(),
                 d.valueClass(),
                 entry.getKey(),
                 U.classForName(entry.getValue(), Object.class),
-                aliases,
+                d.aliases(),
                 coCtx);
 
             d.addProperty(prop, false);
@@ -597,7 +580,7 @@ public class QueryUtils {
 
         processIndexes(qryEntity, d);
     }
-    
+
     /**
      * Processes indexes based on query entity.
      *
@@ -607,53 +590,73 @@ public class QueryUtils {
      */
     private static void processIndexes(QueryEntity qryEntity, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
         if (!F.isEmpty(qryEntity.getIndexes())) {
-            Map<String, String> aliases = qryEntity.getAliases();
+            for (QueryIndex idx : qryEntity.getIndexes())
+                processIndex(idx, d);
+        }
+    }
 
-            if (aliases == null)
-                aliases = Collections.emptyMap();
+    /**
+     * Process dnamic index change.
+     *
+     * @param idx Index.
+     * @param d Type descriptor to populate.
+     * @throws IgniteCheckedException If failed to build index information.
+     */
+    public static void processDynamicIndexChange(String idxName, @Nullable QueryIndex idx, QueryTypeDescriptorImpl d)
+        throws IgniteCheckedException {
+        d.dropIndex(idxName);
 
-            for (QueryIndex idx : qryEntity.getIndexes()) {
-                String idxName = idx.getName();
+        if (idx != null)
+            processIndex(idx, d);
+    }
 
-                if (idxName == null)
-                    idxName = QueryEntity.defaultIndexName(idx);
+    /**
+     * Process single index.
+     *
+     * @param idx Index.
+     * @param d Type descriptor to populate.
+     * @throws IgniteCheckedException If failed to build index information.
+     */
+    private static void processIndex(QueryIndex idx, QueryTypeDescriptorImpl d) throws IgniteCheckedException {
+        String idxName = idx.getName();
 
-                QueryIndexType idxTyp = idx.getIndexType();
+        if (idxName == null)
+            idxName = QueryEntity.defaultIndexName(idx);
 
-                if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-                    d.addIndex(idxName, idxTyp);
+        QueryIndexType idxTyp = idx.getIndexType();
 
-                    int i = 0;
+        if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
+            d.addIndex(idxName, idxTyp);
 
-                    for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
-                        String field = entry.getKey();
-                        boolean asc = entry.getValue();
+            int i = 0;
 
-                        String alias = aliases.get(field);
+            for (Map.Entry<String, Boolean> entry : idx.getFields().entrySet()) {
+                String field = entry.getKey();
+                boolean asc = entry.getValue();
 
-                        if (alias != null)
-                            field = alias;
+                String alias = d.aliases().get(field);
 
-                        d.addFieldToIndex(idxName, field, i++, !asc);
-                    }
-                }
-                else if (idxTyp == QueryIndexType.FULLTEXT){
-                    for (String field : idx.getFields().keySet()) {
-                        String alias = aliases.get(field);
+                if (alias != null)
+                    field = alias;
 
-                        if (alias != null)
-                            field = alias;
-
-                        d.addFieldToTextIndex(field);
-                    }
-                }
-                else if (idxTyp != null)
-                    throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
-                        ", typ=" + idxTyp + ']');
-                else
-                    throw new IllegalArgumentException("Index type is not set: " + idx.getName());
+                d.addFieldToIndex(idxName, field, i++, !asc);
             }
         }
+        else if (idxTyp == QueryIndexType.FULLTEXT){
+            for (String field : idx.getFields().keySet()) {
+                String alias = d.aliases().get(field);
+
+                if (alias != null)
+                    field = alias;
+
+                d.addFieldToTextIndex(field);
+            }
+        }
+        else if (idxTyp != null)
+            throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
+                ", typ=" + idxTyp + ']');
+        else
+            throw new IllegalArgumentException("Index type is not set: " + idx.getName());
     }
     
     /**

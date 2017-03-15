@@ -62,6 +62,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @GridToStringInclude
     private final Map<String, QueryIndexDescriptorImpl> idxs = new HashMap<>();
 
+    /** Aliases. */
+    private Map<String, String> aliases;
+
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
 
@@ -237,6 +240,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
+     * Drop index.
+     *
+     * @param idxName Index name.
+     */
+    public void dropIndex(String idxName) {
+        synchronized (idxMux) {
+            idxs.remove(idxName);
+        }
+    }
+
+    /**
      * Adds field to index.
      *
      * @param idxName Index name.
@@ -248,6 +262,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public void addFieldToIndex(String idxName, String field, int orderNum, boolean descending)
         throws IgniteCheckedException {
         synchronized (idxMux) {
+            if (!props.containsKey(field))
+                throw new IgniteCheckedException("Property not found: " + field);
+
             QueryIndexDescriptorImpl desc = idxs.get(idxName);
 
             assert desc != null;
@@ -368,6 +385,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
+    }
+
+    /**
+     * @return Aliases.
+     */
+    public Map<String, String> aliases() {
+        return aliases != null ? aliases : Collections.<String, String>emptyMap();
+    }
+
+    /**
+     * @param aliases Aliases.
+     */
+    public void aliases(Map<String, String> aliases) {
+        this.aliases = aliases;
     }
 
     /** {@inheritDoc} */
