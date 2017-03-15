@@ -31,6 +31,8 @@
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
+#include "ignite/test_utils.h"
+
 using namespace boost::unit_test;
 
 using namespace ignite;
@@ -387,45 +389,15 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context
 /**
  * Test setup fixture.
  */
-struct CacheInvokeTestSuiteFixture {
-
-    Ignite CreateGrid()
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 512;
-#else
-        cfg.jvmInitMem = 512;
-        cfg.jvmMaxMem = 2048;
-#endif
-
-        cfg.springCfgPath = std::string(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")) + "/cache-query.xml";
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        return grid0;
-    }
-
+struct CacheInvokeTestSuiteFixture
+{
     /**
      * Constructor.
      */
-    CacheInvokeTestSuiteFixture()
+    CacheInvokeTestSuiteFixture() :
+        grid(ignite_test::StartNode("cache-query.xml"))
     {
-        grid = CreateGrid();
+        // No-op.
     }
 
     /**
