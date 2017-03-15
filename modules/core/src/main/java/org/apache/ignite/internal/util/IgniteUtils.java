@@ -9217,7 +9217,7 @@ public abstract class IgniteUtils {
 
             GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
 
-            off += 12;
+            off += 4;
 
             GridUnsafe.putLong(arr, off, drVer.order());
 
@@ -9230,7 +9230,7 @@ public abstract class IgniteUtils {
 
         GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
-        off += 12;
+        off += 4;
 
         GridUnsafe.putLong(arr, off, ver.order());
 
@@ -9247,14 +9247,14 @@ public abstract class IgniteUtils {
     public static GridCacheVersion readVersion(long ptr, boolean verEx) {
         GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
             GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 16));
+            GridUnsafe.getLong(ptr + 8));
 
         if (verEx) {
-            ptr += 24;
+            ptr += 16;
 
             ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
                 GridUnsafe.getInt(ptr + 4),
-                GridUnsafe.getLong(ptr + 16),
+                GridUnsafe.getLong(ptr + 8),
                 ver);
         }
 
@@ -9274,7 +9274,7 @@ public abstract class IgniteUtils {
 
         int nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
-        off += 12;
+        off += 4;
 
         long order = GridUnsafe.getLong(arr, off);
 
@@ -9289,7 +9289,7 @@ public abstract class IgniteUtils {
 
             nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
-            off += 12;
+            off += 4;
 
             order = GridUnsafe.getLong(arr, off);
 
