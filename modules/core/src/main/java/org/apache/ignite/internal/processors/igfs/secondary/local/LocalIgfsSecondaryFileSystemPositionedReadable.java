@@ -17,28 +17,22 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 
 /**
  * Positioned readable interface for local secondary file system.
  */
-public class LocalIgfsSecondaryFileSystemPositionedReadable extends BufferedInputStream
-    implements IgfsSecondaryFileSystemPositionedReadable {
-    /** Last read position. */
-    private long lastReadPos;
+public class LocalIgfsSecondaryFileSystemPositionedReadable implements IgfsSecondaryFileSystemPositionedReadable {
+    /** File input stream */
+    private final FileInputStream in;
 
     /**
-     * Constructor.
-     *
-     * @param in Input stream.
-     * @param bufSize Buffer size.
+     * @param in FileInputStream
      */
-    public LocalIgfsSecondaryFileSystemPositionedReadable(FileInputStream in, int bufSize) {
-        super(in, bufSize);
+    public LocalIgfsSecondaryFileSystemPositionedReadable(FileInputStream in) {
+        this.in = in;
     }
 
     /** {@inheritDoc} */
@@ -46,20 +40,13 @@ public class LocalIgfsSecondaryFileSystemPositionedReadable extends BufferedInpu
         if (in == null)
             throw new IOException("Stream is closed.");
 
-        if (readPos < lastReadPos || readPos + len > lastReadPos + this.buf.length) {
-            ((FileInputStream)in).getChannel().position(readPos);
+        in.getChannel().position(readPos);
 
-            pos = 0;
-            count = 0;
-        }
+        return in.read(buf, off, len);
+    }
 
-        int bytesRead = read(buf, off, len);
-
-        if (bytesRead != -1) {
-            // Advance last read position only if we really read some bytes from the stream.
-            lastReadPos = readPos + bytesRead;
-        }
-
-        return bytesRead;
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        in.close();
     }
 }
