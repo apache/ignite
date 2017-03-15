@@ -1005,7 +1005,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     ", exchId=" + exchId + ']');
         }
         catch (IgniteCheckedException e) {
-            // TODO IGNITE-4473, need reconnect? + check other places.
             U.error(log, "Failed to send local partitions to oldest node (will retry after timeout) [oldestNodeId=" +
                 oldestNode.id() + ", exchId=" + exchId + ']', e);
         }
@@ -1305,7 +1304,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         catch (IgniteCheckedException e) {
-            onDone(e);
+            if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class))
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+            else
+                onDone(e);
         }
     }
 
@@ -1324,6 +1326,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
                 log.debug("Failed to send full partition map to node, node left grid " +
                     "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+
+                return;
+            }
+
+            if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class)) {
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
 
                 return;
             }
@@ -1648,6 +1656,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     processMessage(m.getKey(), m.getValue());
                             }
                         }
+                    }
+                    catch (Exception e) {
+                        if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class))
+                            onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+                        else
+                            throw e;
                     }
                     finally {
                         leaveBusy();

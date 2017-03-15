@@ -972,9 +972,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             if (recon) {
-                rejoinFut = new GridFutureAdapter();
-
-                ctx.discovery().rejoin();
+                rejoin();
 
                 rejoinFut.get();
             }
@@ -3486,11 +3484,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             close();
                         }
                         else {
-                            U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId() + ']', e);
-
-                            rejoinFut = new GridFutureAdapter();
-
-                            ctx.discovery().rejoin();
+                            U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId()
+                                + ", err=" + e.getMessage() + ']');
                         }
                     }
                 }
@@ -3511,6 +3506,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             close();
         }
+    }
+
+    /**
+     * Force reconnect to cluster.
+     */
+    public void rejoin() {
+        if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled()) {
+            U.warn(log, "Cannot perform rejoin. To allow client node reconnect " +
+                "set TcpDiscoverySpi.setClientReconnectDisabled(false).");
+
+            return;
+        }
+
+        if (rejoinFut == null)
+            rejoinFut = new GridFutureAdapter();
+
+        ctx.discovery().rejoin();
     }
 
     /**
