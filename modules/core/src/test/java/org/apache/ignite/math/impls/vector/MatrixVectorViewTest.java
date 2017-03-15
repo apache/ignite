@@ -28,7 +28,7 @@ public class MatrixVectorViewTest {
         Vector vector = parent.viewDiagonal();
 
         for (int i = 0; i < SMALL_SIZE; i++)
-            assertEquals(UNEXPECTED_VALUE + " at row / col " + i, parent.get(i, i), vector.get(i), 0d);
+            assertView(i, i, vector, i);
     }
 
     /** */
@@ -38,7 +38,7 @@ public class MatrixVectorViewTest {
             Vector viewRow = parent.viewRow(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE + " at row " + i + " col " + j, parent.get(i, j), viewRow.get(j), 0d);
+                assertView(i, j, viewRow, j);
         }
     }
 
@@ -46,10 +46,10 @@ public class MatrixVectorViewTest {
     @Test
     public void testCols(){
         for (int i = 0; i < SMALL_SIZE; i++) {
-            Vector viewRow = parent.viewColumn(i);
+            Vector viewCol = parent.viewColumn(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE+ " at row " + i + " col " + j, parent.get(j, i), viewRow.get(j), 0d);
+                assertView(j, i, viewCol, j);
         }
     }
 
@@ -57,6 +57,24 @@ public class MatrixVectorViewTest {
     private void fillMatrix(DenseLocalOnHeapMatrix parent) {
         for(int i = 0; i < parent.rowSize(); i++)
             for(int j = 0; j < parent.columnSize(); j++)
-                parent.set(i, j, i*parent.rowSize() + j);
+                parent.set(i, j, i * parent.rowSize() + j);
+    }
+
+    /** */
+    private void assertView(int row, int col, Vector view, int viewIdx) {
+        assertValue(row, col, view, viewIdx);
+
+        parent.set(row, col, parent.get(row, col) + 1);
+
+        assertValue(row, col, view, viewIdx);
+
+        view.set(viewIdx, view.get(viewIdx) + 2);
+
+        assertValue(row, col, view, viewIdx);
+    }
+
+    /** */
+    private void assertValue(int row, int col, Vector view, int viewIdx) {
+        assertEquals(UNEXPECTED_VALUE + " at row " + row + " col " + col, parent.get(row, col), view.get(viewIdx), 0d);
     }
 }
