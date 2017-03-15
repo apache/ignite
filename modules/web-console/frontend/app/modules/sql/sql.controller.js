@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+import paragraphRateTemplateUrl from 'views/sql/paragraph-rate.tpl.pug';
+import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
+import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
+import showQueryTemplateUrl from 'views/templates/message.tpl.pug';
+
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 
@@ -28,6 +33,8 @@ const SCAN_CACHE_WITH_FILTER = 'VISOR_SCAN_CACHE_WITH_FILTER';
 const SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE = 'VISOR_SCAN_CACHE_WITH_FILTER_CASE_SENSITIVE';
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
+
+const ENFORCE_JOIN_VERS = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], ['1.9.1']];
 
 const _fullColName = (col) => {
     const res = [];
@@ -188,6 +195,13 @@ class Paragraph {
 // Controller for SQL notebook screen.
 export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData',
     function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData) {
+        const $ctrl = this;
+
+        // Define template urls.
+        $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
+        $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
+        $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
+
         let stopTopology = null;
 
         const _tryStopRefresh = function(paragraph) {
@@ -1324,7 +1338,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             agentMonitor.awaitAgent()
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => agentMonitor.query(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!args.localNid, args.pageSize))
+                .then((nid) => agentMonitor.query(nid, args.cacheName, args.query, args.nonCollocatedJoins,
+                    args.enforceJoinOrder, !!args.localNid, args.pageSize))
                 .then(_processQueryResult.bind(this, paragraph, false))
                 .catch((err) => paragraph.errMsg = err.message);
         };
@@ -1357,8 +1372,18 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             return false;
         };
 
+        $scope.enforceJoinOrderAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.includes(node.version, ...ENFORCE_JOIN_VERS));
+
+            return false;
+        };
+
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
+            const enforceJoinOrder = !!paragraph.enforceJoinOrder;
 
             $scope.actionAvailable(paragraph, true) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
@@ -1378,6 +1403,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
+                                enforceJoinOrder,
                                 localNid: local ? nid : null
                             };
 
@@ -1385,7 +1411,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMonitor.query(nid, args.cacheName, qry, nonCollocatedJoins, local, args.pageSize);
+                            return agentMonitor.query(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, local, args.pageSize);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1438,7 +1464,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMonitor.query(nid, args.cacheName, args.query, false, false, args.pageSize);
+                    return agentMonitor.query(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, args.pageSize);
                 })
                 .then(_processQueryResult.bind(this, paragraph, true))
                 .catch((err) => {
@@ -1476,7 +1502,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
                             ActivitiesData.post({ action: '/queries/scan' });
 
-                            return agentMonitor.query(nid, args.cacheName, query, false, local, args.pageSize);
+                            return agentMonitor.query(nid, args.cacheName, query, false, false, local, args.pageSize);
                         })
                         .then((res) => _processQueryResult(paragraph, true, res))
                         .catch((err) => {
@@ -1597,7 +1623,8 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
             const args = paragraph.queryArgs;
 
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
-                .then((nid) => agentMonitor.queryGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.localNid))
+                .then((nid) => agentMonitor.queryGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins,
+                    !!args.enforceJoinOrder, !!args.localNid))
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => paragraph.ace && paragraph.ace.focus());
@@ -1737,7 +1764,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 }
 
                 // Show a basic modal from a controller
-                $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
+                $modal({scope, templateUrl: showQueryTemplateUrl, placement: 'center', show: true});
             }
         };
     }

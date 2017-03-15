@@ -112,7 +112,7 @@ public enum HadoopJobProperty {
     /**
      * Whether to stripe mapper output for remote reducers.
      * <p>
-     * Defaults to {@code false}.
+     * Defaults to {@code true}.
      */
     SHUFFLE_MAPPER_STRIPED_OUTPUT("ignite.shuffle.mapper.striped.output"),
 

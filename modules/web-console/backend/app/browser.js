@@ -98,9 +98,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return first page to browser.
-                socket.on('node:query', (nid, cacheName, query, distributedJoins, local, pageSize, cb) => {
+                socket.on('node:query', (nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize, cb) => {
                     agentMgr.findAgent(accountId())
-                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize))
+                        .then((agent) => agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
@@ -114,13 +114,13 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Execute query on node and return full result to browser.
-                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, local, cb) => {
+                socket.on('node:query:getAll', (nid, cacheName, query, distributedJoins, enforceJoinOrder, local, cb) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
                     agentMgr.findAgent(accountId())
                         .then((agent) => {
-                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, local, pageSize)
+                            const firstPage = agent.fieldsQuery(demo, nid, cacheName, query, distributedJoins, enforceJoinOrder, local, pageSize)
                                 .then(({result}) => {
                                     if (result.key)
                                         return Promise.reject(result.key);
@@ -167,6 +167,34 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                     agentMgr.findAgent(accountId())
                         .then((agent) => agent.queryResetDetailMetrics(demo, nids))
                         .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Collect running queries from all nodes in grid.
+                socket.on('node:query:running', (duration, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCollectRunning(demo, duration))
+                        .then((data) => {
+
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Cancel running query by query id on node.
+                socket.on('node:query:cancel', (nid, queryId, cb) => {
+                    agentMgr.findAgent(accountId())
+                        .then((agent) => agent.queryCancel(demo, nid, queryId))
+                        .then((data) => {
+
                             if (data.finished)
                                 return cb(null, data.result);
 
