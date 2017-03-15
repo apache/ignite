@@ -54,6 +54,10 @@ public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner
     /** {@inheritDoc} */
     @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Prepare plan for: [jobId=" + job.id() + ", jobInfo=" + job.info() + ", topology=" + top
+                + ", oldPlan=" + oldPlan + ']');
+
         // Convert collection of topology nodes to collection of topology node IDs.
         Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
 

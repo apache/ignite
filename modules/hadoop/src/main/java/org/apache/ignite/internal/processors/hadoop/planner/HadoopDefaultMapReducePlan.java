@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.processors.hadoop.planner;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.MAX_COL_SIZE;
 
 /**
  * Map-reduce plan.
@@ -33,6 +39,7 @@ public class HadoopDefaultMapReducePlan implements HadoopMapReducePlan {
     private static final long serialVersionUID = 0L;
 
     /** Mappers map. */
+    @GridToStringInclude
     private Map<UUID, Collection<HadoopInputSplit>> mappers;
 
     /** Reducers map. */
@@ -106,5 +113,21 @@ public class HadoopDefaultMapReducePlan implements HadoopMapReducePlan {
     /** {@inheritDoc} */
     @Override public Collection<UUID> reducerNodeIds() {
         return reducers.keySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        Map<UUID, String> toStrMapReducers = U.newHashMap(MAX_COL_SIZE);
+
+        int cntr = 0;
+
+        for (Map.Entry<UUID, int[]> r : reducers.entrySet()) {
+            toStrMapReducers.put(r.getKey(), Arrays.toString(r.getValue()));
+
+            if (++cntr >= MAX_COL_SIZE)
+                break;
+        }
+
+        return S.toString(HadoopDefaultMapReducePlan.class, this, "reducers", toStrMapReducers);
     }
 }
