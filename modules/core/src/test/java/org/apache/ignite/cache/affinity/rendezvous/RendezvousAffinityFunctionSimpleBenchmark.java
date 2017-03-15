@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -424,6 +425,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         mode = TopologyModificationMode.CHANGE_LAST_NODE;
 
         AffinityFunction aff0 = new NonBalanceRendezvousAffinityFunction(true, 1024);
+//        AffinityFunction aff0 = new FairAffinityFunction(true, 256);
 
 //        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
@@ -437,7 +439,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
     private void affinityBenchmark(AffinityFunction aff0, AffinityFunction aff1) {
         int[] nodesCnts = {100, 1, 2, 3, 4, 100, 200, 300, 400, 500, 600};
 
-        final int backups = 2;
+        final int backups = Integer.MAX_VALUE;
 
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes0 = createBaseNodes(nodesCnt);
