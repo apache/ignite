@@ -45,7 +45,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** */
     @GridToStringExclude
-    private IgniteFutureImpl<?> reconnectFut;
+    private volatile IgniteFutureImpl<?> reconnectFut;
 
     /** */
     private final AtomicReference<GridKernalState> state = new AtomicReference<>(GridKernalState.STOPPED);
@@ -149,19 +149,17 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFutureAdapter<?> onDisconnected() {
-        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+    @Override public GridFutureAdapter<?> onDisconnected(boolean rejoin) {
+        IgniteFutureImpl<?> reconnectFut0 = reconnectFut;
 
-        IgniteFutureImpl reconnectFut0 = reconnectFut;
+        if (rejoin && reconnectFut0 != null)
+            return (GridFutureAdapter<?>)reconnectFut0.internalFuture();
+
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         reconnectFut = new IgniteFutureImpl<>(fut);
 
         if (!state.compareAndSet(GridKernalState.STARTED, GridKernalState.DISCONNECTED)) {
-            Throwable error = reconnectFut0.internalFuture().error();
-
-            if (error instanceof IgniteNeedReconnectException)
-                return fut;
-
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));
 
             return null;
@@ -174,12 +172,6 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     @Override public void onReconnected() {
         if (state.compareAndSet(GridKernalState.DISCONNECTED, GridKernalState.STARTED))
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onReconnectFailed(Throwable t) {
-        if (state.get() == GridKernalState.DISCONNECTED)
-            ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(t);
     }
 
     /**

@@ -1904,6 +1904,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * If {@code true} client does not try to reconnect after
+     * server detected client node failure.
+     *
+     * @return Client reconnect disabled flag.
+     */
+    public boolean isClientReconnectDisabled() {
+        DiscoverySpi discoverySpi = getSpi();
+
+        return discoverySpi instanceof TcpDiscoverySpi && ((TcpDiscoverySpi)discoverySpi).isClientReconnectDisabled();
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.

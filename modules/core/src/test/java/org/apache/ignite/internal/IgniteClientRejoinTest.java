@@ -164,7 +164,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                     break;
                 }
                 catch (IgniteClientDisconnectedException e) {
-                    U.sleep(500);
+                    e.reconnectFuture().get();
                 }
             }
         }

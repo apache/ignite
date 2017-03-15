@@ -333,7 +333,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Reconnector. */
     private volatile IgniteThread reconnector;
 
-    /** Rejoin future. */
+    /** Rejoin future. Rejoin process in progress if not null. */
     private volatile GridFutureAdapter rejoinFut;
 
     /**
@@ -789,8 +789,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         List<PluginProvider> plugins = U.allPluginProviders();
 
-        boolean recon = false;
-
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -947,6 +945,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Notify IO manager the second so further components can send and receive messages.
             ctx.io().onKernalStart();
 
+            boolean recon = false;
+
             // Callbacks.
             for (GridComponent comp : ctx) {
                 // Skip discovery manager.
@@ -962,6 +962,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         comp.onKernalStart();
                     }
                     catch (IgniteNeedReconnectException e) {
+                        if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())
+                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry, set" +
+                                " TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
+
                         recon = true;
                     }
                 }
@@ -3358,8 +3362,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public void onDisconnected() {
         Throwable err = null;
+        final boolean rejoin = rejoinFut != null;
 
-        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected();
+        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected(rejoin);
 
         if (reconnectFut == null) {
             assert ctx.gateway().getState() != STARTED : ctx.gateway().getState();
@@ -3367,9 +3372,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
         }
 
-        IgniteFuture<?> userFut = new IgniteFutureImpl<>(reconnectFut);
+        IgniteFutureImpl<?> curFut = (IgniteFutureImpl<?>)ctx.cluster().get().clientReconnectFuture();
 
-        ctx.cluster().get().clientReconnectFuture(userFut);
+        IgniteFuture<?> userFut;
+
+        // In case of rejoin, keep reconnect future as is and go on with components.
+
+        if (rejoin && curFut != null && curFut.internalFuture() == reconnectFut)
+            userFut = curFut;
+        else {
+            userFut = new IgniteFutureImpl<>(reconnectFut);
+
+            ctx.cluster().get().clientReconnectFuture(userFut);
+        }
 
         ctx.disconnected(true);
 
@@ -3431,9 +3446,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     reconnectFut.add((IgniteInternalFuture)fut);
             }
 
-            // TODO check flag 'setClientReconnectDisabled'.
-            // TODO: should not complete public API reconnect future if force rejoin.
-
             reconnectFut.add((IgniteInternalFuture)ctx.cache().context().exchange().reconnectExchangeFuture());
 
             reconnectFut.markInitialized();
@@ -3467,10 +3479,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             close();
                         }
+                        else if ((ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())) {
+                            U.error(log, "Failed to reconnect, will stop node. To allow client node retry " +
+                                "set TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
+
+                            close();
+                        }
                         else {
                             U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId() + ']', e);
 
-                            ctx.gateway().onReconnectFailed(e);
+                            rejoinFut = new GridFutureAdapter();
 
                             ctx.discovery().rejoin();
                         }
