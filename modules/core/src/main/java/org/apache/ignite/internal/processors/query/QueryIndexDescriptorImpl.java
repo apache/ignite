@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -104,8 +105,14 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
      * @param field Field name.
      * @param orderNum Field order number in this index.
      * @param descending Sort order.
+     * @return This instance for chaining.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addField(String field, int orderNum, boolean descending) {
+    public QueryIndexDescriptorImpl  addField(String field, int orderNum, boolean descending)
+        throws IgniteCheckedException {
+        if (!typDesc.hasField(field))
+            throw new IgniteCheckedException("Field not found: " + field);
+
         fields.add(new T2<>(field, orderNum));
 
         if (descending) {
@@ -114,6 +121,8 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
             descendings.add(field);
         }
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -221,21 +221,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Adds index.
+     * Add index.
      *
-     * @param idxName Index name.
-     * @param type Index type.
-     * @return Index descriptor.
-     * @throws IgniteCheckedException In case of error.
+     * @param idx Index.
+     * @throws IgniteCheckedException If failed.
      */
-    public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
+    public void addIndex(QueryIndexDescriptorImpl idx) throws IgniteCheckedException {
         synchronized (idxMux) {
-            QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(this, idxName, type);
-
-            if (idxs.put(idxName, idx) != null)
-                throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
-
-            return idx;
+            if (idxs.put(idx.name(), idx) != null)
+                throw new IgniteCheckedException("Index with name '" + idx.name() + "' already exists.");
         }
     }
 
@@ -251,34 +245,22 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Adds field to index.
+     * Chedk if particular field exists.
      *
-     * @param idxName Index name.
-     * @param field Field name.
-     * @param orderNum Fields order number in index.
-     * @param descending Sorting order.
-     * @throws IgniteCheckedException If failed.
+     * @param field Field.
+     * @return {@code True} if exists.
      */
-    public void addFieldToIndex(String idxName, String field, int orderNum, boolean descending)
-        throws IgniteCheckedException {
-        synchronized (idxMux) {
-            if (!props.containsKey(field))
-                throw new IgniteCheckedException("Property not found: " + field);
-
-            QueryIndexDescriptorImpl desc = idxs.get(idxName);
-
-            assert desc != null;
-
-            desc.addField(field, orderNum, descending);
-        }
+    public boolean hasField(String field) {
+        return props.containsKey(field);
     }
 
     /**
      * Adds field to text index.
      *
      * @param field Field name.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addFieldToTextIndex(String field) {
+    public void addFieldToTextIndex(String field) throws IgniteCheckedException {
         if (fullTextIdx == null)
             fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT);
 

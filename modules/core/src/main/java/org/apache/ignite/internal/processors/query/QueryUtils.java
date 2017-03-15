@@ -46,6 +46,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -324,14 +325,19 @@ public class QueryUtils {
         assert keyCls != null;
         assert valCls != null;
 
+        Map<String, QueryIndexDescriptorImpl> idxDescs = new HashMap<>();
+
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, d.aliases(), coCtx);
+            addToIndex(d, idxDescs, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null,
+                d.aliases(), coCtx);
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, d.aliases(), coCtx);
+            addToIndex(d, idxDescs, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null,
+                d.aliases(), coCtx);
 
         for (String txtField : meta.getTextFields())
-            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, d.aliases(), coCtx);
+            addToIndex(d, idxDescs, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, d.aliases(),
+                coCtx);
 
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -349,7 +355,7 @@ public class QueryUtils {
                     if (descending == null)
                         descending = false;
 
-                    addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
+                    addToIndex(d, idxDescs, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
                         descending ? IndexType.DESC : IndexType.ASC, idxName, d.aliases(), coCtx);
 
                     order++;
@@ -368,10 +374,14 @@ public class QueryUtils {
 
             d.addProperty(prop, false);
         }
+
+        for (QueryIndexDescriptorImpl idxDesc : idxDescs.values())
+            d.addIndex(idxDesc);
     }
     
     /**
      * @param d Type descriptor.
+     * @param idxDescs Index descriptors.
      * @param keyCls Key class.
      * @param valCls Value class.
      * @param pathStr Path string.
@@ -384,6 +394,7 @@ public class QueryUtils {
      */
     private static void addToIndex(
         QueryTypeDescriptorImpl d,
+        Map<String, QueryIndexDescriptorImpl> idxDescs,
         Class<?> keyCls,
         Class<?> valCls,
         String pathStr,
@@ -423,10 +434,20 @@ public class QueryUtils {
             if (idxType == IndexType.TEXT)
                 d.addFieldToTextIndex(propName);
             else {
-                if (idxOrder == 0) // Add index only on the first field.
-                    d.addIndex(idxName, isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+                QueryIndexDescriptorImpl idxDesc = idxDescs.get(idxName);
 
-                d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
+                if (idxDesc == null) {
+                    assert idxOrder == 0;
+
+                    QueryIndexType idxTyp =
+                        isGeometryClass(propCls) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
+
+                    idxDesc = new QueryIndexDescriptorImpl(d, idxName, idxTyp);
+
+                    idxDescs.put(idxName, idxDesc);
+                }
+
+                idxDesc.addField(propName, idxOrder, idxType == IndexType.DESC);
             }
         }
     }
@@ -448,10 +469,9 @@ public class QueryUtils {
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
+            QueryIndexType idxTyp = isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, false);
+            d.addIndex(new QueryIndexDescriptorImpl(d, idxName, idxTyp).addField(prop.name(), 0, false));
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
@@ -460,10 +480,9 @@ public class QueryUtils {
             d.addProperty(prop, false);
 
             String idxName = prop.name() + "_idx";
+            QueryIndexType idxTyp = isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED;
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, true);
+            d.addIndex(new QueryIndexDescriptorImpl(d, idxName, idxTyp).addField(prop.name(), 0, true));
         }
 
         for (String txtIdx : meta.getTextFields()) {
@@ -483,7 +502,7 @@ public class QueryUtils {
                 LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
 
                 if (!idxFields.isEmpty()) {
-                    d.addIndex(idxName, QueryIndexType.SORTED);
+                    QueryIndexDescriptorImpl idxDesc = new QueryIndexDescriptorImpl(d, idxName, QueryIndexType.SORTED);
 
                     int order = 0;
 
@@ -495,10 +514,12 @@ public class QueryUtils {
 
                         Boolean descending = idxField.getValue().get2();
 
-                        d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+                        idxDesc.addField(prop.name(), order, descending != null && descending);
 
                         order++;
                     }
+
+                    d.addIndex(idxDesc);
                 }
             }
         }
@@ -626,7 +647,7 @@ public class QueryUtils {
         QueryIndexType idxTyp = idx.getIndexType();
 
         if (idxTyp == QueryIndexType.SORTED || idxTyp == QueryIndexType.GEOSPATIAL) {
-            d.addIndex(idxName, idxTyp);
+            QueryIndexDescriptorImpl idxDesc = new QueryIndexDescriptorImpl(d, idxName, idxTyp);
 
             int i = 0;
 
@@ -639,8 +660,10 @@ public class QueryUtils {
                 if (alias != null)
                     field = alias;
 
-                d.addFieldToIndex(idxName, field, i++, !asc);
+                idxDesc.addField(field, i++, !asc);
             }
+
+            d.addIndex(idxDesc);
         }
         else if (idxTyp == QueryIndexType.FULLTEXT){
             for (String field : idx.getFields().keySet()) {
