@@ -126,6 +126,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     @LoggerResource
     private transient IgniteLogger log;
 
+    public enum HashType { Standard, PowerOfTwo}
+
+    /** HashType instance */
+    private HashType hashType = HashType.Standard;
+
     /**
      * Empty constructor with all defaults.
      */
@@ -188,7 +193,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
-        this.parts = parts;
+
+        // ensure that hashType is calculated
+        setPartitions(parts);
+
         this.backupFilter = backupFilter;
 
         try {
@@ -216,7 +224,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets total number of partitions.
+     * Sets total number of partitions.If the number of partitions is a power of two,
+     * the PowerOfTwo hashing method will be used.  Otherwise the Standard hashing
+     * method will be applied.
      *
      * @param parts Total number of partitions.
      */
@@ -224,6 +234,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <= " + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.parts = parts;
+        boolean isPowerOfTwo = this.parts > 0 && (this.parts & (this.parts - 1)) == 0;
+
+        if (isPowerOfTwo)
+            this.hashType = HashType.PowerOfTwo;
+        else
+            this.hashType = HashType.Standard;
     }
 
     /**
@@ -490,7 +506,20 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        return U.safeAbs(key.hashCode() % parts);
+        switch(this.hashType)
+        {
+            case PowerOfTwo:
+            {
+                int h;
+                int i = U.safeAbs((h = key.hashCode()) ^ (h >>> 16));
+                return i & (parts - 1);
+            }
+            case Standard:
+            default:
+            {
+                return U.safeAbs(key.hashCode() % parts);
+            }
+        }
     }
 
     /** {@inheritDoc} */
