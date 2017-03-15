@@ -167,10 +167,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
+     * @param idxStates Index states.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("deprecation")
-    private void initializeCache(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+    private void initializeCache(GridCacheContext<?, ?> cctx, @Nullable QueryIndexStates idxStates)
+        throws IgniteCheckedException {
         String space = cctx.name();
 
         CacheConfiguration<?,?> ccfg = cctx.config();
@@ -250,9 +252,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
+     * @param idxStates Index states.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx) throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, @Nullable QueryIndexStates idxStates)
+        throws IgniteCheckedException {
         if (idx == null)
             return;
 
@@ -260,7 +264,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            initializeCache(cctx);
+            initializeCache(cctx, idxStates);
         }
         finally {
             busyLock.leaveBusy();

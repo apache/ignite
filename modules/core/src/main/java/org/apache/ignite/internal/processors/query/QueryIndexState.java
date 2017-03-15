@@ -31,6 +31,9 @@ public class QueryIndexState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Table name. */
+    private final String tblName;
+
     /** Index name. */
     private final String idxName;
 
@@ -44,9 +47,17 @@ public class QueryIndexState implements Serializable {
      * @param idxName Index name.
      * @param idx Index.
      */
-    public QueryIndexState(String idxName, QueryIndex idx) {
+    public QueryIndexState(String tblName, String idxName, QueryIndex idx) {
+        this.tblName = tblName;
         this.idxName = idxName;
         this.idx = idx;
+    }
+
+    /**
+     * @return Table name.
+     */
+    public String tableName() {
+        return tblName;
     }
 
     /**

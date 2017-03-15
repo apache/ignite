@@ -103,6 +103,7 @@ public class QueryIndexStates implements Serializable {
     public boolean finish(IndexFinishDiscoveryMessage msg) {
         AbstractIndexOperation op = msg.operation();
 
+        String tblName = op.tableName();
         String idxName = op.indexName();
 
         QueryIndexActiveOperation curOp = activeOps.remove(idxName);
@@ -113,11 +114,11 @@ public class QueryIndexStates implements Serializable {
                     QueryIndexState state;
 
                     if (op instanceof CreateIndexOperation)
-                        state = new QueryIndexState(idxName, ((CreateIndexOperation)op).index());
+                        state = new QueryIndexState(tblName, idxName, ((CreateIndexOperation)op).index());
                     else {
                         assert op instanceof DropIndexOperation;
 
-                        state = new QueryIndexState(idxName, null);
+                        state = new QueryIndexState(tblName, idxName, null);
                     }
 
                     readyOps.put(idxName, state);

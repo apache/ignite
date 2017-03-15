@@ -825,7 +825,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     caches.put(maskNull(name), cache);
 
-                    startCache(cache);
+                    startCache(cache, desc.indexStates());
 
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
@@ -1084,11 +1084,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed to start cache.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
+    private void startCache(GridCacheAdapter<?, ?> cache, @Nullable QueryIndexStates idxStates)
+        throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        // TODO: Pass current index state to query processor.
-        ctx.query().onCacheStart(cacheCtx);
+        ctx.query().onCacheStart(cacheCtx, idxStates);
         ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
@@ -1654,7 +1654,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.clientStartOnly(),
             req.initiatingNodeId(),
             req.deploymentId(),
-            topVer
+            topVer,
+            req.indexStates()
         );
 
         DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
@@ -1696,7 +1697,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         false,
                         null,
                         desc.deploymentId(),
-                        topVer
+                        topVer,
+                        desc.indexStates()
                     );
                 }
             }
@@ -1722,7 +1724,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean clientStartOnly,
         UUID initiatingNodeId,
         IgniteUuid deploymentId,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        @Nullable QueryIndexStates idxStates
     ) throws IgniteCheckedException {
         CacheConfiguration ccfg = new CacheConfiguration(cfg);
 
@@ -1756,7 +1759,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             caches.put(maskNull(cacheCtx.name()), cacheCtx.cache());
 
-            startCache(cacheCtx.cache());
+            startCache(cacheCtx.cache(), idxStates);
             onKernalStart(cacheCtx.cache());
         }
     }
