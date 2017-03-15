@@ -17,19 +17,18 @@
 
 package org.apache.ignite.math;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.List;
-import org.apache.ignite.math.impls.MathTestConstants;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.vector.*;
 import org.junit.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.*;
+import java.util.List;
+import java.util.*;
 
-import static java.nio.file.Files.createTempFile;
-import static org.junit.Assert.assertEquals;
+import static java.nio.file.Files.*;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link Tracer}.
@@ -92,14 +91,17 @@ public class TracerTest {
 
     /** */
     @Test
-    public void testWriteVecToCSVFile() throws IOException {
+    public void testWriteVectorToCSVFile() throws IOException {
         DenseLocalOnHeapVector vector = new DenseLocalOnHeapVector(MathTestConstants.STORAGE_SIZE);
 
         for(int i = 0; i < vector.size(); i++)
             vector.set(i,Math.random());
 
-        Path file = createTempFile("DenseLocalOnHeapVector", ".csv");
-        Tracer.saveAsCsv(vector, DEFAULT_FORMAT,file.toString());
+        Path file = createTempFile("vector", ".csv");
+
+        Tracer.saveAsCsv(vector, DEFAULT_FORMAT, file.toString());
+
+        System.out.println("Vector exported: " + file.getFileName());
 
         List<String> strings = Files.readAllLines(file);
         Optional<String> reduce = strings.stream().reduce((s1, s2) -> s1 + s2);
@@ -111,21 +113,23 @@ public class TracerTest {
             assertEquals("Unexpected value.", csvVal, vector.get(i), DEFAULT_DELTA);
         }
 
-        Files.deleteIfExists(file);
+        //Files.deleteIfExists(file);
     }
 
     /** */
     @Test
-    public void testWriteMtxToCSVFile() throws IOException {
+    public void testWriteMatrixToCSVFile() throws IOException {
         DenseLocalOnHeapMatrix matrix = new DenseLocalOnHeapMatrix(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
 
         for(int i = 0; i < matrix.rowSize(); i++)
             for(int j = 0; j < matrix.columnSize(); j++)
                 matrix.set(i, j, Math.random());
 
+        Path file = createTempFile("matrix", ".csv");
 
-        Path file = createTempFile("DenseLocalOnHeapVector", ".csv");
         Tracer.saveAsCsv(matrix, DEFAULT_FORMAT,file.toString());
+
+        System.out.println("Matrix exported: " + file.getFileName());
 
         List<String> strings = Files.readAllLines(file);
         Optional<String> reduce = strings.stream().reduce((s1, s2) -> s1 + s2);
@@ -137,5 +141,7 @@ public class TracerTest {
 
                 assertEquals("Unexpected value.", csvVal, matrix.get(i, j), DEFAULT_DELTA);
             }
+
+        //Files.deleteIfExists(file);
     }
 }

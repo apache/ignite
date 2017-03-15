@@ -33,7 +33,7 @@ public class VectorToMatrixTest {
     private boolean ignore(Class<? extends Vector> clazz){
         boolean isIgnored = false;
         List<Class<? extends Vector>> ignoredClasses = Arrays.asList(DelegatingVector.class, FunctionVector.class,
-            SingleElementVector.class, PivotedVectorView.class);
+            SingleElementVector.class, PivotedVectorView.class, SingleElementVectorView.class);
 
         for (Class<? extends Vector> ignoredClass : ignoredClasses) {
             if (ignoredClass.isAssignableFrom(clazz)){
@@ -229,6 +229,7 @@ public class VectorToMatrixTest {
             put(ConstantVector.class, null);
             put(FunctionVector.class, null);
             put(PivotedVectorView.class, null);
+            put(SingleElementVectorView.class, null);
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }

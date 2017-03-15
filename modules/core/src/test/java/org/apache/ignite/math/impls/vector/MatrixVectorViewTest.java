@@ -1,8 +1,6 @@
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Tracer;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,10 +10,10 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link MatrixVectorView}
  */
-public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
-    private static final String UNEXPECTED_VALUE = "Unexpected value.";
-    private static final int SMALL_SIZE = 3;
-    private DenseLocalOnHeapMatrix parent;
+public class MatrixVectorViewTest {
+    /** */ private static final String UNEXPECTED_VALUE = "Unexpected value";
+    /** */ private static final int SMALL_SIZE = 3;
+    /** */ private DenseLocalOnHeapMatrix parent;
 
     /** */
     @Before
@@ -26,11 +24,11 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
 
     /** */
     @Test
-    public void testDiaganal(){
+    public void testDiagonal(){
         Vector vector = parent.viewDiagonal();
 
         for (int i = 0; i < SMALL_SIZE; i++)
-            assertEquals(UNEXPECTED_VALUE, parent.get(i, i), vector.get(i), 0d);
+            assertView(i, i, vector, i);
     }
 
     /** */
@@ -40,7 +38,7 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
             Vector viewRow = parent.viewRow(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE, parent.get(i, j), viewRow.get(j), 0d);
+                assertView(i, j, viewRow, j);
         }
     }
 
@@ -48,10 +46,10 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
     @Test
     public void testCols(){
         for (int i = 0; i < SMALL_SIZE; i++) {
-            Vector viewRow = parent.viewColumn(i);
+            Vector viewCol = parent.viewColumn(i);
 
             for (int j = 0; j < SMALL_SIZE; j++)
-                assertEquals(UNEXPECTED_VALUE, parent.get(j, i), viewRow.get(j), 0d);
+                assertView(j, i, viewCol, j);
         }
     }
 
@@ -59,6 +57,24 @@ public class MatrixVectorViewTest {//extends ExternalizeTest<MatrixVectorView>{
     private void fillMatrix(DenseLocalOnHeapMatrix parent) {
         for(int i = 0; i < parent.rowSize(); i++)
             for(int j = 0; j < parent.columnSize(); j++)
-                parent.set(i, j, i*parent.rowSize() + j);
+                parent.set(i, j, i * parent.rowSize() + j);
+    }
+
+    /** */
+    private void assertView(int row, int col, Vector view, int viewIdx) {
+        assertValue(row, col, view, viewIdx);
+
+        parent.set(row, col, parent.get(row, col) + 1);
+
+        assertValue(row, col, view, viewIdx);
+
+        view.set(viewIdx, view.get(viewIdx) + 2);
+
+        assertValue(row, col, view, viewIdx);
+    }
+
+    /** */
+    private void assertValue(int row, int col, Vector view, int viewIdx) {
+        assertEquals(UNEXPECTED_VALUE + " at row " + row + " col " + col, parent.get(row, col), view.get(viewIdx), 0d);
     }
 }

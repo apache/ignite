@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.storage.vector.SingleElementVectorDelegateStorage;
 
 /**
@@ -74,6 +75,14 @@ public class SingleElementVectorView extends AbstractVector {
         SingleElementVectorDelegateStorage sto = storage();
 
         return new SingleElementVectorView(sto.delegate(), sto.index());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector times(double x) {
+        if (x == 0.0)
+            return copy().map(Functions.mult(x));
+        else
+            return super.times(x);
     }
 
     /** {@inheritDoc} */
