@@ -94,12 +94,9 @@ public class VectorImplementationsTest {
 
                 Class<? extends Vector> actualType = vLike.getClass();
 
-                /* skip this check for delegating vectors  */
-                if (expType != DelegatingVector.class)
-                    assertTrue("Actual vector type " + actualType.getSimpleName()
-                            + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
-                        actualType.isAssignableFrom(expType));
-
+                assertTrue("Actual vector type " + actualType.getSimpleName()
+                        + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
+                    actualType.isAssignableFrom(expType));
         });
     }
 
@@ -238,7 +235,7 @@ public class VectorImplementationsTest {
         if(clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class))
             return null;
 
-        if (clazz.isAssignableFrom(MatrixVectorView.class))
+        if (clazz.isAssignableFrom(MatrixVectorView.class) || clazz.isAssignableFrom(DelegatingVector.class))
             return DenseLocalOnHeapVector.class; // IMPL NOTE per fixture
 
         return clazz;
