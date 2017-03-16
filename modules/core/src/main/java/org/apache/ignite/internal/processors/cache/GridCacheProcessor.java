@@ -2120,7 +2120,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (existing != null) {
                         if (joiningNodeId.equals(ctx.localNodeId())) {
                             existing.receivedFrom(req.receivedFrom());
-
                             existing.deploymentId(req.deploymentId());
                         }
 
@@ -2146,6 +2145,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 false,
                                 req.deploymentId());
 
+                        desc.initialIndexStates(req.indexStates());
                         desc.indexStates(req.indexStates());
 
                         // Received statically configured cache.
@@ -2858,6 +2858,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
+                        startDesc.initialIndexStates(req.indexStates());
                         startDesc.indexStates(req.indexStates());
 
                         if (newTopVer == null) {

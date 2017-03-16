@@ -82,6 +82,9 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
+    /** Initial dynamic index state as observed from cache processor start() method and discovery join process. */
+    private QueryIndexStates initIdxStates;
+
     /** Dynamic index states. */
     private QueryIndexStates idxStates;
 
@@ -309,6 +312,20 @@ public class DynamicCacheDescriptor {
     /**
      * @return Index states.
      */
+    public QueryIndexStates initialIndexStates() {
+        return initIdxStates;
+    }
+
+    /**
+     * @param initIdxStates Index states.
+     */
+    public void initialIndexStates(QueryIndexStates initIdxStates) {
+        this.initIdxStates = initIdxStates != null ? initIdxStates.copy() : null;
+    }
+
+    /**
+     * @return Index states.
+     */
     public QueryIndexStates indexStates() {
         return idxStates;
     }
@@ -317,7 +334,7 @@ public class DynamicCacheDescriptor {
      * @param idxStates Index states.
      */
     public void indexStates(QueryIndexStates idxStates) {
-        this.idxStates = idxStates;
+        this.idxStates = idxStates != null ? idxStates.copy() : null;
     }
 
     /** {@inheritDoc} */
