@@ -34,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class CacheContinuousQueryBatchAck extends GridCacheMessage {
     /** */
-    public static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.0");
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Routine ID. */
