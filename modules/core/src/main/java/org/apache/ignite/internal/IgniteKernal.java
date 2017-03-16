@@ -958,7 +958,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteNeedReconnectException e) {
                         if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())
-                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry set" +
+                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry, set" +
                                 " TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
 
                         recon = true;
@@ -966,11 +966,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
-            if (recon) {
-                rejoin();
-
+            if (recon)
                 rejoinFut.get();
-            }
 
             // Register MBeans.
             registerKernalMBean();
@@ -3435,7 +3432,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
-                            U.error(log, "Failed to reconnect, will stop node", e);
+                            U.error(log, "Failed to reconnect, will stop node.", e);
 
                             GridFutureAdapter rejoinFut0 = rejoinFut;
 
@@ -3454,7 +3451,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             close();
                         }
                         else {
-                            U.error(log, "Failed to reconnect, retry [locNodeId=" + ctx.localNodeId()
+                            U.error(log, "Failed to reconnect, retry. [locNodeId=" + ctx.localNodeId()
                                 + ", err=" + e.getMessage() + ']');
                         }
                     }

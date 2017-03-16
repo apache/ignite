@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -59,6 +58,9 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** Coordinator. */
     private volatile ClusterNode crd;
 
+    /** Client reconnect disabled. */
+    private boolean clientReconnectDisabled;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty("IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK", "true");
@@ -72,6 +74,11 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        clientReconnectDisabled = false;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +96,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
             cfg.setDiscoverySpi(dspi);
 
             dspi.setJoinTimeout(60_000);
+            dspi.setClientReconnectDisabled(clientReconnectDisabled);
 
             cfg.setClientMode(true);
         }
@@ -99,7 +107,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testManyClientsReconnectAfterStart() throws Exception {
+    public void testClientsReconnectAfterStart() throws Exception {
         Ignite srv1 = startGrid("server1");
 
         crd = ((IgniteKernal)srv1).localNode();
@@ -176,7 +184,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testManyClientsReconnect() throws Exception {
+    public void testClientsReconnect() throws Exception {
         Ignite srv1 = startGrid("server1");
 
         crd = ((IgniteKernal)srv1).localNode();
@@ -235,6 +243,57 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         assertEquals(CLIENTS_NUM, srv1.cluster().forClients().nodes().size());
         assertEquals(CLIENTS_NUM, srv2.cluster().forClients().nodes().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientsReconnectDisabled() throws Exception {
+        clientReconnectDisabled = true;
+
+        Ignite srv1 = startGrid("server1");
+
+        crd = ((IgniteKernal)srv1).localNode();
+
+        Ignite srv2 = startGrid("server2");
+
+        block = true;
+
+        List<IgniteInternalFuture<Ignite>> futs = new ArrayList<>();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final int CLIENTS_NUM = 5;
+
+        for (int i = 0; i < CLIENTS_NUM; i++) {
+            final int idx = i;
+
+            IgniteInternalFuture<Ignite> fut = GridTestUtils.runAsync(new Callable<Ignite>() {
+                @Override public Ignite call() throws Exception {
+                    latch.await();
+
+                    return startGrid("client" + idx);
+                }
+            });
+
+            futs.add(fut);
+        }
+
+        latch.countDown();
+
+        for (final IgniteInternalFuture<Ignite> clientFut : futs) {
+            //noinspection ThrowableNotThrown
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    clientFut.get();
+
+                    return null;
+                }
+            }, IgniteCheckedException.class, null);
+        }
+
+        assertEquals(0, srv1.cluster().forClients().nodes().size());
+        assertEquals(0, srv2.cluster().forClients().nodes().size());
     }
 
     /** {@inheritDoc} */
