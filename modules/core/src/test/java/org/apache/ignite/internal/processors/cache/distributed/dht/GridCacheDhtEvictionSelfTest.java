@@ -338,8 +338,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys) {
             String msg = "Failed key: " + key;
 
-            assertNull(msg, localPeek(nearBackup, key));
-            assertNull(msg, localPeek(dhtBackup, key));
+            assertNull(msg, localPeekOnHeap(nearBackup, key));
+            assertNull(msg, localPeekOnHeap(dhtBackup, key));
             assertNull(msg, nearBackup.peekEx(key));
             assertNull(msg, dhtBackup.peekEx(key));
         }
@@ -347,8 +347,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys) {
             String msg = "Failed key: " + key;
 
-            assertNull(msg, localPeek(nearPrimary, key));
-            assertNull(msg, localPeek(dhtPrimary, key));
+            assertNull(msg, localPeekOnHeap(nearPrimary, key));
+            assertNull(msg, localPeekOnHeap(dhtPrimary, key));
             assertNull(msg, nearPrimary.peekEx(key));
             assertNull(dhtPrimary.peekEx(key));
         }
