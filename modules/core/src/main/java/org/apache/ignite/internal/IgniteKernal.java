@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -1143,9 +1144,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             int loadedPages = 0;
 
                             for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                                PageMemory pageMem = cctx.memoryPolicy().pageMemory();
+                                MemoryPolicy memPlc = cctx.memoryPolicy();
 
-                                loadedPages += pageMem != null ? pageMem.loadedPages() : 0;
+                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
                             }
 
                             String id = U.id8(localNode().id());
