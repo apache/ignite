@@ -115,9 +115,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
     /** */
-    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.7");
-
-    /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
@@ -349,37 +346,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         metaBuf.clear();
 
         startLatch.countDown();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
-
-        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) && marsh instanceof BinaryMarshaller) {
-            BinaryConfiguration bcfg = ctx.config().getBinaryConfiguration();
-
-            for (ClusterNode rmtNode : ctx.discovery().remoteNodes()) {
-                if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0) {
-                    if (bcfg == null || bcfg.getNameMapper() == null) {
-                        throw new IgniteCheckedException("When BinaryMarshaller is used and topology contains old " +
-                            "nodes, then " + BinaryBasicNameMapper.class.getName() + " mapper have to be set " +
-                            "explicitely into binary configuration and 'simpleName' property of the mapper " +
-                            "have to be set to 'true'.");
-                    }
-
-                    if (!(bcfg.getNameMapper() instanceof BinaryBasicNameMapper)
-                        || !((BinaryBasicNameMapper)bcfg.getNameMapper()).isSimpleName()) {
-                        U.quietAndWarn(log, "When BinaryMarshaller is used and topology contains old" +
-                            " nodes, it's strongly recommended, to set " + BinaryBasicNameMapper.class.getName() +
-                            " mapper into binary configuration explicitely " +
-                            " and 'simpleName' property of the mapper set to 'true' (fix configuration or set " +
-                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property).");
-                    }
-
-                    break;
-                }
-            }
-        }
     }
 
     /**
@@ -925,9 +891,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return null;
 
         Object rmtBinaryCfg = rmtNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
-
-        if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0)
-            return null;
 
         ClusterNode locNode = ctx.discovery().localNode();
 
