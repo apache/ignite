@@ -193,7 +193,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         cctx.shared().affinity().onCacheCreated(cctx);
 
         supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx, demandLock);
+        demander = new GridDhtPartitionDemander(cctx);
 
         supplier.start();
         demander.start();
