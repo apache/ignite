@@ -47,9 +47,6 @@ public class GridClockServer {
     /** Read worker. */
     private GridWorker readWorker;
 
-    /** Instance of time processor. */
-    private GridClockSyncProcessor clockSync;
-
     /**
      * Starts server.
      *
@@ -59,7 +56,6 @@ public class GridClockServer {
     public void start(GridKernalContext ctx) throws IgniteCheckedException {
         this.ctx = ctx;
 
-        clockSync = ctx.clockSync();
         log = ctx.log(GridClockServer.class);
 
         try {
@@ -205,8 +201,6 @@ public class GridClockServer {
 
                     GridClockMessage msg = GridClockMessage.fromBytes(packet.getData(), packet.getOffset(),
                         packet.getLength());
-
-                    clockSync.onMessageReceived(msg, packet.getAddress(), packet.getPort());
                 }
                 catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to assemble clock server message (will ignore the packet) [host=" +

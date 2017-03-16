@@ -73,7 +73,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Dummy version sent to older nodes for backward compatibility, */
-    private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0, 0);
+    private static final GridCacheVersion DUMMY_VER = new GridCacheVersion(0, 0, 0);
 
     /** Logger. */
     private static IgniteLogger log;
