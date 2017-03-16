@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,7 +46,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry getOrCreateEntry(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        throw new AssertionError();
+        return new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), null);
     }
 
     /** {@inheritDoc} */
