@@ -56,15 +56,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_10 = IgniteProductVersion.fromString("1.5.10");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_26 = IgniteProductVersion.fromString("1.5.26");
-
-    /** */
     protected static final IgniteProductVersion VER_1_7_2 = IgniteProductVersion.fromString("1.7.2");
 
     /**
@@ -150,15 +141,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      * @return Compatible {@link VisorCache} instance.
      */
     private VisorCache createVisorCache() {
-        if (compatibleWith(VER_1_4_1))
-            return new VisorCache();
-
-        if (compatibleWith(VER_1_5_10))
-            return new VisorCacheV2();
-
-        if (compatibleWith(VER_1_5_26))
-            return new VisorCacheV3();
-
         return new VisorCacheV4();
     }
 
