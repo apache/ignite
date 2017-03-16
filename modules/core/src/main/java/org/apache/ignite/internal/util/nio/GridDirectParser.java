@@ -75,9 +75,11 @@ public class GridDirectParser implements GridNioParser {
 
         try {
             if (msg == null && buf.remaining() >= Message.DIRECT_TYPE_SIZE) {
-                buf.order(GridUnsafe.BIG_ENDIAN ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+                byte b0 = buf.get();
+                byte b1 = buf.get();
 
-                short type = buf.getShort();
+                short type = (short)(buf.order() == ByteOrder.BIG_ENDIAN ? (b0 & 0xFF) << 8 | b1 & 0xFF
+                    : (b1 & 0xFF) << 8 | b0 & 0xFF);
 
                 msg = msgFactory.create(type);
             }
