@@ -867,6 +867,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private UUID rmtNodeId;
 
+        /** */
+        private CountDownLatch forceLatch;
+
         /**
          */
         protected SocketReader() {
@@ -891,16 +894,29 @@ class ClientImpl extends TcpDiscoveryImpl {
          * Force close socket.
          */
         private void forceLeave() {
+            CountDownLatch forceLeaveLatch;
+
             synchronized (mux) {
                 SocketStream stream = sockStream;
 
                 if (stream == null)
                     return;
 
+                this.forceLatch = forceLeaveLatch = new CountDownLatch(1);
+
                 U.closeQuiet(stream.socket());
 
                 this.sockStream = null;
                 this.rmtNodeId = null;
+
+                mux.notifyAll();
+            }
+
+            try {
+                forceLeaveLatch.await();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteSpiException(e);
             }
         }
 
@@ -911,6 +927,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 UUID rmtNodeId;
 
                 synchronized (mux) {
+                    if (forceLatch != null) {
+                        forceLatch.countDown();
+
+                        forceLatch = null;
+                    }
+
                     if (this.sockStream == null) {
                         mux.wait();
 
@@ -1018,7 +1040,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         private TcpDiscoveryAbstractMessage unackedMsg;
 
         /** */
-        private GridFutureAdapter<Object> forceFut;
+        private CountDownLatch forceLeaveLatch;
 
         /**
          *
@@ -1045,12 +1067,14 @@ class ClientImpl extends TcpDiscoveryImpl {
          *
          */
         private void forceLeave() {
+            CountDownLatch forceLeaveLatch;
+
             synchronized (mux) {
                 // If writer was stopped.
                 if (sock == null)
                     return;
 
-                forceFut = new GridFutureAdapter<>();
+                this.forceLeaveLatch = forceLeaveLatch = new CountDownLatch(1);
 
                 unackedMsg = null;
 
@@ -1058,9 +1082,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
 
             try {
-                forceFut.get();
+                forceLeaveLatch.await();
             }
-            catch (IgniteCheckedException e) {
+            catch (InterruptedException e) {
                 throw new IgniteSpiException(e);
             }
         }
@@ -1121,7 +1145,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         continue;
                     }
 
-                    if (forceFut != null) {
+                    if (forceLeaveLatch != null) {
                         msg = new TcpDiscoveryNodeLeftMessage(getLocalNodeId());
 
                         msg.client(true);
@@ -1241,12 +1265,12 @@ class ClientImpl extends TcpDiscoveryImpl {
             queue.clear();
             unackedMsg = null;
 
-            GridFutureAdapter forceFut0 = forceFut;
+            CountDownLatch forceLeaveLatch = this.forceLeaveLatch;
 
-            if (forceFut0 != null) {
-                forceFut = null;
+            if (forceLeaveLatch != null) {
+                this.forceLeaveLatch = null;
 
-                forceFut0.onDone();
+                forceLeaveLatch.countDown();
             }
         }
     }
