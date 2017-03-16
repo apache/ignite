@@ -328,8 +328,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
-    /** Rejoin future. Rejoin process in progress if not null. */
-    private volatile GridFutureAdapter rejoinFut;
+    /** Rejoin future. */
+    private final GridFutureAdapter rejoinFut = new GridFutureAdapter();
+
+    /** Reconnect future. */
+    private GridCompoundFuture<?, Object> reconnectFut;
+
+    /** Rejoin flag. */
+    private volatile boolean rejoining;
+
+    /** Force complete reconnect future. */
+    private static final Object COMPLETE_FLAG = new Object();
 
     /**
      * No-arg constructor is required by externalization.
@@ -3327,9 +3336,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public void onDisconnected() {
         Throwable err = null;
-        final boolean rejoin = rejoinFut != null;
 
-        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected(rejoin);
+        if (reconnectFut != null && !reconnectFut.isDone()) {
+            reconnectFut.onDone(COMPLETE_FLAG);
+
+            try {
+                reconnectFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to reconnect. ", e);
+            }
+        }
+
+        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected(rejoining);
 
         if (reconnectFut == null) {
             assert ctx.gateway().getState() != STARTED : ctx.gateway().getState();
@@ -3343,7 +3362,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // In case of rejoin, keep reconnect future as is and go on with components.
 
-        if (rejoin && curFut != null && curFut.internalFuture() == reconnectFut)
+        if (rejoining && curFut != null && curFut.internalFuture() == reconnectFut)
             userFut = curFut;
         else {
             userFut = new IgniteFutureImpl<>(reconnectFut);
@@ -3402,7 +3421,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ctx.disconnected(false);
 
-            GridCompoundFuture<?, ?> reconnectFut = new GridCompoundFuture<>();
+            reconnectFut = new GridCompoundFuture<>();
 
             for (GridComponent comp : ctx.components()) {
                 IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
@@ -3418,35 +3437,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             reconnectFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
-                        fut.get();
+                        Object res = fut.get();
+
+                        if (res == COMPLETE_FLAG)
+                            return;
 
                         ctx.gateway().onReconnected();
 
-                        GridFutureAdapter rejoinFut0 = rejoinFut;
+                        rejoinFut.onDone();
 
-                        if (rejoinFut0 != null) {
-                            rejoinFut0.onDone();
-
-                            rejoinFut = null;
-                        }
+                        rejoining = false;
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node.", e);
 
-                            GridFutureAdapter rejoinFut0 = rejoinFut;
-
-                            if (rejoinFut0 != null) {
-                                rejoinFut0.onDone(e);
-
-                                rejoinFut = null;
-                            }
+                            rejoinFut.onDone(e);
 
                             close();
                         }
                         else if ((ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())) {
                             U.error(log, "Failed to reconnect, will stop node. To allow client node retry " +
                                 "set TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
+
+                            rejoinFut.onDone(e);
+
+                            rejoining = false;
 
                             close();
                         }
@@ -3486,8 +3502,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return;
         }
 
-        if (rejoinFut == null)
-            rejoinFut = new GridFutureAdapter();
+        rejoining = true;
 
         ctx.discovery().rejoin();
     }
