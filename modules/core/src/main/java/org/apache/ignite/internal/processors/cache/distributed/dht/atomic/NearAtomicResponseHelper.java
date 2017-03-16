@@ -42,45 +42,42 @@ public class NearAtomicResponseHelper {
      * @param res Response.
      * @return {@code true} if all responses added.
      */
-    public boolean addResponse(GridNearAtomicUpdateResponse res) {
+    public GridNearAtomicUpdateResponse addResponse(GridNearAtomicUpdateResponse res) {
         synchronized (this) {
-            if (res.stripe() == -1) {
-                this.res = res;
-                this.res.stripe(-1);
-
-                return true;
-            }
+            if (res.stripe() == -1)
+                return res;
 
             if (stripes.remove(res.stripe())) {
-                if (this.res == null)
-                    this.res = res;
-                else {
-                    if (res.nearValuesIndexes() != null)
-                        for (int i = 0; i < res.nearValuesIndexes().size(); i++)
-                            this.res.addNearValue(
-                                res.nearValuesIndexes().get(i),
-                                res.nearValue(i),
-                                res.nearTtl(i),
-                                res.nearExpireTime(i)
-                            );
+                mergeResponse(res);
 
-                    if (res.failedKeys() != null)
-                        this.res.addFailedKeys(res.failedKeys(), null);
-
-                    if (res.skippedIndexes() != null)
-                        this.res.skippedIndexes().addAll(res.skippedIndexes());
-                }
-                return stripes.isEmpty();
+                return stripes.isEmpty() ? this.res : null;
             }
 
-            return false;
+            return null;
         }
     }
 
     /**
-     * @return Response.
+     * @param res Response.
      */
-    public GridNearAtomicUpdateResponse response() {
-        return res;
+    private void mergeResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null)
+            this.res = res;
+        else {
+            if (res.nearValuesIndexes() != null)
+                for (int i = 0; i < res.nearValuesIndexes().size(); i++)
+                    this.res.addNearValue(
+                        res.nearValuesIndexes().get(i),
+                        res.nearValue(i),
+                        res.nearTtl(i),
+                        res.nearExpireTime(i)
+                    );
+
+            if (res.failedKeys() != null)
+                this.res.addFailedKeys(res.failedKeys(), null);
+
+            if (res.skippedIndexes() != null)
+                this.res.skippedIndexes().addAll(res.skippedIndexes());
+        }
     }
 }

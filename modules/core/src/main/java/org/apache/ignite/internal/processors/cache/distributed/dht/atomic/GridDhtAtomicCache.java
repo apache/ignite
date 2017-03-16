@@ -214,8 +214,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                 if (req.writeSynchronizationMode() != FULL_ASYNC) {
                     if (req.responseHelper() != null) {
-                        if (req.responseHelper().addResponse(res))
-                            sendNearUpdateReply(res.nodeId(), req.responseHelper().response());
+                        GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
+
+                        if (res0 != null)
+                            sendNearUpdateReply(res.nodeId(), res0);
                     }
                     else
                         sendNearUpdateReply(res.nodeId(), res);
