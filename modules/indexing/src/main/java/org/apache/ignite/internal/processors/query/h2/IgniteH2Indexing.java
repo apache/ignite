@@ -1286,11 +1286,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         runs.put(run.id(), run);
 
-        GridRunningQueryInfo run = new GridRunningQueryInfo(qryIdGen.incrementAndGet(), qry, SQL, spaceName,
-            U.currentTimeMillis(), null, true);
-
-        runs.put(run.id(), run);
-
         try {
             ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, sql, params, true, 0, cancel);
 
