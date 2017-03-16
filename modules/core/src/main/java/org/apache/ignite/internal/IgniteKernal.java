@@ -157,6 +157,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -329,7 +330,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
     /** Rejoin future. Rejoin process in progress if not null. */
-    private volatile GridFutureAdapter rejoinFut;
+    private GridFutureAdapter rejoinFut;
+
+    /** All on-start initializations are complete. */
+    private boolean gridInited;
+
+    /** Rejoin mutex. */
+    private final Object rejoinMux = new Object();
 
     /**
      * No-arg constructor is required by externalization.
@@ -966,8 +973,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 }
             }
 
+            synchronized (rejoinMux) {
+                gridInited = true;
+            }
+
             if (recon)
-                rejoinFut.get();
+                rejoin().get();
 
             // Register MBeans.
             registerKernalMBean();
@@ -3327,7 +3338,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public void onDisconnected() {
         Throwable err = null;
-        final boolean rejoin = rejoinFut != null;
+        final boolean rejoin = rejoinFuture() != null;
 
         GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected(rejoin);
 
@@ -3422,25 +3433,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                         ctx.gateway().onReconnected();
 
-                        GridFutureAdapter rejoinFut0 = rejoinFut;
-
-                        if (rejoinFut0 != null) {
-                            rejoinFut0.onDone();
-
-                            rejoinFut = null;
-                        }
+                        completeRejoinFuture(null);
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
                             U.error(log, "Failed to reconnect, will stop node.", e);
 
-                            GridFutureAdapter rejoinFut0 = rejoinFut;
-
-                            if (rejoinFut0 != null) {
-                                rejoinFut0.onDone(e);
-
-                                rejoinFut = null;
-                            }
+                            completeRejoinFuture(e);
 
                             close();
                         }
@@ -3478,18 +3477,62 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Force reconnect to cluster.
      */
-    public void rejoin() {
-        if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled()) {
-            U.warn(log, "Cannot perform rejoin. To allow client node reconnect " +
-                "set TcpDiscoverySpi.setClientReconnectDisabled(false).");
+    public IgniteInternalFuture rejoin() {
+        synchronized (rejoinMux) {
+            if (!gridInited)
+                return new GridFinishedFuture();
 
-            return;
-        }
+            if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled()) {
+                return new GridFinishedFuture(new IgniteCheckedException(
+                    "Cannot perform rejoin. To allow client node reconnect " +
+                        "set TcpDiscoverySpi.setClientReconnectDisabled(false)."));
+            }
 
-        if (rejoinFut == null)
+            // May be requested before reconnect actually
+            // completed, so we need to chain this request as well.
+            if (rejoinFut != null) {
+                //noinspection unchecked
+                rejoinFut.listen(new CI1<IgniteInternalFuture>() {
+                    @Override public void apply(IgniteInternalFuture fut) {
+                        rejoin();
+                    }
+                });
+            }
+
             rejoinFut = new GridFutureAdapter();
 
-        ctx.discovery().rejoin();
+            ctx.discovery().rejoin();
+
+            return rejoinFut;
+        }
+    }
+
+    /**
+     * @return Rejoin future.
+     */
+    private GridFutureAdapter rejoinFuture() {
+        synchronized (rejoinMux) {
+            return rejoinFut;
+        }
+    }
+
+    /**
+     * Completes rejoin future.
+     *
+     * @param err Error.
+     */
+    private void completeRejoinFuture(@Nullable Throwable err) {
+        synchronized (rejoinMux) {
+            if (rejoinFut != null) {
+                GridFutureAdapter fut = rejoinFut;
+
+                // Must be set to null before calling onDone(),
+                // because chained rejoin may be requested.
+                rejoinFut = null;
+
+                fut.onDone(err);
+            }
+        }
     }
 
     /**

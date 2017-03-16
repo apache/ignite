@@ -127,7 +127,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                U.sleep(2_000);
+                U.sleep(5_000);
 
                 block = true;
                 blockAll = false;
