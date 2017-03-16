@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -151,11 +150,8 @@ public class VisorCache implements Serializable, LessNamingBean {
             if (dca != null) {
                 GridDhtPartitionTopology top = dca.topology();
 
-                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0) {
-                    GridDhtPartitionMap2 map2 = top.localPartitionMap();
-
-                    partitionsMap = new GridDhtPartitionMap(map2.nodeId(), map2.updateSequence(), map2.map());
-                }
+                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0)
+                    partitionsMap = top.localPartitionMap();
             }
         }
 

@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -822,17 +821,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 lastVer,
                 exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
-        boolean useOldApi = false;
-
         if (nodes != null) {
             for (ClusterNode node : nodes) {
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0) {
-                    useOldApi = true;
-                    compress = false;
-
-                    break;
-                }
-                else if (!canUsePartitionMapCompression(node))
+                if (!canUsePartitionMapCompression(node))
                     compress = false;
             }
         }
@@ -858,13 +849,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (affCache != null) {
                         GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
-
-                        if (useOldApi) {
-                            locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
-                                locMap.nodeOrder(),
-                                locMap.updateSequence(),
-                                locMap);
-                        }
 
                         addFullPartitionsMap(m,
                             dupData,
@@ -924,7 +908,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     map.nodeOrder(),
                     map.updateSequence());
 
-                for (Map.Entry<UUID, GridDhtPartitionMap2> e : map.entrySet())
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : map.entrySet())
                     map0.put(e.getKey(), e.getValue().emptyCopy());
 
                 map = map0;
@@ -987,10 +971,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                if (targetNode.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
+                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
 
                 addPartitionMap(m,
                     dupData,
@@ -1008,7 +989,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (m.partitions() != null && m.partitions().containsKey(top.cacheId()))
                 continue;
 
-            GridDhtPartitionMap2 locMap = top.localPartitionMap();
+            GridDhtPartitionMap locMap = top.localPartitionMap();
 
             addPartitionMap(m,
                 dupData,
@@ -1036,7 +1017,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Map<Object, T2<Integer, Map<Integer, GridDhtPartitionState>>> dupData,
         boolean compress,
         Integer cacheId,
-        GridDhtPartitionMap2 map,
+        GridDhtPartitionMap map,
         Object affKey) {
         Integer dupDataCache = null;
 
@@ -1261,7 +1242,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
+                for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
                     Integer cacheId = entry.getKey();
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
