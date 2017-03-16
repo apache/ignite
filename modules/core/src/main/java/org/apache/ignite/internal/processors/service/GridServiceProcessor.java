@@ -119,9 +119,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
-    public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
-
-    /** */
     private final Boolean srvcCompatibilitySysProp;
 
     /** Time to wait before reassignment retries. */
@@ -1274,63 +1271,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
-        IgniteNodeValidationResult res = super.validateNode(node);
-
-        if (res != null)
-            return res;
-
-        boolean rmtNodeIsOld = node.version().compareToIgnoreTimestamp(LAZY_SERVICES_CFG_SINCE) < 0;
-
-        if (!rmtNodeIsOld)
-            return null;
-
-        while (true) {
-            ServicesCompatibilityState state = compatibilityState.get();
-
-            if (state.srvcCompatibility)
-                return null;
-
-            // Remote node is old and services are in not compatible mode.
-            if (!state.used) {
-                if (!compatibilityState.compareAndSet(state, new ServicesCompatibilityState(true, false)))
-                    continue;
-
-                return null;
-            }
-
-            ClusterNode locNode = ctx.discovery().localNode();
-
-            return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not " +
-                "compatible mode with old nodes (" + IGNITE_SERVICES_COMPATIBILITY_MODE + " system property can be " +
-                "set explicitly) [locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
-                "Remote node uses IgniteServices and works in not compatible mode with old nodes " +
-                    IGNITE_SERVICES_COMPATIBILITY_MODE + " system property can be set explicitly" +
-                    "[locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + "]");
-        }
-    }
-
     /**
      * @param nodes Remote nodes.
      */
     public void initCompatibilityMode(Collection<ClusterNode> nodes) {
-        boolean mode;
+        boolean mode = false;
 
-        if (srvcCompatibilitySysProp == null) {
-            boolean clusterHasOldNode = false;
-
-            for (ClusterNode n : nodes) {
-                if (n.version().compareToIgnoreTimestamp(LAZY_SERVICES_CFG_SINCE) < 0) {
-                    clusterHasOldNode = true;
-
-                    break;
-                }
-            }
-
-            mode = clusterHasOldNode;
-        }
-        else
+        if (srvcCompatibilitySysProp != null)
             mode = srvcCompatibilitySysProp;
 
         while (true) {

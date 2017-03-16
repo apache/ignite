@@ -3625,61 +3625,31 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                if (node.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
-                    final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+                final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                    if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
-                        utilityPool.execute(
-                            new Runnable() {
-                                @Override public void run() {
-                                    String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                                        " property value differs from remote node's value " +
-                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                        "configure system property explicitly) " +
-                                        "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                        ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
-
-                                    String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
-                                        " property value differs from remote node's value " +
-                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                        "configure system property explicitly) " +
-                                        "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                        ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                        ", rmtNodeId=" + locNode.id() + ']';
-
-                                    nodeCheckError(
-                                        node,
-                                        errMsg,
-                                        sndMsg);
-                                }
-                            });
-
-                        // Ignore join request.
-                        return;
-                    }
-                }
-                else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
+                if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
-                                String errMsg = "Remote node doesn't support lazy services configuration and " +
-                                    "cannot be joined to local node because local node's "
-                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
-                                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
+                                String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                    "configure system property explicitly) " +
+                                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
                                     ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                                String sndMsg = "Local node doesn't support lazy services configuration and " +
-                                    "cannot be joined to local node because remote node's "
-                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
-                                    "[locNodeAddrs=" + U.addressesAsString(node) +
-                                    ", rmtNodeAddrs=" + U.addressesAsString(locNode) +
-                                    ", locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + ']';
+                                String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                    "configure system property explicitly) " +
+                                    "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                    ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
                                 nodeCheckError(
                                     node,
