@@ -369,7 +369,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
                     try {
-                        ses.sendNoFuture(nodeIdMessage());
+                        ses.sendNoFuture(nodeIdMessage(), null);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);

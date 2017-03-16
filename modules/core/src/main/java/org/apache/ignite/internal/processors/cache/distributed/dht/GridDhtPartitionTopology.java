@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -167,6 +168,14 @@ public interface GridDhtPartitionTopology {
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
     public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
+
+    /**
+     * @param p Partition ID.
+     * @param affAssignment Assignments.
+     * @param affNodes Node assigned for given partition by affinity.
+     * @return Collection of all nodes responsible for this partition with primary node being first.
+     */
+    @Nullable public List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
 
     /**
      * @param p Partition ID.

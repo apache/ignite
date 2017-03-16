@@ -47,7 +47,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private static final int SAMPLE_CNT = 1;
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)210;
+    private static final byte DIRECT_TYPE = -127;
 
     /** */
     private int bufSize;

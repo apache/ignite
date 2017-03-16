@@ -39,9 +39,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -702,8 +704,12 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private void checkEntry(Ignite ignite, Integer key, @Nullable Integer val, boolean expectNear, UUID... expReaders)
-        throws Exception {
+    private void checkEntry(Ignite ignite,
+        Integer key,
+        @Nullable Integer val,
+        boolean expectNear,
+        final UUID... expReaders) throws Exception
+    {
         GridCacheAdapter<Integer, Integer> near = ((IgniteKernal) ignite).internalCache();
 
         assertTrue(near.isNear());
@@ -728,10 +734,21 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
-        GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
+        final GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(key);
 
         if (expectDht) {
             assertNotNull("No dht entry for: " + key + ", grid: " + ignite.name(), dhtEntry);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return dhtEntry.readers().size() == expReaders.length;
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }, 5000);
 
             Collection<UUID> readers = dhtEntry.readers();
 

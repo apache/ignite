@@ -401,9 +401,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertEquals(3, msgs.size());
 
-        for (Object msg : msgs)
-            assertTrue(((GridNearAtomicFullUpdateRequest)msg).clientRequest());
-
         map.put(primaryKey(ignite0.cache(null)), 3);
         map.put(primaryKey(ignite1.cache(null)), 4);
         map.put(primaryKey(ignite2.cache(null)), 5);
@@ -1693,8 +1690,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
         multinode(PRIMARY, TestType.PUT_ALL);
     }
 
@@ -1702,8 +1697,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicClockPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
         multinode(CLOCK, TestType.PUT_ALL);
     }
 

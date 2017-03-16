@@ -15,21 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
- *
+ * Represents asynchronous operation result.
  */
-public class GridCachePartitionedNoStripedPoolMultiNodeFullApiSelfTest extends
-    GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+public interface PlatformAsyncResult {
+    /**
+     * Async operation future.
+     *
+     * @return Future.
+     */
+    IgniteFuture future();
 
-        cfg.setStripedPoolSize(-1);
-
-        return cfg;
-    }
+    /**
+     * Async operation result writer method.
+     *
+     * @param writer Writer.
+     * @param result Async operation result.
+     */
+    void write(BinaryRawWriterEx writer, Object result);
 }

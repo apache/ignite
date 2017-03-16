@@ -20,10 +20,12 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -66,6 +68,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsNotNull(ctx.Ignite);
                 Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
+                CheckResourceInjection(ctx);
 
                 var plugin2 = ignite.GetPlugin<TestIgnitePlugin>(TestIgnitePluginProvider.PluginName);
                 Assert.AreEqual(plugin, plugin2);
@@ -78,6 +81,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             Assert.AreEqual(true, plugin.Provider.Stopped);
             Assert.AreEqual(true, plugin.Provider.IgniteStopped);
+        }
+
+        /// <summary>
+        /// Checks the resource injection.
+        /// </summary>
+        private static void CheckResourceInjection(IPluginContext<TestIgnitePluginConfiguration> ctx)
+        {
+            var obj = new Injectee();
+
+            Assert.IsNull(obj.Ignite);
+
+            ctx.InjectResources(obj);
+
+            Assert.IsNotNull(obj.Ignite);
+            Assert.AreEqual(ctx.Ignite.Name, obj.Ignite.Name);
         }
 
         /// <summary>
@@ -116,6 +134,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             // Returns a copy with same name.
             var resCopy = res.Item2.OutObject(1);
             Assert.AreEqual("name1_abc", resCopy.OutStream(1, r => r.ReadString()));
+
+            // Async operation.
+            var task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString());
+            Assert.IsFalse(task.IsCompleted);
+            var asyncRes = task.Result;
+            Assert.IsTrue(task.IsCompleted);
+            Assert.AreEqual("FOO", asyncRes);
+
+            // Async operation with exception in entry point.
+            Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
+
+            // Async operation with exception in future.
+            var errTask = target.DoOutOpAsync<object>(3, null, null);
+            Assert.IsFalse(errTask.IsCompleted);
+            var aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
 
             // Throws custom mapped exception.
             var ex = Assert.Throws<TestIgnitePluginException>(() => target.InLongOutLong(-1, 0));
@@ -173,7 +207,6 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new[]
                 {
                     "normalPlugin.Start", "errPlugin.Start",
-                    "errPlugin.OnIgniteStop", "normalPlugin.OnIgniteStop",
                     "errPlugin.Stop", "normalPlugin.Stop"
                 }, PluginLog);
         }
@@ -297,6 +330,13 @@ namespace Apache.Ignite.Core.Tests.Plugin
             {
                 PluginLog.Add(Name + ".Start");
             }
+        }
+
+        private class Injectee
+        {
+            [InstanceResource]
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public IIgnite Ignite { get; set; }
         }
     }
 }

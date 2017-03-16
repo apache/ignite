@@ -103,7 +103,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridTestUtils.retryAssert(log, 10, 100, new CA() {
+            GridTestUtils.retryAssert(log, 10, 500, new CA() {
                 @Override public void apply() {
                     assertTrue(grid.internalCache().context().mvcc().atomicFutures().isEmpty());
                 }

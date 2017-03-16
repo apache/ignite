@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -161,7 +160,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @param node Node.
      */
-    public void addLockTransactionNode(ClusterNode node) {
+    void addLockTransactionNode(ClusterNode node) {
         assert node != null;
         assert !node.isLocal();
 
@@ -185,7 +184,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @return Has near cache flag.
      */
-    public boolean nearOnOriginatingNode() {
+    boolean nearOnOriginatingNode() {
         return nearOnOriginatingNode;
     }
 
@@ -206,7 +205,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @return Nodes where transactions were started on lock step.
      */
-    @Nullable public Set<ClusterNode> lockTransactionNodes() {
+    @Nullable Set<ClusterNode> lockTransactionNodes() {
         return lockTxNodes;
     }
 
@@ -349,14 +348,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @param mappings Mappings to add.
      */
-    void addDhtNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
+    private void addDhtNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
         addMapping(mappings, dhtMap);
     }
 
     /**
      * @param mappings Mappings to add.
      */
-    void addNearNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
+    private void addNearNodeEntryMapping(Map<ClusterNode, List<GridDhtCacheEntry>> mappings) {
         addMapping(mappings, nearMap);
     }
 
@@ -654,7 +653,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 needRetVal,
                 createTtl,
                 accessTtl,
-                null,
                 skipStore,
                 keepBinary);
         }
@@ -673,7 +671,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param needRetVal Return value flag.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
-     * @param filter Entry write filter.
      * @param skipStore Skip store flag.
      * @return Future for lock acquisition.
      */
@@ -685,7 +682,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean needRetVal,
         final long createTtl,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
         if (log.isDebugEnabled())
@@ -729,7 +725,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         /*retval*/false,
                         /*read*/read,
                         accessTtl,
-                        filter == null ? CU.empty0() : filter,
+                        CU.empty0(),
                         /*computeInvoke*/false);
 
                     return ret;
@@ -740,7 +736,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean finish(boolean commit) throws IgniteCheckedException {
+    @Override public boolean localFinish(boolean commit) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing dht local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -855,16 +851,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         }
 
         return prepFut;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void rollback() throws IgniteCheckedException {
-        try {
-            rollbackAsync().get();
-        }
-        finally {
-            cctx.tm().resetContext();
-        }
     }
 
     /** {@inheritDoc} */

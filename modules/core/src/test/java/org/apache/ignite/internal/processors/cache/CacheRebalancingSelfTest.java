@@ -40,6 +40,13 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -63,13 +70,12 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param future Future.
+     * @param fut Future.
      * @return Internal future.
      */
-    private static IgniteInternalFuture internalFuture(IgniteFuture future) {
-        assert future instanceof IgniteFutureImpl;
+    private static IgniteInternalFuture internalFuture(IgniteFuture fut) {
+        assert fut instanceof IgniteFutureImpl : fut;
 
-        return ((IgniteFutureImpl)future).internalFuture();
+        return ((IgniteFutureImpl) fut).internalFuture();
     }
-
 }
