@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -514,14 +515,47 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     /**
      *
+     * @param affOld Old affinity.
+     * @param affNew New affinity/
+     * @return Count of partitions to migrate.
+     */
+    private int countPrimaryPartitionsToMigrateOnNodeLeave(List<List<ClusterNode>> affOld, List<List<ClusterNode>> affNew) {
+        if (affOld == null || affNew == null)
+            return 0;
+
+        assertEquals(affOld.size(), affNew.size());
+
+        Set<ClusterNode> oldTop = new HashSet<>();
+        Set<ClusterNode> newTop = new HashSet<>();
+
+        for (int i = 0; i < affOld.size(); ++i) {
+            oldTop.addAll(affOld.get(i));
+
+            newTop.addAll(affNew.get(i));
+        }
+
+        if (newTop.size() >= oldTop.size())
+            return 0;
+
+        int diff = 0;
+        for (int i = 0; i < affOld.size(); ++i) {
+            if (newTop.contains(affOld.get(i).get(0)) && !affNew.get(i).get(0).equals(affOld.get(i).get(0)))
+                diff++;
+        }
+
+        return diff;
+    }
+
+    /**
+     *
      */
     public void testPartitionsMigrate() {
         int[] nodesCnts = {2, 3, 4, 6, 8, 10, 64, 100, 200, 300, 400, 500, 600};
 
         final int backups = 2;
 
-        AffinityFunction aff0 = new RendezvousAffinityFunction(true, 1024);
-//        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
+        AffinityFunction aff0 = new RendezvousAffinityFunctionOld(true, 1024);
+        GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
         AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024);
 
@@ -538,7 +572,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             affPrev = assignPartitions(aff0, nodes0, null, backups, 0).get2();
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 List<List<ClusterNode>> affCur = assignPartitions(aff0, nodes0, affPrev, backups, i).get2();
-                diffCnt0 += countPartitionsToMigrate(affPrev, affCur);
+                diffCnt0 += countPrimaryPartitionsToMigrateOnNodeLeave(affPrev, affCur);
                 affPrev = affCur;
             }
 
@@ -546,7 +580,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             int diffCnt1 = 0;
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 List<List<ClusterNode>> affCur = assignPartitions(aff1, nodes1, affPrev, backups, i).get2();
-                diffCnt1 += countPartitionsToMigrate(affPrev, affCur);
+                diffCnt1 += countPrimaryPartitionsToMigrateOnNodeLeave(affPrev, affCur);
                 affPrev = affCur;
             }
 
@@ -554,9 +588,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             info(String.format("Test %d nodes. Golden: %.1f; %s: %.1f; %s: %.1f;",
                 nodesCnt, goldenChangeAffinity,
                 aff0.getClass().getSimpleName(),
-                (double)diffCnt0 / (MAX_EXPERIMENTS - 1),
+                (double)diffCnt0 / (MAX_EXPERIMENTS - 1) * 2,
                 aff1.getClass().getSimpleName(),
-                (double)diffCnt1 / (MAX_EXPERIMENTS - 1)));
+                (double)diffCnt1 / (MAX_EXPERIMENTS - 1) * 2 ));
         }
     }
 
