@@ -101,7 +101,6 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -130,7 +129,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -6498,9 +6496,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
-        public static final IgniteProductVersion NEAR_JOB_SINCE = IgniteProductVersion.fromString("1.5.0");
-
         /** Cache name. */
         private final String cacheName;
 
@@ -6534,7 +6529,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             for (ClusterNode node : subgrid) {
                 ComputeJob job;
 
-                if (near && node.version().compareTo(NEAR_JOB_SINCE) >= 0) {
+                if (near) {
                     job = keys == null ? new GlobalClearAllNearJob(cacheName, topVer) :
                         new GlobalClearKeySetNearJob<>(cacheName, topVer, keys);
                 }
