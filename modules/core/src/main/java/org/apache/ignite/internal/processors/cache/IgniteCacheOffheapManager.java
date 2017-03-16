@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -82,6 +83,12 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public Iterable<CacheDataStore> cacheDataStores();
 
     /**
+     * @param part Partition.
+     * @return Data store.
+     */
+    public CacheDataStore dataStore(GridDhtLocalPartition part);
+
+    /**
      * @param store Data store.
      */
     public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
@@ -104,6 +111,15 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @throws IgniteCheckedException If failed to get number of pending entries.
      */
     public long expiredSize() throws IgniteCheckedException;
+
+    /**
+     * @param key Key.
+     * @param part Partition.
+     * @param c Tree update closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void invoke(KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
+        throws IgniteCheckedException;
 
     /**
      * @param key  Key.
@@ -260,6 +276,16 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     /**
      *
      */
+    interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
+        /**
+         * @return Old row.
+         */
+        @Nullable public CacheDataRow oldRow();
+    }
+
+    /**
+     *
+     */
     interface CacheDataStore {
         /**
          * @return Partition ID.
@@ -307,6 +333,21 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
+         * @param oldRow Old row.
+         * @return New row.
+         * @throws IgniteCheckedException If failed.
+         */
+        CacheDataRow createRow(KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+        /**
+         * @param key Key.
+         * @param val Value.
+         * @param ver Version.
+         * @param expireTime Expire time.
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
@@ -315,6 +356,13 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+        /**
+         * @param key Key.
+         * @param c Closure.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void invoke(KeyCacheObject key, OffheapInvokeClosure c) throws IgniteCheckedException;
 
         /**
          * @param key Key.

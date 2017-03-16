@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -53,10 +52,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class H2TreeIndex extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 0;
-
-    /** PageContext for use in IO's */
-    private static final ThreadLocal<H2TreeIndex> currentIndex = new ThreadLocal<>();
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
 
     /** */
     private final H2Tree tree;
@@ -92,81 +88,22 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = tbl.rowDescriptor().type().typeId() + "_" + name;
+        name = tbl.rowDescriptor() == null ? "_" + name : tbl.rowDescriptor().type().typeId() + "_" + name;
 
         name = BPlusTree.treeName(name, "H2Tree");
 
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-            RootPage page = cctx.offheap().rootPageForIndex(name);
+            RootPage page = getMetaPage(name);
 
             inlineIdxs = getAvailableInlineColumns(cols);
 
             tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
                 dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
-                tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), computeInlineSize(inlineIdxs, inlineSize)) {
-                @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
-                    throws IgniteCheckedException {
-
-                    if (inlineSize() == 0)
-                        return compareRows(getRow(io, pageAddr, idx), row);
-                    else {
-                        int off = io.offset(idx);
-
-                        int fieldOff = 0;
-
-                        int lastIdxUsed = 0;
-
-                        for (int i = 0; i < inlineIdxs.size(); i++) {
-                            InlineIndexHelper inlineIdx = inlineIdxs.get(i);
-
-                            Value v2 = row.getValue(inlineIdx.columnIndex());
-
-                            if (v2 == null)
-                                return 0;
-
-                            Value v1 = inlineIdx.get(pageAddr, off + fieldOff, inlineSize() - fieldOff);
-
-                            if (v1 == null)
-                                break;
-
-                            int c = compareValues(v1, v2, inlineIdx.sortType());
-
-                            if (!canRelyOnCompare(c, v1, v2, inlineIdx))
-                                break;
-
-                            lastIdxUsed++;
-
-                            if (c != 0)
-                                return c;
-
-                            fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
-
-                            if (fieldOff > inlineSize())
-                                break;
-                        }
-
-                        SearchRow rowData = getRow(io, pageAddr, idx);
-
-                        for (int i = lastIdxUsed, len = indexColumns.length; i < len; i++) {
-                            int idx0 = columnIds[i];
-
-                            Value v2 = row.getValue(idx0);
-                            if (v2 == null) {
-                                // Can't compare further.
-                                return 0;
-                            }
-
-                            Value v1 = rowData.getValue(idx0);
-
-                            int c = compareValues(v1, v2, indexColumns[i].sortType);
-                            if (c != 0)
-                                return c;
-                        }
-
-                        return 0;
-                    }
+                tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), cols, inlineIdxs, computeInlineSize(inlineIdxs, inlineSize)) {
+                @Override public int compareValues(Value v1, Value v2) {
+                    return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                 }
             };
         }
@@ -184,8 +121,6 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return List of {@link InlineIndexHelper} objects.
      */
     private List<InlineIndexHelper> getAvailableInlineColumns(IndexColumn[] cols) {
-
-        // todo: null
         List<InlineIndexHelper> res = new ArrayList<>();
 
         for (int i = 0; i < cols.length; i++) {
@@ -200,45 +135,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         return res;
-    }
-
-    /**
-     * @return Tree updated in current thread.
-     */
-    public static H2TreeIndex getCurrentIndex() {
-        return currentIndex.get();
-    }
-
-    /**
-     * @param a First value.
-     * @param b Second Value.
-     * @param sortType Sort type.
-     * @return Compare result.
-     */
-    private int compareValues(Value a, Value b, int sortType) {
-        if (a == b)
-            return 0;
-
-        int comp = table.compareTypeSafe(a, b);
-
-        if ((sortType & SortOrder.DESCENDING) != 0)
-            comp = -comp;
-
-        return comp;
-    }
-
-    /**
-     * @return Tree.
-     */
-    public H2Tree tree() {
-        return tree;
-    }
-
-    /**
-     * @return InlineIndexHelper list.
-     */
-    public List<InlineIndexHelper> inlineIndexes() {
-        return inlineIdxs;
     }
 
     /** {@inheritDoc} */
@@ -273,7 +169,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
         try {
-            currentIndex.set(this);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             return tree.put(row);
         }
@@ -281,14 +177,14 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            currentIndex.remove();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(GridH2Row row) {
         try {
-            currentIndex.set(this);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             return tree.putx(row);
         }
@@ -296,35 +192,35 @@ public class H2TreeIndex extends GridH2IndexBase {
             throw DbException.convert(e);
         }
         finally {
-            currentIndex.remove();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
         try {
-            currentIndex.set(this);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
             return tree.remove(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            currentIndex.remove();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void removex(SearchRow row) {
         try {
-            currentIndex.set(this);
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
             tree.removex(row);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
         finally {
-            currentIndex.remove();
+            InlineIndexHelper.clearCurrentInlineIndexes();
         }
     }
 
@@ -337,7 +233,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
-
     }
 
     /** {@inheritDoc} */
@@ -422,10 +317,10 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @return Inline size.
      */
     private int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize) {
-        int maxSize = PageIO.MAX_PAYLOAD_SIZE;
+        int confSize = cctx.config().getSqlIndexMaxInlineSize();
 
-        int propSize = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
-            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT);
+        int propSize = confSize == -1 ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE,
+            IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT) : confSize;
 
         if (cfgInlineSize == 0)
             return 0;
@@ -449,33 +344,18 @@ public class H2TreeIndex extends GridH2IndexBase {
                 size += idxHelper.size() + 1;
             }
 
-            return Math.min(maxSize, size);
+            return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
         }
         else
-            return Math.min(maxSize, cfgInlineSize);
+            return Math.min(PageIO.MAX_PAYLOAD_SIZE, cfgInlineSize);
     }
 
     /**
-     * @param c Compare result.
-     * @param shortVal Short value.
-     * @param v2 Second value;
-     * @param inlineIdx Index helper.
-     * @return {@code true} if we can rely on compare result.
+     * @param name Name.
+     * @return RootPage for meta page.
+     * @throws IgniteCheckedException
      */
-    protected static boolean canRelyOnCompare(int c, Value shortVal, Value v2, InlineIndexHelper inlineIdx) {
-        if (inlineIdx.type() == Value.STRING) {
-            if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
-                return false;
-
-            if (shortVal.getType() != Value.NULL
-                && v2.getType() != Value.NULL
-                && ((c < 0 && inlineIdx.sortType() == SortOrder.ASCENDING) || (c > 0 && inlineIdx.sortType() == SortOrder.DESCENDING))
-                && shortVal.getString().length() <= v2.getString().length()) {
-                // Can't rely on compare, should use full string.
-                return false;
-            }
-        }
-
-        return true;
+    private RootPage getMetaPage(String name) throws IgniteCheckedException {
+        return cctx.offheap().rootPageForIndex(name);
     }
 }

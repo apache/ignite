@@ -7589,9 +7589,6 @@ public abstract class IgniteUtils {
             return fut.get();
         }
         catch (ExecutionException e) {
-            //todo only for investigation
-            e.printStackTrace();
-
             throw new IgniteCheckedException(e.getCause());
         }
         catch (InterruptedException e) {

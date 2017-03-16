@@ -81,6 +81,8 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
+        assertNotNull(interceptor);
+
         ccfg.setInterceptor(interceptor);
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -109,6 +111,8 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
         stopAllGrids();
 
         super.afterTest();
+
+        interceptor = null;
     }
 
     /**
@@ -200,8 +204,6 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      * @throws Exception If fail.
      */
     private void testRebalance(final Operation operation) throws Exception {
-        interceptor = new RebalanceUpdateInterceptor();
-
         long stopTime = System.currentTimeMillis() + 2 * 60_000;
 
         for (int iter = 0; iter < TEST_ITERATIONS && System.currentTimeMillis() < stopTime; iter++) {
@@ -279,8 +281,10 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      */
     private static class UpdateEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
         /** {@inheritDoc} */
-        @Override public Integer process(final MutableEntry<Integer, Integer> entry,
-            final Object... arguments) throws EntryProcessorException {
+        @Override public Integer process(
+            final MutableEntry<Integer, Integer> entry,
+            final Object... arguments
+        ) throws EntryProcessorException {
             entry.setValue((Integer) arguments[0]);
 
             return null;
@@ -292,8 +296,10 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
      */
     private static class RemoveEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
         /** {@inheritDoc} */
-        @Override public Integer process(final MutableEntry<Integer, Integer> entry,
-            final Object... arguments) throws EntryProcessorException {
+        @Override public Integer process(
+            final MutableEntry<Integer, Integer> entry,
+            final Object... arguments
+        ) throws EntryProcessorException {
             entry.remove();
 
             return null;
@@ -308,7 +314,10 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer onBeforePut(final Cache.Entry entry, final Integer newVal) {
+        @Nullable @Override public Integer onBeforePut(
+            final Cache.Entry entry,
+            final Integer newVal
+        ) {
             try {
                 boolean first = entry.getKey().equals(newVal);
 
@@ -341,7 +350,8 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
 
         /** {@inheritDoc} */
         @Nullable @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(
-            final Cache.Entry<Integer, Integer> entry) {
+            final Cache.Entry<Integer, Integer> entry
+        ) {
             try {
                 assertNotNull("Null old value: " + entry, entry.getValue());
                 assertEquals("Unexpected old value: " + entry, entry.getKey(), entry.getValue());
@@ -356,5 +366,4 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
             return new T2<>(true, null);
         }
     }
-
 }
