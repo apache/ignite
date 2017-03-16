@@ -21,7 +21,6 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridRandom;
-import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Test for {@link GridRandom}.
