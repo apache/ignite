@@ -3726,8 +3726,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Collection<ClusterNode> nodes = grp.forPredicate(new IgnitePredicate<ClusterNode>() {
             /** {@inheritDoc} */
             @Override public boolean apply(ClusterNode clusterNode) {
-                return clusterNode.version().compareTo(PartitionSizeLongTask.SINCE_VER) >= 0 &&
-                    ((modes.primary && aff.primaryByPartition(clusterNode, part, topVer)) ||
+                return ((modes.primary && aff.primaryByPartition(clusterNode, part, topVer)) ||
                         (modes.backup && aff.backupByPartition(clusterNode, part, topVer)));
             }
         }).nodes();
@@ -6416,9 +6415,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private static class PartitionSizeLongTask extends ComputeTaskAdapter<Object, Long> {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        private static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.30");
 
         /** Partition */
         private final int partition;
