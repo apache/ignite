@@ -51,7 +51,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
     /** File descriptor. */
     private IgfsEntryInfo fileInfo;
 
-    /** */
+    /** Size of the secondary file system block. */
     private final long secondaryBlockSize;
 
     /** Affinity written by this output stream. */
@@ -312,8 +312,6 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
                     ((DataInput)data).readFully(remainder, remainderDataLen, writeLen);
 
                 remainderDataLen += writeLen;
-
-                //writeObserver.addWrittenPrimary(writeLen);
             }
             else {
                 if (data instanceof ByteBuffer) {
@@ -380,11 +378,6 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
 
         return affKey == null ? null : new IgfsFileAffinityRange(off, off, affKey);
     }
-
-//    /** {@inheritDoc} */
-//    @Override protected int getBlockSize() {
-//        return fileInfo.blockSize();
-//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

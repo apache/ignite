@@ -375,13 +375,11 @@ public class IgfsDataManager extends IgfsManager {
                             // Wait for existing future to finish and get it's result.
                             res = oldRmtReadFut.get();
 
-                            if (res.length == fileInfo.blockSize())
-                                igfsCtx.metrics().addReadBlocks(1, 0);
+                            readBlockResultPostProcess(fileInfo, res);
                         }
                     }
                     else
-                        if (res.length == fileInfo.blockSize())
-                            igfsCtx.metrics().addReadBlocks(1, 0);
+                        readBlockResultPostProcess(fileInfo, res);
 
                     return res;
                 }
@@ -394,6 +392,19 @@ public class IgfsDataManager extends IgfsManager {
                 igfsCtx.metrics().addReadBlocks(1, 0);
 
         return fut;
+    }
+
+    /**
+     * Performs result post-processing, e.g. increments the metrics.
+     *
+     * @param fileInfo The file info.
+     * @param res The byte array result.
+     */
+    private void readBlockResultPostProcess(IgfsEntryInfo fileInfo, byte[] res) {
+        assert res.length <= fileInfo.blockSize();
+
+        if (res.length == fileInfo.blockSize())
+            igfsCtx.metrics().addReadBlocks(1, 0);
     }
 
     /**
@@ -438,7 +449,7 @@ public class IgfsDataManager extends IgfsManager {
         if (read != blockSize)
             res = Arrays.copyOf(res, read);
         else
-            // Increment the metric only if the whole block is read:
+            // Increment the metric only if whole block is read:
             igfsCtx.metrics().addReadBlocks(1, 1);
 
         return res;

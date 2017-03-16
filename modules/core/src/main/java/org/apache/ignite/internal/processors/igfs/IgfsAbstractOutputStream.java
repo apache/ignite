@@ -62,6 +62,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     /** Time consumed by write operations. */
     protected long time;
 
+    /** Write observer for metrics updates. */
     protected IgfsDataManager.WriteObserver writeObserver;
 
     /**
@@ -83,6 +84,11 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
         igfsCtx.metrics().incrementFilesOpenedForWrite();
     }
 
+    /**
+     * Creates the write observer.
+     *
+     * @return The observer.
+     */
     protected abstract IgfsDataManager.WriteObserver createWriteObserver();
 
     /**
@@ -246,34 +252,11 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
         return ByteBuffer.allocate(bufSize);
     }
 
-    //protected abstract int getBlockSize();
-
-//    /**
-//     *
-//     * @param blockSize
-//     * @param writeLen
-//     * @return
-//     */
-//    protected final int blocksToBeAdded(int blockSize, int writeLen) {
-//        return (int)(bytes / blockSize - (bytes - writeLen) / blockSize);
-//    }
-
     /**
      * Updates IGFS metrics when the stream is closed.
      */
     protected final void updateMetricsOnClose() {
         IgfsLocalMetrics metrics = igfsCtx.metrics();
-
-//        // If there is an incompleted block in the end,
-//        // add 1 to the block count metric:
-//        int blockSize = getBlockSize();
-//
-//        if (blockSize > 0) {
-//            long remainder = bytes % blockSize;
-//
-//            if (remainder > 0)
-//                metrics.addWriteBlocks(1, 1); // TODO: secondary block size may be different.
-//        }
 
         writeObserver.finished();
 
@@ -291,5 +274,4 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     @Override public String toString() {
         return S.toString(IgfsAbstractOutputStream.class, this);
     }
-
 }

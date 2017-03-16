@@ -159,29 +159,15 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
             if (!batch.write(dataBuf))
                 throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
                     "stream because it was marked as closed: " + batch.path());
-            else {
+            else
                 // Zero written to primary Fs because we write directly to secondary Fs:
                 writeObserver.addWrittenSecondary(writeLen);
-
-//                int blockSize = getBlockSize();
-//
-//                if (blockSize > 0) {
-//                    int blocks = blocksToBeAdded(blockSize, writeLen);
-//
-//                    if (blocks > 0)
-//                        igfsCtx.metrics().addWriteBlocks(0/* TODO: zero? */, blocks);
-//                }
-            }
 
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to store data into file: " + path, e);
         }
     }
-//
-//    @Override protected int getBlockSize() {
-//        return info.blockSize();
-//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -183,8 +183,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
             byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, ByteBuffer.wrap(data), true,
-                range, null,
-                new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null, info.blockSize(), info.blockSize()));
+                range, null, new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null, info.blockSize(),
+                    info.blockSize()));
 
             assert remainder == null;
 
@@ -268,8 +268,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
             byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length, ByteBuffer.wrap(data),
-                false, range, null,
-                new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null, info.blockSize(), info.blockSize()));
+                false, range, null, new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null,
+                    info.blockSize(), info.blockSize()));
 
             assert left.length == blockSize / 2;
 
@@ -278,8 +278,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             info = info.length(info.length() + remainder2.length);
 
             byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
-                false, range, null,
-                new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null, info.blockSize(), info.blockSize()));
+                false, range, null, new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null,
+                    info.blockSize(), info.blockSize()));
 
             assert left2 == null;
 
@@ -361,8 +361,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 Arrays.fill(data, (byte)(j / 4));
 
                 byte[] left = mgr.storeDataBlocks(info, (j + 1) * chunkSize, null, 0, ByteBuffer.wrap(data),
-                    true, range, null,
-                    new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null, info.blockSize(), info.blockSize()));
+                    true, range, null, new IgfsDataManager.MetricsWriteObserver(mgr.igfsCtx.metrics(), null,
+                        info.blockSize(), info.blockSize()));
 
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }

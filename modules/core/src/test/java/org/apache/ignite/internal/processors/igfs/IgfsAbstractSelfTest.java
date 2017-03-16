@@ -3153,7 +3153,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         throws Exception {
         checkBlockMetrics(initMetrics, metrics,
             e.totalBlocksRead(), e.rmtBlocksRead(), e.bytesRead(),
-            e.totalBlocksWritten(), e.rmtBlocksWritten(), e.bytesWritten());
+            e.primBlocksWritten(), e.rmtBlocksWritten(), e.bytesWritten());
     }
 
     /**
@@ -3182,6 +3182,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         /** How many blocks written to the primary file system. */
         double primBlocksWritten;
 
+        /** How many blocks written to the secondary file system. */
         double rmtBlocksWritten;
 
         /**
@@ -3214,7 +3215,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
          * @return Total blocks read.
          */
         int totalBlocksRead() {
-            return (int)totalBlocksRead0(); //(int)Math.ceil(totalBlocksRead0());
+            return (int)totalBlocksRead0();
         }
 
         /**
@@ -3231,7 +3232,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             if (proxy)
                 return totalBlocksRead();
 
-            return (int)rmtBlocksRead0();//(int)Math.ceil(rmtBlocksRead0());
+            return (int)rmtBlocksRead0();
         }
 
         /**
@@ -3244,8 +3245,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         /**
          * @return Blocks written.
          */
-        int totalBlocksWritten() {
-            // TODO: In fact, this not total, but primary block count:
+        int primBlocksWritten() {
             return proxy ? 0 : (int)primBlocksWritten;
         }
 
