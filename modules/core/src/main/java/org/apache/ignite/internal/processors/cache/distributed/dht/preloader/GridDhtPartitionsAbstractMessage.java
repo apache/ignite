@@ -32,9 +32,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
-    public static final IgniteProductVersion PART_MAP_COMPRESS_SINCE = IgniteProductVersion.fromString("1.6.11");
-
-    /** */
     protected static final byte COMPRESSED_FLAG_MASK = 1;
 
     /** */

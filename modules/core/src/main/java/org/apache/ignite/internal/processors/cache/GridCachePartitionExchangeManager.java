@@ -821,13 +821,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 lastVer,
                 exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
-        if (nodes != null) {
-            for (ClusterNode node : nodes) {
-                if (!canUsePartitionMapCompression(node))
-                    compress = false;
-            }
-        }
-
         m.compress(compress);
 
         Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
@@ -960,12 +953,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean clientOnlyExchange,
         boolean sndCounters)
     {
-        boolean compress = canUsePartitionMapCompression(targetNode);
-
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
-            compress);
+            true);
 
         Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
 
@@ -975,7 +966,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 addPartitionMap(m,
                     dupData,
-                    compress,
+                    true,
                     cacheCtx.cacheId(),
                     locMap,
                     cacheCtx.affinity().affinityCache().similarAffinityKey());
@@ -993,7 +984,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             addPartitionMap(m,
                 dupData,
-                compress,
+                true,
                 top.cacheId(),
                 locMap,
                 top.similarAffinityKey());
@@ -1547,24 +1538,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             Thread.currentThread().interrupt();
 
         return deque.poll(time, MILLISECONDS);
-    }
-
-    /**
-     * @param node Target node.
-     * @return {@code True} if can use compression for partition map messages.
-     */
-    @SuppressWarnings("SimplifiableIfStatement")
-    private boolean canUsePartitionMapCompression(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
-
-        if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
-            if (ver.minor() == 7 && ver.maintenance() < 4)
-                return false;
-
-            return true;
-        }
-
-        return false;
     }
 
     /**
