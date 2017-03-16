@@ -45,8 +45,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     private static volatile boolean cancelAllJobs = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CollisionSpi colSpi = new AlwaysCancelCollisionSpi();
 
@@ -180,7 +180,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
         }

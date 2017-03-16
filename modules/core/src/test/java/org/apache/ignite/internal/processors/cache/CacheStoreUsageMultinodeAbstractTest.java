@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -83,8 +83,8 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
     protected static Map<String, List<Cache.Entry<?, ?>>> writeMap;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(client);
 
@@ -209,13 +209,13 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         assertNotNull(node);
 
-        String expNode = storeOnPrimary ? (String)node.attribute(ATTR_GRID_NAME) : ignite.name();
+        String expNode = storeOnPrimary ? (String)node.attribute(ATTR_IGNITE_INSTANCE_NAME) : ignite.name();
 
         assertNotNull(expNode);
 
         log.info("Put [node=" + ignite.name() +
             ", key=" + key +
-            ", primary=" + node.attribute(ATTR_GRID_NAME) +
+            ", primary=" + node.attribute(ATTR_IGNITE_INSTANCE_NAME) +
             ", tx=" + tc +
             ", nearCache=" + (cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null) +
             ", storeOnPrimary=" + storeOnPrimary + ']');

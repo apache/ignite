@@ -25,8 +25,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  */
 public class IgniteCacheContinuousExecutionContextTest extends IgniteCacheAtomicExecutionContextTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 

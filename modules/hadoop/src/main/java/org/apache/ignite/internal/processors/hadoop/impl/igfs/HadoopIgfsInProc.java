@@ -139,7 +139,7 @@ public class HadoopIgfsInProc implements HadoopIgfsEx {
 
         cfg.setClientMode(true);
 
-        String nodeName = cfg.getGridName();
+        String nodeName = cfg.getIgniteInstanceName();
 
         synchronized (REF_CTR_MUX) {
             T2<Ignite, Boolean> startRes = IgnitionEx.getOrStart(cfg);

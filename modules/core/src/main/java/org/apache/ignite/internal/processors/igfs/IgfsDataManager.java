@@ -181,7 +181,7 @@ public class IgfsDataManager extends IgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
+        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().igniteInstanceName(),
             "igfs-" + igfsName + "-delete-worker", log);
 
         dataCacheName = igfsCtx.configuration().getDataCacheConfiguration().getName();
@@ -1492,12 +1492,12 @@ public class IgfsDataManager extends IgfsManager {
             new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Worker name.
          * @param log Log.
          */
-        protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected AsyncDeleteWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
 
             stopInfo = IgfsUtils.createDirectory(IgniteUuid.randomUuid());
         }

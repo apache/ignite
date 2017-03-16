@@ -59,11 +59,11 @@ public interface IgniteSpi {
      * This method is called to start SPI. After this method returns
      * successfully kernel assumes that SPI is fully operational.
      *
-     * @param gridName Name of grid instance this SPI is being started for
-     *    ({@code null} for default grid).
+     * @param igniteInstanceName Name of Ignite instance this SPI is being started for
+     *    ({@code null} for default Ignite instance).
      * @throws IgniteSpiException Throws in case of any error during SPI start.
      */
-    public void spiStart(@Nullable String gridName) throws IgniteSpiException;
+    public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
      * Callback invoked when SPI context is initialized. SPI implementation
