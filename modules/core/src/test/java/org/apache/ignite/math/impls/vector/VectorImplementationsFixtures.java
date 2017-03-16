@@ -17,8 +17,10 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.FunctionVectorStorage;
 
 import java.io.IOException;
@@ -44,7 +46,8 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>) FunctionVectorFixture::new,
         (Supplier<Iterable<Vector>>) SingleElementVectorFixture::new,
         (Supplier<Iterable<Vector>>) PivotedVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new
+        (Supplier<Iterable<Vector>>) SingleElementVectorViewFixture::new,
+        (Supplier<Iterable<Vector>>) MatrixVectorViewFixture::new
     );
 
     /** */
@@ -219,6 +222,23 @@ class VectorImplementationsFixtures {
         @Override public String toString() {
             // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
             return ctxDescrHolder.get();
+        }
+    }
+
+    /** */
+    private static class MatrixVectorViewFixture extends VectorSizesExtraFixture<Integer> {
+        /** */
+        MatrixVectorViewFixture() {
+            super("MatrixVectorView",
+                MatrixVectorViewFixture::newView,
+                "stride kind", new Integer[] {0, 1, 2, null});
+        }
+
+        /** */
+        private static Vector newView(int size, int strideKind) {
+            final Matrix parent = new DenseLocalOnHeapMatrix(size, size);
+
+            return new MatrixVectorView(parent, 0, 0, strideKind != 1 ? 1 : 0, strideKind != 0 ? 1 : 0);
         }
     }
 
