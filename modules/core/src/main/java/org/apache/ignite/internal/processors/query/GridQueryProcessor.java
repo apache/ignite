@@ -208,8 +208,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // Apply dynamic changes to candidates.
         if (idxStates != null) {
+            Map<String, QueryIndexState> readyIdxStates = idxStates.readyOperations();
+
             for (QueryTypeCandidate cand : cands)
-                applyInitialDelta(cand.descriptor(), idxStates);
+                applyInitialDelta(cand.descriptor(), readyIdxStates);
         }
 
         // Ready to register at this point.
@@ -227,23 +229,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Apply dynamic index states to not-yet-registered descriptor.
+     * Apply ready dynamic index states to not-yet-registered descriptor.
      *
      * @param desc Descriptor.
      * @param idxStates Index states.
      */
-    private void applyInitialDelta(QueryTypeDescriptorImpl desc, QueryIndexStates idxStates)
+    private void applyInitialDelta(QueryTypeDescriptorImpl desc, Map<String, QueryIndexState> idxStates)
         throws IgniteCheckedException {
-        Map<String, QueryIndex> delta = idxStates.initialDelta(desc.tableName());
+        for (Map.Entry<String, QueryIndexState> entry : idxStates.entrySet()) {
+            String idxName = entry.getKey();
+            QueryIndexState idxState = entry.getValue();
 
-        if (!F.isEmpty(delta)) {
-            for (Map.Entry<String, QueryIndex> deltaEntry : delta.entrySet()) {
-                String idxName = deltaEntry.getKey();
-                QueryIndex idx = deltaEntry.getValue();
 
-                QueryUtils.processDynamicIndexChange(idxName, idx, desc);
-            }
         }
+
+        // TODO
+//        Map<String, QueryIndex> delta = idxStates.initialDelta(desc.tableName());
+//
+//        if (!F.isEmpty(delta)) {
+//            for (Map.Entry<String, QueryIndex> deltaEntry : delta.entrySet()) {
+//                String idxName = deltaEntry.getKey();
+//                QueryIndex idx = deltaEntry.getValue();
+//
+//                QueryUtils.processDynamicIndexChange(idxName, idx, desc);
+//            }
+//        }
     }
 
     /** {@inheritDoc} */
