@@ -1844,15 +1844,16 @@ public abstract class IgniteUtils {
 
     /**
      * @param addrs Addresses.
+     * @return List of reachable addresses.
      */
-    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
+    public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
         final int reachTimeout = 2000;
 
         if (addrs.isEmpty())
             return Collections.emptyList();
 
         if (addrs.size() == 1) {
-            InetAddress addr = addrs.get(0);
+            InetAddress addr = F.first(addrs);
 
             if (reachable(addr, reachTimeout))
                 return Collections.singletonList(addr);
@@ -1868,8 +1869,7 @@ public abstract class IgniteUtils {
 
         for (final InetAddress addr : addrs) {
             futs.add(executor.submit(new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     if (reachable(addr, reachTimeout)) {
                         synchronized (res) {
                             res.add(addr);
@@ -1882,11 +1882,13 @@ public abstract class IgniteUtils {
         for (Future<?> fut : futs) {
             try {
                 fut.get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw new IgniteException(e);
             }
         }
