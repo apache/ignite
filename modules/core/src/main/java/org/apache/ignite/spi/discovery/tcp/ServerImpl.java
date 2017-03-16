@@ -169,10 +169,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE, 512);
 
     /** */
-    private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
-        IgniteProductVersion.fromString("1.5.0");
-
-    /** */
     private IgniteThreadPoolExecutor utilityPool;
 
     /** Nodes ring. */
@@ -5082,10 +5078,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     joiningEmpty = joiningNodes.isEmpty();
                 }
 
-                if (ring.minimumNodeVersion().compareTo(CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE) >= 0)
-                    delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
-                else
-                    delayMsg = !joiningEmpty;
+                delayMsg = msg.topologyVersion() == 0L && !joiningEmpty;
 
                 if (delayMsg) {
                     if (log.isDebugEnabled()) {
