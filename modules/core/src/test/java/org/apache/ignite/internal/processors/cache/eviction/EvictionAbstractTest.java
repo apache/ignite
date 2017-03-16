@@ -814,7 +814,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
                 if (plcMax > 0) {
                     for (int i = 0; i < gridCnt; i++) {
-                        int actual = colocated(i).size();
+                        int actual = colocated(i).map().keySet().size();
 
                         assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
                             actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize));

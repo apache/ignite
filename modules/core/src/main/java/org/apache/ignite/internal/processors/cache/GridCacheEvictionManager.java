@@ -167,7 +167,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
         plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
 
-        plcEnabled = plc != null && cctx.isNear();
+        plcEnabled = plc != null;
 
         filter = cfg.getEvictionFilter();
 
