@@ -1230,14 +1230,14 @@ public class PlatformCallbackGateway {
      * @param outMem Out memory (Java writes, platform reads).
      * @param inMem In memory (platform writes, Java reads).
      */
-    public void pluginCallback(long callbackId, PlatformMemory outMem, PlatformMemory inMem) {
+    public long pluginCallback(long callbackId, PlatformMemory outMem, PlatformMemory inMem) {
         enter();
 
         try {
             long outPtr = outMem == null ? 0 : outMem.pointer();
             long inPtr = inMem == null ? 0 : inMem.pointer();
 
-            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
                     PlatformCallbackOp.PluginCallbackInLongLongOutLong, callbackId, outPtr, inPtr, null);
         }
         finally {

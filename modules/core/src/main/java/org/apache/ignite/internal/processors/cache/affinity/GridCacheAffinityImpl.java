@@ -196,7 +196,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
         int nodesCnt;
 
         if (!cctx.isLocal())
-            nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
+            nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.cacheId(), topVer).size();
         else
             nodesCnt = 1;
 

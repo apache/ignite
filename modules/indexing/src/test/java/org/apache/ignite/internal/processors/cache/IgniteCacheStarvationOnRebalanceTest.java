@@ -52,8 +52,8 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Use small system thread pool to reproduce the issue.
         cfg.setSystemThreadPoolSize(IGNITE_THREAD_POOL_SIZE);

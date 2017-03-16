@@ -79,8 +79,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /** Ignite instance. */
     protected Ignite ignite;
 
-    /** Grid instance name. */
-    protected String gridName;
+    /** Ignite instance name. */
+    protected String igniteInstanceName;
 
     /** SPI name. */
     private String name;
@@ -279,7 +279,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         this.ignite = ignite;
 
         if (ignite != null)
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
     }
 
     /**
@@ -401,22 +401,23 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /**
      * Registers SPI MBean. Note that SPI can only register one MBean.
      *
-     * @param gridName Grid name. If null, then name will be empty.
+     * @param igniteInstanceName Ignite instance name. If null, then name will be empty.
      * @param impl MBean implementation.
      * @param mbeanItf MBean interface (if {@code null}, then standard JMX
      *    naming conventions are used.
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
-        throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
+        String igniteInstanceName, T impl, Class<T> mbeanItf
+    ) throws IgniteSpiException {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
         try {
-            spiMBean = U.registerMBean(jmx, gridName, "SPIs", getName(), impl, mbeanItf);
+            spiMBean = U.registerMBean(jmx, igniteInstanceName, "SPIs", getName(), impl, mbeanItf);
 
             if (log.isDebugEnabled())
                 log.debug("Registered SPI MBean: " + spiMBean);

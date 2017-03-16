@@ -61,7 +61,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.GRID_NAME_PROPERTY;
+import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.IGNITE_INSTANCE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.REGION_CACHE_PROPERTY;
 import static org.hibernate.cfg.Environment.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.Environment.GENERATE_STATISTICS;
@@ -408,8 +408,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -476,11 +476,11 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param accessType Hibernate L2 cache access type.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Hibernate configuration.
      */
-    protected Configuration hibernateConfiguration(org.hibernate.cache.spi.access.AccessType accessType,
-        String gridName) {
+    protected Configuration hibernateConfiguration(AccessType accessType,
+        String igniteInstanceName) {
         Configuration cfg = new Configuration();
 
         cfg.addAnnotatedClass(Entity.class);
@@ -507,7 +507,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(GRID_NAME_PROPERTY, gridName);
+        cfg.setProperty(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
 
         // Use the same cache for Entity and Entity2.
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, ENTITY_NAME);
@@ -1905,20 +1905,20 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param accessType Cache access type.
      */
     private void createSessionFactories(AccessType accessType) {
-        sesFactory1 = startHibernate(accessType, getTestGridName(0));
+        sesFactory1 = startHibernate(accessType, getTestIgniteInstanceName(0));
 
-        sesFactory2 = startHibernate(accessType, getTestGridName(1));
+        sesFactory2 = startHibernate(accessType, getTestIgniteInstanceName(1));
     }
 
     /**
      * Starts Hibernate.
      *
      * @param accessType Cache access type.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Session factory.
      */
-    private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String gridName) {
-        Configuration cfg = hibernateConfiguration(accessType, gridName);
+    private SessionFactory startHibernate(AccessType accessType, String igniteInstanceName) {
+        Configuration cfg = hibernateConfiguration(accessType, igniteInstanceName);
 
         ServiceRegistryBuilder builder = registryBuilder();
 

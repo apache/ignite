@@ -173,12 +173,12 @@ public class IgniteProcessProxy implements IgniteEx {
         if (locJvmGrid != null)
             assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
-        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getGridName(), this);
+        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getIgniteInstanceName(), this);
 
         if (prevVal != null) {
-            remoteCompute().run(new StopGridTask(cfg.getGridName(), true));
+            remoteCompute().run(new StopGridTask(cfg.getIgniteInstanceName(), true));
 
-            throw new IllegalStateException("There was found instance assotiated with " + cfg.getGridName() +
+            throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
     }
@@ -214,15 +214,16 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Instance by name or exception wiil be thrown.
      */
-    public static IgniteProcessProxy ignite(String gridName) {
-        IgniteProcessProxy res = gridProxies.get(gridName);
+    public static IgniteProcessProxy ignite(String igniteInstanceName) {
+        IgniteProcessProxy res = gridProxies.get(igniteInstanceName);
 
         if (res == null)
             throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
+                "or was already stopped: " + igniteInstanceName + ". All known grid instances: " +
+                gridProxies.keySet());
 
         return res;
     }
@@ -230,37 +231,40 @@ public class IgniteProcessProxy implements IgniteEx {
     /**
      * Gracefully shut down the Grid.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
      */
-    public static void stop(String gridName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(gridName);
+    public static void stop(String igniteInstanceName, boolean cancel) {
+        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
-            proxy.remoteCompute().run(new StopGridTask(gridName, cancel));
+            proxy.remoteCompute().run(new StopGridTask(igniteInstanceName, cancel));
 
-            gridProxies.remove(gridName, proxy);
+            gridProxies.remove(igniteInstanceName, proxy);
         }
     }
 
     /**
      * Forcefully shut down the Grid.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      */
-    public static void kill(String gridName) {
-        IgniteProcessProxy proxy = gridProxies.get(gridName);
+    public static void kill(String igniteInstanceName) {
+        A.notNull(igniteInstanceName, "igniteInstanceName");
 
-        A.notNull(gridName, "gridName");
+        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+
+        if (proxy == null)
+            return;
 
         try {
             proxy.getProcess().kill();
         }
         catch (Exception e) {
-            U.error(proxy.log, "Exception while killing " + gridName, e);
+            U.error(proxy.log, "Exception while killing " + igniteInstanceName, e);
         }
 
-        gridProxies.remove(gridName, proxy);
+        gridProxies.remove(igniteInstanceName, proxy);
     }
 
     /**
@@ -313,7 +317,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cfg.getGridName();
+        return cfg.getIgniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -690,24 +694,24 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      */
     private static class StopGridTask implements IgniteRunnable {
-        /** Grid name. */
-        private final String gridName;
+        /** Ignite instance name. */
+        private final String igniteInstanceName;
 
         /** Cancel. */
         private final boolean cancel;
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param cancel Cancel.
          */
-        public StopGridTask(String gridName, boolean cancel) {
-            this.gridName = gridName;
+        public StopGridTask(String igniteInstanceName, boolean cancel) {
+            this.igniteInstanceName = igniteInstanceName;
             this.cancel = cancel;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(gridName, cancel);
+            G.stop(igniteInstanceName, cancel);
         }
     }
 

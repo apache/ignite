@@ -31,7 +31,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -65,8 +65,8 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -110,7 +110,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      */
     private long size(Class<?> cls) throws IgniteCheckedException {
         return (Long)grid().cache(null).query(
-            new SqlFieldsQuery("select count(*) from " + GridQueryProcessor.typeName(cls)).setLocal(true))
+            new SqlFieldsQuery("select count(*) from " + QueryUtils.typeName(cls)).setLocal(true))
             .getAll().get(0).get(0);
     }
 

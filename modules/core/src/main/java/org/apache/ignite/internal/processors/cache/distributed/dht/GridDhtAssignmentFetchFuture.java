@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -71,16 +72,19 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
      * @param ctx Context.
      * @param cacheName Cache name.
      * @param topVer Topology version.
+     * @param discoCache Discovery cache.
      */
     public GridDhtAssignmentFetchFuture(
         GridCacheSharedContext ctx,
         String cacheName,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
     ) {
         this.ctx = ctx;
-        this.key = new T2<>(CU.cacheId(cacheName), topVer);
+        int cacheId = CU.cacheId(cacheName);
+        this.key = new T2<>(cacheId, topVer);
 
-        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
+        Collection<ClusterNode> availableNodes = discoCache.cacheAffinityNodes(cacheId);
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 

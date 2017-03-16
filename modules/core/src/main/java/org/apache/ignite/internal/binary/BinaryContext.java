@@ -79,12 +79,13 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProces
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -194,6 +195,11 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
 
+        sysClss.add(IgniteUuid.class.getName());
+
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
+
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
             sysClss.add(TreeSet.class.getName());
@@ -262,7 +268,7 @@ public class BinaryContext {
         assert metaHnd != null;
         assert igniteCfg != null;
 
-        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getGridName());
+        MarshallerUtils.setNodeName(optmMarsh, igniteCfg.getIgniteInstanceName());
 
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
@@ -369,7 +375,7 @@ public class BinaryContext {
                 return false;
 
             return marshCtx.isSystemType(cls.getName()) || serializerForClass(cls) == null ||
-                GridQueryProcessor.isGeometryClass(cls);
+                QueryUtils.isGeometryClass(cls);
         }
         else
             return desc.useOptimizedMarshaller();

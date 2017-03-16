@@ -68,8 +68,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(true);
@@ -78,8 +78,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new JdkMarshaller());
 
@@ -111,8 +111,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestIgniteInstanceName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestIgniteInstanceName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 
@@ -147,8 +147,8 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
 
         job.setNumReduceTasks(1);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestGridName(0) + "@/" + testInputFile));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestGridName(0) + "@/output"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://:" + getTestIgniteInstanceName(0) + "@/" + testInputFile));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://:" + getTestIgniteInstanceName(0) + "@/output"));
 
         job.setJarByClass(getClass());
 

@@ -123,8 +123,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of the whole partition, the affinity key belongs to,
+     * will present on the destination node throughout the job execution.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -136,11 +138,13 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed. The data
-     * of the extra caches' partitions with the same partition number also will not be migrated.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
-     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache is used for
+     *                   affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
@@ -151,11 +155,12 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where partition is located (the partition is primary on the node)
-     * The data of the partition will not be migrated from the target node
-     * while the job is executed. The data of the extra caches' partitions with the same partition number
-     * also will not be migrated.
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
-     * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
+     * @param cacheNames Names of the caches to to reserve the partition. The first cache is used for
+     *                   affinity co-location.
      * @param partId Partition number.
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
@@ -166,8 +171,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of the whole partition, the affinity key belongs to,
+     * will present on the destination node throughout the job execution.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -180,9 +187,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where data for provided affinity key is located
-     * (a.k.a. affinity co-location). The data of the partition where affKey is stored
-     * will not be migrated from the target node while the job is executed. The data
-     * of the extra caches' partitions with the same partition number also will not be migrated.
+     * (a.k.a. affinity co-location).
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param affKey Affinity key.
@@ -196,9 +204,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
 
     /**
      * Executes given job on the node where partition is located (the partition is primary on the node)
-     * The data of the partition will not be migrated from the target node
-     * while the job is executed. The data of the extra caches' partitions with the same partition number
-     * also will not be migrated.
+     * </p>
+     * It's guaranteed that the data of all the partitions of all participating caches,
+     * the affinity key belongs to, will present on the destination node throughout the job execution.
      *
      * @param cacheNames Names of the caches to to reserve the partition. The first cache uses for affinity co-location.
      * @param partId Partition to reserve.

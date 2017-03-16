@@ -58,8 +58,8 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     private boolean nearCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -173,7 +173,7 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                     cache.get(i);
 
-                    checkFastTxFinish(tx, commit);
+                    checkNormalTxFinish(tx, commit);
                 }
 
                 try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
