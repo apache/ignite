@@ -227,16 +227,10 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         });
     }
     
-    /**
-     * Old version up to 12 x 12 = 153 sec. (profiler)
-     * Recursion version 17 sec. (profiler)
-     */
+    /** */
     @Test
     public void testDeterminant(){
         consumeSampleMatrix((m, desc)->{
-            if (ignore(m.getClass()))
-                return;
-
             if (m.rowSize() != m.columnSize())
                 return;
 

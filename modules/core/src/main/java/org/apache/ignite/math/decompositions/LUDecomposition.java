@@ -20,6 +20,9 @@ package org.apache.ignite.math.decompositions;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Calculates the LU-decomposition of a square matrix.
@@ -28,8 +31,6 @@ import org.apache.ignite.math.exceptions.CardinalityException;
  *
  * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
  * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
- *
- * TODO: add read-only matrix support.
  */
 public class LUDecomposition {
     /** Default bound to determine effective singularity in LU decomposition. */
@@ -79,9 +80,9 @@ public class LUDecomposition {
 
         this.matrix = matrix;
 
-        luMatrix = matrix.copy();
+        luMatrix = copy(matrix);
 
-        pivot = matrix.likeVector(cols);
+        pivot = likeVector(matrix);
         for (int i = 0; i < pivot.size(); i++)
             pivot.setX(i, i);
 
@@ -127,7 +128,7 @@ public class LUDecomposition {
 
             // Pivot if necessary
             if (max != col) {
-                double tmp = 0;
+                double tmp;
                 Vector luMax = luMatrix.viewColumn(max);
                 Vector luCol = luMatrix.viewColumn(col);
 
@@ -161,7 +162,7 @@ public class LUDecomposition {
         if ((cachedL == null) && !singular) {
             final int m = pivot.size();
 
-            cachedL = matrix.like(m, m);
+            cachedL = like(matrix);
             cachedL.assign(0.0);
 
             for (int i = 0; i < m; ++i) {
@@ -183,7 +184,7 @@ public class LUDecomposition {
         if ((cachedU == null) && !singular) {
             final int m = pivot.size();
 
-            cachedU = matrix.like(m, m);
+            cachedU = like(matrix);
             cachedU.assign(0.0);
 
             for (int i = 0; i < m; ++i)
@@ -206,7 +207,7 @@ public class LUDecomposition {
         if ((cachedP == null) && !singular) {
             final int m = pivot.size();
 
-            cachedU = matrix.like(m, m);
+            cachedU = like(matrix);
             cachedU.assign(0.0);
 
             for (int i = 0; i < m; ++i)
@@ -224,6 +225,10 @@ public class LUDecomposition {
         return pivot.copy();
     }
 
+    /**
+     * Return the determinant of the matrix.
+     * @return determinant of the matrix.
+     */
     public double determinant(){
         if (singular)
             return 0;
@@ -235,5 +240,46 @@ public class LUDecomposition {
                 determinant *= luMatrix.getX(i, i);
 
             return determinant;
+    }
+
+    /**
+     * Create the like matrix with read-only matrices support.
+     *
+     * @param matrix Matrix for like.
+     * @return Like matrix.
+     */
+    private Matrix like(Matrix matrix){
+        if (matrix instanceof RandomMatrix)
+            return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+        else
+            return matrix.like(matrix.rowSize(), matrix.columnSize());
+    }
+
+    /**
+     * Create the like vector with read-only matrices support.
+     *
+     * @param matrix Matrix for like.
+     * @return Like vector.
+     */
+    private Vector likeVector(Matrix matrix){
+        if (matrix instanceof RandomMatrix)
+            return new DenseLocalOnHeapVector(matrix.rowSize());
+        else
+            return matrix.likeVector(matrix.rowSize());
+    }
+
+    /**
+     * Create the copy of matrix with read-only matrices support.
+     *
+     * @param matrix Matrix for copy.
+     * @return Copy.
+     */
+    private Matrix copy(Matrix matrix){
+        if (matrix instanceof RandomMatrix){
+            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+            cp.assign(matrix);
+            return cp;
+        } else
+            return matrix.copy();
     }
 }
