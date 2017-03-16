@@ -155,7 +155,7 @@ public class MatrixVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
-        return parent.isArrayBased();
+        return false;
     }
 
     /** {@inheritDoc} */

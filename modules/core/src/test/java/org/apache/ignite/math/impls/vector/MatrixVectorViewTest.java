@@ -1,28 +1,28 @@
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.IndexException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
- * Tests for {@link MatrixVectorView}
+ * Tests for {@link MatrixVectorView}.
  */
 public class MatrixVectorViewTest {
     /** */ private static final String UNEXPECTED_VALUE = "Unexpected value";
     /** */ private static final int SMALL_SIZE = 3;
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ private DenseLocalOnHeapMatrix parent;
+    /** */ private Matrix parent;
 
     /** */
     @Before
     public void setup(){
-        parent = new DenseLocalOnHeapMatrix(SMALL_SIZE, SMALL_SIZE);
-        fillMatrix(parent);
+        parent = newMatrix(SMALL_SIZE, SMALL_SIZE);
     }
 
     /** */
@@ -54,6 +54,19 @@ public class MatrixVectorViewTest {
             for (int j = 0; j < SMALL_SIZE; j++)
                 assertView(j, i, viewCol, j);
         }
+    }
+
+    /** */
+    @Test
+    public void basicTest() {
+        for (int rowSize : new int[] {1, 2, 3, 4})
+            for (int colSize : new int[] {1, 2, 3, 4})
+                for (int row = 0; row < rowSize; row++)
+                    for (int col = 0; col < colSize; col++)
+                        for (int rowStride = 0; rowStride < rowSize; rowStride++)
+                            for (int colStride = 0; colStride < colSize; colStride++)
+                                if (rowStride != 0 || colStride != 0)
+                                    assertMatrixVectorView(newMatrix(rowSize,colSize), row, col, rowStride, colStride);
     }
 
     /** */ @Test(expected = AssertionError.class)
@@ -127,10 +140,38 @@ public class MatrixVectorViewTest {
     }
 
     /** */
-    private void fillMatrix(DenseLocalOnHeapMatrix parent) {
-        for(int i = 0; i < parent.rowSize(); i++)
-            for(int j = 0; j < parent.columnSize(); j++)
-                parent.set(i, j, i * parent.rowSize() + j);
+    private void assertMatrixVectorView(Matrix parent, int row, int col, int rowStride, int colStride) {
+        MatrixVectorView view = new MatrixVectorView(parent, row, col, rowStride, colStride);
+
+        String desc = "parent [" + parent.rowSize() + "x" + parent.columnSize() + "], view ["
+            + row + "x" + col + "], strides [" + rowStride + ", " + colStride + "]";
+
+        final int size = view.size();
+
+        final int sizeByRows = rowStride == 0 ? IMPOSSIBLE_SIZE : (parent.rowSize() - row) / rowStride;
+        final int sizeByCols = colStride == 0 ? IMPOSSIBLE_SIZE : (parent.columnSize() - col) / colStride;
+
+        assertTrue("Size " + size + " differs from expected for " + desc,
+            size == sizeByRows || size == sizeByCols);
+
+        for (int idx = 0; idx < size; idx++) {
+            final int rowIdx = row + idx * rowStride;
+            final int colIdx = col + idx * colStride;
+
+            assertEquals(UNEXPECTED_VALUE + " at view index " + idx + desc,
+                parent.get(rowIdx, colIdx), view.get(idx), 0d);
+        }
+    }
+
+    /** */
+    private Matrix newMatrix(int rowSize, int colSize) {
+        Matrix res = new DenseLocalOnHeapMatrix(rowSize, colSize);
+
+        for(int i = 0; i < res.rowSize(); i++)
+            for(int j = 0; j < res.columnSize(); j++)
+                res.set(i, j, i * res.rowSize() + j);
+
+        return res;
     }
 
     /** */

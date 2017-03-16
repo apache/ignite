@@ -230,6 +230,7 @@ public class VectorToMatrixTest {
             put(FunctionVector.class, null);
             put(PivotedVectorView.class, null);
             put(SingleElementVectorView.class, null);
+            put(MatrixVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }

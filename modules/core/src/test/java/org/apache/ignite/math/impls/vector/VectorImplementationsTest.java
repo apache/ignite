@@ -82,9 +82,9 @@ public class VectorImplementationsTest {
     public void likeTest() {
         for (int card : new int[] {1, 2, 4, 8, 16, 32, 64, 128})
             consumeSampleVectors((v, desc) -> {
-                Class<? extends Vector> expType = v.getClass();
+                Class<? extends Vector> expType = expLikeType(v);
 
-                if (skipLikeTest(expType))
+                if (expType == null)
                     return;
 
                 Vector vLike = v.like(card);
@@ -94,12 +94,9 @@ public class VectorImplementationsTest {
 
                 Class<? extends Vector> actualType = vLike.getClass();
 
-                /* skip this check for delegating vectors  */
-                if (expType != DelegatingVector.class)
-                    assertTrue("Actual vector type " + actualType.getSimpleName()
-                            + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
-                        actualType.isAssignableFrom(expType));
-
+                assertTrue("Actual vector type " + actualType.getSimpleName()
+                        + " should be assignable from expected type " + expType.getSimpleName() + " in " + desc,
+                    actualType.isAssignableFrom(expType));
         });
     }
 
@@ -232,8 +229,16 @@ public class VectorImplementationsTest {
     }
 
     /** */
-    private boolean skipLikeTest(Class<?extends Vector> clazz) {
-        return clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class);
+    private Class<?extends Vector> expLikeType(Vector v) {
+        Class<?extends Vector> clazz = v.getClass();
+
+        if(clazz.isAssignableFrom(PivotedVectorView.class) || clazz.isAssignableFrom(SingleElementVectorView.class))
+            return null;
+
+        if (clazz.isAssignableFrom(MatrixVectorView.class) || clazz.isAssignableFrom(DelegatingVector.class))
+            return DenseLocalOnHeapVector.class; // IMPL NOTE per fixture
+
+        return clazz;
     }
 
     /** */
