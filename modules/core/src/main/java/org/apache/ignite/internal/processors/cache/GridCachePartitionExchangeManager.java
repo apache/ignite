@@ -1852,16 +1852,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
-                    if (!cctx.localNode().isClient()) {
-                        U.error(log, "Ignore exception", e);
+                catch (IgniteCheckedException e) {
+                    if (e instanceof IgniteClientDisconnectedCheckedException
+                        || e instanceof IgniteNeedReconnectException) {
 
-                        return;
+                        if (!cctx.localNode().isClient()) {
+                            U.error(log, "Ignore exception", e);
+
+                            return;
+                        }
+
+                        ((IgniteKernal)cctx.kernalContext().grid()).rejoin();
                     }
 
-                    ((IgniteKernal)cctx.kernalContext().grid()).rejoin();
-                }
-                catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + exchFut, e);
                 }
