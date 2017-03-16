@@ -964,21 +964,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         comp.onKernalStart();
                     }
                     catch (IgniteNeedReconnectException e) {
-                        if (ctx.clientNode() && ctx.discovery().isClientReconnectDisabled())
-                            throw new IgniteCheckedException("Cannot initialize node, to allow client node retry, set" +
-                                " TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
-
                         recon = true;
                     }
                 }
             }
 
+            if (recon)
+                rejoin(true).get();
+
             synchronized (rejoinMux) {
                 gridInited = true;
             }
-
-            if (recon)
-                rejoin().get();
 
             // Register MBeans.
             registerKernalMBean();
@@ -3477,8 +3473,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Force reconnect to cluster.
      */
-    public IgniteInternalFuture rejoin() {
+    public IgniteInternalFuture rejoin(boolean force) {
         synchronized (rejoinMux) {
+            if (force)
+                gridInited = true;
+
             if (!gridInited)
                 return new GridFinishedFuture();
 
@@ -3494,7 +3493,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 //noinspection unchecked
                 rejoinFut.listen(new CI1<IgniteInternalFuture>() {
                     @Override public void apply(IgniteInternalFuture fut) {
-                        rejoin();
+                        rejoin(false);
                     }
                 });
             }

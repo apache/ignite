@@ -1862,7 +1862,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
 
-                        ((IgniteKernal)cctx.kernalContext().grid()).rejoin();
+                        ((IgniteKernal)cctx.kernalContext().grid()).rejoin(false);
                     }
 
                     U.error(log, "Failed to wait for completion of partition map exchange " +
