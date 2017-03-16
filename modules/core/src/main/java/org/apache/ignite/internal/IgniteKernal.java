@@ -334,9 +334,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Reconnect future. */
     private GridCompoundFuture<?, Object> reconnectFut;
 
-    /** Rejoin flag. */
-    private volatile boolean rejoining;
-
     /** Force complete reconnect future. */
     private static final Object COMPLETE_FLAG = new Object();
 
@@ -3348,7 +3345,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
         }
 
-        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected(rejoining);
+        GridFutureAdapter<?> reconnectFut = ctx.gateway().onDisconnected();
 
         if (reconnectFut == null) {
             assert ctx.gateway().getState() != STARTED : ctx.gateway().getState();
@@ -3362,7 +3359,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // In case of rejoin, keep reconnect future as is and go on with components.
 
-        if (rejoining && curFut != null && curFut.internalFuture() == reconnectFut)
+        if (curFut != null && curFut.internalFuture() == reconnectFut)
             userFut = curFut;
         else {
             userFut = new IgniteFutureImpl<>(reconnectFut);
@@ -3445,8 +3442,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ctx.gateway().onReconnected();
 
                         rejoinFut.onDone();
-
-                        rejoining = false;
                     }
                     catch (IgniteCheckedException e) {
                         if (!X.hasCause(e, IgniteNeedReconnectException.class, IgniteClientDisconnectedCheckedException.class)) {
@@ -3461,8 +3456,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "set TcpDiscoverySpi.setClientReconnectDisabled(false).", e);
 
                             rejoinFut.onDone(e);
-
-                            rejoining = false;
 
                             close();
                         }
@@ -3501,8 +3494,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             return;
         }
-
-        rejoining = true;
 
         ctx.discovery().rejoin();
     }

@@ -149,21 +149,19 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridFutureAdapter<?> onDisconnected(boolean rejoin) {
-        IgniteFutureImpl<?> reconnectFut0 = reconnectFut;
-
-        if (rejoin && reconnectFut0 != null)
-            return (GridFutureAdapter<?>)reconnectFut0.internalFuture();
-
-        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
-
-        reconnectFut = new IgniteFutureImpl<>(fut);
-
+    @Override public GridFutureAdapter<?> onDisconnected() {
         if (!state.compareAndSet(GridKernalState.STARTED, GridKernalState.DISCONNECTED)) {
+            if (state.get() == GridKernalState.DISCONNECTED && reconnectFut != null)
+                return (GridFutureAdapter<?>)reconnectFut.internalFuture();
+
             ((GridFutureAdapter<?>)reconnectFut.internalFuture()).onDone(new IgniteCheckedException("Node stopped."));
 
             return null;
         }
+
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+
+        reconnectFut = new IgniteFutureImpl<>(fut);
 
         return fut;
     }

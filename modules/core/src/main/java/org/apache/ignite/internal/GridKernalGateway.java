@@ -117,7 +117,7 @@ public interface GridKernalGateway {
      *
      * @return Reconnect future.
      */
-    @Nullable public GridFutureAdapter<?> onDisconnected(boolean rejoin);
+    @Nullable public GridFutureAdapter<?> onDisconnected();
 
     /**
      * Reconnected callback.

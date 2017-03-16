@@ -129,7 +129,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
             return false;
         }
 
-        @Override public GridFutureAdapter<?> onDisconnected(boolean rejoin) {
+        @Override public GridFutureAdapter<?> onDisconnected() {
             return null;
         }
 
