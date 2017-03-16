@@ -54,6 +54,15 @@ public class QueryIndexState implements Serializable {
     }
 
     /**
+     * Copy object.
+     *
+     * @return Copy.
+     */
+    public QueryIndexState copy() {
+        return new QueryIndexState(tblName, idxName, idx);
+    }
+
+    /**
      * @return Table name.
      */
     public String tableName() {

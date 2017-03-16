@@ -42,6 +42,19 @@ public class QueryIndexActiveOperation {
     }
 
     /**
+     * Copy object.
+     *
+     * @return Copy.
+     */
+    public QueryIndexActiveOperation copy() {
+        QueryIndexActiveOperation copy = new QueryIndexActiveOperation(op);
+
+        copy.accepted = accepted;
+
+        return copy;
+    }
+
+    /**
      * @return Operation.
      */
     public AbstractIndexOperation operation() {

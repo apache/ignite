@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +47,32 @@ public class QueryIndexStates implements Serializable {
 
     /** Mutext for state synchronization. */
     private final Object mux = new Object();
+
+    /**
+     * Default constructor.
+     */
+    public QueryIndexStates() {
+        // No-op.
+    }
+
+    /**
+     * Copy object.
+     *
+     * @return Copy.
+     */
+    public QueryIndexStates copy() {
+        synchronized (mux) {
+            QueryIndexStates res = new QueryIndexStates();
+
+            for (Map.Entry<String, QueryIndexActiveOperation> activeOpEntry : activeOps.entrySet())
+                res.activeOps.put(activeOpEntry.getKey(), activeOpEntry.getValue().copy());
+
+            for (Map.Entry<String, QueryIndexState> readyOpEntry : readyOps.entrySet())
+                res.readyOps.put(readyOpEntry.getKey(), readyOpEntry.getValue().copy());
+
+            return res;
+        }
+    }
 
     /**
      * Try propose new index operation.
