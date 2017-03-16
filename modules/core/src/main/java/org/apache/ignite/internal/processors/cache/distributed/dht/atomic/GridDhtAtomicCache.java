@@ -1684,7 +1684,22 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final int stripeIdx,
         final UpdateReplyClosure completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
+        IgniteInternalFuture<Object> forceFut;
+
+        if (stripeIdx != IgniteThread.GRP_IDX_UNASSIGNED
+            && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
+            && req.stripeMap() != null) {
+            int[] stripeIdxs = req.stripeMap().get(stripeIdx);
+
+            List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.length);
+
+            for (int i = 0; i < stripeIdxs.length; i++)
+                keys.add(req.key(stripeIdxs[i]));
+
+            forceFut = preldr.request(keys, req.topologyVersion());
+        }
+        else
+            forceFut = preldr.request(req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
             try {
@@ -1782,8 +1797,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (stripeIdx != IgniteThread.GRP_IDX_UNASSIGNED
             && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
-            && ((GridNearAtomicFullUpdateRequest)req).stripeMap() != null) {
-            stripeIdxs = ((GridNearAtomicFullUpdateRequest)req).stripeMap().get(stripeIdx);
+            && req.stripeMap() != null) {
+            stripeIdxs = req.stripeMap().get(stripeIdx);
 
             res.stripe(stripeIdx);
         }
@@ -1958,6 +1973,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (remap) {
             assert dhtFut == null;
+            res.stripe(-1);
 
             completionCb.apply(req, res);
         }
@@ -2888,8 +2904,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         AffinityTopologyVersion topVer,
         int[] stripeIdxs)
         throws GridDhtInvalidPartitionException {
-        if (req.size() == 1) {
-            KeyCacheObject key = req.key(0);
+
+        int keysNum = stripeIdxs == null ? req.size() : stripeIdxs.length;
+
+        if (keysNum == 1) {
+            int idx = stripeIdxs != null ? stripeIdxs[0] : 0;
+
+            KeyCacheObject key = req.key(idx);
 
             while (true) {
                 GridDhtCacheEntry entry = entryExx(key, topVer);
@@ -2903,7 +2924,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         else {
-            int keysNum = stripeIdxs == null ? req.size() : stripeIdxs.length;
             List<GridDhtCacheEntry> locked = new ArrayList<>(keysNum);
 
             while (true) {

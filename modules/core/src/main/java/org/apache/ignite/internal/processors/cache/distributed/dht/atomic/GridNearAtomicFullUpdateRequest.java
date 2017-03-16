@@ -404,10 +404,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         return expiryPlc;
     }
 
-    /**
-     * @return Stripe mapping.
-     */
-    @Nullable public Map<Integer, int[]> stripeMap() {
+    /** {@inheritDoc} */
+    @Override @Nullable public Map<Integer, int[]> stripeMap() {
         return stripeMap;
     }
 

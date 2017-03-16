@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -442,6 +443,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @return Key.
      */
     public abstract KeyCacheObject key(int idx);
+
+    /**
+     * @return Stripe map.
+     */
+    @Nullable public Map<Integer, int[]> stripeMap() {
+        return null;
+    }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
