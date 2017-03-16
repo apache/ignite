@@ -6672,6 +6672,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          * Constructor.
          * @param internalIterator Internal iterator.
+         * @param keepBinary Keep binary.
          */
         private EntryIterator(Iterator<GridCacheMapEntry> internalIterator, boolean keepBinary) {
             this.internalIterator = internalIterator;
@@ -6696,7 +6697,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue(keepBinary).getKey());
+                getAndRemove((K)current.wrapLazyValue(keepBinary).getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -6717,7 +6718,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Keep binary flag. */
         private final boolean keepBinary;
 
-        /** Constructor. */
+        /** Constructor.
+         * @param internalSet Internal set.
+         * @param keepBinary Keep binary flag.
+         */
         private EntrySet(Set<GridCacheMapEntry> internalSet, boolean keepBinary) {
             this.internalSet = internalSet;
             this.keepBinary = keepBinary;
