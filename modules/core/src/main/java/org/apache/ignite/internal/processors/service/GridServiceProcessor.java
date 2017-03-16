@@ -121,9 +121,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
-    /** Versions that only compatible with each other, and from 1.5.33. */
-    private static final Set<IgniteProductVersion> SERVICE_TOP_CALLABLE_VER1;
-
     /** */
     private final Boolean srvcCompatibilitySysProp;
 
@@ -170,31 +167,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** Topology listener. */
     private DiscoveryEventListener topLsnr = new TopologyListener();
-
-    static {
-        Set<IgniteProductVersion> versions = new TreeSet<>(new Comparator<IgniteProductVersion>() {
-            @Override public int compare(final IgniteProductVersion o1, final IgniteProductVersion o2) {
-                return o1.compareToIgnoreTimestamp(o2);
-            }
-        });
-
-        versions.add(IgniteProductVersion.fromString("1.5.30"));
-        versions.add(IgniteProductVersion.fromString("1.5.31"));
-        versions.add(IgniteProductVersion.fromString("1.5.32"));
-        versions.add(IgniteProductVersion.fromString("1.6.3"));
-        versions.add(IgniteProductVersion.fromString("1.6.4"));
-        versions.add(IgniteProductVersion.fromString("1.6.5"));
-        versions.add(IgniteProductVersion.fromString("1.6.6"));
-        versions.add(IgniteProductVersion.fromString("1.6.7"));
-        versions.add(IgniteProductVersion.fromString("1.6.8"));
-        versions.add(IgniteProductVersion.fromString("1.6.9"));
-        versions.add(IgniteProductVersion.fromString("1.6.10"));
-        versions.add(IgniteProductVersion.fromString("1.7.0"));
-        versions.add(IgniteProductVersion.fromString("1.7.1"));
-        versions.add(IgniteProductVersion.fromString("1.7.2"));
-
-        SERVICE_TOP_CALLABLE_VER1 = Collections.unmodifiableSet(versions);
-    }
 
     /**
      * @param ctx Kernal context.
@@ -704,8 +676,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
             final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
-
-            call.serialize = SERVICE_TOP_CALLABLE_VER1.contains(node.version());
 
             return ctx.closure().callAsyncNoFailover(
                 GridClosureCallMode.BROADCAST,
@@ -1905,9 +1875,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         @LoggerResource
         private transient IgniteLogger log;
 
-        /** */
-        transient boolean serialize;
-
         /**
          * @param svcName Service name.
          */
@@ -1951,16 +1918,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
 
             return serviceTopology(cache, svcName);
-        }
-
-        /**
-         * @param self Instance of current class before serialization.
-         * @param ver Sender job version.
-         * @return List of serializable transient fields.
-         */
-        @SuppressWarnings("unused")
-        private static String[] serializableTransient(ServiceTopologyCallable self, IgniteProductVersion ver) {
-            return (self != null && self.serialize) || (ver != null && SERVICE_TOP_CALLABLE_VER1.contains(ver)) ? SER_FIELDS : null;
         }
     }
 
