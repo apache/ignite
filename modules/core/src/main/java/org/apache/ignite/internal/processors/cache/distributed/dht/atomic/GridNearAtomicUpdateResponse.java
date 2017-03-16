@@ -97,6 +97,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     private int partId = -1;
 
     /** Stripe. */
+    @GridDirectTransient
     private int stripe = -1;
 
     /** */
@@ -548,12 +549,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 writer.incrementState();
 
-            case 15:
-                if (!writer.writeInt("stripe", stripe))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -666,14 +661,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
-            case 15:
-                stripe = reader.readInt("stripe");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
@@ -686,7 +673,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 15;
     }
 
     /** {@inheritDoc} */

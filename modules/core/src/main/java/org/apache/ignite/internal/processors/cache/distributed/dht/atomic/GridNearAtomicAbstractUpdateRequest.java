@@ -89,6 +89,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     @GridToStringExclude
     protected byte flags;
 
+    /** Response helper. */
+    @GridDirectTransient
+    private NearAtomicResponseHelper responseHelper;
+
     /**
      *
      */
@@ -416,6 +420,21 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      */
     public int stripes() {
         return 0;
+    }
+
+    /**
+     * @return Response helper.
+     */
+    public NearAtomicResponseHelper responseHelper() {
+        return responseHelper;
+    }
+
+    /**
+     * @param responseHelper Response helper.
+     */
+    public void responseHelper(
+        NearAtomicResponseHelper responseHelper) {
+        this.responseHelper = responseHelper;
     }
 
     /**

@@ -371,7 +371,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         GridCacheReturn opRes0 = null;
         CachePartialUpdateCheckedException err0 = null;
 
-        boolean rcvAll = false;
+        boolean rcvAll;
 
         synchronized (mux) {
             if (futId == -1 || futId != res.futureId())
@@ -412,8 +412,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     if (msgLog.isDebugEnabled())
                         msgLog.debug("Processed near atomic update response " +
                             "[futId=" + res.futureId() + ", node=" + nodeId + ", stripe=" + res.stripe() +
-                            ": " + resCnt + "/" + mappings.size() + (rcvAll ? " all done" : "") +
-                            " " + reqState.state() + ']');
+                            ": " + resCnt + "/" + mappings.size() + (rcvAll ? " all done" : "") + ']');
                 }
                 else
                     return;
@@ -472,18 +471,11 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (rcvAll && nearEnabled) {
             if (mappings != null) {
                 for (PrimaryRequestState reqState : mappings.values()) {
-                    if (reqState.responses() != null) {
-                        for (GridNearAtomicUpdateResponse res0 : reqState.responses().values()) {
-                            updateNear(reqState.req, res0);
-                        }
-                    }
-                    else {
-                        GridNearAtomicUpdateResponse res0 = reqState.response();
+                    GridNearAtomicUpdateResponse res0 = reqState.response();
 
-                        assert res0 != null : reqState;
+                    assert res0 != null : reqState;
 
-                        updateNear(reqState.req, res0);
-                    }
+                    updateNear(reqState.req, res0);
                 }
             }
             else if (!nodeErr)

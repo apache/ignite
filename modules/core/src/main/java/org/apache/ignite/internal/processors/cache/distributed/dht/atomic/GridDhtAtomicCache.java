@@ -212,8 +212,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updateReplyClos = new UpdateReplyClosure() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                if (req.writeSynchronizationMode() != FULL_ASYNC)
-                    sendNearUpdateReply(res.nodeId(), res);
+                if (req.writeSynchronizationMode() != FULL_ASYNC) {
+                    if (req.responseHelper() != null) {
+                        if (req.responseHelper().addResponse(res))
+                            sendNearUpdateReply(res.nodeId(), req.responseHelper().response());
+                    }
+                    else
+                        sendNearUpdateReply(res.nodeId(), res);
+                }
                 else {
                     if (res.remapTopologyVersion() != null)
                         // Remap keys on primary node in FULL_ASYNC mode.
