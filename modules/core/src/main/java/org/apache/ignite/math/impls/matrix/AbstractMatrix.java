@@ -21,6 +21,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.decompositions.LUDecomposition;
 import org.apache.ignite.math.exceptions.*;
 import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.*;
@@ -467,63 +468,9 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        return recDet(null, null, this, this::getX);
-    }
+        LUDecomposition luDecomposition = new LUDecomposition(this);
 
-    /**
-     * @param idxX Index x.
-     * @param idxY Index y.
-     */
-    private double recDet(int[] idxX, int[] idxY, Matrix origin, IntIntToDoubleFunction getter){
-        int rows = idxX == null ? rowSize() : idxX.length;
-        int cols = idxX == null ? columnSize() : idxX.length;
-
-        if (rows != cols)
-            throw new CardinalityException(rows, cols);
-
-        if (rows == 1)
-            return getter.apply(0, 0);
-
-        if (rows == 2)
-            return getter.apply(0, 0) * getter.apply(1, 1) - getter.apply(0, 1) * getter.apply(1, 0);
-
-        if (rows == 3)
-            return getter.apply(0, 0) * (getter.apply(1, 1) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 1))
-                - getter.apply(0, 1) * (getter.apply(1, 0) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 0))
-                + getter.apply(0, 2) * (getter.apply(1, 0) * getter.apply(2, 1) - getter.apply(1, 1) * getter.apply(2, 0));
-
-        if (idxX == null){
-            idxX = IntStream.range(0, rows).toArray();
-            idxY = IntStream.range(0, cols).toArray();
-        }
-
-        double det = 0;
-
-        for (int i = 0; i < rows; i++) {
-            int[] finalIdxX = skipIdx(idxX, 0);
-            int[] finalIdxY = skipIdx(idxY, i);
-
-            IntIntToDoubleFunction get = (x, y) -> origin.getX(finalIdxX[x], finalIdxY[y]);
-
-            det += Math.pow(-1, i) * getX(0, i) * recDet(finalIdxX, finalIdxY, origin, get);
-        }
-
-        return det;
-    }
-
-    /**
-     * @param idxs Idxs.
-     * @param idx Index.
-     */
-    private int[] skipIdx(int[] idxs, int idx){
-        int[] res = new int[idxs.length -1];
-        int j = 0;
-
-        for (int i = 0; i < idxs.length; i++)
-            if (i != idx)
-                res[j++] = idxs[i];
-        
-        return res;
+        return luDecomposition.determinant();
     }
 
     /** {@inheritDoc} */

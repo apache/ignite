@@ -21,9 +21,12 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.math.impls.vector.RandomVector;
@@ -226,11 +229,17 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     
     /**
      * Old version up to 12 x 12 = 153 sec. (profiler)
-     * Current version 17 sec. (profiler)
+     * Recursion version 17 sec. (profiler)
      */
     @Test
     public void testDeterminant(){
         consumeSampleMatrix((m, desc)->{
+            if (ignore(m.getClass()))
+                return;
+
+            if (m.rowSize() != m.columnSize())
+                return;
+
             double[][] doubles = fillIntAndReturn(m);
 
             if (m.rowSize() == 1)
@@ -242,7 +251,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 if (ignore(m.getClass()))
                     return;
 
-                if (m.rowSize() < 15) { //Otherwise it's takes too long.
+                if (m.rowSize() < 30000) { //Otherwise it's takes too long.
                     Matrix diagMtx = m.like(m.rowSize(), m.columnSize());
 
                     diagMtx.assign(0);
@@ -466,6 +475,54 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
             m.assign(arr);
         }
         return arr;
+    }
+
+    private double recDet(int[] idxX, int[] idxY, Matrix origin, IntIntToDoubleFunction getter){
+        int rows = idxX == null ? origin.rowSize() : idxX.length;
+        int cols = idxX == null ? origin.columnSize() : idxX.length;
+
+        if (rows != cols)
+            throw new CardinalityException(rows, cols);
+
+        if (rows == 1)
+            return getter.apply(0, 0);
+
+        if (rows == 2)
+            return getter.apply(0, 0) * getter.apply(1, 1) - getter.apply(0, 1) * getter.apply(1, 0);
+
+        if (rows == 3)
+            return getter.apply(0, 0) * (getter.apply(1, 1) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 1))
+                - getter.apply(0, 1) * (getter.apply(1, 0) * getter.apply(2, 2) - getter.apply(1, 2) * getter.apply(2, 0))
+                + getter.apply(0, 2) * (getter.apply(1, 0) * getter.apply(2, 1) - getter.apply(1, 1) * getter.apply(2, 0));
+
+        if (idxX == null){
+            idxX = IntStream.range(0, rows).toArray();
+            idxY = IntStream.range(0, cols).toArray();
+        }
+
+        double det = 0;
+
+        for (int i = 0; i < rows; i++) {
+            int[] finalIdxX = skipIdx(idxX, 0);
+            int[] finalIdxY = skipIdx(idxY, i);
+
+            IntIntToDoubleFunction get = (x, y) -> origin.getX(finalIdxX[x], finalIdxY[y]);
+
+            det += Math.pow(-1, i) * origin.getX(finalIdxX[0], finalIdxY[i]) * recDet(finalIdxX, finalIdxY, origin, get);
+        }
+
+        return det;
+    }
+
+    private int[] skipIdx(int[] idxs, int idx){
+        int[] res = new int[idxs.length -1];
+        int j = 0;
+
+        for (int i = 0; i < idxs.length; i++)
+            if (i != idx)
+                res[j++] = idxs[i];
+
+        return res;
     }
 
     /** */

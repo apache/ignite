@@ -24,12 +24,22 @@ import org.apache.ignite.math.exceptions.CardinalityException;
 /**
  * Calculates the LU-decomposition of a square matrix.
  *
- * TODO: add description.
- * TODO: WIP
+ * This class inspired by class from Apache Common Math with similar name.
+ *
+ * @see <a href="http://mathworld.wolfram.com/LUDecomposition.html">MathWorld</a>
+ * @see <a href="http://en.wikipedia.org/wiki/LU_decomposition">Wikipedia</a>
+ *
+ * TODO: add read-only matrix support.
  */
 public class LUDecomposition {
+    /** Default bound to determine effective singularity in LU decomposition. */
+    private static final double DEFAULT_TOO_SMALL = 1e-11;
     /** Pivot permutation associated with LU decomposition. */
     private final Vector pivot;
+    /** Parity of the permutation associated with the LU decomposition. */
+    private boolean even;
+    /** Singularity indicator. */
+    private boolean singular;
     /** Cached value of L. */
     private Matrix cachedL;
     /** Cached value of U. */
@@ -43,11 +53,24 @@ public class LUDecomposition {
 
     /**
      * Calculates the LU-decomposition of the given matrix.
+     * This constructor uses 1e-11 as default value for the singularity
+     * threshold.
      *
      * @param matrix Matrix to decompose.
      * @throws CardinalityException if matrix is not square.
      */
-    public LUDecomposition(Matrix matrix){
+    public LUDecomposition(Matrix matrix) {
+        this(matrix, DEFAULT_TOO_SMALL);
+    }
+
+    /**
+     * Calculates the LUP-decomposition of the given matrix.
+     *
+     * @param matrix Matrix to decompose.
+     * @param singularityThreshold threshold (based on partial row norm).
+     * @throws CardinalityException if matrix is not square.
+     */
+    public LUDecomposition(Matrix matrix, double singularityThreshold){
         int rows = matrix.rowSize();
         int cols = matrix.columnSize();
 
@@ -57,14 +80,21 @@ public class LUDecomposition {
         this.matrix = matrix;
 
         luMatrix = matrix.copy();
+
         pivot = matrix.likeVector(cols);
+        for (int i = 0; i < pivot.size(); i++)
+            pivot.setX(i, i);
+
+        even     = true;
+        singular = false;
+        
         cachedL = null;
         cachedU = null;
         cachedP = null;
 
         for (int col = 0; col < cols; col++) {
             for (int row = 0; row < col; row++) {
-                double sum = 0;
+                double sum = luMatrix.getX(row, col);
 
                 for (int i = 0; i < row; i++)
                     sum -= luMatrix.getX(col, i) * luMatrix.getX(i, col);
@@ -72,25 +102,138 @@ public class LUDecomposition {
                 luMatrix.setX(row, col, sum);
             }
 
+            int max = col;
+            double largest = Double.NEGATIVE_INFINITY;
+
             for (int row = col; row < rows; row++) {
-                //TODO
+                double sum = luMatrix.getX(row, col);
+
+                for (int i = 0; i < col; i++)
+                    sum -= luMatrix.getX(col, i) * luMatrix.getX(i, col);
+
+                luMatrix.setX(row, col, sum);
+
+                if (Math.abs(sum) > largest){
+                    largest = Math.abs(sum);
+                    max = row;
+                }
             }
+
+            // Singularity check
+            if (Math.abs(luMatrix.getX(max, col)) < singularityThreshold) {
+                singular = true;
+                return;
+            }
+
+            // Pivot if necessary
+            if (max != col) {
+                double tmp = 0;
+                Vector luMax = luMatrix.viewColumn(max);
+                Vector luCol = luMatrix.viewColumn(col);
+
+                for (int i = 0; i < cols; i++) {
+                    tmp = luMax.getX(i);
+                    luMax.setX(i, luCol.getX(i));
+                    luCol.setX(i, tmp);
+                }
+
+                int temp = (int)pivot.getX(max);
+
+                pivot.setX(max, pivot.getX(col));
+                pivot.setX(col, temp);
+
+                even = !even;
+            }
+
+            // Divide the lower elements by the "winning" diagonal elt.
+            final double luDiag = luMatrix.getX(col, col);
+            for (int row = col + 1; row < cols; row++)
+                luMatrix.setX(row, col, luMatrix.getX(row, col) / luDiag) ;
         }
     }
 
-    public Matrix getCachedL() {
+    /**
+     * Returns the matrix L of the decomposition.
+     * <p>L is a lower-triangular matrix</p>
+     * @return the L matrix (or null if decomposed matrix is singular).
+     */
+    public Matrix getL() {
+        if ((cachedL == null) && !singular) {
+            final int m = pivot.size();
+
+            cachedL = matrix.like(m, m);
+            cachedL.assign(0.0);
+
+            for (int i = 0; i < m; ++i) {
+                for (int j = 0; j < i; ++j)
+                    cachedL.setX(i, j, luMatrix.getX(i, j));
+
+                cachedL.setX(i, i, 1.0);
+            }
+        }
         return cachedL;
     }
 
-    public Matrix getCachedU() {
+    /**
+     * Returns the matrix U of the decomposition.
+     * <p>U is an upper-triangular matrix</p>
+     * @return the U matrix (or null if decomposed matrix is singular).
+     */
+    public Matrix getU() {
+        if ((cachedU == null) && !singular) {
+            final int m = pivot.size();
+
+            cachedU = matrix.like(m, m);
+            cachedU.assign(0.0);
+
+            for (int i = 0; i < m; ++i)
+                for (int j = i; j < m; ++j)
+                    cachedU.setX(i, j, luMatrix.getX(i, j));
+        }
         return cachedU;
     }
 
-    public Matrix getCachedP(){
+    /**
+     * Returns the P rows permutation matrix.
+     * <p>P is a sparse matrix with exactly one element set to 1.0 in
+     * each row and each column, all other elements being set to 0.0.</p>
+     * <p>The positions of the 1 elements are given by the {@link #getPivot()
+     * pivot permutation vector}.</p>
+     * @return the P rows permutation matrix (or null if decomposed matrix is singular).
+     * @see #getPivot()
+     */
+    public Matrix getP(){
+        if ((cachedP == null) && !singular) {
+            final int m = pivot.size();
+
+            cachedU = matrix.like(m, m);
+            cachedU.assign(0.0);
+
+            for (int i = 0; i < m; ++i)
+                cachedP.setX(i, (int)pivot.get(i), 1.0);
+        }
         return cachedP;
     }
 
+    /**
+     * Returns the pivot permutation vector.
+     * @return the pivot permutation vector.
+     * @see #getP()
+     */
+    public Vector getPivot() {
+        return pivot.copy();
+    }
+
     public double determinant(){
-        return 0d;
+        if (singular)
+            return 0;
+
+        final int m = pivot.size();
+            double determinant = even ? 1 : -1;
+
+            for (int i = 0; i < m; i++)
+                determinant *= luMatrix.getX(i, i);
+
+            return determinant;
     }
 }
