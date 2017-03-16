@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.query.ddl;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for index operations.
@@ -35,6 +37,9 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
     /** Operation. */
     @GridToStringInclude
     protected final AbstractIndexOperation op;
+
+    /** Local cache index state at the moment of message receive. */
+    private transient QueryIndexStates idxStates;
 
     /**
      * Constructor.
@@ -55,6 +60,20 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
      */
     public AbstractIndexOperation operation() {
         return op;
+    }
+
+    /**
+     * @return Index states.
+     */
+    @Nullable public QueryIndexStates indexStates() {
+        return idxStates;
+    }
+
+    /**
+     * @param idxStates Index states.
+     */
+    public void indexStates(QueryIndexStates idxStates) {
+        this.idxStates = idxStates;
     }
 
     /** {@inheritDoc} */
