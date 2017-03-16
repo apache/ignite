@@ -111,7 +111,8 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
      * @param igfsFile The file to copy.
      */
     public IgfsFileImpl(IgfsFile igfsFile) {
-        this(igfsFile, (int)igfsFile.groupBlockSize());
+        this(igfsFile, //(int)igfsFile.groupBlockSize());
+            igfsFile.blockSize()); // TODO : ??????
     }
 
     /**

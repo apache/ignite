@@ -50,11 +50,15 @@ class IgfsOutputStreamProxyImpl extends IgfsAbstractOutputStream {
         assert batch != null;
 
         this.info = info;
+
+        this.writeObserver = createWriteObserver();
     }
 
     @Override protected IgfsDataManager.WriteObserver createWriteObserver() {
-        // NB: for PROXY mode primary block size == secondary block size.
-        return new IgfsDataManager.MetricsWriteObserver(igfsCtx.metrics(), info.blockSize(), info.blockSize());
+        // NB: for PROXY mode primary block size == secondary block size,
+        // but in fact we write only to secondary file system, so set primary block size zero
+        // to prevent assertions failing:
+        return new IgfsDataManager.MetricsWriteObserver(igfsCtx.metrics(), mux, 0, info.blockSize());
     }
 
     /** {@inheritDoc} */

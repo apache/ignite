@@ -1136,7 +1136,10 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsFileWorkerBatch batch = secondaryStream != null ? newBatch(path, secondaryStream) : null;
 
-                return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
+                int secBlckSize = mode == PRIMARY ? 0 : secondaryCtx.info().blockSize();
+
+                return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch,
+                    secBlckSize);
             }
         });
     }
@@ -1179,7 +1182,10 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsFileWorkerBatch batch = newBatch(path, desc.secondaryOutputStream());
 
-                    return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch);
+                    int blkSize = secondaryFs.info(path).blockSize();
+
+                    return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch,
+                        blkSize);
                 }
 
                 final List<IgniteUuid> ids = meta.idsForPath(path);
@@ -1217,7 +1223,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 assert res != null;
 
-                return new IgfsOutputStreamImpl(igfsCtx, path, res, bufferSize(bufSize), mode, null);
+                return new IgfsOutputStreamImpl(igfsCtx, path, res, bufferSize(bufSize), mode, null, 0);
             }
         });
     }

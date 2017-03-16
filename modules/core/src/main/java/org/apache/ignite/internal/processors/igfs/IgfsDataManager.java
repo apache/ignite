@@ -376,18 +376,23 @@ public class IgfsDataManager extends IgfsManager {
                             // Wait for existing future to finish and get it's result.
                             res = oldRmtReadFut.get();
 
-                            igfsCtx.metrics().addReadBlocks(1, 0);
+                            if (res.length == fileInfo.blockSize())
+                                igfsCtx.metrics().addReadBlocks(1, 0);
                         }
                     }
                     else
-                        igfsCtx.metrics().addReadBlocks(1, 0);
+                        if (res.length == fileInfo.blockSize())
+                            igfsCtx.metrics().addReadBlocks(1, 0);
 
                     return res;
                 }
             }, exec);
         }
         else
-            igfsCtx.metrics().addReadBlocks(1, 0);
+            // Increment the metric only in case we read a whole block:
+            if (blockIdx < fileInfo.blocksCount() - 1
+                || fileInfo.length() % fileInfo.blockSize() == 0)
+                igfsCtx.metrics().addReadBlocks(1, 0);
 
         return fut;
     }
@@ -433,8 +438,9 @@ public class IgfsDataManager extends IgfsManager {
         // If we did not read full block at the end of the file - trim it.
         if (read != blockSize)
             res = Arrays.copyOf(res, read);
-
-        igfsCtx.metrics().addReadBlocks(1, 1);
+        else
+            // Increment the metric only if the whole block is read:
+            igfsCtx.metrics().addReadBlocks(1, 1);
 
         return res;
     }
@@ -1230,46 +1236,64 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Observer that updates metrics blocks.
+     * Observer that updates metric blocks.
+     * Cardinality is one observer per one output stream.
      */
     public static class MetricsWriteObserver extends WriteObserver {
-        /** Cumulative total written byte counter. */
+        private final int primaryBlockSize;
+        private final long secondaryBlockSize;
+
+        /** Shared metrics object, one for entire the file system. */
+        private final IgfsLocalMetrics metrics;
+        private final Object mux;
+
+        /** Written byte counters for this output stream. */
         private long bytesPrimary;
         private long bytesSecondary;
 
-        private final int primaryBlockSize;
-        private final int secondaryBlockSize;
+        MetricsWriteObserver(IgfsLocalMetrics metrics, Object mux, int primaryBlockSize, long secondaryBlockSize) {
+            assert metrics != null;
 
-        private final IgfsLocalMetrics metrics;
-
-        MetricsWriteObserver(IgfsLocalMetrics metrics, int primaryBlockSize, int secondaryBlockSize) {
             this.metrics = metrics;
+            this.mux = mux;
             this.primaryBlockSize = primaryBlockSize;
             this.secondaryBlockSize = secondaryBlockSize;
         }
 
-        private static int blocksToBeAdded(long totalBytes, int blockSize, int writeLen) {
+        private static int blocksToBeAdded(long totalBytes, long blockSize, int writeLen) {
+            if (blockSize == 0)
+                return 0;
+
             return (int)(totalBytes / blockSize - (totalBytes - writeLen) / blockSize);
         }
 
         @Override public void addWrittenPrimary(int bytesAdded) {
+            assert mux == null || Thread.holdsLock(mux);
+
             bytesPrimary += bytesAdded;
 
             int blocks = blocksToBeAdded(bytesPrimary, primaryBlockSize, bytesAdded);
 
-            metrics.addWriteBlocks(blocks, 0);
+            if (blocks > 0)
+                metrics.addWriteBlocks(blocks, 0);
         }
 
         @Override public void addWrittenSecondary(int bytesAdded) {
+            assert mux == null || Thread.holdsLock(mux);
+
             bytesSecondary += bytesAdded;
 
             int blocks = blocksToBeAdded(bytesSecondary, secondaryBlockSize, bytesAdded);
 
-            metrics.addWriteBlocks(0, blocks);
+            if (blocks > 0)
+                metrics.addWriteBlocks(0, blocks);
         }
 
         @Override public void finished() {
-            assert bytesPrimary == bytesSecondary;
+            assert mux == null || Thread.holdsLock(mux);
+
+            assert primaryBlockSize <= 0 || secondaryBlockSize <= 0 || bytesPrimary == bytesSecondary
+                : " prim = " + bytesPrimary + ", sec = " + bytesSecondary;
         }
     }
 

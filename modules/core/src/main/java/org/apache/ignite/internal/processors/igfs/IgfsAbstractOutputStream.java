@@ -62,7 +62,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     /** Time consumed by write operations. */
     protected long time;
 
-    protected final IgfsDataManager.WriteObserver writeObserver;
+    protected IgfsDataManager.WriteObserver writeObserver;
 
     /**
      * Constructs file output stream.
@@ -81,8 +81,6 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
         }
 
         igfsCtx.metrics().incrementFilesOpenedForWrite();
-
-        writeObserver = createWriteObserver();
     }
 
     protected abstract IgfsDataManager.WriteObserver createWriteObserver();

@@ -51,6 +51,9 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
     /** File descriptor. */
     private IgfsEntryInfo fileInfo;
 
+    /** */
+    private final long secondaryBlockSize;
+
     /** Affinity written by this output stream. */
     private IgfsFileAffinityRange streamRange;
 
@@ -74,7 +77,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
      * @param batch Optional secondary file system batch.
      */
     IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
-        @Nullable IgfsFileWorkerBatch batch) {
+        @Nullable IgfsFileWorkerBatch batch, long secBlockSize) {
         super(igfsCtx, path, bufSize, batch);
 
         assert fileInfo != null && fileInfo.isFile() : "Unexpected file info: " + fileInfo;
@@ -91,13 +94,19 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
             streamRange = initialStreamRange(fileInfo);
 
             writeFut = igfsCtx.data().writeStart(fileInfo.id());
+
+            secondaryBlockSize = secBlockSize;
+
+            writeObserver = createWriteObserver();
         }
     }
 
     @Override protected IgfsDataManager.WriteObserver createWriteObserver() {
+        assert igfsCtx != null;
+        assert fileInfo != null;
+
         return new IgfsDataManager.MetricsWriteObserver(
-            // TODO: get somehow the block sizes:
-            igfsCtx.metrics(), info.blockSize(), secondaryInfo.blockSize());
+            igfsCtx.metrics(), mux, fileInfo.blockSize(), secondaryBlockSize);
     }
 
     /**
@@ -304,7 +313,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
 
                 remainderDataLen += writeLen;
 
-                writeObserver.addWrittenPrimary(writeLen);
+                //writeObserver.addWrittenPrimary(writeLen);
             }
             else {
                 if (data instanceof ByteBuffer) {
