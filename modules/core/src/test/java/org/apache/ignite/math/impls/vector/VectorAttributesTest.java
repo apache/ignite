@@ -38,7 +38,10 @@ public class VectorAttributesTest {
         new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
             DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, SparseLocalVectorSequentialAccess.class,
             RandomVector.class, ConstantVector.class, SingleElementVector.class),
-        new AttrCfg("guidNotNull", v -> v.guid() == null));
+        new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
+        new AttrCfg("isRandomAccess", Vector::isRandomAccess,
+            DenseLocalOnHeapVector.class),
+        new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */
     private final List<Specification> specFixture = Arrays.asList(
@@ -157,6 +160,11 @@ public class VectorAttributesTest {
     /** */
     private static class SparseLocalVectorSequentialAccess extends SparseLocalVector {
         /** */
+        public SparseLocalVectorSequentialAccess() {
+            // No-op.
+        }
+
+        /** */
         SparseLocalVectorSequentialAccess(int size) {
             super(size, SEQUENTIAL_ACCESS_MODE);
         }
@@ -164,6 +172,11 @@ public class VectorAttributesTest {
 
     /** */
     private static class SparseLocalVectorRandomAccess extends SparseLocalVector {
+        /** */
+        public SparseLocalVectorRandomAccess() {
+            // No-op.
+        }
+
         /** */
         SparseLocalVectorRandomAccess(int size) {
             super(size, RANDOM_ACCESS_MODE);
