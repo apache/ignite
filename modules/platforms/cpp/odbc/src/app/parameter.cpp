@@ -164,6 +164,7 @@ namespace ignite
                         break;
                     }
 
+                    case SQL_TYPE_TIME:
                     case SQL_TIME:
                     {
                         writer.WriteTime(buf.GetTime());
