@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -51,7 +52,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private IgniteInternalTx tx;
+    private GridNearTxLocal tx;
 
     /** Gateway. */
     @GridToStringExclude
@@ -75,7 +76,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * @param cctx Shared context.
      * @param async Async flag.
      */
-    public TransactionProxyImpl(IgniteInternalTx tx, GridCacheSharedContext<K, V> cctx, boolean async) {
+    public TransactionProxyImpl(GridNearTxLocal tx, GridCacheSharedContext<K, V> cctx, boolean async) {
         assert tx != null;
         assert cctx != null;
 
@@ -87,7 +88,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     /**
      * @return Transaction.
      */
-    public IgniteInternalTx tx() {
+    public GridNearTxLocal tx() {
         return tx;
     }
 
@@ -316,7 +317,9 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
         IgniteInternalFuture<Transaction> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, Transaction>() {
             @Override public Transaction applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
-                return fut.get().proxy();
+                fut.get();
+
+                return TransactionProxyImpl.this;
             }
         });
 
@@ -330,7 +333,7 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (IgniteInternalTx)in.readObject();
+        tx = (GridNearTxLocal)in.readObject();
     }
 
     /** {@inheritDoc} */

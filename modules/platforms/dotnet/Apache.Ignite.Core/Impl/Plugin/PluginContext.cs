@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
 {
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
@@ -86,6 +87,14 @@ namespace Apache.Ignite.Core.Impl.Plugin
             IgniteArgumentCheck.NotNull(callback, "callback");
 
             _pluginProcessor.RegisterCallback(callbackId, callback);
+        }
+
+        /** <inheritdoc /> */
+        public void InjectResources(object target)
+        {
+            IgniteArgumentCheck.NotNull(target, "target");
+
+            ResourceProcessor.Inject(target, _pluginProcessor.Ignite);
         }
     }
 }

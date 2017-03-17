@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Events
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = IgniteGuid.Read(r);
+            _xid = r.ReadObject<IgniteGuid?>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
