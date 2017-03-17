@@ -53,7 +53,7 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
         
         this.size = size;
         this.cache = cache;
-        this.keyFunc = keyFunc;
+        this.keyFunc = idxFunc;
         this.valMapper = valMapper;
     }
 
