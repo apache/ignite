@@ -18,8 +18,10 @@
 package org.apache.ignite.springdata;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.AbstractMap;
+import java.util.Iterator;
 import java.util.Map;
+import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -27,10 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.springframework.data.keyvalue.core.AbstractKeyValueAdapter;
-import org.springframework.data.keyvalue.core.ForwardingCloseableIterator;
 import org.springframework.data.util.CloseableIterator;
 
 /**
@@ -99,17 +99,59 @@ public class IgniteKeyValueAdapter extends AbstractKeyValueAdapter {
 
     /** {@inheritDoc} */
     @Override public Object delete(Serializable id, Serializable keyspace) {
-        return cache(keyspace).invoke(id, new RemovalEntryProcessor());
+        return cache(keyspace).invoke(id, new RemoveEntryProcessor());
     }
 
     /** {@inheritDoc} */
     @Override public Iterable<?> getAllOf(Serializable keyspace) {
-        return cache(keyspace).;
+        return new Iterable<Object>() {
+            @Override public Iterator<Object> iterator() {
+                return new CloseableIterator<Object>() {
+                    Iterator<Cache.Entry<Serializable, Object>> iter = cache(keyspace).iterator();
+
+                    @Override public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override public Object next() {
+                        Cache.Entry<Serializable, Object> entry = iter.next();
+
+                        assert entry != null;
+
+                        return entry.getValue();
+                    }
+
+                    @Override public void close() {
+                        // Ignite's internal iterator is referenced by a weak reference. Releasing it.
+                        iter = null;
+                    }
+                };
+            }
+        };
     }
 
     /** {@inheritDoc} */
     @Override public CloseableIterator<Map.Entry<Serializable, Object>> entries(Serializable keyspace) {
-        return new ForwardingCloseableIterator<Map.Entry<Serializable, Object>>(cache(keyspace).iterator());
+        return new CloseableIterator<Map.Entry<Serializable, Object>>() {
+            Iterator<Cache.Entry<Serializable, Object>> iter = cache(keyspace).iterator();
+
+            @Override public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            @Override public Map.Entry<Serializable, Object> next() {
+                Cache.Entry<Serializable, Object> entry = iter.next();
+
+                assert entry != null;
+
+                return new AbstractMap.SimpleEntry<Serializable, Object>(entry.getKey(), entry.getValue());
+            }
+
+            @Override public void close() {
+                // Ignite's internal iterator is referenced by a weak reference. Releasing it.
+                iter = null;
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -149,7 +191,7 @@ public class IgniteKeyValueAdapter extends AbstractKeyValueAdapter {
     /**
      *
      */
-    private static class RemovalEntryProcessor implements EntryProcessor<Serializable, Object, Object> {
+    private static class RemoveEntryProcessor implements EntryProcessor<Serializable, Object, Object> {
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Serializable, Object> entry, Object... arguments)
             throws EntryProcessorException {
