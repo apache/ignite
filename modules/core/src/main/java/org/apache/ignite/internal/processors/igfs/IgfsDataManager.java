@@ -1262,12 +1262,12 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /**
+         * Function calculating the block addition logic.
          *
-         *
-         * @param totalBytes
-         * @param blockSize
-         * @param writeLen
-         * @return
+         * @param totalBytes Total bytes currently written to the stream.
+         * @param blockSize The block size.
+         * @param writeLen The length just written.
+         * @return The number of blo cks to add.
          */
         private static int blocksToBeAdded(long totalBytes, long blockSize, int writeLen) {
             if (blockSize == 0)
