@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -385,6 +386,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Task or {@code null} if message doesn't require any special processing.
      */
     public CachePartitionExchangeWorkerTask exchangeTaskForCustomDiscoveryMessage(DiscoveryCustomMessage msg) {
+        if (msg instanceof IndexAbstractDiscoveryMessage) {
+            IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
+
+            if (msg0.exchange())
+                return new IndexExchangeWorkerTask(msg0);
+        }
+
         return null;
     }
 
@@ -394,7 +402,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param task Task.
      */
     public void processCustomExchangeTask(CachePartitionExchangeWorkerTask task) {
-        // No-op.
+        if (task instanceof IndexExchangeWorkerTask) {
+            IndexAbstractDiscoveryMessage msg = ((IndexExchangeWorkerTask)task).message();
+
+            if (msg instanceof IndexAcceptDiscoveryMessage)
+                onIndexAcceptMessageExchange((IndexAcceptDiscoveryMessage)msg);
+            else if (msg instanceof IndexFinishDiscoveryMessage)
+                onIndexFinishMessageExchange((IndexFinishDiscoveryMessage)msg);
+            else
+                U.warn(log, "Unsupported index discovery message: " + msg);
+        }
+        else
+            U.warn(log, "Unsupported custom exchange task: " + task);
     }
 
     /**
@@ -2720,11 +2739,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (msg instanceof IndexProposeDiscoveryMessage)
-                onIndexProposeMessage((IndexProposeDiscoveryMessage)msg);
+                onIndexProposeMessageDiscovery((IndexProposeDiscoveryMessage)msg);
             else if (msg instanceof IndexAcceptDiscoveryMessage)
-                onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
+                onIndexAcceptMessageDiscovery((IndexAcceptDiscoveryMessage)msg);
             else if (msg instanceof IndexFinishDiscoveryMessage)
-                onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
+                onIndexFinishMessageDiscovery((IndexFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
 
@@ -2742,7 +2761,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
-    private void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
+    private void onIndexProposeMessageDiscovery(IndexProposeDiscoveryMessage msg) {
         UUID locNodeId = ctx.localNodeId();
 
         AbstractIndexOperation op = msg.operation();
@@ -2768,11 +2787,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle cache index ack discovery message.
+     * Handle cache index accept discovery message.
      *
      * @param msg Message.
      */
-    private void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
+    private void onIndexAcceptMessageDiscovery(IndexAcceptDiscoveryMessage msg) {
         AbstractIndexOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
@@ -2784,11 +2803,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Handle index accept message in exchange thread.
+     *
+     * @param msg Message.
+     */
+    private void onIndexAcceptMessageExchange(IndexAcceptDiscoveryMessage msg) {
+        // TODO
+    }
+
+    /**
      * Handle cache index ack discovery message.
      *
      * @param msg Message.
      */
-    private void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
+    private void onIndexFinishMessageDiscovery(IndexFinishDiscoveryMessage msg) {
         AbstractIndexOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
@@ -2797,6 +2825,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         desc.tryFinish(msg, true);
+    }
+
+    /**
+     * Handle index finish message in exchange thread.
+     *
+     * @param msg Message.
+     */
+    private void onIndexFinishMessageExchange(IndexFinishDiscoveryMessage msg) {
+        // TODO
     }
 
     /**
