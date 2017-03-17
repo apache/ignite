@@ -264,7 +264,7 @@ abstract class TcpDiscoveryImpl {
      *
      * @throws IgniteSpiException If failed.
      */
-    public abstract void rejoin() throws IgniteSpiException;
+    public abstract void reconnect() throws IgniteSpiException;
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>

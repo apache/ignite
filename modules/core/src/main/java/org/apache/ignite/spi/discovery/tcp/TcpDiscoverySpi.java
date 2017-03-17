@@ -52,7 +52,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1928,12 +1927,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
-     * Force rejoin to cluster.
+     * Force reconnect to cluster.
      *
      * @throws IgniteSpiException If failed.
      */
-    public void rejoin() throws IgniteSpiException {
-        impl.rejoin();
+    public void reconnect() throws IgniteSpiException {
+        impl.reconnect();
     }
 
     /**

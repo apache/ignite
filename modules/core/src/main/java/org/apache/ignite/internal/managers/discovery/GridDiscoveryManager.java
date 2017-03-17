@@ -1892,27 +1892,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @return {@code True} if local node client and discovery SPI supports reconnect.
+     */
+    public boolean reconnectSupported() {
+        DiscoverySpi spi = getSpi();
+
+        return ctx.clientNode() && (spi instanceof TcpDiscoverySpi) &&
+            !(((TcpDiscoverySpi) spi).isClientReconnectDisabled());
+    }
+
+    /**
      * Leave cluster and try to join again.
      *
      * @throws IgniteSpiException If failed.
      */
-    public void rejoin() {
+    public void reconnect() {
+        assert reconnectSupported();
+
         DiscoverySpi discoverySpi = getSpi();
 
-        if (discoverySpi instanceof TcpDiscoverySpi)
-            ((TcpDiscoverySpi)discoverySpi).rejoin();
-    }
-
-    /**
-     * If {@code true} client does not try to reconnect after
-     * server detected client node failure.
-     *
-     * @return Client reconnect disabled flag.
-     */
-    public boolean isClientReconnectDisabled() {
-        DiscoverySpi discoverySpi = getSpi();
-
-        return discoverySpi instanceof TcpDiscoverySpi && ((TcpDiscoverySpi)discoverySpi).isClientReconnectDisabled();
+        ((TcpDiscoverySpi)discoverySpi).reconnect();
     }
 
     /**

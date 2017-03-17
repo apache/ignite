@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -90,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -452,8 +449,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else
                         U.warn(log, "Still waiting for initial partition map exchange [fut=" + fut + ']');
                 }
+                catch (IgniteNeedReconnectException e) {
+                    throw e;
+                }
                 catch (Exception e) {
-                    if (cctx.localNode().isClient() && X.hasCause(e, IOException.class))
+                    if (fut.reconnectOnError(e))
                         throw new IgniteNeedReconnectException(cctx.localNode(), e);
 
                     throw e;
@@ -1708,7 +1708,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     }
                                 }
                                 catch (Exception e) {
-                                    if (cctx.localNode().isClient() && X.hasCause(e, IOException.class))
+                                    if (exchFut.reconnectOnError(e))
                                         throw new IgniteNeedReconnectException(cctx.localNode(), e);
 
                                     throw e;
@@ -1852,19 +1852,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
+                catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
+                    assert cctx.discovery().reconnectSupported();
+
+                    U.warn(log,"Local node failed to complete partition map exchange due to " +
+                        "network issues, will try to reconnect to cluster", e);
+
+                    cctx.discovery().reconnect();
+                }
                 catch (IgniteCheckedException e) {
-                    if (e instanceof IgniteClientDisconnectedCheckedException
-                        || e instanceof IgniteNeedReconnectException) {
-
-                        if (!cctx.localNode().isClient()) {
-                            U.error(log, "Ignore exception", e);
-
-                            return;
-                        }
-
-                        ((IgniteKernal)cctx.kernalContext().grid()).rejoin();
-                    }
-
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + exchFut, e);
                 }

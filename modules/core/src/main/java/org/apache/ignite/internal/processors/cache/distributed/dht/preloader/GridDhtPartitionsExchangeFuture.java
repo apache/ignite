@@ -508,15 +508,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             throw e;
         }
+        catch (IgniteNeedReconnectException e) {
+            onDone(e);
+        }
         catch (Throwable e) {
-            U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
-
-            if (cctx.localNode().isClient() && X.hasCause(e,
-                IOException.class,
-                IgniteClientDisconnectedCheckedException.class))
+            if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
-            else
+            else {
+                U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
+
                 onDone(e);
+            }
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1304,7 +1306,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         catch (IgniteCheckedException e) {
-            if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class))
+            if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
@@ -1324,13 +1326,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
-                log.debug("Failed to send full partition map to node, node left grid " +
-                    "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send full partition map to node, node left grid " +
+                        "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
 
                 return;
             }
 
-            if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class)) {
+            if (reconnectOnError(e)) {
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
 
                 return;
@@ -1658,7 +1661,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         }
                     }
                     catch (Exception e) {
-                        if (cctx.kernalContext().clientNode() && X.hasCause(e, IOException.class))
+                        if (reconnectOnError(e))
                             onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
                         else
                             throw e;
@@ -1672,6 +1675,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @param e Exception.
+     * @return {@code True} if local node should try reconnect in case of error.
+     */
+    public boolean reconnectOnError(Throwable e) {
+        return X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class) &&
+            cctx.discovery().reconnectSupported();
     }
 
     /** {@inheritDoc} */

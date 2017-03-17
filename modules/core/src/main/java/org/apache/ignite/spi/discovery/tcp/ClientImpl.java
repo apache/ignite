@@ -130,7 +130,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
 
     /** */
-    private static final Object SPI_REJOIN = "SPI_REJOIN";
+    private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
@@ -812,8 +812,8 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void rejoin() throws IgniteSpiException {
-        msgWorker.addMessage(SPI_REJOIN);
+    @Override public void reconnect() throws IgniteSpiException {
+        msgWorker.addMessage(SPI_RECONNECT);
     }
 
     /** {@inheritDoc} */
@@ -888,11 +888,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         private UUID rmtNodeId;
 
         /** */
-        private CountDownLatch forceLatch;
+        private CountDownLatch stopReadLatch;
 
         /**
          */
-        protected SocketReader() {
+        SocketReader() {
             super(spi.ignite().name(), "tcp-client-disco-sock-reader", log);
         }
 
@@ -900,7 +900,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param sockStream Socket.
          * @param rmtNodeId Rmt node id.
          */
-        public void setSocket(SocketStream sockStream, UUID rmtNodeId) {
+        void setSocket(SocketStream sockStream, UUID rmtNodeId) {
             synchronized (mux) {
                 this.sockStream = sockStream;
 
@@ -911,10 +911,10 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Force close socket.
+         * @throws InterruptedException If interrupted.
          */
-        private void forceLeave() {
-            CountDownLatch forceLeaveLatch;
+        private void forceStopRead() throws InterruptedException {
+            CountDownLatch stopReadLatch;
 
             synchronized (mux) {
                 SocketStream stream = sockStream;
@@ -922,7 +922,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (stream == null)
                     return;
 
-                this.forceLatch = forceLeaveLatch = new CountDownLatch(1);
+                this.stopReadLatch = stopReadLatch = new CountDownLatch(1);
 
                 U.closeQuiet(stream.socket());
 
@@ -932,12 +932,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 mux.notifyAll();
             }
 
-            try {
-                forceLeaveLatch.await();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteSpiException(e);
-            }
+            stopReadLatch.await();
         }
 
         /** {@inheritDoc} */
@@ -947,10 +942,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                 UUID rmtNodeId;
 
                 synchronized (mux) {
-                    if (forceLatch != null) {
-                        forceLatch.countDown();
+                    if (stopReadLatch != null) {
+                        stopReadLatch.countDown();
 
-                        forceLatch = null;
+                        stopReadLatch = null;
                     }
 
                     if (this.sockStream == null) {
@@ -1065,7 +1060,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          *
          */
-        protected SocketWriter() {
+        SocketWriter() {
             super(spi.ignite().name(), "tcp-client-disco-sock-writer", log);
 
             sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
@@ -1084,9 +1079,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * Sends {@link TcpDiscoveryNodeLeftMessage} and closes socket.
          *
+         * @throws InterruptedException If interrupted.
          */
-        private void forceLeave() {
+        private void forceLeave() throws InterruptedException {
             CountDownLatch forceLeaveLatch;
 
             synchronized (mux) {
@@ -1101,12 +1098,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 mux.notifyAll();
             }
 
-            try {
-                forceLeaveLatch.await();
-            }
-            catch (InterruptedException e) {
-                throw new IgniteSpiException(e);
-            }
+            forceLeaveLatch.await();
         }
 
         /**
@@ -1537,7 +1529,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         else
                             leaveLatch.countDown();
                     }
-                    else if (msg == SPI_REJOIN) {
+                    else if (msg == SPI_RECONNECT) {
                         if (state == CONNECTED) {
                             if (reconnector != null) {
                                 reconnector.cancel();
@@ -1547,7 +1539,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             }
 
                             sockWriter.forceLeave();
-                            sockReader.forceLeave();
+                            sockReader.forceStopRead();
 
                             currSock = null;
 

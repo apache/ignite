@@ -1610,7 +1610,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void rejoin() throws IgniteSpiException {
+    @Override public void reconnect() throws IgniteSpiException {
         throw new UnsupportedOperationException("Rejoin is not supported for server.");
     }
 

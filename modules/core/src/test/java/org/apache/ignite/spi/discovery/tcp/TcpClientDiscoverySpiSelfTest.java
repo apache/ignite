@@ -44,7 +44,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -1791,8 +1790,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         clientNodeIds.add(client.cluster().localNode().id());
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return srv.cluster().nodes().size() == 2;
             }
         }, awaitTime());
@@ -1805,7 +1803,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientRejoin() throws Exception {
+    public void testForceClientReconnect() throws Exception {
         startServerNodes(1);
 
         startClientNodes(1);
@@ -1827,7 +1825,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_NODE_JOINED);
 
-        client.context().discovery().rejoin();
+        client.context().discovery().reconnect();
 
         assert latch.await(10, TimeUnit.SECONDS);
 
