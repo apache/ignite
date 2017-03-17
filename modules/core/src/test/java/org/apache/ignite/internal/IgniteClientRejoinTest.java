@@ -101,6 +101,9 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
             cfg.setClientMode(true);
         }
 
+        // TODO: IGNITE-4833
+        cfg.setPeerClassLoadingEnabled(false);
+
         return cfg;
     }
 
