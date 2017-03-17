@@ -718,18 +718,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                try {
-                                    if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
-                                        sendPrepareResponse(res);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
-                                        ", dhtTxId=" + tx.xidVersion() +
-                                        ", node=" + tx.nearNodeId() +
-                                        ", res=" + res,
-                                        ", tx=" + tx,
-                                        e);
-                                }
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                    sendPrepareResponse(res);
                             }
                         };
 
@@ -761,18 +751,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 }
             }
             else {
-                try {
-                    if (REPLIED_UPD.compareAndSet(this, 0, 1))
-                        sendPrepareResponse(res);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + tx.nearNodeId() +
-                        ", res=" + res,
-                        ", tx=" + tx,
-                        e);
-                }
+                if (REPLIED_UPD.compareAndSet(this, 0, 1))
+                    sendPrepareResponse(res);
             }
 
             return true;
@@ -783,14 +763,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 try {
                     sendPrepareResponse(res);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + tx.nearNodeId() +
-                        ", res=" + res,
-                        ", tx=" + tx,
-                        e);
                 }
                 finally {
                     // Will call super.onDone().
@@ -819,9 +791,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /**
      * @param res Response.
-     * @throws IgniteCheckedException If failed to send response.
      */
-    private void sendPrepareResponse(GridNearTxPrepareResponse res) throws IgniteCheckedException {
+    private void sendPrepareResponse(GridNearTxPrepareResponse res) {
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
             Throwable err = this.err;
 
@@ -837,13 +808,31 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 return;
             }
 
-            cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+            try {
+                cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
 
-            if (msgLog.isDebugEnabled()) {
-                msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res + ']');
+                }
+            }
+            catch (ClusterTopologyCheckedException e) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Failed to send prepare response, node left [txId=" + tx.nearXidVersion() + "," +
+                        ", dhtTxId=" + tx.xidVersion() +
+                        ", node=" + tx.nearNodeId() +
+                        ", res=" + res + ']');
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(msgLog, "Failed to send prepare response [txId=" + tx.nearXidVersion() + "," +
                     ", dhtTxId=" + tx.xidVersion() +
                     ", node=" + tx.nearNodeId() +
-                    ", res=" + res + ']');
+                    ", res=" + res,
+                    ", tx=" + tx + ']',
+                    e);
             }
         }
     }
