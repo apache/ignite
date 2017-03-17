@@ -215,7 +215,7 @@ class VectorImplementationsFixtures {
 
         /** {@inheritDoc} */
         @Override public Iterator<Vector> iterator() {
-            return iter.get();//(
+            return iter.get();
         }
 
         /** {@inheritDoc} */
