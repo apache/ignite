@@ -21,6 +21,7 @@ IgniteTargetOutStream @19
 IgniteTargetInStreamOutStream @20 
 IgniteTargetInObjectStreamOutObjectStream @21
 IgniteTargetInLongOutLong @24
+IgniteTargetInStreamAsync @25
 IgniteProcessorCompute @64 
 IgniteProcessorMessage @65 
 IgniteProcessorEvents @66 

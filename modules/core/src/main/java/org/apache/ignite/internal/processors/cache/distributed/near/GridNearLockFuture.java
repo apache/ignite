@@ -1045,6 +1045,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 first = false;
                                             }
 
+                                            assert !implicitTx() && !implicitSingleTx() : tx;
+
                                             req = new GridNearLockRequest(
                                                 cctx.cacheId(),
                                                 topVer,
@@ -1053,8 +1055,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 futId,
                                                 lockVer,
                                                 inTx(),
-                                                implicitTx(),
-                                                implicitSingleTx(),
                                                 read,
                                                 retval,
                                                 isolation(),

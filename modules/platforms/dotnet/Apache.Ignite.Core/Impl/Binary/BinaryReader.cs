@@ -354,13 +354,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public Guid? ReadGuid(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadGuid, BinaryUtils.TypeGuid);
+            return ReadField<Guid?>(fieldName, r => BinaryUtils.ReadGuid(r), BinaryUtils.TypeGuid);
         }
 
         /** <inheritdoc /> */
         public Guid? ReadGuid()
         {
-            return Read(BinaryUtils.ReadGuid, BinaryUtils.TypeGuid);
+            return Read<Guid?>(r => BinaryUtils.ReadGuid(r), BinaryUtils.TypeGuid);
         }
 
         /** <inheritdoc /> */
