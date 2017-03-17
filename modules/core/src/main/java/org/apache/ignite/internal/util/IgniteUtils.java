@@ -157,6 +157,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1411,6 +1412,22 @@ public abstract class IgniteUtils {
         }
 
         return ctor;
+    }
+
+    /**
+     * Gets constructor wich has only one parameter with type of {@link BinaryReader}
+     *
+     * @param clazz - Class to get constructor with BinaryReader parameter for
+     * @return - constructor with only one parameter of {@link BinaryReader} type
+     */
+    @Nullable public static Constructor<?> getConstructorBinaryReaderParameter(Class<?> clazz) {
+        for (Constructor constructor : clazz.getDeclaredConstructors()) {
+            if (constructor.getParameterTypes().length == 1) {
+                if (BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]))
+                    return constructor;
+            }
+        }
+        return null;
     }
 
     /**

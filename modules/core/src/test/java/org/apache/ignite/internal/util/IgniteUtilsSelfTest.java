@@ -27,6 +27,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -42,6 +43,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -717,6 +719,54 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
         assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetConstructorBinaryReaderParameter() throws Exception {
+        assertNull(U.getConstructorBinaryReaderParameter(SimpleClassNoConstructor.class));
+
+        Constructor<?> constructor;
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPublicConstructor.class));
+        assertEquals(constructor.getParameterTypes().length, 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderProtectedConstructor.class));
+        assertEquals(constructor.getParameterTypes().length, 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderPrivateConstructor.class));
+        assertEquals(constructor.getParameterTypes().length, 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+
+        assertNotNull(constructor = U.getConstructorBinaryReaderParameter(SimpleClassBinaryReaderDefaultConstructor.class));
+        assertEquals(constructor.getParameterTypes().length, 1);
+        assertTrue(BinaryReader.class.isAssignableFrom(constructor.getParameterTypes()[0]));
+    }
+
+    /** */
+    private static class SimpleClassNoConstructor {}
+
+    /** */
+    private static class SimpleClassBinaryReaderPublicConstructor {
+        public SimpleClassBinaryReaderPublicConstructor(BinaryReader reader){}
+    }
+
+    /** */
+    private static class SimpleClassBinaryReaderProtectedConstructor {
+        protected SimpleClassBinaryReaderProtectedConstructor(BinaryReader reader){}
+    }
+
+    /** */
+    private static class SimpleClassBinaryReaderPrivateConstructor {
+        private SimpleClassBinaryReaderPrivateConstructor(BinaryReader reader){}
+    }
+
+    /** */
+    private static class SimpleClassBinaryReaderDefaultConstructor {
+        SimpleClassBinaryReaderDefaultConstructor(BinaryReader reader){}
     }
 
     /**
