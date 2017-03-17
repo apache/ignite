@@ -310,7 +310,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         err = new TransactionRollbackException("Failed to commit transaction.", err);
 
                     try {
-                        tx.finish(err == null);
+                        tx.localFinish(err == null);
                     }
                     catch (IgniteCheckedException e) {
                         if (err != null)
@@ -402,7 +402,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         }
 
         try {
-            if (tx.finish(commit) || (!commit && tx.state() == UNKNOWN)) {
+            if (tx.localFinish(commit) || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
                     if (mappings.single()) {
                         GridDistributedTxMapping mapping = mappings.singleMapping();
