@@ -618,8 +618,6 @@ public class GridReduceQueryExecutor {
                             .parameters(mapQry.parameters(), mapQry.parameterIndexes()));
                 }
 
-                IgniteProductVersion minNodeVer = cctx.shared().exchange().minimumNodeVersion(topVer);
-
                 final boolean distributedJoins = qry.distributedJoins();
 
                 final Collection<ClusterNode> finalNodes = nodes;
