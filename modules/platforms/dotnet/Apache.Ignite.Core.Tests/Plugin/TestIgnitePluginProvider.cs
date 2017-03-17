@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             Context = context;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(false);
         }
 
         /** <inheritdoc /> */
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             Stopped = cancel;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(false);
         }
 
         /** <inheritdoc /> */
@@ -135,16 +135,19 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// <summary>
         /// Ensures that Ignite instance is functional.
         /// </summary>
-        private void EnsureIgniteWorks()
+        private void EnsureIgniteWorks(bool checkCache = true)
         {
             Assert.NotNull(Context);
             Assert.NotNull(Context.Ignite);
             Assert.NotNull(Context.IgniteConfiguration);
             Assert.NotNull(Context.PluginConfiguration);
 
-            var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
+            if (checkCache)
+            {
+                var cache = Context.Ignite.GetOrCreateCache<int, int>("pluginCache");
 
-            Assert.AreEqual(0, cache.GetSize());
+                Assert.AreEqual(0, cache.GetSize());
+            }
         }
     }
 }
