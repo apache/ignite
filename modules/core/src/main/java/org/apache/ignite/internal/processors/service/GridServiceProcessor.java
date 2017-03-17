@@ -1498,60 +1498,60 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
-        /**
-         * Deployment callback.
-         *
-         * @param dep Service deployment.
-         * @param topVer Topology version.
-         */
-        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
-            // Retry forever.
-            try {
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+    /**
+     * Deployment callback.
+     *
+     * @param dep Service deployment.
+     * @param topVer Topology version.
+     */
+    private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
+        // Retry forever.
+        try {
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer.equals(topVer))
-                    reassign(dep, topVer);
+            // If topology version changed, reassignment will happen from topology event.
+            if (newTopVer.equals(topVer))
+                reassign(dep, topVer);
+        }
+        catch (IgniteCheckedException e) {
+            if (!(e instanceof ClusterTopologyCheckedException))
+                log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
+
+            AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+
+            if (!newTopVer.equals(topVer)) {
+                assert newTopVer.compareTo(topVer) > 0;
+
+                // Reassignment will happen from topology event.
+                return;
             }
-            catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyCheckedException))
-                    log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
+            ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
+                private IgniteUuid id = IgniteUuid.randomUuid();
 
-                if (!newTopVer.equals(topVer)) {
-                    assert newTopVer.compareTo(topVer) > 0;
+                private long start = System.currentTimeMillis();
 
-                    // Reassignment will happen from topology event.
-                    return;
+                @Override public IgniteUuid timeoutId() {
+                    return id;
                 }
 
-                ctx.timeout().addTimeoutObject(new GridTimeoutObject() {
-                    private IgniteUuid id = IgniteUuid.randomUuid();
+                @Override public long endTime() {
+                    return start + RETRY_TIMEOUT;
+                }
 
-                    private long start = System.currentTimeMillis();
+                @Override public void onTimeout() {
+                    if (!busyLock.enterBusy())
+                        return;
 
-                    @Override public IgniteUuid timeoutId() {
-                        return id;
+                    try {
+                        // Try again.
+                        onDeployment(dep, topVer);
                     }
-
-                    @Override public long endTime() {
-                        return start + RETRY_TIMEOUT;
+                    finally {
+                        busyLock.leaveBusy();
                     }
-
-                    @Override public void onTimeout() {
-                        if (!busyLock.enterBusy())
-                            return;
-
-                        try {
-                            // Try again.
-                            onDeployment(dep, topVer);
-                        }
-                        finally {
-                            busyLock.leaveBusy();
-                        }
-                    }
-                });
+                }
+            });
         }
     }
 
