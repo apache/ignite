@@ -61,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -79,13 +78,6 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
  * DHT cache preloader.
  */
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
-    /**
-     * Rebalancing was refactored at version 1.5.0, but backward compatibility to previous implementation was saved.
-     * Node automatically chose communication protocol depends on remote node's version.
-     * Backward compatibility may be removed at Ignite 2.x.
-     */
-    public static final IgniteProductVersion REBALANCING_VER_2_SINCE = IgniteProductVersion.fromString("1.5.0");
-
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
