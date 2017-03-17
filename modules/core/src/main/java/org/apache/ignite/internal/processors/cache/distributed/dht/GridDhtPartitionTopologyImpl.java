@@ -579,7 +579,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (locPart != null) {
                         GridDhtPartitionState state = locPart.state();
 
-                        if (state == MOVING && cctx.kernalContext().state().active()) {
+                        // TODO: ask Alexey G why we didn't evict OWNING parts.
+                        if ((state == MOVING || state == OWNING) && cctx.kernalContext().state().active()) {
                             locPart.rent(false);
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq);
@@ -587,7 +588,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                             changed = true;
 
                             if (log.isDebugEnabled())
-                                log.debug("Evicting moving partition (it does not belong to affinity): " + locPart);
+                                log.debug("Evicting " + state + " partition (it does not belong to affinity): " + locPart);
                         }
                     }
                 }

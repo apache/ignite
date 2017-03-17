@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 public class IgniteDhtDemandedPartitionsMap implements Serializable {
     /** */
@@ -107,5 +108,10 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
             return Collections.emptySet();
 
         return Collections.unmodifiableSet(full);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDhtDemandedPartitionsMap.class, this);
     }
 }
