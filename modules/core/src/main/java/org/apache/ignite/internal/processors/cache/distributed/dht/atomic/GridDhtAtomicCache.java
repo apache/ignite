@@ -213,14 +213,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                 if (req.writeSynchronizationMode() != FULL_ASYNC) {
-                    if (req.responseHelper() != null) {
-                        GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
-
-                        if (res0 != null)
-                            sendNearUpdateReply(res.nodeId(), res0);
-                    }
-                    else
-                        sendNearUpdateReply(res.nodeId(), res);
+                    sendNearUpdateReply(res.nodeId(), res);
                 }
                 else {
                     if (res.remapTopologyVersion() != null)
@@ -1684,22 +1677,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final int stripeIdx,
         final UpdateReplyClosure completionCb
     ) {
-        IgniteInternalFuture<Object> forceFut;
+//        if (true) {
+//            updateAllAsyncInternal0(nodeId, req, ((IgniteThread)Thread.currentThread()).stripe(), completionCb);
+//
+//            return;
+//        }
 
-        if (stripeIdx != IgniteThread.GRP_IDX_UNASSIGNED
-            && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
-            && req.stripeMap() != null) {
-            int[] stripeIdxs = req.stripeMap().get(stripeIdx);
-
-            List<KeyCacheObject> keys = new ArrayList<>(stripeIdxs.length);
-
-            for (int i = 0; i < stripeIdxs.length; i++)
-                keys.add(req.key(stripeIdxs[i]));
-
-            forceFut = preldr.request(keys, req.topologyVersion());
-        }
-        else
-            forceFut = preldr.request(req, req.topologyVersion());
+        IgniteInternalFuture<Object> forceFut = preldr.request(req, req.topologyVersion());
 
         if (forceFut == null || forceFut.isDone()) {
             try {
@@ -1715,9 +1699,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 return;
             }
 
-            updateAllAsyncInternal0(nodeId, req, stripeIdx, completionCb);
+            updateAllAsyncInternal0(nodeId, req, ((IgniteThread)Thread.currentThread()).stripe(), completionCb);
         }
         else {
+            if (true)
+                throw new RuntimeException("error");
+
             forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> fut) {
                     try {
@@ -1761,9 +1748,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         completionCb.apply(req, res);
     }
 
-    private GridCacheVersion ver;
-
-
     /**
      * Executes local update after preloader fetched values.
      *
@@ -1774,36 +1758,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void updateAllAsyncInternal0(
         UUID nodeId,
-        GridNearAtomicAbstractUpdateRequest req,
+        final GridNearAtomicAbstractUpdateRequest req,
         int stripeIdx,
-        UpdateReplyClosure completionCb
+        final UpdateReplyClosure completionCb
     ) {
-        ClusterNode node = ctx.discovery().node(nodeId);
+        final ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null) {
             U.warn(msgLog, "Skip near update request, node originated update request left [" +
                 "futId=" + req.futureId() + ", node=" + nodeId + ']');
 
             return;
-        }
-
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
-            nodeId,
-            req.futureId(),
-            req.partition(),
-            false,
-            ctx.deploymentEnabled());
-
-        res.partition(req.partition());
-
-        int[] stripeIdxs = null;
-
-        if (stripeIdx != IgniteThread.GRP_IDX_UNASSIGNED
-            && req.directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE
-            && req.stripeMap() != null) {
-            stripeIdxs = req.stripeMap().get(stripeIdx);
-
-            res.stripe(stripeIdx);
         }
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
@@ -1830,103 +1795,41 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 try {
                     if (top.stopping()) {
-                        addAllKeysAsFailed(req, res, stripeIdxs, new IgniteCheckedException("Failed to perform cache operation " +
-                            "(cache is stopped): " + name()));
-
-                        completionCb.apply(req, res);
 
                         return;
                     }
 
                     // Do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
-                    if (true || req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
-                        locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
+                    if (req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
+                        Map<Integer, int[]> stripemap = req.stripeMap();
 
-                        boolean hasNear = ctx.discovery().cacheNearNode(node, name());
+                        final GridDhtAtomicAbstractUpdateFuture fut = createDhtFuture(null, req, req.size());
 
-                        // Assign next version for update inside entries lock.
-                        if (ver == null)
-                            ver = ctx.versions().next(top.topologyVersion());
+                        ((GridNearAtomicFullUpdateRequest)req).responseHelper(new NearAtomicResponseHelper(stripemap.size()));
 
-                        if (hasNear)
-                            res.nearVersion(ver);
-
-                        if (msgLog.isDebugEnabled()) {
-                            msgLog.debug("Assigned update version [futId=" + req.futureId() +
-                                ", writeVer=" + ver + ']');
+                        for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
+                            if (stripeIdx == e.getKey())
+                                update(fut, node, req, e.getValue(), completionCb);
+                            else {
+                                ctx.kernalContext().getStripedExecutorService().execute(e.getKey(), new Runnable() {
+                                    @Override public void run() {
+                                        try {
+                                            update(fut, node, req, e.getValue(), completionCb);
+                                        }
+                                        catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                });
+                            }
                         }
-
-                        assert ver != null : "Got null version for update request: " + req;
-
-                        boolean sndPrevVal = !top.rebalanceFinished(req.topologyVersion());
-
-                        int size = stripeIdxs == null ? req.size() : stripeIdxs.length;
-
-                        dhtFut = null;//createDhtFuture(ver, req, size);
-
-                        expiry = expiryPolicy(req.expiry());
-
-                        GridCacheReturn retVal = null;
-
-                        if (size > 1 &&                           // Several keys ...
-                            writeThrough() && !req.skipStore() && // and store is enabled ...
-                            !ctx.store().isLocal() &&             // and this is not local store ...
-                                                                  // (conflict resolver should be used for local store)
-                            !ctx.dr().receiveEnabled()            // and no DR.
-                            ) {
-                            // This method can only be used when there are no replicated entries in the batch.
-                            UpdateBatchResult updRes = updateWithBatch(node,
-                                hasNear,
-                                req,
-                                res,
-                                locked,
-                                ver,
-                                dhtFut,
-                                ctx.isDrEnabled(),
-                                taskName,
-                                expiry,
-                                sndPrevVal,
-                                stripeIdxs);
-
-                            deleted = updRes.deleted();
-                            dhtFut = updRes.dhtFuture();
-
-                            if (req.operation() == TRANSFORM)
-                                retVal = updRes.invokeResults();
-                        }
-                        else {
-                            UpdateSingleResult updRes = updateSingle(node,
-                                hasNear,
-                                req,
-                                res,
-                                locked,
-                                ver,
-                                dhtFut,
-                                ctx.isDrEnabled(),
-                                taskName,
-                                expiry,
-                                sndPrevVal,
-                                stripeIdxs);
-
-                            retVal = updRes.returnValue();
-                            deleted = updRes.deleted();
-                            dhtFut = updRes.dhtFuture();
-                        }
-
-                        if (retVal == null)
-                            retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, true);
-
-                        res.returnValue(retVal);
-
-                        if (dhtFut != null)
-                            ctx.mvcc().addAtomicFuture(dhtFut.id(), dhtFut);
                     }
                     else {
                         // Should remap all keys.
                         remap = true;
 
-                        res.remapTopologyVersion(top.topologyVersion());
+                        //res.remapTopologyVersion(top.topologyVersion());
                     }
                 }
                 finally {
@@ -1958,16 +1861,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             remap = true;
 
-            res.remapTopologyVersion(ctx.topology().topologyVersion());
+            //res.remapTopologyVersion(ctx.topology().topologyVersion());
         }
         catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
             U.error(log, "Unexpected exception during cache update", e);
 
-            addAllKeysAsFailed(req, res, stripeIdxs, e);
+            //addAllKeysAsFailed(req, res, stripeIdxs, e);
 
-            completionCb.apply(req, res);
+            //completionCb.apply(req, res);
 
             if (e instanceof Error)
                 throw e;
@@ -1975,23 +1878,91 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
 
-        if (remap) {
-            assert dhtFut == null;
-            res.stripe(-1);
+//        if (remap) {
+//            assert dhtFut == null;
+//            res.stripe(-1);
+//
+//            completionCb.apply(req, res);
+//        }
+//        else {
+//            if (dhtFut != null)
+//                dhtFut.map(node, res.returnValue(), res, completionCb);
+//            else
+//                completionCb.apply(req, res);
+//        }
+//
+//        if (req.writeSynchronizationMode() != FULL_ASYNC)
+//            req.cleanup(!node.isLocal());
+//
+//        sendTtlUpdateRequest(expiry);
+    }
+
+    private void update(
+        GridDhtAtomicAbstractUpdateFuture fut,
+        ClusterNode node,
+        GridNearAtomicAbstractUpdateRequest req,
+        int[] stripeIdxs,
+        UpdateReplyClosure completionCb) throws GridCacheEntryRemovedException {
+        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+            node.id(),
+            req.futureId(),
+            req.partition(),
+            false,
+            ctx.deploymentEnabled());
+
+        List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
+
+        boolean hasNear = ctx.discovery().cacheNearNode(node, name());
+
+        // Assign next version for update inside entries lock.
+        //if (ver == null)
+        GridCacheVersion ver = ctx.versions().next(ctx.topology().topologyVersion());
+
+        if (hasNear)
+            res.nearVersion(ver);
+
+        if (msgLog.isDebugEnabled()) {
+            msgLog.debug("Assigned update version [futId=" + req.futureId() +
+                ", writeVer=" + ver + ']');
+        }
+
+        assert ver != null : "Got null version for update request: " + req;
+
+        boolean sndPrevVal = false;//!top.rebalanceFinished(req.topologyVersion());
+
+        int size = stripeIdxs == null ? req.size() : stripeIdxs.length;
+
+        GridCacheReturn retVal = null;
+
+        UpdateSingleResult updRes = updateSingle(node,
+            hasNear,
+            req,
+            res,
+            locked,
+            ver,
+            null,
+            ctx.isDrEnabled(),
+            null,
+            null,
+            sndPrevVal,
+            stripeIdxs);
+
+        retVal = updRes.returnValue();
+
+        if (retVal == null)
+            retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, true);
+
+        res.returnValue(retVal);
+
+        unlockEntries(locked, null);
+
+        GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
+
+        if (res0 != null) {
+            fut.onDone();
 
             completionCb.apply(req, res);
         }
-        else {
-            if (dhtFut != null)
-                dhtFut.map(node, res.returnValue(), res, completionCb);
-            else
-                completionCb.apply(req, res);
-        }
-
-        if (req.writeSynchronizationMode() != FULL_ASYNC)
-            req.cleanup(!node.isLocal());
-
-        sendTtlUpdateRequest(expiry);
     }
 
     /**

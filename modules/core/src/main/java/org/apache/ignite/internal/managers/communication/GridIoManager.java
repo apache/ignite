@@ -856,23 +856,25 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 //        }
 
 
-        if (plc == GridIoPolicy.SYSTEM_POOL &&
-            (msg.partition() != Integer.MIN_VALUE ||
-                msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE)) {
-            Map<Integer, int[]> stripemap = msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE ?
-                ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() : null;
+        if (plc == GridIoPolicy.SYSTEM_POOL && (msg.partition() != Integer.MIN_VALUE)) {
+//            Map<Integer, int[]> stripemap = msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE ?
+//                ((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap() : null;
+//
+//            if (stripemap != null) {
+//                GridNearAtomicFullUpdateRequest msg0 = ((GridNearAtomicFullUpdateRequest)msg.message());
+//
+//                msg0.responseHelper(new NearAtomicResponseHelper(stripemap.keySet()));
+//
+//                for (Integer stripe : stripemap.keySet()) {
+//                    stripedExecutor.execute(stripe, c);
+//                }
+//            }
+//            else
 
-            if (stripemap != null) {
-                GridNearAtomicFullUpdateRequest msg0 = ((GridNearAtomicFullUpdateRequest)msg.message());
-
-                msg0.responseHelper(new NearAtomicResponseHelper(stripemap.keySet()));
-
-                for (Integer stripe : stripemap.keySet()) {
-                    stripedExecutor.execute(stripe, c);
-                }
-            }
-            else
-                stripedExecutor.execute(msg.partition(), c);
+//            if (msg.message().directType() == GridNearAtomicFullUpdateRequest.DIRECT_TYPE)
+//                stripedExecutor.execute(((GridNearAtomicFullUpdateRequest)msg.message()).stripeMap().keySet().iterator().next(), c);
+//            else
+            stripedExecutor.execute(msg.partition(), c);
 
             return;
         }
