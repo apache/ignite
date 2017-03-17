@@ -40,6 +40,23 @@ public class QueryEntity implements Serializable {
     /** Value type. */
     private String valType;
 
+    /** Key name.
+     * Can be used in field list to denote the key as a whole.
+     * Default is _key.
+     * */
+    private String keyFieldName;
+
+    /** Value name.
+     * Can be used in field list to denote the entire value.
+     * Default is _value.
+     * */
+    private String valueFieldName;
+
+    /** Name to be used for version field.
+     * Default is _ver.
+     * */
+    private String versionFieldName;
+
     /** Fields available for query. A map from field name to type name. */
     private LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
@@ -107,6 +124,54 @@ public class QueryEntity implements Serializable {
      */
     public void setValueType(String valType) {
         this.valType = valType;
+    }
+
+    /**
+     * Gets key field name.
+     * @return Key name.
+     */
+    public String getKeyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * Sets key field name.
+     * @param keyFieldName Key name.
+     */
+    public void setKeyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+    }
+
+    /**
+     * Get value field name.
+     * @return Value name.
+     */
+    public String getValueFieldName() {
+        return valueFieldName;
+    }
+
+    /**
+     * Sets value field name.
+     * @param valueFieldName value name.
+     */
+    public void setValueFieldName(String valueFieldName) {
+        this.valueFieldName = valueFieldName;
+    }
+
+    /**
+     * Gets version field name.
+     * @return version field name.
+     */
+    public String getVersionFieldName() {
+        return versionFieldName;
+    }
+
+    /**
+     * Sets version field name.
+     * @param versionFieldName version field name.
+     */
+    public void setVersionFieldName(String versionFieldName) {
+        this.versionFieldName = versionFieldName;
     }
 
     /**

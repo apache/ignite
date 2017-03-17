@@ -211,7 +211,7 @@ public class GridH2Table extends TableBase {
 
         assert desc != null;
 
-        GridH2Row searchRow = desc.createRow(key, null, 0);
+        GridH2Row searchRow = desc.createRow(key, null, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -469,16 +469,17 @@ public class GridH2Table extends TableBase {
      *
      * @param key Key.
      * @param val Value.
+     * @param ver Version.
      * @param expirationTime Expiration time.
      * @param rmv If {@code true} then remove, else update row.
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+    public boolean update(CacheObject key, CacheObject val, @Nullable byte[] ver, long expirationTime, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, val, expirationTime);
+        GridH2Row row = desc.createRow(key, val, ver, expirationTime);
 
         if (!rmv)
             ((GridH2AbstractKeyValueRow)row).valuesCache(new Value[getColumns().length]);

@@ -550,14 +550,14 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from \"persPart\".Person2 p, (select * from \"orgRepl\".Organization) o " +
+                    "from \"persPart\".Person2 p, (select _key, _val, * from \"orgRepl\".Organization) o " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
                 false,
                 0,
                 "select p._key k1, o._key k2 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPart\".Person2 p " +
                     "where p.orgId = o._key");
 
             checkQueryPlan(persPart,
@@ -770,7 +770,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     sql);
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2.name and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,
@@ -780,7 +780,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                     "batched:unicast");
 
                 sql = "select p1._key k1, p2._key k2, o._key k3 " +
-                    "from (select * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
+                    "from (select _key, _val, * from \"orgRepl\".Organization) o, \"persPartAff\".Person2 p1, \"persPart\".Person2 p2 " +
                     "where p1._key=p2._key and p2.orgId = o._key";
 
                 checkQueryPlan(persPart,

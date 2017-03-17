@@ -68,7 +68,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
+    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, @Nullable byte[] ver, long expirationTime)
         throws IgniteCheckedException;
 
     /**
@@ -163,4 +163,17 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return {@code True} if index should support snapshots.
      */
     public boolean snapshotableIndex();
+
+    /**
+     * Maps alias column index to proper column index
+     * @param col column index
+     * @return result
+     */
+    public int remapColumnId(int col);
+
+    /**
+     * @return number of hidden columns
+     */
+    public int getHiddenColumnCount();
+
 }

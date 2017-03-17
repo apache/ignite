@@ -2394,6 +2394,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** Default key field name */
+        private final String DFLT_KEY_FIELD_NAME = "_key";
+
+        /** Default value field name */
+        private final String DFLT_VAL_FIELD_NAME = "_val";
+
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
             final GridKernalContext ctx = ((IgniteKernal)ignite).context();
@@ -2432,13 +2438,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        int size = 2 + type.fields().size();
+                        String keyFieldName = U.firstNotNull(type.keyFieldName(), DFLT_KEY_FIELD_NAME);
+                        String valFieldName = U.firstNotNull(type.valueFieldName(), DFLT_VAL_FIELD_NAME);
+
+                        int size = type.fields().size() +
+                            (fields.containsKey(keyFieldName) ? 1 : 0) +
+                            (fields.containsKey(valFieldName) ? 1 : 0);
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
-                        // _KEY and _VAL are not included in GridIndexingTypeDescriptor.valueFields
-                        fieldsMap.put("_KEY", type.keyClass().getName());
-                        fieldsMap.put("_VAL", type.valueClass().getName());
+                        if (!fields.containsKey(keyFieldName))
+                            fieldsMap.put(keyFieldName.toUpperCase(), type.keyClass().getName());
+
+                        if (!fields.containsKey(valFieldName))
+                            fieldsMap.put(valFieldName.toUpperCase(), type.valueClass().getName());
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());

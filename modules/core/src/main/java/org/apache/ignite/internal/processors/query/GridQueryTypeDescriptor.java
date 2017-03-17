@@ -121,4 +121,25 @@ public interface GridQueryTypeDescriptor {
      * @return Affinity key.
      */
     public String affinityKey();
+
+    /**
+     * Gets key field name.
+     * @return Key field name.
+     */
+    public String keyFieldName();
+
+    /**
+     * Gets value field name.
+     * @return value field name.
+     */
+    public String valueFieldName();
+
+    /**
+     * Gets version field name.
+     * @return value field name.
+     */
+    public String versionFieldName();
+
+
+
 }

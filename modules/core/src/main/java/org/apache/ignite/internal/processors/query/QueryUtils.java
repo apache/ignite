@@ -152,6 +152,10 @@ public class QueryUtils {
         desc.keyTypeName(qryEntity.getKeyType());
         desc.valueTypeName(qryEntity.getValueType());
 
+        desc.keyFieldName(qryEntity.getKeyFieldName());
+        desc.valueFieldName(qryEntity.getValueFieldName());
+        desc.versionFieldName(qryEntity.getVersionFieldName());
+
         if (binaryEnabled && keyOrValMustDeserialize) {
             if (keyMustDeserialize)
                 mustDeserializeClss.add(keyCls);

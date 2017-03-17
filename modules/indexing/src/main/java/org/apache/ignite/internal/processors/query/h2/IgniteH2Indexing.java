@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -191,7 +192,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
 
@@ -230,6 +230,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
+
+    /** Version field name. */
+    public static final String VER_FIELD_NAME = "_VER";
 
     /** */
     private static final Field COMMAND_FIELD;
@@ -581,7 +584,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (TableDescriptor tbl : tbls) {
                 if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, null, 0, true)) {
+                    if (tbl.tbl.update(key, null, null, 0, true)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
 
@@ -645,7 +648,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, expirationTime, false);
+        tbl.tbl.update(k, v, ver, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
@@ -708,7 +711,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
-                if (tbl.tbl.update(key, val, 0, true)) {
+                if (tbl.tbl.update(key, val, null, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
@@ -1633,7 +1636,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if(tableAlias != null)
             t = tableAlias;
 
-        qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
+        final String keyFieldName = (tbl.type().keyFieldName() == null) ? KEY_FIELD_NAME : escapeName(tbl.type().keyFieldName(), tbl.schema.escapeAll());
+        final String valFieldName = (tbl.type().valueFieldName() == null) ? VAL_FIELD_NAME : escapeName(tbl.type().valueFieldName(), tbl.schema.escapeAll());
+
+        qry = "SELECT " + t + "." + keyFieldName + ", " + t + "." + valFieldName + from + qry;
 
         return qry;
     }
@@ -1774,12 +1780,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         SB sql = new SB();
 
         sql.a("CREATE TABLE ").a(tbl.fullTableName()).a(" (")
-            .a(KEY_FIELD_NAME).a(' ').a(keyType).a(" NOT NULL");
+           .a(KEY_FIELD_NAME).a(' ').a(keyType);
 
-        sql.a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
+        if (!tbl.type().fields().isEmpty() || tbl.type().keyFieldName() != null)
+                sql.a(" INVISIBLE");
 
-        for (Map.Entry<String, Class<?>> e: tbl.type().fields().entrySet())
-            sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
+        sql.a(" NOT NULL")
+           .a(',').a(VAL_FIELD_NAME).a(' ').a(valTypeStr);
+
+        if (!tbl.type().fields().isEmpty() || tbl.type().valueFieldName() != null)
+            sql.a(" INVISIBLE");
+
+        sql.a(',').a(VER_FIELD_NAME).a(" BINARY INVISIBLE");
+
+        if (tbl.type().keyFieldName() != null && !tbl.type().fields().containsKey(tbl.type().keyFieldName())) {
+            sql.a(',').a(escapeName(tbl.type().keyFieldName(), escapeAll)).a(' ').a(keyType);
+
+            if (!tbl.type().fields().isEmpty())
+                    sql.a(" INVISIBLE");
+
+            sql.a(" NOT NULL");
+        }
+
+        if (tbl.type().valueFieldName() != null && !tbl.type().fields().containsKey(tbl.type().valueFieldName())) {
+            sql.a(',').a(escapeName(tbl.type().valueFieldName(), escapeAll)).a(' ').a(valTypeStr);
+
+            if (!tbl.type().fields().isEmpty())
+                sql.a(" INVISIBLE");
+        }
+
+        if (tbl.type().versionFieldName() != null &&
+                !tbl.type().fields().containsKey(tbl.type().versionFieldName()))
+            sql.a(',').a(escapeName(tbl.type().versionFieldName(), escapeAll)).a(" BINARY INVISIBLE");
+
+        for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet()) {
+           sql.a(',').a(escapeName(e.getKey(), escapeAll)).a(' ').a(dbTypeFromClass(e.getValue()));
+        }
 
         sql.a(')');
 
@@ -2758,7 +2794,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
+            IndexColumn keyCol = tbl.indexColumn(GridH2AbstractKeyValueRow.KEY_COL, SortOrder.ASCENDING);
             IndexColumn affCol = tbl.getAffinityKeyColumn();
 
             if (affCol != null && equal(affCol, keyCol))
@@ -3135,6 +3171,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final GridQueryProperty[] props;
 
+        /** */
+        private final int keyAliasColumnId;
+
+        /** */
+        private final int valueAliasColumnId;
+
+        /** */
+        private final int verAliasColumnId;
+
+        /** */
+        private final int hiddenColumnCount;
+
         /**
          * @param type Type descriptor.
          * @param schema Schema.
@@ -3151,9 +3199,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Map<String, Class<?>> allFields = new LinkedHashMap<>();
 
             allFields.putAll(type.fields());
-
             fields = allFields.keySet().toArray(new String[allFields.size()]);
-
             fieldTypes = new int[fields.length];
 
             Class[] classes = allFields.values().toArray(new Class[fields.length]);
@@ -3163,6 +3209,49 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             keyType = DataType.getTypeFromClass(type.keyClass());
             valType = DataType.getTypeFromClass(type.valueClass());
+
+            int keyColumnId = -1;
+            int valueColumnId = -1;
+            int verColumnId = -1;
+
+            int extra = GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
+            final List<String> fieldsList = Arrays.asList(fields);
+            if (type.keyFieldName() != null) {
+                keyColumnId = fieldsList.indexOf(type.keyFieldName());
+                if (keyColumnId < 0)
+                    extra++;
+            }
+
+            if (type.valueFieldName() != null) {
+                valueColumnId = fieldsList.indexOf(type.valueFieldName());
+                if (valueColumnId < 0)
+                    extra++;
+            }
+
+            if (type.versionFieldName() != null) {
+                verColumnId = fieldsList.indexOf(type.versionFieldName());
+                if (verColumnId < 0)
+                    extra++;
+            }
+
+            int count = GridH2AbstractKeyValueRow.DEFAULT_COLUMNS_COUNT;
+
+            if (type.keyFieldName() != null)
+                keyAliasColumnId = (keyColumnId < 0) ? count++: keyColumnId + extra;
+            else
+                keyAliasColumnId = -1;
+
+            if (type.valueFieldName() != null)
+                valueAliasColumnId = (valueColumnId < 0) ? count++: valueColumnId + extra;
+            else
+                valueAliasColumnId = -1;
+
+            if (type.versionFieldName() != null)
+                verAliasColumnId = (verColumnId < 0) ? count++: verColumnId + extra;
+            else
+                verAliasColumnId = -1;
+
+            hiddenColumnCount = count;
 
             props = new GridQueryProperty[fields.length];
 
@@ -3291,15 +3380,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
+        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, @Nullable byte[] ver, long expirationTime)
             throws IgniteCheckedException {
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
                     return GridH2RowFactory.create(wrap(key, keyType));
 
                 return schema.offheap == null ?
-                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
-                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
+                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, ver, expirationTime) :
+                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, ver, expirationTime);
             }
             catch (ClassCastException e) {
                 throw new IgniteCheckedException("Failed to convert key to SQL type. " +
@@ -3387,6 +3476,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public boolean snapshotableIndex() {
             return snapshotableIdx;
+        }
+
+        /** {@inheritDoc} */
+        public int remapColumnId(int col) {
+            if (col == keyAliasColumnId)
+                return GridH2AbstractKeyValueRow.KEY_COL;
+            if (col == valueAliasColumnId)
+                return GridH2AbstractKeyValueRow.VAL_COL;
+            if (col == verAliasColumnId)
+                return GridH2AbstractKeyValueRow.VER_COL;
+            return col;
+        }
+
+        /** {@inheritDoc} */
+        public int getHiddenColumnCount() {
+            return hiddenColumnCount;
         }
     }
 
