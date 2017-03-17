@@ -379,6 +379,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Create exchange worker task for custom discovery message.
+     *
+     * @param msg Custom discovery message.
+     * @return Task or {@code null} if message doesn't require any special processing.
+     */
+    public CachePartitionExchangeWorkerTask exchangeTaskForCustomDiscoveryMessage(DiscoveryCustomMessage msg) {
+        return null;
+    }
+
+    /**
+     * Process custom exchange task.
+     *
+     * @param task Task.
+     */
+    public void processCustomExchangeTask(CachePartitionExchangeWorkerTask task) {
+        // No-op.
+    }
+
+    /**
      * @param c Ignite configuration.
      * @param cc Configuration to validate.
      * @param cacheType Cache type.
