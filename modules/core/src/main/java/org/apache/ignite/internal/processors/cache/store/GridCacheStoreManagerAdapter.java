@@ -87,13 +87,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** */
     private static final int SES_ATTR = GridMetadataAwareAdapter.EntryKey.CACHE_STORE_MANAGER_KEY.key();
 
-    /**
-     * Behavior can be changed by setting {@link IgniteSystemProperties#IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY} property
-     * to {@code True}.
-     */
-    private static final IgniteProductVersion LOCAL_STORE_KEEPS_PRIMARY_AND_BACKUPS_SINCE =
-        IgniteProductVersion.fromString("1.5.22");
-
     /** */
     protected CacheStore<Object, Object> store;
 
@@ -239,18 +232,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (isLocal()) {
-            for (ClusterNode node : cctx.kernalContext().cluster().get().forRemotes().nodes()) {
-                if (LOCAL_STORE_KEEPS_PRIMARY_AND_BACKUPS_SINCE.compareTo(node.version()) > 0 &&
-                    !IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY)) {
-                    IgniteProductVersion v = LOCAL_STORE_KEEPS_PRIMARY_AND_BACKUPS_SINCE;
+            if (!IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY)) {
 
-                    log.warning("Since Ignite " + v.major() + "." + v.minor() + "." + v.maintenance() +
-                        " Local Store keeps primary and backup partitions. " +
-                        "To keep primary partitions only please set system property " +
-                        IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY + " to 'true'.");
-
-                    break;
-                }
+                log.warning("Local Store keeps primary and backup partitions. " +
+                    "To keep primary partitions only please set system property " +
+                    IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY + " to 'true'.");
             }
         }
     }
