@@ -114,6 +114,12 @@ import org.apache.ignite.lang.IgniteUuid;
  *     tx.commit();
  * }
  * </pre>
+ *
+ * <p>
+ * <h1 class="header">Note</h1>
+ * Remember that all changes inside transaction stay visible inside the same transaction. For example, if you try
+ * to 'get' values after successful put operation - you will get the value, which you 'put', but not value,
+ * which another transaction committed between this 'put' and 'get'.
  */
 public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     /**
@@ -234,14 +240,14 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws TransactionHeuristicException If transaction has entered an unknown state.
      */
     @IgniteAsyncSupported
-    public void commit() throws IgniteException;
+    public void commit() throws TransactionException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
      * @throws IgniteException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws IgniteException;
+    @Override public void close() throws TransactionException;
 
     /**
      * Rolls back this transaction.
@@ -249,5 +255,5 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws IgniteException If rollback failed.
      */
     @IgniteAsyncSupported
-    public void rollback() throws IgniteException;
+    public void rollback() throws TransactionException;
 }

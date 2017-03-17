@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.TransactionCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -533,7 +534,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             boolean finished = finish(commit);
 
             if (!finished)
-                err = new IgniteCheckedException("Failed to finish transaction [commit=" + commit +
+                err = new TransactionCheckedException("Failed to finish transaction [commit=" + commit +
                     ", tx=" + CU.txString(this) + ']');
         }
         catch (IgniteCheckedException e) {

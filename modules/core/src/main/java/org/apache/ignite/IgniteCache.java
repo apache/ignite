@@ -61,6 +61,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
+import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
@@ -242,9 +243,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    public V getAndPutIfAbsent(K key, V val) throws CacheException;
+    public V getAndPutIfAbsent(K key, V val) throws CacheException, TransactionException;
 
     /**
      * Creates a {@link Lock} instance associated with passed key.
@@ -460,19 +462,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
-        Object... args);
+        Object... args) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public V get(K key);
+    @Override public V get(K key) throws TransactionException;
 
     /**
      * Gets an entry from the cache.
@@ -492,18 +496,20 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    public CacheEntry<K, V> getEntry(K key);
+    public CacheEntry<K, V> getEntry(K key) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public Map<K, V> getAll(Set<? extends K> keys);
+    @Override public Map<K, V> getAll(Set<? extends K> keys) throws TransactionException;
 
     /**
      * Gets a collection of entries from the {@link Cache}.
@@ -526,9 +532,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
+    public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) throws TransactionException;
 
     /**
      * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
@@ -545,9 +552,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean containsKey(K key);
+    @Override public boolean containsKey(K key) throws TransactionException;
 
     /**
      * Determines if the {@link Cache} contains entries for the specified keys.
@@ -557,108 +565,120 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    public boolean containsKeys(Set<? extends K> keys);
+    public boolean containsKeys(Set<? extends K> keys) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public void put(K key, V val);
+    @Override public void put(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public V getAndPut(K key, V val);
+    @Override public V getAndPut(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public void putAll(Map<? extends K, ? extends V> map);
+    @Override public void putAll(Map<? extends K, ? extends V> map) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean putIfAbsent(K key, V val);
+    @Override public boolean putIfAbsent(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean remove(K key);
+    @Override public boolean remove(K key) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean remove(K key, V oldVal);
+    @Override public boolean remove(K key, V oldVal) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public V getAndRemove(K key);
+    @Override public V getAndRemove(K key) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean replace(K key, V oldVal, V newVal);
+    @Override public boolean replace(K key, V oldVal, V newVal) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public boolean replace(K key, V val);
+    @Override public boolean replace(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public V getAndReplace(K key, V val);
+    @Override public V getAndReplace(K key, V val) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public void removeAll(Set<? extends K> keys);
+    @Override public void removeAll(Set<? extends K> keys) throws TransactionException;
 
     /**
      * Removes all of the mappings from this cache.
@@ -745,9 +765,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
+    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException;
 
     /**
      * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
@@ -777,15 +798,17 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
+     * @see TransactionException
      */
     @IgniteAsyncSupported
-    public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments);
+    public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException;
 
     /**
      * {@inheritDoc}
      * @throws TransactionTimeoutException If operation performs within transaction and timeout occurred.
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
+     * @see TransactionException
      */
     @IgniteAsyncSupported
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
@@ -832,10 +855,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionRollbackException If operation performs within transaction that automatically rolled back.
      * @throws TransactionHeuristicException If operation performs within transaction that entered an unknown state.
      * @see CacheEntryProcessor
+     * @see TransactionException
      */
     @IgniteAsyncSupported
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
+        CacheEntryProcessor<K, V, T> entryProcessor, Object... args) throws TransactionException;
 
     /**
      * Closes this cache instance.
