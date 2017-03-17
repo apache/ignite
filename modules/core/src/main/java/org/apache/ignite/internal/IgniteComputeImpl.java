@@ -119,8 +119,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            saveOrGet(ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, affKey,
-                job, prj.nodes()));
+            saveOrGet(ctx.closure().affinityRun(Collections.singletonList(cacheName), partId, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -149,7 +148,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, affKey, job, prj.nodes()));
+            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -168,7 +167,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, null, job, prj.nodes()));
+            saveOrGet(ctx.closure().affinityRun(cacheNames, partId, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -194,7 +193,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return saveOrGet(ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, affKey, job,
+            return saveOrGet(ctx.closure().affinityCall(Collections.singletonList(cacheName), partId, job,
                 prj.nodes()));
         }
         catch (IgniteCheckedException e) {
@@ -226,7 +225,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
                 throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
                     + affKey + ']');
 
-            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, affKey, job, prj.nodes()));
+            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -245,7 +244,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, null, job, prj.nodes()));
+            return saveOrGet(ctx.closure().affinityCall(cacheNames, partId, job, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

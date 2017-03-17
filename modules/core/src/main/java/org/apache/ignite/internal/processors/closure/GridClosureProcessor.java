@@ -446,7 +446,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@NotNull Collection<String> cacheNames,
         int partId,
-        @Nullable Object affKey,
         Callable<R> job,
         @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert partId >= 0 : partId;
@@ -467,7 +466,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
+            return ctx.task().execute(new T5(node, job, cacheNames, partId, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -477,7 +476,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      * @param cacheNames Cache names.
      * @param partId Partition.
-     * @param affKey Affinity key.
      * @param job Job.
      * @param nodes Grid nodes.
      * @return Job future.
@@ -485,7 +483,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public ComputeTaskInternalFuture<?> affinityRun(@NotNull Collection<String> cacheNames,
         int partId,
-        @Nullable Object affKey,
         Runnable job,
         @Nullable Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert partId >= 0 : partId;
@@ -506,7 +503,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T4(node, job, cacheNames, partId, affKey, mapTopVer), null, false);
+            return ctx.task().execute(new T4(node, job, cacheNames, partId, mapTopVer), null, false);
         }
         finally {
             busyLock.readUnlock();
@@ -518,6 +515,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param job Closure to execute.
      * @param nodes Grid nodes.
      * @param sys If {@code true}, then system pool will be used.
+     * @param timeout Timeout.
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
@@ -1324,9 +1322,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Runnable job;
 
         /** */
-        private Object affKey;
-
-        /** */
         private int partId;
 
         /** */
@@ -1335,16 +1330,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Collection<String> affCacheNames;
 
-
         /**
          * @param node Cluster node.
          * @param job Job affinity partition.
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
-         * @param affKey Affinity key.
          * @param topVer Affinity topology version.
          */
-        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId, Object affKey,
+        private T4(ClusterNode node, Runnable job, Collection<String> affCacheNames, int partId,
             AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
@@ -1354,7 +1347,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.job = job;
             this.affCacheNames = affCacheNames;
             this.partId = partId;
-            this.affKey = affKey;
             this.topVer = topVer;
         }
 
@@ -1377,11 +1369,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Nullable @Override public AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object affinityKey() {
-            return affKey;
-        }
     }
 
     /**
@@ -1398,9 +1385,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Callable<R> job;
 
         /** */
-        private Object affKey;
-
-        /** */
         private int partId;
 
         /** */
@@ -1409,21 +1393,17 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private Collection<String> affCacheNames;
 
-
-
         /**
          * @param node Cluster node.
          * @param job Job affinity partition.
          * @param affCacheNames Affinity caches.
          * @param partId Partition.
-         * @param affKey Affinity key.
          * @param topVer Affinity topology version.
          */
         private T5(ClusterNode node,
             Callable<R> job,
             Collection<String> affCacheNames,
             int partId,
-            Object affKey,
             AffinityTopologyVersion topVer) {
             super(U.peerDeployAware0(job));
 
@@ -1431,7 +1411,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             this.job = job;
             this.affCacheNames = affCacheNames;
             this.partId = partId;
-            this.affKey = affKey;
             this.topVer = topVer;
         }
 
@@ -1448,11 +1427,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             }
 
             throw new IgniteException("Failed to find successful job result: " + res);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object affinityKey() {
-            return affKey;
         }
 
         /** {@inheritDoc} */
