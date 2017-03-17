@@ -63,7 +63,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
     protected long time;
 
     /** Write observer for metrics updates. */
-    protected IgfsDataManager.WriteObserver writeObserver;
+    protected IgfsDataManager.MetricsWriteObserver writeObserver;
 
     /**
      * Constructs file output stream.
@@ -89,7 +89,7 @@ abstract class IgfsAbstractOutputStream extends IgfsOutputStream {
      *
      * @return The observer.
      */
-    protected abstract IgfsDataManager.WriteObserver createWriteObserver();
+    protected abstract IgfsDataManager.MetricsWriteObserver createWriteObserver();
 
     /**
      * Optimize buffer size.

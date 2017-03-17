@@ -80,8 +80,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizab
 
     /**
      * A constructor that should be used for DUAL modes: it allows to specify
-     * the blockSize (size of IGFS cache value) for a secondary file system file, which normally
-     * should have blockSize == groupBlockSize == block size on the secondary file system.
+     * the blockSize (size of IGFS cache value) for a secondary file system file
      *
      * @param igfsFile The file to copy.
      * @param blockSize The IGFS block size.

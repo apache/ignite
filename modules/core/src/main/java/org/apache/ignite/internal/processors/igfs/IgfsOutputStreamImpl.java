@@ -101,7 +101,7 @@ class IgfsOutputStreamImpl extends IgfsAbstractOutputStream {
         }
     }
 
-    @Override protected IgfsDataManager.WriteObserver createWriteObserver() {
+    @Override protected IgfsDataManager.MetricsWriteObserver createWriteObserver() {
         assert igfsCtx != null;
         assert fileInfo != null;
 
