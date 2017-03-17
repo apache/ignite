@@ -917,6 +917,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         first = false;
                                     }
 
+                                    assert !implicitTx() && !implicitSingleTx() : tx;
+
                                     req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
@@ -925,8 +927,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         futId,
                                         lockVer,
                                         inTx(),
-                                        implicitTx(),
-                                        implicitSingleTx(),
                                         read,
                                         retval,
                                         isolation(),
@@ -981,9 +981,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     assert tx == null || marked;
                 }
             }
-
-            if (inTx() && req != null)
-                req.hasTransforms(tx.hasTransforms());
 
             if (!distributedKeys.isEmpty()) {
                 mapping.distributedKeys(distributedKeys);

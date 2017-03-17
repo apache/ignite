@@ -510,7 +510,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeBoolean(event0.isNear());
             writeNode(writer, event0.eventNode());
             writer.writeObject(event0.key());
-            PlatformUtils.writeIgniteUuid(writer, event0.xid());
+            writer.writeObject(event0.xid());
             writer.writeObject(event0.newValue());
             writer.writeObject(event0.oldValue());
             writer.writeBoolean(event0.hasOldValue());
@@ -589,8 +589,8 @@ public class PlatformContextImpl implements PlatformContext {
 
             writer.writeString(event0.taskName());
             writer.writeString(event0.taskClassName());
-            PlatformUtils.writeIgniteUuid(writer, event0.taskSessionId());
-            PlatformUtils.writeIgniteUuid(writer, event0.jobId());
+            writer.writeObject(event0.taskSessionId());
+            writer.writeObject(event0.jobId());
             writeNode(writer, event0.taskNode());
             writer.writeUuid(event0.taskSubjectId());
         }
@@ -610,7 +610,7 @@ public class PlatformContextImpl implements PlatformContext {
 
             writer.writeString(event0.taskName());
             writer.writeString(event0.taskClassName());
-            PlatformUtils.writeIgniteUuid(writer, event0.taskSessionId());
+            writer.writeObject(event0.taskSessionId());
             writer.writeBoolean(event0.internal());
             writer.writeUuid(event0.subjectId());
         }
@@ -625,7 +625,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param evt Event.
      */
     private void writeCommonEventData(BinaryRawWriterEx writer, EventAdapter evt) {
-        PlatformUtils.writeIgniteUuid(writer, evt.id());
+        writer.writeObject(evt.id());
         writer.writeLong(evt.localOrder());
         writeNode(writer, evt.node());
         writer.writeString(evt.message());

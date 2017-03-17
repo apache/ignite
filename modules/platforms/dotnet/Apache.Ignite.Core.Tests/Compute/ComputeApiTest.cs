@@ -118,6 +118,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Type: enum array from cache. */
         private const int EchoTypeEnumArrayFromCache = 21;
+                
+        /** Echo type: IgniteUuid. */
+        private const int EchoTypeIgniteUuid = 22;
 
         /** First node. */
         private IIgnite _grid1;
@@ -1029,6 +1032,22 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, enumMeta.Fields.Count);
 
             Assert.AreEqual(enumVal, res);
+        }
+
+        /// <summary>
+        /// Tests that IgniteGuid in .NET maps to IgniteUuid in Java.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskIgniteUuid()
+        {
+            var guid = Guid.NewGuid();
+
+            _grid1.GetCache<int, object>(null)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
+
+            Assert.AreEqual(guid, res.GlobalId);
+            Assert.AreEqual(25, res.LocalId);
         }
 
         /// <summary>
