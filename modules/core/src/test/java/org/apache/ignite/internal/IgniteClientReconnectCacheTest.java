@@ -700,9 +700,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 try {
                     Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
 
-                    fail();
+                    // Commented due to IGNITE-4473, because
+                    // IgniteClientDisconnectedException won't
+                    // be thrown, but client will reconnect.
+//                    fail();
 
-                    return false;
+                    return true;
                 }
                 catch (IgniteClientDisconnectedException e) {
                     log.info("Expected start error: " + e);
@@ -745,6 +748,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         }
         finally {
             srvCommSpi.stopBlock(false);
+
+            System.out.println("== Stopped block");
         }
 
         assertTrue(fut.get());

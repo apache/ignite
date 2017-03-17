@@ -515,9 +515,9 @@ public abstract class IgniteUtils {
         boolean assertionsEnabled0 = true;
 
         try {
-            assert false;
-
-            assertionsEnabled0 = false;
+//            assert false;
+//
+//            assertionsEnabled0 = false;
         }
         catch (AssertionError ignored) {
             assertionsEnabled0 = true;
