@@ -1799,9 +1799,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.7");
 
         /** */
-        private static final String[] SER_FIELDS = {"waitedCacheInit", "jCtx", "log"};
-
-        /** */
         private final String svcName;
 
         /** */
