@@ -1396,8 +1396,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         name,
                         key,
                         reentrantLockView,
-                        dsCacheCtx,
-                        create);
+                        dsCacheCtx);
 
                     dsMap.put(key, reentrantLock0);
 
