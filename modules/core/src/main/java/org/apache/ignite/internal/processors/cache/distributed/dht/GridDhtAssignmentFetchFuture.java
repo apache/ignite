@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteNeedReconnectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -204,14 +203,14 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                         "continue to another node): " + node);
                 }
                 catch (IgniteCheckedException e) {
-                    if (ctx.discovery().reconnectSupported() && X.hasCause(e, IOException.class)) {
-                        onDone(new IgniteNeedReconnectException(ctx.localNode(), e));
-
-                        return;
+                    if (log0.isDebugEnabled() || !X.hasCause(e, IOException.class)) {
+                        U.error(log0, "Failed to request affinity assignment from remote node (will " +
+                            "continue to another node): " + node, e);
                     }
-
-                    U.warn(log0, "Failed to request affinity assignment from remote node (will " +
-                        "continue to another node): " + node);
+                    else {
+                        U.warn(log0, "Failed to request affinity assignment from remote node (will " +
+                            "continue to another node): " + node);
+                    }
                 }
             }
 
