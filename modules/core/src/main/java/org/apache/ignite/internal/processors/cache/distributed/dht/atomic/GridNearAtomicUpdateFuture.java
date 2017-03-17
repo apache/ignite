@@ -982,8 +982,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         Map<UUID, PrimaryRequestState> pendingMappings = U.newHashMap(topNodes.size());
 
-        int part = (int)(futId & 0xFFFF);
-
         // Create mappings first, then send messages.
         for (Object key : keys) {
             if (key == null)
@@ -1075,8 +1073,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                     keys.size(),
                     stripes
                 );
-
-                req.partition(part);
 
                 mapped = new PrimaryRequestState(req, nodes, false);
 

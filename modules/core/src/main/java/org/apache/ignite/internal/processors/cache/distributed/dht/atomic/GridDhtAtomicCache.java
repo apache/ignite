@@ -212,9 +212,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         updateReplyClos = new UpdateReplyClosure() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
-                if (req.writeSynchronizationMode() != FULL_ASYNC) {
+                if (req.writeSynchronizationMode() != FULL_ASYNC)
                     sendNearUpdateReply(res.nodeId(), res);
-                }
                 else {
                     if (res.remapTopologyVersion() != null)
                         // Remap keys on primary node in FULL_ASYNC mode.
@@ -280,17 +279,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     UUID nodeId,
                     GridNearAtomicAbstractUpdateRequest req
                 ) {
-                    int stripeIdx;
-                    Thread curTrd = Thread.currentThread();
-                    if (req instanceof GridNearAtomicFullUpdateRequest && curTrd instanceof IgniteThread)
-                        stripeIdx = ((IgniteThread)curTrd).stripe();
-                    else
-                        stripeIdx = IgniteThread.GRP_IDX_UNASSIGNED;
-
                     processNearAtomicUpdateRequest(
                         nodeId,
                         req,
-                        stripeIdx);
+                        -1);
                 }
 
                 @Override public String toString() {
