@@ -664,23 +664,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @param timeout If greater than 0 limits task execution time. Cannot be negative.
      * @return Service topology.
+     * @throws IgniteCheckedException On error.
      */
     public Map<UUID, Integer> serviceTopology(String name, long timeout) throws IgniteCheckedException {
         ClusterNode node = cache.affinity().mapKeyToNode(name);
 
-        if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
-            final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
+        final ServiceTopologyCallable call = new ServiceTopologyCallable(name);
 
-            return ctx.closure().callAsyncNoFailover(
-                GridClosureCallMode.BROADCAST,
-                call,
-                Collections.singletonList(node),
-                false,
-                timeout
-            ).get();
-        }
-        else
-            return serviceTopology(cache, name);
+        return ctx.closure().callAsyncNoFailover(
+            GridClosureCallMode.BROADCAST,
+            call,
+            Collections.singletonList(node),
+            false,
+            timeout
+        ).get();
     }
 
     /**
@@ -1794,9 +1791,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        private static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.7");
 
         /** */
         private final String svcName;
