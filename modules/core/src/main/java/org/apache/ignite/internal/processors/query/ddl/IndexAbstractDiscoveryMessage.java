@@ -38,6 +38,9 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
     @GridToStringInclude
     protected final AbstractIndexOperation op;
 
+    /** Whether request must be propagated to exchange worker for final processing. */
+    private transient boolean exchange;
+
     /** Local cache index state at the moment of message receive. */
     private transient QueryIndexStates idxStates;
 
@@ -74,6 +77,20 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
      */
     public void indexStates(QueryIndexStates idxStates) {
         this.idxStates = idxStates;
+    }
+
+    /**
+     * @return Whether request must be propagated to exchange worker for final processing.
+     */
+    public boolean exchange() {
+        return exchange;
+    }
+
+    /**
+     * @param exchange Whether request must be propagated to exchange worker for final processing.
+     */
+    public void exchange(boolean exchange) {
+        this.exchange = exchange;
     }
 
     /** {@inheritDoc} */

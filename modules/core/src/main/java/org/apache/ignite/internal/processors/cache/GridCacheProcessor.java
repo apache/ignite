@@ -825,7 +825,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     caches.put(maskNull(name), cache);
 
-                    startCache(cache, desc.indexStates());
+                    startCache(cache, desc.indexStatesForStart());
 
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
@@ -1698,7 +1698,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         null,
                         desc.deploymentId(),
                         topVer,
-                        desc.indexStates()
+                        desc.indexStatesForStart()
                     );
                 }
             }
@@ -2133,7 +2133,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                     ccfg.getCacheMode());
                         }
 
-                        existing.indexStates(req.indexStates());
+                        existing.tryUpdateFromDiscovery(req.indexStates());
                     }
                     else {
                         assert req.cacheType() != null : req;
@@ -2145,8 +2145,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 false,
                                 req.deploymentId());
 
-                        desc.initialIndexStates(req.indexStates());
-                        desc.indexStates(req.indexStates());
+                        desc.tryUpdateFromDiscovery(req.indexStates());
 
                         // Received statically configured cache.
                         if (req.initiatingNodeId() == null)
@@ -2695,20 +2694,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             IgniteUuid id = msg0.id();
 
-            boolean res = idxDiscoMsgIdHist.add(id);
-
-            if (!idxDiscoMsgIdHist.add(id))
+            if (!idxDiscoMsgIdHist.add(id)) {
                 U.warn(log, "Received duplicate index change discovery message (will ignore): " + msg);
-            else {
-                if (msg instanceof IndexProposeDiscoveryMessage)
-                    onIndexProposeMessage((IndexProposeDiscoveryMessage)msg);
-                else if (msg instanceof IndexAcceptDiscoveryMessage)
-                    onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
-                else if (msg instanceof IndexFinishDiscoveryMessage)
-                    onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
-                else
-                    U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
+
+                return false;
             }
+
+            if (msg instanceof IndexProposeDiscoveryMessage)
+                onIndexProposeMessage((IndexProposeDiscoveryMessage)msg);
+            else if (msg instanceof IndexAcceptDiscoveryMessage)
+                onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
+            else if (msg instanceof IndexFinishDiscoveryMessage)
+                onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
+            else
+                U.warn(log, "Unsupported index discovery message type (will ignore): " + msg);
 
             return false;
         }
@@ -2741,20 +2740,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
         if (desc == null) {
-            msg.onError(locNodeId, "Cache doesn't exit on node [cacheName=" + op.space() +
-                ". nodeId=" + locNodeId + ']');
+            msg.onError(locNodeId, "Cache doesn't exit [cacheName=" + op.space() + ", nodeId=" + locNodeId + ']');
 
             return;
         }
 
-        // Validate request at descriptor level.
-        QueryIndexStates idxStates = desc.indexStates();
-
-        if (idxStates == null)
-            idxStates = new QueryIndexStates();
-
-        if (idxStates.propose(locNodeId, msg))
-            desc.indexStates(idxStates);
+        desc.tryProposeFromDiscoveryThread(locNodeId, msg);
     }
 
     /**
@@ -2770,12 +2761,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        QueryIndexStates idxStates = desc.indexStates();
-
-        if (idxStates == null || !idxStates.accept(msg))
-            return;
-
-        ctx.query().onIndexAccept(op.space(), op);
+        desc.tryAccept(msg, true);
     }
 
     /**
@@ -2784,9 +2770,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
-        // TODO: Clear dynamic descriptors!
+        AbstractIndexOperation op = msg.operation();
 
-        // TODO: Delegate to indexing to handle result and complete client futures!
+        DynamicCacheDescriptor desc = cacheDescriptor(op.space());
+
+        if (desc == null)
+            return;
+
+        desc.tryFinish(msg, true);
     }
 
     /**
@@ -2858,8 +2849,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
-                        startDesc.initialIndexStates(req.indexStates());
-                        startDesc.indexStates(req.indexStates());
+                        startDesc.tryUpdateFromDiscovery(req.indexStates());
 
                         if (newTopVer == null) {
                             newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),

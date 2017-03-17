@@ -301,7 +301,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param idxStates Index states.
      */
     public void indexStates(QueryIndexStates idxStates) {
-        this.idxStates = idxStates;
+        this.idxStates = idxStates != null ? idxStates.copy() : null;
     }
 
     /** {@inheritDoc} */

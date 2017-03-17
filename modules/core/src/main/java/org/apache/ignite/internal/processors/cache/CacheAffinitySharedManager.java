@@ -352,7 +352,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     false,
                     req.deploymentId());
 
-                desc.indexStates(req.indexStates());
+                desc.tryUpdateFromDiscovery(req.indexStates());
 
                 DynamicCacheDescriptor old = registeredCaches.put(cacheId, desc);
 

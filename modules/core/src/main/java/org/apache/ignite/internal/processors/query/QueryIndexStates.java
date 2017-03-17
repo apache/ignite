@@ -79,9 +79,8 @@ public class QueryIndexStates implements Serializable {
      *
      * @param locNodeId Local node ID.
      * @param msg Propose message.
-     * @return {@code True} if propose succeeded.
      */
-    public boolean propose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
+    public void propose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
         synchronized (mux) {
             AbstractIndexOperation op = msg.operation();
 
@@ -90,13 +89,9 @@ public class QueryIndexStates implements Serializable {
             if (activeOps.containsKey(idxName)) {
                 msg.onError(locNodeId, "Failed to initiate index create/drop because another operation on the same " +
                     "index is in progress: " + idxName);
-
-                return false;
             }
 
             activeOps.put(idxName, new QueryIndexActiveOperation(op));
-
-            return true;
         }
     }
 

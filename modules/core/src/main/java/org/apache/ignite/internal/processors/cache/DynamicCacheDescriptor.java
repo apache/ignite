@@ -25,10 +25,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QueryIndexStates;
+import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,10 +87,16 @@ public class DynamicCacheDescriptor {
     /** */
     private AffinityTopologyVersion rcvdFromVer;
 
-    /** Initial dynamic index state as observed from cache processor start() method and discovery join process. */
-    private QueryIndexStates initIdxStates;
+    /** Mutex to control index states. */
+    private final Object idxStatesMux = new Object();
 
-    /** Dynamic index states. */
+    /** Initial index states which is used to start cache. */
+    private QueryIndexStates idxStatesForStart;
+
+    /** Whether index states for start is fixed. */
+    private boolean idxStatesForStartFixed;
+
+    /** Current index states. */
     private QueryIndexStates idxStates;
 
     /**
@@ -310,31 +321,114 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Index states.
+     * Get index state for cache start. Once requested it never changes afterwards.
+     *
+     * @return Index states for cache start.
      */
-    public QueryIndexStates initialIndexStates() {
-        return initIdxStates;
-    }
+    public QueryIndexStates indexStatesForStart() {
+        synchronized (idxStatesMux) {
+            if (!idxStatesForStartFixed) {
+                idxStatesForStart = idxStates;
 
-    /**
-     * @param initIdxStates Index states.
-     */
-    public void initialIndexStates(QueryIndexStates initIdxStates) {
-        this.initIdxStates = initIdxStates != null ? initIdxStates.copy() : null;
+                idxStatesForStartFixed = true;
+            }
+
+            return idxStatesForStart != null ? idxStatesForStart.copy() : null;
+        }
     }
 
     /**
      * @return Index states.
      */
     public QueryIndexStates indexStates() {
-        return idxStates;
+        synchronized (idxStatesMux) {
+            return idxStates != null ? idxStates.copy() : null;
+        }
     }
 
     /**
+     * Try updating index state from discovery thread. If start state is not fixed yet, update will succeed and return
+     * {@code true}.
+     *
      * @param idxStates Index states.
      */
-    public void indexStates(QueryIndexStates idxStates) {
-        this.idxStates = idxStates != null ? idxStates.copy() : null;
+    public void tryUpdateFromDiscovery(QueryIndexStates idxStates) {
+        synchronized (idxStatesMux) {
+            if (!idxStatesForStartFixed)
+                this.idxStates = idxStates != null ? idxStates.copy() : null;
+        }
+    }
+
+    /**
+     * Try performing propose from discovery thread.
+     *
+     * @param locNodeId Local node ID.
+     * @param msg Message.
+     */
+    public void tryProposeFromDiscoveryThread(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
+        synchronized (idxStatesMux) {
+            if (idxStates == null)
+                idxStates = new QueryIndexStates();
+
+            idxStates.propose(locNodeId, msg);
+        }
+    }
+
+    /**
+     * Try applying accept message.
+     *
+     * @param msg Message.
+     * @param disco Whether call is performed from discovery thread.
+     * @return Result.
+     */
+    public boolean tryAccept(IndexAcceptDiscoveryMessage msg, boolean disco) {
+        synchronized (idxStatesMux) {
+            if (disco && idxStatesForStartFixed) {
+                msg.exchange(true);
+
+                return false;
+            }
+
+            if (idxStates == null)
+                idxStates = new QueryIndexStates();
+
+            return idxStates.accept(msg);
+        }
+    }
+
+    /**
+     * Try applying finish message.
+     *
+     * @param msg Message.
+     * @param disco Whether call is performed from discovery thread.
+     * @return Result.
+     */
+    public boolean tryFinish(IndexFinishDiscoveryMessage msg, boolean disco) {
+        synchronized (idxStatesMux) {
+            if (disco && idxStatesForStartFixed) {
+                msg.exchange(true);
+
+                return false;
+            }
+
+            if (idxStates == null)
+                idxStates = new QueryIndexStates();
+
+            return idxStates.finish(msg);
+        }
+    }
+
+    /**
+     * Forcefully update index states from exchange thread.
+     *
+     * @param idxStates Index states.
+     */
+    public void updateIndexStatesFromExchange(QueryIndexStates idxStates) {
+        synchronized (idxStatesMux) {
+            assert idxStatesForStartFixed;
+
+            this.idxStates = idxStates != null ? idxStates.copy() : null;
+        }
     }
 
     /** {@inheritDoc} */
