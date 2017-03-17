@@ -431,15 +431,12 @@ class VisorCacheCommand {
 
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
-                            cm match {
-                                case v2: VisorCacheMetricsV2 => (
-                                    "Total: " + (v2.keySize() + v2.offHeapEntriesCount()),
-                                    "  Heap: " + v2.keySize(),
-                                    "  Off-Heap: " + v2.offHeapEntriesCount(),
-                                    "  Off-Heap Memory: " + formatMemory(v2.offHeapAllocatedSize())
-                                )
-                                case v1 => v1.keySize()
-                            },
+                            (
+                                "Total: " + (cm.keySize() + cm.offHeapEntriesCount()),
+                                "  Heap: " + cm.keySize(),
+                                "  Off-Heap: " + cm.offHeapEntriesCount(),
+                                "  Off-Heap Memory: " + formatMemory(cm.offHeapAllocatedSize())
+                            ),
                             (
                                 "Hi: " + cm.hits(),
                                 "Mi: " + cm.misses(),
