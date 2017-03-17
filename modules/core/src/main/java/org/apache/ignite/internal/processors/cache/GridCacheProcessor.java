@@ -1647,6 +1647,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert req.start() : req;
         assert req.cacheType() != null : req;
 
+        DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
+
+        if (desc != null)
+            desc.onStart();
+
         prepareCacheStart(
             req.startCacheConfiguration(),
             req.nearCacheConfiguration(),
@@ -1655,13 +1660,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.initiatingNodeId(),
             req.deploymentId(),
             topVer,
-            req.indexStates()
+            desc != null ? desc.indexStatesForStart() : null
         );
-
-        DynamicCacheDescriptor desc = cacheDescriptor(req.cacheName());
-
-        if (desc != null)
-            desc.onStart();
     }
 
     /**
