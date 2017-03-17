@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
@@ -41,7 +42,7 @@ namespace ignite
 
             void DiagnosableAdapter::AddStatusRecord(SqlState sqlState, const std::string& message)
             {
-                LOG_MSG("Adding new record: %s\n", message.c_str());
+                LOG_MSG("Adding new record: " << message);
 
                 AddStatusRecord(sqlState, message, 0, 0);
             }

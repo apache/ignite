@@ -2207,7 +2207,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         if (partNodes.isEmpty()) {
                             try {
-                                ClusterNode primary = cacheAff.mapKeyToNode(i);
+                                cacheAff.mapKeyToNode(i);
 
                                 fail();
                             }

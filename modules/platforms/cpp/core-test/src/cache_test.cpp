@@ -24,6 +24,7 @@
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/test_utils.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -65,7 +66,7 @@ namespace ignite
         IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
         IGNITE_BINARY_IS_NULL_FALSE(Person)
         IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
-            
+
         void Write(BinaryWriter& writer, Person obj)
         {
             writer.WriteString("name", obj.name);
@@ -93,44 +94,8 @@ struct CacheTestSuiteFixture {
      */
     CacheTestSuiteFixture()
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
-        
-        for (int i = 0; i < 2; i++) 
-        {
-            std::stringstream stream;
-
-            stream << "grid-" << i;
-
-            IgniteError err;
-
-            Ignite grid = Ignition::Start(cfg, stream.str().c_str(), &err);
-                
-            if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-                BOOST_FAIL(err.GetText());
-
-            if (i == 0)
-                grid0 = grid;
-            else
-                grid1 = grid;
-        }
+        grid0 = ignite_test::StartNode("cache-test.xml", "grid-0");
+        grid1 = ignite_test::StartNode("cache-test.xml", "grid-1");
     }
 
     /*

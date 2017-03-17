@@ -53,6 +53,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -3106,6 +3107,71 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertNotEquals(binObj02, binObj01);
         assertNotEquals(binObj02, binObj00);
         assertNotEquals(binObj02, binObj11);
+    }
+
+
+    /**
+     * The test must be refactored after {@link IgniteSystemProperties#IGNITE_BINARY_SORT_OBJECT_FIELDS}
+     * is removed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFieldOrder() throws Exception {
+        if (BinaryUtils.FIELDS_SORTED_ORDER)
+            return;
+
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectImpl binObj = marshal(simpleObject(), m);
+
+        Collection<String> fieldsBin =  binObj.type().fieldNames();
+
+        Field[] fields = SimpleObject.class.getDeclaredFields();
+
+        assertEquals(fields.length, fieldsBin.size());
+
+        int i = 0;
+
+        for (String fieldName : fieldsBin) {
+            assertEquals(fields[i].getName(), fieldName);
+
+            ++i;
+        }
+    }
+
+    /**
+     * The test must be refactored after {@link IgniteSystemProperties#IGNITE_BINARY_SORT_OBJECT_FIELDS}
+     * is removed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFieldOrderByBuilder() throws Exception {
+        if (BinaryUtils.FIELDS_SORTED_ORDER)
+            return;
+
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(m), "MyFakeClass");
+
+        String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
+
+        for (String fieldName : fieldNames)
+            builder.setField(fieldName, 0);
+
+        BinaryObject binObj = builder.build();
+
+
+        Collection<String> fieldsBin =  binObj.type().fieldNames();
+
+        assertEquals(fieldNames.length, fieldsBin.size());
+
+        int i = 0;
+
+        for (String fieldName : fieldsBin) {
+            assertEquals(fieldNames[i], fieldName);
+
+            ++i;
+        }
     }
 
     /**

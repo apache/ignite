@@ -32,6 +32,7 @@
         <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <java8.folder>src/main/java</java8.folder>
+        <spark.folder>src/main/java</spark.folder>
         <java.ver>1.7</java.ver>
     </properties>
 
@@ -100,10 +101,20 @@
         <profile>
             <id>scala</id>
 
+            <properties>
+                <spark.folder>src/main/spark</spark.folder>
+            </properties>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-scalar</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-spark</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
@@ -166,6 +177,12 @@
                     <artifactId>ignite-schedule</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-geospatial</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
             </dependencies>
         </profile>
     </profiles>
@@ -208,6 +225,7 @@
                                 <source>schema-import/src/main/java</source>
                                 <source>${lgpl.folder}</source>
                                 <source>${java8.folder}</source>
+                                <source>${spark.folder}</source>
                             </sources>
                         </configuration>
                     </execution>

@@ -24,6 +24,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
@@ -61,8 +62,8 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     public void testUpdateSimple() {
         IgniteCache p = cache();
 
-        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set p.id = p.id * 2, p.name = " +
-            "substring(p.name, 0, 2) where length(p._key) = ? or p.secondName like ?").setArgs(2, "%ite"));
+        QueryCursor<List<?>> c = p.query(new SqlFieldsQuery("update Person p set p.id = p.id * 2, p.firstName = " +
+            "substring(p.firstName, 0, 2) where length(p._key) = ? or p.secondName like ?").setArgs(2, "%ite"));
 
         c.iterator();
 
@@ -182,14 +183,14 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
         cache.query(new SqlFieldsQuery("insert into \"AllTypes\"(_key, _val, \"dateCol\", \"booleanCol\"," +
             "\"tsCol\") values(2, ?, '2016-11-30 12:00:00', false, DATE '2016-12-01')").setArgs(new AllTypes(2L)));
 
-        List<?> ll = cache.query(new SqlFieldsQuery("select \"primitiveIntsCol\" from \"AllTypes\"")).getAll();
-
-        cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = CAST('50' as INT)," +
-            " \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
+        List<List<?>> resLst = cache.query(new SqlFieldsQuery("update \"AllTypes\" set \"doubleCol\" = " +
+            "CAST('50' as INT), \"booleanCol\" = 80, \"innerTypeCol\" = ?, \"strCol\" = PI(), \"shortCol\" = " +
             "CAST(WEEK(PARSEDATETIME('2016-11-30', 'yyyy-MM-dd')) as VARCHAR), " +
             "\"sqlDateCol\"=TIMESTAMP '2016-12-02 13:47:00', \"tsCol\"=TIMESTAMPADD('MI', 2, " +
             "DATEADD('DAY', 2, \"tsCol\")), \"primitiveIntsCol\" = ?, \"bytesCol\" = ?")
-            .setArgs(new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6}));
+            .setArgs(new AllTypes.InnerType(80L), new int[] {2, 3}, new Byte[] {4, 5, 6})).getAll();
+
+        assertEquals(Collections.singletonList(Collections.singletonList(1L)), resLst);
 
         AllTypes res = (AllTypes) cache.get(2L);
 

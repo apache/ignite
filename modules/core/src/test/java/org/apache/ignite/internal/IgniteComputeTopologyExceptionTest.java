@@ -88,7 +88,8 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
                 }
             },
             nodes,
-            false);
+            false,
+            0);
 
         try {
             fut.get();

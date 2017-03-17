@@ -48,6 +48,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         company: String,
         country: String,
         lastLogin: Date,
+        lastActivity: Date,
         admin: Boolean,
         token: String,
         resetPasswordToken: String
@@ -59,22 +60,26 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         usernameLowerCase: true
     });
 
+    const transform = (doc, ret) => {
+        return {
+            _id: ret._id,
+            email: ret.email,
+            firstName: ret.firstName,
+            lastName: ret.lastName,
+            company: ret.company,
+            country: ret.country,
+            admin: ret.admin,
+            token: ret.token,
+            lastLogin: ret.lastLogin,
+            lastActivity: ret.lastActivity
+        };
+    };
+
     // Configure transformation to JSON.
-    AccountSchema.set('toJSON', {
-        transform: (doc, ret) => {
-            return {
-                _id: ret._id,
-                email: ret.email,
-                firstName: ret.firstName,
-                lastName: ret.lastName,
-                company: ret.company,
-                country: ret.country,
-                admin: ret.admin,
-                token: ret.token,
-                lastLogin: ret.lastLogin
-            };
-        }
-    });
+    AccountSchema.set('toJSON', { transform });
+
+    // Configure transformation to JSON.
+    AccountSchema.set('toObject', { transform });
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
@@ -139,6 +144,25 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+
+        affinity: {
+            kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
+            Rendezvous: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Fair: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Custom: {
+                className: String
+            }
+        },
+
+        affinityMapper: String,
 
         nodeFilter: {
             kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
@@ -247,6 +271,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
+        queryDetailMetricsSize: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -823,7 +848,24 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             Custom: {
                 className: String
             }
-        }]
+        }],
+        deploymentSpi: {
+            kind: {type: String, enum: ['URI', 'Local', 'Custom']},
+            URI: {
+                uriList: [String],
+                temporaryDirectoryPath: String,
+                scanners: [String],
+                listener: String,
+                checkMd5: Boolean,
+                encodeUri: Boolean
+            },
+            Local: {
+                listener: String
+            },
+            Custom: {
+                className: String
+            }
+        }
     });
 
     ClusterSchema.index({name: 1, space: 1}, {unique: true});
@@ -843,13 +885,15 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             result: {type: String, enum: ['none', 'table', 'bar', 'pie', 'line', 'area']},
             pageSize: Number,
             timeLineSpan: String,
+            maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
-            }
+            },
+            qryType: String
         }]
     });
 
@@ -862,6 +906,20 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         // TODO IGNITE-843 Send error to admin
         res.status(err.code || 500).send(err.message);
     };
+
+    // Define Activities schema.
+    const ActivitiesSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        group: String,
+        action: String,
+        amount: { type: Number, default: 1 }
+    });
+
+    ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });
+
+    // Define Activities model.
+    result.Activities = mongoose.model('Activities', ActivitiesSchema);
 
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {

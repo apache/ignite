@@ -409,6 +409,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** */
     private boolean clientReconnectDisabled;
 
+    /** */
+    protected IgniteSpiContext spiCtx;
+
     /** {@inheritDoc} */
     @Override public String getSpiState() {
         return impl.getSpiState();
@@ -1161,6 +1164,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
+        this.spiCtx = spiCtx;
+
         ctxInitLatch.countDown();
 
         ipFinder.onSpiContextInitialized(spiCtx);
@@ -1243,6 +1248,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper)
         throws IOException, IgniteSpiOperationTimeoutException {
         return openSocket(createSocket(), sockAddr, timeoutHelper);
+    }
+
+    /**
+     * @param sock Socket.
+     * @return Buffered stream wrapping socket stream.
+     * @throws IOException If failed.
+     */
+    final BufferedOutputStream socketStream(Socket sock) throws IOException {
+        int bufSize = sock.getSendBufferSize();
+
+        return bufSize > 0 ? new BufferedOutputStream(sock.getOutputStream(), bufSize) :
+            new BufferedOutputStream(sock.getOutputStream());
     }
 
     /**
@@ -1351,7 +1368,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
-        writeToSocket(sock, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()), msg, timeout);
+        writeToSocket(sock, socketStream(sock), msg, timeout);
     }
 
     /**

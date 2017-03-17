@@ -53,7 +53,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -270,6 +270,19 @@ public class VisorTaskUtils {
     /**
      * Compact class names.
      *
+     * @param cls Class object for compact.
+     * @return Compacted string.
+     */
+    @Nullable public static String compactClass(Class cls) {
+        if (cls == null)
+            return null;
+
+        return U.compact(cls.getName());
+    }
+
+    /**
+     * Compact class names.
+     *
      * @param obj Object for compact.
      * @return Compacted string.
      */
@@ -277,7 +290,7 @@ public class VisorTaskUtils {
         if (obj == null)
             return null;
 
-        return U.compact(obj.getClass().getName());
+        return compactClass(obj.getClass());
     }
 
     /**
@@ -680,11 +693,11 @@ public class VisorTaskUtils {
         if (plc instanceof LruEvictionPolicyMBean)
             return ((LruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (plc instanceof RandomEvictionPolicyMBean)
-            return ((RandomEvictionPolicyMBean)plc).getMaxSize();
-
         if (plc instanceof FifoEvictionPolicyMBean)
             return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+
+        if (plc instanceof SortedEvictionPolicyMBean)
+            return ((SortedEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }

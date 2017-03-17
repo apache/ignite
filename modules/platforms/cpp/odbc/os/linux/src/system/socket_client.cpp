@@ -27,6 +27,7 @@
 
 #include "ignite/odbc/system/socket_client.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/log.h"
 
 #define SOCKET_ERROR (-1)
 
@@ -49,7 +50,7 @@ namespace ignite
 
             bool SocketClient::Connect(const char* hostname, uint16_t port)
             {
-                LOG_MSG("Host: %s, port: %d\n", hostname, port);
+                LOG_MSG("Host: " << hostname << ", port: " << port);
 
                 addrinfo hints;
                 memset(&hints, 0, sizeof(hints));
@@ -70,8 +71,10 @@ namespace ignite
                 // Attempt to connect to an address until one succeeds
                 for (addrinfo *it = result; it != NULL; it = it->ai_next) 
                 {
-                    LOG_MSG("Addr: %u.%u.%u.%u\n", it->ai_addr->sa_data[2], it->ai_addr->sa_data[3],
-                                                   it->ai_addr->sa_data[4], it->ai_addr->sa_data[5]);
+                    LOG_MSG("Addr: " << it->ai_addr->sa_data[2] << "."
+                                     << it->ai_addr->sa_data[3] << "."
+                                     << it->ai_addr->sa_data[4] << "."
+                                     << it->ai_addr->sa_data[5]);
 
                     // Create a SOCKET for connecting to server
                     socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);

@@ -143,7 +143,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
 
-                onComplete(discoThread);
+                onComplete();
 
                 return;
             }
@@ -163,7 +163,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            onComplete(discoThread);
+            onComplete();
         }
     }
 
@@ -202,7 +202,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<IgniteTxKey> requestedKeys() {
         synchronized (sync) {
-            for (int i = 0; i < futuresCount(); i++) {
+            int size = futuresCountNoLock();
+
+            for (int i = 0; i < size; i++) {
                 IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (isMini(fut) && !fut.isDone()) {
@@ -233,8 +235,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     private MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
+            int size = futuresCountNoLock();
+
             // Avoid iterator creation.
-            for (int i = 0; i < futuresCount(); i++) {
+            for (int i = size - 1; i >= 0; i--) {
                 IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
@@ -261,7 +265,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         ERR_UPD.compareAndSet(this, null, err);
 
-        return onComplete(false);
+        return onComplete();
     }
 
     /**
@@ -275,10 +279,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * Completeness callback.
      *
-     * @param discoThread {@code True} if executed from discovery thread.
      * @return {@code True} if future was finished by this call.
      */
-    private boolean onComplete(boolean discoThread) {
+    private boolean onComplete() {
         Throwable err0 = err;
 
         if (err0 == null || tx.needCheckBackup())
@@ -601,7 +604,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
             nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodes(entry.key(), topVer) :
+                cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
                 cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         txMapping.addMapping(nodes);
@@ -687,7 +690,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 keys = new HashSet<>(keyLockFut.lockKeys);
             else {
                 synchronized (sync) {
-                    for (int i = 0; i < futuresCount(); i++) {
+                    int size = futuresCountNoLock();
+
+                    for (int i = 0; i < size; i++) {
                         IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                         if (isMini(fut) && !fut.isDone()) {
@@ -726,7 +731,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                 "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
 
-            onComplete(false);
+            onComplete();
         }
     }
 
@@ -895,7 +900,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                         else
                             remap();
-                    } else {
+                    }
+                    else {
                         parent.onPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.

@@ -30,15 +30,17 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/cache/cache_peek_mode.h>
+#include <ignite/cache/query/query_cursor.h>
+#include <ignite/cache/query/query_fields_cursor.h>
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/operations.h>
 
 namespace ignite
 {
@@ -55,6 +57,9 @@ namespace ignite
          * of this class instance will only create another reference to the same
          * underlying object. Underlying object released automatically once all
          * the instances are destructed.
+         *
+         * @tparam K Cache key type.
+         * @tparam V Cache value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -1339,6 +1344,106 @@ namespace ignite
             }
 
             /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, initialQry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
              * Check if the instance is valid.
              *
              * Invalid instance can be returned if some of the previous
@@ -1354,9 +1459,38 @@ namespace ignite
                 return impl.IsValid();
             }
 
+            /**
+             * Executes LocalLoadCache on all cache nodes.
+             */
+            void LoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Loads state from the underlying persistent storage.
+             *
+             * This method is not transactional and may end up loading a stale value into
+             * cache if another thread has updated the value immediately after it has been
+             * loaded. It is mostly useful when pre-loading the cache from underlying
+             * data store before start, or for read-only caches.
+             */
+            void LocalLoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LocalLoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
         private:
             /** Implementation delegate. */
-            ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
+            common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
         };
     }
 }

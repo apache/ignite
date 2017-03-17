@@ -161,7 +161,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                             try {
                                 cacheOperations(node, cache);
                             }
-                            catch (Exception e) {
+                            catch (Exception ignored) {
                                 if (node.isStopping())
                                     break;
                             }

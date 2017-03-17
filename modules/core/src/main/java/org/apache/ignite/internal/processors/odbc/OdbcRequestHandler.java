@@ -198,13 +198,19 @@ public class OdbcRequestHandler {
             qry.setDistributedJoins(distributedJoins);
             qry.setEnforceJoinOrder(enforceJoinOrder);
 
-            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+            IgniteCache<Object, Object> cache0 = ctx.grid().cache(req.cacheName());
+
+            if (cache0 == null)
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
+
+            IgniteCache<Object, Object> cache = cache0.withKeepBinary();
 
             if (cache == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Cache doesn't exist (did you configure it?): " +
-                    req.cacheName());
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Can not get cache with keep binary: " + req.cacheName());
 
-            QueryCursor qryCur = cache.withKeepBinary().query(qry);
+            QueryCursor qryCur = cache.query(qry);
 
             qryCursors.put(qryId, new IgniteBiTuple<QueryCursor, Iterator>(qryCur, null));
 
@@ -382,7 +388,7 @@ public class OdbcRequestHandler {
                     if (!matches("TABLE", req.tableType()))
                         continue;
 
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName, table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, cacheName, table.name(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);

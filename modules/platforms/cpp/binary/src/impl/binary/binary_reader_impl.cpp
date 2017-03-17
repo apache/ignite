@@ -663,6 +663,23 @@ namespace ignite
                 return elemId == id && elemRead < elemCnt;
             }
 
+            bool BinaryReaderImpl::SkipIfNull()
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                InteropStreamPositionGuard<InteropInputStream> positionGuard(*stream);
+
+                int8_t hdr = stream->ReadInt8();
+
+                if (hdr != IGNITE_HDR_NULL)
+                    return false;
+
+                positionGuard.Release();
+
+                return true;
+            }
+
             void BinaryReaderImpl::SetRawMode()
             {
                 CheckRawMode(false);

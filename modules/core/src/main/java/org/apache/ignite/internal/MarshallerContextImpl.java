@@ -167,7 +167,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
             return true;
         }
-        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException ignored) {
             if (++failedCnt > 10) {
                 if (log.isQuiet())
                     U.quiet(false, "Failed to register marshalled class for more than 10 times in a row " +
@@ -214,7 +214,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         clsName = reader.readLine();
                     }
                 }
-                catch (IOException e) {
+                catch (IOException ignored) {
                     throw new IgniteCheckedException("Class definition was not found " +
                         "at marshaller cache and local file. " +
                         "[id=" + id + ", file=" + file.getAbsolutePath() + ']');

@@ -31,6 +31,7 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
+#include "ignite/impl/binary/binary_type_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
@@ -669,14 +670,20 @@ namespace ignite
                         stream->WriteInt8(IGNITE_PROTO_VER);
                         stream->WriteInt16(IGNITE_BINARY_FLAG_USER_TYPE);
                         stream->WriteInt32(idRslvr.GetTypeId());
-                        stream->WriteInt32(type.GetHashCode(obj));
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        int32_t hashPos = stream->Reserve(4);
+
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
                         type.Write(writer, obj);
 
                         writerImpl.PostWrite();
+
+                        stream->Synchronize();
+
+                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos);
+                        stream->WriteInt32(hashPos, impl::binary::GetHashCode<T>(obj, binObj));
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());

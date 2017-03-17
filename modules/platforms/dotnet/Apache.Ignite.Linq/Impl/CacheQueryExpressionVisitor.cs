@@ -20,6 +20,7 @@ using System.Text;
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -29,6 +30,7 @@ namespace Apache.Ignite.Linq.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
+    using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
@@ -276,17 +278,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Field hierarchy is flattened (Person.Address.Street is just Street), append as is, do not call Visit.
 
-            // Special case: string.Length
-            if (expression.Member == MethodVisitor.StringLength)
-            {
-                ResultBuilder.Append("length(");
-
-                VisitMember((MemberExpression) expression.Expression);
-
-                ResultBuilder.Append(")");
-
+            // Property call (string.Length, DateTime.Month, etc).
+            if (MethodVisitor.VisitPropertyCall(expression, this))
                 return expression;
-            }
 
             // Special case: grouping
             if (VisitGroupByMember(expression.Expression))
@@ -478,13 +472,134 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            // This happens when New expression uses a subquery, in a GroupBy.
-            _modelVisitor.VisitSelectors(expression.QueryModel, false);
+            var subQueryModel = expression.QueryModel;
+
+            var contains = subQueryModel.ResultOperators.FirstOrDefault() as ContainsResultOperator;
+            
+            // Check if IEnumerable.Contains is used.
+            if (subQueryModel.ResultOperators.Count == 1 && contains != null)
+            {
+                VisitContains(subQueryModel, contains);
+            }
+            else
+            {
+                // This happens when New expression uses a subquery, in a GroupBy.
+                _modelVisitor.VisitSelectors(expression.QueryModel, false);
+            }
 
             return expression;
+        }
+
+        /// <summary>
+        /// Visits IEnumerable.Contains
+        /// </summary>
+        private void VisitContains(QueryModel subQueryModel, ContainsResultOperator contains)
+        {
+            ResultBuilder.Append("(");
+
+            var fromExpression = subQueryModel.MainFromClause.FromExpression;
+
+            var queryable = ExpressionWalker.GetCacheQueryable(fromExpression, false);
+
+            if (queryable != null)
+            {
+                Visit(contains.Item);
+
+                ResultBuilder.Append(" IN (");
+                _modelVisitor.VisitQueryModel(subQueryModel);
+                ResultBuilder.Append(")");
+            }
+            else
+            {
+                var inValues = GetInValues(fromExpression).ToArray();
+
+                var hasNulls = inValues.Any(o => o == null);
+
+                if (hasNulls)
+                {
+                    ResultBuilder.Append("(");
+                }
+
+                Visit(contains.Item);
+
+                ResultBuilder.Append(" IN (");
+                AppendInParameters(inValues);
+                ResultBuilder.Append(")");
+
+                if (hasNulls)
+                {
+                    ResultBuilder.Append(") OR ");
+                    Visit(contains.Item);
+                    ResultBuilder.Append(" IS NULL");
+                }
+            }
+
+            ResultBuilder.Append(")");
+        }
+
+        /// <summary>
+        /// Gets values for IN expression.
+        /// </summary>
+        private static IEnumerable<object> GetInValues(Expression fromExpression)
+        {
+            IEnumerable result;
+            switch (fromExpression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression) fromExpression;
+                    result = ExpressionWalker.EvaluateExpression<IEnumerable>(memberExpression);
+                    break;
+                case ExpressionType.ListInit:
+                    var listInitExpression = (ListInitExpression) fromExpression;
+                    result = listInitExpression.Initializers
+                        .SelectMany(init => init.Arguments)
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.NewArrayInit:
+                    var newArrayExpression = (NewArrayExpression) fromExpression;
+                    result = newArrayExpression.Expressions
+                        .Select(ExpressionWalker.EvaluateExpression<object>);
+                    break;
+                case ExpressionType.Parameter:
+                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                    throw new NotSupportedException("'Contains' clause coming from compiled query parameter is not supported.");
+                default:
+                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
+                    break;
+            }
+
+            result = result ?? Enumerable.Empty<object>();
+
+            return result
+                .Cast<object>()
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Appends not null parameters using ", " as delimeter.
+        /// </summary>
+        private void AppendInParameters(IEnumerable<object> values)
+        {
+            var first = true;
+
+            foreach (var val in values)
+            {
+                if (val == null)
+                    continue;
+
+                if (!first)
+                {
+                    ResultBuilder.Append(", ");
+                }
+
+                first = false;
+
+                AppendParameter(val);
+            }
         }
 
         /** <inheritdoc /> */

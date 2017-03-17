@@ -29,11 +29,11 @@
 
 #ifndef SQL_ASYNC_NOTIFICATION_NOT_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_NOT_CAPABLE      0x00000000L
-#endif 
+#endif
 
 #ifndef SQL_ASYNC_NOTIFICATION_CAPABLE
 #define SQL_ASYNC_NOTIFICATION_CAPABLE          0x00000001L
-#endif 
+#endif
 
 namespace ignite
 {
@@ -41,8 +41,6 @@ namespace ignite
     {
         namespace config
         {
-
-#ifdef ODBC_DEBUG
 
 #define DBG_STR_CASE(x) case x: return #x
 
@@ -95,14 +93,38 @@ namespace ignite
                     DBG_STR_CASE(SQL_SQL92_VALUE_EXPRESSIONS);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES1);
                     DBG_STR_CASE(SQL_STATIC_CURSOR_ATTRIBUTES2);
-                default: 
+                    DBG_STR_CASE(SQL_CONVERT_BIGINT);
+                    DBG_STR_CASE(SQL_CONVERT_BINARY);
+                    DBG_STR_CASE(SQL_CONVERT_BIT);
+                    DBG_STR_CASE(SQL_CONVERT_CHAR);
+                    DBG_STR_CASE(SQL_CONVERT_DATE);
+                    DBG_STR_CASE(SQL_CONVERT_DECIMAL);
+                    DBG_STR_CASE(SQL_CONVERT_DOUBLE);
+                    DBG_STR_CASE(SQL_CONVERT_FLOAT);
+                    DBG_STR_CASE(SQL_CONVERT_INTEGER);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_NUMERIC);
+                    DBG_STR_CASE(SQL_CONVERT_REAL);
+                    DBG_STR_CASE(SQL_CONVERT_SMALLINT);
+                    DBG_STR_CASE(SQL_CONVERT_TIME);
+                    DBG_STR_CASE(SQL_CONVERT_TIMESTAMP);
+                    DBG_STR_CASE(SQL_CONVERT_TINYINT);
+                    DBG_STR_CASE(SQL_CONVERT_VARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_VARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_LONGVARBINARY);
+                    DBG_STR_CASE(SQL_CONVERT_WCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_DAY_TIME);
+                    DBG_STR_CASE(SQL_CONVERT_INTERVAL_YEAR_MONTH);
+                    DBG_STR_CASE(SQL_CONVERT_WLONGVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_WVARCHAR);
+                    DBG_STR_CASE(SQL_CONVERT_GUID);
+                default:
                     break;
                 }
                 return "<< UNKNOWN TYPE >>";
             }
 
 #undef DBG_STR_CASE
-#endif
 
             ConnectionInfo::ConnectionInfo() : strParams(), intParams(),
                 shortParams()
@@ -117,7 +139,7 @@ namespace ignite
                 strParams[SQL_DBMS_VER]        = "03.00";
 
 #ifdef SQL_DRIVER_VER
-                // Driver version. At a minimum, the version is of the form 
+                // Driver version. At a minimum, the version is of the form
                 // ##.##.####, where the first two digits are the major version,
                 // the next two digits are the minor version, and the last four
                 // digits are the release version.
@@ -125,7 +147,7 @@ namespace ignite
 #endif // SQL_DRIVER_VER
 
 #ifdef SQL_COLUMN_ALIAS
-                // A character string: "Y" if the data source supports column 
+                // A character string: "Y" if the data source supports column
                 // aliases; otherwise, "N".
                 strParams[SQL_COLUMN_ALIAS] = "Y";
 #endif // SQL_COLUMN_ALIAS
@@ -168,7 +190,7 @@ namespace ignite
 #endif // SQL_TABLE_TERM
 
 #ifdef SQL_SCHEMA_TERM
-                // A character string with the data source vendor's name for 
+                // A character string with the data source vendor's name for
                 // a schema; for example, "owner", "Authorization ID", or "Schema".
                 strParams[SQL_SCHEMA_TERM] = "schema";
 #endif // SQL_SCHEMA_TERM
@@ -194,9 +216,9 @@ namespace ignite
 
 #ifdef SQL_ASYNC_NOTIFICATION
                 // Indicates if the driver supports asynchronous notification.
-                // SQL_ASYNC_NOTIFICATION_CAPABLE  = Asynchronous execution 
+                // SQL_ASYNC_NOTIFICATION_CAPABLE  = Asynchronous execution
                 // notification is supported by the driver.
-                // SQL_ASYNC_NOTIFICATION_NOT_CAPABLE Asynchronous execution 
+                // SQL_ASYNC_NOTIFICATION_NOT_CAPABLE Asynchronous execution
                 // notification is not supported by the driver.
                 intParams[SQL_ASYNC_NOTIFICATION] = SQL_ASYNC_NOTIFICATION_NOT_CAPABLE;
 #endif // SQL_ASYNC_NOTIFICATION
@@ -207,7 +229,7 @@ namespace ignite
 #endif // SQL_GETDATA_EXTENSIONS
 
 #ifdef SQL_ODBC_INTERFACE_CONFORMANCE
-                // Indicates the level of the ODBC 3.x interface that the driver 
+                // Indicates the level of the ODBC 3.x interface that the driver
                 // complies with.
                 intParams[SQL_ODBC_INTERFACE_CONFORMANCE] = SQL_OIC_CORE;
 #endif // SQL_ODBC_INTERFACE_CONFORMANCE
@@ -229,7 +251,7 @@ namespace ignite
 #endif // SQL_SCHEMA_USAGE
 
 #ifdef SQL_MAX_IDENTIFIER_LEN
-                // Indicates the maximum size in characters that the data source 
+                // Indicates the maximum size in characters that the data source
                 // supports for user-defined names.
                 intParams[SQL_MAX_IDENTIFIER_LEN] = 128;
 #endif // SQL_MAX_IDENTIFIER_LEN
@@ -243,7 +265,7 @@ namespace ignite
 #ifdef SQL_NUMERIC_FUNCTIONS
                 // Bitmask enumerating the scalar numeric functions supported by
                 // the driver and associated data source.
-                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN | 
+                intParams[SQL_NUMERIC_FUNCTIONS] = SQL_FN_NUM_ABS | SQL_FN_NUM_ACOS | SQL_FN_NUM_ASIN |
                     SQL_FN_NUM_ATAN | SQL_FN_NUM_ATAN2 | SQL_FN_NUM_CEILING | SQL_FN_NUM_COS | SQL_FN_NUM_COT |
                     SQL_FN_NUM_EXP | SQL_FN_NUM_FLOOR | SQL_FN_NUM_LOG | SQL_FN_NUM_MOD | SQL_FN_NUM_SIGN |
                     SQL_FN_NUM_SIN | SQL_FN_NUM_SQRT | SQL_FN_NUM_TAN | SQL_FN_NUM_PI | SQL_FN_NUM_RAND |
@@ -273,7 +295,7 @@ namespace ignite
 #endif // SQL_TIMEDATE_FUNCTIONS
 
 #ifdef SQL_TIMEDATE_ADD_INTERVALS
-                // Bitmask enumerating timestamp intervals supported by the driver 
+                // Bitmask enumerating timestamp intervals supported by the driver
                 // and associated data source for the TIMESTAMPADD scalar function.
                 intParams[SQL_TIMEDATE_ADD_INTERVALS] = 0;
 #endif // SQL_TIMEDATE_ADD_INTERVALS
@@ -299,11 +321,11 @@ namespace ignite
 #ifdef SQL_CONVERT_FUNCTIONS
                 // Bitmask enumerating the scalar conversion functions supported
                 // by the driver and associated data source.
-                intParams[SQL_CONVERT_FUNCTIONS] = 0;
+                intParams[SQL_CONVERT_FUNCTIONS] = SQL_FN_CVT_CONVERT | SQL_FN_CVT_CAST;
 #endif // SQL_CONVERT_FUNCTIONS
 
 #ifdef SQL_OJ_CAPABILITIES
-                // Bitmask enumerating the types of outer joins supported by the 
+                // Bitmask enumerating the types of outer joins supported by the
                 // driver and data source.
                 intParams[SQL_OJ_CAPABILITIES] = SQL_OJ_LEFT | SQL_OJ_NOT_ORDERED | SQL_OJ_ALL_COMPARISON_OPS;
 #endif // SQL_OJ_CAPABILITIES
@@ -333,7 +355,7 @@ namespace ignite
 #ifdef SQL_SQL92_VALUE_EXPRESSIONS
                 // Bitmask enumerating the value expressions supported,
                 // as defined in SQL-92.
-                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE | 
+                intParams[SQL_SQL92_VALUE_EXPRESSIONS] = SQL_SVE_CASE |
                     SQL_SVE_CAST | SQL_SVE_COALESCE | SQL_SVE_NULLIF;
 #endif // SQL_SQL92_VALUE_EXPRESSIONS
 
@@ -368,6 +390,207 @@ namespace ignite
                 // SQL_STATIC_CURSOR_ATTRIBUTES1.
                 intParams[SQL_STATIC_CURSOR_ATTRIBUTES2] = 0;
 #endif //SQL_STATIC_CURSOR_ATTRIBUTES2
+
+#ifdef SQL_CONVERT_BIGINT
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BIGINT
+                intParams[SQL_CONVERT_BIGINT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR | SQL_CVT_WCHAR |
+                    SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_BIT |
+                    SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT |
+                    SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_BIGINT
+
+#ifdef SQL_CONVERT_BINARY
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BINARY
+                intParams[SQL_CONVERT_BINARY] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR | SQL_CVT_NUMERIC | SQL_CVT_DECIMAL |
+                    SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
+                    SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_BINARY
+
+#ifdef SQL_CONVERT_BIT
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type BIT
+                intParams[SQL_CONVERT_BIT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR | SQL_CVT_NUMERIC |
+                    SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT;
+#endif //SQL_CONVERT_BIT
+
+#ifdef SQL_CONVERT_CHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type CHAR
+                intParams[SQL_CONVERT_CHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_CHAR
+
+#ifdef SQL_CONVERT_VARCHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type VARCHAR
+                intParams[SQL_CONVERT_VARCHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_VARCHAR
+
+#ifdef SQL_CONVERT_LONGVARCHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type LONGVARCHAR
+                intParams[SQL_CONVERT_LONGVARCHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_LONGVARCHAR
+
+#ifdef SQL_CONVERT_WCHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WCHAR
+                intParams[SQL_CONVERT_WCHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_WCHAR
+
+#ifdef SQL_CONVERT_WVARCHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WVARCHAR
+                intParams[SQL_CONVERT_WVARCHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_WVARCHAR
+
+#ifdef SQL_CONVERT_WLONGVARCHAR
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type WLONGVARCHAR
+                intParams[SQL_CONVERT_WLONGVARCHAR] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_WLONGVARCHAR
+
+#ifdef SQL_CONVERT_DATE
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DATE
+                intParams[SQL_CONVERT_DATE] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_DATE | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_DATE
+
+#ifdef SQL_CONVERT_DECIMAL
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DECIMAL
+                intParams[SQL_CONVERT_DECIMAL] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT |
+                    SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_DECIMAL
+
+#ifdef SQL_CONVERT_DOUBLE
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type DOUBLE
+                intParams[SQL_CONVERT_DOUBLE] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR | SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_DOUBLE
+
+#ifdef SQL_CONVERT_FLOAT
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type FLOAT
+                intParams[SQL_CONVERT_FLOAT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT | SQL_CVT_INTEGER |
+                    SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_FLOAT
+
+#ifdef SQL_CONVERT_REAL
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type REAL
+                intParams[SQL_CONVERT_REAL] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
+                    SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_REAL
+
+#ifdef SQL_CONVERT_INTEGER
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type INTEGER
+                intParams[SQL_CONVERT_INTEGER] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
+                    SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY |
+                    SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_INTEGER
+
+#ifdef SQL_CONVERT_NUMERIC
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type NUMERIC
+                intParams[SQL_CONVERT_NUMERIC] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT |
+                    SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
+                    SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_NUMERIC
+
+#ifdef SQL_CONVERT_SMALLINT
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type SMALLINT
+                intParams[SQL_CONVERT_SMALLINT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT |
+                    SQL_CVT_SMALLINT | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL |
+                    SQL_CVT_FLOAT | SQL_CVT_DOUBLE | SQL_CVT_BINARY | SQL_CVT_VARBINARY |
+                    SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_SMALLINT
+
+#ifdef SQL_CONVERT_TINYINT
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TINYINT
+                intParams[SQL_CONVERT_TINYINT] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
+                    SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_TINYINT
+
+#ifdef SQL_CONVERT_TIME
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TIME
+                intParams[SQL_CONVERT_TIME] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY |
+                    SQL_CVT_TIME | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_TIME
+
+#ifdef SQL_CONVERT_TIMESTAMP
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type TIMESTAMP
+                intParams[SQL_CONVERT_TIMESTAMP] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_BINARY |
+                    SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE | SQL_CVT_TIME | SQL_CVT_TIMESTAMP;
+#endif //SQL_CONVERT_TIMESTAMP
+
+#ifdef SQL_CONVERT_VARBINARY
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type VARBINARY
+                intParams[SQL_CONVERT_VARBINARY] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
+                    SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE |
+                    SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_VARBINARY
+
+#ifdef SQL_CONVERT_LONGVARBINARY
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type LONGVARBINARY
+                intParams[SQL_CONVERT_LONGVARBINARY] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_NUMERIC | SQL_CVT_DECIMAL | SQL_CVT_BIT | SQL_CVT_TINYINT | SQL_CVT_SMALLINT |
+                    SQL_CVT_INTEGER | SQL_CVT_BIGINT | SQL_CVT_REAL | SQL_CVT_FLOAT | SQL_CVT_DOUBLE |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_DATE |
+                    SQL_CVT_TIME | SQL_CVT_TIMESTAMP | SQL_CVT_GUID;
+#endif //SQL_CONVERT_LONGVARBINARY
+
+#ifdef SQL_CONVERT_GUID
+                // Bitmask indicates the conversions supported by the CONVERT scalar function for target type GUID
+                intParams[SQL_CONVERT_GUID] = SQL_CVT_CHAR | SQL_CVT_VARCHAR | SQL_CVT_LONGVARCHAR |
+                    SQL_CVT_WCHAR | SQL_CVT_WLONGVARCHAR | SQL_CVT_WVARCHAR |
+                    SQL_CVT_BINARY | SQL_CVT_VARBINARY | SQL_CVT_LONGVARBINARY | SQL_CVT_GUID;
+#endif //SQL_CONVERT_GUID
 
                 //======================= Short Params ========================
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
@@ -412,10 +635,10 @@ namespace ignite
 
                 StringInfoMap::const_iterator itStr = strParams.find(type);
 
-                if (itStr != strParams.cend()) 
+                if (itStr != strParams.end())
                 {
                     unsigned short strlen = static_cast<short>(
-                        utility::CopyStringToBuffer(itStr->second, 
+                        utility::CopyStringToBuffer(itStr->second,
                             reinterpret_cast<char*>(buf), buflen));
 
                     if (reslen)
@@ -426,7 +649,7 @@ namespace ignite
 
                 UintInfoMap::const_iterator itInt = intParams.find(type);
 
-                if (itInt != intParams.cend())
+                if (itInt != intParams.end())
                 {
                     unsigned int *res = reinterpret_cast<unsigned int*>(buf);
 
@@ -437,7 +660,7 @@ namespace ignite
 
                 UshortInfoMap::const_iterator itShort = shortParams.find(type);
 
-                if (itShort != shortParams.cend())
+                if (itShort != shortParams.end())
                 {
                     unsigned short *res = reinterpret_cast<unsigned short*>(buf);
 

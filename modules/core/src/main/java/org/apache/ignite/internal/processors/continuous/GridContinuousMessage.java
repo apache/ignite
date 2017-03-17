@@ -48,7 +48,7 @@ public class GridContinuousMessage implements Message {
     private UUID routineId;
 
     /** Optional message data. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Object data;
 

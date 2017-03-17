@@ -193,6 +193,10 @@
     <ClInclude Include="..\..\include\ignite\cache\cache.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_entry.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h" />
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query.h" />
+    <ClInclude Include="..\..\include\ignite\cache\query\continuous\continuous_query_handle.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h" />
@@ -208,6 +212,8 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_handle_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\continuous\continuous_query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
@@ -229,6 +235,7 @@
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
