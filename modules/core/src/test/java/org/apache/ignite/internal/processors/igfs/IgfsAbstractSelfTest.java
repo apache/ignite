@@ -2714,7 +2714,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             // LocalIgfsSecondaryFileSystem reports zero block size.
             return;
 
-        final MetricExpectations e = new MetricExpectations(dual, proxy, blockSize, secBlockSize);
+        final MetricExpectations e = new MetricExpectations(blockSize, secBlockSize);
 
         igfs.configuration().setPrefetchBlocks(0);
 
@@ -2753,40 +2753,38 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         final IgfsMetrics initMetrics = igfs.metrics();
 
         assert blockSize > 0 : "Unexpected block size: " + blockSize;
+        assert secBlockSize >= blockSize : "Unexpected secondary block size: " + secBlockSize;
 
         checkBlockMetrics(initMetrics, igfs.metrics(), 0, 0, 0, 0, 0, 0);
 
         // Write two blocks to the file.
-        final int writtenFile1 = blockSize * 7;
+        final int writtenBytesFile1 = blockSize * 7;
 
-        e.primBlocksWritten = writtenFile1 / blockSize;
-        e.rmtBlocksWritten  = writtenFile1 / secBlockSize;
+        e.addBytesWritten(writtenBytesFile1, !proxy, dual || proxy);
 
         try (IgfsOutputStream os = igfs.append(file1, true)) {
-            os.write(new byte[writtenFile1]);
+            os.write(new byte[writtenBytesFile1]);
         }
 
         checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
-        int writtenFile2 = blockSize;
+        @SuppressWarnings("PointlessArithmeticExpression") final int writtenBytesFile2 = blockSize * 1;
 
         // Write one more file (one block).
         try (IgfsOutputStream os = igfs.create(file2, 256, true, null, 1, 256, null)) {
-            os.write(new byte[writtenFile2]);
+            os.write(new byte[writtenBytesFile2]);
         }
 
-        e.primBlocksWritten += writtenFile2 / blockSize;
-        // 8 for dual is because in dual tests we have
-        e.rmtBlocksWritten += writtenFile2 / secBlockSize;//(dual || proxy) ? 8 : 3; // Not 4 because one file is of 3.5 secondary blocks, and the other is 0.5 blocks.
+        e.addBytesWritten(writtenBytesFile2, !proxy, dual || proxy);
 
         checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
-        e.primBlocksRead = 2;
-
         // Read data from the first file.
         try (IgfsInputStream is = igfs.open(file1)) {
-            is.readFully(0, new byte[blockSize * (int)e.primBlocksRead]);
+            is.readFully(0, new byte[blockSize * 2]);
         }
+
+        e.addBytesRead(blockSize * 2, proxy);
 
         checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
@@ -2795,7 +2793,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             ((IgfsInputStreamImpl)is).readChunks(0, blockSize);
         }
 
-        e.primBlocksRead++;
+        e.addBytesRead(blockSize, proxy);
 
         checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
@@ -2817,7 +2815,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 ((IgfsInputStreamImpl)is).readChunks(0, rmtBlockSize);
             }
 
-            e.rmtBlocksRead++;
+            e.addBytesRead(rmtBlockSize, dual || proxy);
 
             checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
@@ -2829,22 +2827,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 ((IgfsInputStreamImpl)is).readChunks(0, rmtBlockSize);
             }
 
-            if (dual)
-                e.primBlocksRead++;
-            else
-                e.rmtBlocksRead++;
+            e.addBytesRead(rmtBlockSize, !dual || proxy);
 
             checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
-            final int written3 = rmtBlockSize;
+            @SuppressWarnings("PointlessArithmeticExpression") final int writtenBytes3 = rmtBlockSize * 1;
 
             // Write some data to the file working in DUAL mode.
             try (IgfsOutputStream os = igfs.append(fileRemote, false)) {
-                os.write(new byte[written3]);
+                os.write(new byte[writtenBytes3]);
             }
 
-            e.primBlocksWritten += written3 / blockSize;
-            e.rmtBlocksWritten += written3 / secBlockSize;
+            e.addBytesWritten(writtenBytes3, !proxy, dual || proxy);
 
             checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
@@ -2861,7 +2855,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 os.write(new byte[blockSize / 2]);
             }
 
-            e.primBlocksWritten += 0.5;
+            e.addBytesWritten(blockSize / 2, !proxy, dual || proxy);
 
             checkMetricExpectations(initMetrics, igfs.metrics(), e);
 
@@ -2875,7 +2869,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 ((IgfsInputStreamImpl)is).readChunks(0, blockSize / 2);
             }
 
-            e.primBlocksRead += 0.5;
+            e.addBytesRead(blockSize / 2, proxy);
 
             assertEquals(5, igfs.metrics().blocksReadTotal());
 
@@ -2906,7 +2900,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     public void testMetricsBlockSmallWrites() throws Exception {
         assert !dual || igfsSecondaryFileSystem != null;
-        final boolean localSecondary = igfsSecondary instanceof IgfsLocalSecondaryFileSystemTestAdapter;
+        final boolean locSecondary = igfsSecondary instanceof IgfsLocalSecondaryFileSystemTestAdapter;
 
         final IgfsPath file00 = new IgfsPath("/file00");
 
@@ -2916,9 +2910,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         IgfsFile f2 = igfsSecondaryFileSystem.info(file00);
         int b2 = f2 == null ? blockSize : f2.blockSize();
-        //long gsize2 = f2.groupBlockSize();
 
-        if (isProxy() && localSecondary) {
+        if (isProxy() && locSecondary) {
             assert blockSize == 0;
 
             return; // The test does not make sense.
@@ -2955,13 +2948,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
         }
 
-        int expectedPrimaryBlcoks = writtenCnt / blockSize;
-        int expectedSecondaryBlocks = b2 == 0 ? 0 : writtenCnt / b2;
+        int expPrimaryBlcoks = writtenCnt / blockSize;
+        int expSecondaryBlocks = b2 == 0 ? 0 : writtenCnt / b2;
 
         checkBlockMetrics(initMetrics, igfs.metrics(),
             0, 0, 0,
-            isProxy() ? 0 : expectedPrimaryBlcoks /*primaryBlocksWrite*/,
-            !localSecondary && (dual || isProxy()) ? expectedSecondaryBlocks : 0 /*secondaryBlocksWrite*/,
+            isProxy() ? 0 : expPrimaryBlcoks,
+            !locSecondary && (dual || isProxy()) ? expSecondaryBlocks : 0,
             writtenCnt);
     }
 
@@ -3160,107 +3153,114 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      * Metrics expectations.
      */
     private static class MetricExpectations {
-        /** Proxy mode. */
-        private final boolean proxy;
-
-        /** Dual mode. */
-        private final boolean dual;
-
-        /** Proxy mode. */
-        private final int blockSize;
+        /** Primary block size. */
+        private final int primBlockSize;
 
         /** Remote block size.  */
         private final int rmtBlockSize;
 
-        /** How many blocks read from the primary file system after primary write. */
-        double primBlocksRead;
+        /** Total number of bytes written. */
+        private long bytesRead;
 
-        /** How many blocks read read from primary if the
+        /** Total bytes written. */
+        private long bytesWritten;
+
+        /** How many blocks read from the primary file system after primary write. */
+        private long primBlocksRead;
+
+        /** How many blocks read from primary if the
          * file existed in secondary but did not exist in primary (fetched up). */
-        double rmtBlocksRead;
+        private long rmtBlocksRead;
 
         /** How many blocks written to the primary file system. */
-        double primBlocksWritten;
+        private long primBlocksWritten;
 
         /** How many blocks written to the secondary file system. */
-        double rmtBlocksWritten;
+        private long rmtBlocksWritten;
 
         /**
          * Constructor.
          *
-         * @param dual If dual mode.
-         * @param proxy If proxy mode.
          * @param primBlockSize Block size.
          * @param secBlockSize Block size.
          */
-        MetricExpectations(boolean dual, boolean proxy, int primBlockSize, int secBlockSize) {
-            this.dual = dual;
-            this.proxy = proxy;
-
-            this.blockSize = primBlockSize;
+        MetricExpectations(int primBlockSize, int secBlockSize) {
+            this.primBlockSize = primBlockSize;
             this.rmtBlockSize = secBlockSize;
-        }
-
-        /**
-         * @return Total blocks read as double.
-         */
-        double totalBlocksRead0() {
-            if (proxy || dual)
-                return primBlocksRead + rmtBlocksRead;
-
-            return primBlocksRead;
         }
 
         /**
          * @return Total blocks read.
          */
-        int totalBlocksRead() {
-            return (int)totalBlocksRead0();
+        long totalBlocksRead() {
+            return primBlocksRead + rmtBlocksRead;
         }
 
         /**
          * @return Remote blocks read.
          */
-        double rmtBlocksRead0() {
+        long rmtBlocksRead() {
             return rmtBlocksRead;
-        }
-
-        /**
-         * @return Remote blocks read.
-         */
-        int rmtBlocksRead() {
-            if (proxy)
-                return totalBlocksRead();
-
-            return (int)rmtBlocksRead0();
         }
 
         /**
          * @return Bytes read.
          */
         long bytesRead() {
-            return (long)(blockSize * primBlocksRead + rmtBlockSize * rmtBlocksRead);
+            return bytesRead;
         }
 
         /**
          * @return Blocks written.
          */
-        int primBlocksWritten() {
-            return proxy ? 0 : (int)primBlocksWritten;
+        long primBlocksWritten() {
+            return primBlocksWritten;
         }
 
         /**
          * @return Blocks written.
          */
-        int rmtBlocksWritten() {
-            return (dual || proxy) ? (int)rmtBlocksWritten : 0;
+        long rmtBlocksWritten() {
+            return rmtBlocksWritten;
         }
 
         /**
          * @return Bytes written.
          */
         long bytesWritten() {
-            return (long)(blockSize * primBlocksWritten);
+            return bytesWritten;
+        }
+
+        /**
+         * Handles byte read.
+         *
+         * @param read Bytes read.
+         * @param remoteRead if the read was from the remote file system.
+         */
+        void addBytesRead(long read, boolean remoteRead) {
+            bytesRead += read;
+
+            if (remoteRead)
+                rmtBlocksRead += read / rmtBlockSize;
+            else
+                primBlocksRead += read / primBlockSize;
+        }
+
+        /**
+         * Handles bytes write.
+         *
+         * @param written How many bytes written.
+         * @param prim if to update the primary counters
+         * @param rmt if to update the remote counters
+         */
+        void addBytesWritten(long written, boolean prim, boolean rmt) {
+            bytesWritten += written;
+
+            if (prim)
+                primBlocksWritten += written / primBlockSize;
+
+            if (rmt)
+                rmtBlocksWritten += written / rmtBlockSize;
         }
     }
 
@@ -3282,12 +3282,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         throws Exception {
         assert metrics != null;
 
+        Assert.assertEquals(bytesRead, metrics.bytesRead() - initMetrics.bytesRead());
         Assert.assertEquals(blocksRead, metrics.blocksReadTotal() - initMetrics.blocksReadTotal());
         Assert.assertEquals(blocksReadRemote, metrics.blocksReadRemote() - initMetrics.blocksReadRemote());
-        Assert.assertEquals(bytesRead, metrics.bytesRead() - initMetrics.bytesRead());
 
-        Assert.assertEquals(blocksWrite, metrics.blocksWrittenTotal() - initMetrics.blocksWrittenTotal());
         Assert.assertEquals(bytesWrite, metrics.bytesWritten() - initMetrics.bytesWritten());
+        Assert.assertEquals(blocksWrite, metrics.blocksWrittenTotal() - initMetrics.blocksWrittenTotal());
         Assert.assertEquals(blocksWriteRemote, metrics.blocksWrittenRemote() - initMetrics.blocksWrittenRemote());
     }
 }
