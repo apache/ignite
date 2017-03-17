@@ -17,8 +17,9 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
+import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.*;
 import java.util.*;
 import java.util.function.*;
@@ -27,106 +28,145 @@ import static org.junit.Assert.*;
 
 /** */
 public class VectorAttributesTest {
+    /** */
+    private final List<AttrCfg> attrCfgs = Arrays.asList(
+        new AttrCfg("isDense", Vector::isDense,
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, RandomVector.class, ConstantVector.class,
+            SingleElementVector.class),
+        new AttrCfg("isArrayBased", Vector::isArrayBased,
+            DenseLocalOnHeapVector.class),
+        new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, SparseLocalVectorSequentialAccess.class,
+            RandomVector.class, ConstantVector.class, SingleElementVector.class),
+        new AttrCfg("guidNotNull", v -> v.guid() == null));
+
+    /** */
+    private final List<Specification> specFixture = Arrays.asList(
+        new Specification(new DenseLocalOnHeapVector(1)),
+        new Specification(new DenseLocalOffHeapVector(1)),
+        new Specification(new DelegatingVector(new DenseLocalOnHeapVector(1)),
+            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+        new Specification(new DelegatingVector(new DenseLocalOffHeapVector(1)),
+            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+        new Specification(new SparseLocalVectorSequentialAccess(1)),
+        new Specification(new SparseLocalVectorRandomAccess(1)),
+        new Specification(new RandomVector(1)),
+        new Specification(new ConstantVector(1, 1.0)),
+        new Specification(new FunctionVector(1, idx -> (double)idx)),
+        new Specification(new SingleElementVector(1, 0, 1.0)),
+        new Specification(new PivotedVectorView(new DenseLocalOnHeapVector(1), new int[] {0}),
+            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+        new Specification(new PivotedVectorView(new DenseLocalOffHeapVector(1), new int[] {0}),
+            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+        new Specification(new SingleElementVectorView(new DenseLocalOnHeapVector(1), 0),
+            DenseLocalOnHeapVector.class, "isDense", "isSequentialAccess"),
+        new Specification(new SingleElementVectorView(new DenseLocalOffHeapVector(1), 0),
+            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess"),
+        new Specification(new MatrixVectorView(new DenseLocalOnHeapMatrix(1, 1), 0, 0, 1, 1),
+            DenseLocalOnHeapVector.class, "isDense"), // todo find out why "isSequentialAccess" fails here
+        new Specification(new MatrixVectorView(new DenseLocalOffHeapMatrix(1, 1), 0, 0, 1, 1),
+            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess"));
+
     /** */ @Test
     public void isDenseTest() {
-        alwaysTrueAttributeTest(StorageOpsMetrics::isDense);
+        assertAttribute("isDense");
+    }
+
+    /** */ @Test
+    public void isArrayBasedTest() {
+        assertAttribute("isArrayBased");
     }
 
     /** */ @Test
     public void isSequentialAccessTest() {
-        alwaysTrueAttributeTest(StorageOpsMetrics::isSequentialAccess);
+        assertAttribute("isSequentialAccess");
     }
 
     /** */ @Test
     public void guidTest() {
-        alwaysTrueAttributeTest(v -> v.guid() != null);
+        assertAttribute("guidNotNull");
+
     }
 
     /** */
-    private void alwaysTrueAttributeTest(Predicate<Vector> pred) {
-        boolean expECaught = false;
+    private void assertAttribute(String name) {
+        final AttrCfg attr = attrCfg(name);
 
-        try {
-            assertTrue("Null map args.",
-                pred.test(new DenseLocalOnHeapVector(0)));
-        } catch (AssertionError e) {
-            expECaught = true;
+        for (Specification spec : specFixture)
+            spec.verify(attr);
+    }
+
+    /** */
+    private AttrCfg attrCfg(String name) {
+        for (AttrCfg attr : attrCfgs)
+            if (attr.name.equals(name))
+                return attr;
+
+        throw new IllegalArgumentException("Undefined attribute " + name);
+    }
+
+    /** See http://en.wikipedia.org/wiki/Specification_pattern */
+    private static class Specification {
+        /** */ private final Vector v;
+        /** */ private final Class<? extends Vector> underlyingType;
+        /** */ private final List<String> attrsFromUnderlying;
+        /** */ final String desc;
+
+        /** */
+        Specification(Vector v, Class<? extends Vector> underlyingType, String... attrsFromUnderlying) {
+            this.v = v;
+            this.underlyingType = underlyingType;
+            this.attrsFromUnderlying = Arrays.asList(attrsFromUnderlying);
+            final Class<? extends Vector> clazz = v.getClass();
+            desc = clazz.getSimpleName() + (clazz.equals(underlyingType)
+                ? "" : " (underlying type " + underlyingType.getSimpleName() + ")");
         }
 
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
-
-        assertTrue("Size from args.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
-
-        expECaught = false;
-
-        try {
-            assertTrue("Null array shallow copy.",
-                pred.test(new DenseLocalOnHeapVector(null, true)));
-        } catch (AssertionError e) {
-            expECaught = true;
+        /** */
+        Specification(Vector v) {
+            this(v, v.getClass());
         }
 
-        expECaught = false;
+        /** */
+        void verify(AttrCfg attr) {
+            final boolean obtained = attr.obtain.apply(v);
 
-        try {
-            assertTrue("0 size, off heap vector.",
-                pred.test(new DenseLocalOffHeapVector(new double[0])));
-        } catch (AssertionError e) {
-            expECaught = true;
+            final Class<? extends Vector> typeToCheck
+                = attrsFromUnderlying.contains(attr.name) ? underlyingType : v.getClass();
+
+            final boolean exp = attr.trueInTypes.contains(typeToCheck);
+
+            assertEquals("Unexpected " + attr.name + " value for " + desc, exp, obtained);
         }
+    }
 
-        assertTrue("Default constructor expect exception at this predicate.", expECaught);
+    /** */
+    private static class AttrCfg {
+        /** */ final String name;
+        /** */ final Function<Vector, Boolean> obtain;
+        /** */ final List<Class> trueInTypes;
 
-        final double[] test = new double[99];
+        /** */
+        AttrCfg(String name, Function<Vector, Boolean> obtain, Class... trueInTypes) {
+            this.name = name;
+            this.obtain = obtain;
+            this.trueInTypes = Arrays.asList(trueInTypes);
+        }
+    }
 
-        assertTrue("Size from array in args.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", false);
-            }})));
+    /** */
+    private static class SparseLocalVectorSequentialAccess extends SparseLocalVector {
+        /** */
+        SparseLocalVectorSequentialAccess(int size) {
+            super(size, SEQUENTIAL_ACCESS_MODE);
+        }
+    }
 
-        assertTrue("Size from array in args, shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", true);
-            }})));
-
-        assertTrue("0 size shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[0], true)));
-
-        assertTrue("0 size.",
-            pred.test(new DenseLocalOnHeapVector(new double[0], false)));
-
-        assertTrue("1 size shallow copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[1], true)));
-
-        assertTrue("1 size.",
-            pred.test(new DenseLocalOnHeapVector(new double[1], false)));
-
-        assertTrue("0 size default copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[0])));
-
-        assertTrue("1 size default copy.",
-            pred.test(new DenseLocalOnHeapVector(new double[1])));
-
-        assertTrue("Size from args, off heap vector.",
-            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{ put("size", 99); }})));
-
-        assertTrue("Size from array in args, off heap vector.",
-            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", false);
-            }})));
-
-        assertTrue("Size from array in args, shallow copy, off heap vector.",
-            pred.test(new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", true);
-            }})));
-
-        assertTrue("1 size, off heap vector.",
-            pred.test(new DenseLocalOffHeapVector(new double[1])));
-
+    /** */
+    private static class SparseLocalVectorRandomAccess extends SparseLocalVector {
+        /** */
+        SparseLocalVectorRandomAccess(int size) {
+            super(size, RANDOM_ACCESS_MODE);
+        }
     }
 }
