@@ -406,6 +406,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override @Nullable public Map<Integer, int[]> stripeMap() {
+        //stripeMap = null;
         return stripeMap;
     }
 

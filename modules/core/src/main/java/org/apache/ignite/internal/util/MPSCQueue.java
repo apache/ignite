@@ -41,7 +41,7 @@ public final class MPSCQueue<E> extends AbstractQueue<E> implements BlockingQueu
     /** */
     final AtomicReference<Node> putStack = new AtomicReference<>();
     /** */
-    private final AtomicInteger takeStackSize = new AtomicInteger();
+    //private final AtomicInteger takeStackSize = new AtomicInteger();
 
     /** */
     private Thread consumerThread;
@@ -189,7 +189,7 @@ public final class MPSCQueue<E> extends AbstractQueue<E> implements BlockingQueu
     private void dequeue() {
         takeStack[takeStackIndex] = null;
         takeStackIndex++;
-        takeStackSize.lazySet(takeStackSize.get() - 1);
+        //takeStackSize.lazySet(takeStackSize.get() - 1);
     }
 
     /** */
@@ -248,7 +248,7 @@ public final class MPSCQueue<E> extends AbstractQueue<E> implements BlockingQueu
     private void copyIntoTakeStack(Node putStackHead) {
         int putStackSize = putStackHead.size;
 
-        takeStackSize.lazySet(putStackSize);
+        //takeStackSize.lazySet(putStackSize);
 
         if (putStackSize > takeStack.length)
             takeStack = new Object[nextPowerOfTwo(putStackHead.size)];
@@ -270,7 +270,7 @@ public final class MPSCQueue<E> extends AbstractQueue<E> implements BlockingQueu
     @Override public int size() {
         Node h = putStack.get();
         int putStackSize = h == null ? 0 : h.size;
-        return putStackSize + takeStackSize.get();
+        return putStackSize + 0;//takeStackSize.get();
     }
 
     /** {@inheritDoc}. */

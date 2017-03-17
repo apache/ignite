@@ -1761,6 +1761,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         completionCb.apply(req, res);
     }
 
+    private GridCacheVersion ver;
+
+
     /**
      * Executes local update after preloader fetched values.
      *
@@ -1837,13 +1840,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     // Do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
-                    if (req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
+                    if (true || req.topologyLocked() || !needRemap(req.topologyVersion(), top.topologyVersion())) {
                         locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
 
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         // Assign next version for update inside entries lock.
-                        GridCacheVersion ver = ctx.versions().next(top.topologyVersion());
+                        if (ver == null)
+                            ver = ctx.versions().next(top.topologyVersion());
 
                         if (hasNear)
                             res.nearVersion(ver);
@@ -1859,7 +1863,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         int size = stripeIdxs == null ? req.size() : stripeIdxs.length;
 
-                        dhtFut = createDhtFuture(ver, req, size);
+                        dhtFut = null;//createDhtFuture(ver, req, size);
 
                         expiry = expiryPolicy(req.expiry());
 
@@ -1977,9 +1981,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             completionCb.apply(req, res);
         }
-        else
+        else {
             if (dhtFut != null)
                 dhtFut.map(node, res.returnValue(), res, completionCb);
+            else
+                completionCb.apply(req, res);
+        }
 
         if (req.writeSynchronizationMode() != FULL_ASYNC)
             req.cleanup(!node.isLocal());

@@ -55,11 +55,13 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearAtomicResponseHelper;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.MPSCQueue;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -201,6 +203,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     };
 
+    private Thread resThread;
+
+    private MPSCQueue<Runnable> q;
+
     /**
      * @param ctx Grid kernal context.
      */
@@ -221,6 +227,26 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
+
+        resThread = new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        Runnable r = q.take();
+
+                        r.run();
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        q = new MPSCQueue<>(resThread);
+
+        resThread.setDaemon(true);
+        resThread.start();
     }
 
     /**
@@ -822,6 +848,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             return;
         }
+
+//        if (msg.message() instanceof GridNearAtomicUpdateResponse) {
+//            q.add(c);
+//
+//            return;
+//        }
+
 
         if (plc == GridIoPolicy.SYSTEM_POOL &&
             (msg.partition() != Integer.MIN_VALUE ||
