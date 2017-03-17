@@ -30,13 +30,13 @@ import java.util.function.*;
  * can add weights, indices, etc. while maintaining full vector functionality.
  */
 public class DelegatingVector implements Vector {
-    // Delegating vector.
+    /** Delegating vector. */
     private Vector dlg;
 
-    // Meta attribute storage.
+    /** Meta attribute storage. */
     private Map<String, Object> meta = new HashMap<>();
 
-    // GUID.
+    /** GUID. */
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /** */
@@ -60,8 +60,11 @@ public class DelegatingVector implements Vector {
     public DelegatingVector(Map<String, Object> args) {
         assert args != null;
 
-        if (args.containsKey("delegate"))
+        if (args.containsKey("delegate")) {
             dlg = (Vector)args.get("delegate");
+
+            assert dlg != null;
+        }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
@@ -74,9 +77,8 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override
     @SuppressWarnings("unchecked")
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         dlg = (Vector)in.readObject();
         meta = (Map<String, Object>)in.readObject();
         guid = (IgniteUuid)in.readObject();
@@ -138,8 +140,7 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Vector sort() {
+    @Override public Vector sort() {
         return dlg.sort();
     }
 
@@ -363,13 +364,14 @@ public class DelegatingVector implements Vector {
         dlg.destroy();
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = 1;
+        int res = 1;
 
-        result = result * 37 + meta.hashCode();
-        result = result * 37 + dlg.hashCode();
+        res = res * 37 + meta.hashCode();
+        res = res * 37 + dlg.hashCode();
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
