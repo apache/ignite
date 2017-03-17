@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -37,6 +35,10 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** Underlying target. */
     private final PlatformTarget target;
 
+    /**
+     * @param target Platform target.
+     * @param platformCtx Platform context.
+     */
     public PlatformTargetProxyImpl(PlatformTarget target, PlatformContext platformCtx) {
         assert platformCtx != null;
         assert target != null;
@@ -115,15 +117,13 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
 
             final PlatformAsyncResult res = target.processInStreamAsync(type, reader);
 
-            if (res == null) {
+            if (res == null)
                 throw new IgniteException("PlatformTarget.processInStreamAsync should not return null.");
-            }
 
             IgniteFuture fut = res.future();
 
-            if (fut == null) {
+            if (fut == null)
                 throw new IgniteException("PlatformAsyncResult.future() should not return null.");
-            }
 
             PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, new PlatformFutureUtils.Writer() {
                 /** {@inheritDoc} */
