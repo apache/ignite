@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -160,8 +159,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      *
      * @param txMapping Transaction mapping.
      */
-    protected final void checkOnePhase(GridDhtTxMapping txMapping) {
-        if (tx.storeUsed())
+    final void checkOnePhase(GridDhtTxMapping txMapping) {
+        if (tx.storeWriteThrough())
             return;
 
         Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();

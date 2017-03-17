@@ -423,7 +423,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @param val Value to set.
      */
-    void setAndMarkValid(CacheObject val) {
+    public void setAndMarkValid(CacheObject val) {
         setAndMarkValid(op(), val, this.val.hasWriteValue(), this.val.hasReadValue());
     }
 
@@ -451,7 +451,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * Marks this entry as value-has-bean-read. Effectively, makes values enlisted to transaction visible
      * to further peek operations.
      */
-    void markValid() {
+    public void markValid() {
         prevVal.value(val.op(), val.value(), val.hasWriteValue(), val.hasReadValue());
     }
 
