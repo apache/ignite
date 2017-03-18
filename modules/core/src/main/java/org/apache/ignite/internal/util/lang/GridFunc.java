@@ -2318,16 +2318,33 @@ public class GridFunc {
     }
 
     /**
-     * Tests if the given path is a directory and is not {@code null} or empty.
+     * Tests if the given path is not {@code null} and is an empty directory.
      *
      * @param dir Path to test.
-     * @return Whether or not the given path is a directory and is not {@code null} or empty.
+     * @return Whether or not the given path is not {@code null} and is an empty directory.
      */
     public static boolean isEmptyDirectory(Path dir) {
         if (dir == null || !Files.isDirectory(dir))
             return false;
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
             return !files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Tests if the given path is not {@code null} and is a not empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is a not empty directory.
+     */
+    public static boolean isNotEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return files.iterator().hasNext();
         }
         catch (IOException e) {
             throw new IgniteException(e);
