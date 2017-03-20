@@ -406,9 +406,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IndexAbstractDiscoveryMessage msg = ((IndexExchangeWorkerTask)task).message();
 
             if (msg instanceof IndexAcceptDiscoveryMessage)
-                onIndexAcceptMessageExchange((IndexAcceptDiscoveryMessage)msg);
+                ctx.query().onIndexAcceptMessage((IndexAcceptDiscoveryMessage)msg);
             else if (msg instanceof IndexFinishDiscoveryMessage)
-                onIndexFinishMessageExchange((IndexFinishDiscoveryMessage)msg);
+                ctx.query().onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported index discovery message: " + msg);
         }
@@ -2803,15 +2803,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle index accept message in exchange thread.
-     *
-     * @param msg Message.
-     */
-    private void onIndexAcceptMessageExchange(IndexAcceptDiscoveryMessage msg) {
-        // TODO
-    }
-
-    /**
      * Handle cache index ack discovery message.
      *
      * @param msg Message.
@@ -2825,15 +2816,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         desc.tryFinish(msg, true);
-    }
-
-    /**
-     * Handle index finish message in exchange thread.
-     *
-     * @param msg Message.
-     */
-    private void onIndexFinishMessageExchange(IndexFinishDiscoveryMessage msg) {
-        // TODO
     }
 
     /**

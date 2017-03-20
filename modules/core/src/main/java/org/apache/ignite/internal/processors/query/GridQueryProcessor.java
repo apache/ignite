@@ -64,9 +64,12 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.task.IndexingAcceptTask;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStartTask;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStopTask;
+import org.apache.ignite.internal.processors.query.ddl.task.IndexingFinishTask;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -341,6 +344,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Handle index accept message.
+     *
+     * @param msg Message.
+     */
+    public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
+        idxWorker.onAccept(msg);
+    }
+
+    /**
+     * Handle index accept message.
+     *
+     * @param msg Message.
+     */
+    public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
+        idxWorker.onFinish(msg);
     }
 
     /**
@@ -1100,6 +1121,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param ldr Class loader to undeploy.
      * @throws IgniteCheckedException If undeploy failed.
      */
+    // TODO: Can we remove this method? Handle undeploy for indexing otherwise.
     public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Undeploy [space=" + space + "]");
@@ -1293,10 +1315,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 IndexingTask task = tasks.take();
 
                 if (task != null) {
-                    if (task instanceof IndexingCacheStartTask)
-                        handleCacheStart((IndexingCacheStartTask)task);
+                    if (task instanceof IndexingCacheStartTask) {
+                        IndexingCacheStartTask task0 = (IndexingCacheStartTask)task;
+
+                        handleCacheStart(task0.space(), task0.initialIndexStates());
+                    }
                     else if (task instanceof IndexingCacheStopTask)
                         handleCacheStop((IndexingCacheStopTask)task);
+                    else if (task instanceof IndexingAcceptTask)
+                        handleAccept(((IndexingAcceptTask)task).message());
+                    else if (task instanceof IndexingFinishTask)
+                        handleFinish(((IndexingFinishTask)task).message());
                     else
                         U.warn(log, "Unsupported task: " + task);
                 }
@@ -1325,9 +1354,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /**
          * Handle cache start task.
          *
-         * @param task Task.
+         * @param space Space.
+         * @param initIdxStates Initial index states.
          */
-        private void handleCacheStart(IndexingCacheStartTask task) {
+        private void handleCacheStart(String space, QueryIndexStates initIdxStates) {
             // TODO: Start active operations.
         }
 
@@ -1350,6 +1380,42 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             removeIndexesOnSpaceUnregister(task.space());
 
             completeIndexClientFuturesOnSpaceUnregister(task.space(), true);
+        }
+
+        /**
+         * Index accept callback.
+         *
+         * @param msg Message.
+         */
+        public void onAccept(IndexAcceptDiscoveryMessage msg) {
+            submit(new IndexingAcceptTask(msg));
+        }
+
+        /**
+         * Handle index accept.
+         *
+         * @param msg Message.
+         */
+        private void handleAccept(IndexAcceptDiscoveryMessage msg) {
+            // TODO
+        }
+
+        /**
+         * Index finish callback.
+         *
+         * @param msg Message.
+         */
+        public void onFinish(IndexFinishDiscoveryMessage msg) {
+            submit(new IndexingFinishTask(msg));
+        }
+
+        /**
+         * Handle index finish.
+         *
+         * @param msg Message.
+         */
+        private void handleFinish(IndexFinishDiscoveryMessage msg) {
+            // TODO
         }
 
         /**
@@ -1401,30 +1467,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (crdChanged) {
                 // TODO: Process new coordinator.
             }
-        }
-    }
-
-    /**
-     * Change index task.
-     */
-    private static class ChangeIndexingTask implements IndexingTask {
-        /** Operation. */
-        private final AbstractIndexOperation op;
-
-        /**
-         * Constructor.
-         *
-         * @param op Operation.
-         */
-        public ChangeIndexingTask(AbstractIndexOperation op) {
-            this.op = op;
-        }
-
-        /**
-         * @return Operation.
-         */
-        public AbstractIndexOperation operation() {
-            return op;
         }
     }
 
