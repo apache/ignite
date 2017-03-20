@@ -163,44 +163,6 @@ public class QueryIndexStates implements Serializable {
     }
 
     /**
-     * Get initial delta to be applied to the table.
-     * @param tblName Table name.
-     * @return Delta.
-     */
-    public Map<String, QueryIndex> initialDelta(String tblName) {
-        synchronized (mux) {
-            Map<String, QueryIndex> res = new HashMap<>();
-
-            for (QueryIndexState idxState : readyOps.values()) {
-                if (F.eq(tblName, idxState.tableName()))
-                    res.put(idxState.indexName(), idxState.index());
-            }
-
-            for (Map.Entry<String, QueryIndexActiveOperation> op : activeOps.entrySet()) {
-                if (op.getValue().accepted()) {
-                    AbstractIndexOperation op0 = op.getValue().operation();
-
-                    if (F.eq(tblName, op0.tableName())) {
-                        QueryIndex idx;
-
-                        if (op0 instanceof CreateIndexOperation)
-                            idx = ((CreateIndexOperation)op0).index();
-                        else {
-                            assert op0 instanceof DropIndexOperation;
-
-                            idx = null;
-                        }
-
-                        res.put(op0.indexName(), idx);
-                    }
-                }
-            }
-
-            return res;
-        }
-    }
-
-    /**
      * @return Accepted active operations.
      */
     public Map<String, QueryIndexActiveOperation> acceptedActiveOperations() {
