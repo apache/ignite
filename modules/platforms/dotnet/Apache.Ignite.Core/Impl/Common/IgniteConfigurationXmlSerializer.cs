@@ -84,8 +84,14 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
-            if (property != null && (!property.CanWrite || IsObsolete(property)))
-                return;
+            if (property != null)
+            {
+                if (!property.CanWrite && !IsKeyValuePair(property.DeclaringType))
+                    return;
+
+                if (IsObsolete(property))
+                    return;
+            }
 
             if (valueType == typeof(IgniteConfiguration))
                 writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
@@ -416,11 +422,21 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(propertyType != null);
 
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>))
+            if (IsKeyValuePair(propertyType))
                 return false;
 
             return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type) ||
                    propertyType == typeof (object);
+        }
+
+        /// <summary>
+        /// Determines whether specified type is KeyValuePair.
+        /// </summary>
+        private static bool IsKeyValuePair(Type propertyType)
+        {
+            Debug.Assert(propertyType != null);
+
+            return propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>);
         }
 
         /// <summary>
