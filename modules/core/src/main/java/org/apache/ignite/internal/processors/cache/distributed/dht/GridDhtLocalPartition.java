@@ -302,6 +302,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /** {@inheritDoc} */
+    public int heapSize() {
+        return map.size();
+    }
+
+    /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
         map.incrementPublicSize(e);
     }
