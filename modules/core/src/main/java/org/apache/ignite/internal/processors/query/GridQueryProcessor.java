@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStartTask;
+import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStopTask;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -516,9 +517,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // Clear indexes.
-            removeIndexesOnSpaceUnregister(space);
-
-            completeIndexClientFuturesOnSpaceUnregister(space, true);
+            idxWorker.onCacheStop(space);
 
             // Notify indexing.
             try {
@@ -1289,6 +1288,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // TODO Find coordinator.
 
             // TODO: Start processing tasks
+
+            while (!isCancelled()) {
+                IndexingTask task = tasks.take();
+
+                if (task != null) {
+                    if (task instanceof IndexingCacheStartTask)
+                        handleCacheStart((IndexingCacheStartTask)task);
+                    else if (task instanceof IndexingCacheStopTask)
+                        handleCacheStop((IndexingCacheStopTask)task);
+                    else
+                        U.warn(log, "Unsupported task: " + task);
+                }
+            }
         }
 
         /**
@@ -1308,6 +1320,36 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         public void onCacheStart(String space, QueryIndexStates initIdxStates) {
             submit(new IndexingCacheStartTask(space, initIdxStates));
+        }
+
+        /**
+         * Handle cache start task.
+         *
+         * @param task Task.
+         */
+        private void handleCacheStart(IndexingCacheStartTask task) {
+            // TODO: Start active operations.
+        }
+
+        /**
+         * Cache stopped callback.
+         *
+         * @param space Space.
+         */
+        public void onCacheStop(String space) {
+            submit(new IndexingCacheStopTask(space));
+        }
+
+        /**
+         * Handle cache stop task.
+         *
+         * @param task Task.
+         */
+        private void handleCacheStop(IndexingCacheStopTask task) {
+            // TODO: Correct implementation.
+            removeIndexesOnSpaceUnregister(task.space());
+
+            completeIndexClientFuturesOnSpaceUnregister(task.space(), true);
         }
 
         /**
