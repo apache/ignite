@@ -701,7 +701,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public final Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
+    @Override public final Iterable<Cache.Entry<K, V>> localEntries(
+        CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -715,9 +716,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.isLocal()) {
             modes.primary = true;
             modes.backup = true;
+        }
 
-            if (modes.heap)
-                its.add(iterator(map.entries().iterator(), !keepBinary));
+        if (modes.offheap) {
+            if (modes.heap && modes.near && ctx.isNear())
+                its.add(ctx.near().nearEntries().iterator());
+
+            if (modes.primary || modes.backup) {
+                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+                IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
+
+                its.add(offheapMgr.<K, V>entriesIterator(modes.primary, modes.backup, topVer, ctx.keepBinary()));
+            }
         }
         else if (modes.heap) {
             if (modes.near && ctx.isNear())
@@ -728,16 +739,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 its.add(cache.localEntriesIterator(modes.primary, modes.backup, keepBinary));
             }
-        }
-
-        // Swap and offheap are disabled for near cache.
-        if (modes.primary || modes.backup) {
-            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-            IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
-
-            if (modes.offheap)
-                its.add(offheapMgr.<K, V>entriesIterator(modes.primary, modes.backup, topVer, ctx.keepBinary()));
         }
 
         final Iterator<Cache.Entry<K, V>> it = F.flatIterators(its);
@@ -1002,11 +1003,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-         * Gets entry set containing internal entries.
-         *
-         * @param filter Filter.
-         * @return Entry set.
-         */
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
     @Override public final Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
         boolean keepBinary = ctx.keepBinary();
 
@@ -2912,7 +2913,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         do {
             for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null);
-                it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH;)
+                it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH; )
                 keys.add((K)it.next().key());
 
             removeAll(keys);
@@ -3841,7 +3842,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
         return ctx.kernalContext().task().execute(
-                new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part), null);
+            new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part), null);
     }
 
     /** {@inheritDoc} */

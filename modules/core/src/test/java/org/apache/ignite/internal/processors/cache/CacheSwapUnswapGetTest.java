@@ -277,31 +277,22 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
             int onheapSize = cache.localSize(CachePeekMode.ONHEAP);
             int offheapSize = cache.localSize(CachePeekMode.OFFHEAP);
-            int swapSize = cache.localSize(CachePeekMode.SWAP);
             int total = cache.localSize();
             long offheapMem = cache.localMetrics().getOffHeapAllocatedSize();
 
             log.info("Cache size [heap=" + onheapSize +
                 ", offheap=" + offheapSize +
-                ", swap=" + swapSize +
                 ", total=" + total +
                 ", offheapMem=" + offheapMem +  ']');
 
             assertTrue(total > 0);
 
-            assertEquals(onheapSize + offheapSize + swapSize, total);
+            assertEquals(onheapSize + offheapSize, total);
 
             if (memMode == CacheMemoryMode.OFFHEAP_TIERED)
                 assertEquals(0, onheapSize);
             else
                 assertEquals(MAX_HEAP_SIZE, onheapSize);
-
-            if (swap) {
-                assertTrue(swapSize > 0);
-                assertTrue(offheapMem <= OFFHEAP_MEM);
-            }
-            else
-                assertEquals(0, swapSize);
         }
         finally {
             done.set(true);
