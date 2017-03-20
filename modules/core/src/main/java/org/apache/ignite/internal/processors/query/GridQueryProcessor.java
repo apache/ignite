@@ -1115,64 +1115,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Removes index tables for all classes belonging to given class loader.
-     *
-     * @param space Space name.
-     * @param ldr Class loader to undeploy.
-     * @throws IgniteCheckedException If undeploy failed.
-     */
-    // TODO: Can we remove this method? Handle undeploy for indexing otherwise.
-    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Undeploy [space=" + space + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
-
-        try {
-            idxLock.writeLock().lock();
-
-            try {
-                Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
-
-                while (it.hasNext()) {
-                    Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> entry = it.next();
-
-                    if (!F.eq(entry.getKey().space(), space))
-                        continue;
-
-                    QueryTypeDescriptorImpl desc = entry.getValue();
-
-                    if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
-                        ldr.equals(U.detectClassLoader(desc.keyClass()))) {
-                        it.remove();
-
-                        removeIndexesOnSpaceUnregister(space);
-
-                        completeIndexClientFuturesOnSpaceUnregister(space, false);
-
-                        try {
-                            idx.unregisterType(entry.getKey().space(), desc.name());
-                        }
-                        catch (Exception e) {
-                            U.error(log, "Failed to clear indexing on type unregister (will ignore): " + space, e);
-                        }
-                    }
-                }
-            }
-            finally {
-                idxLock.writeLock().unlock();
-            }
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
      * Gets types for space.
      *
      * @param space Space name.
