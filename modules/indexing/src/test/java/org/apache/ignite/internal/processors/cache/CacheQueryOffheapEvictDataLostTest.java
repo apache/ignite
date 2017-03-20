@@ -30,7 +30,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
@@ -51,22 +50,15 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
-        ccfg1.setName("cache-1");
-        ccfg1.setMemoryMode(OFFHEAP_TIERED);
-        ccfg1.setOffHeapMaxMemory(1024);
-        ccfg1.setIndexedTypes(Integer.class, TestData.class);
+        ccfg.setName("cache-1");
+        ccfg.setMemoryMode(ONHEAP_TIERED);
+        ccfg.setEvictionPolicy(new LruEvictionPolicy(10));
+        ccfg.setOffHeapMaxMemory(1024);
+        ccfg.setIndexedTypes(Integer.class, TestData.class);
 
-        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>();
-
-        ccfg2.setName("cache-2");
-        ccfg2.setMemoryMode(ONHEAP_TIERED);
-        ccfg2.setEvictionPolicy(new LruEvictionPolicy(10));
-        ccfg2.setOffHeapMaxMemory(1024);
-        ccfg2.setIndexedTypes(Integer.class, TestData.class);
-
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -102,17 +94,12 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
 
             @Override public void apply(Integer idx) {
                 IgniteCache<Object, Object> cache1 = grid().cache("cache-1");
-                IgniteCache<Object, Object> cache2 = grid().cache("cache-2");
 
                 while (U.currentTimeMillis() < stopTime) {
-                    if (idx == 0) {
+                    if (idx == 0)
                         putGet(cache1);
-                        putGet(cache2);
-                    }
-                    else {
+                    else
                         query(cache1);
-                        query(cache2);
-                    }
                 }
             }
         }, 10, "test-thread");
