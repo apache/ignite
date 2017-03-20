@@ -41,11 +41,6 @@ public class GridCacheLocalAtomicSetSelfTest extends GridCacheSetAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }

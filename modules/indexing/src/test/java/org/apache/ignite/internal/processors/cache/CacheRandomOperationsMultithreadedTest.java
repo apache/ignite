@@ -51,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -104,32 +103,6 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            null,
-            false);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredIndexing() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            null,
-            true);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicOffheapEviction() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             ATOMIC,
@@ -148,32 +121,6 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
             ATOMIC,
             ONHEAP_TIERED,
             new LruEvictionPolicy<>(10),
-            true);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            null,
-            false);
-
-        randomOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredIndexing() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            null,
             true);
 
         randomOperations(ccfg);

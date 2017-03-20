@@ -45,7 +45,6 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -140,7 +139,6 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setBackups(2);
         cfg.setOffHeapMaxMemory(0);
-        cfg.setMemoryMode(OFFHEAP_TIERED);
 
         IgniteCache<String, Integer> cache = client.getOrCreateCache(cfg);
 

@@ -71,8 +71,6 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
             Long.class, Person.class
         );
 
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-
         c.setCacheConfiguration(ccfg);
 
         return c;

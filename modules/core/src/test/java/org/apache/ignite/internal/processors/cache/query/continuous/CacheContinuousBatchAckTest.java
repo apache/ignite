@@ -45,7 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -182,29 +181,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionOffheapWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionTxOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplicated() throws Exception {
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, ONHEAP_TIERED, false));
     }
@@ -223,29 +199,6 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         filterOn.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, ONHEAP_TIERED, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, ATOMIC, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTxOffheap() throws Exception {
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, OFFHEAP_TIERED, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTxOffheapWithFilter() throws Exception {
-        filterOn.set(true);
-
-        checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, OFFHEAP_TIERED, true));
     }
 
     /**

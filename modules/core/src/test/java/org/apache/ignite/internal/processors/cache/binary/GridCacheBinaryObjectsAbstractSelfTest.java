@@ -83,7 +83,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -191,19 +190,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setBackups(1);
 
-        if (offheapTiered()) {
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-            cacheCfg.setOffHeapMaxMemory(0);
-        }
-
         return cacheCfg;
-    }
-
-    /**
-     * @return {@code True} if should use OFFHEAP_TIERED mode.
-     */
-    protected boolean offheapTiered() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -237,11 +224,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.remove(i);
-
-        if (offheapTiered()) {
-            for (int k = 0; k < 100; k++)
-                c.remove(k);
-        }
 
         assertEquals(0, c.size());
     }

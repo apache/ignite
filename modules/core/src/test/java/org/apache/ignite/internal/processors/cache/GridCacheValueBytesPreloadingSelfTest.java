@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
-import java.util.Collections;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,7 +25,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,22 +71,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
      */
     public void testOnHeapTiered() throws Exception {
         memMode = ONHEAP_TIERED;
-
-        startGrids(1);
-
-        try {
-            checkByteArrays();
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOffHeapTiered() throws Exception {
-        memMode = OFFHEAP_TIERED;
 
         startGrids(1);
 

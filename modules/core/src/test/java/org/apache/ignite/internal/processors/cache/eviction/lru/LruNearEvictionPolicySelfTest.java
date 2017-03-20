@@ -103,29 +103,9 @@ public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffHeapNearEvictionMaxSize() throws Exception {
-        atomicityMode = ATOMIC;
-        memMode = CacheMemoryMode.OFFHEAP_TIERED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
         memMode = ONHEAP_TIERED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransactionalOffHeapNearEvictionMaxSize() throws Exception {
-        atomicityMode = TRANSACTIONAL;
-        memMode = CacheMemoryMode.OFFHEAP_TIERED;
 
         checkNearEvictionMaxSize();
     }

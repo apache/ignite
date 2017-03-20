@@ -56,7 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -330,15 +329,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         distributedJoins = true;
 
         checkAllCacheCombinationsSet1(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDistributedJoins1Offheap() throws Exception {
-        memMode = OFFHEAP_TIERED;
-
-        testDistributedJoins1();
     }
 
     /**

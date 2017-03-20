@@ -49,7 +49,6 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         ccfg.setNearConfiguration(null);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setOffHeapMaxMemory(0);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         cfg.setCacheConfiguration(ccfg);
 

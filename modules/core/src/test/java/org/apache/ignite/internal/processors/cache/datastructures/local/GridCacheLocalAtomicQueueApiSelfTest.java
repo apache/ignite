@@ -27,10 +27,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
  * Queue tests with local atomic cache.
  */
 public class GridCacheLocalAtomicQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {

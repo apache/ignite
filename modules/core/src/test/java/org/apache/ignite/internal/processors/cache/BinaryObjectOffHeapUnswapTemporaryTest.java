@@ -43,7 +43,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
@@ -113,36 +112,8 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testTxOffheapTiered() throws Exception {
-        ignite(0).getOrCreateCache(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED));
-
-        try {
-            doTest();
-        }
-        finally {
-            ignite(0).destroyCache(null);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTxOffheapValues() throws Exception {
         ignite(0).getOrCreateCache(cacheConfiguration(TRANSACTIONAL, OFFHEAP_VALUES));
-
-        try {
-            doTest();
-        }
-        finally {
-            ignite(0).destroyCache(null);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTiered() throws Exception {
-        ignite(0).getOrCreateCache(cacheConfiguration(ATOMIC, OFFHEAP_TIERED));
 
         try {
             doTest();

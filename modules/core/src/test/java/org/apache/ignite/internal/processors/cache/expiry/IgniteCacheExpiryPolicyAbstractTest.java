@@ -112,9 +112,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cfg.setMemoryMode(memoryMode());
 
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
-            cfg.setOffHeapMaxMemory(0);
-
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 

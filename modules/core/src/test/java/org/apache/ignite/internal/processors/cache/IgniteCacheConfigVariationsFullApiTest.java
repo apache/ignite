@@ -93,12 +93,10 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
-import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
@@ -2551,7 +2549,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     public void _testDeletedEntriesFlag() throws Exception {
-        if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
+        if (cacheMode() != LOCAL && cacheMode() != REPLICATED) {
             final int cnt = 3;
 
             IgniteCache<String, Integer> cache = jcache();
@@ -3476,9 +3474,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         if (true)
             return;
 
-        if (memoryMode() == OFFHEAP_TIERED)
-            return;
-
         int ttl = 1000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -3758,155 +3753,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testUnswap() throws Exception {
-        if (swapEnabled() && !offheapEnabled()) {
-            IgniteCache<String, Integer> cache = jcache();
-
-            List<String> keys = primaryKeysForCache(3);
-
-            String k1 = keys.get(0);
-            String k2 = keys.get(1);
-            String k3 = keys.get(2);
-
-            cache.getAndPut(k1, 1);
-            cache.getAndPut(k2, 2);
-            cache.getAndPut(k3, 3);
-
-            final AtomicInteger swapEvts = new AtomicInteger(0);
-            final AtomicInteger unswapEvts = new AtomicInteger(0);
-
-            Collection<String> locKeys = new HashSet<>();
-
-            if (grid(0).context().cache().cache(cacheName()).context().affinityNode()) {
-                Iterable<Cache.Entry<String, Integer>> entries = cache.localEntries(PRIMARY, BACKUP);
-
-                for (Cache.Entry<String, Integer> entry : entries)
-                    locKeys.add(entry.getKey());
-
-                info("Local keys (primary + backup): " + locKeys);
-            }
-
-            for (int i = 0; i < gridCount(); i++)
-                grid(i).events().localListen(
-                    new SwapEvtsLocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
-
-            cache.localEvict(F.asList(k2, k3));
-
-            if (memoryMode() == OFFHEAP_TIERED) {
-                assertNotNull(cache.localPeek(k1, ONHEAP, OFFHEAP));
-                assertNotNull(cache.localPeek(k2, ONHEAP, OFFHEAP));
-                assertNotNull(cache.localPeek(k3, ONHEAP, OFFHEAP));
-            }
-            else {
-                assertNotNull(cache.localPeek(k1, ONHEAP, OFFHEAP));
-                assertNull(cache.localPeek(k2, ONHEAP, OFFHEAP));
-                assertNull(cache.localPeek(k3, ONHEAP, OFFHEAP));
-            }
-
-            int cnt = 0;
-
-            if (locKeys.contains(k2) && swapEnabled()) {
-                assertNull(cache.localPeek(k2, ONHEAP));
-
-                cache.localPromote(Collections.singleton(k2));
-
-                assertEquals((Integer)2, cache.localPeek(k2, ONHEAP));
-
-                if (swapAfterLocalEvict())
-                    cnt++;
-            }
-            else {
-                cache.localPromote(Collections.singleton(k2));
-
-                assertNull(cache.localPeek(k2, ONHEAP));
-            }
-
-            if (locKeys.contains(k3) && swapEnabled()) {
-                assertNull(cache.localPeek(k3, ONHEAP));
-
-                cache.localPromote(Collections.singleton(k3));
-
-                assertEquals((Integer)3, cache.localPeek(k3, ONHEAP));
-
-                if (swapAfterLocalEvict())
-                    cnt++;
-            }
-            else {
-                cache.localPromote(Collections.singleton(k3));
-
-                assertNull(cache.localPeek(k3, ONHEAP));
-            }
-
-            assertEquals(cnt, swapEvts.get());
-            assertEquals(cnt, unswapEvts.get());
-
-            cache.localEvict(Collections.singleton(k1));
-
-            assertEquals((Integer)1, cache.get(k1));
-
-            if (locKeys.contains(k1) && swapAfterLocalEvict())
-                cnt++;
-
-            assertEquals(cnt, swapEvts.get());
-            assertEquals(cnt, unswapEvts.get());
-
-            cache.clear();
-
-            // Check with multiple arguments.
-            cache.getAndPut(k1, 1);
-            cache.getAndPut(k2, 2);
-            cache.getAndPut(k3, 3);
-
-            swapEvts.set(0);
-            unswapEvts.set(0);
-
-            cache.localEvict(Collections.singleton(k2));
-            cache.localEvict(Collections.singleton(k3));
-
-            if (memoryMode() == OFFHEAP_TIERED) {
-                assertNotNull(cache.localPeek(k1, ONHEAP, OFFHEAP));
-                assertNotNull(cache.localPeek(k2, ONHEAP, OFFHEAP));
-                assertNotNull(cache.localPeek(k3, ONHEAP, OFFHEAP));
-            }
-            else {
-                assertNotNull(cache.localPeek(k1, ONHEAP, OFFHEAP));
-                assertNull(cache.localPeek(k2, ONHEAP, OFFHEAP));
-                assertNull(cache.localPeek(k3, ONHEAP, OFFHEAP));
-            }
-
-            cache.localPromote(F.asSet(k2, k3));
-
-            cnt = 0;
-
-            if (locKeys.contains(k2) && swapAfterLocalEvict())
-                cnt++;
-
-            if (locKeys.contains(k3) && swapAfterLocalEvict())
-                cnt++;
-
-            assertEquals(cnt, swapEvts.get());
-            assertEquals(cnt, unswapEvts.get());
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param k Key,
-     */
-    private void checkKeyAfterPut(IgniteCache<String, Integer> cache, String k) {
-        if (memoryMode() == OFFHEAP_TIERED) {
-            assertNotNull(cache.localPeek(k, OFFHEAP));
-            assertNull(cache.localPeek(k, ONHEAP));
-        }
-        else {
-            assertNotNull(cache.localPeek(k, ONHEAP));
-            assertNull(cache.localPeek(k, OFFHEAP));
-        }
-    }
-
-    /**
      * @param cache Cache.
      * @param k Key.
      */
@@ -3915,11 +3761,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             case ONHEAP_TIERED:
                 assertNull(cache.localPeek(k, ONHEAP));
                 assertEquals(offheapEnabled(), cache.localPeek(k, OFFHEAP) != null);
-
-                break;
-            case OFFHEAP_TIERED:
-                assertNull(cache.localPeek(k, ONHEAP));
-                assertNotNull(cache.localPeek(k, OFFHEAP));
 
                 break;
             case OFFHEAP_VALUES:
@@ -4062,12 +3903,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                     for (int i = 0; i < cnt; i++) {
                         boolean removed = cache.remove("key" + i);
 
-                        // TODO: delete the following check when IGNITE-2590 will be fixed.
-                        boolean bug2590 = cacheMode() == LOCAL && memoryMode() == OFFHEAP_TIERED
-                            && concurrency == OPTIMISTIC && isolation == REPEATABLE_READ;
-
-                        if (!bug2590)
-                            assertTrue(removed);
+                        assertTrue(removed);
                     }
                 }
             });
@@ -4145,9 +3981,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     public void testToMap() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        if (offheapTiered(cache))
-            return;
-
         cache.put("key1", 1);
         cache.put("key2", 2);
 
@@ -4166,9 +3999,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     protected void checkSize(final Collection<String> keys) throws Exception {
-        if (memoryMode() == OFFHEAP_TIERED)
-            return;
-
         if (nearEnabled())
             assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -75,41 +74,6 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReadThroughAtomic0_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughAtomic1_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED, 1, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughAtomic2_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED, 2, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughAtomicNearCache_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED, 1, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughAtomicReplicated_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, OFFHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testInvokeReadThroughTx0() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 0, false));
     }
@@ -140,40 +104,5 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
      */
     public void testInvokeReadThroughTxReplicated() throws Exception {
         invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, ONHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTx0_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTx1_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED, 1, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTx2_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED, 2, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTxNearCache_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED, 1, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTxReplicated_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, OFFHEAP_TIERED, 0, false));
     }
 }

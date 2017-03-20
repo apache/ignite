@@ -32,7 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -76,7 +78,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         ccfg.setName(CACHE_PARAMS);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         List<QueryEntity> queryEntities = new ArrayList<>();
 
@@ -161,9 +162,17 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             startGrid(0);
 
-            Thread.sleep(2_000);
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        checkTopology(2);
 
-            checkTopology(2);
+                        return true;
+                    } catch (Exception ex) {
+                        return false;
+                    }
+                }
+            }, 30_000);
 
             info("Pre-insert");
 

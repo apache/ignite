@@ -41,8 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -97,20 +95,6 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapLimitedIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1024 * 1024, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 0, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicIndexEnabled() throws Exception {
         concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, true));
     }
@@ -118,50 +102,8 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTxOffheapLimitedIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1024 * 1024, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 0, true));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapLimited() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1024 * 1024, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheap() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomic() throws Exception {
         concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapLimited() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1024 * 1024, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheap() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 0, false));
     }
 
     /**
