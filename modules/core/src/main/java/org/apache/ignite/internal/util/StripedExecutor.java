@@ -76,7 +76,7 @@ public class StripedExecutor implements ExecutorService {
 
         try {
             for (int i = 0; i < cnt; i++) {
-                stripes[i] = new StripeMPSCQueue(
+                stripes[i] = new StripeConcurrentQueue(
                     igniteInstanceName,
                     poolName,
                     i,
@@ -428,7 +428,7 @@ public class StripedExecutor implements ExecutorService {
         private final IgniteLogger log;
 
         /** Stopping flag. */
-        private volatile boolean stopping;
+        protected volatile boolean stopping;
 
         /** */
         private volatile long completedCnt;
@@ -627,8 +627,10 @@ public class StripedExecutor implements ExecutorService {
                     //parkCntr++;
                     LockSupport.park();
 
-                    if (Thread.interrupted())
+                    if (stopping)
                         throw new InterruptedException();
+//                    if (Thread.interrupted())
+//                        throw new InterruptedException();
                 }
             }
             finally {

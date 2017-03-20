@@ -34,6 +34,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -122,6 +123,8 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 @SuppressWarnings("unchecked")
 @GridToStringExclude
 public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
+    private static final boolean TEST_STRIPE_SUBMIT = IgniteSystemProperties.getBoolean("TEST_STRIPE_SUBMIT");
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -420,6 +423,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
                 });
         }
+
+        log.info("Start cache, TEST_STRIPE_SUBMIT: " + TEST_STRIPE_SUBMIT);
     }
 
     /**
@@ -1804,22 +1809,38 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         final AffinityAssignment affAssignment = ctx.affinity().assignment(req.topologyVersion());
 
-                        ((GridNearAtomicFullUpdateRequest)req).responseHelper(new NearAtomicResponseHelper(stripemap.size()));
+                        if (TEST_STRIPE_SUBMIT) {
+                            for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
+                                if (stripeIdx == e.getKey())
+                                    continue;
+                                else {
+                                    ctx.kernalContext().getStripedExecutorService().execute(e.getKey(), new Runnable() {
+                                        @Override public void run() {
+                                        }
+                                    });
+                                }
+                            }
 
-                        for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
-                            if (stripeIdx == e.getKey())
-                                update(affAssignment, ver, fut, node, req, e.getValue(), completionCb);
-                            else {
-                                ctx.kernalContext().getStripedExecutorService().execute(e.getKey(), new Runnable() {
-                                    @Override public void run() {
-                                        try {
-                                            update(affAssignment, ver, fut, node, req, e.getValue(), completionCb);
+                            update(affAssignment, ver, fut, node, req, null, completionCb);
+                        }
+                        else {
+                            req.responseHelper(new NearAtomicResponseHelper(stripemap.size()));
+
+                            for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
+                                if (stripeIdx == e.getKey())
+                                    update(affAssignment, ver, fut, node, req, e.getValue(), completionCb);
+                                else {
+                                    ctx.kernalContext().getStripedExecutorService().execute(e.getKey(), new Runnable() {
+                                        @Override public void run() {
+                                            try {
+                                                update(affAssignment, ver, fut, node, req, e.getValue(), completionCb);
+                                            }
+                                            catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
                                         }
-                                        catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                });
+                                    });
+                                }
                             }
                         }
                     }
@@ -1834,7 +1855,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     top.readUnlock();
                 }
             }
-            catch (GridCacheEntryRemovedException e) {
+            catch (Exception e) {
                 assert false : "Entry should not become obsolete while holding lock.";
 
                 e.printStackTrace();
@@ -1957,9 +1978,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         unlockEntries(locked, null);
 
-        GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
-
-        if (res0 != null) {
+        if (TEST_STRIPE_SUBMIT){
             for (int i = 0; i < req.size(); i++) {
                 fut.addWriteEntry(affinityAssignment,
                     req.key(i),
@@ -1976,6 +1995,28 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             fut.onDone();
 
             completionCb.apply(req, res);
+        }
+        else {
+            GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
+
+            if (res0 != null) {
+                for (int i = 0; i < req.size(); i++) {
+                    fut.addWriteEntry(affinityAssignment,
+                        req.key(i),
+                        req.value(i),
+                        null,
+                        0,
+                        0,
+                        null,
+                        false,
+                        null,
+                        1L);
+                }
+
+                fut.onDone();
+
+                completionCb.apply(req, res);
+            }
         }
     }
 
