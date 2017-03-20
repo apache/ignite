@@ -25,5 +25,5 @@ import java.util.function.DoubleFunction;
  *
  * @see java.util.function.DoubleFunction
  */
-public interface IgniteDoubleFunction<R> extends DoubleFunction<R>, Serializable {
+public interface IgniteDoubleFunction<Double> extends DoubleFunction<Double>, Serializable {
 }
