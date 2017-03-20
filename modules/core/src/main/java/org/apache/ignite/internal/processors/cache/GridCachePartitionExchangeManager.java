@@ -1720,7 +1720,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     task = futQ.poll(timeout, MILLISECONDS);
 
                     if (task == null)
-                        continue;
+                        continue; // Main while loop.
 
                     if (!task.isExchange()) {
                         processCustomTask(task);
