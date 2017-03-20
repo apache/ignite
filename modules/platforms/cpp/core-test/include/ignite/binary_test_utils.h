@@ -30,6 +30,11 @@ namespace ignite_test
     {
         namespace binary
         {
+            inline bool IsBinaryError(const IgniteError& err)
+            {
+                return err.GetCode() == IgniteError::IGNITE_ERR_BINARY;
+            }
+
             template<typename T>
             inline void Write(BinaryRawWriter& writer, T val)
             {

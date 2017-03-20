@@ -171,229 +171,54 @@ void CheckRawPrimitiveArray(T dflt, T val1, T val2)
 
 void CheckRawWritesRestricted(BinaryRawWriter& writer)
 {
-    try
-    {
-        writer.WriteInt8(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteInt8(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(writer.WriteInt8Array(arr, 1), IgniteError, IsBinaryError);
 
-    try
-    {
-        int8_t arr[1];
+    Guid guid(1, 1);
+    BOOST_CHECK_EXCEPTION(writer.WriteGuid(guid), IgniteError, IsBinaryError);
 
-        writer.WriteInt8Array(arr, 1);
+    Date date(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteDate(date), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    Time time(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteTime(time), IgniteError, IsBinaryError);
 
-    try
-    {
-        Guid val(1, 1);
+    Timestamp ts(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteTimestamp(ts), IgniteError, IsBinaryError);
 
-        writer.WriteGuid(val);
+    BOOST_CHECK_EXCEPTION(writer.WriteString("test"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteArray<int8_t>(), IgniteError, IsBinaryError);
 
-    try
-    {
-        Date val(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteCollection<int8_t>(), IgniteError, IsBinaryError);
 
-        writer.WriteDate(val);
+    BOOST_CHECK_EXCEPTION((writer.WriteMap<int8_t, int8_t>()), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        Time val(1);
-
-        writer.WriteTime(val);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        Timestamp val(1);
-
-        writer.WriteTimestamp(val);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        writer.WriteString("test");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteArray<int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteCollection<int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteMap<int8_t, int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteInt8(1), IgniteError, IsBinaryError);
 }
 
 void CheckRawReadsRestricted(BinaryRawReader& reader)
 {
-    try
-    {
-        reader.ReadInt8();
+    BOOST_CHECK_EXCEPTION(reader.ReadInt8(), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(reader.ReadInt8Array(arr, 1), IgniteError, IsBinaryError);
 
-    try
-    {
-        int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(reader.ReadGuid(), IgniteError, IsBinaryError);
 
-        reader.ReadInt8Array(arr, 1);
+    BOOST_CHECK_EXCEPTION(reader.ReadDate(), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadTimestamp(), IgniteError, IsBinaryError);
 
-    try
-    {
-        reader.ReadGuid();
+    BOOST_CHECK_EXCEPTION(reader.ReadString(), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadArray<int8_t>(), IgniteError, IsBinaryError);
 
-    try
-    {
-        reader.ReadDate();
+    BOOST_CHECK_EXCEPTION(reader.ReadCollection<int8_t>(), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadTimestamp();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadString();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadArray<int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadCollection<int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadMap<int8_t, int8_t>();
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION((reader.ReadMap<int8_t, int8_t>()), IgniteError, IsBinaryError);
 }
 
 void CheckRawCollectionEmpty(CollectionType* colType)
@@ -413,27 +238,9 @@ void CheckRawCollectionEmpty(CollectionType* colType)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        colWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(colWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        colWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -452,16 +259,7 @@ void CheckRawCollectionEmpty(CollectionType* colType)
     BOOST_REQUIRE(!colReader.HasNext());
     BOOST_REQUIRE(!colReader.IsNull());
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -491,27 +289,9 @@ void CheckRawCollection(CollectionType* colType)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        colWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(colWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        colWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -542,16 +322,7 @@ void CheckRawCollection(CollectionType* colType)
 
     BOOST_REQUIRE(!colReader.HasNext());
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -622,27 +393,9 @@ void CheckRawMapEmpty(MapType* mapType)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        mapWriter.Write(1, BinaryInner(1));
+    BOOST_CHECK_EXCEPTION(mapWriter.Write(1, BinaryInner(1)), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        mapWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -661,19 +414,9 @@ void CheckRawMapEmpty(MapType* mapType)
     BOOST_REQUIRE(!mapReader.HasNext());
     BOOST_REQUIRE(!mapReader.IsNull());
 
-    try
-    {
-        int8_t key;
-        BinaryInner val;
-
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t key;
+    BinaryInner val;
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -703,27 +446,9 @@ void CheckRawMap(MapType* mapType)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        mapWriter.Write(4, BinaryInner(4));
+    BOOST_CHECK_EXCEPTION(mapWriter.Write(4, BinaryInner(4)), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        mapWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -762,16 +487,7 @@ void CheckRawMap(MapType* mapType)
 
     BOOST_REQUIRE(!mapReader.HasNext());
 
-    try
-    {
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1081,29 +797,10 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(arrReader.IsNull());
 
-    try
-    {
-        char res[100];
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
 
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1124,55 +821,14 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        const char* val = "test";
+    const char* val1 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1, 4), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1), IgniteError, IsBinaryError);
 
-        arrWriter.Write(val, 4);
+    std::string val2 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val2), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        const char* val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        std::string val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -1186,29 +842,9 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(!arrReader.IsNull());
 
-    try
-    {
-        char res[100];
-
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1239,55 +875,14 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        const char* val = "test";
+    const char* val1 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1, 4), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1), IgniteError, IsBinaryError);
 
-        arrWriter.Write(val, 4);
+    std::string val2 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val2), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        const char* val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        std::string val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -1349,29 +944,9 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
 
     BOOST_REQUIRE(!arrReader.HasNext());
 
-    try
-    {
-        char res[100];
-
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1464,16 +1039,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(arrReader.IsNull());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1494,27 +1060,9 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        arrWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -1528,16 +1076,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(!arrReader.IsNull());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1566,27 +1105,9 @@ BOOST_AUTO_TEST_CASE(TestArray)
 
     rawWriter.WriteInt8(1);
 
-    try
-    {
-        arrWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     out.Synchronize();
 
@@ -1612,16 +1133,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
 
     BOOST_REQUIRE(!arrReader.HasNext());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1650,16 +1162,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     BOOST_REQUIRE(!colReader.HasNext());
     BOOST_REQUIRE(colReader.IsNull()); 
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
@@ -1724,19 +1227,9 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     BOOST_REQUIRE(!mapReader.HasNext());
     BOOST_REQUIRE(mapReader.IsNull());
 
-    try
-    {
-        int8_t key;
-        BinaryInner val;
-
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t key;
+    BinaryInner val;
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(&key, &val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 }
