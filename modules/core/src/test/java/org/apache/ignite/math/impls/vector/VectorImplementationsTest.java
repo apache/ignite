@@ -290,7 +290,7 @@ public class VectorImplementationsTest {
 
     /** */
     @Test
-    public void getDistanceSquared() {
+    public void getDistanceSquaredTest() {
         consumeSampleVectors((v, desc) -> {
             new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
 
