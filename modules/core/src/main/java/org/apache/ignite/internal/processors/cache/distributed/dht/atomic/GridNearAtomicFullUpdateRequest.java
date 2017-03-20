@@ -231,7 +231,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 stripeCnt = new int[maxStripes];
 
             if (stripeMap == null)
-                stripeMap = new HashMap<>(maxStripes);
+                stripeMap = U.newHashMap(maxStripes);
 
             int[] idxs = stripeMap.get(stripe);
 
@@ -417,9 +417,8 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (stripeMap != null && stripeCnt != null) {
-            for (Integer idx : stripeMap.keySet()) {
-                stripeMap.put(idx, Arrays.copyOf(stripeMap.get(idx), stripeCnt[idx]));
-            }
+            for (Map.Entry<Integer, int[]> e : stripeMap.entrySet())
+                e.setValue(Arrays.copyOf(e.getValue(), stripeCnt[e.getKey()]));
 
             stripeCnt = null;
         }

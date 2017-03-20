@@ -152,7 +152,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
 
     /**
      * @param affAssignment Affinity assignment.
-     * @param entry Entry to map.
+     * @param key Key to map.
      * @param val Value to write.
      * @param entryProcessor Entry processor.
      * @param ttl TTL (optional).
@@ -165,7 +165,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
     @SuppressWarnings("ForLoopReplaceableByForEach")
     final void addWriteEntry(
         AffinityAssignment affAssignment,
-        GridDhtCacheEntry entry,
+        KeyCacheObject key,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
@@ -176,19 +176,19 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
         long updateCntr) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        List<ClusterNode> affNodes = affAssignment.get(entry.partition());
+        List<ClusterNode> affNodes = affAssignment.get(key.partition());
 
-        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), affAssignment, affNodes);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(key.partition(), affAssignment, affNodes);
 
         if (dhtNodes == null)
             dhtNodes = affNodes;
 
         if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + key + ']');
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
-        addDhtKey(entry.key(), dhtNodes);
+        addDhtKey(key, dhtNodes);
 
         for (int i = 0; i < dhtNodes.size(); i++) {
             ClusterNode node = dhtNodes.get(i);
@@ -212,7 +212,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridFutureAdapte
                     mappings.put(nodeId, updateReq);
                 }
 
-                updateReq.addWriteValue(entry.key(),
+                updateReq.addWriteValue(key,
                     val,
                     entryProcessor,
                     ttl,

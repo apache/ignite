@@ -1798,7 +1798,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         Map<Integer, int[]> stripemap = req.stripeMap();
 
-                        final GridDhtAtomicAbstractUpdateFuture fut = null;//createDhtFuture(null, req, req.size());
+                        final GridDhtAtomicAbstractUpdateFuture fut = createDhtFuture(null, req, req.size());
+
+                        ctx.mvcc().addAtomicFuture(fut.id(), fut);
 
                         final AffinityAssignment affAssignment = ctx.affinity().assignment(req.topologyVersion());
 
@@ -1901,8 +1903,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         int[] stripeIdxs,
         UpdateReplyClosure completionCb) throws GridCacheEntryRemovedException {
-        fut = createDhtFuture(null, req, req.size());
-
         GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
             node.id(),
             req.futureId(),
@@ -1941,7 +1941,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res,
             locked,
             ver,
-            fut,
+            null,
             ctx.isDrEnabled(),
             null,
             null,
@@ -1960,7 +1960,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
 
         if (res0 != null) {
-            //fut.onDone();
+            for (int i = 0; i < req.size(); i++) {
+                fut.addWriteEntry(affinityAssignment,
+                    req.key(i),
+                    req.value(i),
+                    null,
+                    0,
+                    0,
+                    null,
+                    false,
+                    null,
+                    1L);
+            }
+
+            fut.onDone();
 
             completionCb.apply(req, res);
         }
@@ -2526,7 +2539,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         dhtFut.addWriteEntry(
                             affAssignment,
-                            entry,
+                            entry.key(),
                             updRes.newValue(),
                             entryProcessor,
                             updRes.newTtl(),
@@ -2796,7 +2809,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         dhtFut.addWriteEntry(
                             affAssignment,
-                            entry,
+                            entry.key(),
                             writeVal,
                             entryProcessor,
                             updRes.newTtl(),
