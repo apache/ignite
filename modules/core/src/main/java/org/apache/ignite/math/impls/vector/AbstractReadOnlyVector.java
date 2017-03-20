@@ -14,17 +14,17 @@ import java.util.function.DoubleFunction;
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
  */
-public abstract class AbstractReadonlyVector extends AbstractVector {
+public abstract class AbstractReadOnlyVector extends AbstractVector {
     /** */
-    public AbstractReadonlyVector() {
+    public AbstractReadOnlyVector() {
         // No-op.
     }
 
     /**
      * @param sto Storage.
      */
-    public AbstractReadonlyVector(VectorStorage sto) {
-        super(sto);
+    public AbstractReadOnlyVector(VectorStorage sto) {
+        super(true, sto);
     }
 
     /** {@inheritDoc} */

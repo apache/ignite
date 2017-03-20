@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Constant value, read-only vector.
  */
-public class ConstantVector extends AbstractReadonlyVector {
+public class ConstantVector extends AbstractReadOnlyVector {
     /**
      *
      */
@@ -89,7 +89,7 @@ public class ConstantVector extends AbstractReadonlyVector {
             return false;
 
         ConstantVector that = (ConstantVector) o;
-        
+
         VectorStorage sto = getStorage();
 
         return (sto != null ? sto.equals(that.getStorage()) : that.getStorage() == null);

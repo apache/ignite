@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
@@ -367,8 +368,22 @@ public class VectorImplementationsTest {
 
     /** */
     private void mutateAtIdxTest(Vector v, String desc, MutateAtIdx operation) {
-        if (readOnly(v))
+        if (readOnly(v)) {
+            if (v.size() < 1)
+                return;
+
+            boolean expECaught = false;
+
+            try {
+                operation.apply(v, 0, 1);
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at attempt to mutate element in " + desc, expECaught);
+
             return;
+        }
 
         for (double val : new double[] {0, -1, 0, 1})
             for (int idx = 0; idx < v.size(); idx++) {
@@ -444,7 +459,35 @@ public class VectorImplementationsTest {
                 ref[idx] = operation.apply(ref[idx], ref[idx]);
 
             checker.assertCloseEnough(vecOperation.apply(v, operand), ref);
+
+            assertWrongCardinality(v, desc, vecOperation);
         });
+    }
+
+    /** */
+    private void assertWrongCardinality(Vector v, String desc, BiFunction<Vector, Vector, Vector> vecOperation) {
+        boolean expECaught = false;
+
+        try {
+            vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() + 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() - 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
     }
 
     /** */

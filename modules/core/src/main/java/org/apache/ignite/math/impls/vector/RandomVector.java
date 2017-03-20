@@ -30,7 +30,7 @@ import java.util.*;
  * Random vector. Each value is taken from {-1,0,1} with roughly equal probability. Note
  * that by default, the value is determined by a relatively simple hash of the index.
  */
-public class RandomVector extends AbstractReadonlyVector {
+public class RandomVector extends AbstractReadOnlyVector {
     private boolean fastHash;
 
     /**
