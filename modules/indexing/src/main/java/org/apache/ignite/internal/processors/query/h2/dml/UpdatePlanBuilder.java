@@ -134,7 +134,7 @@ public final class UpdatePlanBuilder {
             // We don't quote _key and _val column names on CREATE TABLE, so they are always uppercase here.
             GridSqlColumn[] keys = merge.keys();
 
-            if (keys.length != 1 || (0 != desc.remapColumnId(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId())))
+            if (keys.length != 1 || (0 != desc.mapAliasColumnId(tbl.dataTable().getColumn(keys[0].columnName()).getColumnId())))
                 throw new CacheException("SQL MERGE does not support arbitrary keys");
 
             cols = merge.columns();
@@ -175,7 +175,7 @@ public final class UpdatePlanBuilder {
             colTypes[i] = col.resultType().type();
 
             int colId = tbl.dataTable().getColumn(colName).getColumnId();
-            colId = desc.remapColumnId(colId);
+            colId = desc.mapAliasColumnId(colId);
             if (colId == 0) {
                 keyColIdx = i;
                 continue;
@@ -490,7 +490,7 @@ public final class UpdatePlanBuilder {
 
         for (String colName : affectedColNames) {
             int colId = gridTbl.getColumn(colName).getColumnId();
-            colId = desc.remapColumnId(colId);
+            colId = desc.mapAliasColumnId(colId);
             if (colId == 0)
                 return true;
 

@@ -276,7 +276,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     Map<String, String> fields = meta.fields("Person");
 
                     assert fields != null;
-                    assert fields.size() == 5;
+                    assert fields.size() == 6;
 
                     if (binaryMarshaller) {
                         assert Object.class.getName().equals(fields.get("_KEY"));
@@ -291,12 +291,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                         assert int.class.getName().equals(fields.get("ORGID"));
                     }
 
+                    assert byte[].class.getName().equals(fields.get("_VER"));
                     assert String.class.getName().equals(fields.get("NAME"));
 
                     fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assertEquals("Fields: " + fields, 5, fields.size());
+                    assertEquals("Fields: " + fields, 6, fields.size());
 
                     if (binaryMarshaller) {
                         assert Object.class.getName().equals(fields.get("_VAL"));
@@ -313,16 +314,18 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     fields = meta.fields("String");
 
                     assert fields != null;
-                    assert fields.size() == 2;
+                    assert fields.size() == 3;
                     assert String.class.getName().equals(fields.get("_KEY"));
                     assert String.class.getName().equals(fields.get("_VAL"));
+                    assert byte[].class.getName().equals(fields.get("_VER"));
 
                     fields = meta.fields("Integer");
 
                     assert fields != null;
-                    assert fields.size() == 2;
+                    assert fields.size() == 3;
                     assert Integer.class.getName().equals(fields.get("_KEY"));
                     assert Integer.class.getName().equals(fields.get("_VAL"));
+                    assert byte[].class.getName().equals(fields.get("_VER"));
 
                     Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
 

@@ -219,7 +219,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                 return v;
         }
 
-        col = desc.remapColumnId(col);
+        col = desc.mapAliasColumnId(col);
         if (col < DEFAULT_COLUMNS_COUNT) {
             Value v;
 

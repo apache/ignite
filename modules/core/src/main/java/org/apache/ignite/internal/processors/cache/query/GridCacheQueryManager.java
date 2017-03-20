@@ -2395,10 +2395,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private Ignite ignite;
 
         /** Default key field name */
-        private final String DFLT_KEY_FIELD_NAME = "_key";
+        private final String DFLT_KEY_FIELD_NAME = "_KEY";
 
         /** Default value field name */
-        private final String DFLT_VAL_FIELD_NAME = "_val";
+        private final String DFLT_VAL_FIELD_NAME = "_VAL";
+
+        /** Default version field name */
+        private final String DFLT_VER_FIELD_NAME = "_VER";
 
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
@@ -2438,20 +2441,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         keyClasses.put(type.name(), type.keyClass().getName());
                         valClasses.put(type.name(), type.valueClass().getName());
 
-                        String keyFieldName = U.firstNotNull(type.keyFieldName(), DFLT_KEY_FIELD_NAME);
-                        String valFieldName = U.firstNotNull(type.valueFieldName(), DFLT_VAL_FIELD_NAME);
-
-                        int size = type.fields().size() +
-                            (fields.containsKey(keyFieldName) ? 1 : 0) +
-                            (fields.containsKey(valFieldName) ? 1 : 0);
+                        final boolean addKeyAlias = (type.keyFieldName() != null) && type.fields().containsKey(type.keyFieldName());
+                        final boolean addValAlias = (type.valueFieldName() != null) && type.fields().containsKey(type.valueFieldName());
+                        final boolean addVerAlias = (type.versionFieldName() != null) && type.fields().containsKey(type.versionFieldName());
+                        int size = type.fields().size() + 3 + (addKeyAlias ? 1 : 0) + (addValAlias ? 1 : 0) + (addVerAlias ? 1 : 0);
 
                         Map<String, String> fieldsMap = U.newLinkedHashMap(size);
 
-                        if (!fields.containsKey(keyFieldName))
-                            fieldsMap.put(keyFieldName.toUpperCase(), type.keyClass().getName());
+                        fieldsMap.put(DFLT_KEY_FIELD_NAME, type.keyClass().getName());
+                        fieldsMap.put(DFLT_VAL_FIELD_NAME, type.valueClass().getName());
+                        fieldsMap.put(DFLT_VER_FIELD_NAME, byte[].class.getName());
 
-                        if (!fields.containsKey(valFieldName))
-                            fieldsMap.put(valFieldName.toUpperCase(), type.valueClass().getName());
+                        if (addKeyAlias)
+                            fieldsMap.put(type.keyFieldName().toUpperCase(), type.keyClass().getName());
+
+                        if (addValAlias)
+                            fieldsMap.put(type.valueFieldName().toUpperCase(), type.valueClass().getName());
+
+                        if (addVerAlias)
+                            fieldsMap.put(type.versionFieldName().toUpperCase(), byte[].class.getName());
 
                         for (Map.Entry<String, Class<?>> e : type.fields().entrySet())
                             fieldsMap.put(e.getKey().toUpperCase(), e.getValue().getName());

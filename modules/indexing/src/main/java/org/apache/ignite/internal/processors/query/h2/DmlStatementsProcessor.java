@@ -585,7 +585,7 @@ public class DmlStatementsProcessor {
 
             for (int i = 0; i < plan.tbl.getColumns().length; i++) {
                 Column c = plan.tbl.getColumn(i);
-                int colId = desc.remapColumnId(c.getColumnId());
+                int colId = desc.mapAliasColumnId(c.getColumnId());
                 // Skip key and value
                 if (colId <= 2)
                     continue;
@@ -967,7 +967,7 @@ public class DmlStatementsProcessor {
         // Skip key and value
         for (int i = 0; i < cols.length; i++) {
             int colId = cols[i].getColumnId();
-            colId = plan.tbl.rowDescriptor().remapColumnId(colId);
+            colId = plan.tbl.rowDescriptor().mapAliasColumnId(colId);
             if (colId <= 2)
                continue;
 

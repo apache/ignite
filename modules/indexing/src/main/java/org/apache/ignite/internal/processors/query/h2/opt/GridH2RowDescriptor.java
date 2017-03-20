@@ -169,7 +169,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param col column index
      * @return result
      */
-    public int remapColumnId(int col);
+    public int mapAliasColumnId(int col);
 
     /**
      * @return number of hidden columns

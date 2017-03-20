@@ -1701,7 +1701,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
 
         for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
+            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME) || name.equalsIgnoreCase(VER_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
 
@@ -3171,16 +3171,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private final GridQueryProperty[] props;
 
-        /** */
+        /** Id of user-defined key column */
         private final int keyAliasColumnId;
 
-        /** */
+        /** Id of user-defined value column */
         private final int valueAliasColumnId;
 
-        /** */
+        /** Id of user-defined version column */
         private final int verAliasColumnId;
 
-        /** */
+        /** Number of hidden columns, i.e. not included in @{link #fields} */
         private final int hiddenColumnCount;
 
         /**
@@ -3479,7 +3479,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        public int remapColumnId(int col) {
+        public int mapAliasColumnId(int col) {
             if (col == keyAliasColumnId)
                 return GridH2AbstractKeyValueRow.KEY_COL;
             if (col == valueAliasColumnId)

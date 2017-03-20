@@ -139,7 +139,4 @@ public interface GridQueryTypeDescriptor {
      * @return value field name.
      */
     public String versionFieldName();
-
-
-
 }

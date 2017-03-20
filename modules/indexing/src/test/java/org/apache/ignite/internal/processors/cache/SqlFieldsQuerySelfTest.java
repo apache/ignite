@@ -84,40 +84,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If error.
-     */
-    public void testSystemColumns() throws Exception {
-
-        startGrid(0);
-
-        createAndFillCache();
-
-        startGrid(1);
-
-        IgniteCache<?, ?> cache = grid(1).cache("person");
-
-        //SqlFieldsQuery qry = new SqlFieldsQuery("select _key from person where age > 10");
-        SqlFieldsQuery qry = new SqlFieldsQuery("select name from person where _key=2");
-
-        QueryCursor<List<?>> qryCursor = cache.query(qry);
-
-        List<List<?>> result = qryCursor.getAll();
-        if (false) {
-            //assertEquals(2, result.size());
-
-            log.info("-------------------!!!!!!!!---------------------");
-//        log.info((String)result.get(0).get(0));
-//        log.info((String)result.get(1).get(0));
-
-            for (int row = 0; row < result.size(); ++row) {
-                log.info("_KEY=" + ((Number) result.get(row).get(0)).intValue());
-            }
-            log.info("-------------------!!!!!!!!---------------------");
-        }
-        //Thread.currentThread().sleep(300000);
-    }
-
-    /**
      *
      */
     private void executeQuery() {

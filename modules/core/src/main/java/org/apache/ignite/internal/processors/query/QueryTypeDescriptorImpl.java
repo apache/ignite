@@ -87,7 +87,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String verFieldName;
 
-
     /**
      * @return {@code True} if type registration in SPI was finished and type was not rejected.
      */
@@ -344,7 +343,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @Override public String toString() {
         return S.toString(QueryTypeDescriptorImpl.class, this);
     }
-
 
     /**
      * Sets key field name.
