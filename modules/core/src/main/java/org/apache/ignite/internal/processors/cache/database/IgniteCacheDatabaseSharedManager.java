@@ -152,17 +152,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database config.
      */
     protected void initPageMemoryPools(MemoryConfiguration dbCfg) {
-        MemoryPolicyConfiguration[] memPlcs = dbCfg.getMemoryPolicies();
+        MemoryPolicyConfiguration[] memPlcsCfgs = dbCfg.getMemoryPolicies();
 
-        memPlcMap = U.newHashMap(memPlcs.length + 1);
+        memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
 
-        for (MemoryPolicyConfiguration memPlc : memPlcs) {
-            PageMemory pageMem = initMemory(dbCfg, memPlc);
+        for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
+            PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
 
-            memPlcMap.put(memPlc.getName(), new MemoryPolicy(pageMem, memPlc));
+            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
 
-            if (memPlc.isDefault())
-                dfltMemPlc = new MemoryPolicy(pageMem, memPlc);
+            memPlcMap.put(memPlcCfg.getName(), memPlc);
+
+            if (memPlcCfg.isDefault())
+                dfltMemPlc = memPlc;
         }
 
         MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
