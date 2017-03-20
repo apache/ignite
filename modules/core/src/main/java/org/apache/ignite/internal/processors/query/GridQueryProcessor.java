@@ -222,8 +222,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (initIdxStates != null) {
             Map<String, QueryIndexState> readyIdxStates = initIdxStates.readyOperations();
 
-            for (QueryTypeCandidate cand : cands)
-                applyReadyDynamicOperations(cand.descriptor(), readyIdxStates);
+            for (QueryTypeCandidate cand : cands) {
+                QueryTypeDescriptorImpl desc = cand.descriptor();
+
+                for (Map.Entry<String, QueryIndexState> entry : readyIdxStates.entrySet()) {
+                    String idxName = entry.getKey();
+                    QueryIndexState idxState = entry.getValue();
+
+                    if (F.eq(desc.tableName(), idxState.tableName()))
+                        QueryUtils.processDynamicIndexChange(idxName, idxState.index(), desc);
+                }
+            }
         }
 
         // Ready to register at this point.
@@ -245,19 +254,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Apply ready dynamic index states to not-yet-registered descriptor.
+     * Find current coordinator.
      *
-     * @param desc Descriptor.
-     * @param idxStates Index states.
+     * @return {@code True} if node is coordinator.
      */
-    private void applyReadyDynamicOperations(QueryTypeDescriptorImpl desc, Map<String, QueryIndexState> idxStates)
-        throws IgniteCheckedException {
-        for (Map.Entry<String, QueryIndexState> entry : idxStates.entrySet()) {
-            String idxName = entry.getKey();
-            QueryIndexState idxState = entry.getValue();
+    private ClusterNode findCoordinator() {
+        ClusterNode res = null;
 
-            QueryUtils.processDynamicIndexChange(idxName, idxState.index(), desc);
+        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+            if (res == null || res.order() > node.order())
+                res = node;
         }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -308,6 +317,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
+     * When called for the first time, we initialize topology thus understanding whether current node is coordinator
+     * or not.
+     *
      * @param cctx Cache context.
      * @param idxStates Index states.
      * @throws IgniteCheckedException If failed.
@@ -353,33 +366,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
         idxWorker.onAccept(msg);
-    }
 
-    /**
-     * Handle index accept message.
-     *
-     * @param msg Message.
-     */
-    public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
-        idxWorker.onFinish(msg);
-    }
-
-    /**
-     * Handle node leave.
-     *
-     * @param node Node.
-     */
-    public void onNodeLeave(ClusterNode node) {
-        // TODO.
-    }
-
-    /**
-     * Handle index init discovery message.
-     *
-     * @param space Space.
-     * @param op Operation.
-     */
-    public void onIndexAccept(String space, AbstractIndexOperation op) {
         idxLock.writeLock().lock();
 
         // TODO
@@ -456,12 +443,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle index ack discovery message.
+     * Handle index accept message.
      *
      * @param msg Message.
      */
-    private void onIndexAckDiscoveryMessage(String space, IndexAcceptDiscoveryMessage msg) {
-        // TODO
+    public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
+        idxWorker.onFinish(msg);
+    }
+
+    /**
+     * Handle node leave.
+     *
+     * @param node Node.
+     */
+    public void onNodeLeave(ClusterNode node) {
+        // TODO.
     }
 
     /**
