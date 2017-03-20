@@ -194,9 +194,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final boolean noFailover;
 
     /** */
-    private final Object affKey;
-
-    /** */
     private final int affPartId;
 
     /** */
@@ -330,7 +327,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             affPartId = affTask.partition();
             affCacheName = F.first(affTask.affinityCacheNames());
-            affKey = affTask.affinityKey();
             mapTopVer = affTask.topologyVersion();
 
             affCacheIds = new int[affTask.affinityCacheNames().size()];
@@ -343,7 +339,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         else {
             affPartId = -1;
             affCacheName = null;
-            affKey = null;
             mapTopVer = null;
             affCacheIds = null;
         }
@@ -1175,7 +1170,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affPartId,
-                affKey, affCacheName, mapTopVer);
+                affCacheName, mapTopVer);
 
             return checkTargetNode(res, jobRes, node);
         }
