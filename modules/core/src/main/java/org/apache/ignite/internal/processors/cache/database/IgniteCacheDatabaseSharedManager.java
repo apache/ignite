@@ -159,9 +159,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
 
         for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-            PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
-
-            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
+            MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg);
 
             memPlcMap.put(memPlcCfg.getName(), memPlc);
 
