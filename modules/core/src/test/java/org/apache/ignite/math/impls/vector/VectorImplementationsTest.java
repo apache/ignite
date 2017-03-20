@@ -31,7 +31,7 @@ import java.util.function.*;
 import static org.junit.Assert.*;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest {
+public class VectorImplementationsTest { // todo split this to smaller cohesive test classes
     /** */ @Test
     public void vectorImplementationsFixturesTest() {
         new VectorImplementationsFixtures().selfTest();
@@ -359,6 +359,89 @@ public class VectorImplementationsTest {
         consumeSampleVectors((v, desc) -> assertNotNull("Null meta storage in " + desc, v.getMetaStorage()));
     }
 
+    /** */ @Test
+    public void assignDoubleTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            for (double val : new double[] {0, -1, 0, 1}) {
+                v.assign(val);
+
+                for (int idx = 0; idx < v.size(); idx++) {
+                    final Metric metric = new Metric(val, v.get(idx));
+
+                    assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
+                        + ", " + desc, metric.closeEnough());
+                }
+            }
+        });
+    }
+
+    /** */ @Test
+    public void assignDoubleArrTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign(ref);
+
+            checker.assertCloseEnough(v, ref);
+
+            assignDoubleArrWrongCardinality(v, desc);
+        });
+    }
+
+    /** */ @Test
+    public void assignVectorTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign(new DenseLocalOnHeapVector(ref));
+
+            checker.assertCloseEnough(v, ref);
+
+            assignVectorWrongCardinality(v, desc);
+        });
+    }
+
+    /** */ @Test
+    public void assignFunctionTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign((idx) -> ref[idx]);
+
+            checker.assertCloseEnough(v, ref);
+        });
+    }
+
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
         // todo find out if this is indeed OK
@@ -462,6 +545,58 @@ public class VectorImplementationsTest {
 
             assertWrongCardinality(v, desc, vecOperation);
         });
+    }
+
+    /** */
+    private void assignDoubleArrWrongCardinality(Vector v, String desc) {
+        boolean expECaught = false;
+
+        try {
+            v.assign(new double[v.size() + 1]);
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            v.assign(new double[v.size() - 1]);
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
+    }
+
+    /** */
+    private void assignVectorWrongCardinality(Vector v, String desc) {
+        boolean expECaught = false;
+
+        try {
+            v.assign(new DenseLocalOnHeapVector(v.size() + 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            v.assign(new DenseLocalOnHeapVector(v.size() - 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
     }
 
     /** */

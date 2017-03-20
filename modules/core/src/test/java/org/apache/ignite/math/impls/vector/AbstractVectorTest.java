@@ -347,16 +347,6 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test
-    public void assignPositive() {
-        initVector();
-
-        testVector.assign(TEST_VALUE);
-
-        testVector.all().forEach(x -> assertTrue(UNEXPECTED_VALUE, x.get() == TEST_VALUE));
-    }
-
-    /** */
     @Test(expected = NullPointerException.class)
     public void assignArr() {
         testVector.assign(new double[1]);
@@ -366,43 +356,6 @@ public class AbstractVectorTest {
     @Test(expected = NullPointerException.class)
     public void assignArrEmpty() {
         testVector.assign(new double[0]);
-    }
-
-    /** */
-    @Test
-    public void assignArrPositive() {
-        double[] doubles = initVector();
-
-        doubles = Arrays.stream(doubles).map(x -> x + x).toArray();
-
-        testVector.assign(doubles);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), doubles[i], NIL_DELTA);
-
-    }
-
-    /** */
-    @Test
-    public void assignByFunc() {
-        initVector();
-
-        testVector.assign(x -> x);
-
-        for (Vector.Element x : testVector.all())
-            assertEquals(VALUE_NOT_EQUALS, x.index(), x.get(), NIL_DELTA);
-    }
-
-    /** */
-    @Test
-    public void assign3() {
-        AbstractVector testVector1 = getAbstractVector(createStorage());
-
-        testVector = getAbstractVector(createEmptyStorage());
-
-        testVector.assign(testVector1);
-
-        assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector1));
     }
 
     /** */
