@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
-            if (property != null && !property.CanWrite)
+            if (property != null && (!property.CanWrite || IsObsolete(property)))
                 return;
 
             if (valueType == typeof(IgniteConfiguration))
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
 
             // Write attributes
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsObsolete(p)))
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
@@ -481,6 +481,16 @@ namespace Apache.Ignite.Core.Impl.Common
                 return Activator.CreateInstance(propertyType);
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether the specified property is obsolete.
+        /// </summary>
+        private static bool IsObsolete(PropertyInfo property)
+        {
+            Debug.Assert(property != null);
+
+            return property.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any();
         }
     }
 }
