@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheSyncReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridReplicatedTxPreloadTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadLifecycleSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadStartStopEventsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheDaemonNodeLocalSelfTest;
@@ -117,7 +116,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 

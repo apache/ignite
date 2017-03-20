@@ -30,7 +30,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -44,7 +43,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -105,8 +103,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testAtomicClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
-            ATOMIC,
-            ONHEAP_TIERED
+            ATOMIC
         );
 
         testContinuousQuery(ccfg, true);
@@ -118,8 +115,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testAtomic() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
-            ATOMIC,
-            ONHEAP_TIERED
+            ATOMIC
         );
 
         testContinuousQuery(ccfg, false);
@@ -131,8 +127,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testAtomicReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
-            ATOMIC,
-            ONHEAP_TIERED
+            ATOMIC
         );
 
         testContinuousQuery(ccfg, false);
@@ -144,8 +139,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testAtomicReplicatedClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
-            ATOMIC,
-            ONHEAP_TIERED
+            ATOMIC
         );
 
         testContinuousQuery(ccfg, true);
@@ -157,8 +151,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
+            TRANSACTIONAL
         );
 
         testContinuousQuery(ccfg, false);
@@ -169,8 +162,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testTxClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
+            TRANSACTIONAL
         );
 
         testContinuousQuery(ccfg, true);
@@ -182,8 +174,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testTxReplicated() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
+            TRANSACTIONAL
         );
 
         testContinuousQuery(ccfg, false);
@@ -195,8 +186,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     public void testTxReplicatedClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED
+            TRANSACTIONAL
         );
 
         testContinuousQuery(ccfg, true);
@@ -279,19 +269,16 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 

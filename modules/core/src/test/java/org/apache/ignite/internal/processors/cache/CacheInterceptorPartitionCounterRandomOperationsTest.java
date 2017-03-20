@@ -39,7 +39,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheInterceptorEntry;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
@@ -64,8 +63,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -152,7 +149,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -165,7 +161,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
-            ONHEAP_TIERED,
             true);
 
         doTestPartitionCounterOperation(ccfg);
@@ -178,7 +173,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -191,33 +185,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
-            true);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
             true);
 
         doTestPartitionCounterOperation(ccfg);
@@ -230,7 +197,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             ATOMIC,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -243,7 +209,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -256,7 +221,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             true);
 
         doTestPartitionCounterOperation(ccfg);
@@ -269,7 +233,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -282,7 +245,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -295,34 +257,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             true);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestPartitionCounterOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -334,7 +269,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -347,7 +281,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             true);
 
         doTestPartitionCounterOperation(ccfg);
@@ -360,7 +293,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             0,
             TRANSACTIONAL,
-            ONHEAP_TIERED,
             false);
 
         doTestPartitionCounterOperation(ccfg);
@@ -784,7 +716,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param store If {@code true} configures dummy cache store.
      * @return Cache configuration.
      */
@@ -792,13 +723,11 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         CacheMode cacheMode,
         int backups,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         boolean store) {
         CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 

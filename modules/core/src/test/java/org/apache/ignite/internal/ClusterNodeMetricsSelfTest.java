@@ -62,9 +62,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Amount of cache entries. */
     private static final int MAX_VALS_AMOUNT = 400;
 
-    /** With OFFHEAP_VALUES policy. */
-    private final String OFF_HEAP_VALUE_NAME = "offHeapValuesCfg";
-
     /** With ONHEAP_TIERED policy. */
     private final String ON_HEAP_TIERED_NAME = "onHeapTieredCfg";
 
@@ -91,12 +88,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration();
         cfg.setMetricsUpdateFrequency(0);
 
-        CacheConfiguration<Integer, Object> offHeapValuesCfg = defaultCacheConfiguration();
-        offHeapValuesCfg.setName(OFF_HEAP_VALUE_NAME);
-        offHeapValuesCfg.setStatisticsEnabled(true);
-        offHeapValuesCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
-        offHeapValuesCfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
-
         CacheConfiguration<Integer, Object> onHeapTieredCfg = defaultCacheConfiguration();
         onHeapTieredCfg.setName(ON_HEAP_TIERED_NAME);
         onHeapTieredCfg.setStatisticsEnabled(true);
@@ -109,7 +100,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         onHeapTieredCfg.setEvictionPolicy(plc);
 
-        return cfg.setCacheConfiguration(offHeapValuesCfg, onHeapTieredCfg);
+        return cfg.setCacheConfiguration(onHeapTieredCfg);
     }
 
     /**
@@ -121,13 +112,10 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         Ignite ignite = grid();
 
         final IgniteCache onHeapCache = ignite.getOrCreateCache(ON_HEAP_TIERED_NAME);
-        final IgniteCache offHeapCache = ignite.getOrCreateCache(OFF_HEAP_VALUE_NAME);
 
         long prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
-        long prevValuesOffHeapSize = offHeapCache.metrics().getOffHeapAllocatedSize();
 
         assertEquals(0, prevTieredOffHeapSize);
-        assertEquals(0, prevValuesOffHeapSize);
 
         long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
 
@@ -135,16 +123,12 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(onHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5)
             * VAL_SIZE + prevTieredOffHeapSize);
-        assertEquals(0, offHeapCache.metrics().getOffHeapAllocatedSize());
 
         assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
 
         prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
         prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
 
-        fillCache(offHeapCache);
-
-        assertTrue(offHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE);
         assertEquals(prevTieredOffHeapSize, onHeapCache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed <
             ignite.cluster().metrics().getNonHeapMemoryUsed());

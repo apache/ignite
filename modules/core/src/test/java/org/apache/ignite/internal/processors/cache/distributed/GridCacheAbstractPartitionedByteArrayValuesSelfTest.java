@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -55,21 +54,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setEvictSynchronized(false);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration offheapCacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setCacheMode(PARTITIONED);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(nearConfiguration());
-        cfg.setBackups(1);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setMemoryMode(OFFHEAP_VALUES);
-        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
 
         return cfg;
     }

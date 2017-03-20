@@ -59,8 +59,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -125,91 +123,84 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerTx() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerTxJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInListenerTxOffHeapValues() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_VALUES), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerAtomic() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerAtomicJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerReplicatedAtomic() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerReplicatedAtomicJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerReplicatedAtomicOffHeapValues() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerAtomicWithoutBackup() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerAtomicWithoutBackupJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListener() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerReplicated() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInListenerReplicatedJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, true);
     }
 
     ///
@@ -220,63 +211,63 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterTx() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterTxJCacheApi() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterAtomic() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterAtomicJCacheApi() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), true, true, true);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC), true, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterReplicatedAtomic() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterAtomicWithoutBackup() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 0, ATOMIC, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 0, ATOMIC), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilter() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterReplicated() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterReplicatedJCacheApi() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, ONHEAP_TIERED), true, true, false);
+        testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), true, true, false);
     }
 
     ///
@@ -287,42 +278,42 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterTxSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterAtomicSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC), false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterReplicatedAtomicSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC), false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterAtomicWithoutBackupSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 0, ATOMIC), false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL), false, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNonDeadLockInFilterReplicatedSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL, ONHEAP_TIERED), false, true, false);
+        testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, TRANSACTIONAL), false, true, false);
     }
 
     /**
@@ -773,20 +764,17 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      * @param cacheMode Cache mode.
      * @param backups Number of backups.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @return Cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
-        ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + memoryMode + "-" + backups);
+        ccfg.setName("test-cache-" + atomicityMode + "-" + cacheMode + "-" + backups);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
