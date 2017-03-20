@@ -245,7 +245,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static void downloadHadoop() throws Exception {
-        String ver = IgniteSystemProperties.getString("hadoop.version", "2.5.2");
+        String ver = IgniteSystemProperties.getString("hadoop.version", "2.4.1");
 
         X.println("Will use Hadoop version: " + ver);
 
