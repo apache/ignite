@@ -170,15 +170,22 @@ public class VectorImplementationsTest {
     /** */ @Test
     public void sumTest() {
         toDoubleTest(null,
-            ref -> {
-                double sum = 0;
-
-                for (double val : ref)
-                    sum += val;
-
-                return sum;
-            },
+            ref -> Arrays.stream(ref).sum(),
             Vector::sum);
+    }
+
+    /** */ @Test
+    public void minValueTest() {
+        toDoubleTest(null,
+            ref -> Arrays.stream(ref).min().getAsDouble(),
+            v -> v.minValue().get());
+    }
+
+    /** */ @Test
+    public void maxValueTest() {
+        toDoubleTest(null,
+            ref -> Arrays.stream(ref).max().getAsDouble(),
+            v -> v.maxValue().get());
     }
 
     /** */

@@ -163,26 +163,6 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void minValue() {
-        double[] data = initVector();
-
-        Vector.Element minVal = testVector.minValue();
-
-        assertEquals(VALUE_NOT_EQUALS, minVal.get(), Arrays.stream(data).min().getAsDouble(), NIL_DELTA);
-    }
-
-    /** */
-    @Test
-    public void maxValue() {
-        double[] data = initVector();
-
-        Vector.Element maxVal = testVector.maxValue();
-
-        assertEquals(VALUE_NOT_EQUALS, maxVal.get(), Arrays.stream(data).max().getAsDouble(), NIL_DELTA);
-    }
-
-    /** */
-    @Test
     public void set() {
         double[] data = initVector();
 
@@ -476,12 +456,6 @@ public class AbstractVectorTest {
         testVector.assign(testVector1);
 
         assertTrue(VALUE_NOT_EQUALS, testVector.equals(testVector1));
-    }
-
-    /** */
-    @Test
-    public void cross() { // TODO write test
-
     }
 
     /** */
@@ -917,8 +891,6 @@ public class AbstractVectorTest {
 
     /**
      * Add some zeroes to vector elements. Also set zeroes to the same elements in reference array data
-     *
-     * @param testRef
      */
     private void addNilValues(double[] testRef) {
         addNilValues();
