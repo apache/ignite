@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "newDomainGrid"
+                    IgniteInstanceName = "newDomainGrid"
                 });
                 Ignition.Stop(ignite.Name, true);
             }

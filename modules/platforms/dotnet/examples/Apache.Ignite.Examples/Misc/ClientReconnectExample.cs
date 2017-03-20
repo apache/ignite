@@ -113,7 +113,7 @@ namespace Apache.Ignite.Examples.Misc
             var cfg = new IgniteConfiguration
             {
                 // Nodes within a single process are distinguished by GridName property.
-                GridName = "serverNode",
+                IgniteInstanceName = "serverNode",
 
                 // Discovery settings are the same as in app.config.
                 DiscoverySpi = new TcpDiscoverySpi
