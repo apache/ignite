@@ -98,15 +98,6 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test
-    public void getX() {
-        double[] data = initVector();
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i], NIL_DELTA);
-    }
-
-    /** */
     @Test(expected = NullPointerException.class)
     public void getXNegative0() {
         testVector.getX(0);
@@ -196,18 +187,6 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test
-    public void setX() {
-        double[] data = initVector();
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            testVector.setX(i, Math.exp(data[i]));
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), Math.exp(data[i]), NIL_DELTA);
-    }
-
-    /** */
     @Test(expected = IndexOutOfBoundsException.class)
     public void setXNegative0() {
         initVector();
@@ -231,42 +210,10 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void increment() {
-        double[] data = initVector();
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            testVector.increment(i, 1d);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, NIL_DELTA);
-    }
-
-    /** */
-    @Test
-    public void incrementX() {
-        double[] data = initVector();
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            testVector.incrementX(i, 1d);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, testVector.get(i), data[i] + 1, NIL_DELTA);
-    }
-
-    /** */
-    @Test
     public void isZero() {
         assertTrue(UNEXPECTED_VALUE, testVector.isZero(0d));
 
         assertFalse(UNEXPECTED_VALUE, testVector.isZero(1d));
-    }
-
-    /** */
-    @Test
-    public void sum() {
-        double[] data = initVector();
-
-        assertEquals(VALUE_NOT_EQUALS, testVector.sum(), Arrays.stream(data).sum(), EXPECTED_DELTA);
     }
 
     /** */

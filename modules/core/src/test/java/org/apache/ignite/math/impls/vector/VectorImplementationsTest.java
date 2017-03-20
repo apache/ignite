@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
@@ -36,19 +37,111 @@ public class VectorImplementationsTest {
 
     /** */ @Test
     public void setGetTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            vec.set(idx, val);
+
+            return val;
+        }));
+    }
+
+    /** */ @Test
+    public void setXTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            vec.setX(idx, val);
+
+            return val;
+        }));
+    }
+
+    /** */ @Test
+    public void incrementTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            double old = vec.get(idx);
+
+            vec.increment(idx, val);
+
+            return old + val;
+        }));
+    }
+
+    /** */ @Test
+    public void incrementXTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            double old = vec.getX(idx);
+
+            vec.incrementX(idx, val);
+
+            return old + val;
+        }));
+    }
+
+    /** */ @Test
+    public void operateXOutOfBoundsTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
-                return;
+            if (v instanceof DenseLocalOffHeapVector || v instanceof SparseLocalVector)
+                return; // todo find out if it's OK to skip by instances here
 
-            for (double val : new double[] {0, -1, 0, 1})
-                for (int idx = 0; idx < v.size(); idx++) {
-                    v.set(idx, val);
+            boolean expECaught = false;
 
-                    final Metric metric = new Metric(val, v.get(idx));
+            try {
+                v.getX(-1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
 
-                    assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
-                        + ", " + desc, metric.closeEnough());
-                }
+            if (!getXOutOfBoundsOK(v))
+                assertTrue("Expect exception at negative index getX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.setX(-1, 0);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at negative index setX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.incrementX(-1, 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at negative index incrementX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.getX(v.size());
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            if (!getXOutOfBoundsOK(v))
+                assertTrue("Expect exception at too large index getX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.setX(v.size(), 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at too large index setX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.incrementX(v.size(), 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at too large index incrementX in " + desc, expECaught);
         });
     }
 
@@ -236,6 +329,29 @@ public class VectorImplementationsTest {
     }
 
     /** */
+    private boolean getXOutOfBoundsOK(Vector v) {
+        // todo find out if this is indeed OK
+        return v instanceof RandomVector || v instanceof  ConstantVector
+            || v instanceof SingleElementVector || v instanceof SingleElementVectorView;
+    }
+
+    /** */
+    private void mutateAtIdxTest(Vector v, String desc, MutateAtIdx operation) {
+        if (readOnly(v))
+            return;
+
+        for (double val : new double[] {0, -1, 0, 1})
+            for (int idx = 0; idx < v.size(); idx++) {
+                double exp = operation.apply(v, idx, val);
+
+                final Metric metric = new Metric(exp, v.get(idx));
+
+                assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
+                    + ", " + desc, metric.closeEnough());
+            }
+    }
+
+    /** */
     private Class<?extends Vector> expLikeType(Vector v) {
         Class<?extends Vector> clazz = v.getClass();
 
@@ -342,6 +458,12 @@ public class VectorImplementationsTest {
                 consumeSampleVectors((v, desc) -> externalizeTest(v));
             }
         }).externalizeTest();
+    }
+
+    /** */
+    private interface MutateAtIdx {
+        /** */
+        double apply(Vector v, int idx, double val);
     }
 
     /** */

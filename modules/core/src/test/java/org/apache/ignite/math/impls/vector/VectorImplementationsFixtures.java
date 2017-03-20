@@ -95,8 +95,17 @@ class VectorImplementationsFixtures {
     private static class SparseLocalVectorFixture  extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
-            super("SparseLocalVector", SparseLocalVector::new, "access mode",
+            super("SparseLocalVector", SparseLocalVectorFixture::newSample, "access mode",
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
+        }
+
+        /** */
+        private static SparseLocalVector newSample(int size, int acsMode) {
+            SparseLocalVector res = new SparseLocalVector(size, acsMode);
+
+            res.assign(0); // todo find out if init in test is OK or it should be done at impl side
+
+            return res;
         }
     }
 
