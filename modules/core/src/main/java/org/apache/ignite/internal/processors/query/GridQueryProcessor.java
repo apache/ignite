@@ -271,6 +271,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
+        idxWorker.cancel();
+
+        try {
+            idxWorker.join();
+        }
+        catch (InterruptedException e) {
+            U.warn(log, "Failed to wait for index worker stop due to interrupt.", e);
+        }
+
         busyLock.block();
     }
 
