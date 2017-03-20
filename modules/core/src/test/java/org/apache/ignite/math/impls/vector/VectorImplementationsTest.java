@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.*;
@@ -325,6 +326,30 @@ public class VectorImplementationsTest {
 
             assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
                 metric1.closeEnough());
+        });
+    }
+
+    /** */ @Test
+    public void sortTest() {
+        consumeSampleVectors((v, desc) -> {
+            if(readOnly(v) || !v.isArrayBased()) {
+                boolean expECaught = false;
+
+                try {
+                    v.sort();
+                } catch (UnsupportedOperationException uoe) {
+                    expECaught = true;
+                }
+
+                assertTrue("Expected exception was not caught for sort in " + desc, expECaught);
+
+                return;
+            }
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            new ElementsChecker(v, ref, desc).assertCloseEnough(v.sort(), Arrays.stream(ref).sorted().toArray());
         });
     }
 
