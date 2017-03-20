@@ -204,6 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(61, metrics.WriteBehindCriticalOverflowCount);
                 Assert.AreEqual(62, metrics.WriteBehindErrorRetryCount);
                 Assert.AreEqual(63, metrics.WriteBehindBufferSize);
+                Assert.AreEqual(64,metrics.SystemAllocatedSize)
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);

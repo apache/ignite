@@ -244,6 +244,13 @@ public interface CacheMetrics {
     public long getOffHeapMaxSize();
 
     /**
+     * Gets the offheap memory allocated for internal data structures
+     *
+     * @return offHeap allocated for internal data structures
+     */
+    public long getSystemAllocatedSize();
+
+    /**
      * The total number of get requests to the swap.
      *
      * @return The number of gets.

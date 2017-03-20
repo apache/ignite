@@ -110,6 +110,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Off-heap memory maximum size*/
     private long offHeapMaxSize;
 
+    /** Off-heap memory allocated for internal data structures. */
+    private long systemAllocatedSize;
+
     /** Number of reads from swap. */
     private long swapGets;
 
@@ -275,6 +278,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
         offHeapMaxSize = m.getOffHeapMaxSize();
+        systemAllocatedSize = m.getSystemAllocatedSize();
 
         swapGets = m.getSwapGets();
         swapPuts = m.getSwapPuts();
@@ -624,6 +628,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     @Override public long getOffHeapMaxSize() {
         return offHeapMaxSize;
     }
+
+    /** {@inheritDoc} */
+    @Override public long getSystemAllocatedSize() { return systemAllocatedSize; }
 
     /** {@inheritDoc} */
     @Override public long getSwapGets() {
