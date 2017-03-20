@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStartTask;
+import org.apache.ignite.internal.processors.query.ddl.task.IndexingTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1261,7 +1263,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private class DynamicIndexManagerWorker extends GridWorker {
         /** Tasks queue. */
-        private final LinkedBlockingQueue<DynamicIndexTask> tasks = new LinkedBlockingQueue<>();
+        private final LinkedBlockingQueue<IndexingTask> tasks = new LinkedBlockingQueue<>();
 
         /** Alive nodes. */
         private Collection<ClusterNode> aliveNodes;
@@ -1294,7 +1296,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          *
          * @param task Task.
          */
-        public void submit(DynamicIndexTask task) {
+        public void submit(IndexingTask task) {
             tasks.add(task);
         }
 
@@ -1305,7 +1307,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param initIdxStates Initial index states.
          */
         public void onCacheStart(String space, QueryIndexStates initIdxStates) {
-            submit(new CacheStartTask(space, initIdxStates));
+            submit(new IndexingCacheStartTask(space, initIdxStates));
         }
 
         /**
@@ -1361,52 +1363,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Marker interface for index-related tasks.
-     */
-    private static interface DynamicIndexTask {
-        // No-op.
-    }
-
-    /**
-     * Cache start task.
-     */
-    private static class CacheStartTask implements DynamicIndexTask {
-        /** Space. */
-        private final String space;
-
-        /** Initial index states. */
-        private final QueryIndexStates initIdxStates;
-
-        /**
-         * Constructor.
-         *
-         * @param space Space.
-         * @param initIdxStates Initial index states.
-         */
-        public CacheStartTask(String space, QueryIndexStates initIdxStates) {
-            this.space = space;
-            this.initIdxStates = initIdxStates;
-        }
-
-        /**
-         * @return Space.
-         */
-        public String space() {
-            return space;
-        }
-
-        /**
-         * @return Initial index states.
-         */
-        public QueryIndexStates initialIndexStates() {
-            return initIdxStates;
-        }
-    }
-
-    /**
      * Change index task.
      */
-    private static class ChangeIndexTask implements DynamicIndexTask {
+    private static class ChangeIndexingTask implements IndexingTask {
         /** Operation. */
         private final AbstractIndexOperation op;
 
@@ -1415,7 +1374,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          *
          * @param op Operation.
          */
-        public ChangeIndexTask(AbstractIndexOperation op) {
+        public ChangeIndexingTask(AbstractIndexOperation op) {
             this.op = op;
         }
 
@@ -1430,7 +1389,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Node leave task.
      */
-    private static class NodeLeaveTask implements DynamicIndexTask {
+    private static class NodeLeaveTask implements IndexingTask {
         /** Node ID. */
         private final UUID nodeId;
 
@@ -1454,7 +1413,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Type removal task (either due to cache stop or due to type undeploy).
      */
-    private static class TypeRemoveTask implements DynamicIndexTask {
+    private static class TypeRemoveTask implements IndexingTask {
         /** Type descriptor. */
         private final QueryTypeDescriptorImpl typeDesc;
 
@@ -1478,7 +1437,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Operation status message received.
      */
-    private static class OperationStatusTask implements DynamicIndexTask {
+    private static class OperationStatusTask implements IndexingTask {
         /** Node ID. */
         private final UUID nodeId;
 
