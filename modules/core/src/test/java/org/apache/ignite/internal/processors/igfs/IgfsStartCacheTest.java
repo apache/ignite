@@ -91,7 +91,7 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
             cfg.setFileSystemConfiguration(igfsCfg);
         }
 
-        cfg.setGridName("node-" + idx);
+        cfg.setIgniteInstanceName("node-" + idx);
 
         return cfg;
     }

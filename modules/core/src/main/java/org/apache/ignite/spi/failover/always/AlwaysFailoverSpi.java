@@ -151,7 +151,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -160,7 +160,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
         if (log.isDebugEnabled())
             log.debug(configInfo("maximumFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, AlwaysFailoverSpiMBean.class);
+        registerMBean(igniteInstanceName, this, AlwaysFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

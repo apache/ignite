@@ -48,7 +48,6 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -58,23 +57,25 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -92,7 +93,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -160,7 +160,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Thread factory. */
-    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.gridName());
+    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName());
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
@@ -169,7 +169,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<Object, Object> cache;
 
     /** Topology listener. */
-    private GridLocalEventListener topLsnr = new TopologyListener();
+    private DiscoveryEventListener topLsnr = new TopologyListener();
 
     static {
         Set<IgniteProductVersion> versions = new TreeSet<>(new Comparator<IgniteProductVersion>() {
@@ -202,7 +202,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public GridServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.gridName(), "srvc-deploy"));
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
 
         String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
@@ -253,7 +253,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cache = ctx.cache().utilityCache();
 
         if (!ctx.clientNode())
-            ctx.event().addLocalEventListener(topLsnr, EVTS);
+            ctx.event().addDiscoveryEventListener(topLsnr, EVTS);
 
         try {
             if (ctx.deploy().enabled())
@@ -316,7 +316,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         busyLock.block();
 
         if (!ctx.clientNode())
-            ctx.event().removeLocalEventListener(topLsnr);
+            ctx.event().removeDiscoveryEventListener(topLsnr);
 
         Collection<ServiceContextImpl> ctxs = new ArrayList<>();
 
@@ -945,7 +945,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             else
                 nodes = null;
 
-            try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+            try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
@@ -1570,9 +1570,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      * Topology listener.
      */
-    private class TopologyListener implements GridLocalEventListener {
+    private class TopologyListener implements DiscoveryEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(Event evt) {
+        @Override public void onEvent(DiscoveryEvent evt, final DiscoCache discoCache) {
             if (!busyLock.enterBusy())
                 return;
 
@@ -1593,11 +1593,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
                 }
                 else
-                    topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
+                    topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
 
                 depExe.execute(new BusyRunnable() {
                     @Override public void run0() {
-                        ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
+                        // In case the cache instance isn't tracked by DiscoveryManager anymore.
+                        discoCache.updateAlives(ctx.discovery());
+
+                        ClusterNode oldest = discoCache.oldestAliveServerNodeWithCache();
 
                         if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();

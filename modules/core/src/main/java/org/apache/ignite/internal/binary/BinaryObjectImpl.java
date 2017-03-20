@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -33,19 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
-
-import static java.nio.charset.StandardCharsets.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary object implementation.
@@ -74,7 +73,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private boolean detachAllowed;
 
     /** */
-    @GridDirectTransient
     private int part = -1;
 
     /**
@@ -561,7 +559,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         start = in.readInt();
     }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -584,6 +581,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeInt("start", detachAllowed ? 0 : start))
                     return false;
 
@@ -611,6 +614,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 reader.incrementState();
 
             case 1:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 start = reader.readInt("start");
 
                 if (!reader.isLastRead())
@@ -620,7 +631,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         }
 
-        return true;
+        return reader.afterMessageRead(BinaryObjectImpl.class);
     }
 
     /** {@inheritDoc} */
