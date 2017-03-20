@@ -15,28 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.closure;
-
-import java.util.Collection;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Affinity mapped task.
+ * Cache partition exchange worker task marker interface.
  */
-public interface AffinityTask {
+public interface CachePartitionExchangeWorkerTask {
     /**
-     * @return Partition.
+     * @return {@code True) if task denotes standard exchange task, {@code false} if this is a custom task which
+     * must be executed from within exchange thread.
      */
-    public int partition();
-
-    /**
-     * @return Affinity cache name.
-     */
-    @Nullable public Collection<String> affinityCacheNames();
-
-    /**
-     * @return Affinity topology version.
-     */
-    @Nullable public AffinityTopologyVersion topologyVersion();
+    boolean isExchange();
 }

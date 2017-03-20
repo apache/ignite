@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Interop
     using System;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Interface to interoperate with
