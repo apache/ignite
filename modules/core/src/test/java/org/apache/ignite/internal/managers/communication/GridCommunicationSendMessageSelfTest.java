@@ -150,7 +150,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
-            return writer.writeShort(null, directType());
+            if (!writer.writeByte(null, (byte)(directType() & 0xFF)))
+                return false;
+
+            return writer.writeByte(null, (byte)((directType() >> 8 ) & 0xFF));
         }
 
         /** {@inheritDoc} */

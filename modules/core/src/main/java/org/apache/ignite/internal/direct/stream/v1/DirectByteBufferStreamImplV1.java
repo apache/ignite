@@ -505,8 +505,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             else
                 lastFinished = false;
         }
-        else
-            writeShort(Short.MIN_VALUE);
+        else {
+            writeByte((byte)(Short.MIN_VALUE & 0xFF));
+            writeByte((byte)((Short.MIN_VALUE >> 8 ) & 0xFF));
+        }
     }
 
     /** {@inheritDoc} */

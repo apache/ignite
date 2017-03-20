@@ -69,7 +69,9 @@ public class DirectMessageWriter implements MessageWriter {
     @Override public boolean writeHeader(short type, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeShort(type);
+        stream.writeByte((byte)(type & 0xFF));
+        stream.writeByte((byte)((type >> 8 ) & 0xFF));
+
 
         return stream.lastFinished();
     }

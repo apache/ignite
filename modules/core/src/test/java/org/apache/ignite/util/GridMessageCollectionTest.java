@@ -18,12 +18,10 @@
 package org.apache.ignite.util;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -108,14 +106,16 @@ public class GridMessageCollectionTest extends TestCase {
      * @param m Message.
      */
     private void doTestMarshal(Message m) {
-        ByteBuffer buf = ByteBuffer.allocate(8 * 1024)
-            .order(GridUnsafe.BIG_ENDIAN ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
         m.writeTo(buf, writer(proto));
 
         buf.flip();
 
-        short type = buf.getShort();
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
 
         assertEquals(m.directType(), type);
 
