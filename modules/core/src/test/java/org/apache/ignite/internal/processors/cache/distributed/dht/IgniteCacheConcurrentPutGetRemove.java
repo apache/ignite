@@ -38,7 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -78,22 +77,8 @@ public class IgniteCacheConcurrentPutGetRemove extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPutGetRemoveAtomicOffheap() throws Exception {
-        putGetRemove(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutGetRemoveTx() throws Exception {
         putGetRemove(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutGetRemoveTxOffheap() throws Exception {
-        putGetRemove(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1));
     }
 
     /**

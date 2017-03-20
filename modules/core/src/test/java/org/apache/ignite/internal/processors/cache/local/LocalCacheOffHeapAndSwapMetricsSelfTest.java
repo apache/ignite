@@ -384,7 +384,7 @@ public class LocalCacheOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     public void testOffHeapMetricsInOffHeapTiered() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4536");
 
-        createCache(CacheMemoryMode.OFFHEAP_TIERED, 0, false);
+//        createCache(CacheMemoryMode.OFFHEAP_TIERED, 0, false);
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);
@@ -467,7 +467,7 @@ public class LocalCacheOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     public void testOffHeapAndSwapMetricsInOffHeapTiered() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-4536");
 
-        createCache(CacheMemoryMode.OFFHEAP_TIERED, OFFHEAP_MAX_SIZE, true);
+//        createCache(CacheMemoryMode.OFFHEAP_TIERED, OFFHEAP_MAX_SIZE, true);
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);

@@ -64,7 +64,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -196,9 +195,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setBackups(backups);
         cacheCfg.setOffHeapMaxMemory(0);
 
-        if (isOffHeapTieredMode())
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-
         return cacheCfg;
     }
 
@@ -218,13 +214,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Cache mode.
      */
     protected abstract CacheMode getCacheMode();
-
-    /**
-     * @return {@code True} if {@link CacheMemoryMode#OFFHEAP_TIERED} memory mode should be used.
-     */
-    protected boolean isOffHeapTieredMode() {
-        return false;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {

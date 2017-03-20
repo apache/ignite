@@ -1838,23 +1838,6 @@ public final class GridTestUtils {
                 break;
             }
 
-            case OFFHEAP_TIERED: {
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = maxOffheapSize;
-                swap = true;
-
-                break;
-            }
-
             case OFFHEAP_EVICT: {
                 memMode = CacheMemoryMode.ONHEAP_TIERED;
                 evictionPlc = true;

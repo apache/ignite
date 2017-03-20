@@ -90,10 +90,6 @@ public class ConfigVariations {
         Parameters.parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
 
     /** */
-    private static final ConfigParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM =
-        Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
-
-    /** */
     private static final ConfigParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =
         Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
 
@@ -129,7 +125,6 @@ public class ConfigVariations {
         Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
         asArray(ONHEAP_TIERED_MEMORY_PARAM,
             Parameters.complexParameter(ONHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
-            Parameters.complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
             Parameters.complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
         ),
         Parameters.booleanParameters("setLoadPreviousValue"),

@@ -31,7 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -96,7 +95,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(OFFHEAP_TIERED);
         ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
         ccfg.setIndexedTypes(indexedTypes);
 

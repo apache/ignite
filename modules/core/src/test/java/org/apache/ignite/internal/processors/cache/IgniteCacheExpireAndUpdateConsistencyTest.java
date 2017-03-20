@@ -53,7 +53,6 @@ import org.apache.ignite.transactions.Transaction;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -128,13 +127,6 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTx1() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 0));
     }
@@ -151,13 +143,6 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
      */
     public void testTx3() throws Exception {
         updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1));
     }
 
     /**

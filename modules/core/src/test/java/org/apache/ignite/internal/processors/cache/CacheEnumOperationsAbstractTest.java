@@ -37,7 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -112,15 +111,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTx() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, ONHEAP_TIERED);
 
@@ -132,15 +122,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
      */
     public void testTxOffheapValues() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_VALUES);
-
-        enumOperations(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC, OFFHEAP_TIERED);
 
         enumOperations(ccfg);
     }
@@ -284,9 +265,6 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
         ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-
-        if (memoryMode == OFFHEAP_TIERED)
-            ccfg.setOffHeapMaxMemory(0);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

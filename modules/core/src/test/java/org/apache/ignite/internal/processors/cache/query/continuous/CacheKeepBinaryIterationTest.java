@@ -42,7 +42,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -107,43 +106,11 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED
-        );
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTxOnHeap() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
             ONHEAP_TIERED
-        );
-
-        doTestScanQuery(ccfg, true, true);
-        doTestScanQuery(ccfg, true, false);
-        doTestScanQuery(ccfg, false, true);
-        doTestScanQuery(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED
         );
 
         doTestScanQuery(ccfg, true, true);
@@ -171,43 +138,11 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED
-        );
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTxOnHeapLocalEntries() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             TRANSACTIONAL,
             ONHEAP_TIERED
-        );
-
-        doTestLocalEntries(ccfg, true, true);
-        doTestLocalEntries(ccfg, true, false);
-        doTestLocalEntries(ccfg, false, true);
-        doTestLocalEntries(ccfg, false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffHeapLocalEntries() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED
         );
 
         doTestLocalEntries(ccfg, true, true);
@@ -332,8 +267,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                         (mode == CachePeekMode.NEAR && i == 0 &&
                             ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED &&
                             ccfg.getNearConfiguration() != null) ||
-                        (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED) ||
-                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED))
+                        (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED))
                         assertTrue("Zero result at mode: " + mode, size > 0);
                 }
             }

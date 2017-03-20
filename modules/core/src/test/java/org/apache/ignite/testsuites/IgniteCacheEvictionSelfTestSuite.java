@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.GridCacheMemoryModeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
@@ -67,7 +66,6 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePreloadingEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesPartitionedSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEmptyEntriesLocalSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheMemoryModeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheSynchronousEvictionsFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
 

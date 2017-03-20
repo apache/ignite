@@ -44,7 +44,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -92,22 +91,8 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testExpiredEventAtomicOffheap() throws Exception {
-        checkExpiredEvents(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testExpiredEventTx() throws Exception {
         checkExpiredEvents(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExpiredEventTxOffheap() throws Exception {
-        checkExpiredEvents(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED));
     }
 
     /**

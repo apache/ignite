@@ -81,7 +81,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      */
     public void testLocalEviction() throws Exception {
         checkEviction(CacheMode.LOCAL, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(CacheMode.LOCAL, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
@@ -89,7 +88,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      */
     public void testPartitionedEviction() throws Exception {
         checkEviction(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(CacheMode.PARTITIONED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
@@ -97,7 +95,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      */
     public void testReplicatedEviction() throws Exception {
         checkEviction(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED);
-        checkEviction(CacheMode.REPLICATED, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**

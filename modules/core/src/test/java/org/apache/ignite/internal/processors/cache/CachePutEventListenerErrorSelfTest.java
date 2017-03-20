@@ -101,22 +101,8 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedAtomicOffHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPartitionedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPartitionedTransactionalOffHeap() throws Exception {
-        doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
@@ -129,22 +115,8 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReplicatedAtomicOffHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, CacheMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplicatedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTransactionalOffHeap() throws Exception {
-        doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED);
     }
 
     /**

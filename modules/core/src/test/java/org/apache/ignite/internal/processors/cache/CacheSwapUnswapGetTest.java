@@ -131,22 +131,8 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTxCacheOffheapTiered() throws Exception {
-        swapUnswap(TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testTxCacheOffheapSwapEvict() throws Exception {
         swapUnswap(TRANSACTIONAL, CacheMemoryMode.ONHEAP_TIERED, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxCacheOffheapTieredSwapEvict() throws Exception {
-        swapUnswap(TRANSACTIONAL, CacheMemoryMode.OFFHEAP_TIERED, true);
     }
 
     /**
@@ -159,22 +145,8 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicCacheOffheapTiered() throws Exception {
-        swapUnswap(ATOMIC, CacheMemoryMode.OFFHEAP_TIERED, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicCacheOffheapSwapEvict() throws Exception {
         swapUnswap(ATOMIC, CacheMemoryMode.ONHEAP_TIERED, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicCacheOffheapTieredSwapEvict() throws Exception {
-        swapUnswap(ATOMIC, CacheMemoryMode.OFFHEAP_TIERED, true);
     }
 
     /**
@@ -287,12 +259,9 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
             assertTrue(total > 0);
 
-            assertEquals(onheapSize + offheapSize, total);
+            assertEquals(offheapSize, total);
 
-            if (memMode == CacheMemoryMode.OFFHEAP_TIERED)
-                assertEquals(0, onheapSize);
-            else
-                assertEquals(MAX_HEAP_SIZE, onheapSize);
+            assertEquals(MAX_HEAP_SIZE, onheapSize);
         }
         finally {
             done.set(true);

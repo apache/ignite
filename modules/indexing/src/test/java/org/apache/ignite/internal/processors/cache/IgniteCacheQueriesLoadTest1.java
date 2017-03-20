@@ -160,7 +160,6 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         parentCfg.setAffinity(aff);
         parentCfg.setAtomicityMode(TRANSACTIONAL);
         parentCfg.setCacheMode(PARTITIONED);
-        parentCfg.setMemoryMode(OFFHEAP_TIERED);
         parentCfg.setBackups(2);
         parentCfg.setWriteSynchronizationMode(FULL_SYNC);
 

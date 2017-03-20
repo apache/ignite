@@ -21,7 +21,6 @@ import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapValuesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsModeResolverSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsModesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsOneClientNodeTest;
-import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapValuesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOptimziedMarshallerSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencyClientSelfTest;
@@ -95,7 +93,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgfsPrimaryOptimziedMarshallerSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
@@ -165,7 +162,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
         suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
-        suite.addTestSuite(IgfsAtomicPrimaryOffheapTieredSelfTest.class);
         suite.addTestSuite(IgfsAtomicPrimaryOffheapValuesSelfTest.class);
 
         suite.addTestSuite(IgfsSecondaryFileSystemInjectionSelfTest.class);

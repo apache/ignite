@@ -59,7 +59,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -139,20 +138,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testNonDeadLockInListenerTxOffHeap() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInListenerTxOffHeapJCacheApi() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_TIERED), true, true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testNonDeadLockInListenerTxOffHeapValues() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_VALUES), true, true, false);
     }
@@ -190,20 +175,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInListenerReplicatedAtomicOffHeapValues() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInListenerAtomicOffHeap() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInListenerAtomicOffHeapValues() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), true, true, false);
     }
 
     /**
@@ -262,27 +233,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testNonDeadLockInFilterTxOffHeap() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterTxOffHeapJCacheApi() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_TIERED), true, true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterTxOffHeapValues() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_VALUES), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testNonDeadLockInFilterAtomic() throws Exception {
         testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
     }
@@ -299,27 +249,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInFilterReplicatedAtomic() throws Exception {
         testNonDeadLockInFilter(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterAtomicOffHeap() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), true, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterAtomicOffHeapJCacheApi() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), true, true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterAtomicOffHeapValues() throws Exception {
-        testNonDeadLockInFilter(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), true, true, false);
     }
 
     /**
@@ -364,20 +293,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testNonDeadLockInFilterTxOffHeapSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_TIERED), false, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterTxOffHeapValuesSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, TRANSACTIONAL, OFFHEAP_VALUES), false, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testNonDeadLockInFilterAtomicSyncFilter() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, ONHEAP_TIERED), false, true, false);
     }
@@ -387,20 +302,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
      */
     public void testNonDeadLockInFilterReplicatedAtomicSyncFilter() throws Exception {
         testNonDeadLockInListener(cacheConfiguration(REPLICATED, 2, ATOMIC, ONHEAP_TIERED), false, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterAtomicOffHeapSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), false, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNonDeadLockInFilterAtomicOffHeapValuesSyncFilter() throws Exception {
-        testNonDeadLockInListener(cacheConfiguration(PARTITIONED, 2, ATOMIC, OFFHEAP_TIERED), false, true, false);
     }
 
     /**

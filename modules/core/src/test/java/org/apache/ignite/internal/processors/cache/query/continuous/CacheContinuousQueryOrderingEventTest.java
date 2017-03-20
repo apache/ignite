@@ -64,7 +64,6 @@ import org.apache.ignite.transactions.Transaction;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -152,29 +151,9 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapTwoBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicOffheapValuesTwoBackup() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_VALUES, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedOffheap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, false);
     }
@@ -234,26 +213,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheapTwoBackupAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTwoBackupAsyncFullSync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
-            OFFHEAP_TIERED, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAtomicOffheapValuesTwoBackupAsync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 2, ATOMIC,
             OFFHEAP_VALUES, PRIMARY_SYNC);
@@ -287,16 +246,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     public void testAtomicReplicatedAsyncFullSync() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
             ONHEAP_TIERED, FULL_SYNC);
-
-        doOrderingTest(ccfg, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedOffheapAsync() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED, 0, ATOMIC,
-            OFFHEAP_TIERED, PRIMARY_SYNC);
 
         doOrderingTest(ccfg, true);
     }

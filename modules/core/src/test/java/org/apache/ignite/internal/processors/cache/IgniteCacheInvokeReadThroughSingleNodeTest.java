@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,13 +38,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      */
     public void testInvokeReadThroughAtomic() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED, 1, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughAtomic_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, OFFHEAP_TIERED, 1, false));
     }
 
     /**
@@ -74,13 +66,6 @@ public class IgniteCacheInvokeReadThroughSingleNodeTest extends IgniteCacheInvok
      */
     public void testInvokeReadThroughTx() throws Exception {
         invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 1, false));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeReadThroughTx_Offheap() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, OFFHEAP_TIERED, 1, false));
     }
 
     /**
