@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.spring;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Phaser;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -41,6 +44,9 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DYNAMIC_CACHE_NAME = "dynamicCache";
+
+    /** */
+    private static final String SYNC_CACHE_NAME = "syncCache";
 
     /** */
     private static final Object NULL;
@@ -61,6 +67,9 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private GridSpringDynamicCacheTestService dynamicSvc;
+
+    /** */
+    private GridSpringSyncCacheTestService syncSvc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -102,9 +111,11 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
         dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
+        syncSvc = (GridSpringSyncCacheTestService)factory.getBean("syncTestService");
 
         svc.reset();
         dynamicSvc.reset();
+        syncSvc.reset();
     }
 
     /** {@inheritDoc} */
@@ -434,5 +445,48 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
         assertEquals(2, dynamicSvc.called());
 
         assertEquals(0, c.size());
+    }
+
+    /** */
+    private static final int THREADS_NUMBER = 10;
+
+    /** */
+    private static final Phaser BARRIER = new Phaser(THREADS_NUMBER);
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSyncCache() throws Exception {
+        IgniteCache<Object, Object> igniteCache = grid().getOrCreateCache(SYNC_CACHE_NAME);
+
+        final SpringCache springCache = new SpringCache(igniteCache);
+
+        final int iterationsNumber = 1000;
+
+        Callable callable = new Callable() {
+
+            @Override public Object call() throws Exception {
+                for (int key = 0; key < iterationsNumber; key++) {
+                    BARRIER.arriveAndAwaitAdvance();
+
+                    final int tempKey = key;
+
+                    springCache.get(key, new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            syncSvc.cacheable(tempKey);
+
+                            return tempKey;
+                        }
+                    });
+                }
+
+                return null;
+            }
+        };
+
+        GridTestUtils.runMultiThreaded(callable, THREADS_NUMBER, "testSyncCache");
+
+        assertEquals(iterationsNumber, igniteCache.size());
+        assertEquals(iterationsNumber, syncSvc.called());
     }
 }
