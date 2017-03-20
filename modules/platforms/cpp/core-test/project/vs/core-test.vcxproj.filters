@@ -79,6 +79,9 @@
     <ClCompile Include="..\..\src\test_utils.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache_store_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\date_time_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -131,6 +134,12 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-identity.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-store.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

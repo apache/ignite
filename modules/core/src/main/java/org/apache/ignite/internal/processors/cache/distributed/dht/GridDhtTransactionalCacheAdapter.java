@@ -178,7 +178,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable GridDhtTxRemote startRemoteTx(UUID nodeId,
+    @Nullable private GridDhtTxRemote startRemoteTx(UUID nodeId,
         GridDhtLockRequest req,
         GridDhtLockResponse res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
@@ -307,7 +307,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 if (tx.state() == COMMITTING)
                                     tx.forceCommit();
                                 else
-                                    tx.rollback();
+                                    tx.rollbackRemoteTx();
                             }
 
                             return null;
@@ -362,7 +362,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (log.isDebugEnabled())
                 log.debug("Rolling back remote DHT transaction because it is empty [req=" + req + ", res=" + res + ']');
 
-            tx.rollback();
+            tx.rollbackRemoteTx();
 
             tx = null;
         }
@@ -374,7 +374,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest req) {
+    private void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest req) {
         if (txLockMsgLog.isDebugEnabled()) {
             txLockMsgLog.debug("Received dht lock request [txId=" + req.nearXidVersion() +
                 ", dhtTxId=" + req.version() +
@@ -452,7 +452,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected final void processDhtLockRequest0(UUID nodeId, GridDhtLockRequest req) {
+    private void processDhtLockRequest0(UUID nodeId, GridDhtLockRequest req) {
         assert nodeId != null;
         assert req != null;
         assert !nodeId.equals(locNodeId);
@@ -561,10 +561,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (fail) {
             if (dhtTx != null)
-                dhtTx.rollback();
+                dhtTx.rollbackRemoteTx();
 
             if (nearTx != null) // Even though this should never happen, we leave this check for consistency.
-                nearTx.rollback();
+                nearTx.rollbackRemoteTx();
 
             List<KeyCacheObject> keys = req.keys();
 
@@ -602,7 +602,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
+    private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
         clearLocks(nodeId, req);
 
         if (isNearEnabled(cacheCfg))
@@ -961,8 +961,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.futureId(),
                             req.miniId(),
                             req.threadId(),
-                            req.implicitTx(),
-                            req.implicitSingleTx(),
+                            /*implicitTx*/false,
+                            /*implicitSingleTx*/false,
                             ctx.systemTx(),
                             false,
                             ctx.ioPolicy(),
@@ -989,7 +989,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             U.warn(log, msg);
 
                             if (tx != null)
-                                tx.rollback();
+                                tx.rollbackDhtLocal();
 
                             return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
                         }
@@ -1038,31 +1038,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 t.xidVersion(),
                                 e);
 
-                            if (resp.error() == null && t.onePhaseCommit()) {
-                                assert t.implicit();
+                            assert !t.implicit() : t;
+                            assert !t.onePhaseCommit() : t;
 
-                                return t.commitAsync().chain(
-                                    new C1<IgniteInternalFuture<IgniteInternalTx>, GridNearLockResponse>() {
-                                        @Override public GridNearLockResponse apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                                            try {
-                                                // Check for error.
-                                                f.get();
-                                            }
-                                            catch (IgniteCheckedException e1) {
-                                                resp.error(e1);
-                                            }
+                            sendLockReply(nearNode, t, req, resp);
 
-                                            sendLockReply(nearNode, t, req, resp);
-
-                                            return resp;
-                                        }
-                                    });
-                            }
-                            else {
-                                sendLockReply(nearNode, t, req, resp);
-
-                                return new GridFinishedFuture<>(resp);
-                            }
+                            return new GridFinishedFuture<>(resp);
                         }
                     }
                 );
@@ -1105,7 +1086,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             if (tx != null) {
                 try {
-                    tx.rollback();
+                    tx.rollbackDhtLocal();
                 }
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to rollback the transaction: " + tx, ex);
@@ -1309,7 +1290,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void sendLockReply(
         ClusterNode nearNode,
-        @Nullable IgniteInternalTx tx,
+        @Nullable GridDhtTxLocal tx,
         GridNearLockRequest req,
         GridNearLockResponse res
     ) {
@@ -1347,7 +1328,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ", res=" + res + ']', e);
 
             if (tx != null)
-                tx.rollbackAsync();
+                tx.rollbackDhtLocalAsync();
 
             // Convert to closure exception as this method is only called form closures.
             throw new GridClosureException(e);

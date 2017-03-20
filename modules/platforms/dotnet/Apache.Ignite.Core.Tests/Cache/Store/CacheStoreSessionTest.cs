@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             IgniteConfiguration cfg = new IgniteConfiguration
             {
-                GridName = IgniteName,
+                IgniteInstanceName = IgniteName,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = @"config\cache\store\cache-store-session.xml"

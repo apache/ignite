@@ -51,8 +51,8 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
     private long rebalanceDelay;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // 'testForcePreload' is not valid with late assignment.
         cfg.setLateAffinityAssignment(false);

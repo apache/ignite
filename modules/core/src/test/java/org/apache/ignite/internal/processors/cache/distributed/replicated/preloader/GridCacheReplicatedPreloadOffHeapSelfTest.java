@@ -26,8 +26,8 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
  */
 public class GridCacheReplicatedPreloadOffHeapSelfTest extends GridCacheReplicatedPreloadSelfTest {
     /** {@inheritDoc} */
-    @Override CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);

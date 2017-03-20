@@ -26,13 +26,13 @@ import org.h2.value.ValueNull;
 /**
  * Constant value.
  */
-public class GridSqlConst extends GridSqlElement implements GridSqlValue {
+public class GridSqlConst extends GridSqlElement {
     /** */
     public static final GridSqlElement NULL = new GridSqlConst(ValueNull.INSTANCE)
         .resultType(GridSqlType.fromExpression(ValueExpression.getNull()));
 
     /** */
-    public static final GridSqlElement TRUE = new GridSqlConst(ValueBoolean.get(true))
+    public static final GridSqlConst TRUE = (GridSqlConst)new GridSqlConst(ValueBoolean.get(true))
         .resultType(GridSqlType.BOOLEAN);
 
     /** */
@@ -42,7 +42,7 @@ public class GridSqlConst extends GridSqlElement implements GridSqlValue {
      * @param val Value.
      */
     public GridSqlConst(Value val) {
-        super(Collections.<GridSqlElement>emptyList());
+        super(Collections.<GridSqlAst>emptyList());
 
         this.val = val;
     }

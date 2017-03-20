@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (int i = 0; i < GridCnt; i++)
             {
-                cfg.GridName = "grid-" + i;
+                cfg.IgniteInstanceName = "grid-" + i;
 
                 Ignition.Start(cfg);
             }

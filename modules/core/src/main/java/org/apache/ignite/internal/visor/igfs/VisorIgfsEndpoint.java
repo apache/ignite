@@ -32,8 +32,8 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     /** IGFS name. */
     private final String igfsName;
 
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Host address / name. */
     private final String hostName;
@@ -45,13 +45,15 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
      * Create IGFS endpoint descriptor with given parameters.
      *
      * @param igfsName IGFS name.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param hostName Host address / name.
      * @param port Port number.
      */
-    public VisorIgfsEndpoint(@Nullable String igfsName, String gridName, @Nullable String hostName, int port) {
+    public VisorIgfsEndpoint(
+        @Nullable String igfsName, String igniteInstanceName, @Nullable String hostName, int port
+    ) {
         this.igfsName = igfsName;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.hostName = hostName;
         this.port = port;
     }
@@ -64,10 +66,10 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     }
 
     /**
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName() {
-        return gridName;
+    public String igniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
@@ -90,14 +92,14 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     public String authority() {
         String addr = hostName + ":" + port;
 
-        if (igfsName == null && gridName == null)
+        if (igfsName == null && igniteInstanceName == null)
             return addr;
         else if (igfsName == null)
-            return gridName + "@" + addr;
-        else if (gridName == null)
+            return igniteInstanceName + "@" + addr;
+        else if (igniteInstanceName == null)
             return igfsName + "@" + addr;
         else
-            return igfsName + ":" + gridName + "@" + addr;
+            return igfsName + ":" + igniteInstanceName + "@" + addr;
     }
 
     /** {@inheritDoc} */
