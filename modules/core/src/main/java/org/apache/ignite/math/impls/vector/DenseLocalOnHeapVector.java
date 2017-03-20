@@ -92,15 +92,6 @@ public class DenseLocalOnHeapVector extends AbstractVector {
         this(arr, false);
     }
 
-    /**
-     * @param orig Source Vector.
-     */
-    private DenseLocalOnHeapVector(DenseLocalOnHeapVector orig) {
-        setStorage(mkStorage(orig.size()));
-
-        assign(orig);
-    }
-
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         return new DenseLocalOnHeapMatrix(rows, cols);
