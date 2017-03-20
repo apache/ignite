@@ -1130,30 +1130,23 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 
     cursor = cache.Query(qry);
 
-    try
-    {
-        BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasNext());
 
-        QueryFieldsRow row = cursor.GetNext();
+    QueryFieldsRow row = cursor.GetNext();
 
-        BOOST_REQUIRE(row.HasNext());
+    BOOST_REQUIRE(row.HasNext());
 
-        int age = row.GetNext<int>();
+    int age = row.GetNext<int>();
 
-        BOOST_REQUIRE(age == 10);
+    BOOST_REQUIRE(age == 10);
 
-        std::string name = row.GetNext<std::string>();
+    std::string name = row.GetNext<std::string>();
 
-        BOOST_REQUIRE(name == "A1");
+    BOOST_REQUIRE(name == "A1");
 
-        BOOST_REQUIRE(!row.HasNext());
+    BOOST_REQUIRE(!row.HasNext());
 
-        CheckEmpty(cursor);
-    }
-    catch (IgniteError& error)
-    {
-        BOOST_FAIL(error.GetText());
-    }
+    CheckEmpty(cursor);
 }
 
 /**
