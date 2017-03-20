@@ -65,13 +65,6 @@ public class QueryIndexClientFuture extends GridFutureAdapter<Object> {
         onDone(new IgniteException("Operation failed because cache was stopped."));
     }
 
-    /**
-     * Handle type undeploy.
-     */
-    public void onTypeUnregistered() {
-        onDone(new IgniteException("Operation failed because type was undeployed."));
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryIndexClientFuture.class, this);

@@ -575,9 +575,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Complete index client futures in case of cache stop or type unregistration.
      *
      * @param space Space.
-     * @param cacheStop {@code True} if completion caused by cache stop.
      */
-    private void completeIndexClientFuturesOnSpaceUnregister(String space, boolean cacheStop) {
+    private void completeIndexClientFuturesOnSpaceUnregister(String space) {
         Iterator<Map.Entry<UUID, QueryIndexClientFuture>> idxCliFutIt = idxCliFuts.entrySet().iterator();
 
         while (idxCliFutIt.hasNext()) {
@@ -586,10 +585,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             QueryIndexClientFuture idxCliFut = idxCliFutEntry.getValue();
 
             if (F.eq(space, idxCliFut.key().space())) {
-                if (cacheStop)
-                    idxCliFut.onCacheStopped();
-                else
-                    idxCliFut.onTypeUnregistered();
+                idxCliFut.onCacheStopped();
 
                 idxCliFutIt.remove();
             }
@@ -1321,7 +1317,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // TODO: Correct implementation.
             removeIndexesOnSpaceUnregister(task.space());
 
-            completeIndexClientFuturesOnSpaceUnregister(task.space(), true);
+            completeIndexClientFuturesOnSpaceUnregister(task.space());
         }
 
         /**
