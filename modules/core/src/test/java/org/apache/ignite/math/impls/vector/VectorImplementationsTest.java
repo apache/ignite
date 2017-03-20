@@ -353,6 +353,11 @@ public class VectorImplementationsTest {
         });
     }
 
+    /** */ @Test
+    public void getMetaStorageTest() {
+        consumeSampleVectors((v, desc) -> assertNotNull("Null meta storage in " + desc, v.getMetaStorage()));
+    }
+
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
         // todo find out if this is indeed OK
