@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig2,
-                GridName = "dotNet2"
+                IgniteInstanceName = "dotNet2"
             });
 
             // Java-only node
