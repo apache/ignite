@@ -121,21 +121,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1;
 
-        doTestPutAndPutAll(1000, 0, true, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOnheapSwap() throws Exception {
-        mode = CacheMode.LOCAL;
-        memoryMode = CacheMemoryMode.ONHEAP_TIERED;
-        maxOnheapSize = 330;
-        swapEnabled = true;
-        atomicity = CacheAtomicityMode.ATOMIC;
-        offheapSize = -1;
-
-        doTestPutAndPutAll(330, 670, true, false);
+        doTestPutAndPutAll(1000, 0, true);
     }
 
     /**
@@ -149,21 +135,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1; // Must be fixed in config validation.
 
-        doTestPutAndPutAll(0, 1000, false, true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOffheapSwap() throws Exception {
-        mode = CacheMode.LOCAL;
-        memoryMode = CacheMemoryMode.OFFHEAP_TIERED;
-        maxOnheapSize = Integer.MAX_VALUE;
-        swapEnabled = true;
-        atomicity = CacheAtomicityMode.ATOMIC;
-        offheapSize = 1000; // Small for evictions from offheap to swap.
-
-        doTestPutAndPutAll(0, 1000, false, false);
+        doTestPutAndPutAll(0, 1000, false);
     }
 
     /**
@@ -177,7 +149,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = 1000; // Small for evictions from offheap to swap.
 
-        doTestPutAndPutAll(24, 976, false, false);
+        doTestPutAndPutAll(24, 976, false);
     }
 
     /**
@@ -208,17 +180,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cache In cache.
-     * @param offheapSwap In swap and offheap.
+     * @param offheap In offheap.
      * @param offheapEmpty Offheap is empty.
-     * @param swapEmpty Swap is empty.
      * @throws Exception If failed.
      */
-    private void doTestPutAndPutAll(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty)
+    private void doTestPutAndPutAll(int cache, int offheap, boolean offheapEmpty)
         throws Exception {
-        final int all = cache + offheapSwap;
+        final int all = cache + offheap;
 
         // put
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<IgniteCache<String, Integer>>() {
+        doTest(cache, offheap, offheapEmpty, new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> c) throws IgniteCheckedException {
                 for (int i = 0; i < all; i++)
                     c.put(valueOf(i), i);
@@ -226,7 +197,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         });
 
         //putAll
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<IgniteCache<String, Integer>>() {
+        doTest(cache, offheap, offheapEmpty, new CIX1<IgniteCache<String, Integer>>() {
             @Override public void applyx(IgniteCache<String, Integer> c) throws IgniteCheckedException {
                 putAll(c, 0, all / 2);
 
@@ -246,14 +217,12 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cache Cache size.
-     * @param offheapSwap Offheap + swap size.
+     * @param offheap Offheap + swap size.
      * @param offheapEmpty Offheap is empty.
-     * @param swapEmpty Swap is empty.
      * @param x Cache modifier.
      * @throws IgniteCheckedException If failed.
      */
-    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty,
-        CIX1<IgniteCache<String, Integer>> x) throws Exception {
+    void doTest(int cache, int offheap, boolean offheapEmpty, CIX1<IgniteCache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();
@@ -263,22 +232,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         x.applyx(c);
 
         assertEquals(cache, c.size(CachePeekMode.ONHEAP));
-        assertEquals(offheapSwap, c.localSize(CachePeekMode.OFFHEAP) + c.localSize(CachePeekMode.SWAP));
+        assertEquals(offheap, c.localSize(CachePeekMode.OFFHEAP));
 
         info("size: " + c.size());
         info("heap: " + c.localSize(CachePeekMode.ONHEAP));
         info("offheap: " + c.localSize(CachePeekMode.OFFHEAP));
-        info("swap: " + c.localSize(CachePeekMode.SWAP));
 
         if (offheapEmpty)
             Assert.assertEquals(0, c.localSize(CachePeekMode.OFFHEAP));
         else
             Assert.assertNotEquals(0, c.localSize(CachePeekMode.OFFHEAP));
-
-        if (swapEmpty)
-            Assert.assertEquals(0, c.localSize(CachePeekMode.SWAP));
-        else
-            Assert.assertNotEquals(0, c.localSize(CachePeekMode.SWAP));
 
         stopAllGrids();
     }
