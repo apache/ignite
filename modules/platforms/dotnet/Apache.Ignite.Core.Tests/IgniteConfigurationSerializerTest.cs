@@ -294,6 +294,9 @@ namespace Apache.Ignite.Core.Tests
                 if (!prop.CanWrite)
                     continue;  // Read-only properties are not configured in XML.
 
+                if (prop.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any())
+                    continue;  // Skip deprecated.
+
                 var propType = prop.PropertyType;
 
                 var isCollection = propType.IsGenericType &&
