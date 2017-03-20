@@ -388,6 +388,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = KEYS; i < KEYS + 100; i++)
             assertEquals(i, ignite2.cache(name).get(i));
 
+        awaitPartitionMapExchange(true, true, null);
+
         assertEquals(102, ignite2.cache(name).size());
 
         assertEquals(102, LOCAL_STORE_1.map.size());
@@ -410,6 +412,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         for (int i = KEYS; i < KEYS + 100; i++)
             assertEquals(i, ignite2.cache(name).get(i));
+
+        awaitPartitionMapExchange(true, true, null);
 
         assertEquals(102, ignite2.cache(name).size());
 
@@ -604,9 +608,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 try (Transaction tx = grid(i).transactions().txStart()) {
                     Map<Integer, Integer> m = new HashMap<>(3);
 
-                    for (int j = 0; j < 50; j++) {
+                    for (int j = 0; j < 50; j++)
                         m.put(rn.nextInt(1000), 1000);
-                    }
 
                     grid(i).cache(BACKUP_CACHE_1).withSkipStore().putAll(m);
 
