@@ -771,7 +771,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TimeUnit.SECONDS.toMillis(15);
+        return TimeUnit.SECONDS.toMillis(2 * 60);
     }
 
     /**

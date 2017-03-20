@@ -15,21 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.IgniteConfiguration;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- *
+ * Cache partition exchange worker task marker interface.
  */
-public class GridCachePartitionedNoStripedPoolMultiNodeFullApiSelfTest extends
-    GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setStripedPoolSize(-1);
-
-        return cfg;
-    }
+public interface CachePartitionExchangeWorkerTask {
+    /**
+     * @return {@code True) if task denotes standard exchange task, {@code false} if this is a custom task which
+     * must be executed from within exchange thread.
+     */
+    boolean isExchange();
 }

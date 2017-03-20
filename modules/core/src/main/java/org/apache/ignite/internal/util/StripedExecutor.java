@@ -56,7 +56,7 @@ public class StripedExecutor implements ExecutorService {
 
     /**
      * @param cnt Count.
-     * @param gridName Node name.
+     * @param igniteInstanceName Node name.
      * @param poolName Pool name.
      * @param log Logger.
      */
@@ -435,7 +435,11 @@ public class StripedExecutor implements ExecutorService {
          * Starts the stripe.
          */
         void start() {
-            thread = new IgniteThread(igniteInstanceName, poolName + "-stripe-" + idx, this);
+            thread = new IgniteThread(igniteInstanceName,
+                poolName + "-stripe-" + idx,
+                this,
+                IgniteThread.GRP_IDX_UNASSIGNED,
+                idx);
 
             thread.start();
         }

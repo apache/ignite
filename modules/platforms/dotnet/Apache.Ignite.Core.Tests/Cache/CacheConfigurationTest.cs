@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     GetCustomCacheConfiguration(),
                     GetCustomCacheConfiguration2()
                 },
-                GridName = CacheName,
+                IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
             };
 
