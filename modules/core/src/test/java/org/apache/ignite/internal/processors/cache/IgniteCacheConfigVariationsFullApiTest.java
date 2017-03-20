@@ -3763,10 +3763,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 assertEquals(offheapEnabled(), cache.localPeek(k, OFFHEAP) != null);
 
                 break;
-            case OFFHEAP_VALUES:
-                assertNull(cache.localPeek(k, ONHEAP, OFFHEAP));
-
-                break;
             default:
                 fail("Unexpected memory mode: " + memoryMode());
         }

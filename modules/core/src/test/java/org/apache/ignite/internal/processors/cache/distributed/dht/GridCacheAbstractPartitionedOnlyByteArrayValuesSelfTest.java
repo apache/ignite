@@ -38,14 +38,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     /** Offheap cache name. */
     protected static final String CACHE_ATOMIC_OFFHEAP = "cache_atomic_offheap";
 
-    /** Offheap tiered cache name. */
-    protected static final String CACHE_ATOMIC_OFFHEAP_TIERED = "cache_atomic_offheap_tiered";
-
     /** Atomic caches. */
     private static IgniteCache<Integer, Object>[] cachesAtomic;
-
-    /** Atomic offheap caches. */
-    private static IgniteCache<Integer, Object>[] cachesAtomicOffheap;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -57,16 +51,7 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         atomicCacheCfg.setAtomicityMode(ATOMIC);
         atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
-        CacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
-
-        atomicOffheapCacheCfg.setName(CACHE_ATOMIC_OFFHEAP);
-        atomicOffheapCacheCfg.setAtomicityMode(ATOMIC);
-        atomicOffheapCacheCfg.setAtomicWriteOrderMode(PRIMARY);
-
-        c.setCacheConfiguration(cacheConfiguration(),
-            offheapCacheConfiguration(),
-            atomicCacheCfg,
-            atomicOffheapCacheCfg);
+        c.setCacheConfiguration(cacheConfiguration(), atomicCacheCfg);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -86,18 +71,14 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         int gridCnt = gridCount();
 
         cachesAtomic = new IgniteCache[gridCnt];
-        cachesAtomicOffheap = new IgniteCache[gridCnt];
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < gridCount(); i++)
             cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
-            cachesAtomicOffheap[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP);
-        }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cachesAtomic = null;
-        cachesAtomicOffheap = null;
 
         super.afterTestsStopped();
     }
@@ -109,15 +90,6 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
      */
     public void testAtomic() throws Exception {
         testAtomic0(cachesAtomic);
-    }
-
-    /**
-     * Test atomic offheap cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheap() throws Exception {
-        testAtomic0(cachesAtomicOffheap);
     }
 
     /**
