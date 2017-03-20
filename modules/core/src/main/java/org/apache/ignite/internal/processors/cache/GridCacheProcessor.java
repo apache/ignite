@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMes
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -411,6 +412,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.query().onIndexFinishMessage((IndexFinishDiscoveryMessage)msg);
             else
                 U.warn(log, "Unsupported index discovery message: " + msg);
+        }
+        else if (task instanceof IndexNodeLeaveExchangeWorkerTask) {
+            IndexNodeLeaveExchangeWorkerTask task0 = (IndexNodeLeaveExchangeWorkerTask)task;
+
+            ctx.query().onNodeLeave(task0.node());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);

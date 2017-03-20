@@ -365,6 +365,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Handle node leave.
+     *
+     * @param node Node.
+     */
+    public void onNodeLeave(ClusterNode node) {
+        // TODO.
+    }
+
+    /**
      * Handle index init discovery message.
      *
      * @param space Space.
