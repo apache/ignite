@@ -799,9 +799,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         String type = qry.getType();
 
-                        QueryTypeDescriptorImpl typeDesc = type(cctx.name(), type);
+                        String typeName = type(cctx.name(), type);
 
-                        qry.setType(typeDesc.name());
+                        qry.setType(typeName);
 
                         sendQueryExecutedEvent(
                             qry.getSql(),
@@ -1054,9 +1054,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                        QueryTypeDescriptorImpl type = type(space, resType);
+                        String typeName = type(space, resType);
 
-                        return idx.queryLocalText(space, clause, type.name(), filters);
+                        return idx.queryLocalText(space, clause, typeName, filters);
                     }
                 }, true);
         }
@@ -1139,20 +1139,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets type descriptor for space and type name.
+     * Gets type name for provided space and type name if type is still valid.
      *
      * @param space Space name.
      * @param typeName Type name.
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
+    private String type(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
         if (type == null || !type.registered())
             throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
 
-        return type;
+        return type.name();
     }
 
     /**
@@ -1438,30 +1438,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          */
         public UUID nodeId() {
             return nodeId;
-        }
-    }
-
-    /**
-     * Type removal task (either due to cache stop or due to type undeploy).
-     */
-    private static class TypeRemoveTask implements IndexingTask {
-        /** Type descriptor. */
-        private final QueryTypeDescriptorImpl typeDesc;
-
-        /**
-         * Constructor.
-         *
-         * @param typeDesc Type descriptor.
-         */
-        public TypeRemoveTask(QueryTypeDescriptorImpl typeDesc) {
-            this.typeDesc = typeDesc;
-        }
-
-        /**
-         * @return Type descriptor.
-         */
-        public QueryTypeDescriptorImpl typeDescriptor() {
-            return typeDesc;
         }
     }
 
