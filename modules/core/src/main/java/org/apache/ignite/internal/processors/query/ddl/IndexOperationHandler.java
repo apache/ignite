@@ -51,11 +51,11 @@ public class IndexOperationHandler {
     /** Mutex for concurrent access. */
     private final Object mux = new Object();
 
+    /** Cancellation token. */
+    private final IndexOperationCancellationToken cancelToken = new IndexOperationCancellationToken();
+
     /** Init flag. */
     private boolean init;
-
-    /** Cancel flag. */
-    private boolean cancel;
 
     /** Worker. */
     private IndexWorker worker;
@@ -84,7 +84,7 @@ public class IndexOperationHandler {
             if (!init) {
                 init = true;
 
-                if (!cancel) {
+                if (!cancelToken.isCancelled()) {
                     worker = new IndexWorker(ctx.igniteInstanceName(), workerName(), log);
 
                     new IgniteThread(worker).start();
@@ -96,26 +96,22 @@ public class IndexOperationHandler {
     }
 
     /**
-     * @return Worker name.
-     */
-    private String workerName() {
-        return "index-op-worker" + op.space() + "-" + op.tableName() + "-" + op.indexName();
-    }
-
-    /**
      * Cancel operation.
      */
     public void cancel() {
         synchronized (mux) {
-            if (!cancel) {
-                cancel = true;
-
+            if (!cancelToken.cancel()) {
                 if (worker != null)
                     worker.cancel();
             }
-
-            // TODO
         }
+    }
+
+    /**
+     * @return Worker name.
+     */
+    private String workerName() {
+        return "index-op-worker" + op.space() + "-" + op.tableName() + "-" + op.indexName();
     }
 
     /**
@@ -140,7 +136,14 @@ public class IndexOperationHandler {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             startLatch.countDown();
 
-            // TODO: Do actual create/drop.
+            try {
+                qryProc.processIndexOperation(op, cancelToken);
+
+                opFut.onDone();
+            }
+            catch (Exception e) {
+                opFut.onDone(e);
+            }
         }
 
         /**

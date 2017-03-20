@@ -41,9 +41,6 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
     /** Whether request must be propagated to exchange worker for final processing. */
     private transient boolean exchange;
 
-    /** Local cache index state at the moment of message receive. */
-    private transient QueryIndexStates idxStates;
-
     /**
      * Constructor.
      *
@@ -63,20 +60,6 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
      */
     public AbstractIndexOperation operation() {
         return op;
-    }
-
-    /**
-     * @return Index states.
-     */
-    @Nullable public QueryIndexStates indexStates() {
-        return idxStates;
-    }
-
-    /**
-     * @param idxStates Index states.
-     */
-    public void indexStates(QueryIndexStates idxStates) {
-        this.idxStates = idxStates;
     }
 
     /**

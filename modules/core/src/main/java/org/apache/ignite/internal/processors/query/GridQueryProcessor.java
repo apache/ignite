@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.ddl.IndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingAcceptTask;
 import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStartTask;
@@ -457,6 +458,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param node Node.
      */
     public void onNodeLeave(ClusterNode node) {
+        // TODO.
+    }
+
+    /**
+     * Process index operation.
+     *
+     * @param op Operation.
+     * @param cancelToken Cancel token.
+     */
+    public void processIndexOperation(AbstractIndexOperation op, IndexOperationCancellationToken cancelToken) {
         // TODO.
     }
 
