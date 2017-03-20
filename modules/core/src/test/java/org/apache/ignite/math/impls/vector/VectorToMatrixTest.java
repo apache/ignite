@@ -2,6 +2,7 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
@@ -33,7 +34,7 @@ public class VectorToMatrixTest {
     private boolean ignore(Class<? extends Vector> clazz){
         boolean isIgnored = false;
         List<Class<? extends Vector>> ignoredClasses = Arrays.asList(FunctionVector.class,
-            SingleElementVector.class, PivotedVectorView.class, SingleElementVectorView.class);
+            SingleElementVector.class, SingleElementVectorView.class);
 
         for (Class<? extends Vector> ignoredClass : ignoredClasses) {
             if (ignoredClass.isAssignableFrom(clazz)){
@@ -43,6 +44,25 @@ public class VectorToMatrixTest {
         }
 
         return isIgnored;
+    }
+
+    /** */
+    @Test
+    public void testLikeMatrixUnsupported() throws Exception {
+        consumeSampleVectors((v, desc) -> {
+            if (!ignore(v.getClass()))
+                return;
+
+            boolean expECaught = false;
+
+            try {
+                assertNull("Null view instead of exception in " + desc, v.likeMatrix(1, 1));
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
+            }
+
+            assertTrue("Expected exception was not caught in " + desc, expECaught);
+        });
     }
 
     /** */
@@ -228,7 +248,7 @@ public class VectorToMatrixTest {
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             put(FunctionVector.class, null);
-            put(PivotedVectorView.class, null);
+            put(PivotedVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             put(SingleElementVectorView.class, null);
             put(MatrixVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             put(DelegatingVector.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture

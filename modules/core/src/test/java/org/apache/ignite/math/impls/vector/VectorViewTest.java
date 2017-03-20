@@ -25,12 +25,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
-import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.MathTestConstants;
@@ -112,46 +109,19 @@ public class VectorViewTest {
     }
 
     /** See also {@link VectorToMatrixTest#testLikeMatrix()}. */
-    @Test(expected = UnsupportedOperationException.class)
-    public void testLikeMatrix() throws Exception {
-        final Set<String> untested = new LinkedHashSet<>();
-
+    @Test
+    public void testLikeMatrix() {
         consumeSampleVectors((v, desc) -> {
-            final Matrix matrix = new VectorView(v, 0, 1).likeMatrix(1, 1);
+            boolean expECaught = false;
 
-            if (matrix == null) {
-                untested.add(v.getClass().getSimpleName());
-
-                return;
+            try {
+                assertNull("Null view instead of exception in " + desc, new VectorView(v, 0, 1).likeMatrix(1, 1));
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
             }
 
-            Class<? extends Matrix> expMatrixType = v.likeMatrix(1, 1).getClass();
-
-            Class<? extends Matrix> actualMatrixType = matrix.getClass();
-
-            assertTrue("Expected matrix type " + expMatrixType.getSimpleName()
-                    + " should be assignable from actual type " + actualMatrixType.getSimpleName() + " in " + desc,
-                expMatrixType.isAssignableFrom(actualMatrixType));
-
-            for (int rows : new int[] {0, 1, 2})
-                for (int cols : new int[] {0, 1, 2}) {
-                    final Matrix actualMatrix = new VectorView(v, 0, 0).likeMatrix(rows, cols);
-
-                    String details = "rows " + rows + " cols " + cols;
-
-                    assertNotNull("Expect non-null matrix for " + details + " in " + desc,
-                        actualMatrix);
-
-                    assertEquals("Unexpected number of rows in " + desc, rows, actualMatrix.rowSize());
-
-                    assertEquals("Unexpected number of cols in " + desc, cols, actualMatrix.columnSize());
-                }
+            assertTrue("Expected exception was not caught in " + desc, expECaught);
         });
-
-        if (untested.isEmpty())
-            return;
-
-        System.out.println("Method likeMatrix() is not yet ready for testing in VectorViews based on " + untested);
     }
 
     /** */
