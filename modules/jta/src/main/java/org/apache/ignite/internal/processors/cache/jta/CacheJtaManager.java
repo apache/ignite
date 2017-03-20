@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.jta.CacheTmLookup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -151,7 +152,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                     Transaction jtaTx = jtaTm.getTransaction();
 
                     if (jtaTx != null) {
-                        IgniteInternalTx tx = cctx.tm().userTx();
+                        GridNearTxLocal tx = cctx.tm().userTx();
 
                         if (tx == null) {
                             TransactionConfiguration tCfg = cctx.kernalContext().config()

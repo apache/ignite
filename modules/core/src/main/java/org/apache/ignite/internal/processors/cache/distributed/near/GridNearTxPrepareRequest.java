@@ -103,7 +103,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
         AffinityTopologyVersion topVer,
-        IgniteInternalTx tx,
+        GridNearTxLocal tx,
         long timeout,
         Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
