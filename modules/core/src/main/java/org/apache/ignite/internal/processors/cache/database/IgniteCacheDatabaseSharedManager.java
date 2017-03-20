@@ -111,7 +111,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (MemoryPolicyConfiguration memPlc : dbCfg.getMemoryPolicies()) {
             String plcName = memPlc.getName();
 
-            FreeListImpl freeList = new FreeListImpl(0, cctx.gridName(), pageMemory(plcName), null, cctx.wal(), 0L, true);
+            FreeListImpl freeList = new FreeListImpl(0,
+                    cctx.gridName(),
+                    memoryPolicy(plcName).pageMemory(),
+                    null,
+                    cctx.wal(),
+                    0L,
+                    true);
 
             freeListMap.put(plcName, freeList);
 
@@ -122,7 +128,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         freeListMap.put(SYSTEM_MEMORY_POLICY_NAME,
                 new FreeListImpl(0,
                         cctx.gridName(),
-                        pageMemory(SYSTEM_MEMORY_POLICY_NAME),
+                        memoryPolicy(SYSTEM_MEMORY_POLICY_NAME).pageMemory(),
                         null,
                         cctx.wal(),
                         0L,
@@ -148,12 +154,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database config.
      */
     protected void initPageMemoryPools(MemoryConfiguration dbCfg) {
-        MemoryPolicyConfiguration[] memPlcs = dbCfg.getMemoryPolicies();
+        MemoryPolicyConfiguration[] memPlcsCfgs = dbCfg.getMemoryPolicies();
 
-        memPlcMap = U.newHashMap(memPlcs.length + 1);
+        memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
 
-        for (MemoryPolicyConfiguration memPlcCfg : memPlcs) {
-            MemoryPolicy memPlc = initMemory(dbCfg, memPlcCfg);
+        for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
+            PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
+
+            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
 
             memPlcMap.put(memPlcCfg.getName(), memPlc);
 
@@ -262,24 +270,30 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName MemoryPolicyConfiguration name.
-     * @return {@link PageMemory} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @return collection of all configured {@link MemoryPolicy policies}.
      */
-    public PageMemory pageMemory(String memPlcName) {
-        MemoryPolicy memPlc = memoryPolicy(memPlcName);
-
-        return memPlc == null ? null : memPlc.pageMemory();
+    public Collection<MemoryPolicy> memoryPolicies() {
+        return memPlcMap != null ? memPlcMap.values() : null;
     }
 
     /**
      * @param memPlcName Memory policy name.
      * @return {@link MemoryPolicy} instance associated with a given {@link MemoryPolicyConfiguration}.
+     * @throws IgniteCheckedException in case of request for unknown MemoryPolicy.
      */
-    public MemoryPolicy memoryPolicy(String memPlcName) {
+    public MemoryPolicy memoryPolicy(String memPlcName) throws IgniteCheckedException {
         if (memPlcName == null)
             return dfltMemPlc;
 
-        return memPlcMap != null ? memPlcMap.get(memPlcName) : null;
+        if (memPlcMap == null)
+            return null;
+
+        MemoryPolicy plc;
+
+        if ((plc = memPlcMap.get(memPlcName)) == null)
+            throw new IgniteCheckedException("Requested MemoryPolicy is not configured: " + memPlcName);
+
+        return plc;
     }
 
     /**

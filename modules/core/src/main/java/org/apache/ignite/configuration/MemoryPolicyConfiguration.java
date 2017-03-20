@@ -29,15 +29,15 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Default MemoryPolicyConfiguration flag.
+     *
+     * Note that one and only one MemoryPolicy within the Ignite node must be marked as default.
      */
     private boolean dflt;
 
-    /** */
+    /** Unique name of MemoryPolicy (must be null for default MemoryPolicy). */
     private String name;
 
-    /**
-     * Size in bytes of {@link PageMemory} to be created.
-     */
+    /** Size in bytes of {@link PageMemory} to be created. */
     private long size;
 
     /** */

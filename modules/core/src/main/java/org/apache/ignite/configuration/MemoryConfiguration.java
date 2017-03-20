@@ -22,7 +22,32 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Database configuration used to configure database.
+ * Database configuration used to configure database and manage offheap memory of Ignite Node.
+ *
+ * <p>It may be configured under {@link IgniteConfiguration XML configuration} as follows:</p>
+ * <pre>
+ *     {@code
+ *     <property name="memoryConfiguration">
+ *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
+ *             <property name="systemCacheMemorySize" value="103833600"/>
+ *             <property name="defaultMemoryPolicySize" value="1063256064"/>
+ *
+ *             <property name="memoryPolicies">
+ *                 <list>
+ *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                         <property name="default" value="false"/>
+ *                         <property name="name" value="operational_mem_plc"/>
+ *                         <property name="size" value="103833600"/>
+ *                     </bean>
+ *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
+ *                         ...
+ *                     </bean>
+ *                 </list>
+ *             </property>
+ *         </bean>
+ *     </property>
+ *     }
+ * </pre>
  */
 public class MemoryConfiguration implements Serializable {
     /** */
@@ -67,7 +92,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     *
+     * @return size in bytes of MemoryPolicy used by default.
      */
     public long getDefaultMemoryPolicySize() {
         return dfltMemPlcSize;
@@ -98,7 +123,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     *
+     * @return array of MemoryPolicyConfiguration objects.
      */
     public MemoryPolicyConfiguration[] getMemoryPolicies() {
         return memPlcs;
