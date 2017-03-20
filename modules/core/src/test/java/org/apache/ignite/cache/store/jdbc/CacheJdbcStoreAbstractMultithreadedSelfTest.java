@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
@@ -65,7 +66,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-query-entities.xml";
 
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
@@ -170,9 +171,9 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
             springCtx.refresh();
 
-            Collection<CacheTypeMetadata> tp = new ArrayList<>(springCtx.getBeansOfType(CacheTypeMetadata.class).values());
-
-            cc.setTypeMetadata(tp);
+//            Collection<QueryEntity> ce = new ArrayList<>(springCtx.getBeansOfType(QueryEntity.class).values());
+//
+//            cc.setQueryEntities(ce);
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
