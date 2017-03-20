@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -220,7 +221,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration ccfg = cctx.config();
 
-        qryProcEnabled = GridQueryProcessor.isEnabled(ccfg);
+        qryProcEnabled = QueryUtils.isEnabled(ccfg);
 
         qryProc = cctx.kernalContext().query();
 
@@ -484,7 +485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     public void remove(CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
-        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
+        if (!QueryUtils.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
             return; // No-op.
 
         if (!enterBusy())
@@ -499,28 +500,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if(qryProcEnabled)
                 qryProc.remove(space, key, val);
-        }
-        finally {
-            invalidateResultCache();
-
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Undeploys given class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     */
-    public void onUndeploy(ClassLoader ldr) {
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            qryProc.onUndeploy(space, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
         }
         finally {
             invalidateResultCache();
@@ -2369,7 +2348,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Query manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Query manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() + ", cache=" + cctx.name() + ']');
     }
 
     /**

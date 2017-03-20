@@ -62,6 +62,16 @@ namespace Apache.Ignite.Core.Impl.Plugin
             Debug.Assert(ignite != null);
 
             _ignite = ignite;
+
+            try
+            {
+                LoadPlugins();
+            }
+            catch (Exception)
+            {
+                Stop(true);
+                throw;
+            }
         }
 
         /// <summary>
@@ -85,8 +95,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /// </summary>
         public void OnIgniteStart()
         {
-            LoadPlugins();
-
             // Notify plugins.
             foreach (var provider in _pluginProviders)
                 provider.OnIgniteStart();

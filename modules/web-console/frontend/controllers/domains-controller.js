@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/configuration/domains-import.tpl.pug';
+
 // Controller for Domain model screen.
 export default ['domainsController', [
     '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
@@ -409,7 +411,7 @@ export default ['domainsController', [
         $scope.$watch('importDomain.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        const importDomainModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
+        const importDomainModal = $modal({scope: $scope, templateUrl, show: false});
 
         const hideImportDomain = importDomainModal.hide;
 

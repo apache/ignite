@@ -76,8 +76,8 @@ class GridUpdateNotifier {
     /** Download url for latest version. */
     private volatile String downloadUrl;
 
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
@@ -106,18 +106,18 @@ class GridUpdateNotifier {
     /**
      * Creates new notifier with default values.
      *
-     * @param gridName gridName
+     * @param igniteInstanceName igniteInstanceName
      * @param ver Compound Ignite version.
      * @param gw Kernal gateway.
      * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+    GridUpdateNotifier(String igniteInstanceName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
         boolean reportOnlyNew) throws IgniteCheckedException {
         try {
             this.ver = ver;
-            this.gridName = gridName == null ? "null" : gridName;
+            this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
             this.gw = gw;
 
             SB pluginsBuilder = new SB();
@@ -169,7 +169,7 @@ class GridUpdateNotifier {
             StringWriter sw = new StringWriter();
 
             try {
-                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
+                IgniteSystemProperties.safeSnapshot().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;
@@ -295,7 +295,7 @@ class GridUpdateNotifier {
          * @param log Logger.
          */
         UpdateChecker(IgniteLogger log) {
-            super(gridName, "grid-version-checker", log);
+            super(igniteInstanceName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());
         }
@@ -306,7 +306,7 @@ class GridUpdateNotifier {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
                 String postParams =
-                    "gridName=" + encode(gridName, CHARSET) +
+                    "igniteInstanceName=" + encode(igniteInstanceName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +

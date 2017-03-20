@@ -60,8 +60,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -195,8 +195,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -236,7 +236,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     ClusterNode node = msg.get1();
 
-                    log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                    log.info("Send blocked message: [node=" +
+                        node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                         ", msg=" + msg.get2().message() + ']');
 
                     sendMessage(msg.get1(), msg.get2());

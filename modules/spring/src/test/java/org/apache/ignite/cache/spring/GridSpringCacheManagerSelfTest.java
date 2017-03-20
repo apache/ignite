@@ -63,8 +63,8 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     private GridSpringDynamicCacheTestService dynamicSvc;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = new CacheConfiguration();
 
@@ -82,7 +82,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "testGrid";
     }
 
