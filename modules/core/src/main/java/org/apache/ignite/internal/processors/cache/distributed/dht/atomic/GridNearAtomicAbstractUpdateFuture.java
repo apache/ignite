@@ -522,10 +522,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
          * @return {@code True} if all expected responses are received.
          */
         private boolean finished() {
-            if (req.writeSynchronizationMode() == PRIMARY_SYNC)
-                return hasRes;
-
-            return (dhtNodes != null && dhtNodes.isEmpty()) && hasRes;
+            return hasRes; // FIXME tmp.
         }
 
         /**

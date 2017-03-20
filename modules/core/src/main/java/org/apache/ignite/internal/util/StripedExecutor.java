@@ -624,7 +624,7 @@ public class StripedExecutor implements ExecutorService {
                     if (r != null)
                         return r;
 
-                    parkCntr++;
+                    //parkCntr++;
                     LockSupport.park();
 
                     if (Thread.interrupted())
@@ -641,7 +641,7 @@ public class StripedExecutor implements ExecutorService {
             queue.add(cmd);
 
             if (parked) {
-                unparkCntr.increment();
+                //unparkCntr.increment();
                 LockSupport.unpark(thread);
             }
         }
