@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             return new IgniteConfiguration
             {
-                GridName = gridName,
+                IgniteInstanceName = gridName,
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration

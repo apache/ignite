@@ -809,7 +809,7 @@ button.form-control {
     }
 
     .btn-group {
-        vertical-align:top;
+        vertical-align: top;
         margin-left: 10px;
 
         i { line-height: 18px; }
@@ -1852,6 +1852,12 @@ th[st-sort] {
 
 .panel-tip-container {
     display: inline-block;
+}
+
+.panel-top-align {
+    label {
+        vertical-align: top !important;
+    }
 }
 
 button.dropdown-toggle {
