@@ -36,14 +36,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -57,23 +52,6 @@ import org.junit.Assert;
 public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     /** */
     private static final int KEYS_COUNT = 20_000;
-
-    /**
-     * @return Node count.
-     */
-    protected abstract int gridCount();
-
-    /**
-     * @return {@code True} if indexing is enabled.
-     */
-    protected abstract boolean indexingEnabled();
-
-    /**
-     * @return {@code True} if cache operations should be called from client node with near cache.
-     */
-    protected boolean withClientNearCache() {
-        return false;
-    }
 
     /**
      * @return Ignite instance for testing.
@@ -95,13 +73,6 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             return ig().getOrCreateNearCache(name, new NearCacheConfiguration<K, V>());
 
         return ig().cache(name);
-    }
-
-    /**
-     * @return {@code True} if use large page.
-     */
-    protected boolean isLargePage() {
-        return false;
     }
 
     /**
