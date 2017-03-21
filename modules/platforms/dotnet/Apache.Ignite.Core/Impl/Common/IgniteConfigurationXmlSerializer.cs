@@ -190,9 +190,22 @@ namespace Apache.Ignite.Core.Impl.Common
             while (reader.MoveToNextAttribute())
             {
                 var name = reader.Name;
+
+                if (name == TypNameAttribute || name == XmlnsAttribute)
+                    continue;
+
                 var val = reader.Value;
 
-                SetProperty(target, name, val);
+                var property = GetPropertyOrThrow(name, val, target.GetType());
+
+                if (!property.CanWrite)
+                {
+                    throw new ConfigurationErrorsException(string.Format(
+                            "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                            name, val, target.GetType(), property.Name));
+                }
+
+                property.SetValue(target, val, null);
             }
 
             // Read content
@@ -205,29 +218,40 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 var name = reader.Name;
                 var prop = GetPropertyOrThrow(name, reader.Value, targetType);
-                var propType = prop.PropertyType;
 
-                if (IsBasicType(propType))
-                {
-                    // Regular property in xmlElement form
-                    SetProperty(target, name, reader.ReadString());
-                }
-                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
-                {
-                    // Collection
-                    ReadCollectionProperty(reader, prop, target, resolver);
-                }
-                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
-                {
-                    // Dictionary
-                    ReadDictionaryProperty(reader, prop, target, resolver);
-                }
-                else
-                {
-                    // Nested object (complex property)
-                    prop.SetValue(target, ReadComplexProperty(reader, propType, prop.Name, targetType, resolver), null);
-                }
+                var value = ReadPropertyValue(reader, resolver, prop, targetType);
+                prop.SetValue(target, value, null);
             }
+        }
+
+        /// <summary>
+        /// Reads the property value.
+        /// </summary>
+        private static object ReadPropertyValue(XmlReader reader, TypeResolver resolver, 
+            PropertyInfo prop, Type targetType)
+        {
+            var propType = prop.PropertyType;
+
+            if (IsBasicType(propType))
+            {
+                // Regular property in xmlElement form.
+                return ConvertBasicValue(reader.ReadString(), prop);
+            }
+
+            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
+            {
+                // Collection.
+                return ReadCollectionProperty(reader, prop, targetType, resolver);
+            }
+
+            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+            {
+                // Dictionary.
+                return ReadDictionaryProperty(reader, prop, resolver);
+            }
+
+            // Nested object (complex property).
+            return ReadComplexProperty(reader, propType, prop.Name, targetType, resolver);
         }
 
         /// <summary>
@@ -284,7 +308,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the collection.
         /// </summary>
-        private static void ReadCollectionProperty(XmlReader reader, PropertyInfo prop, object target, 
+        private static IList ReadCollectionProperty(XmlReader reader, PropertyInfo prop, Type targetType, 
             TypeResolver resolver)
         {
             var elementType = prop.PropertyType.GetGenericArguments().Single();
@@ -310,18 +334,17 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     list.Add(converter != null
                         ? converter.ConvertFromInvariantString(subReader.ReadString())
-                        : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType(), resolver));
+                        : ReadComplexProperty(subReader, elementType, prop.Name, targetType, resolver));
                 }
             }
 
-            prop.SetValue(target, list, null);
+            return list;
         }
         
         /// <summary>
         /// Reads the dictionary.
         /// </summary>
-        private static void ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, object target,
-            TypeResolver resolver)
+        private static IDictionary ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, TypeResolver resolver)
         {
             var keyValTypes = prop.PropertyType.GetGenericArguments();
 
@@ -367,32 +390,17 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             }
 
-            prop.SetValue(target, dict, null);
+            return dict;
         }
 
         /// <summary>
-        /// Sets the property.
+        /// Reads the basic value.
         /// </summary>
-        private static void SetProperty(object target, string propName, string propVal)
+        private static object ConvertBasicValue(string propVal, PropertyInfo property)
         {
-            if (propName == TypNameAttribute || propName == XmlnsAttribute)
-                return;
-
-            var type = target.GetType();
-            var property = GetPropertyOrThrow(propName, propVal, type);
-
-            if (!property.CanWrite)
-            {
-                throw new ConfigurationErrorsException(string.Format(
-                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
-                        propName, propVal, type, property.Name));
-            }
-
             var converter = GetConverter(property, property.PropertyType);
 
-            var convertedVal = converter.ConvertFromInvariantString(propVal);
-
-            property.SetValue(target, convertedVal, null);
+            return converter.ConvertFromInvariantString(propVal);
         }
 
         /// <summary>
@@ -407,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets specified property from a type or throws an exception.
         /// </summary>
-        private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
+        private static PropertyInfo GetPropertyOrThrow(string propName, object propVal, Type type)
         {
             var property = type.GetProperty(XmlNameToPropertyName(propName));
 
