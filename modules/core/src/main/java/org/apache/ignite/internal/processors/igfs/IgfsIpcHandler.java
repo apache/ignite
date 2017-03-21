@@ -101,7 +101,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
         String prefix = "igfs-" + igfsCtx.igfs().name() + (mgmt ? "mgmt-" : "") + "-ipc";
 
-        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().gridName(), threadCnt, threadCnt,
+        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().igniteInstanceName(), threadCnt, threadCnt,
             Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>());
 
         log = ctx.log(IgfsIpcHandler.class);

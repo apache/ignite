@@ -118,7 +118,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
      * @return Swap key.
      */
     private SwapKey key(int i) {
-        return new SwapKey(new KeyCacheObjectImpl(i, U.intToBytes(i)), i % 11, U.intToBytes(i));
+        return new SwapKey(new KeyCacheObjectImpl(i, U.intToBytes(i), i), i % 11, U.intToBytes(i));
     }
 
     /**

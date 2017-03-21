@@ -1217,13 +1217,18 @@
                                             <xs:documentation>Assembly-qualified type name.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="pluginConfigurationClosureFactoryId" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Id to locate PlatformPluginConfigurationClosureFactory on Java side.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
             </xs:all>
-            <xs:attribute name="gridName" type="xs:string">
+            <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
                 </xs:annotation>

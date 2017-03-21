@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  *
@@ -76,7 +76,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     Set<String> blockNodes = blockCls.get(msg0.getClass());
 
                     if (blockNodes != null) {
-                        String nodeName = (String)node.attributes().get(ATTR_GRID_NAME);
+                        String nodeName = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
 
                         block = blockNodes.contains(nodeName);
                     }
@@ -87,6 +87,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                         ", msg=" + ioMsg.message() + ']');
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
+
+                    notifyAll();
 
                     return;
                 }
@@ -134,6 +136,33 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         synchronized (this) {
             return !blockedMsgs.isEmpty();
         }
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForMessage(Class<?> cls, String nodeName) throws InterruptedException {
+        synchronized (this) {
+            while (!hasMessage(cls, nodeName))
+                wait();
+        }
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @return {@code True} if has blocked message.
+     */
+    private boolean hasMessage(Class<?> cls, String nodeName) {
+        for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+            if (msg.get2().message().getClass() == cls &&
+                nodeName.equals(msg.get1().attribute(ATTR_IGNITE_INSTANCE_NAME)))
+                return true;
+        }
+
+        return false;
     }
 
     /**

@@ -75,8 +75,8 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);

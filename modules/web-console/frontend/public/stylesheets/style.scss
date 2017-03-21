@@ -809,7 +809,7 @@ button.form-control {
     }
 
     .btn-group {
-        vertical-align:top;
+        vertical-align: top;
         margin-left: 10px;
 
         i { line-height: 18px; }
@@ -1854,6 +1854,12 @@ th[st-sort] {
     display: inline-block;
 }
 
+.panel-top-align {
+    label {
+        vertical-align: top !important;
+    }
+}
+
 button.dropdown-toggle {
     margin-right: 5px;
 }
@@ -2330,14 +2336,6 @@ html,body,.splash-screen {
 
     .ui-grid-cell-contents > i {
         line-height: $line-height-base;
-    }
-
-    .ui-grid-row:nth-child(odd):hover .ui-grid-cell {
-        background: $ignite-row-hover;
-    }
-    
-    .ui-grid-row:nth-child(even):hover .ui-grid-cell {
-        background: $ignite-row-hover;
     }
 }
 

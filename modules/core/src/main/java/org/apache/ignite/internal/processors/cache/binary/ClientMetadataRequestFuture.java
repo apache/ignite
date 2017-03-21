@@ -77,7 +77,7 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
     ) {
         ioMgr = ctx.io();
         discoMgr = ctx.discovery();
-        aliveSrvNodes = new LinkedList<>(discoMgr.aliveSrvNodes());
+        aliveSrvNodes = new LinkedList<>(discoMgr.aliveServerNodes());
 
         this.typeId = typeId;
         this.syncMap = syncMap;
@@ -95,8 +95,7 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
                 ClusterNode srvNode = aliveSrvNodes.poll();
 
                 try {
-                    ioMgr.send(
-                            srvNode,
+                    ioMgr.sendToGridTopic(srvNode,
                             GridTopic.TOPIC_METADATA_REQ,
                             new MetadataRequestMessage(typeId),
                             GridIoPolicy.SYSTEM_POOL);

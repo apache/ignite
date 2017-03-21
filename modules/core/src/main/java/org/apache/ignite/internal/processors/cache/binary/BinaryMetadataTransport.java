@@ -563,7 +563,7 @@ final class BinaryMetadataTransport {
             resp.binaryMetadataBytes(binMetaBytes);
 
             try {
-                ioMgr.send(nodeId, GridTopic.TOPIC_METADATA_REQ, resp, SYSTEM_POOL);
+                ioMgr.sendToGridTopic(nodeId, GridTopic.TOPIC_METADATA_REQ, resp, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send up-to-date metadata response.", e);

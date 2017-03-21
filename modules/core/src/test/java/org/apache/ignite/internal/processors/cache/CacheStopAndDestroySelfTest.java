@@ -90,10 +90,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(2).equals(gridName))
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName))
             iCfg.setClientMode(true);
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);

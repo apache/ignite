@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cfg.SpringConfigUrl = "config\\native-client-test-cache.xml";
 
             for (int i = 0; i < GridCount(); i++) {
-                cfg.GridName = "grid-" + i;
+                cfg.IgniteInstanceName = "grid-" + i;
 
                 Ignition.Start(cfg);
             }

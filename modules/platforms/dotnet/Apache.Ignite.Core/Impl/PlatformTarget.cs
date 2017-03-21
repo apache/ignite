@@ -962,6 +962,35 @@ namespace Apache.Ignite.Core.Impl
             return GetPlatformTarget(DoOutOpObject(type));
         }
 
+        /** <inheritdoc /> */
+        public Task<T> DoOutOpAsync<T>(int type, Action<IBinaryRawWriter> writeAction = null, 
+            Func<IBinaryRawReader, T> readAction = null)
+        {
+            var convertFunc = readAction != null 
+                ? r => readAction(r) 
+                : (Func<BinaryReader, T>) null;
+
+            return GetFuture((futId, futType) =>
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    stream.WriteLong(futId);
+                    stream.WriteInt(futType);
+
+                    if (writeAction != null)
+                    {
+                        var writer = _marsh.StartMarshal(stream);
+
+                        writeAction(writer);
+
+                        FinishMarshal(writer);
+                    }
+
+                    UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
+                }
+            }, false, convertFunc).Task;
+        }
+
         /// <summary>
         /// Gets the platform target.
         /// </summary>

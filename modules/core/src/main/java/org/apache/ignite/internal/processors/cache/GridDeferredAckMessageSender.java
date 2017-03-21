@@ -41,30 +41,31 @@ public abstract class GridDeferredAckMessageSender {
     private GridTimeoutProcessor time;
 
     /** Closure processor. */
-    public GridClosureProcessor closure;
+    public GridClosureProcessor c;
 
     /**
      * @param time Time.
-     * @param closure Closure.
+     * @param c Closure.
      */
     public GridDeferredAckMessageSender(GridTimeoutProcessor time,
-        GridClosureProcessor closure) {
+        GridClosureProcessor c) {
         this.time = time;
-        this.closure = closure;
+        this.c = c;
     }
 
     /**
-     *
+     * @return Timeout.
      */
     public abstract int getTimeout();
 
     /**
-     *
+     * @return Buffer size.
      */
     public abstract int getBufferSize();
 
     /**
-     *
+     * @param nodeId Node ID.
+     * @param vers Versions to send.
      */
     public abstract void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers);
 
@@ -151,7 +152,7 @@ public abstract class GridDeferredAckMessageSender {
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (guard.compareAndSet(false, true)) {
-                closure.runLocalSafe(new Runnable() {
+                c.runLocalSafe(new Runnable() {
                     @Override public void run() {
                         writeLock().lock();
 

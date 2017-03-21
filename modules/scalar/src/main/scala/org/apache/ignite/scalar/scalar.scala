@@ -302,11 +302,12 @@ object scalar extends ScalarConversions {
     /**
      * Gets named cache from specified grid.
      *
-     * @param gridName Name of the grid.
+     * @param igniteInstanceName Name of the Ignite instance.
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
-        ignite$(gridName) match {
+    @inline def cache$[K, V](@Nullable igniteInstanceName: String,
+        @Nullable cacheName: String): Option[IgniteCache[K, V]] =
+        ignite$(igniteInstanceName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None
         }
@@ -339,9 +340,9 @@ object scalar extends ScalarConversions {
     def nid8$(node: ClusterNode) = node.id().toString.take(8).toUpperCase
 
     /**
-     * Gets named grid.
+     * Gets named Ignite instance.
      *
-     * @param name Grid name.
+     * @param name Ignite instance name.
      */
     @inline def ignite$(@Nullable name: String): Option[Ignite] =
         try {
@@ -396,10 +397,10 @@ object scalar extends ScalarConversions {
         Ignition.state == IgniteState.STOPPED
 
     /**
-     * Stops given grid and specified cancel flag.
-     * If specified grid is already stopped - it's no-op.
+     * Stops given Ignite instance and specified cancel flag.
+     * If specified Ignite instance is already stopped - it's no-op.
      *
-     * @param name Grid name to cancel.
+     * @param name Ignite instance name to cancel.
      * @param cancel Whether or not to cancel all currently running jobs.
      */
     def stop(@Nullable name: String, cancel: Boolean) =

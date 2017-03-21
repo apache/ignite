@@ -272,7 +272,9 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         }).get();
 
-        assertEquals(((BinaryObject)ignite0.cache(null).withKeepBinary().get(1)).field(intFieldName), 101);
+        int fld = ((BinaryObject) ignite0.cache(null).withKeepBinary().get(1)).field(intFieldName);
+
+        assertEquals(fld, 101);
 
         final IgniteEx ignite2 = startGrid(2);
 
