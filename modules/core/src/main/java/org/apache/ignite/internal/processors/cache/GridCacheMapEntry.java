@@ -2223,8 +2223,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     conflictVer = null;
             }
 
-            boolean ignoreTime = true;
-
             // Perform version check only in case there was no explicit conflict resolution.
             if (conflictCtx == null) {
                 if (verCheck) {
@@ -4218,8 +4216,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache.Entry<K, V> wrapLazyValue(boolean keepBinary) {
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
         return new LazyValueEntry<>(key, keepBinary);
     }
 

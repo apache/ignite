@@ -978,7 +978,7 @@ public class GridCacheUtils {
     public static byte[] versionToBytes(GridCacheVersion ver) {
         assert ver != null;
 
-        byte[] bytes = new byte[20];
+        byte[] bytes = new byte[16];
 
         U.intToBytes(ver.topologyVersion(), bytes, 0);
         U.longToBytes(ver.order(), bytes, 4);

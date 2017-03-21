@@ -49,7 +49,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests {@link CacheInterceptor}.
@@ -434,35 +433,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 afterTest();
             }
         }
-    }
-
-    /**
-     * @param op Operation type.
-     * @return {@code True} if this is atomic cache and update is first run on primary node.
-     */
-    private int expectedIgnoreInvokeCount(Operation op) {
-        int dataNodes = cacheMode() == REPLICATED ? gridCount() : 2;
-
-        if (atomicityMode() == TRANSACTIONAL)
-            return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
-        else {
-            // If update goes through primary node and it is cancelled then backups aren't updated.
-            return op == Operation.TRANSFORM ? 1 : dataNodes;
-        }
-    }
-
-    /**
-     * @param op Operation type.
-     * @return {@code True} if this is atomic cache and update is first run on primary node.
-     */
-    private int expectedInvokeCount(Operation op) {
-        int dataNodes = cacheMode() == REPLICATED ? gridCount() : 2;
-
-        if (atomicityMode() == TRANSACTIONAL)
-            // Update + after update + one call before store is updated.
-            return dataNodes * 2 + (storeEnabled() ? 1 : 0);
-        else
-            return op == Operation.TRANSFORM ? 2 : dataNodes * 2;
     }
 
     /**

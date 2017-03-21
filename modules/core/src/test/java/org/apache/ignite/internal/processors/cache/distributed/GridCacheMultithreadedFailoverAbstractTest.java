@@ -218,9 +218,8 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         if (cacheMode() == PARTITIONED)
             ccfg.setBackups(backups());
 
-        if (atomicityMode() != ATOMIC && cacheMode() == PARTITIONED) {
+        if (atomicityMode() != ATOMIC && cacheMode() == PARTITIONED)
             ccfg.setNearConfiguration(new NearCacheConfiguration());
-        }
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
