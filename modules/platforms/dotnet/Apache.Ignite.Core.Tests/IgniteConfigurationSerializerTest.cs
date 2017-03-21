@@ -126,7 +126,10 @@ namespace Apache.Ignite.Core.Tests
                                 <int>TaskFailed</int>
                                 <int>JobFinished</int>
                             </includedEventTypes>
-                            <userAttributes><pair key='myNode' value='true' /></userAttributes>
+                            <userAttributes>
+                                <pair key='myNode' value='true' />
+                                <pair key='foo'><value type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests'><bar>Baz</bar></value></pair>
+                            </userAttributes>
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                             <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                             <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
@@ -202,7 +205,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
 
-            Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
+            Assert.AreEqual(new Dictionary<string, object>
+            {
+                {"myNode", "true"},
+                {"foo", new FooClass {Bar = "Baz"}}
+            }, cfg.UserAttributes);
 
             var atomicCfg = cfg.AtomicConfiguration;
             Assert.AreEqual(2, atomicCfg.Backups);
@@ -904,7 +911,30 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public class FooClass
         {
-            // No-op.
+            public string Bar { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return string.Equals(Bar, ((FooClass) obj).Bar);
+            }
+
+            public override int GetHashCode()
+            {
+                return Bar != null ? Bar.GetHashCode() : 0;
+            }
+
+            public static bool operator ==(FooClass left, FooClass right)
+            {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(FooClass left, FooClass right)
+            {
+                return !Equals(left, right);
+            }
         }
 
         /// <summary>
