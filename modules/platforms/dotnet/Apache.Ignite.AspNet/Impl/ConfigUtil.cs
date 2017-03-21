@@ -93,10 +93,10 @@ namespace Apache.Ignite.AspNet.Impl
                         typeof(IgniteConfigurationSection).Name, sectionName));
             }
             else
-                config = new IgniteConfiguration {GridName = gridName};
+                config = new IgniteConfiguration {IgniteInstanceName = gridName};
 
             // Check if already started.
-            var ignite = Ignition.TryGetIgnite(config.GridName);
+            var ignite = Ignition.TryGetIgnite(config.IgniteInstanceName);
 
             if (ignite != null)
                 return ignite;

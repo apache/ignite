@@ -33,7 +33,8 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-@SuppressWarnings("TypeMayBeWeakened") public class CacheObjectContext {
+@SuppressWarnings("TypeMayBeWeakened")
+public class CacheObjectContext {
     /** */
     private GridKernalContext kernalCtx;
 

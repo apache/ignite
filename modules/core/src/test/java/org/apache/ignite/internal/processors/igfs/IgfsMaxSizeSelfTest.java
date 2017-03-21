@@ -36,13 +36,11 @@ public class IgfsMaxSizeSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName("test");
 
         if (maxSize > 0)
@@ -67,9 +65,11 @@ public class IgfsMaxSizeSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         cfg.setFileSystemConfiguration(igfsCfg);
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
     }

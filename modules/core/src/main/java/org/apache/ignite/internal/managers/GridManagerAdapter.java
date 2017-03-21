@@ -59,6 +59,9 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -265,7 +268,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             onBeforeSpiStart();
 
             try {
-                spi.spiStart(ctx.gridName());
+                spi.spiStart(ctx.igniteInstanceName());
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
@@ -388,7 +391,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                         try {
                             if (msg instanceof Message)
-                                ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
+                                ctx.io().sendToCustomTopic(node, topic, (Message)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0, false);
                         }
@@ -608,12 +611,22 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         // No-op.
     }
 

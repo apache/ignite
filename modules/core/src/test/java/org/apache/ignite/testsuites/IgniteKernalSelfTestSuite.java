@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
-import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeploy;
+import org.apache.ignite.internal.processors.service.GridServiceContinuousQueryRedeployTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeSelfTest;
@@ -143,7 +143,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteServiceReassignmentTest.class);
         suite.addTestSuite(IgniteServiceProxyTimeoutInitializedTest.class);
         suite.addTestSuite(IgniteServiceDynamicCachesSelfTest.class);
-        suite.addTestSuite(GridServiceContinuousQueryRedeploy.class);
+        suite.addTestSuite(GridServiceContinuousQueryRedeployTest.class);
 
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);

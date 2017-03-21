@@ -70,6 +70,9 @@ namespace ignite
             /** Operation: GetAndReplace. */
             const int32_t OP_GET_AND_REPLACE = 10;
 
+            /** Operation: Invoke. */
+            const int32_t OP_INVOKE = 12;
+
             /** Operation: LoadCache */
             const int32_t OP_LOAD_CACHE = 15;
 
@@ -158,82 +161,82 @@ namespace ignite
                 return name;
             }
 
-            bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ContainsKey(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_CONTAINS_KEY, inOp, err);
             }
 
-            bool CacheImpl::ContainsKeys(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ContainsKeys(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_CONTAINS_KEYS, inOp, err);
             }
 
-            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError* err)
+            void CacheImpl::LocalPeek(InputOperation& inOp, OutputOperation& outOp, int32_t peekModes, IgniteError& err)
             {
                 OutInOpX(OP_LOCAL_PEEK, inOp, outOp, err);
             }
 
-            void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::Get(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET_ALL, inOp, outOp, err);
             }
 
-            void CacheImpl::Put(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::Put(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_PUT, inOp, err);
             }
 
-            void CacheImpl::PutAll(ignite::impl::InputOperation& inOp, IgniteError* err)
+            void CacheImpl::PutAll(ignite::impl::InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_PUT_ALL, inOp, err);
             }
 
-            void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET_AND_PUT, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET_AND_REPLACE, inOp, outOp, err);
             }
 
-            void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET_AND_REMOVE, inOp, outOp, err);
             }
 
-            bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::PutIfAbsent(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_PUT_IF_ABSENT, inOp, err);
             }
 
-            void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void CacheImpl::GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 OutInOpX(OP_GET_AND_PUT_IF_ABSENT, inOp, outOp, err);
             }
 
-            bool CacheImpl::Replace(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::Replace(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REPLACE_2, inOp, err);
             }
 
-            bool CacheImpl::ReplaceIfEqual(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::ReplaceIfEqual(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REPLACE_3, inOp, err);
             }
 
-            void CacheImpl::LocalEvict(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalEvict(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_EVICT, inOp, err);
             }
 
-            void CacheImpl::Clear(IgniteError* err)
+            void CacheImpl::Clear(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -242,42 +245,42 @@ namespace ignite
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            void CacheImpl::Clear(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::Clear(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_CLEAR, inOp, err);
             }
 
-            void CacheImpl::ClearAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::ClearAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_CLEAR_ALL, inOp, err);
             }
 
-            void CacheImpl::LocalClear(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalClear(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_CLEAR, inOp, err);
             }
 
-            void CacheImpl::LocalClearAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::LocalClearAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_LOCAL_CLEAR_ALL, inOp, err);
             }
 
-            bool CacheImpl::Remove(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::Remove(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REMOVE_1, inOp, err);
             }
 
-            bool CacheImpl::RemoveIfEqual(InputOperation& inOp, IgniteError* err)
+            bool CacheImpl::RemoveIfEqual(InputOperation& inOp, IgniteError& err)
             {
                 return OutOp(OP_REMOVE_2, inOp, err);
             }
 
-            void CacheImpl::RemoveAll(InputOperation& inOp, IgniteError* err)
+            void CacheImpl::RemoveAll(InputOperation& inOp, IgniteError& err)
             {
                 OutOp(OP_REMOVE_ALL, inOp, err);
             }
 
-            void CacheImpl::RemoveAll(IgniteError* err)
+            void CacheImpl::RemoveAll(IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -286,29 +289,34 @@ namespace ignite
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
-            int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError* err)
+            int32_t CacheImpl::Size(int32_t peekModes, bool local, IgniteError& err)
             {
                 int32_t op = local ? OP_SIZE_LOC : OP_SIZE;
 
                 return static_cast<int32_t>(OutInOpLong(op, peekModes, err));
             }
 
-            QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QuerySql(const SqlQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SQL, err);
             }
 
-            QueryCursorImpl* CacheImpl::QueryText(const TextQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QueryText(const TextQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_TEXT, err);
             }
 
-            QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError* err)
+            QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SCAN, err);
             }
 
-            QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
+            void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
+            {
+                OutInOpX(OP_INVOKE, inOp, outOp, err);
+            }
+
+            QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError& err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
             }
@@ -347,9 +355,9 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), &err);
+                InStreamOutLong(OP_LOAD_CACHE, *mem.Get(), err);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             void CacheImpl::LocalLoadCache(IgniteError & err)
@@ -368,9 +376,9 @@ namespace ignite
 
                 out.Synchronize();
 
-                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), &err);
+                InStreamOutLong(OP_LOC_LOAD_CACHE, *mem.Get(), err);
 
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
             }
 
             struct DummyQry { void Write(BinaryRawWriter&) const { }};

@@ -113,7 +113,7 @@ namespace ignite
                 {
                     Snap* pendingSnap = it->Get();
 
-                    if (updater->Update(pendingSnap, err))
+                    if (updater->Update(pendingSnap, *err))
                     {
                         // Perform copy-on-write update of snapshot collection.
                         std::map<int32_t, SPSnap>* newSnapshots = new std::map<int32_t, SPSnap>();
