@@ -46,7 +46,6 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
@@ -1664,28 +1663,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setMaxQueryIteratorsCount(int maxQryIterCnt) {
         this.maxQryIterCnt = maxQryIterCnt;
-
-        return this;
-    }
-
-    /**
-     * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
-     * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
-     *
-     * @return Memory mode.
-     */
-    @Deprecated public CacheMemoryMode getMemoryMode() {
-        return null;
-    }
-
-    /**
-     * Sets memory mode for cache.
-     *
-     * @param memMode Memory mode.
-     * @return {@code this} for chaining.
-     */
-    @Deprecated public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
-        //this.memMode = memMode;
 
         return this;
     }

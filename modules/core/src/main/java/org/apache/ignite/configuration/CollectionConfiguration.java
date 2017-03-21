@@ -19,7 +19,6 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -95,19 +94,6 @@ public class CollectionConfiguration implements Serializable {
      */
     public void setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    @Deprecated public CacheMemoryMode getMemoryMode() {
-        return null;
-    }
-
-    /**
-     * @param memoryMode Memory mode.
-     */
-    @Deprecated public void setMemoryMode(CacheMemoryMode memoryMode) {
     }
 
     /**
