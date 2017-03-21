@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MemoryMetricsImpl;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPagePayload;
@@ -75,6 +77,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** */
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
 
+    /** */
+    private final MemoryMetricsImpl memMetrics;
+
     /**
      *
      */
@@ -107,7 +112,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             return updated;
         }
-    };
+    }
 
     /** */
     private final PageHandler<CacheDataRow, Integer> writeRow = new WriteRowHandler();
@@ -277,6 +282,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
      * @param pageMem Page memory.
+     * @param memMetrics Memory metrics.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -287,6 +293,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int cacheId,
         String name,
         PageMemory pageMem,
+        MemoryMetricsImpl memMetrics,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
@@ -311,6 +318,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         this.shift = shift;
+
+        this.memMetrics = memMetrics;
 
         init(metaPageId, initNew);
     }
@@ -396,6 +405,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         int written = 0;
 
         do {
+            if (written != 0)
+                memMetrics.incrementLargeEntriesPages();
+
             int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
             int bucket = bucket(freeSpace, false);
@@ -461,6 +473,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         while (nextLink != 0L) {
+            memMetrics.decrementLargeEntriesPages();
+
             itemId = PageIdUtils.itemId(nextLink);
             pageId = PageIdUtils.pageId(nextLink);
 
@@ -470,8 +484,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 assert nextLink != FAIL_L; // Can't fail here.
             }
         }
-
-        //somehow count how many pages were released during the course of removingDataRow
     }
 
     /** {@inheritDoc} */

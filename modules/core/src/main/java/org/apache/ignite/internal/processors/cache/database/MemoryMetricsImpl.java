@@ -29,6 +29,11 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
 
+    /**
+     * Counter for number of pages occupied by large entries (one entry is larger than one page).
+     */
+    private final LongAdder8 largeEntriesPages = new LongAdder8();
+
     /** */
     private volatile boolean metricsEnabled;
 
@@ -46,7 +51,7 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return totalAllocatedPages.longValue();
+        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
     }
 
     /** {@inheritDoc} */
@@ -60,8 +65,13 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getLargeEntriesPagesPercentage() {
-        return 0;
+    @Override public float getLargeEntriesPagesPercentage() {
+        if (metricsEnabled)
+            return totalAllocatedPages.longValue() != 0 ?
+                    (float) largeEntriesPages.doubleValue() / totalAllocatedPages.longValue()
+                    : 0;
+        else
+            return 0;
     }
 
     /** {@inheritDoc} */
@@ -75,6 +85,22 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     public void incrementTotalAllocatedPages() {
         if (metricsEnabled)
             totalAllocatedPages.increment();
+    }
+
+    /**
+     *
+     */
+    public void incrementLargeEntriesPages() {
+        if (metricsEnabled)
+            largeEntriesPages.increment();
+    }
+
+    /**
+     *
+     */
+    public void decrementLargeEntriesPages() {
+        if (metricsEnabled)
+            largeEntriesPages.decrement();
     }
 
     @Override public void enableMetrics() {

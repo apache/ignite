@@ -56,7 +56,7 @@ public interface MemoryMetrics {
      *
      * @return Percentage of pages fully occupied by large entities.
      */
-    public long getLargeEntriesPagesPercentage();
+    public float getLargeEntriesPagesPercentage();
 
     /**
      * @return Free space to overall size ratio across all pages in FreeList.
