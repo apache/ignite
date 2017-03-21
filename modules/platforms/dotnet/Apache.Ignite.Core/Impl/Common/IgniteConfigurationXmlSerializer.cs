@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
                 {
                     // Dictionary
-                    ReadDictionaryProperty(reader, prop, target);
+                    ReadDictionaryProperty(reader, prop, target, resolver);
                 }
                 else
                 {
@@ -313,7 +313,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the dictionary.
         /// </summary>
-        private static void ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, object target)
+        private static void ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, object target,
+            TypeResolver resolver)
         {
             var keyValTypes = prop.PropertyType.GetGenericArguments();
 
@@ -334,13 +335,20 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid dictionary element in IgniteConfiguration: expected '{0}', " +
                                           "but was '{1}'", KeyValPairElement, subReader.Name));
 
-                    var key = subReader.GetAttribute("key");
+                    object key = subReader.GetAttribute("key");
+                    object val = subReader.GetAttribute("value");
+
+                    if (key == null)
+                        key = ReadComplexProperty(subReader, keyValTypes[0], "key", dictType, resolver);
 
                     if (key == null)
                         throw new ConfigurationErrorsException(
                             "Invalid dictionary entry, key attribute is missing for property " + prop);
 
-                    dict[key] = subReader.GetAttribute("value");
+                    if (val == null)
+                        val = ReadComplexProperty(subReader, keyValTypes[0], "value", dictType, resolver);
+
+                    dict[key] = val;
                 }
             }
 
