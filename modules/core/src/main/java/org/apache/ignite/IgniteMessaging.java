@@ -79,9 +79,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * All local listeners will be executed in the calling thread.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
@@ -91,11 +89,22 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public void send(@Nullable Object topic, Object msg) throws IgniteException;
 
     /**
+     * Sends given message with specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * All local listeners will be executed public thread pool (it is user's  responsibility to implement
+     * back-pressure and limit number of concurrently executed async messages).
+     *
+     * @param topic Topic to send to, {@code null} for default topic.
+     * @param msg Message to send.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
+     */
+    public void sendAsync(@Nullable Object topic, Object msg) throws IgniteException;
+
+    /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * All local listeners will be executed in the calling thread.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
@@ -104,6 +113,20 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
     public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
+
+    /**
+     * Sends given messages with the specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * All local listeners will be executed in public thread pool (it is user's responsibility to implement
+     * back-pressure and limit number of concurrently executed async messages).
+     *
+     * @param topic Topic to send to, {@code null} for default topic.
+     * @param msgs Messages to send. Order of the sending is undefined. If the method produces
+     *      the exception none or some messages could have been sent already.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
+     */
+    public void sendAsync(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
 
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
