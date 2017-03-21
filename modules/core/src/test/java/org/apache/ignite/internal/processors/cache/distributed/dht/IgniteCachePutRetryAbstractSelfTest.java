@@ -233,14 +233,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOffheapSwap() throws Exception {
-        checkRetry(Test.INVOKE_ALL, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllOffheapTiered() throws Exception {
+    public void testInvokeAllEvict() throws Exception {
         checkRetry(Test.INVOKE_ALL, true, false);
     }
 
