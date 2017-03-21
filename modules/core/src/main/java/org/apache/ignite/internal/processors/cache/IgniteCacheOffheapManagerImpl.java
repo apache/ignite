@@ -262,7 +262,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             for (GridDhtLocalPartition locPart : cctx.topology().currentLocalPartitions()) {
                 if (primary) {
                     if (cctx.affinity().primaryByPartition(locNode, locPart.id(), topVer)) {
-                        cnt += locPart.size();
+                        cnt += locPart.dataStore().size();
 
                         continue;
                     }
@@ -270,7 +270,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 if (backup) {
                     if (cctx.affinity().backupByPartition(locNode, locPart.id(), topVer))
-                        cnt += locPart.size();
+                        cnt += locPart.dataStore().size();
                 }
             }
 
@@ -288,7 +288,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         else {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
 
-            return locPart == null ? 0 : locPart.size();
+            return locPart == null ? 0 : locPart.dataStore().size();
         }
     }
 
