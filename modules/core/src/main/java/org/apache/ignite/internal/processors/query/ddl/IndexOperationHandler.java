@@ -66,14 +66,24 @@ public class IndexOperationHandler {
      * @param ctx Context.
      * @param qryProc Query processor.
      * @param op Target operation.
+     * @param dummy Whether this is dummy request which should be considered completed right-away. This is the case for
+     *     client nodes and for server node in-progress operations received through discovery data.
      */
-    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, AbstractIndexOperation op) {
+    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, AbstractIndexOperation op,
+        boolean dummy) {
         this.ctx = ctx;
         this.qryProc = qryProc;
         this.op = op;
 
         log = ctx.log(IndexOperationHandler.class);
+
         opFut = new GridFutureAdapter();
+
+        if (dummy) {
+            init = true;
+
+            opFut.onDone();
+        }
     }
 
     /**
