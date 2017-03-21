@@ -154,7 +154,7 @@ class Paragraph {
 
             while (_.nonNil(cause)) {
                 if (_.nonEmpty(cause.className) &&
-                    _.includes(['SQLException', 'JdbcSQLException'], JavaTypes.shortClassName(cause.className))) {
+                    _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
                     this.error.message = cause.message;
 
                     break;
