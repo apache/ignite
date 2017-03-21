@@ -262,6 +262,13 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             }
 
+            if (IsBasicType(propType))
+            {
+                var converter = GetConverter(null, propType);
+
+                return converter.ConvertFromInvariantString(reader.ReadElementContentAsString());
+            }
+
             var nestedVal = Activator.CreateInstance(propType);
 
             using (var subReader = reader.ReadSubtree())
