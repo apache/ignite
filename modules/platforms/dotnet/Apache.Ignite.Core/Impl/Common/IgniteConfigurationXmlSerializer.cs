@@ -552,8 +552,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private interface IPair
         {
+            /// <summary>
+            /// Gets the key.
+            /// </summary>
             object Key { get; }
 
+            /// <summary>
+            /// Gets the value.
+            /// </summary>
             object Value { get; }
         }
 
@@ -570,11 +576,13 @@ namespace Apache.Ignite.Core.Impl.Common
             // ReSharper disable once MemberCanBePrivate.Local
             public TV Value { get; set; }
 
+            /** <inheritdoc /> */
             object IPair.Key
             {
                 get { return Key; }
             }
 
+            /** <inheritdoc /> */
             object IPair.Value
             {
                 get { return Value; }
