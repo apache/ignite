@@ -189,23 +189,14 @@ namespace Apache.Ignite.Core.Impl.Common
             // Read attributes
             while (reader.MoveToNextAttribute())
             {
-                var name = reader.Name;
-
-                if (name == TypNameAttribute || name == XmlnsAttribute)
+                if (reader.Name == TypNameAttribute || reader.Name == XmlnsAttribute)
                     continue;
 
-                var val = reader.Value;
+                var prop = GetPropertyOrThrow(reader.Name, reader.Value, target.GetType());
 
-                var property = GetPropertyOrThrow(name, val, target.GetType());
+                var value = ConvertBasicValue(reader.Value, prop);
 
-                if (!property.CanWrite)
-                {
-                    throw new ConfigurationErrorsException(string.Format(
-                            "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
-                            name, val, target.GetType(), property.Name));
-                }
-
-                property.SetValue(target, val, null);
+                prop.SetValue(target, value, null);
             }
 
             // Read content
@@ -216,10 +207,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (reader.NodeType != XmlNodeType.Element)
                     continue;
 
-                var name = reader.Name;
-                var prop = GetPropertyOrThrow(name, reader.Value, targetType);
+                var prop = GetPropertyOrThrow(reader.Name, reader.Value, targetType);
 
                 var value = ReadPropertyValue(reader, resolver, prop, targetType);
+
                 prop.SetValue(target, value, null);
             }
         }
@@ -420,10 +411,19 @@ namespace Apache.Ignite.Core.Impl.Common
             var property = type.GetProperty(XmlNameToPropertyName(propName));
 
             if (property == null)
+            {
                 throw new ConfigurationErrorsException(
                     string.Format(
                         "Invalid IgniteConfiguration attribute '{0}={1}', there is no such property on '{2}'",
                         propName, propVal, type));
+            }
+
+            if (!property.CanWrite)
+            {
+                throw new ConfigurationErrorsException(string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                        propName, propVal, type, property.Name));
+            }
 
             return property;
         }
