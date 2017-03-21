@@ -2050,7 +2050,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         Long updateCntr0 = null;
 
-        synchronized (this) {
+        //synchronized (this) {
             boolean internal = isInternal() || !context().userCache();
 
             Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
@@ -2705,7 +2705,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert rmv;
             }
-        }
+       // }
 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + oldVal + ", entry=" + this + ']');

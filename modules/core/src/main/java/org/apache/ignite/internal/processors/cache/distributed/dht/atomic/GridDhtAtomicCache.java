@@ -1860,19 +1860,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 e.printStackTrace();
             }
-            finally {
-                if (locked != null)
-                    unlockEntries(locked, req.topologyVersion());
-
-                // Enqueue if necessary after locks release.
-                if (deleted != null) {
-                    assert !deleted.isEmpty();
-                    assert ctx.deferredDelete() : this;
-
-                    for (IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion> e : deleted)
-                        ctx.onDeferredDelete(e.get1(), e.get2());
-                }
-            }
         }
         catch (GridDhtInvalidPartitionException ignore) {
             if (log.isDebugEnabled())
@@ -1931,7 +1918,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             ctx.deploymentEnabled());
 
-        List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
+        //List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
 
         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
@@ -1960,7 +1947,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             hasNear,
             req,
             res,
-            locked,
             ver,
             null,
             ctx.isDrEnabled(),
@@ -1976,7 +1962,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         res.returnValue(retVal);
 
-        unlockEntries(locked, null);
+        //unlockEntries(locked, null);
 
         if (TEST_STRIPE_SUBMIT){
             for (int i = 0; i < req.size(); i++) {
@@ -2471,7 +2457,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param hasNear {@code True} if originating node has near cache.
      * @param req Update request.
      * @param res Update response.
-     * @param locked Locked entries.
      * @param ver Assigned update version.
      * @param dhtFut Optional DHT future.
      * @param replicate Whether DR is enabled for that cache.
@@ -2488,7 +2473,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean hasNear,
         GridNearAtomicAbstractUpdateRequest req,
         GridNearAtomicUpdateResponse res,
-        List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicAbstractUpdateFuture dhtFut,
         boolean replicate,
@@ -2519,7 +2503,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // We are holding java-level locks on entries at this point.
             // No GridCacheEntryRemovedException can be thrown.
             try {
-                GridDhtCacheEntry entry = locked.get(i);
+                GridDhtCacheEntry entry = entryExx(k, topVer);
 
                 GridCacheVersion newConflictVer = req.conflictVersion(trueIdx);
                 long newConflictTtl = req.conflictTtl(trueIdx);
