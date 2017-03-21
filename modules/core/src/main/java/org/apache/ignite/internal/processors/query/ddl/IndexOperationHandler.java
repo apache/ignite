@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.ddl;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -66,11 +67,12 @@ public class IndexOperationHandler {
      * @param ctx Context.
      * @param qryProc Query processor.
      * @param op Target operation.
-     * @param dummy Whether this is dummy request which should be considered completed right-away. This is the case for
-     *     client nodes and for server node in-progress operations received through discovery data.
+     * @param completed Whether this is dummy request which should be considered completed right-away. This is the
+     *     case for client nodes and for server node in-progress operations received through discovery data.
+     * @param err Error for future to be completed with.
      */
     public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, AbstractIndexOperation op,
-        boolean dummy) {
+        boolean completed, Exception err) {
         this.ctx = ctx;
         this.qryProc = qryProc;
         this.op = op;
@@ -79,10 +81,13 @@ public class IndexOperationHandler {
 
         opFut = new GridFutureAdapter();
 
-        if (dummy) {
+        if (completed) {
             init = true;
 
-            opFut.onDone();
+            if (err != null)
+                opFut.onDone(err);
+            else
+                opFut.onDone();
         }
     }
 
@@ -115,6 +120,13 @@ public class IndexOperationHandler {
                     worker.cancel();
             }
         }
+    }
+
+    /**
+     * @return Future completed when operation is ready.
+     */
+    public IgniteInternalFuture future() {
+        return opFut;
     }
 
     /**
