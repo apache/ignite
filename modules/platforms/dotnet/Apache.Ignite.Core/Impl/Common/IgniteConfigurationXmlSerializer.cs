@@ -223,6 +223,11 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var propType = prop.PropertyType;
 
+            if (propType == typeof(object))
+            {
+                propType = ResolvePropertyType(reader, propType, prop.Name, targetType, resolver);
+            }
+
             if (IsBasicType(propType))
             {
                 // Regular property in xmlElement form.
