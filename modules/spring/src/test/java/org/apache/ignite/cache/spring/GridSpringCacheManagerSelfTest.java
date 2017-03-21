@@ -463,19 +463,19 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         final int iterationsNumber = 1000;
 
-        Callable callable = new Callable() {
+        Callable cacheGetCall = new Callable() {
 
             @Override public Object call() throws Exception {
-                for (int key = 0; key < iterationsNumber; key++) {
+                for (int iter = 0; iter < iterationsNumber; iter++) {
                     BARRIER.arriveAndAwaitAdvance();
 
-                    final int tempKey = key;
+                    final int key = iter;
 
                     springCache.get(key, new Callable<Object>() {
                         @Override public Object call() throws Exception {
-                            syncSvc.cacheable(tempKey);
+                            syncSvc.cacheable(key);
 
-                            return tempKey;
+                            return key;
                         }
                     });
                 }
@@ -484,7 +484,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        GridTestUtils.runMultiThreaded(callable, THREADS_NUMBER, "testSyncCache");
+        GridTestUtils.runMultiThreaded(cacheGetCall, THREADS_NUMBER, "testSyncCache");
 
         assertEquals(iterationsNumber, igniteCache.size());
         assertEquals(iterationsNumber, syncSvc.called());
