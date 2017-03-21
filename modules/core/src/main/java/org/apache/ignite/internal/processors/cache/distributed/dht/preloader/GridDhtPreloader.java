@@ -612,8 +612,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,
-                    assignment.assignment(),
-                    true);
+                    assignment.assignment());
 
                 if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
                     assert assignment.idealAssignment() != null;

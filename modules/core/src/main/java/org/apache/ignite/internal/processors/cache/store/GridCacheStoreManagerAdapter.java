@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -67,7 +66,6 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
@@ -229,15 +227,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             sesLsnrs = cctx.shared().storeSessionListeners();
 
             globalSesLsnrs = true;
-        }
-
-        if (isLocal()) {
-            if (!IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY)) {
-
-                log.warning("Local Store keeps primary and backup partitions. " +
-                    "To keep primary partitions only please set system property " +
-                    IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY + " to 'true'.");
-            }
         }
     }
 

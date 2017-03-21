@@ -2912,14 +2912,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
 
-                            if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                                if (!next.version().greaterThanEqual(TcpDiscoverySpi.FAILURE_DETECTION_MAJOR_VER,
-                                    TcpDiscoverySpi.FAILURE_DETECTION_MINOR_VER,
-                                    TcpDiscoverySpi.FAILURE_DETECTION_MAINT_VER))
-                                    // Preserve backward compatibility with nodes of older versions.
-                                    msg = new TcpDiscoveryStatusCheckMessage(locNode, null);
-                            }
-                            else
+                            if (!(msg instanceof TcpDiscoveryConnectionCheckMessage))
                                 prepareNodeAddedMessage(msg, next.id(), pendingMsgs.msgs, pendingMsgs.discardId,
                                     pendingMsgs.customDiscardId);
 

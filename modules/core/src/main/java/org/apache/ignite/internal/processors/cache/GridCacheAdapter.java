@@ -3477,7 +3477,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param keys Keys.
      * @param plc Expiry policy.
-     * @param keepBinary Keep binary flag. Will be ignored for releases older than {@link #LOAD_CACHE_JOB_V2_SINCE}.
+     * @param keepBinary Keep binary flag.
      * @return Operation future.
      */
     private IgniteInternalFuture<?> runLoadKeysCallable(final Set<? extends K> keys, final ExpiryPolicy plc,
