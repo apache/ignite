@@ -78,14 +78,6 @@ public class IgniteBenchmarkArguments {
     private TransactionIsolation txIsolation = TransactionIsolation.REPEATABLE_READ;
 
     /** */
-    @Parameter(names = {"-ot", "--offheapTiered"}, description = "Tiered offheap")
-    private boolean offheapTiered;
-
-    /** */
-    @Parameter(names = {"-ov", "--offheapValuesOnly"}, description = "Offheap values only")
-    private boolean offheapVals;
-
-    /** */
     @Parameter(names = {"-rtp", "--restPort"}, description = "REST TCP port")
     private int restTcpPort;
 
@@ -280,27 +272,6 @@ public class IgniteBenchmarkArguments {
      */
     public int backups() {
         return backups;
-    }
-
-    /**
-     * @return Offheap tiered.
-     */
-    public boolean isOffheapTiered() {
-        return offheapTiered;
-    }
-
-    /**
-     * @return Offheap values.
-     */
-    public boolean isOffheapValues() {
-        return offheapVals;
-    }
-
-    /**
-     * @return {@code True} if any offheap is enabled.
-     */
-    public boolean isOffHeap() {
-        return offheapTiered || offheapVals;
     }
 
     /**

@@ -61,8 +61,6 @@ The following Ignite benchmark properties can be defined in the benchmark config
 * `-nc` or `--nearCache` - Near cache flag
 * `-nn <num>` or `--nodeNumber <num>` - Number of nodes (automatically set in `benchmark.properties`), used to wait for the specified number of nodes to start
 * `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
-* `-ot` or `--offheapTiered` - Flag indicating whether tiered off-heap mode is on
-* `-ov` or `--offheapValuesOnly` - Flag indicating whether off-heap mode is on and only cache values are stored off-heap
 * `-r <num>` or `--range` - Range of keys that are randomly generated for cache operations
 * `-rth <host>` or `--restHost <host>` - REST TCP host
 * `-rtp <num>` or `--restPort <num>` - REST TCP port, indicates that a Ignite node is ready to process Ignite Clients
