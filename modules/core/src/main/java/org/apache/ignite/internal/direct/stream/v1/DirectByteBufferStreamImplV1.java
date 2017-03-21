@@ -505,10 +505,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             else
                 lastFinished = false;
         }
-        else {
-            writeByte((byte)(Short.MIN_VALUE & 0xFF));
-            writeByte((byte)((Short.MIN_VALUE >> 8 ) & 0xFF));
-        }
+        else
+            writeShort(Short.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -816,7 +814,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 return null;
             }
 
-            short type = readShort();
+            byte b0 = readByte();
+            byte b1 = readByte();
+
+            short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
 
             msg = type == Short.MIN_VALUE ? null : msgFactory.create(type);
 
