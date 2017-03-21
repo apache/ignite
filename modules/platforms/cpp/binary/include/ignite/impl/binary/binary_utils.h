@@ -25,6 +25,7 @@
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
+#include "ignite/time.h"
 
 #include "ignite/binary/binary_type.h"
 
@@ -424,7 +425,7 @@ namespace ignite
                  * Utility method to read Timestamp from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
+                 * @return Value.
                  */
                 static Timestamp ReadTimestamp(interop::InteropInputStream* stream);
 
@@ -435,6 +436,22 @@ namespace ignite
                  * @param val Value.
                  */
                 static void WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val);
+
+                /**
+                 * Utility method to read Time from stream.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static Time ReadTime(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write Timestamp to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteTime(interop::InteropOutputStream* stream, const Time val);
 
                 /**
                  * Utility method to write string to stream.
@@ -523,6 +540,12 @@ namespace ignite
             inline Timestamp BinaryUtils::GetDefaultValue<Timestamp>()
             {
                 return Timestamp();
+            }
+
+            template<>
+            inline Time BinaryUtils::GetDefaultValue<Time>()
+            {
+                return Time();
             }
 
             template<>

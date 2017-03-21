@@ -37,6 +37,7 @@ namespace ignite
             doubleField(0.0),
             boolField(false),
             dateField(),
+            timeField(),
             timestampField()
         {
             // No-op.
@@ -45,7 +46,7 @@ namespace ignite
         TestType(int8_t i8Field, int16_t i16Field, int32_t i32Field,
             int64_t i64Field, const std::string& strField, float floatField,
             double doubleField, bool boolField, const Guid& guidField,
-            const Date& dateField, const Timestamp& timestampField) :
+            const Date& dateField, const Time& timeField, const Timestamp& timestampField) :
             allNulls(false),
             i8Field(i8Field),
             i16Field(i16Field),
@@ -57,6 +58,7 @@ namespace ignite
             boolField(boolField),
             guidField(guidField),
             dateField(dateField),
+            timeField(timeField),
             timestampField(timestampField)
         {
             // No-op.
@@ -76,6 +78,7 @@ namespace ignite
                 one.boolField == two.boolField &&
                 one.guidField == two.guidField &&
                 one.dateField == two.dateField &&
+                one.timeField == two.timeField &&
                 one.timestampField == two.timestampField &&
                 one.i8ArrayField == two.i8ArrayField;
         }
@@ -91,6 +94,7 @@ namespace ignite
         bool boolField;
         Guid guidField;
         Date dateField;
+        Time timeField;
         Timestamp timestampField;
         std::vector<int8_t> i8ArrayField;
     };
@@ -125,6 +129,7 @@ namespace ignite
                     writer.WriteBool("boolField", obj.boolField);
                     writer.WriteGuid("guidField", obj.guidField);
                     writer.WriteDate("dateField", obj.dateField);
+                    writer.WriteTime("timeField", obj.timeField);
                     writer.WriteTimestamp("timestampField", obj.timestampField);
                     if (obj.i8ArrayField.empty())
                     {
@@ -147,6 +152,7 @@ namespace ignite
                     writer.WriteNull("boolField");
                     writer.WriteNull("guidField");
                     writer.WriteNull("dateField");
+                    writer.WriteNull("timeField");
                     writer.WriteNull("timestampField");
                     writer.WriteNull("i8ArrayField");
                 }
@@ -164,11 +170,12 @@ namespace ignite
                 bool boolField = reader.ReadBool("boolField");
                 Guid guidField = reader.ReadGuid("guidField");
                 Date dateField = reader.ReadDate("dateField");
+                Time timeField = reader.ReadTime("timeField");
                 Timestamp timestampField = reader.ReadTimestamp("timestampField");
 
                 TestType result(i8Field, i16Field, i32Field, i64Field, strField,
                     floatField, doubleField, boolField, guidField, dateField,
-                    timestampField);
+                    timeField, timestampField);
 
                 int32_t len = reader.ReadInt8Array("i8ArrayField", 0, 0);
                 if (len > 0)
