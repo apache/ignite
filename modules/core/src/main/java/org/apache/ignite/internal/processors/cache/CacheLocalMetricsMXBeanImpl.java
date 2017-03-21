@@ -44,11 +44,6 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return cache.metrics0().getOverflowSize();
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
         return cache.metrics0().getOffHeapGets();
     }
@@ -111,51 +106,6 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getOffHeapMaxSize() {
         return cache.metrics0().getOffHeapMaxSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return cache.metrics0().getSwapGets();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return cache.metrics0().getSwapPuts();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return cache.metrics0().getSwapRemovals();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return cache.metrics0().getSwapHits();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return cache.metrics0().getSwapMisses();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        return cache.metrics0().getSwapHitPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        return cache.metrics0().getSwapMissPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        return cache.metrics0().getSwapEntriesCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return cache.metrics0().getSwapSize();
     }
 
     /** {@inheritDoc} */

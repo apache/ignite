@@ -470,6 +470,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                 assert nextLink != FAIL_L; // Can't fail here.
             }
         }
+
+        //somehow count how many pages were released during the course of removingDataRow
     }
 
     /** {@inheritDoc} */

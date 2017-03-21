@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -57,6 +58,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     protected Map<String, MemoryPolicy> memPlcMap;
+
+    /** */
+    protected Map<String, MemoryMetrics> memMetricsMap;
 
     /** */
     protected MemoryPolicy dfltMemPlc;
@@ -156,12 +160,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
 
-        for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-            PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
+        memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);
 
-            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
+        for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
+            MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg.getName());
+
+            PageMemory pageMem = initMemory(dbCfg, memPlcCfg, memMetrics);
+
+            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memMetrics, memPlcCfg);
 
             memPlcMap.put(memPlcCfg.getName(), memPlc);
+
+            memMetricsMap.put(memPlcCfg.getName(), memMetrics);
 
             if (memPlcCfg.isDefault())
                 dfltMemPlc = memPlc;
@@ -169,7 +179,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
 
-        memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, new MemoryPolicy(initMemory(dbCfg, sysPlcCfg), sysPlcCfg));
+        MemoryMetricsImpl sysMemMetrics = new MemoryMetricsImpl(SYSTEM_MEMORY_POLICY_NAME);
+
+        memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME,
+                new MemoryPolicy(
+                        initMemory(dbCfg, sysPlcCfg, sysMemMetrics),
+                        sysMemMetrics,
+                        sysPlcCfg));
+
+        memMetricsMap.put(SYSTEM_MEMORY_POLICY_NAME, sysMemMetrics);
     }
 
     /**
@@ -272,6 +290,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public Collection<MemoryPolicy> memoryPolicies() {
         return memPlcMap != null ? memPlcMap.values() : null;
+    }
+
+    /**
+     * @return MemoryMetrics for all MemoryPolicies configured in Ignite instance.
+     */
+    public Collection<MemoryMetrics> memoryMetrics() {
+        return memMetricsMap != null ? memMetricsMap.values() : null;
     }
 
     /**
@@ -427,9 +452,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param dbCfg memory configuration with common parameters.
      * @param plc memory policy with PageMemory specific parameters.
+     * @param memMetrics {@link MemoryMetrics} object to collect memory usage metrics.
      * @return Page memory instance.
      */
-    private PageMemory initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc) {
+    private PageMemory initMemory(MemoryConfiguration dbCfg, MemoryPolicyConfiguration plc, MemoryMetricsImpl memMetrics) {
         long[] sizes = calculateFragmentSizes(
                 dbCfg.getConcurrencyLevel(),
                 plc.getSize());
@@ -444,7 +470,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 true,
                 sizes);
 
-        return createPageMemory(memProvider, dbCfg.getPageSize());
+        return createPageMemory(memProvider, dbCfg.getPageSize(), memMetrics);
     }
 
     /**
@@ -492,9 +518,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param memProvider Memory provider.
      * @param pageSize Page size.
+     * @param memMetrics MemoryMetrics to collect memory usage metrics.
+     * @return PageMemory instance.
      */
-    protected PageMemory createPageMemory(DirectMemoryProvider memProvider, int pageSize) {
-        return new PageMemoryNoStoreImpl(log, memProvider, cctx, pageSize, false);
+    protected PageMemory createPageMemory(DirectMemoryProvider memProvider, int pageSize, MemoryMetricsImpl memMetrics) {
+        return new PageMemoryNoStoreImpl(log, memProvider, cctx, pageSize, memMetrics, false);
     }
 
     /**
