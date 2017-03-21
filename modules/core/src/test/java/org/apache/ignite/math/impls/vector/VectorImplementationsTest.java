@@ -253,11 +253,12 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
+            final int delta = size > 32 ? 3 : 1; // IMPL NOTE this is for faster test execution
 
             final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
-            for (int off = 0; off < size; off++)
-                for (int len = 1; len < size - off; len++)
+            for (int off = 0; off < size; off += delta)
+                for (int len = 1; len < size - off; len += delta)
                     checker.assertCloseEnough(v.viewPart(off, len), Arrays.copyOfRange(ref, off, off + len));
         });
     }

@@ -20,37 +20,24 @@ import static org.junit.Assert.*;
 public class VectorToMatrixTest {
     /** */ private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
 
+    /** */ private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
+        SingleElementVector.class, SingleElementVectorView.class);
+
     /** */ @Test
     public void testHaveLikeMatrix() throws InstantiationException, IllegalAccessException {
         for (Class<? extends Vector> key : typesMap.keySet()) {
             Class<? extends Matrix> val = typesMap.get(key);
 
-            if (val == null && !ignore(key))
+            if (val == null && likeMatrixSupported(key))
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
-    }
-
-    /** Ignore test for given vector type. */
-    private boolean ignore(Class<? extends Vector> clazz){
-        boolean isIgnored = false;
-        List<Class<? extends Vector>> ignoredClasses = Arrays.asList(FunctionVector.class,
-            SingleElementVector.class, SingleElementVectorView.class);
-
-        for (Class<? extends Vector> ignoredClass : ignoredClasses) {
-            if (ignoredClass.isAssignableFrom(clazz)){
-                isIgnored = true;
-                break;
-            }
-        }
-
-        return isIgnored;
     }
 
     /** */
     @Test
     public void testLikeMatrixUnsupported() throws Exception {
         consumeSampleVectors((v, desc) -> {
-            if (!ignore(v.getClass()))
+            if (likeMatrixSupported(v.getClass()))
                 return;
 
             boolean expECaught = false;
@@ -220,7 +207,7 @@ public class VectorToMatrixTest {
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
 
-        if (ignore(v.getClass()))
+        if (!likeMatrixSupported(v.getClass()))
             return false;
 
         final boolean availableForTesting = typesMap.get(v.getClass()) != null;
@@ -231,6 +218,15 @@ public class VectorToMatrixTest {
             availableForTesting || actualLikeMatrix == null);
 
         return availableForTesting;
+    }
+
+    /** Ignore test for given vector type. */
+    private boolean likeMatrixSupported(Class<? extends Vector> clazz){
+        for (Class<? extends Vector> ignoredClass : likeMatrixUnsupported)
+            if (ignoredClass.isAssignableFrom(clazz))
+                return false;
+
+        return true;
     }
 
     /** */
