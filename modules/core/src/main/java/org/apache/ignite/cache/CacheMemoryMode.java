@@ -23,7 +23,7 @@ import org.apache.ignite.cache.eviction.EvictionPolicy;
  * Defines set of memory modes. Memory modes help control whether cache entries are
  * stored on heap memory, offheap memory, or in swap space.
  */
-public enum CacheMemoryMode {
+@Deprecated public enum CacheMemoryMode {
     /**
      * Entries will be stored on-heap first. The onheap tiered storage works as follows:
      * <nl>

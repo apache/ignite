@@ -31,7 +31,6 @@ import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -78,7 +77,6 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setMemoryMode(memoryMode());
         ccfg.setOffHeapMaxMemory(0);
 
         LruEvictionPolicy plc = new LruEvictionPolicy();
@@ -123,11 +121,6 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @return Atomicity mode.
      */
     protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * @return Memory mode.
-     */
-    protected abstract CacheMemoryMode memoryMode();
 
     /**
      * @return Cache mode.

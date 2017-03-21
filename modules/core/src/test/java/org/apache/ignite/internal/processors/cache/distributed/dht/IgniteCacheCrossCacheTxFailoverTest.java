@@ -53,9 +53,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.GridTestUtils.TestMemoryMode;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
-import static org.apache.ignite.testframework.GridTestUtils.setMemoryMode;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -115,13 +113,11 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @param name Cache name.
      * @param cacheMode Cache mode.
      * @param parts Number of partitions.
-     * @param memMode Memory mode.
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name,
         CacheMode cacheMode,
-        int parts,
-        TestMemoryMode memMode) {
+        int parts) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
@@ -133,8 +129,6 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
             ccfg.setBackups(1);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, parts));
-
-        setMemoryMode(null, ccfg, memMode, 100, 1024);
 
         return ccfg;
     }
@@ -148,70 +142,56 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailover() throws Exception {
-        crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCrossCachePessimisticTxFailoverOffheapSwap() throws Exception {
-        crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ, TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        crossCacheTxFailover(PARTITIONED, true, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailoverDifferentAffinity() throws Exception {
-        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheOptimisticTxFailover() throws Exception {
-        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheOptimisticSerializableTxFailover() throws Exception {
-        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, SERIALIZABLE, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCrossCacheOptimisticTxFailoverOffheapSwap() throws Exception {
-        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, REPEATABLE_READ, TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        crossCacheTxFailover(PARTITIONED, true, OPTIMISTIC, SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheOptimisticTxFailoverDifferentAffinity() throws Exception {
-        crossCacheTxFailover(PARTITIONED, false, OPTIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(PARTITIONED, false, OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailoverReplicated() throws Exception {
-        crossCacheTxFailover(REPLICATED, true, PESSIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(REPLICATED, true, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheOptimisticTxFailoverReplicated() throws Exception {
-        crossCacheTxFailover(REPLICATED, true, OPTIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(REPLICATED, true, OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCachePessimisticTxFailoverDifferentAffinityReplicated() throws Exception {
-        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ, TestMemoryMode.HEAP);
+        crossCacheTxFailover(PARTITIONED, false, PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
@@ -219,21 +199,19 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
      * @param sameAff If {@code false} uses different number of partitions for caches.
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
-     * @param memMode Memory mode.
      * @throws Exception If failed.
      */
     private void crossCacheTxFailover(CacheMode cacheMode,
         boolean sameAff,
         final TransactionConcurrency concurrency,
-        final TransactionIsolation isolation,
-        TestMemoryMode memMode) throws Exception {
+        final TransactionIsolation isolation) throws Exception {
         IgniteKernal ignite0 = (IgniteKernal)ignite(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
         try {
-            ignite0.createCache(cacheConfiguration(CACHE1, cacheMode, 256, memMode));
-            ignite0.createCache(cacheConfiguration(CACHE2, cacheMode, sameAff ? 256 : 128, memMode));
+            ignite0.createCache(cacheConfiguration(CACHE1, cacheMode, 256));
+            ignite0.createCache(cacheConfiguration(CACHE2, cacheMode, sameAff ? 256 : 128));
 
             final AtomicInteger threadIdx = new AtomicInteger();
 

@@ -21,9 +21,14 @@ import org.apache.ignite.cache.*;
 /**
  * TTL test with offheap.
  */
-public abstract class CacheTtlOnheapAbstractSelfTest extends CacheTtlAbstractSelfTest {
+public class CacheTtlAtomicPartitionedSelfTest extends CacheTtlAtomicAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 2;
     }
 }

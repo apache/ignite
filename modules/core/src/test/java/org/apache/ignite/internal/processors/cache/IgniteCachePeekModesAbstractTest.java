@@ -29,7 +29,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -89,8 +88,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
         ccfg.setOffHeapMaxMemory(512);
 

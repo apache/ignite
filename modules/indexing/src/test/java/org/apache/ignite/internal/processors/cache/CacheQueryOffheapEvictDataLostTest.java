@@ -30,8 +30,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
-
 /**
  *
  */
@@ -53,7 +51,6 @@ public class CacheQueryOffheapEvictDataLostTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setName("cache-1");
-        ccfg.setMemoryMode(ONHEAP_TIERED);
         ccfg.setEvictionPolicy(new LruEvictionPolicy(10));
         ccfg.setOffHeapMaxMemory(1024);
         ccfg.setIndexedTypes(Integer.class, TestData.class);
