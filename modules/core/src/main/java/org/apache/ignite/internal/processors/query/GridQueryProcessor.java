@@ -17,27 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
@@ -50,7 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -67,11 +48,6 @@ import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessa
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.task.IndexingAcceptTask;
-import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStartTask;
-import org.apache.ignite.internal.processors.query.ddl.task.IndexingCacheStopTask;
-import org.apache.ignite.internal.processors.query.ddl.task.IndexingFinishTask;
-import org.apache.ignite.internal.processors.query.ddl.task.IndexingTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -80,12 +56,26 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -97,11 +87,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
+    /** */
+    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** */
+    private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
 
     /** Type descriptors. */
     private final Map<QueryTypeIdKey, QueryTypeDescriptorImpl> types = new ConcurrentHashMap<>();
@@ -121,15 +117,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Index create/drop client futures. */
     private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
 
-    /** Index worker. */
-    private final DynamicIndexManagerWorker idxWorker;
-
-    /** */
-    private GridTimeoutProcessor.CancelableTask qryDetailMetricsEvictTask;
-
-    /** */
-    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -143,8 +130,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
-
-        idxWorker = new DynamicIndexManagerWorker(ctx.igniteInstanceName(), log);
     }
 
     /** {@inheritDoc} */
@@ -156,8 +141,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx, busyLock);
         }
-
-        new IgniteThread(idxWorker).start();
 
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
@@ -236,12 +219,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
+        // TODO: Apply pending operations right away!
+
         // Ready to register at this point.
         registerCache0(space, cctx, cands);
-
-        // Active operations will be applied from worker thread.
-        if (initIdxStates != null)
-            idxWorker.onCacheStart(space, initIdxStates);
 
         // Warn about possible implicit deserialization.
         if (!mustDeserializeClss.isEmpty()) {
@@ -285,15 +266,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 Thread.currentThread().interrupt();
             }
-        }
-
-        idxWorker.cancel();
-
-        try {
-            idxWorker.join();
-        }
-        catch (InterruptedException e) {
-            U.warn(log, "Failed to wait for index worker stop due to interrupt.", e);
         }
 
         busyLock.block();
@@ -366,8 +338,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
-        idxWorker.onAccept(msg);
-
         idxLock.writeLock().lock();
 
         // TODO
@@ -449,7 +419,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
-        idxWorker.onFinish(msg);
+
     }
 
     /**
@@ -554,7 +524,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // Clear indexes.
-            idxWorker.onCacheStop(space);
+            // TODO Clear pending index operations.
 
             // Notify indexing.
             try {
@@ -1231,268 +1201,5 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
-    }
-
-    /**
-     * Worker which manages overall dynamic index creation process.
-     */
-    private class DynamicIndexManagerWorker extends GridWorker {
-        /** Tasks queue. */
-        private final LinkedBlockingQueue<IndexingTask> tasks = new LinkedBlockingQueue<>();
-
-        /** Alive nodes. */
-        private Collection<ClusterNode> aliveNodes;
-
-        /** Local node ID. */
-        private UUID locNodeId;
-
-        /** Coordinator node. */
-        private ClusterNode crdNode;
-
-        /**
-         * Constructor.
-         *
-         * @param igniteInstanceName Ignite instance name.
-         * @param log Logger.
-         */
-        public DynamicIndexManagerWorker(String igniteInstanceName, IgniteLogger log) {
-            super(igniteInstanceName, "dynamic-index-manager-worker", log);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            // TODO Find coordinator.
-
-            // TODO: Start processing tasks
-
-            while (!isCancelled()) {
-                IndexingTask task = tasks.take();
-
-                if (task != null) {
-                    if (task instanceof IndexingCacheStartTask) {
-                        IndexingCacheStartTask task0 = (IndexingCacheStartTask)task;
-
-                        handleCacheStart(task0.space(), task0.initialIndexStates());
-                    }
-                    else if (task instanceof IndexingCacheStopTask)
-                        handleCacheStop((IndexingCacheStopTask)task);
-                    else if (task instanceof IndexingAcceptTask)
-                        handleAccept(((IndexingAcceptTask)task).message());
-                    else if (task instanceof IndexingFinishTask)
-                        handleFinish(((IndexingFinishTask)task).message());
-                    else
-                        U.warn(log, "Unsupported task: " + task);
-                }
-            }
-        }
-
-        /**
-         * Submit new task.
-         *
-         * @param task Task.
-         */
-        public void submit(IndexingTask task) {
-            tasks.add(task);
-        }
-
-        /**
-         * Cache started callback.
-         *
-         * @param space Space.
-         * @param initIdxStates Initial index states.
-         */
-        public void onCacheStart(String space, QueryIndexStates initIdxStates) {
-            submit(new IndexingCacheStartTask(space, initIdxStates));
-        }
-
-        /**
-         * Handle cache start task.
-         *
-         * @param space Space.
-         * @param initIdxStates Initial index states.
-         */
-        private void handleCacheStart(String space, QueryIndexStates initIdxStates) {
-            // TODO: Start active operations.
-        }
-
-        /**
-         * Cache stopped callback.
-         *
-         * @param space Space.
-         */
-        public void onCacheStop(String space) {
-            submit(new IndexingCacheStopTask(space));
-        }
-
-        /**
-         * Handle cache stop task.
-         *
-         * @param task Task.
-         */
-        private void handleCacheStop(IndexingCacheStopTask task) {
-            // TODO: Correct implementation.
-            removeIndexesOnSpaceUnregister(task.space());
-
-            completeIndexClientFuturesOnSpaceUnregister(task.space());
-        }
-
-        /**
-         * Index accept callback.
-         *
-         * @param msg Message.
-         */
-        public void onAccept(IndexAcceptDiscoveryMessage msg) {
-            submit(new IndexingAcceptTask(msg));
-        }
-
-        /**
-         * Handle index accept.
-         *
-         * @param msg Message.
-         */
-        private void handleAccept(IndexAcceptDiscoveryMessage msg) {
-            // TODO
-        }
-
-        /**
-         * Index finish callback.
-         *
-         * @param msg Message.
-         */
-        public void onFinish(IndexFinishDiscoveryMessage msg) {
-            submit(new IndexingFinishTask(msg));
-        }
-
-        /**
-         * Handle index finish.
-         *
-         * @param msg Message.
-         */
-        private void handleFinish(IndexFinishDiscoveryMessage msg) {
-            // TODO
-        }
-
-        /**
-         * Update topology in response to node leave event.
-         */
-        private void updateTopology() {
-            boolean crdChanged = true;
-            Collection<ClusterNode> leftNodes = new HashSet<>();
-
-            if (aliveNodes == null) {
-                // First call.
-                aliveNodes = new HashSet<>(ctx.discovery().aliveServerNodes());
-
-                for (ClusterNode aliveNode : aliveNodes) {
-                    if (crdNode == null || crdNode.order() > aliveNode.order()) {
-                        crdNode = aliveNode;
-
-                        crdChanged = true;
-                    }
-                }
-            }
-            else {
-                Collection<ClusterNode> aliveNodes0 = ctx.discovery().aliveServerNodes();
-
-                for (ClusterNode aliveNode : aliveNodes0) {
-                    if (!aliveNodes.contains(aliveNode))
-                        leftNodes.add(aliveNode);
-                }
-
-                aliveNodes = aliveNodes0;
-
-                if (leftNodes.contains(crdNode)) {
-                    crdNode = null;
-
-                    for (ClusterNode aliveNode : aliveNodes) {
-                        if (crdNode == null || crdNode.order() > aliveNode.order()) {
-                            crdNode = aliveNode;
-
-                            crdChanged = true;
-                        }
-                    }
-                }
-            }
-
-            for (ClusterNode leftNode : leftNodes) {
-                // TODO: Process left nodes
-            }
-
-            if (crdChanged) {
-                // TODO: Process new coordinator.
-            }
-        }
-    }
-
-    /**
-     * Node leave task.
-     */
-    private static class NodeLeaveTask implements IndexingTask {
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /**
-         * Constructor.
-         *
-         * @param nodeId Node ID.
-         */
-        public NodeLeaveTask(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /**
-         * @return Node ID.
-         */
-        public UUID nodeId() {
-            return nodeId;
-        }
-    }
-
-    /**
-     * Operation status message received.
-     */
-    private static class OperationStatusTask implements IndexingTask {
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /** Operation ID. */
-        private final UUID opId;
-
-        /** Error message. */
-        private final String errMsg;
-
-        /**
-         * Constructor.
-         *
-         * @param nodeId Node ID.
-         * @param opId Operation ID.
-         * @param errMsg Error message.
-         */
-        public OperationStatusTask(UUID nodeId, UUID opId, String errMsg) {
-            this.nodeId = nodeId;
-            this.opId = opId;
-            this.errMsg = errMsg;
-        }
-
-        /**
-         * @return Node ID.
-         */
-        public UUID nodeId() {
-            return nodeId;
-        }
-
-        /**
-         * @return Operation ID.
-         */
-        public UUID operationId() {
-            return opId;
-        }
-
-        /**
-         * @return Error message (if any).
-         */
-        @Nullable public String errorMessage() {
-            return errMsg;
-        }
     }
 }
