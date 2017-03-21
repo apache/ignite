@@ -142,6 +142,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
+            case 8:
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -166,6 +172,14 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
+            case 8:
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedUnlockRequest.class);
@@ -178,7 +192,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
