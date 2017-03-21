@@ -1228,7 +1228,7 @@
                     </xs:complexType>
                 </xs:element>
             </xs:all>
-            <xs:attribute name="gridName" type="xs:string">
+            <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
                 </xs:annotation>

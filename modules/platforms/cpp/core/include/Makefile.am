@@ -25,6 +25,7 @@ nobase_include_HEADERS = \
     ignite/impl/ignite_environment.h \
     ignite/impl/ignite_impl.h \
     ignite/impl/cache/query/query_fields_row_impl.h \
+    ignite/impl/cache/query/query_argument.h \
     ignite/impl/cache/query/query_impl.h \
     ignite/impl/cache/cache_impl.h \
     ignite/impl/cache/cache_entry_processor_holder.h \
@@ -43,7 +44,6 @@ nobase_include_HEADERS = \
     ignite/cache/query/query_cursor.h \
     ignite/cache/query/query_sql.h \
     ignite/cache/query/query.h \
-    ignite/cache/query/query_argument.h \
     ignite/cache/query/query_sql_fields.h \
     ignite/cache/query/query_text.h \
     ignite/cache/cache.h \
