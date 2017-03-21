@@ -295,7 +295,12 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    protected GridCursor<GridH2Row> doFind0(
+    @Override protected <K, V> IgniteTree<K, V> treeForRead(int segment) {
+        return (IgniteTree<K, V>)tree;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCursor<GridH2Row> doFind0(
         IgniteTree t,
         @Nullable SearchRow first,
         boolean includeFirst,
