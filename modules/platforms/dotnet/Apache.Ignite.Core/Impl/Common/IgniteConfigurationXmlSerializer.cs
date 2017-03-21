@@ -251,6 +251,26 @@ namespace Apache.Ignite.Core.Impl.Common
         private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType, 
             TypeResolver resolver)
         {
+            propType = ResolvePropertyType(reader, propType, propName, targetType, resolver);
+
+            var nestedVal = Activator.CreateInstance(propType);
+
+            using (var subReader = reader.ReadSubtree())
+            {
+                subReader.Read();  // read first element
+
+                ReadElement(subReader, nestedVal, resolver);
+            }
+
+            return nestedVal;
+        }
+
+        /// <summary>
+        /// Resolves the type of the property.
+        /// </summary>
+        private static Type ResolvePropertyType(XmlReader reader, Type propType, string propName, Type targetType,
+            TypeResolver resolver)
+        {
             var typeName = reader.GetAttribute(TypNameAttribute);
 
             if (propType.IsAbstract || typeName != null)
@@ -276,24 +296,7 @@ namespace Apache.Ignite.Core.Impl.Common
                     throw new ConfigurationErrorsException(message);
                 }
             }
-
-            if (IsBasicType(propType))
-            {
-                var converter = GetConverter(null, propType);
-
-                return converter.ConvertFromInvariantString(reader.ReadElementContentAsString());
-            }
-
-            var nestedVal = Activator.CreateInstance(propType);
-
-            using (var subReader = reader.ReadSubtree())
-            {
-                subReader.Read();  // read first element
-
-                ReadElement(subReader, nestedVal, resolver);
-            }
-
-            return nestedVal;
+            return propType;
         }
 
         /// <summary>
@@ -341,6 +344,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var dictType = typeof (Dictionary<,>).MakeGenericType(keyValTypes);
 
+            var pairType = typeof(KeyValuePair<,>).MakeGenericType(keyValTypes);
+
             var dict = (IDictionary) Activator.CreateInstance(dictType);
 
             using (var subReader = reader.ReadSubtree())
@@ -361,9 +366,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     if (key == null)
                     {
-                        ReadElement(subReader);
+                        SkipToElement(subReader);
 
-                        key = ReadComplexProperty(subReader, keyValTypes[0], "key", dictType, resolver);
+                        key = ReadPropertyValue(subReader, resolver, pairType.GetProperty("Key"), pairType);
                     }
 
                     if (key == null)
@@ -372,9 +377,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     if (val == null)
                     {
-                        ReadElement(subReader);
+                        SkipToElement(subReader);
 
-                        val = ReadComplexProperty(subReader, keyValTypes[1], "value", dictType, resolver);
+                        val = ReadPropertyValue(subReader, resolver, pairType.GetProperty("Value"), pairType);
                     }
 
                     dict[key] = val;
@@ -550,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the element.
         /// </summary>
-        private static void ReadElement(XmlReader reader)
+        private static void SkipToElement(XmlReader reader)
         {
             while (reader.Read() && reader.NodeType != XmlNodeType.Element)
             {
