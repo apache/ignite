@@ -339,14 +339,22 @@ namespace Apache.Ignite.Core.Impl.Common
                     object val = subReader.GetAttribute("value");
 
                     if (key == null)
+                    {
+                        ReadElement(subReader);
+
                         key = ReadComplexProperty(subReader, keyValTypes[0], "key", dictType, resolver);
+                    }
 
                     if (key == null)
                         throw new ConfigurationErrorsException(
                             "Invalid dictionary entry, key attribute is missing for property " + prop);
 
                     if (val == null)
-                        val = ReadComplexProperty(subReader, keyValTypes[0], "value", dictType, resolver);
+                    {
+                        ReadElement(subReader);
+
+                        val = ReadComplexProperty(subReader, keyValTypes[1], "value", dictType, resolver);
+                    }
 
                     dict[key] = val;
                 }
@@ -522,6 +530,20 @@ namespace Apache.Ignite.Core.Impl.Common
             Debug.Assert(property != null);
 
             return property.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any();
+        }
+
+        /// <summary>
+        /// Reads the element.
+        /// </summary>
+        private static void ReadElement(XmlReader reader)
+        {
+            while (reader.Read() && reader.NodeType != XmlNodeType.Element)
+            {
+                // No-op.
+            }
+
+            if (reader.NodeType != XmlNodeType.Element)
+                throw new ConfigurationErrorsException("Failed to read element: " + reader);
         }
     }
 }
