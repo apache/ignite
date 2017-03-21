@@ -42,7 +42,6 @@ import org.apache.ignite.internal.managers.communication.GridCommunicationSendMe
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
@@ -111,8 +110,6 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAliveCacheSelfTest.class);
-        suite.addTestSuite(GridDiscoveryManagerSelfTest.RegularDiscovery.class);
-        suite.addTestSuite(GridDiscoveryManagerSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
