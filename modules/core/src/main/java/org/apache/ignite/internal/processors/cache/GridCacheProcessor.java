@@ -2805,7 +2805,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        desc.tryAccept(msg, true);
+        desc.tryAccept(msg);
     }
 
     /**
@@ -2821,7 +2821,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc == null)
             return;
 
-        desc.tryFinish(msg, true);
+        desc.tryFinish(msg);
     }
 
     /**

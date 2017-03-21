@@ -75,7 +75,7 @@ public class QueryIndexStates implements Serializable {
     }
 
     /**
-     * Try propose new index operation.
+     * Try propose new index operation. Result is communicated through message error state.
      *
      * @param locNodeId Local node ID.
      * @param msg Propose message.

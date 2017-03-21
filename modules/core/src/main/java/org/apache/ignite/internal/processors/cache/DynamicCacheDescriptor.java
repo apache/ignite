@@ -29,11 +29,9 @@ import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessa
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -356,6 +354,8 @@ public class DynamicCacheDescriptor {
         synchronized (idxStatesMux) {
             if (!idxStatesForStartFixed)
                 this.idxStates = idxStates != null ? idxStates.copy() : null;
+
+            // TODO: Validate that both states are compatible?
         }
     }
 
@@ -378,16 +378,12 @@ public class DynamicCacheDescriptor {
      * Try applying accept message.
      *
      * @param msg Message.
-     * @param disco Whether call is performed from discovery thread.
      * @return Result.
      */
-    public boolean tryAccept(IndexAcceptDiscoveryMessage msg, boolean disco) {
+    public boolean tryAccept(IndexAcceptDiscoveryMessage msg) {
         synchronized (idxStatesMux) {
-            if (disco && idxStatesForStartFixed) {
+            if (idxStatesForStartFixed)
                 msg.exchange(true);
-
-                return false;
-            }
 
             if (idxStates == null)
                 idxStates = new QueryIndexStates();
@@ -400,16 +396,12 @@ public class DynamicCacheDescriptor {
      * Try applying finish message.
      *
      * @param msg Message.
-     * @param disco Whether call is performed from discovery thread.
      * @return Result.
      */
-    public boolean tryFinish(IndexFinishDiscoveryMessage msg, boolean disco) {
+    public boolean tryFinish(IndexFinishDiscoveryMessage msg) {
         synchronized (idxStatesMux) {
-            if (disco && idxStatesForStartFixed) {
+            if (idxStatesForStartFixed)
                 msg.exchange(true);
-
-                return false;
-            }
 
             if (idxStates == null)
                 idxStates = new QueryIndexStates();
