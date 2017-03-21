@@ -316,8 +316,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         // Apply dynamic changes to candidates.
+        Collection<AbstractIndexOperation> ops = new ArrayList<>();
+
         if (initIdxStates != null) {
             Map<String, QueryIndexState> readyIdxStates = initIdxStates.readyOperations();
+            Map<String, QueryIndexActiveOperation> acceptedOps = initIdxStates.acceptedActiveOperations();
 
             for (QueryTypeCandidate cand : cands) {
                 QueryTypeDescriptorImpl desc = cand.descriptor();
@@ -329,13 +332,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (F.eq(desc.tableName(), idxState.tableName()))
                         QueryUtils.processDynamicIndexChange(idxName, idxState.index(), desc);
                 }
+
+                for (Map.Entry<String, QueryIndexActiveOperation> acceptedOpEntry : acceptedOps.entrySet()) {
+                    String idxName = acceptedOpEntry.getKey();
+                    AbstractIndexOperation op = acceptedOpEntry.getValue().operation();
+
+                    if (F.eq(desc.tableName(), op.tableName())) {
+                        QueryIndex idx = op instanceof CreateIndexOperation ? ((CreateIndexOperation)op).index() : null;
+
+                        QueryUtils.processDynamicIndexChange(idxName, idx, desc);
+                    }
+
+                    ops.add(op);
+                }
             }
         }
 
-        // TODO: Apply pending operations right away!
-
         // Ready to register at this point.
         registerCache0(space, cctx, cands);
+
+        // If cache was registered successfully, start pending operations.
+        for (AbstractIndexOperation op : ops)
+            startIndexOperation(op, true, null);
 
         // Warn about possible implicit deserialization.
         if (!mustDeserializeClss.isEmpty()) {
@@ -346,22 +364,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
         }
-    }
-
-    /**
-     * Find current coordinator.
-     *
-     * @return {@code True} if node is coordinator.
-     */
-    private ClusterNode findCoordinator() {
-        ClusterNode res = null;
-
-        for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
-            if (res == null || res.order() > node.order())
-                res = node;
-        }
-
-        return res;
     }
 
     /** {@inheritDoc} */
@@ -1305,6 +1307,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Unsupported IO message: " + msg);
+    }
+
+    /**
+     * Start index operation.
+     *
+     * @param op Operation.
+     * @param completed Completed flag.
+     * @param err Error.
+     */
+    private void startIndexOperation(AbstractIndexOperation op, boolean completed, Exception err) {
+        // TODO
     }
 
     /**

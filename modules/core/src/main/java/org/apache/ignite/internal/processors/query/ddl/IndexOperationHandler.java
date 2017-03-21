@@ -123,6 +123,13 @@ public class IndexOperationHandler {
     }
 
     /**
+     * @return Operation.
+     */
+    public AbstractIndexOperation operation() {
+        return op;
+    }
+
+    /**
      * @return Future completed when operation is ready.
      */
     public IgniteInternalFuture future() {
