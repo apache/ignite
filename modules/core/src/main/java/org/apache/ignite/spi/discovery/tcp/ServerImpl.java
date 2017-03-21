@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.ObjectStreamException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -1111,6 +1112,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         int connectAttempts = 1;
 
+        int sslConnectAttempts = 3;
+
         boolean joinReqSent;
 
         UUID locNodeId = getLocalNodeId();
@@ -1221,6 +1224,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                     errs = new ArrayList<>();
 
                 errs.add(e);
+
+                if (X.hasCause(e, SSLException.class)) {
+                    if (--sslConnectAttempts == 0)
+                        throw new IgniteException("Unable to establish secure connection. " +
+                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
+
+                    continue;
+                }
+
+                if (X.hasCause(e, StreamCorruptedException.class)) {
+                    if (--sslConnectAttempts == 0)
+                        throw new IgniteException("Unable to establish plain connection. " +
+                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
+
+                    continue;
+                }
 
                 if (timeoutHelper.checkFailureTimeoutReached(e))
                     break;
