@@ -17,11 +17,10 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import java.util.stream.IntStream;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.decompositions.LUDecomposition;
+import org.apache.ignite.math.decompositions.*;
 import org.apache.ignite.math.exceptions.*;
 import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.*;
@@ -316,6 +315,18 @@ public abstract class AbstractMatrix extends DistributionSupport implements Matr
                 for (int y = 0; y < cols; y++)
                     storageSet(x, y, val);
         }
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix assign(IntIntToDoubleFunction fun) {
+        int rows = sto.rowSize();
+        int cols = sto.columnSize();
+
+        for (int x = 0; x < rows; x++)
+            for (int y = 0; y < cols; y++)
+                storageSet(x, y, fun.apply(x, y));
 
         return this;
     }

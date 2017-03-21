@@ -126,13 +126,18 @@ public class TracerTest {
      */
     @Test
     public void testHtmlMatrixTracer() throws IOException {
-        Matrix mtx = makeRandomMatrix(100, 100);
-
-        // Default color mapping.
-        Tracer.showHtml(mtx);
+        Matrix mtx1 = makeRandomMatrix(100, 100);
         
         // Custom color mapping.
-        Tracer.showHtml(mtx, COLOR_MAPPER);
+        Tracer.showHtml(mtx1, COLOR_MAPPER);
+
+        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
+
+        Tracer.showHtml(mtx2);
     }
 
     /** */
