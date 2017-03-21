@@ -236,10 +236,10 @@ namespace Apache.Ignite.Core.Impl.Common
         private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType, 
             TypeResolver resolver)
         {
-            if (propType.IsAbstract)
-            {
-                var typeName = reader.GetAttribute(TypNameAttribute);
+            var typeName = reader.GetAttribute(TypNameAttribute);
 
+            if (propType.IsAbstract || typeName != null)
+            {
                 var derivedTypes = GetConcreteDerivedTypes(propType);
 
                 propType = typeName == null
