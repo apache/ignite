@@ -179,7 +179,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-
             case -46:
                 msg = new GridChangeGlobalStateMessageResponse();
 
