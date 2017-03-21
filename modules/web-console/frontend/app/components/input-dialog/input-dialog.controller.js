@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+export default class InputDialogController {
+    static $inject = ['deferred', 'ui'];
 
-import org.apache.ignite.mxbean.MXBeanDescription;
+    constructor(deferred, {title, label, value, toValidValue}) {
+        this.deferred = deferred;
+        this.title = title;
+        this.label = label;
+        this.value = value;
+        this.toValidValue = toValidValue;
+    }
 
-/**
- * MBean for {@code random} eviction policy.
- */
-@MXBeanDescription("MBean for random cache eviction policy.")
-public interface RandomEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
+    confirm() {
+        if (_.isFunction(this.toValidValue))
+            return this.deferred.resolve(this.toValidValue(this.value));
 
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @MXBeanDescription("Sets maximum allowed cache size.")
-    public void setMaxSize(int max);
+        this.deferred.resolve(this.value);
+    }
 }

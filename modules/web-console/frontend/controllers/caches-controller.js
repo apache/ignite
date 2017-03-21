@@ -19,8 +19,8 @@ import infoMessageTemplateUrl from 'views/templates/message.tpl.pug';
 
 // Controller for Caches screen.
 export default ['cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable',
-    function($scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils, LegacyTable) {
+    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable',
+    function($scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
@@ -517,15 +517,13 @@ export default ['cachesController', [
         };
 
         function _cacheNames() {
-            return _.map($scope.caches, function(cache) {
-                return cache.name;
-            });
+            return _.map($scope.caches, (cache) => cache.name);
         }
 
         // Clone cache with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
+                Input.clone($scope.backupItem.name, _cacheNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
