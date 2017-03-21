@@ -84,6 +84,9 @@ final class BinaryMetadataTransport {
     private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
 
     /** */
+    private volatile boolean stopping;
+
+    /** */
     private final List<BinaryMetadataUpdatedListener> binaryUpdatedLsnrs = new CopyOnWriteArrayList<>();
 
     /**
@@ -148,7 +151,11 @@ final class BinaryMetadataTransport {
 
         synchronized (this) {
             unlabeledFutures.add(resFut);
-            discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, locNodeId));
+
+            if (!stopping)
+                discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, locNodeId));
+            else
+                resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
         }
 
         return resFut;
@@ -200,6 +207,8 @@ final class BinaryMetadataTransport {
 
     /** */
     void stop() {
+        stopping = true;
+
         cancelFutures(MetadataUpdateResult.createUpdateDisabledResult());
     }
 
@@ -352,6 +361,12 @@ final class BinaryMetadataTransport {
      * @param fut Future.
      */
     private void initSyncFor(int typeId, int pendingVer, MetadataUpdateResultFuture fut) {
+        if (stopping) {
+            fut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
+
+            return;
+        }
+
         SyncKey key = new SyncKey(typeId, pendingVer);
 
         syncMap.put(key, fut);

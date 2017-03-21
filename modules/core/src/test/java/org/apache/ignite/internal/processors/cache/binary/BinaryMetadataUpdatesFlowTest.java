@@ -506,6 +506,31 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param builder Builder.
+     * @param desc Descriptor with parameters of BinaryObject to build.
+     * @return BinaryObject built by provided description
+     */
+    private static BinaryObject newBinaryObject(BinaryObjectBuilder builder, BinaryUpdateDescription desc) {
+        builder.setField(SEQ_NUM_FLD, desc.itemId + 1);
+
+        switch (desc.fieldType) {
+            case NUMBER:
+                builder.setField(desc.fieldName, getNumberFieldVal());
+                break;
+            case STRING:
+                builder.setField(desc.fieldName, getStringFieldVal());
+                break;
+            case ARRAY:
+                builder.setField(desc.fieldName, getArrayFieldVal());
+                break;
+            case OBJECT:
+                builder.setField(desc.fieldName, new Object());
+        }
+
+        return builder.build();
+    }
+
+    /**
      * Compute job executed on each node in cluster which constantly adds new entries to ignite cache
      * according to {@link BinaryUpdateDescription descriptions} it reads from shared queue.
      */
@@ -546,23 +571,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
                 BinaryObjectBuilder builder = ignite.binary().builder(BINARY_TYPE_NAME);
 
-                builder.setField(SEQ_NUM_FLD, desc.itemId + 1);
-
-                switch (desc.fieldType) {
-                    case NUMBER:
-                        builder.setField(desc.fieldName, getNumberFieldVal());
-                        break;
-                    case STRING:
-                        builder.setField(desc.fieldName, getStringFieldVal());
-                        break;
-                    case ARRAY:
-                        builder.setField(desc.fieldName, getArrayFieldVal());
-                        break;
-                    case OBJECT:
-                        builder.setField(desc.fieldName, new Object());
-                }
-
-                BinaryObject bo = builder.build();
+                BinaryObject bo = newBinaryObject(builder, desc);
 
                 cache.put(desc.itemId, bo);
 
