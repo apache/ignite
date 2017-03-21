@@ -1791,10 +1791,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 top.readLock();
 
                 try {
-                    if (top.stopping()) {
-
+                    if (top.stopping())
                         return;
-                    }
 
                     // Do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
@@ -1811,11 +1809,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         if (TEST_STRIPE_SUBMIT) {
                             for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
-                                if (stripeIdx == e.getKey())
-                                    continue;
-                                else {
+                                if (stripeIdx != e.getKey()) {
                                     ctx.kernalContext().getStripedExecutorService().execute(e.getKey(), new Runnable() {
                                         @Override public void run() {
+                                            // No-op.
                                         }
                                     });
                                 }
@@ -1824,7 +1821,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             update(affAssignment, ver, fut, node, req, null, completionCb);
                         }
                         else {
-                            req.responseHelper(new NearAtomicResponseHelper(stripemap.size()));
+                            req.setResCount(stripemap.size());
 
                             for (final Map.Entry<Integer, int[]> e : stripemap.entrySet()) {
                                 if (stripeIdx == e.getKey())
@@ -1911,22 +1908,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicAbstractUpdateRequest req,
         int[] stripeIdxs,
         UpdateReplyClosure completionCb) throws GridCacheEntryRemovedException {
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
-            node.id(),
-            req.futureId(),
-            req.partition(),
-            false,
-            ctx.deploymentEnabled());
-
-        //List<GridDhtCacheEntry> locked = lockEntries(req, req.topologyVersion(), stripeIdxs);
-
         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
-
-        // Assign next version for update inside entries lock.
-        //if (ver == null)
-
-        if (hasNear)
-            res.nearVersion(ver);
 
         if (msgLog.isDebugEnabled()) {
             msgLog.debug("Assigned update version [futId=" + req.futureId() +
@@ -1946,7 +1928,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             node,
             hasNear,
             req,
-            res,
+            null,
             ver,
             null,
             ctx.isDrEnabled(),
@@ -1960,11 +1942,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (retVal == null)
             retVal = new GridCacheReturn(ctx, node.isLocal(), true, null, true);
 
-        res.returnValue(retVal);
-
-        //unlockEntries(locked, null);
-
         if (TEST_STRIPE_SUBMIT){
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+                node.id(),
+                req.futureId(),
+                req.partition(),
+                false,
+                ctx.deploymentEnabled());
+
+            if (hasNear)
+                res.nearVersion(ver);
+
+            res.returnValue(retVal);
+
             for (int i = 0; i < req.size(); i++) {
                 fut.addWriteEntry(affinityAssignment,
                     req.key(i),
@@ -1983,9 +1973,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             completionCb.apply(req, res);
         }
         else {
-            GridNearAtomicUpdateResponse res0 = req.responseHelper().addResponse(res);
+            if (req.addRes()) {
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+                    node.id(),
+                    req.futureId(),
+                    req.partition(),
+                    false,
+                    ctx.deploymentEnabled());
 
-            if (res0 != null) {
+                if (hasNear)
+                    res.nearVersion(ver);
+
+                res.returnValue(retVal);
+
                 for (int i = 0; i < req.size(); i++) {
                     fut.addWriteEntry(affinityAssignment,
                         req.key(i),
@@ -2656,7 +2656,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             }
             catch (IgniteCheckedException e) {
-                res.addFailedKey(k, e);
+                if (res != null)
+                    res.addFailedKey(k, e);
             }
         }
 
