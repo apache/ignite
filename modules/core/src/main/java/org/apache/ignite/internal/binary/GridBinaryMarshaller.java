@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
+import java.util.Map;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.compression.CompressionType;
+import org.apache.ignite.internal.binary.compression.compressors.CompressionUtils;
+import org.apache.ignite.internal.binary.compression.compressors.Compressor;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -223,13 +230,38 @@ public class GridBinaryMarshaller {
     public static final byte DFLT_HDR_LEN = 24;
 
     /** */
+    public static final byte GZIPPED = 90;
+
+    /** */
+    public static final byte DEFLATED = 91;
+
+    /** */
+    public static final byte COMPRESSED_CUSTOM = 92;
+
+    /** */
     private final BinaryContext ctx;
+
+    /** */
+    private final Map<CompressionType, Compressor> compressorsSelector;
+
+    /**
+     * Indicates whether full compression mode is switched on.
+     * Full compression means all data (metadata+value) will be compress when serializing.
+     */
+    private final boolean fullCompressionMode;
+
+    /** Defines a compression type when <code>fullCompressionMode</code> switched on. */
+    private final CompressionType fullCompressionType;
 
     /**
      * @param ctx Context.
      */
     public GridBinaryMarshaller(BinaryContext ctx) {
         this.ctx = ctx;
+        IgniteConfiguration conf = ctx.configuration();
+        this.compressorsSelector = conf.getCompressorsSelector();
+        this.fullCompressionMode = conf.isFullCompressionMode();
+        this.fullCompressionType = conf.getFullCompressionType();
     }
 
     /**
@@ -244,7 +276,25 @@ public class GridBinaryMarshaller {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
             writer.marshal(obj);
 
-            return writer.array();
+            byte[] bytes = writer.array();
+
+            if (fullCompressionMode && !CompressionUtils.isCompressionType(bytes[0])) {
+                byte[] buffer;
+
+                Compressor compressor = compressorsSelector.get(fullCompressionType);
+
+                buffer = CompressionUtils.compress(compressor, bytes);
+
+                byte[] compressed = new byte[buffer.length + 1];
+
+                compressed[0] = (byte)fullCompressionType.getMode().typeId();
+
+                System.arraycopy(buffer, 0, compressed, 1, buffer.length);
+
+                return compressed;
+            }
+
+            return bytes;
         }
     }
 
@@ -258,6 +308,10 @@ public class GridBinaryMarshaller {
         assert bytes != null;
 
         BinaryContext oldCtx = pushContext(ctx);
+
+        if (CompressionUtils.isCompressionType(bytes[0])) {
+            bytes = decompress(bytes);
+        }
 
         try {
             return (T) BinaryUtils.unmarshal(BinaryHeapInputStream.create(bytes, 0), ctx, clsLdr);
@@ -299,6 +353,10 @@ public class GridBinaryMarshaller {
             return null;
 
         BinaryContext oldCtx = pushContext(ctx);
+
+        if (CompressionUtils.isCompressionType(arr[0])) {
+            arr = decompress(arr);
+        }
 
         try {
             return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr, true).deserialize();
@@ -398,5 +456,17 @@ public class GridBinaryMarshaller {
         }
 
         return ctx;
+    }
+
+    /**
+     * @param bytes Compressed bytes.
+     * @return Decompressed bytes.
+     */
+    private byte[] decompress(@NotNull byte[] bytes) {
+        assert CompressionUtils.isCompressionType(bytes[0]);
+
+        Compressor compressor = compressorsSelector.get(CompressionType.ofTypeId(bytes[0]));
+
+        return CompressionUtils.decompress(compressor, Arrays.copyOfRange(bytes, 1, bytes.length));
     }
 }

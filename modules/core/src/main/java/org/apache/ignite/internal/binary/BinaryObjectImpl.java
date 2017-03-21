@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,6 +35,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.binary.compression.CompressionType;
+import org.apache.ignite.internal.binary.compression.compressors.CompressionUtils;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -90,6 +93,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
+
+        if (CompressionUtils.isCompressionType(arr[0]))
+            arr = CompressionUtils.decompress(ctx, CompressionType.ofTypeId(arr[0]), Arrays.copyOfRange(arr, 1, arr.length));
 
         this.ctx = ctx;
         this.arr = arr;

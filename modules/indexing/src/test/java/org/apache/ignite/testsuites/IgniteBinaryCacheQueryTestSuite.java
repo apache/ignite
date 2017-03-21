@@ -19,9 +19,12 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.BinaryCompressedSerializationQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.BinaryCompressedSerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCompressedCacheBinaryObjectsScanSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryDuplicateIndexObjectPartitionedTransactionalSelfTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -43,6 +46,11 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
+
+        // Full compressed mode switched on
+        suite.addTestSuite(BinaryCompressedSerializationQuerySelfTest.class);
+        suite.addTestSuite(BinaryCompressedSerializationQueryWithReflectiveSerializerSelfTest.class);
+        suite.addTestSuite(IgniteCompressedCacheBinaryObjectsScanSelfTest.class);
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);

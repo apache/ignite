@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
@@ -41,6 +42,10 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.binary.compression.CompressionType;
+import org.apache.ignite.internal.binary.compression.compressors.Compressor;
+import org.apache.ignite.internal.binary.compression.compressors.DeflaterCompressor;
+import org.apache.ignite.internal.binary.compression.compressors.GZipCompressor;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -474,11 +479,26 @@ public class IgniteConfiguration {
     /** */
     private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
 
+    /** Consists mapping a compression type and an implementation of {@link Compressor}*/
+    private Map<CompressionType, Compressor> compressorsSelector;
+
+    /**
+     * Indicates whether full compression mode is switched on.
+     * Full compression means all data (metadata+value) will be compress when serializing.
+     */
+    private boolean fullCompressionMode;
+
+    /** Defines a compression type when <code>fullCompressionMode</code> switched on. */
+    private CompressionType fullCompressionType;
+
     /**
      * Creates valid grid configuration with all default values.
      */
     public IgniteConfiguration() {
-        // No-op.
+        compressorsSelector = new HashMap<>();
+        compressorsSelector.put(CompressionType.GZIP, new GZipCompressor());
+        compressorsSelector.put(CompressionType.DEFLATE, new DeflaterCompressor());
+        fullCompressionType = CompressionType.GZIP;
     }
 
     /**
@@ -576,6 +596,9 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        compressorsSelector = cfg.getCompressorsSelector();
+        fullCompressionMode = cfg.isFullCompressionMode();
+        fullCompressionType = cfg.getFullCompressionType();
     }
 
     /**
@@ -2684,6 +2707,51 @@ public class IgniteConfiguration {
         this.lateAffAssignment = lateAffAssignment;
 
         return this;
+    }
+
+    /**
+     * Gets the map, which consists mapping of {@link CompressionType} and used {@link Compressor}
+     *
+     * @return - the map which consists mapping of a type of compression and used {@link Compressor}
+     */
+    public Map<CompressionType, Compressor> getCompressorsSelector() {
+        return compressorsSelector;
+    }
+
+    /**
+     * Indicates whether full compression mode is switched on.
+     *
+     * @return - 'true' if full compression mode is enabled, otherwise 'false'.
+     */
+    public boolean isFullCompressionMode() {
+        return fullCompressionMode;
+    }
+
+    /**
+     * Switches a mode of full compression mode {@link CompressionType}.
+     *
+     * @param fullCompressionMode - flag, 'true' - switch on full compression mode, otherwise - switch off.
+     */
+    public void setFullCompressionMode(boolean fullCompressionMode) {
+        this.fullCompressionMode = fullCompressionMode;
+    }
+
+    /**
+     * Gets a type of full compression mode {@link CompressionType}.
+     *
+     * @return - type of full compression mode.
+     */
+    public CompressionType getFullCompressionType() {
+        return fullCompressionType;
+    }
+
+    /**
+     * Sets a type of full compression mode {@link CompressionType}.
+     *
+     * @param fullCompressionType - type of full compression mode.
+     */
+    public void setFullCompressionType(CompressionType fullCompressionType) {
+        this.fullCompressionType = fullCompressionType;
     }
 
     /** {@inheritDoc} */
