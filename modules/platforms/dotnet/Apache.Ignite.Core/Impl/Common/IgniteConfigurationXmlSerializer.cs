@@ -295,7 +295,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 message += ", specified type cannot be resolved: " + typeName;
             }
             else if (derivedTypes.Any())
+            {
                 message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
+            }
 
             throw new ConfigurationErrorsException(message);
         }
