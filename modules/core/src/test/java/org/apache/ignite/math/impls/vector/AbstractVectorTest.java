@@ -358,14 +358,6 @@ public class AbstractVectorTest {
     }
 
     /** */
-    @Test
-    public void dot() {
-        double[] data = initVector();
-
-        assertEquals(VALUE_NOT_EQUALS, testVector.dot(testVector), Arrays.stream(data).reduce(0, (x, y) -> x + y * y), NIL_DELTA);
-    }
-
-    /** */
     @Test(expected = NullPointerException.class)
     public void dotNegative() {
         testVector.dot(getAbstractVector(createEmptyStorage()));
@@ -381,117 +373,11 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void plus(){
-        double[] data0 = initVector();
-
-        VectorStorage storage = createStorage();
-
-        double[] data1 = storage.data().clone();
-
-        AbstractVector testVector1 = getAbstractVector(storage);
-
-        Vector plus = testVector.plus(testVector1);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] += data1[i];
-
-            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], NIL_DELTA);
-        }
-    }
-
-    /** */
-    @Test
-    public void plusDouble(){
-        double[] data0 = initVector();
-
-        Vector plus = testVector.plus(TEST_VALUE);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] += TEST_VALUE;
-
-            assertEquals(VALUE_NOT_EQUALS, plus.get(i), data0[i], NIL_DELTA);
-        }
-    }
-
-    /** */
-    @Test
-    public void minus(){
-        double[] data0 = initVector();
-
-        VectorStorage storage1 = createStorage();
-
-        double[] data1 = storage1.data().clone();
-
-        AbstractVector testVector1 = getAbstractVector(storage1);
-
-        Vector minus = testVector.minus(testVector1);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] -= data1[i];
-
-            assertEquals(VALUE_NOT_EQUALS, minus.get(i), data0[i], NIL_DELTA);
-        }
-    }
-
-    /** */
-    @Test
-    public void times(){
-        double[] data0 = initVector();
-
-        VectorStorage storage1 = createStorage();
-
-        double[] data1 = storage1.data().clone();
-
-        AbstractVector testVector1 = getAbstractVector(storage1);
-
-        Vector times = testVector.times(testVector1);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] *= data1[i];
-
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
-        }
-    }
-
-    /** */
-    @Test
-    public void timesDouble(){
-        double[] data0 = initVector();
-
-        double testVal = 2.5;
-
-        Vector times = testVector.times(testVal);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] *= testVal;
-
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
-        }
-    }
-
-    /** */
-    @Test
     public void getStorage(){
         assertNotNull(NULL_VALUE, getAbstractVector(createEmptyStorage()));
         assertNotNull(NULL_VALUE, getAbstractVector(createStorage()));
         testVector.setStorage(createStorage());
         assertNotNull(NULL_VALUE, testVector.getStorage());
-    }
-
-    /** */
-    @Test
-    public void divide(){
-        double[] data0 = initVector();
-
-        double testVal = 2.5;
-
-        Vector times = testVector.divide(testVal);
-
-        for (int i = 0; i < data0.length; i++) {
-            data0[i] /= testVal;
-
-            assertEquals(VALUE_NOT_EQUALS, times.get(i), data0[i], NIL_DELTA);
-        }
     }
 
     /** */

@@ -72,13 +72,8 @@ public class VectorNormTest {
             final Vector vOnHeap = new DenseLocalOnHeapVector(size);
             final Vector vOffHeap = new DenseLocalOffHeapVector(size);
 
-            for (Vector.Element e : v.all()) {
-                final int idx = size - 1 - e.index();
-                final double val = e.get();
-
-                vOnHeap.set(idx, val);
-                vOffHeap.set(idx, val);
-            }
+            invertValues(v, vOnHeap);
+            invertValues(v, vOffHeap);
 
             for (int idx = 0; idx < size; idx++) {
                 final double exp = v.get(idx);
@@ -101,6 +96,43 @@ public class VectorNormTest {
             assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
                 metric1.closeEnough());
         });
+    }
+
+    /** */
+    @Test
+    public void dotTest() {
+        consumeSampleVectors((v, desc) -> {
+            new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
+
+            final int size = v.size();
+            final Vector v1 = new DenseLocalOnHeapVector(size);
+
+            invertValues(v, v1);
+
+            final double actual = v.dot(v1);
+
+            double exp = 0;
+
+            for (Vector.Element e : v.all())
+                exp += e.get() * v1.get(e.index());
+
+            final Metric metric = new Metric(exp, actual);
+
+            assertTrue("Dot product not close enough at " + desc + ", " + metric,
+                metric.closeEnough());
+        });
+    }
+
+    /** */
+    private void invertValues(Vector src, Vector dst) {
+        final int size = src.size();
+
+        for (Vector.Element e : src.all()) {
+            final int idx = size - 1 - e.index();
+            final double val = e.get();
+
+            dst.set(idx, val);
+        }
     }
 
     /** */
