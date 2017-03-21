@@ -31,22 +31,37 @@ import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Default iterator for rebalancing.
+ */
 public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Iterators for full preloading, ordered by partition ID. */
     @Nullable private final NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators;
 
+    /** Iterator for historical preloading. */
     @Nullable private final IgniteHistoricalIterator historicalIterator;
 
+    /** Partitions marked as missing. */
     private final Set<Integer> missingParts = new HashSet<>();
 
+    /** Current full iterator. */
     private Map.Entry<Integer, GridCloseableIterator<CacheDataRow>> current;
 
+    /** */
     private boolean reachedEnd;
 
+    /** */
     private boolean closed;
 
+    /**
+     *
+     * @param fullIterators
+     * @param historicalIterator
+     * @throws IgniteCheckedException
+     */
     public IgniteRebalanceIteratorImpl(
         NavigableMap<Integer, GridCloseableIterator<CacheDataRow>> fullIterators,
         IgniteHistoricalIterator historicalIterator) throws IgniteCheckedException {
@@ -56,6 +71,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         advance();
     }
 
+    /** */
     private synchronized void advance() throws IgniteCheckedException {
         if (fullIterators.isEmpty())
             reachedEnd = true;
@@ -74,10 +90,12 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         assert current != null || reachedEnd;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean historical(int partId) {
-        return historicalIterator != null && historicalIterator.includes(partId);
+        return historicalIterator != null && historicalIterator.contains(partId);
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean isPartitionDone(int partId) {
         if (historical(partId))
             return historicalIterator.isDone(partId);
@@ -85,14 +103,17 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         return current == null || current.getKey() > partId;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean isPartitionMissing(int partId) {
         return missingParts.contains(partId);
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void setPartitionMissing(int partId) {
         missingParts.add(partId);
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean hasNextX() throws IgniteCheckedException {
         if (historicalIterator != null && historicalIterator.hasNextX())
             return true;
@@ -100,6 +121,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         return current != null && current.getValue().hasNextX();
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized CacheDataRow nextX() throws IgniteCheckedException {
         if (historicalIterator != null && historicalIterator.hasNextX())
             return historicalIterator.nextX();
@@ -114,10 +136,12 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("remove");
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void close() throws IgniteCheckedException {
         if (historicalIterator != null)
             historicalIterator.close();
@@ -130,14 +154,17 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         closed = true;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean isClosed() {
         return closed;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized Iterator<CacheDataRow> iterator() {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized boolean hasNext() {
         try {
             return hasNextX();
@@ -147,6 +174,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized CacheDataRow next() {
         try {
             return nextX();
@@ -156,6 +184,7 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void remove() {
         try {
             removeX();

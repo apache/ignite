@@ -604,6 +604,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         };
     }
 
+    /** {@inheritDoc} */
     @Override public GridCloseableIterator<CacheDataRow> reservedIterator(int part,
         AffinityTopologyVersion topVer) throws IgniteCheckedException {
         final GridDhtLocalPartition loc = cctx.topology().localPartition(part, cctx.topology().topologyVersion(), false);

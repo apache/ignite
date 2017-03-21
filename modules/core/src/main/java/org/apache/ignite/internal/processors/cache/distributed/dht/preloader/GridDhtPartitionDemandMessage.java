@@ -46,9 +46,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /** Update sequence. */
     private long updateSeq;
 
-    @GridDirectTransient
-    private IgniteDhtDemandedPartitionsMap parts;
+    /** Partitions map. */
+    @GridDirectTransient private IgniteDhtDemandedPartitionsMap parts;
 
+    /** Serialized partitions map. */
     private byte[] partsBytes;
 
     /** Topic. */

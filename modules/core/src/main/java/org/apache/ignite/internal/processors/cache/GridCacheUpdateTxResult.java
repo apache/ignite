@@ -33,6 +33,7 @@ public class GridCacheUpdateTxResult {
     @GridToStringInclude
     private final CacheObject oldVal;
 
+    /** WAL pointer. */
     @Nullable private final WALPointer walPtr;
 
     /** Partition idx. */
@@ -84,6 +85,9 @@ public class GridCacheUpdateTxResult {
         return oldVal;
     }
 
+    /**
+     * @return WAL pointer.
+     */
     @Nullable public WALPointer walPtr() {
         return walPtr;
     }

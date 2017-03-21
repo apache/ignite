@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -562,50 +563,57 @@ public class GridDhtPartitionDemander {
      * @return String representation of partitions list.
      */
     private String partitionsList(IgniteDhtDemandedPartitionsMap map) {
-        return "TMP_PARTITIONS_LIST";
+        List<Integer> s = new ArrayList<>(map.size());
 
-//        List<Integer> s = new ArrayList<>(c);
-//
-//        Collections.sort(s);
-//
-//        StringBuilder sb = new StringBuilder();
-//
-//        int start = -1;
-//
-//        int prev = -1;
-//
-//        Iterator<Integer> sit = s.iterator();
-//
-//        while (sit.hasNext()) {
-//            int p = sit.next();
-//
-//            if (start == -1) {
-//                start = p;
-//                prev = p;
-//            }
-//
-//            if (prev < p - 1) {
-//                sb.append(start);
-//
-//                if (start != prev)
-//                    sb.append("-").append(prev);
-//
-//                sb.append(", ");
-//
-//                start = p;
-//            }
-//
-//            if (!sit.hasNext()) {
-//                sb.append(start);
-//
-//                if (start != p)
-//                    sb.append("-").append(p);
-//            }
-//
-//            prev = p;
-//        }
-//
-//        return sb.toString();
+        for (Integer p : map.fullSet())
+            s.add(p);
+
+        for (Integer p : map.historicalMap().keySet()) {
+            assert !s.contains(p);
+
+            s.add(p);
+        }
+
+        Collections.sort(s);
+
+        StringBuilder sb = new StringBuilder();
+
+        int start = -1;
+
+        int prev = -1;
+
+        Iterator<Integer> sit = s.iterator();
+
+        while (sit.hasNext()) {
+            int p = sit.next();
+
+            if (start == -1) {
+                start = p;
+                prev = p;
+            }
+
+            if (prev < p - 1) {
+                sb.append(start);
+
+                if (start != prev)
+                    sb.append("-").append(prev);
+
+                sb.append(", ");
+
+                start = p;
+            }
+
+            if (!sit.hasNext()) {
+                sb.append(start);
+
+                if (start != p)
+                    sb.append("-").append(p);
+            }
+
+            prev = p;
+        }
+
+        return sb.toString();
     }
 
     /**
