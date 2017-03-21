@@ -9152,10 +9152,6 @@ public abstract class IgniteUtils {
 
             off += 4;
 
-            GridUnsafe.putLong(arr, off, drVer.globalTime());
-
-            off += 8;
-
             GridUnsafe.putLong(arr, off, drVer.order());
 
             off += 8;
@@ -9168,10 +9164,6 @@ public abstract class IgniteUtils {
         GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
         off += 4;
-
-        GridUnsafe.putLong(arr, off, ver.globalTime());
-
-        off += 8;
 
         GridUnsafe.putLong(arr, off, ver.order());
 
@@ -9188,16 +9180,14 @@ public abstract class IgniteUtils {
     public static GridCacheVersion readVersion(long ptr, boolean verEx) {
         GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
             GridUnsafe.getInt(ptr + 4),
-            GridUnsafe.getLong(ptr + 8),
-            GridUnsafe.getLong(ptr + 16));
+            GridUnsafe.getLong(ptr + 8));
 
         if (verEx) {
-            ptr += 24;
+            ptr += 16;
 
             ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
                 GridUnsafe.getInt(ptr + 4),
                 GridUnsafe.getLong(ptr + 8),
-                GridUnsafe.getLong(ptr + 16),
                 ver);
         }
 
@@ -9219,15 +9209,11 @@ public abstract class IgniteUtils {
 
         off += 4;
 
-        long globalTime = GridUnsafe.getLong(arr, off);
-
-        off += 8;
-
         long order = GridUnsafe.getLong(arr, off);
 
         off += 8;
 
-        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, order);
 
         if (verEx) {
             topVer = GridUnsafe.getInt(arr, off);
@@ -9238,13 +9224,9 @@ public abstract class IgniteUtils {
 
             off += 4;
 
-            globalTime = GridUnsafe.getLong(arr, off);
-
-            off += 8;
-
             order = GridUnsafe.getLong(arr, off);
 
-            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, order, ver);
         }
 
         return ver;

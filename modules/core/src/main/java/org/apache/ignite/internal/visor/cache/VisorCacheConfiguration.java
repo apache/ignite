@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
@@ -52,9 +51,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
 
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode;
-
-    /** Cache atomicity write ordering mode. */
-    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Eager ttl flag. */
     private boolean eagerTtl;
@@ -134,7 +130,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
         name = ccfg.getName();
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
-        atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
         eagerTtl = ccfg.isEagerTtl();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
         swapEnabled = ccfg.isSwapEnabled();
@@ -195,13 +190,6 @@ public class VisorCacheConfiguration implements Serializable, LessNamingBean {
      */
     public CacheAtomicityMode atomicityMode() {
         return atomicityMode;
-    }
-
-    /**
-     * @return Cache atomicity write ordering mode.
-     */
-    public CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return atomicWriteOrderMode;
     }
 
     /**
