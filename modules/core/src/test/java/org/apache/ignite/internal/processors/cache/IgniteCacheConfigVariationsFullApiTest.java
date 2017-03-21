@@ -3757,15 +3757,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @param k Key.
      */
     private void checkKeyAfterLocalEvict(IgniteCache<String, Integer> cache, String k) {
-        switch (memoryMode()) {
-            case ONHEAP_TIERED:
-                assertNull(cache.localPeek(k, ONHEAP));
-                assertEquals(offheapEnabled(), cache.localPeek(k, OFFHEAP) != null);
-
-                break;
-            default:
-                fail("Unexpected memory mode: " + memoryMode());
-        }
+        assertNull(cache.localPeek(k, ONHEAP));
+        assertEquals(offheapEnabled(), cache.localPeek(k, OFFHEAP) != null);
     }
 
     /**

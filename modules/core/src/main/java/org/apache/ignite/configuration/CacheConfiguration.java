@@ -1674,7 +1674,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Memory mode.
      */
-    public CacheMemoryMode getMemoryMode() {
+    @Deprecated public CacheMemoryMode getMemoryMode() {
         return null;
     }
 
@@ -1684,7 +1684,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param memMode Memory mode.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
+    @Deprecated public CacheConfiguration<K, V> setMemoryMode(CacheMemoryMode memMode) {
         //this.memMode = memMode;
 
         return this;

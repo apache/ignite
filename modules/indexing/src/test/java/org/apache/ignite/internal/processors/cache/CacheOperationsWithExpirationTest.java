@@ -28,7 +28,6 @@ import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
@@ -53,19 +51,16 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
 
     /**
      * @param atomicityMode Atomicity mode.
-     * @param memoryMode Memory mode.
      * @param offheapMem Offheap memory size.
      * @param idx Indexing enabled flag.
      * @return Cache configuration.
      */
     private CacheConfiguration<String, TestIndexedType> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         long offheapMem,
         boolean idx) {
         CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setOffHeapMaxMemory(offheapMem);
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
@@ -96,14 +91,14 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAtomicIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, true));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, false));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, false));
     }
 
     /**

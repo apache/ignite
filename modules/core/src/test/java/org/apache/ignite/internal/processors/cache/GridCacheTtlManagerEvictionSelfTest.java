@@ -21,9 +21,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,9 +48,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
     /** Cache mode. */
     private volatile CacheMode cacheMode;
 
-    /** Cache memory mode. */
-    private volatile CacheMemoryMode cacheMemoryMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -66,7 +61,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(cacheMemoryMode);
         ccfg.setEagerTtl(true);
         ccfg.setEvictionPolicy(new FifoEvictionPolicy(ENTRIES_LIMIT, 100));
         ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.HOURS, 12)));
@@ -80,21 +74,21 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testLocalEviction() throws Exception {
-        checkEviction(CacheMode.LOCAL, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.LOCAL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionedEviction() throws Exception {
-        checkEviction(CacheMode.PARTITIONED, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.PARTITIONED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testReplicatedEviction() throws Exception {
-        checkEviction(CacheMode.REPLICATED, CacheMemoryMode.ONHEAP_TIERED);
+        checkEviction(CacheMode.REPLICATED);
     }
 
     /**
@@ -102,9 +96,8 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private void checkEviction(CacheMode mode, CacheMemoryMode memoryMode) throws Exception {
+    private void checkEviction(CacheMode mode) throws Exception {
         cacheMode = mode;
-        cacheMemoryMode = memoryMode;
 
         final IgniteKernal g = (IgniteKernal)startGrid(0);
 

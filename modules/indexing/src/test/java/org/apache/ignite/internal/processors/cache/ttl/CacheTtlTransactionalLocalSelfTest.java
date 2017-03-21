@@ -21,7 +21,7 @@ import org.apache.ignite.cache.CacheMode;
 /**
  * TTL test with offheap.
  */
-public class CacheTtlOnheapTransactionalLocalSelfTest extends CacheTtlOnheapTransactionalAbstractSelfTest {
+public class CacheTtlTransactionalLocalSelfTest extends CacheTtlTransactionalAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.LOCAL;

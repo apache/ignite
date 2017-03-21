@@ -110,19 +110,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cfg.setExpiryPolicyFactory(factory);
 
-        cfg.setMemoryMode(memoryMode());
-
         if (disableEagerTtl)
             cfg.setEagerTtl(false);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
     }
 
     /**

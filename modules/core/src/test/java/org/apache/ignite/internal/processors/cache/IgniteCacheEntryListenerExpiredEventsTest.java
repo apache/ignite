@@ -28,7 +28,6 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,7 +43,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -85,14 +83,14 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testExpiredEventAtomic() throws Exception {
-        checkExpiredEvents(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED));
+        checkExpiredEvents(cacheConfiguration(PARTITIONED, ATOMIC));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExpiredEventTx() throws Exception {
-        checkExpiredEvents(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED));
+        checkExpiredEvents(cacheConfiguration(PARTITIONED, TRANSACTIONAL));
     }
 
     /**
@@ -143,18 +141,15 @@ public class IgniteCacheEntryListenerExpiredEventsTest extends GridCommonAbstrac
      *
      * @param cacheMode Cache mode.
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 

@@ -16,19 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache.ttl;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
  * TTL test with offheap.
  */
-public class CacheTtlOnheapAtomicLocalSelfTest extends CacheTtlOnheapAtomicAbstractSelfTest {
+public abstract class CacheTtlTransactionalAbstractSelfTest extends CacheTtlAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.LOCAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 }

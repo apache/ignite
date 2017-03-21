@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -380,13 +379,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      */
     protected CacheAtomicityMode atomicityMode() {
         return cacheConfiguration().getAtomicityMode();
-    }
-
-    /**
-     * @return {@code True} if values should be stored off-heap.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return cacheConfiguration().getMemoryMode();
     }
 
     /**

@@ -100,14 +100,14 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Cache memory mode.
      */
-    public CacheMemoryMode getMemoryMode() {
+    @Deprecated public CacheMemoryMode getMemoryMode() {
         return null;
     }
 
     /**
      * @param memoryMode Memory mode.
      */
-    public void setMemoryMode(CacheMemoryMode memoryMode) {
+    @Deprecated public void setMemoryMode(CacheMemoryMode memoryMode) {
     }
 
     /**

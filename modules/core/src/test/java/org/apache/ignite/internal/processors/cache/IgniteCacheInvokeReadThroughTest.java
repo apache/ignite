@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -40,69 +39,69 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThrou
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughAtomic0() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED, 0, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughAtomic1() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED, 1, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughAtomic2() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED, 2, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 2, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughAtomicNearCache() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, ONHEAP_TIERED, 1, true));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, ATOMIC, 1, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughAtomicReplicated() throws Exception {
-        invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, ONHEAP_TIERED, 0, false));
+        invokeReadThrough(cacheConfiguration(REPLICATED, ATOMIC, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughTx0() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 0, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughTx1() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 1, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughTx2() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 2, false));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 2, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughTxNearCache() throws Exception {
-        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, ONHEAP_TIERED, 1, true));
+        invokeReadThrough(cacheConfiguration(PARTITIONED, TRANSACTIONAL, 1, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInvokeReadThroughTxReplicated() throws Exception {
-        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, ONHEAP_TIERED, 0, false));
+        invokeReadThrough(cacheConfiguration(REPLICATED, TRANSACTIONAL, 0, false));
     }
 }

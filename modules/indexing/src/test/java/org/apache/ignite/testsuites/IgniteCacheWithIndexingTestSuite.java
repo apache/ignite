@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfT
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapAtomicPartitionedSelfTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapTransactionalLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlOnheapTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 
 /**
  * Cache tests using indexing.
@@ -51,10 +51,10 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
-        suite.addTestSuite(CacheTtlOnheapTransactionalLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapAtomicLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapAtomicPartitionedSelfTest.class);
+        suite.addTestSuite(CacheTtlTransactionalLocalSelfTest.class);
+        suite.addTestSuite(CacheTtlTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(CacheTtlAtomicLocalSelfTest.class);
+        suite.addTestSuite(CacheTtlAtomicPartitionedSelfTest.class);
 
         suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
         suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);

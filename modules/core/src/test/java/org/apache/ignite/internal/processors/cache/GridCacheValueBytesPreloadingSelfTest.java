@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -33,9 +31,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTest {
-    /** Memory mode. */
-    private CacheMemoryMode memMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -58,7 +53,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
@@ -69,8 +63,6 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testOnHeapTiered() throws Exception {
-        memMode = ONHEAP_TIERED;
-
         startGrids(1);
 
         try {
