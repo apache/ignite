@@ -929,5 +929,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             ((IgniteKernal)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Object> nodeAttributes() {
+            return Collections.emptyMap();
+        }
     }
 }
