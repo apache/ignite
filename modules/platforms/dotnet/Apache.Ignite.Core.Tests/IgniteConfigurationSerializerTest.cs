@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(type, y.GetType());
 
-            if (type.IsValueType || type == typeof (string) || type.IsSubclassOf(typeof (Type)))
+            if (type.IsValueType || type == typeof(string) || type.IsSubclassOf(typeof(Type)))
             {
                 Assert.AreEqual(x, y);
                 return;
@@ -551,8 +551,9 @@ namespace Apache.Ignite.Core.Tests
                     Assert.IsNull(xVal);
                     Assert.IsNull(yVal);
                 }
-                else if (propType != typeof(string) && propType.IsGenericType 
-                    && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
+                else if (propType != typeof(string) && propType.IsGenericType
+                         && (propType.GetGenericTypeDefinition() == typeof(ICollection<>)
+                             || propType.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
                 {
                     var xCol = ((IEnumerable) xVal).OfType<object>().ToList();
                     var yCol = ((IEnumerable) yVal).OfType<object>().ToList();
@@ -606,7 +607,7 @@ namespace Apache.Ignite.Core.Tests
                             EqualityComparer = new BinaryFieldEqualityComparer()
                         }
                     },
-                    Types = new[] {typeof (string).FullName},
+                    Types = new[] {typeof(string).FullName},
                     DefaultIdMapper = new IdMapper(),
                     DefaultKeepDeserialized = true,
                     DefaultNameMapper = new NameMapper(),
@@ -643,7 +644,7 @@ namespace Apache.Ignite.Core.Tests
                             {
                                 Fields = new[]
                                 {
-                                    new QueryField("field", typeof (int)) { IsKeyField = true }
+                                    new QueryField("field", typeof(int)) {IsKeyField = true}
                                 },
                                 Indexes = new[]
                                 {
@@ -653,8 +654,8 @@ namespace Apache.Ignite.Core.Tests
                                 {
                                     new QueryAlias("field.field", "fld")
                                 },
-                                KeyType = typeof (string),
-                                ValueType = typeof (long)
+                                KeyType = typeof(string),
+                                ValueType = typeof(long)
                             },
                         },
                         ReadFromBackup = false,
@@ -677,12 +678,16 @@ namespace Apache.Ignite.Core.Tests
                             NearStartSize = 5,
                             EvictionPolicy = new FifoEvictionPolicy
                             {
-                                BatchSize = 19, MaxMemorySize = 1024, MaxSize = 555
+                                BatchSize = 19,
+                                MaxMemorySize = 1024,
+                                MaxSize = 555
                             }
                         },
                         EvictionPolicy = new LruEvictionPolicy
                         {
-                            BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                            BatchSize = 18,
+                            MaxMemorySize = 1023,
+                            MaxSize = 554
                         },
                         AffinityFunction = new FairAffinityFunction
                         {
@@ -745,7 +750,8 @@ namespace Apache.Ignite.Core.Tests
                 SuppressWarnings = true,
                 WorkDirectory = @"c:\work",
                 IsDaemon = true,
-                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(),
+                    x => x%2 == 0 ? (object) x : new FooClass {Bar = x.ToString()}),
                 AtomicConfiguration = new AtomicConfiguration
                 {
                     CacheMode = CacheMode.Replicated,
@@ -792,7 +798,7 @@ namespace Apache.Ignite.Core.Tests
                     ReadStripesNumber = 77,
                     BaseDirectory = "test"
                 },
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() }
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration()}
             };
         }
 
