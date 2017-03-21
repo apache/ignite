@@ -281,24 +281,23 @@ namespace Apache.Ignite.Core.Impl.Common
                 : resolver.ResolveType(typeName) ??
                   GetConcreteDerivedTypes(propType).FirstOrDefault(x => x.Name == typeName);
 
-            if (res == null)
+            if (res != null)
+                return res;
+
+            var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
+                propName);
+
+            var derivedTypes = GetConcreteDerivedTypes(propType);
+
+
+            if (typeName != null)
             {
-                var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
-                    propName);
-
-                var derivedTypes = GetConcreteDerivedTypes(propType);
-
-
-                if (typeName != null)
-                {
-                    message += ", specified type cannot be resolved: " + typeName;
-                }
-                else if (derivedTypes.Any())
-                    message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
-
-                throw new ConfigurationErrorsException(message);
+                message += ", specified type cannot be resolved: " + typeName;
             }
-            return res;
+            else if (derivedTypes.Any())
+                message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
+
+            throw new ConfigurationErrorsException(message);
         }
 
         /// <summary>
