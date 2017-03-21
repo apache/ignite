@@ -20,11 +20,17 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.Vector;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Spliterator;
 import java.util.function.BiConsumer;
 
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterator.SIZED;
 import static org.junit.Assert.*;
+
+import static org.apache.ignite.math.impls.MathTestConstants.*;
 
 /** */
 public class VectorIterableTest {
@@ -54,23 +60,6 @@ public class VectorIterableTest {
         consumeSampleVectors(
             (v, desc) -> iteratorTestBound(v.all().iterator(), desc)
         );
-    }
-
-    /** */
-    private void iteratorTestBound(Iterator<Vector.Element> it, String desc) {
-        while (it.hasNext())
-            assertNotNull(it.next());
-
-        boolean expECaught = false;
-
-        try {
-            it.next();
-        } catch (NoSuchElementException e) {
-            expECaught = true;
-        }
-
-        assertTrue("Expected exception missed for " + desc,
-            expECaught);
     }
 
     /** */ @Test
@@ -183,6 +172,116 @@ public class VectorIterableTest {
             (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
                 -> assertEquals("Unexpected num zeroes at " + desc,
                 (int)numZeroes, vec.size() - vec.nonZeroElements())));
+    }
+
+    /** */ @Test
+    public void allSpliteratorTest() {
+        consumeSampleVectors(
+            (v, desc) -> {
+                final String desc1 = " " + desc;
+
+                Spliterator<Double> spliterator = v.allSpliterator();
+
+                assertNotNull(NULL_VALUE + desc1, spliterator);
+
+                assertNull(NOT_NULL_VALUE + desc1, spliterator.trySplit());
+
+                assertTrue(UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+
+                if (!readOnly(v))
+                    fillWithNonZeroes(v);
+
+                spliterator = v.allSpliterator();
+
+                assertNotNull(NULL_VALUE + desc1, spliterator);
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(), v.size());
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), v.size());
+
+                assertTrue(UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+
+                Spliterator<Double> secondHalf = spliterator.trySplit();
+
+                assertNull(NOT_NULL_VALUE + desc1, secondHalf);
+
+                spliterator.tryAdvance(x -> {
+                });
+            }
+        );
+    }
+
+    /** */ @Test
+    public void nonZeroSpliteratorTest() {
+        consumeSampleVectors(
+            (v, desc) -> consumeSampleVectorsWithZeroes(v, (vec, numZeroes)
+                -> {
+                final String desc1 = " Num zeroes " + numZeroes + " " + desc;
+
+                Spliterator<Double> spliterator = vec.nonZeroSpliterator();
+
+                assertNotNull(NULL_VALUE + desc1, spliterator);
+
+                assertNull(NOT_NULL_VALUE + desc1, spliterator.trySplit());
+
+                assertTrue(UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+
+                spliterator = vec.nonZeroSpliterator();
+
+                assertNotNull(NULL_VALUE + desc1, spliterator);
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(), vec.size() - numZeroes);
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(), vec.size() - numZeroes);
+
+                assertTrue(UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+
+                Spliterator<Double> secondHalf = spliterator.trySplit();
+
+                assertNull(NOT_NULL_VALUE + desc1, secondHalf);
+
+                double[] data = new double[vec.size()];
+
+                for (Vector.Element e : vec.all())
+                    data[e.index()] = e.get();
+
+                spliterator = vec.nonZeroSpliterator();
+
+                assertNotNull(NULL_VALUE + desc1, spliterator);
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.estimateSize(),
+                    Arrays.stream(data).filter(x -> x != 0d).count());
+
+                assertEquals(VALUE_NOT_EQUALS + desc1, spliterator.getExactSizeIfKnown(),
+                    Arrays.stream(data).filter(x -> x != 0d).count());
+
+                assertTrue(UNEXPECTED_VALUE + desc1, spliterator.hasCharacteristics(ORDERED | SIZED));
+
+                secondHalf = spliterator.trySplit();
+
+                assertNull(NOT_NULL_VALUE + desc1, secondHalf);
+
+                if (!spliterator.tryAdvance(x -> {
+                }))
+                    fail(NO_NEXT_ELEMENT + desc1);
+            }));
+    }
+
+    /** */
+    private void iteratorTestBound(Iterator<Vector.Element> it, String desc) {
+        while (it.hasNext())
+            assertNotNull(it.next());
+
+        boolean expECaught = false;
+
+        try {
+            it.next();
+        } catch (NoSuchElementException e) {
+            expECaught = true;
+        }
+
+        assertTrue("Expected exception missed for " + desc,
+            expECaught);
     }
 
     /** */

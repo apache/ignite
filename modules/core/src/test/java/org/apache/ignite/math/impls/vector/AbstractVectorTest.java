@@ -27,7 +27,6 @@ import org.junit.*;
 import java.util.*;
 import java.util.stream.*;
 
-import static java.util.Spliterator.*;
 import static org.apache.ignite.math.impls.MathTestConstants.*;
 import static org.junit.Assert.*;
 
@@ -356,86 +355,6 @@ public class AbstractVectorTest {
     @Test(expected = NullPointerException.class)
     public void assignArrEmpty() {
         testVector.assign(new double[0]);
-    }
-
-    /** */
-    @Test
-    public void allSpliterator() {
-
-        Spliterator<Double> spliterator = testVector.allSpliterator();
-
-        assertNotNull(NULL_VALUE, spliterator);
-
-        assertNull(NOT_NULL_VALUE, spliterator.trySplit());
-
-        assertTrue(UNEXPECTED_VALUE, spliterator.hasCharacteristics(ORDERED | SIZED));
-
-        double[] data = initVector();
-
-        spliterator = testVector.allSpliterator();
-
-        assertNotNull(NULL_VALUE, spliterator);
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.estimateSize(), data.length);
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.getExactSizeIfKnown(), data.length);
-
-        assertTrue(UNEXPECTED_VALUE, spliterator.hasCharacteristics(ORDERED | SIZED));
-
-        Spliterator<Double> secondHalf = spliterator.trySplit();
-
-        assertNull(NOT_NULL_VALUE, secondHalf);
-
-        spliterator.tryAdvance(x -> {
-        });
-    }
-
-    /** */
-    @Test
-    public void nonZeroSpliterator() {
-        Spliterator<Double> spliterator = testVector.nonZeroSpliterator();
-
-        assertNotNull(NULL_VALUE, spliterator);
-
-        assertNull(NOT_NULL_VALUE, spliterator.trySplit());
-
-        assertTrue(UNEXPECTED_VALUE, spliterator.hasCharacteristics(ORDERED | SIZED));
-
-        double[] data = initVector();
-
-        spliterator = testVector.nonZeroSpliterator();
-
-        assertNotNull(NULL_VALUE, spliterator);
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.estimateSize(), data.length);
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.getExactSizeIfKnown(), data.length);
-
-        assertTrue(UNEXPECTED_VALUE, spliterator.hasCharacteristics(ORDERED | SIZED));
-
-        Spliterator<Double> secondHalf = spliterator.trySplit();
-
-        assertNull(NOT_NULL_VALUE, secondHalf);
-
-        addNilValues(data);
-
-        spliterator = testVector.nonZeroSpliterator();
-
-        assertNotNull(NULL_VALUE, spliterator);
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.estimateSize(), Arrays.stream(data).filter(x -> x != 0d).count());
-
-        assertEquals(VALUE_NOT_EQUALS, spliterator.getExactSizeIfKnown(), Arrays.stream(data).filter(x -> x != 0d).count());
-
-        assertTrue(UNEXPECTED_VALUE, spliterator.hasCharacteristics(ORDERED | SIZED));
-
-        secondHalf = spliterator.trySplit();
-
-        assertNull(NOT_NULL_VALUE, secondHalf);
-
-        if (!spliterator.tryAdvance(x -> {
-        }))
-            fail(NO_NEXT_ELEMENT);
     }
 
     /** */

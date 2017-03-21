@@ -201,34 +201,6 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */ @Test
-    public void normalizeTest() {
-        normalizeTest(2, (val, len) -> val / len, Vector::normalize);
-    }
-
-    /** */ @Test
-    public void normalizePowerTest() {
-        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
-    }
-
-    /** */ @Test
-    public void logNormalizeTest() {
-        normalizeTest(2, (val, len) -> Math.log1p(val) / (len * Math.log(2)), Vector::logNormalize);
-    }
-
-    /** */ @Test
-    public void logNormalizePowerTest() {
-        for (double pow : new double[] {1.1, 2, 2.5})
-            normalizeTest(pow, (val, norm) -> Math.log1p(val) / (norm * Math.log(pow)), (v) -> v.logNormalize(pow));
-    }
-
-    /** */ @Test
-    public void kNormTest() {
-        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            toDoubleTest(pow, ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
-    }
-
-    /** */ @Test
     public void plusVectorTest() {
         operationVectorTest((operand1, operand2) -> operand1 + operand2, Vector::plus);
     }
@@ -265,70 +237,23 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
     /** */ @Test
     public void sumTest() {
-        toDoubleTest(null,
+        toDoubleTest(
             ref -> Arrays.stream(ref).sum(),
             Vector::sum);
     }
 
     /** */ @Test
     public void minValueTest() {
-        toDoubleTest(null,
+        toDoubleTest(
             ref -> Arrays.stream(ref).min().getAsDouble(),
             v -> v.minValue().get());
     }
 
     /** */ @Test
     public void maxValueTest() {
-        toDoubleTest(null,
+        toDoubleTest(
             ref -> Arrays.stream(ref).max().getAsDouble(),
             v -> v.maxValue().get());
-    }
-
-    /** */
-    @Test
-    public void getLengthSquaredTest() {
-        toDoubleTest(2.0, ref -> new Norm(ref, 2).sumPowers(), Vector::getLengthSquared);
-    }
-
-    /** */
-    @Test
-    public void getDistanceSquaredTest() {
-        consumeSampleVectors((v, desc) -> {
-            new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
-
-            final int size = v.size();
-            final Vector vOnHeap = new DenseLocalOnHeapVector(size);
-            final Vector vOffHeap = new DenseLocalOffHeapVector(size);
-
-            for (Vector.Element e : v.all()) {
-                final int idx = size - 1 - e.index();
-                final double val = e.get();
-
-                vOnHeap.set(idx, val);
-                vOffHeap.set(idx, val);
-            }
-
-            for (int idx = 0; idx < size; idx++) {
-                final double exp = v.get(idx);
-                final int idxMirror = size - 1 - idx;
-
-                assertTrue("On heap vector difference at " + desc + ", idx " + idx,
-                    exp - vOnHeap.get(idxMirror) == 0);
-                assertTrue("Off heap vector difference at " + desc + ", idx " + idx,
-                    exp - vOffHeap.get(idxMirror) == 0);
-            }
-
-            final double exp = vOnHeap.minus(v).getLengthSquared(); // IMPL NOTE this won't mutate vOnHeap
-            final Metric metric = new Metric(exp, v.getDistanceSquared(vOnHeap));
-
-            assertTrue("On heap vector not close enough at " + desc + ", " + metric,
-                metric.closeEnough());
-
-            final Metric metric1 = new Metric(exp, v.getDistanceSquared(vOffHeap));
-
-            assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
-                metric1.closeEnough());
-        });
     }
 
     /** */ @Test
@@ -494,7 +419,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    private void toDoubleTest(Double val, Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
+    private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
@@ -506,25 +431,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
             final Metric metric = new Metric(exp, obtained);
 
             assertTrue("Not close enough at " + desc
-                + (val == null ? "" : ", value " + val) + ", " + metric, metric.closeEnough());
-        });
-    }
-
-    /** */
-    private void normalizeTest(double pow, BiFunction<Double, Double, Double> operation,
-        Function<Vector, Vector> vecOperation) {
-        consumeSampleVectors((v, desc) -> {
-            final int size = v.size();
-            final double[] ref = new double[size];
-            final boolean nonNegative = pow != (int)pow;
-
-            final ElementsChecker checker = new ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
-            final double norm = new Norm(ref, pow).calculate();
-
-            for (int idx = 0; idx < size; idx++)
-                ref[idx] = operation.apply(ref[idx], norm);
-
-            checker.assertCloseEnough(vecOperation.apply(v), ref);
+                + ", " + metric, metric.closeEnough());
         });
     }
 
@@ -676,73 +583,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    private static class Norm {
-        /** */
-        private final double[] arr;
-
-        /** */
-        private final Double pow;
-
-        /** */
-        Norm(double[] arr, double pow) {
-            this.arr = arr;
-            this.pow = pow;
-        }
-
-        /** */
-        double calculate() {
-            if (pow.equals(0.0))
-                return countNonZeroes(); // IMPL NOTE this is beautiful if you think of it
-
-            if (pow.equals(Double.POSITIVE_INFINITY))
-                return maxAbs();
-
-            return Math.pow(sumPowers(), 1 / pow);
-        }
-
-        /** */
-        double sumPowers() {
-            if (pow.equals(0.0))
-                return countNonZeroes();
-
-            double norm = 0;
-
-            for (double val : arr)
-                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
-
-            return norm;
-        }
-
-        /** */
-        private int countNonZeroes() {
-            int cnt = 0;
-
-            final Double zero = 0.0;
-
-            for (double val : arr)
-                if (!zero.equals(val))
-                    cnt++;
-
-            return cnt;
-        }
-
-        /** */
-        private double maxAbs() {
-            double res = 0;
-
-            for (double val : arr) {
-                final double abs = Math.abs(val);
-
-                if (abs > res)
-                    res = abs;
-            }
-
-            return res;
-        }
-    }
-
-    /** */
-    private static class ElementsChecker {
+    static class ElementsChecker {
         /** */
         private final String fixtureDesc;
 
@@ -836,7 +677,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+    static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
         /** */
         private final double exp;
 
