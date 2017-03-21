@@ -199,7 +199,7 @@ mixin paragraph-scan
                 | Scan on selected node
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
-            .error(ng-switch-when='error') Error: {{paragraph.errMsg}}
+            .error(ng-switch-when='error') Error: {{paragraph.error.message}}
             .empty(ng-switch-when='empty') Result set is empty
             .table(ng-switch-when='table')
                 +table-result-heading-scan
@@ -247,7 +247,7 @@ mixin paragraph-query
             .pull-right
                 +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
-            .error(ng-switch-when='error') Error: {{paragraph.errMsg}}
+            .error(ng-switch-when='error') Error: {{paragraph.error.message}}
             .empty(ng-switch-when='empty') Result set is empty
             .table(ng-switch-when='table')
                 +table-result-heading-query
@@ -255,9 +255,10 @@ mixin paragraph-query
             .chart(ng-switch-when='chart')
                 +chart-result
             .footer.clearfix
-                a.pull-left(ng-click='showResultQuery(paragraph)') Show query
+                a.pull-left(ng-show='paragraph.resultType() === "error"' ng-click='showStackTrace(paragraph)') Show error details
+                a.pull-left(ng-show='paragraph.resultType() !== "error"' ng-click='showResultQuery(paragraph)') Show query
 
-                -var nextVisibleCondition = 'paragraph.resultType() != "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
