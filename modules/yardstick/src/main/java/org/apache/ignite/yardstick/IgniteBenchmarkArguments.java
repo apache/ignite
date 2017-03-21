@@ -101,6 +101,10 @@ public class IgniteBenchmarkArguments {
     public int preloadAmount = 500_000;
 
     /** */
+    @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
+    public long preloadLogsInterval = 30_000;
+
+    /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
     private int jobs = 10;
 
@@ -147,6 +151,14 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
     private boolean keysPerThread;
+
+    /** */
+    @Parameter(names = {"-ac", "--additionalCachesNumber"}, description = "Number of additional caches")
+    private int additionalCachesNum;
+
+    /** */
+    @Parameter(names = {"-acn", "--additionalCachesName"}, description = "Template cache name for additional caches")
+    private String additionalCachesName;
 
     /** */
     @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
@@ -290,6 +302,13 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Preload log printing interval in seconds.
+     */
+    public long preloadLogsInterval() {
+        return preloadLogsInterval;
+    }
+
+    /**
      * @return Configuration file.
      */
     public String configuration() {
@@ -378,6 +397,20 @@ public class IgniteBenchmarkArguments {
      */
     public boolean keysPerThread() {
         return keysPerThread;
+    }
+
+    /**
+     * @return Number of additional caches.
+     */
+    public int additionalCachesNumber() {
+        return additionalCachesNum;
+    }
+
+    /**
+     * @return Name of cache which will be taken as base for additional caches.
+     */
+    public String additionalCachesName() {
+        return additionalCachesName;
     }
 
     /**

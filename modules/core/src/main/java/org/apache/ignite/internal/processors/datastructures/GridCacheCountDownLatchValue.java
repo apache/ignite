@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,9 +33,11 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
     private static final long serialVersionUID = 0L;
 
     /** Count. */
+    @GridToStringInclude(sensitive = true)
     private int cnt;
 
     /** Initial count. */
+    @GridToStringInclude(sensitive = true)
     private int initCnt;
 
     /** Auto delete flag. */

@@ -50,8 +50,8 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     private static int idx;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 

@@ -33,6 +33,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -59,6 +61,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,8 +104,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -248,7 +251,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             l1.await();
 
             // This will wait until data streamer finishes loading.
-            stopGrid(getTestGridName(1), false);
+            stopGrid(getTestIgniteInstanceName(1), false);
 
             f1.get();
 
@@ -524,7 +527,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                                 U.sleep(1000);
 
-                                stopGrid(getTestGridName(restartNodeIdx), true);
+                                stopGrid(getTestIgniteInstanceName(restartNodeIdx), true);
 
                                 info(">>>>>>> Stopped node: " + id);
                             }
@@ -624,7 +627,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             ldr = g1.dataStreamer(null);
 
             // This will close loader.
-            stopGrid(getTestGridName(1), false);
+            stopGrid(getTestIgniteInstanceName(1), false);
 
             try {
                 ldr.addData(0, 0);
@@ -949,6 +952,94 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testLocalDataStreamerDedicatedThreadPool() throws Exception {
+        try {
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            final IgniteCache<String, String> cache = ignite.cache(null);
+
+            IgniteDataStreamer<String, String> ldr = ignite.dataStreamer(null);
+            try {
+                ldr.receiver(new StreamReceiver<String, String>() {
+                    @Override public void receive(IgniteCache<String, String> cache,
+                        Collection<Map.Entry<String, String>> entries) throws IgniteException {
+                        String threadName = Thread.currentThread().getName();
+
+                        cache.put("key", threadName);
+                    }
+                });
+                ldr.addData("key", "value");
+
+                ldr.tryFlush();
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return cache.get("key") != null;
+                    }
+                }, 3_000);
+            }
+            finally {
+                ldr.close(true);
+            }
+
+            assertNotNull(cache.get("key"));
+
+            assertTrue(cache.get("key").startsWith("data-streamer"));
+
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteDataStreamerDedicatedThreadPool() throws Exception {
+        try {
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            useCache = false;
+
+            Ignite client = startGrid(0);
+
+            final IgniteCache<String, String> cache = ignite.cache(null);
+
+            IgniteDataStreamer<String, String> ldr = client.dataStreamer(null);
+
+            try {
+                ldr.receiver(new StringStringStreamReceiver());
+
+                ldr.addData("key", "value");
+
+                ldr.tryFlush();
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return cache.get("key") != null;
+                    }
+                }, 3_000);
+            }
+            finally {
+                ldr.close(true);
+            }
+
+            assertNotNull(cache.get("key"));
+
+            assertTrue(cache.get("key").startsWith("data-streamer"));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      *
      */
     public static class TestObject {
@@ -1022,6 +1113,19 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 cache.put(e.getKey(), new TestObject(e.getValue().val + 1));
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class StringStringStreamReceiver implements StreamReceiver<String, String> {
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<String, String> cache,
+            Collection<Map.Entry<String, String>> entries) throws IgniteException {
+            String threadName = Thread.currentThread().getName();
+
+            cache.put("key", threadName);
         }
     }
 }

@@ -242,7 +242,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                                         session + "]");
                                 }
                             }
-                            catch (JMSException e) {
+                            catch (JMSException ignored) {
                                 log.warning("Error while committing session: from batch time-based completion " +
                                     "[session=" + session + "]");
                             }

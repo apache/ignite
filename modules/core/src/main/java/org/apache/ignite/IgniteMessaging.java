@@ -77,6 +77,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * By default all local listeners will be executed in the calling thread, or if you use
+     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
+     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
@@ -87,6 +91,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
 
     /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * By default all local listeners will be executed in the calling thread, or if you use
+     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
+     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
@@ -99,7 +107,8 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
      * this method will arrive in the same order they were sent. Note that if a topic is used
-     * for ordered messages, then it cannot be reused for non-ordered messages.
+     * for ordered messages, then it cannot be reused for non-ordered messages. Note that local listeners
+     * are always executed in public thread pool, no matter default or {@link #withAsync()} mode is used.
      * <p>
      * The {@code timeout} parameter specifies how long an out-of-order message will stay in a queue,
      * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered

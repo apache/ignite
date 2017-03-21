@@ -31,24 +31,32 @@ namespace
 
         int8_t hdr = stream.ReadInt8();
 
-        if (hdr != IGNITE_HDR_FULL)
-            return false;
+        switch (hdr)
+        {
+            case IGNITE_TYPE_BINARY:
+            {
+                // Header field + Length field + Object itself + Offset field
+                len = 1 + 4 + stream.ReadInt32() + 4;
 
-        int8_t protoVer = stream.ReadInt8();
+                break;
+            }
 
-        if (protoVer != IGNITE_PROTO_VER)
-            return false;
+            case IGNITE_TYPE_OBJECT:
+            {
+                int8_t protoVer = stream.ReadInt8();
 
-        // Skipping flags
-        stream.ReadInt16();
+                if (protoVer != IGNITE_PROTO_VER)
+                    return false;
 
-        // Skipping typeId
-        stream.ReadInt32();
+                // Skipping flags, typeId and hash code
+                len = stream.ReadInt32(stream.Position() + 2 + 4 + 4);
 
-        // Skipping hash code
-        stream.ReadInt32();
+                break;
+            }
 
-        len = stream.ReadInt32();
+            default:
+                return false;
+        }
 
         return true;
     }
@@ -80,6 +88,7 @@ namespace
             case IGNITE_TYPE_DOUBLE:
             case IGNITE_TYPE_BOOL:
             case IGNITE_HDR_NULL:
+            case IGNITE_TYPE_ARRAY_BYTE:
             {
                 // No-op.
                 break;
@@ -238,7 +247,8 @@ namespace ignite
                     break;
                 }
 
-                case IGNITE_HDR_FULL:
+                case IGNITE_TYPE_BINARY:
+                case IGNITE_TYPE_OBJECT:
                 {
                     int32_t len;
 
@@ -281,9 +291,21 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    sizeTmp = reader.ReadInt32();
+                    assert(sizeTmp >= 0);
+
+                    startPosTmp = stream->Position();
+                    stream->Position(stream->Position() + sizeTmp);
+
+                    break;
+                }
+
                 default:
                 {
                     // This is a fail case.
+                    assert(false);
                     return;
                 }
             }
@@ -413,7 +435,8 @@ namespace ignite
                     break;
                 }
 
-                case IGNITE_HDR_FULL:
+                case IGNITE_TYPE_BINARY:
+                case IGNITE_TYPE_OBJECT:
                 {
                     int32_t len;
 
@@ -459,6 +482,20 @@ namespace ignite
 
                     dataBuf.PutTimestamp(ts);
 
+                    break;
+                }
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    stream->Position(startPos + offset);
+                    int32_t maxRead = std::min(GetUnreadDataLength(), static_cast<int32_t>(dataBuf.GetSize()));
+                    std::vector<int8_t> data(maxRead);
+
+                    stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
+
+                    int32_t written = dataBuf.PutBinaryData(data.data(), data.size());
+
+                    IncreaseOffset(written);
                     break;
                 }
 

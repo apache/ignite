@@ -68,6 +68,21 @@ module.exports.factory = (mongo, errors) => {
         static createDemoSpace(userId) {
             return new mongo.Space({name: 'Demo space', owner: userId, demo: true}).save();
         }
+
+        /**
+         * Clean up spaces.
+         *
+         * @param {mongo.ObjectId|String} spaceIds - The space ids for clean up.
+         * @returns {Promise.<>}
+         */
+        static cleanUp(spaceIds) {
+            return Promise.all([
+                mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
+                mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
+                mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
+                mongo.Igfs.remove({space: {$in: spaceIds}}).exec()
+            ]);
+        }
     }
 
     return SpacesService;

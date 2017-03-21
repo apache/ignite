@@ -60,8 +60,8 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -152,7 +152,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }
@@ -174,7 +174,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                             try {
                                 Thread.sleep(ThreadLocalRandom.current().nextLong(50));
                             }
-                            catch (InterruptedException e) {
+                            catch (InterruptedException ignored) {
                                 Thread.currentThread().interrupt();
                             }
                         }

@@ -70,7 +70,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             var cfg = TestUtils.GetTestConfiguration();
             var ignite = Ignition.Start(cfg);
 
-            Ignition.Start(new IgniteConfiguration(cfg) {GridName = "grid2"});
+            Ignition.Start(new IgniteConfiguration(cfg) {IgniteInstanceName = "grid2"});
 
             // Create SQL CE database in a temp file.
             using (var ctx = GetDbContext())
@@ -317,6 +317,55 @@ namespace Apache.Ignite.EntityFramework.Tests
                 Assert.AreEqual(3, ctx.Posts.Count(x => x.Content == null));
                 Assert.AreEqual(3, GetEntityCommand(ctx, esql).ExecuteScalar());
                 Assert.AreEqual(blog.BlogId*3, ctx.Posts.Sum(x => x.BlogId));
+            }
+        }
+
+        /// <summary>
+        /// Queries with entity sets used multiple times are handled correctly.
+        /// </summary>
+        [Test]
+        public void TestDuplicateEntitySets()
+        {
+            using (var ctx = GetDbContext())
+            {
+                var blog = new Blog
+                {
+                    Name = "Foo",
+                    Posts = new List<Post>
+                    {
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Foo"},
+                        new Post {Title = "Bar"}
+                    }
+                };
+                ctx.Blogs.Add(blog);
+
+                Assert.AreEqual(5, ctx.SaveChanges());
+
+                var res = ctx.Blogs.Select(b => new
+                {
+                    X = b.Posts.FirstOrDefault(p => p.Title == b.Name),
+                    Y = b.Posts.Count(p => p.Title == b.Name)
+                }).ToArray();
+
+                Assert.AreEqual(1, res.Length);
+                Assert.AreEqual("Foo", res[0].X.Title);
+                Assert.AreEqual(3, res[0].Y);
+
+                // Modify and check updated result.
+                ctx.Posts.Remove(ctx.Posts.First(x => x.Title == "Foo"));
+                Assert.AreEqual(1, ctx.SaveChanges());
+
+                res = ctx.Blogs.Select(b => new
+                {
+                    X = b.Posts.FirstOrDefault(p => p.Title == b.Name),
+                    Y = b.Posts.Count(p => p.Title == b.Name)
+                }).ToArray();
+
+                Assert.AreEqual(1, res.Length);
+                Assert.AreEqual("Foo", res[0].X.Title);
+                Assert.AreEqual(2, res[0].Y);
             }
         }
 
@@ -664,8 +713,11 @@ namespace Apache.Ignite.EntityFramework.Tests
         {
             TestUtils.RunMultiThreaded(CreateRemoveBlog, 4, 5);
 
+            // Run once again to force cleanup.
+            CreateRemoveBlog();
+
             // Wait for the cleanup to complete.
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
 
             // Only one version of data is in the cache.
             Assert.AreEqual(1, _cache.GetSize());

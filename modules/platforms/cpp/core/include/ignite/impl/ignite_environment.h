@@ -20,14 +20,19 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
+#include <ignite/ignite_binding_context.h>
+#include <ignite/ignite_configuration.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
-#include "ignite/jni/utils.h"
+#include "ignite/impl/handle_registry.h"
+#include "ignite/impl/module_manager.h"
+#include "ignite/impl/ignite_binding_impl.h"
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /**
          * Defines environment in which Ignite operates.
@@ -41,14 +46,33 @@ namespace ignite
             enum { DEFAULT_ALLOCATION_SIZE = 1024 };
 
             /**
-             * Default constructor.
+             * Default fast path handle registry containers capasity.
              */
-            IgniteEnvironment();
+            enum { DEFAULT_FAST_PATH_CONTAINERS_CAP = 1024 };
+
+            /**
+            * Default slow path handle registry containers capasity.
+            */
+            enum { DEFAULT_SLOW_PATH_CONTAINERS_CAP = 16 };
+
+            /**
+             * Constructor.
+             *
+             * @param cfg Node configuration.
+             */
+            IgniteEnvironment(const IgniteConfiguration& cfg);
 
             /**
              * Destructor.
              */
             ~IgniteEnvironment();
+
+            /**
+             * Get node configuration.
+             *
+             * @return Node configuration.
+             */
+            const IgniteConfiguration& GetConfiguration() const;
 
             /**
              * Populate callback handlers.
@@ -74,8 +98,23 @@ namespace ignite
              * Start callback.
              *
              * @param memPtr Memory pointer.
+             * @param proc Processor instance.
              */
             void OnStartCallback(long long memPtr, jobject proc);
+
+            /**
+             * Continuous query listener apply callback.
+             *
+             * @param mem Memory with data.
+             */
+            void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Cache Invoke callback.
+             *
+             * @param mem Input-output memory.
+             */
+            void CacheInvokeCallback(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Get name of Ignite instance.
@@ -83,6 +122,13 @@ namespace ignite
              * @return Name.
              */
             const char* InstanceName() const;
+
+            /**
+             * Get processor associated with the instance.
+             *
+             * @return Processor.
+             */
+            void* GetProcessor();
 
             /**
              * Get JNI context.
@@ -133,12 +179,36 @@ namespace ignite
              */
             void ProcessorReleaseStart();
 
+            /**
+             * Get handle registry.
+             *
+             * @return Handle registry.
+             */
+            HandleRegistry& GetHandleRegistry();
+
+            /**
+             * Get binding.
+             *
+             * @return IgniteBinding instance.
+             */
+            IgniteBinding GetBinding() const;
+
+            /**
+             * Get binding context.
+             *
+             * @return Binding context.
+             */
+            IgniteBindingContext GetBindingContext() const;
+
         private:
+            /** Node configuration. */
+            IgniteConfiguration* cfg;
+
             /** Context to access Java. */
             common::concurrent::SharedPointer<jni::java::JniContext> ctx;
 
             /** Startup latch. */
-            common::concurrent::SingleLatch* latch;
+            common::concurrent::SingleLatch latch;
 
             /** Ignite name. */
             char* name;
@@ -146,11 +216,20 @@ namespace ignite
             /** Processor instance. */
             jni::JavaGlobalRef proc;
 
+            /** Handle registry. */
+            HandleRegistry registry;
+
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
 
             /** Type updater. */
             binary::BinaryTypeUpdater* metaUpdater;
+
+            /** Ignite binding */
+            common::concurrent::SharedPointer<IgniteBindingImpl> binding;
+
+            /** Module manager. */
+            common::concurrent::SharedPointer<ModuleManager> moduleMgr;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

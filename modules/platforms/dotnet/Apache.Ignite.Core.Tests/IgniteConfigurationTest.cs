@@ -34,7 +34,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.SwapSpace.File;
+    using Apache.Ignite.Core.Tests.Plugin;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -120,7 +122,7 @@ namespace Apache.Ignite.Core.Tests
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
-                Assert.AreEqual(cfg.GridName, resCfg.GridName);
+                Assert.AreEqual(cfg.IgniteInstanceName, resCfg.IgniteInstanceName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
                 Assert.AreEqual(cfg.MetricsExpireTime, resCfg.MetricsExpireTime);
                 Assert.AreEqual(cfg.MetricsHistorySize, resCfg.MetricsHistorySize);
@@ -181,6 +183,21 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(swap.MaximumWriteQueueSize, resSwap.MaximumWriteQueueSize);
                 Assert.AreEqual(swap.ReadStripesNumber, resSwap.ReadStripesNumber);
                 Assert.AreEqual(swap.WriteBufferSize, resSwap.WriteBufferSize);
+
+                var binCfg = cfg.BinaryConfiguration;
+                Assert.IsFalse(binCfg.CompactFooter);
+
+                var typ = binCfg.TypeConfigurations.Single();
+                Assert.AreEqual("myType", typ.TypeName);
+                Assert.IsTrue(typ.IsEnum);
+                Assert.AreEqual("affKey", typ.AffinityKeyFieldName);
+                Assert.AreEqual(false, typ.KeepDeserialized);
+
+                CollectionAssert.AreEqual(new[] {"fld1", "fld2"},
+                    ((BinaryFieldEqualityComparer)typ.EqualityComparer).FieldNames);
+
+                Assert.IsNotNull(resCfg.PluginConfigurations);
+                Assert.AreEqual(cfg.PluginConfigurations, resCfg.PluginConfigurations);
             }
         }
 
@@ -227,7 +244,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 Localhost = "127.0.0.1",
                 DiscoverySpi = TestUtils.GetStaticDiscovery(),
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             }))
             {
@@ -267,7 +284,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -366,7 +383,7 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(cfg))
             {
                 // Start with the same endpoint
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -455,7 +472,7 @@ namespace Apache.Ignite.Core.Tests
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                GridName = "gridName1",
+                IgniteInstanceName = "gridName1",
                 IncludedEventTypes = EventType.SwapspaceAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
@@ -468,7 +485,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
-                IsDaemon = true,
+                IsDaemon = false,
                 IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration
@@ -512,8 +529,24 @@ namespace Apache.Ignite.Core.Tests
                     MaximumWriteQueueSize = 8,
                     WriteBufferSize = 9,
                     BaseDirectory = Path.GetTempPath(),
-                    MaximumSparsity = 11.22f
-                }
+                    MaximumSparsity = 0.123f
+                },
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    CompactFooter = false,
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration
+                        {
+                            TypeName = "myType",
+                            IsEnum = true,
+                            AffinityKeyFieldName = "affKey",
+                            KeepDeserialized = false,
+                            EqualityComparer = new BinaryFieldEqualityComparer("fld1", "fld2")
+                        }
+                    }
+                },
+                PluginConfigurations = new[] { new TestIgnitePluginConfiguration() }
             };
         }
     }

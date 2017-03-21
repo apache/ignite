@@ -33,7 +33,7 @@ public class GridSqlPlaceholder extends GridSqlElement {
      * @param sql SQL.
      */
     public GridSqlPlaceholder(String sql) {
-        super(Collections.<GridSqlElement>emptyList());
+        super(Collections.<GridSqlAst>emptyList());
 
         this.sql = sql;
     }

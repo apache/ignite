@@ -73,7 +73,7 @@ public class GridClockServer {
                 try {
                     locHost = U.getLocalHost();
                 }
-                catch (IOException e) {
+                catch (IOException ignored) {
                     locHost = InetAddress.getLoopbackAddress();
 
                     U.warn(log, "Failed to get local host address, will use loopback address: " + locHost);
@@ -186,7 +186,7 @@ public class GridClockServer {
          * Creates read worker.
          */
         protected ReadWorker() {
-            super(ctx.gridName(), "grid-time-server-reader", GridClockServer.this.log);
+            super(ctx.igniteInstanceName(), "grid-time-server-reader", GridClockServer.this.log);
         }
 
         /** {@inheritDoc} */

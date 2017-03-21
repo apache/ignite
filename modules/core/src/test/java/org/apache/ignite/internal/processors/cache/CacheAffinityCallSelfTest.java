@@ -56,8 +56,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -69,7 +69,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setFailoverSpi(failSpi);
 
         // Do not configure cache on client.
-        if (gridName.equals(getTestGridName(SRVS))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);
@@ -175,8 +175,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
             while (!fut.isDone())
                 client.compute().affinityCall(CACHE_NAME, key, new CheckCallable(key, null));
         }
-        catch (ClusterTopologyException ignore) {
-            log.info("Expected error: " + ignore);
+        catch (ClusterTopologyException e) {
+            log.info("Expected error: " + e);
         }
         finally {
             stopAllGrids();
@@ -214,12 +214,12 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
 
                 ClusterNode loc = ignite.cluster().localNode();
 
-                if (loc.equals(aff.primary(key, topVer)))
+                if (loc.equals(aff.primaryByKey(key, topVer)))
                     return true;
 
                 AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer.topologyVersion() + 1, 0);
 
-                assertEquals(loc, aff.primary(key, topVer0));
+                assertEquals(loc, aff.primaryByKey(key, topVer0));
             }
 
             return null;

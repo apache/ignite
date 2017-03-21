@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -147,7 +147,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @return {@code this} For chaining.
      */
     public SqlFieldsQuery setTimeout(int timeout, TimeUnit timeUnit) {
-        this.timeout = GridQueryProcessor.validateTimeout(timeout, timeUnit);
+        this.timeout = QueryUtils.validateTimeout(timeout, timeUnit);
 
         return this;
     }
@@ -163,6 +163,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /**
      * Sets flag defining if this query is collocated.
+     *
+     * Collocation flag is used for optimization purposes of queries with GROUP BY statements.
+     * Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+     * If you know in advance that the elements of your query selection are collocated together on the same node and
+     * you group by collocated key (primary or affinity key), then Ignite can make significant performance and network
+     * optimizations by grouping data on remote nodes.
      *
      * @param collocated Flag value.
      * @return {@code this} For chaining.

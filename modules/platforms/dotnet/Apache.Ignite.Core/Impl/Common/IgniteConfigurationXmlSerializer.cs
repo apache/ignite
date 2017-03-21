@@ -84,6 +84,15 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
+            if (property != null)
+            {
+                if (!property.CanWrite && !IsKeyValuePair(property.DeclaringType))
+                    return;
+
+                if (IsObsolete(property))
+                    return;
+            }
+
             if (valueType == typeof(IgniteConfiguration))
                 writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
             else
@@ -142,14 +151,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
         {
-            var props = GetNonDefaultProperties(obj).ToList();
+            var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
             // Specify type for interfaces and abstract classes
             if (valueType.IsAbstract)
                 writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
 
             // Write attributes
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsObsolete(p)))
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
@@ -341,6 +350,13 @@ namespace Apache.Ignite.Core.Impl.Common
             var type = target.GetType();
             var property = GetPropertyOrThrow(propName, propVal, type);
 
+            if (!property.CanWrite)
+            {
+                throw new ConfigurationErrorsException(string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                        propName, propVal, type, property.Name));
+            }
+
             var converter = GetConverter(property, property.PropertyType);
 
             var convertedVal = converter.ConvertFromInvariantString(propVal);
@@ -353,7 +369,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return type.Assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
+            return typeof(IIgnite).Assembly.GetTypes()
+                .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 
         /// <summary>
@@ -405,11 +422,21 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(propertyType != null);
 
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>))
+            if (IsKeyValuePair(propertyType))
                 return false;
 
             return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type) ||
                    propertyType == typeof (object);
+        }
+
+        /// <summary>
+        /// Determines whether specified type is KeyValuePair.
+        /// </summary>
+        private static bool IsKeyValuePair(Type propertyType)
+        {
+            Debug.Assert(propertyType != null);
+
+            return propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>);
         }
 
         /// <summary>
@@ -470,6 +497,16 @@ namespace Apache.Ignite.Core.Impl.Common
                 return Activator.CreateInstance(propertyType);
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether the specified property is obsolete.
+        /// </summary>
+        private static bool IsObsolete(PropertyInfo property)
+        {
+            Debug.Assert(property != null);
+
+            return property.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any();
         }
     }
 }

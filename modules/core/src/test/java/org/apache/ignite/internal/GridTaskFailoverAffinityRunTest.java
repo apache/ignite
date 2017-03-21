@@ -50,14 +50,14 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     private boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        boolean client = clientMode && gridName.equals(getTestGridName(0));
+        boolean client = clientMode && igniteInstanceName.equals(getTestIgniteInstanceName(0));
 
         if (client) {
             cfg.setClientMode(true);

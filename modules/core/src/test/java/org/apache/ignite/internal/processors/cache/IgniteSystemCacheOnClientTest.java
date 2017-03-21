@@ -37,12 +37,12 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -65,30 +65,9 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
 
         assertTrue(ignite.configuration().isClientMode());
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ignite.internalCache(CU.MARSH_CACHE_NAME) != null;
-            }
-        }, 5000);
-
-        GridCacheAdapter marshCache = ignite.internalCache(CU.MARSH_CACHE_NAME);
-
-        assertNotNull(marshCache);
-
-        assertFalse(marshCache.context().isNear());
-
-        marshCache = ((IgniteKernal)ignite(0)).internalCache(CU.MARSH_CACHE_NAME);
-
-        assertFalse(marshCache.context().isNear());
-
-        Collection<ClusterNode> affNodes = marshCache.affinity().mapKeyToPrimaryAndBackups(1);
-
-        assertEquals(1, affNodes.size());
-        assertTrue(affNodes.contains(ignite(0).cluster().localNode()));
-
         GridCacheAdapter utilityCache = ((IgniteKernal)ignite(0)).internalCache(CU.UTILITY_CACHE_NAME);
 
-        affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
+        Collection<ClusterNode> affNodes = utilityCache.affinity().mapKeyToPrimaryAndBackups(1);
 
         assertEquals(1, affNodes.size());
         assertTrue(affNodes.contains(ignite(0).cluster().localNode()));
