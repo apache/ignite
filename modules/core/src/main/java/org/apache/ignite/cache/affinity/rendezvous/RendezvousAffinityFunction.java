@@ -225,8 +225,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /**
      * Sets total number of partitions.If the number of partitions is a power of two,
-     * the PowerOfTwo hashing method will be used.  Otherwise the Standard hashing
-     * method will be applied.
+     * the PowerOfTwo hashing method will be used, which gives better distribution of
+     * keys within partitions.  Otherwise the Standard hashing method will be applied.
      *
      * @param parts Total number of partitions.
      */
