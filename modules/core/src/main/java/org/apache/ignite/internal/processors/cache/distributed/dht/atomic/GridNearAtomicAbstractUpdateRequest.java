@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
@@ -89,10 +90,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
     protected byte flags;
-
-    /** Response helper. */
-    @GridDirectTransient
-    private NearAtomicResponseHelper responseHelper;
 
     /**
      *
@@ -424,21 +421,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     }
 
     /**
-     * @return Response helper.
-     */
-    public NearAtomicResponseHelper responseHelper() {
-        return responseHelper;
-    }
-
-    /**
-     * @param responseHelper Response helper.
-     */
-    public void responseHelper(
-        NearAtomicResponseHelper responseHelper) {
-        this.responseHelper = responseHelper;
-    }
-
-    /**
      * @param idx Key index.
      * @return Key.
      */
@@ -596,6 +578,23 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         }
 
         return reader.afterMessageRead(GridNearAtomicAbstractUpdateRequest.class);
+    }
+
+    private static final AtomicIntegerFieldUpdater<GridNearAtomicAbstractUpdateRequest> UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearAtomicAbstractUpdateRequest.class, "cnt");
+
+    /** */
+    @GridDirectTransient
+    private volatile int cnt;
+
+    void setResCount(int cnt) {
+        this.cnt = cnt;
+    }
+
+    boolean addRes() {
+        int c = UPD.decrementAndGet(this);
+
+        return c == 0;
     }
 
     /** {@inheritDoc} */
