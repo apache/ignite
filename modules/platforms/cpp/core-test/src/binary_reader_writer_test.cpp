@@ -908,44 +908,6 @@ BOOST_AUTO_TEST_CASE(TestTimeNull)
     BOOST_REQUIRE(actualVal == expVal);
 }
 
-BOOST_AUTO_TEST_CASE(TestTimeNull)
-{
-    TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
-
-    InteropUnpooledMemory mem(1024);
-
-    InteropOutputStream out(&mem);
-    BinaryWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
-    BinaryWriter writer(&writerImpl);
-
-    out.Position(IGNITE_DFLT_HDR_LEN);
-
-    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
-
-    writer.WriteNull("test");
-
-    writerImpl.PostWrite();
-
-    out.Synchronize();
-
-    InteropInputStream in(&mem);
-
-    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
-    int32_t footerEnd = footerBegin + 5;
-
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
-    BinaryReader reader(&readerImpl);
-
-    in.Position(IGNITE_DFLT_HDR_LEN);
-
-    BOOST_CHECK_EXCEPTION(reader.ReadTime(NULL), IgniteError, IsBinaryError);
-
-    Time expVal;
-    Time actualVal = reader.ReadTime("test");
-
-    BOOST_REQUIRE(actualVal == expVal);
-}
-
 BOOST_AUTO_TEST_CASE(TestTimestampNull)
 {
     TemplatedBinaryIdResolver<BinaryDummy> idRslvr;

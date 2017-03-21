@@ -704,28 +704,6 @@ BOOST_AUTO_TEST_CASE(TestTimeNull)
     BOOST_REQUIRE(actualVal == expVal);
 }
 
-BOOST_AUTO_TEST_CASE(TestTimeNull)
-{
-    InteropUnpooledMemory mem(1024);
-
-    InteropOutputStream out(&mem);
-    BinaryWriterImpl writer(&out, NULL);
-    BinaryRawWriter rawWriter(&writer);
-
-    rawWriter.WriteNull();
-
-    out.Synchronize();
-
-    InteropInputStream in(&mem);
-    BinaryReaderImpl reader(&in);
-    BinaryRawReader rawReader(&reader);
-
-    Time expVal;
-    Time actualVal = rawReader.ReadTime();
-
-    BOOST_REQUIRE(actualVal == expVal);
-}
-
 BOOST_AUTO_TEST_CASE(TestTimestampNull)
 {
     InteropUnpooledMemory mem(1024);
