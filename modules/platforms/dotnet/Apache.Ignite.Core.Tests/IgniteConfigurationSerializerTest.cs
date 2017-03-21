@@ -551,9 +551,9 @@ namespace Apache.Ignite.Core.Tests
                     Assert.IsNull(xVal);
                     Assert.IsNull(yVal);
                 }
-                else if (propType != typeof(string) && propType.IsGenericType
-                         && (propType.GetGenericTypeDefinition() == typeof(ICollection<>)
-                             || propType.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
+                else if (propType != typeof(string) && propType.IsGenericType &&
+                         (propType.GetGenericTypeDefinition() == typeof(ICollection<>) ||
+                          propType.GetGenericTypeDefinition() == typeof(IDictionary<,>) ))
                 {
                     var xCol = ((IEnumerable) xVal).OfType<object>().ToList();
                     var yCol = ((IEnumerable) yVal).OfType<object>().ToList();
