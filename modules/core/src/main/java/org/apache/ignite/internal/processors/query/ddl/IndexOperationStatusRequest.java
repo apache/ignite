@@ -26,23 +26,19 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
- * Message with index operation status. Sent from participant to coordinator when index creation is completed or
- * when coordinator changes.
+ * Operation status request.
  */
-public class IndexOperationStatusMessage implements Message {
+public class IndexOperationStatusRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Operation ID. */
     private UUID opId;
 
-    /** Error message. */
-    private String errMsg;
-
     /**
      * Default constructor.
      */
-    public IndexOperationStatusMessage() {
+    public IndexOperationStatusRequest() {
         // No-op.
     }
 
@@ -50,11 +46,9 @@ public class IndexOperationStatusMessage implements Message {
      * Constructor.
      *
      * @param opId Operation ID.
-     * @param errMsg Error message.
      */
-    public IndexOperationStatusMessage(UUID opId, String errMsg) {
+    public IndexOperationStatusRequest(UUID opId, String errMsg) {
         this.opId = opId;
-        this.errMsg = errMsg;
     }
 
     /**
@@ -62,13 +56,6 @@ public class IndexOperationStatusMessage implements Message {
      */
     public UUID operationId() {
         return opId;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public String errorMessage() {
-        return errMsg;
     }
 
     /** {@inheritDoc} */
@@ -85,12 +72,6 @@ public class IndexOperationStatusMessage implements Message {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeUuid("opId", opId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString("errMsg", errMsg))
                     return false;
 
                 writer.incrementState();
@@ -114,17 +95,9 @@ public class IndexOperationStatusMessage implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                errMsg = reader.readString("errMsg");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
-        return reader.afterMessageRead(IndexOperationStatusMessage.class);
+        return reader.afterMessageRead(IndexOperationStatusRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -134,7 +107,7 @@ public class IndexOperationStatusMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -144,6 +117,6 @@ public class IndexOperationStatusMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexOperationStatusMessage.class, this);
+        return S.toString(IndexOperationStatusRequest.class, this);
     }
 }
