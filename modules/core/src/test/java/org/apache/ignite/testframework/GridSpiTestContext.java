@@ -601,6 +601,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
             timeoutProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
     }
 
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return Collections.emptyMap();
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.

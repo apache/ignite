@@ -756,14 +756,16 @@ public interface GridCacheEntryEx {
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
      * @param readerArgs Reader will be added if not null.
+     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
      * @return Current version and value.
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public T2<CacheObject, GridCacheVersion> versionedValue(CacheObject val,
+    public EntryGetResult versionedValue(CacheObject val,
         @Nullable GridCacheVersion curVer,
         @Nullable GridCacheVersion newVer,
-        @Nullable ReaderArguments readerArgs)
+        @Nullable ReaderArguments readerArgs,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
