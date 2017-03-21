@@ -32,6 +32,9 @@ public class IndexOperationStatusRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Sender node ID. */
+    private UUID sndNodeId;
+
     /** Operation ID. */
     private UUID opId;
 
@@ -45,10 +48,19 @@ public class IndexOperationStatusRequest implements Message {
     /**
      * Constructor.
      *
+     * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
      */
-    public IndexOperationStatusRequest(UUID opId, String errMsg) {
+    public IndexOperationStatusRequest(UUID sndNodeId, UUID opId) {
+        this.sndNodeId = sndNodeId;
         this.opId = opId;
+    }
+
+    /**
+     * @return Sender node ID.
+     */
+    public UUID senderNodeId() {
+        return sndNodeId;
     }
 
     /**
@@ -71,6 +83,12 @@ public class IndexOperationStatusRequest implements Message {
 
         switch (writer.state()) {
             case 0:
+                if (!writer.writeUuid("sndNodeId", sndNodeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
                 if (!writer.writeUuid("opId", opId))
                     return false;
 
@@ -89,6 +107,14 @@ public class IndexOperationStatusRequest implements Message {
 
         switch (reader.state()) {
             case 0:
+                sndNodeId = reader.readUuid("sndNodeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
                 opId = reader.readUuid("opId");
 
                 if (!reader.isLastRead())
@@ -107,7 +133,7 @@ public class IndexOperationStatusRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */

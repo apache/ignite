@@ -33,6 +33,9 @@ public class IndexOperationStatusResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Sender node ID. */
+    private UUID sndNodeId;
+
     /** Operation ID. */
     private UUID opId;
 
@@ -49,12 +52,21 @@ public class IndexOperationStatusResponse implements Message {
     /**
      * Constructor.
      *
+     * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
      * @param errMsg Error message.
      */
-    public IndexOperationStatusResponse(UUID opId, String errMsg) {
+    public IndexOperationStatusResponse(UUID sndNodeId, UUID opId, String errMsg) {
+        this.sndNodeId = sndNodeId;
         this.opId = opId;
         this.errMsg = errMsg;
+    }
+
+    /**
+     * @return Sender node ID.
+     */
+    public UUID senderNodeId() {
+        return sndNodeId;
     }
 
     /**
@@ -84,12 +96,18 @@ public class IndexOperationStatusResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("opId", opId))
+                if (!writer.writeUuid("sndNodeId", sndNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeUuid("opId", opId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeString("errMsg", errMsg))
                     return false;
 
@@ -108,7 +126,7 @@ public class IndexOperationStatusResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                opId = reader.readUuid("opId");
+                sndNodeId = reader.readUuid("sndNodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -116,6 +134,14 @@ public class IndexOperationStatusResponse implements Message {
                 reader.incrementState();
 
             case 1:
+                opId = reader.readUuid("opId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 errMsg = reader.readString("errMsg");
 
                 if (!reader.isLastRead())
@@ -134,7 +160,7 @@ public class IndexOperationStatusResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */

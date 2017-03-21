@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
@@ -32,6 +33,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -47,6 +50,8 @@ import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexOperationCancellationToken;
+import org.apache.ignite.internal.processors.query.ddl.IndexOperationStatusRequest;
+import org.apache.ignite.internal.processors.query.ddl.IndexOperationStatusResponse;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -56,9 +61,11 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
@@ -71,13 +78,16 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 
 /**
@@ -117,6 +127,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Index create/drop client futures. */
     private final ConcurrentMap<UUID, QueryIndexClientFuture> idxCliFuts = new ConcurrentHashMap<>();
 
+    /** IO message listener. */
+    private final GridMessageListener ioLsnr;
+
+    /** Queue with pending IO messages. */
+    private final Queue<Object> ioMsgs = new ConcurrentLinkedDeque<>();
+
+    /** IO init lock. */
+    private final ReadWriteLock ioInitLock = new ReentrantReadWriteLock();
+
+    /** IO init flag. */
+    private volatile boolean ioInit;
+
+    /** IO worker to process too early IO messages. */
+    private volatile GridWorker ioWorker;
+
     /**
      * @param ctx Kernal context.
      */
@@ -130,6 +155,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
+
+        ioLsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object obj) {
+                dispatchIoMessage(obj);
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -142,6 +173,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
+        ctx.io().addMessageListener(TOPIC_DYNAMIC_SCHEMA, ioLsnr);
+
         // Schedule queries detail metrics eviction.
         qryDetailMetricsEvictTask = ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
@@ -149,6 +182,80 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     cache.context().queries().evictDetailMetrics();
             }
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        // Start IO worker to consume racy IO messages.
+        boolean startIoWorker = false;
+
+        ioInitLock.writeLock().lock();
+
+        try {
+            if (!ioMsgs.isEmpty())
+                startIoWorker = true;
+
+            ioInit = true;
+        }
+        finally {
+            ioInitLock.writeLock().unlock();
+        }
+
+        if (startIoWorker) {
+            ioWorker = new IoWorker(ctx.igniteInstanceName(), "query-proc-io-worker", log);
+
+            new IgniteThread(ioWorker).start();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
+
+        GridWorker ioWorker0 = ioWorker;
+
+        if (ioWorker0 != null) {
+            ioWorker0.cancel();
+
+            try {
+                ioWorker0.join();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                if (log.isDebugEnabled())
+                    log.debug("Got interrupted while waiting for IO worker to finish.");
+            }
+        }
+
+        if (cancel && idx != null) {
+            try {
+                while (!busyLock.tryBlock(500))
+                    idx.cancelAllQueries();
+
+                return;
+            } catch (InterruptedException ignored) {
+                U.warn(log, "Interrupted while waiting for active queries cancellation.");
+
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        busyLock.block();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        ctx.io().removeMessageListener(TOPIC_DYNAMIC_SCHEMA, ioLsnr);
+
+        if (idx != null)
+            idx.stop();
+
+        U.closeQuiet(qryDetailMetricsEvictTask);
     }
 
     /**
@@ -249,36 +356,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel);
-
-        if (cancel && idx != null) {
-            try {
-                while (!busyLock.tryBlock(500))
-                    idx.cancelAllQueries();
-
-                return;
-            } catch (InterruptedException ignored) {
-                U.warn(log, "Interrupted while waiting for active queries cancellation.");
-
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        busyLock.block();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        if (idx != null)
-            idx.stop();
-
-        U.closeQuiet(qryDetailMetricsEvictTask);
     }
 
     /** {@inheritDoc} */
@@ -1190,6 +1267,59 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Dispatch IO message.
+     *
+     * @param msg Message.
+     */
+    private void dispatchIoMessage(Object msg) {
+        if (!ioInit) {
+            ioInitLock.readLock().lock();
+
+            try {
+                if (!ioInit) {
+                    ioMsgs.add(msg);
+
+                    return;
+                }
+            }
+            finally {
+                ioInitLock.readLock().unlock();
+            }
+        }
+
+        if (msg instanceof IndexOperationStatusRequest) {
+            IndexOperationStatusRequest req = (IndexOperationStatusRequest)msg;
+
+            processStatusRequest(req);
+        }
+        else if (msg instanceof IndexOperationStatusResponse) {
+            IndexOperationStatusResponse resp = (IndexOperationStatusResponse)msg;
+
+            processStatusResponse(resp);
+        }
+        else
+            U.warn(log, "Unsupported IO message: " + msg);
+    }
+
+    /**
+     * Process status request.
+     *
+     * @param req Status request.
+     */
+    private void processStatusRequest(IndexOperationStatusRequest req) {
+        // TODO
+    }
+
+    /**
+     * Process status response.
+     *
+     * @param resp Status response.
+     */
+    private void processStatusResponse(IndexOperationStatusResponse resp) {
+        // TODO
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
@@ -1201,5 +1331,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * IO worker to process pending IO messages.
+     */
+    private class IoWorker extends GridWorker {
+        /**
+         * Constructor.
+         *
+         * @param igniteInstanceName Ignite instance name.
+         * @param name Worker name.
+         * @param log Logger.
+         */
+        public IoWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                Object msg = ioMsgs.poll();
+
+                if (msg == null)
+                    break;
+
+                dispatchIoMessage(msg);
+            }
+        }
     }
 }
