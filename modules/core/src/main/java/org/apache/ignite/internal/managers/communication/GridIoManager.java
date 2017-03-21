@@ -243,10 +243,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         };
 
-        q = new MPSCQueue<>(resThread);
-
-        resThread.setDaemon(true);
-        resThread.start();
+//        q = new MPSCQueue<>(resThread);
+//
+//        resThread.setDaemon(true);
+//        resThread.start();
     }
 
     /**

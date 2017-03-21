@@ -1966,7 +1966,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             if (lock.readLock().tryLock()) {
                 try {
                     if (log.isDebugEnabled())
-                        log.debug("Entered to eviction future storeResponse() [fut=" + this + ", node=" + nodeId +
+                        log.debug("Entered to eviction future onResponse() [fut=" + this + ", node=" + nodeId +
                             ", res=" + res + ']');
 
                     ClusterNode node = cctx.node(nodeId);
