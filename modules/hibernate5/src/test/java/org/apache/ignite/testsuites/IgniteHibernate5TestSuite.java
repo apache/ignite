@@ -28,9 +28,9 @@ import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTes
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
 
 /**
- * Hibernate integration tests.
+ * Hibernate5 integration tests.
  */
-public class IgniteHibernateTestSuite extends TestSuite {
+public class IgniteHibernate5TestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
