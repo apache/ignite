@@ -4425,7 +4425,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Releases asynchronous operations permit, if limited.
      */
-    private void asyncOpRelease() {
+    protected void asyncOpRelease() {
         if (asyncOpsSem != null)
             asyncOpsSem.release();
     }
