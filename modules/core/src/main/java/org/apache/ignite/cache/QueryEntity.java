@@ -186,18 +186,8 @@ public class QueryEntity implements Serializable {
      */
     public void setIndexes(Collection<QueryIndex> idxs) {
         for (QueryIndex idx : idxs) {
-            if (!F.isEmpty(idx.getFields())) {
-                if (idx.getName() == null)
-                    idx.setName(defaultIndexName(idx));
-
-                if (idx.getIndexType() == null)
-                    throw new IllegalArgumentException("Index type is not set " + idx.getName());
-
-                if (!this.idxs.containsKey(idx.getName()))
-                    this.idxs.put(idx.getName(), idx);
-                else
-                    throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
-            }
+            if (!F.isEmpty(idx.getFields()))
+                addIndex(idx);
         }
     }
 
@@ -220,6 +210,21 @@ public class QueryEntity implements Serializable {
 
     /**
      * Utility method for building query entities programmatically.
+     * @param fullName Full name of the field.
+     * @param cls Class of the field.
+     */
+    public void addQueryField(String fullName, Class<?> cls) {
+        A.notNull(fullName, "fullName");
+        A.notNull(cls, "cls");
+
+        addQueryField(fullName, cls.getName(), null);
+    }
+
+    /**
+     * Utility method for building query entities programmatically.
+     * @param fullName Full name of the field.
+     * @param type Type of the field.
+     * @param alias Field alias.
      */
     public void addQueryField(String fullName, String type, String alias) {
         A.notNull(fullName, "fullName");
@@ -229,6 +234,27 @@ public class QueryEntity implements Serializable {
 
         if (alias != null)
             aliases.put(fullName, alias);
+    }
+
+    /**
+     * Utility method for building indexes programmatically.
+     * @param idx Index to add.
+     */
+    public void addIndex(QueryIndex idx) {
+        A.notNull(idx, "index");
+
+        assert !F.isEmpty(idx.getFields()) : "Index must contain one or more fields";
+
+        if (idx.getName() == null)
+            idx.setName(defaultIndexName(idx));
+
+        if (idx.getIndexType() == null)
+            throw new IllegalArgumentException("Index type is not set " + idx.getName());
+
+        if (!idxs.containsKey(idx.getName()))
+            idxs.put(idx.getName(), idx);
+        else
+            throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
     }
 
     /**
