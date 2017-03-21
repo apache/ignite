@@ -296,6 +296,27 @@ namespace ignite
             int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
 
             /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @return Result.
+             */
+            Time ReadTime(const char* fieldName);
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
+
+            /**
              * Read string.
              *
              * @param fieldName Field name.
