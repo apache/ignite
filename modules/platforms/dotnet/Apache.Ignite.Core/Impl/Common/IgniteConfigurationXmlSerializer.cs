@@ -352,6 +352,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var dictType = typeof (Dictionary<,>).MakeGenericType(keyValTypes);
 
+            var pairType = typeof(Pair<,>).MakeGenericType(keyValTypes);
+
             var dict = (IDictionary) Activator.CreateInstance(dictType);
 
             using (var subReader = reader.ReadSubtree())
@@ -367,7 +369,7 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid dictionary element in IgniteConfiguration: expected '{0}', " +
                                           "but was '{1}'", KeyValPairElement, subReader.Name));
 
-                    var pair = new Pair();
+                    var pair = (IPair) Activator.CreateInstance(pairType);
 
                     var pairReader = subReader.ReadSubtree();
 
@@ -546,15 +548,37 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Non-generic Pair accessor.
+        /// </summary>
+        private interface IPair
+        {
+            object Key { get; }
+
+            object Value { get; }
+        }
+
+        /// <summary>
         /// Surrogate dictionary entry to overcome immutable KeyValuePair.
         /// </summary>
-        private class Pair
+        private class Pair<TK, TV> : IPair
         {
             // ReSharper disable once UnusedAutoPropertyAccessor.Local
-            public object Key { get; set; }
+            // ReSharper disable once MemberCanBePrivate.Local
+            public TK Key { get; set; }
 
             // ReSharper disable once UnusedAutoPropertyAccessor.Local
-            public object Value { get; set; }
+            // ReSharper disable once MemberCanBePrivate.Local
+            public TV Value { get; set; }
+
+            object IPair.Key
+            {
+                get { return Key; }
+            }
+
+            object IPair.Value
+            {
+                get { return Value; }
+            }
         }
     }
 }
