@@ -74,7 +74,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
         MemoryConfiguration mem = new MemoryConfiguration();
 
         mem.setPageSize(PAGE_SIZE);
-        mem.setPageCacheSize(PAGE_CACHE_SIZE);
+        mem.setDefaultMemoryPolicySize(PAGE_CACHE_SIZE);
 
         cfg.setMemoryConfiguration(mem);
 
