@@ -194,7 +194,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 var prop = GetPropertyOrThrow(reader.Name, reader.Value, target.GetType());
 
-                var value = ConvertBasicValue(reader.Value, prop);
+                var value = ConvertBasicValue(reader.Value, prop, prop.PropertyType);
 
                 prop.SetValue(target, value, null);
             }
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (IsBasicType(propType))
             {
                 // Regular property in xmlElement form.
-                return ConvertBasicValue(reader.ReadString(), prop);
+                return ConvertBasicValue(reader.ReadString(), prop, propType);
             }
 
             if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
@@ -385,9 +385,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the basic value.
         /// </summary>
-        private static object ConvertBasicValue(string propVal, PropertyInfo property)
+        private static object ConvertBasicValue(string propVal, PropertyInfo property, Type propertyType)
         {
-            var converter = GetConverter(property, property.PropertyType);
+            var converter = GetConverter(property, propertyType);
 
             return converter.ConvertFromInvariantString(propVal);
         }
