@@ -273,30 +273,32 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var typeName = reader.GetAttribute(TypNameAttribute);
 
-            if (propType.IsAbstract || typeName != null)
+            if (!propType.IsAbstract && typeName == null)
+                return propType;
+
+            var res = typeName == null
+                ? null
+                : resolver.ResolveType(typeName) ??
+                  GetConcreteDerivedTypes(propType).FirstOrDefault(x => x.Name == typeName);
+
+            if (res == null)
             {
+                var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
+                    propName);
+
                 var derivedTypes = GetConcreteDerivedTypes(propType);
 
-                propType = typeName == null
-                    ? null
-                    : resolver.ResolveType(typeName) ?? derivedTypes.FirstOrDefault(x => x.Name == typeName);
 
-                if (propType == null)
+                if (typeName != null)
                 {
-                    var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
-                        propName);
-
-                    if (typeName != null)
-                    {
-                        message += ", specified type cannot be resolved: " + typeName;
-                    }
-                    else if (derivedTypes.Any())
-                        message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
-
-                    throw new ConfigurationErrorsException(message);
+                    message += ", specified type cannot be resolved: " + typeName;
                 }
+                else if (derivedTypes.Any())
+                    message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
+
+                throw new ConfigurationErrorsException(message);
             }
-            return propType;
+            return res;
         }
 
         /// <summary>
