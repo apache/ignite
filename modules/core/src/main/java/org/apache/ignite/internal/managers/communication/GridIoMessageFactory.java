@@ -863,7 +863,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case -48:
+            case -49:
                 msg = new IndexOperationStatusMessage();
 
                 break;
