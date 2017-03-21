@@ -344,8 +344,6 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var dictType = typeof (Dictionary<,>).MakeGenericType(keyValTypes);
 
-            var pairType = typeof(KeyValuePair<,>).MakeGenericType(keyValTypes);
-
             var dict = (IDictionary) Activator.CreateInstance(dictType);
 
             using (var subReader = reader.ReadSubtree())
@@ -361,28 +359,15 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid dictionary element in IgniteConfiguration: expected '{0}', " +
                                           "but was '{1}'", KeyValPairElement, subReader.Name));
 
-                    object key = subReader.GetAttribute("key");
-                    object val = subReader.GetAttribute("value");
+                    var pair = new Pair();
 
-                    if (key == null)
-                    {
-                        SkipToElement(subReader);
+                    var pairReader = subReader.ReadSubtree();
 
-                        key = ReadPropertyValue(subReader, resolver, pairType.GetProperty("Key"), pairType);
-                    }
+                    pairReader.Read();
 
-                    if (key == null)
-                        throw new ConfigurationErrorsException(
-                            "Invalid dictionary entry, key attribute is missing for property " + prop);
+                    ReadElement(pairReader, pair, resolver);
 
-                    if (val == null)
-                    {
-                        SkipToElement(subReader);
-
-                        val = ReadPropertyValue(subReader, resolver, pairType.GetProperty("Value"), pairType);
-                    }
-
-                    dict[key] = val;
+                    dict[pair.Key] = pair.Value;
                 }
             }
 
@@ -553,17 +538,15 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Reads the element.
+        /// Surrogate dictionary entry to overcome immutable KeyValuePair.
         /// </summary>
-        private static void SkipToElement(XmlReader reader)
+        private class Pair
         {
-            while (reader.Read() && reader.NodeType != XmlNodeType.Element)
-            {
-                // No-op.
-            }
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public object Key { get; set; }
 
-            if (reader.NodeType != XmlNodeType.Element)
-                throw new ConfigurationErrorsException("Failed to read element: " + reader);
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public object Value { get; set; }
         }
     }
 }
