@@ -32,7 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -282,7 +282,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
 
                                 if (val == null) {
@@ -407,7 +407,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);
 
                 if (latchVal == null) {
