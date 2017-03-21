@@ -250,7 +250,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (cctx.allowFastEviction())
             return map.size() == 0;
 
-        return size() == 0 && map.size() == 0;
+        return store.size() == 0 && map.size() == 0;
     }
 
     /**
@@ -293,12 +293,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return (int)store.size();
+        return map.size();
     }
 
     /** {@inheritDoc} */
     @Override public int publicSize() {
-        return (int)store.size();
+        return map.publicSize();
     }
 
     /** {@inheritDoc} */

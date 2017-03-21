@@ -76,7 +76,7 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
             cache = grid(g).cache(null);
 
             for (GridDhtLocalPartition p : dht(cache).topology().localPartitions()) {
-                int size = p.size();
+                int size = p.dataStore().size();
 
                 assertTrue("Unexpected size: " + size, size <= 32);
             }
