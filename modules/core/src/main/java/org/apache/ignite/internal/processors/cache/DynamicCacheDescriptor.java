@@ -354,18 +354,16 @@ public class DynamicCacheDescriptor {
         synchronized (idxStatesMux) {
             if (!idxStatesForStartFixed)
                 this.idxStates = idxStates != null ? idxStates.copy() : null;
-
-            // TODO: Validate that both states are compatible?
         }
     }
 
     /**
-     * Try performing propose from discovery thread.
+     * Try applying propose message.
      *
      * @param locNodeId Local node ID.
      * @param msg Message.
      */
-    public void tryProposeFromDiscoveryThread(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
+    public void tryPropose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
         synchronized (idxStatesMux) {
             if (idxStates == null)
                 idxStates = new QueryIndexStates();
@@ -378,17 +376,13 @@ public class DynamicCacheDescriptor {
      * Try applying accept message.
      *
      * @param msg Message.
-     * @return Result.
      */
-    public boolean tryAccept(IndexAcceptDiscoveryMessage msg) {
+    public void tryAccept(IndexAcceptDiscoveryMessage msg) {
         synchronized (idxStatesMux) {
-            if (idxStatesForStartFixed)
-                msg.exchange(true);
-
             if (idxStates == null)
                 idxStates = new QueryIndexStates();
 
-            return idxStates.accept(msg);
+            idxStates.accept(msg);
         }
     }
 
@@ -396,30 +390,13 @@ public class DynamicCacheDescriptor {
      * Try applying finish message.
      *
      * @param msg Message.
-     * @return Result.
      */
-    public boolean tryFinish(IndexFinishDiscoveryMessage msg) {
+    public void tryFinish(IndexFinishDiscoveryMessage msg) {
         synchronized (idxStatesMux) {
-            if (idxStatesForStartFixed)
-                msg.exchange(true);
-
             if (idxStates == null)
                 idxStates = new QueryIndexStates();
 
-            return idxStates.finish(msg);
-        }
-    }
-
-    /**
-     * Forcefully update index states from exchange thread.
-     *
-     * @param idxStates Index states.
-     */
-    public void updateIndexStatesFromExchange(QueryIndexStates idxStates) {
-        synchronized (idxStatesMux) {
-            assert idxStatesForStartFixed;
-
-            this.idxStates = idxStates != null ? idxStates.copy() : null;
+            idxStates.finish(msg);
         }
     }
 

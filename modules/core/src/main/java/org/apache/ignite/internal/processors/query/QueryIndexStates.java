@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
 import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
@@ -99,9 +98,8 @@ public class QueryIndexStates implements Serializable {
      * Process accept message propagating index from proposed to accepted state.
      *
      * @param msg Message.
-     * @return {@code True} if accept succeeded. It may fail in case of concurrent cache stop/start.
      */
-    public boolean accept(IndexAcceptDiscoveryMessage msg) {
+    public void accept(IndexAcceptDiscoveryMessage msg) {
         synchronized (mux) {
             AbstractIndexOperation op = msg.operation();
 
@@ -109,17 +107,14 @@ public class QueryIndexStates implements Serializable {
 
             QueryIndexActiveOperation curOp = activeOps.get(idxName);
 
-            if (curOp != null) {
-                if (F.eq(curOp.operation().operationId(), op.operationId())) {
-                    assert !curOp.accepted();
+            if (curOp != null && F.eq(curOp.operation().operationId(), op.operationId())) {
+                assert !curOp.accepted();
 
-                    curOp.accept();
-
-                    return true;
-                }
+                curOp.accept();
             }
-
-            return false;
+            else
+                msg.onError("failed to apply dynamic index change operation because cache state changed " +
+                    "concurrently.");
         }
     }
 
@@ -127,9 +122,8 @@ public class QueryIndexStates implements Serializable {
      * Process finish message.
      *
      * @param msg Message.
-     * @return {@code True} if accept succeeded. It may fail in case of concurrent cache stop/start.
      */
-    public boolean finish(IndexFinishDiscoveryMessage msg) {
+    public void finish(IndexFinishDiscoveryMessage msg) {
         synchronized (mux) {
             AbstractIndexOperation op = msg.operation();
 
@@ -153,12 +147,8 @@ public class QueryIndexStates implements Serializable {
 
                         readyOps.put(idxName, state);
                     }
-
-                    return true;
                 }
             }
-
-            return false;
         }
     }
 

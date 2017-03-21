@@ -30,6 +30,9 @@ public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Error message. */
+    private transient volatile String errMsg;
+
     /**
      * Constructor.
      *
@@ -47,6 +50,20 @@ public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable public String onError() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg Error message.
+     */
+    public void onError(String errMsg) {
+        this.errMsg = errMsg;
     }
 
 

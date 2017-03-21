@@ -2789,7 +2789,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
         }
 
-        desc.tryProposeFromDiscoveryThread(locNodeId, msg);
+        desc.tryPropose(locNodeId, msg);
     }
 
     /**
@@ -2803,9 +2803,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
         if (desc == null)
-            return;
+            msg.onError("Cache was stopped concurrently.");
+        else
+            desc.tryAccept(msg);
 
-        desc.tryAccept(msg);
+        msg.exchange(true);
     }
 
     /**
@@ -2822,6 +2824,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         desc.tryFinish(msg);
+
+        msg.exchange(true);
     }
 
     /**
