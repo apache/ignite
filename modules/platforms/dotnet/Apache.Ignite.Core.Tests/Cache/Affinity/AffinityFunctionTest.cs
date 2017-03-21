@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             _ignite = Ignition.Start(cfg);
 
-            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"});
+            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "grid2"});
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "grid3",
+                IgniteInstanceName = "grid3",
             }))
             {
                 expectedNodeId = ignite.GetCluster().GetLocalNode().Id;

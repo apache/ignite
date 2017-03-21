@@ -1718,7 +1718,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "grid2",
+                IgniteInstanceName = "grid2",
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = GetCompactFooter()
