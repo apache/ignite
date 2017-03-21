@@ -157,7 +157,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
             // Specify type when it differs from declared type.
             if (valueType != realType)
+            {
                 writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
+            }
 
             if (IsBasicType(obj.GetType()))
             {
