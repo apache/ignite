@@ -153,9 +153,17 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
-            // Specify type for interfaces and abstract classes
-            if (valueType.IsAbstract)
+            var realType = obj.GetType();
+
+            // Specify type when it differs from declared type.
+            if (valueType != realType)
                 writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
+
+            if (IsBasicType(obj.GetType()))
+            {
+                WriteBasicProperty(obj, writer, realType, null);
+                return;
+            }
 
             // Write attributes
             foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsObsolete(p)))
@@ -425,8 +433,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (IsKeyValuePair(propertyType))
                 return false;
 
-            return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type) ||
-                   propertyType == typeof (object);
+            return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type);
         }
 
         /// <summary>
@@ -444,7 +451,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static TypeConverter GetConverter(PropertyInfo property, Type propertyType)
         {
-            Debug.Assert(property != null);
             Debug.Assert(propertyType != null);
 
             if (propertyType.IsEnum)
@@ -456,7 +462,8 @@ namespace Apache.Ignite.Core.Impl.Common
             if (propertyType == typeof(bool))
                 return BooleanLowerCaseConverter.Instance;
 
-            if (property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
+            if (property != null &&
+                property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
 
             if (propertyType == typeof (object))
