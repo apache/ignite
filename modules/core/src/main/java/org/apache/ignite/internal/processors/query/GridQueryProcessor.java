@@ -184,10 +184,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
-
+    /**
+     * Handle cache kernal start. At this point discovery and IO managers are operational,
+     * GridCacheProcessor.onKernalStart() registered caches received on discovery stage, but exchange worker is not
+     * started.
+     * <p>
+     * At this point we allow concurrent IO messages handling as initial cache state is consistent.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCacheKernalStart() throws IgniteCheckedException {
         // Start IO worker to consume racy IO messages.
         boolean startIoWorker = false;
 

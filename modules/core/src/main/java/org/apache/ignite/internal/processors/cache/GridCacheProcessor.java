@@ -874,6 +874,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
             }
+
+            ctx.query().onCacheKernalStart();
         }
         finally {
             cacheStartedLatch.countDown();
