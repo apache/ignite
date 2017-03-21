@@ -126,6 +126,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     @LoggerResource
     private transient IgniteLogger log;
 
+    /** Defines the type of hash to calculate - PowerOfTwo (for partition counts that are a power of 2)
+     * or Standard (for partition counts that are not a power of 2)
+     */
     public enum HashType { Standard, PowerOfTwo}
 
     /** HashType instance */
