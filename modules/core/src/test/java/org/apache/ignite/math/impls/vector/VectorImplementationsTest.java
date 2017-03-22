@@ -181,7 +181,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
                 if (expType == null) {
                     try {
-                        v.like(1);
+                        v.like(card);
                     } catch (UnsupportedOperationException uoe) {
                         return;
                     }
