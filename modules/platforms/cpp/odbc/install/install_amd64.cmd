@@ -7,7 +7,9 @@ if [%ODBC_AMD64%] == [] (
 	echo error: 64-bit driver is not specified. Call format: install_amd64 abs_path_to_64_bit_driver [abs_path_to_32_bit_driver]
 	pause
 	exit /b 1
-) else if exist %ODBC_AMD64% (
+)
+
+if exist %ODBC_AMD64% (
 	if exist %ODBC_AMD64%\ (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)
@@ -26,7 +28,11 @@ if [%ODBC_AMD64%] == [] (
 
 if [%ODBC_X86%] == [] (
 	echo warning: 32-bit driver is not specified. If you want to install 32-bit driver please specify path to it as a second argument.
-) else if exist %ODBC_X86% (
+	pause
+	exit /b 1
+)
+
+if exist %ODBC_X86% (
 	if exist %ODBC_X86%\ (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)

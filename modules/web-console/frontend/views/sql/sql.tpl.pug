@@ -91,20 +91,31 @@ mixin paragraph-rename
             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' ignite-on-enter='renameParagraph(paragraph, paragraph.editName)' ignite-on-escape='paragraph.edit = false')
 
 mixin query-settings
-    label.tipLabel(bs-tooltip data-placement='bottom' data-title='Configure periodical execution of last successfully executed query') Refresh rate:
-        button.btn.btn-default.fa.fa-clock-o.tipLabel(ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='{{ $ctrl.paragraphRateTemplateUrl }}' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
+    .panel-top-align
+        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Configure periodical execution of last successfully executed query') Refresh rate:
+            button.btn.btn-default.fa.fa-clock-o.tipLabel(ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='{{ $ctrl.paragraphRateTemplateUrl }}' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
 
-    label.tipLabel(bs-tooltip data-placement='bottom' data-title='Max number of rows to show in query result as one page') Page size:
-        button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
+        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Max number of rows to show in query result as one page') Page size:
+            button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.pageSize' bs-select bs-options='item for item in pageSizes')
 
-    label.tipLabel(bs-tooltip data-placement='bottom' data-title='Limit query max results to specified number of pages') Max pages:
-        button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.maxPages' bs-select bs-options='item.value as item.label for item in maxPages')
+        label.tipLabel(bs-tooltip data-placement='bottom' data-title='Limit query max results to specified number of pages') Max pages:
+            button.btn.btn-default.select-toggle.tipLabel(ng-model='paragraph.maxPages' bs-select bs-options='item.value as item.label for item in maxPages')
 
-    label.tipLabel(ng-if='nonCollocatedJoinsAvailable(paragraph)' bs-tooltip data-placement='bottom' data-title='Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
-        Nested joins are not supported for now.<br/>\
-        <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.' data-trigger='hover')
-        input(type='checkbox' ng-model='paragraph.nonCollocatedJoins')
-        span Allow non-collocated joins
+        .panel-tip-container
+            .row(ng-if='nonCollocatedJoinsAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Non-collocated joins is a special mode that allow to join data across cluster without collocation.<br/>\
+                    Nested joins are not supported for now.<br/>\
+                    <b>NOTE</b>: In some cases it may consume more heap memory or may take a long time than collocated joins.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.nonCollocatedJoins')
+                    span Allow non-collocated joins
+            .row(ng-if='enforceJoinOrderAvailable(paragraph)')
+                label.tipLabel(bs-tooltip data-placement='bottom' data-title='Enforce join order of tables in the query.<br/>\
+                    If <b>set</b> then query optimizer will not reorder tables in join.<br/>\
+                    <b>NOTE:</b> It is not recommended to enable this property until you are sure that\
+                    your indexes and the query itself are correct and tuned as much as possible but\
+                    query optimizer still produces wrong join order.' data-trigger='hover')
+                    input(type='checkbox' ng-model='paragraph.enforceJoinOrder')
+                    span Enforce join order
 
 mixin query-actions
     button.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='execute(paragraph)') Execute
@@ -188,7 +199,7 @@ mixin paragraph-scan
                 | Scan on selected node
 
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
-            .error(ng-switch-when='error') Error: {{paragraph.errMsg}}
+            .error(ng-switch-when='error') Error: {{paragraph.error.message}}
             .empty(ng-switch-when='empty') Result set is empty
             .table(ng-switch-when='table')
                 +table-result-heading-scan
@@ -236,7 +247,7 @@ mixin paragraph-query
             .pull-right
                 +query-settings
         .col-sm-12.sql-result(ng-if='paragraph.queryExecuted()' ng-switch='paragraph.resultType()')
-            .error(ng-switch-when='error') Error: {{paragraph.errMsg}}
+            .error(ng-switch-when='error') Error: {{paragraph.error.message}}
             .empty(ng-switch-when='empty') Result set is empty
             .table(ng-switch-when='table')
                 +table-result-heading-query
@@ -244,9 +255,10 @@ mixin paragraph-query
             .chart(ng-switch-when='chart')
                 +chart-result
             .footer.clearfix
-                a.pull-left(ng-click='showResultQuery(paragraph)') Show query
+                a.pull-left(ng-show='paragraph.resultType() === "error"' ng-click='showStackTrace(paragraph)') Show error details
+                a.pull-left(ng-show='paragraph.resultType() !== "error"' ng-click='showResultQuery(paragraph)') Show query
 
-                -var nextVisibleCondition = 'paragraph.resultType() != "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
+                -var nextVisibleCondition = 'paragraph.resultType() !== "error" && paragraph.queryId && paragraph.nonRefresh() && (paragraph.table() || paragraph.chart() && !paragraph.scanExplain())'
 
                 .pull-right(ng-show=`${nextVisibleCondition}` ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                     i.fa.fa-chevron-circle-right
