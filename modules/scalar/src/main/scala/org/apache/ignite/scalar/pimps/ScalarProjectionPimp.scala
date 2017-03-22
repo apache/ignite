@@ -377,7 +377,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
         IgniteFuture[java.util.Collection[R]] = {
         val comp = value.ignite().compute(forPredicate(p))
 
-        comp.callAsync()[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
+        comp.callAsync[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
     }
 
     /**
