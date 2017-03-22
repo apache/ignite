@@ -23,6 +23,8 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
 /**
  * A vector interface.
@@ -170,7 +172,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param fun Mapping function.
      * @return This vector.
      */
-    Vector map(DoubleFunction<Double> fun);
+    Vector map(IgniteDoubleFunction<Double> fun);
 
     /**
      * Maps all values in this vector through a given function.
@@ -184,7 +186,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return This function.
      * @throws CardinalityException Thrown if cardinalities mismatch.
      */
-    Vector map(Vector vec, BiFunction<Double, Double, Double> fun);
+    Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun);
 
     /**
      * Maps all elements of this vector by applying given function to each element with a constant
@@ -194,7 +196,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param y Second parameter for mapping function.
      * @return This vector.
      */
-    Vector map(BiFunction<Double, Double, Double> fun, double y);
+    Vector map(IgniteBiFunction<Double, Double, Double> fun, double y);
 
     /**
      * Creates new vector containing values from this vector divided by the argument.
@@ -442,7 +444,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param zeroVal Zero value for fold operation.
      * @return Folded value of this vector.
      */
-    <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal);
+    <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal);
 
     /**
      * Combines & maps two vector and folds them into a single value.
@@ -455,7 +457,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Folded value of these vectors.
      * @throws CardinalityException Thrown when cardinalities mismatch.
      */
-    <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal);
+    <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal);
 
     /**
      * Gets the sum of squares of all elements in this vector.

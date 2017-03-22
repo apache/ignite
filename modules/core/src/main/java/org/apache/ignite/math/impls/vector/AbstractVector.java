@@ -167,7 +167,7 @@ public abstract class AbstractVector extends DistributionSupport implements Vect
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(DoubleFunction<Double> fun) {
+    @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         if (sto.isArrayBased()) {
             double[] data = sto.data();
 
@@ -184,7 +184,7 @@ public abstract class AbstractVector extends DistributionSupport implements Vect
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(vec);
 
         int len = size();
@@ -196,7 +196,7 @@ public abstract class AbstractVector extends DistributionSupport implements Vect
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         int len = size();
 
         for (int i = 0; i < len; i++)
@@ -363,7 +363,7 @@ public abstract class AbstractVector extends DistributionSupport implements Vect
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
         T res = zeroVal;
         int len = size();
 
@@ -374,7 +374,7 @@ public abstract class AbstractVector extends DistributionSupport implements Vect
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
+    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
         checkCardinality(vec);
 
         T res = zeroVal;

@@ -24,6 +24,8 @@ import org.apache.ignite.math.Vector;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
 /**
  * Convenient class that can be used to add decorations to an existing vector. Subclasses
@@ -180,17 +182,17 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(DoubleFunction<Double> fun) {
+    @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         return dlg.map(fun);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
         return dlg.map(vec, fun);
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         return dlg.map(fun, y);
     }
 
@@ -325,12 +327,12 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(BiFunction<T, Double, T> foldFun, DoubleFunction<Double> mapFun, T zeroVal) {
+    @Override public <T> T foldMap(IgniteBiFunction<T, Double, T> foldFun, IgniteDoubleFunction<Double> mapFun, T zeroVal) {
         return dlg.foldMap(foldFun, mapFun, zeroVal);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T foldMap(Vector vec, BiFunction<T, Double, T> foldFun, BiFunction<Double, Double, Double> combFun, T zeroVal) {
+    @Override public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun, IgniteBiFunction<Double, Double, Double> combFun, T zeroVal) {
         return dlg.foldMap(vec, foldFun, combFun, zeroVal);
     }
 

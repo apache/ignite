@@ -17,6 +17,8 @@
 
 package org.apache.ignite.math.impls.storage.vector;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
@@ -54,6 +56,13 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
         this.cache = cache;
         this.keyMapper = keyMapper;
         this.valMapper = valMapper;
+
+        Map batchInitVals = new HashMap();
+
+        for (int i = 0; i < size; i++)
+            batchInitVals.put(keyMapper.apply(i), 0d);
+
+        cache.putAll(batchInitVals);
     }
 
     /**

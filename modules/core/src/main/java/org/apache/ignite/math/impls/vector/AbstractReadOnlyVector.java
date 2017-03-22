@@ -3,6 +3,8 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorStorage;
+import org.apache.ignite.math.functions.IgniteBiFunction;
+import org.apache.ignite.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.math.impls.matrix.FunctionMatrix;
 
 import java.util.function.BiFunction;
@@ -65,19 +67,19 @@ public abstract class AbstractReadOnlyVector extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(DoubleFunction<Double> fun) {
+    @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         return new FunctionVector(size(), (i) -> fun.apply(get(i)));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(Vector vec, BiFunction<Double, Double, Double> fun) {
+    @Override public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun) {
         checkCardinality(vec);
 
         return new FunctionVector(size(), (i) -> fun.apply(get(i), vec.get(i)));
     }
 
     /** {@inheritDoc} */
-    @Override public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         return new FunctionVector(size(), (i) -> fun.apply(get(i), y));
     }
 

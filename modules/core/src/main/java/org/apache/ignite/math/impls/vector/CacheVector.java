@@ -102,12 +102,12 @@ public class CacheVector<K, V> extends AbstractVector {
 
 
     @Override
-    public Vector map(DoubleFunction<Double> fun) {
+    public Vector map(IgniteDoubleFunction<Double> fun) {
         return mapOverValues(fun::apply);
     }
 
     @Override
-    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+    public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         // TODO: provide cache-optimized implementation.
         return super.map(fun, y); // TODO
     }
