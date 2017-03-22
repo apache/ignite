@@ -315,6 +315,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
+        U.shutdownNow(GridServiceProcessor.class, depExe, log);
+
         if (!ctx.clientNode())
             ctx.event().removeLocalEventListener(topLsnr);
 
@@ -351,8 +353,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     ctx.name());
             }
         }
-
-        U.shutdownNow(GridServiceProcessor.class, depExe, log);
 
         Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
@@ -1399,7 +1399,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 return;
 
             try {
-                depExe.execute(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         onSystemCacheUpdated(deps);
                     }
@@ -1586,7 +1586,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else
                     topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
 
-                depExe.execute(new BusyRunnable() {
+                depExe.execute(new DepRunnable() {
                     @Override public void run0() {
                         ClusterNode oldest = ctx.discovery().oldestAliveCacheServerNode(topVer);
 
@@ -1794,11 +1794,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private abstract class BusyRunnable implements Runnable {
+    private abstract class DepRunnable implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
             if (!busyLock.enterBusy())
                 return;
+
+            // Won't block ServiceProcessor stopping process.
+            busyLock.leaveBusy();
 
             svcName.set(null);
 
@@ -1812,8 +1815,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     throw t;
             }
             finally {
-                busyLock.leaveBusy();
-
                 svcName.set(null);
             }
         }
