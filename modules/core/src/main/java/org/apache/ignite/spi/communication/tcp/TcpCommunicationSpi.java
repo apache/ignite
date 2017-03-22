@@ -333,10 +333,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = -1;
 
-    /** */
+    /** Recovery last received ID message type. */
     public static final short RECOVERY_LAST_ID_MSG_TYPE = -2;
 
-    /** */
+    /** Handshake message type. */
     public static final short HANDSHAKE_MSG_TYPE = -3;
 
     /** */
@@ -3499,20 +3499,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
-     * Write message type to ouput stream.
+     * Write message type to output stream.
      *
      * @param os Output stream.
      * @param type Message type.
      * @throws IOException On error.
      */
-    private static void writeMsgType(OutputStream os, short type) throws IOException {
-        if (GridUnsafe.BIG_ENDIAN) {
-            os.write((byte)type >> 8);
-            os.write((byte)type);
-        } else {
-            os.write((byte)type);
-            os.write((byte)type >> 8);
-        }
+    private static void writeMessageType(OutputStream os, short type) throws IOException {
+        os.write((byte)(type & 0xFF));
+        os.write((byte)((type >> 8) & 0xFF));
     }
 
     /**
@@ -3993,7 +3988,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 NodeIdMessage msg = new NodeIdMessage(id);
 
                 out.write(U.IGNITE_HEADER);
-                writeMsgType(out, NODE_ID_MSG_TYPE);
+                writeMessageType(out, NODE_ID_MSG_TYPE);
                 out.write(msg.nodeIdBytes);
 
                 out.flush();

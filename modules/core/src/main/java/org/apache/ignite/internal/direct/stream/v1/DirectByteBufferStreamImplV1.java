@@ -814,10 +814,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 return null;
             }
 
-            byte b0 = readByte();
-            byte b1 = readByte();
-
-            short type = (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+            short type = readShort();
 
             msg = type == Short.MIN_VALUE ? null : msgFactory.create(type);
 

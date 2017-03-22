@@ -50,12 +50,20 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private static final short DIRECT_TYPE = -127;
 
     /** */
+    private static final short DIRECT_TYPE_OVER_BYTE = 1000;
+
+    /** */
     private int bufSize;
 
     static {
         GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
             @Override public Message apply() {
                 return new TestMessage();
+            }
+        });
+        GridIoMessageFactory.registerCustom(DIRECT_TYPE_OVER_BYTE, new CO<Message>() {
+            @Override public Message apply() {
+                return new TestOverByteIdMessage();
             }
         });
     }
@@ -86,7 +94,21 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend();
+            doSend(new TestMessage(), TestMessage.class);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSendMessageOverByteId() throws Exception {
+        try {
+            startGridsMultiThreaded(2);
+
+            doSend(new TestOverByteIdMessage(), TestOverByteIdMessage.class);
         }
         finally {
             stopAllGrids();
@@ -102,7 +124,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend();
+            doSend(new TestMessage(), TestMessage.class);
         }
         finally {
             stopAllGrids();
@@ -110,11 +132,14 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     }
 
     /**
+     * @param msg Message to send.
+     * @param msgCls Message class to check the received message.
+     *
      * @throws Exception If failed.
      */
-    private void doSend() throws Exception {
-        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
+    private void doSend(Message msg, final Class<?> msgCls) throws Exception {
+        GridIoManager mgr0 = grid(0).context().io();
+        GridIoManager mgr1 = grid(1).context().io();
 
         String topic = "test-topic";
 
@@ -122,14 +147,15 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
-                latch.countDown();
+                if (msgCls.isInstance(msg))
+                    latch.countDown();
             }
         });
 
         long time = System.nanoTime();
 
         for (int i = 1; i <= SAMPLE_CNT; i++) {
-            mgr0.sendToCustomTopic(grid(1).localNode(), topic, new TestMessage(), GridIoPolicy.PUBLIC_POOL);
+            mgr0.sendToCustomTopic(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
             if (i % 500 == 0)
                 info("Sent messages count: " + i);
@@ -176,4 +202,38 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
             return 0;
         }
     }
+
+    /** */
+    private static class TestOverByteIdMessage implements Message {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!writer.writeHeader(directType(), (byte)0))
+                return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return DIRECT_TYPE_OVER_BYTE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
+    }
+
 }
