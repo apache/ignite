@@ -21,6 +21,7 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <ignite/common/utils.h>
 #include <ignite/common/fixed_size_array.h>
 #include <ignite/binary/binary_object.h>
 #include <ignite/binary/binary_writer.h>
@@ -127,6 +128,22 @@ void CheckField(const T& obj, const char* field, const F& expected)
     BOOST_CHECK_EQUAL(actual, expected);
 }
 
+template<typename F, typename T>
+void CheckFieldNP(const T& obj, const char* field, const F& expected)
+{
+    InteropUnpooledMemory mem(1024);
+    FillMem<T>(mem, obj);
+
+    TemplatedBinaryIdResolver<T> resolver;
+    BinaryObject binObj(mem, 0, &resolver, 0);
+
+    BOOST_REQUIRE(binObj.HasField(field));
+
+    F actual = binObj.GetField<F>(field);
+
+    BOOST_CHECK(actual == expected);
+}
+
 template<typename T>
 void CheckNoField(const T& obj, const char* field)
 {
@@ -222,6 +239,49 @@ BOOST_AUTO_TEST_CASE(UserBinaryFieldsGetField)
 
     CheckNoField(some, "rawVal1");
     CheckNoField(some, "rawVal2");
+    CheckNoField(some, "some");
+    CheckNoField(some, "unknown");
+    CheckNoField(some, "");
+}
+
+BOOST_AUTO_TEST_CASE(UserTestTypeGetField)
+{
+    TestType dflt;
+
+    CheckField<int8_t>(dflt, "i8Field", dflt.i8Field);
+    CheckField<int16_t>(dflt, "i16Field", dflt.i16Field);
+    CheckField<int32_t>(dflt, "i32Field", dflt.i32Field);
+    CheckField<int64_t>(dflt, "i64Field", dflt.i64Field);
+    CheckField<std::string>(dflt, "strField", dflt.strField);
+    CheckField<float>(dflt, "floatField", dflt.floatField);
+    CheckField<double>(dflt, "doubleField", dflt.doubleField);
+    CheckField<bool>(dflt, "boolField", dflt.boolField);
+    CheckField<Guid>(dflt, "guidField", dflt.guidField);
+    CheckFieldNP<Date>(dflt, "dateField", dflt.dateField);
+    CheckFieldNP<Time>(dflt, "timeField", dflt.timeField);
+    CheckFieldNP<Timestamp>(dflt, "timestampField", dflt.timestampField);
+
+    CheckNoField(dflt, "some");
+    CheckNoField(dflt, "unknown");
+    CheckNoField(dflt, "");
+
+    TestType some(31, 2314, 54363467, -534180269165, "Lorem ipsum", 45364.46462f, 0.0750732, true,
+        Guid(8934658962, 56784598325), common::MakeDateGmt(1997, 3, 21), common::MakeTimeGmt(23, 50, 11),
+        common::MakeTimestampGmt(2002, 4, 12, 14, 36, 29, 438576348));
+
+    CheckField<int8_t>(some, "i8Field", some.i8Field);
+    CheckField<int16_t>(some, "i16Field", some.i16Field);
+    CheckField<int32_t>(some, "i32Field", some.i32Field);
+    CheckField<int64_t>(some, "i64Field", some.i64Field);
+    CheckField<std::string>(some, "strField", some.strField);
+    CheckField<float>(some, "floatField", some.floatField);
+    CheckField<double>(some, "doubleField", some.doubleField);
+    CheckField<bool>(some, "boolField", some.boolField);
+    CheckField<Guid>(some, "guidField", some.guidField);
+    CheckFieldNP<Date>(some, "dateField", some.dateField);
+    CheckFieldNP<Time>(some, "timeField", some.timeField);
+    CheckFieldNP<Timestamp>(some, "timestampField", some.timestampField);
+
     CheckNoField(some, "some");
     CheckNoField(some, "unknown");
     CheckNoField(some, "");
