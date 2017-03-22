@@ -371,7 +371,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
         // todo find out if this is indeed OK
-        return v instanceof RandomVector || v instanceof  ConstantVector
+        return v instanceof RandomVector || v instanceof ConstantVector
             || v instanceof SingleElementVector || v instanceof SingleElementVectorView;
     }
 
@@ -426,9 +426,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             new ElementsChecker(v, ref, desc); // IMPL NOTE this initialises vector and reference array
 
-            final double exp = calcRef.apply(ref);
-            final double obtained = calcVec.apply(v);
-            final Metric metric = new Metric(exp, obtained);
+            final Metric metric = new Metric(calcRef.apply(ref), calcVec.apply(v));
 
             assertTrue("Not close enough at " + desc
                 + ", " + metric, metric.closeEnough());

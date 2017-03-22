@@ -56,6 +56,7 @@ import org.junit.runners.Suite;
     VectorAttributesTest.class,
     VectorToMatrixTest.class,
     VectorNormTest.class,
+    VectorFoldMapTest.class,
     // Vector storage tests
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,

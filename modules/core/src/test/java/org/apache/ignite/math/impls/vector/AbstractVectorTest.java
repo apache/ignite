@@ -120,39 +120,6 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void mapTwoVectors() {
-        double[] data = initVector();
-
-        AbstractVector testVector1 = getAbstractVector(createStorage(data));
-
-        Vector map = testVector.map(testVector1, Functions.PLUS);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), data[i] + data[i], NIL_DELTA);
-    }
-
-    /** */
-    @Test
-    public void mapDoubleFunc() {
-        double[] data = initVector();
-        Vector map = testVector.map(Functions.INV);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.INV.apply(data[i]), NIL_DELTA);
-    }
-
-    /** */
-    @Test
-    public void mapCurrying() {
-        double[] data = initVector();
-        Vector map = testVector.map(Functions.PLUS, SECOND_ARG);
-
-        for (int i = 0; i < STORAGE_SIZE; i++)
-            assertEquals(VALUE_NOT_EQUALS, map.get(i), Functions.PLUS.apply(data[i], SECOND_ARG), NIL_DELTA);
-    }
-
-    /** */
-    @Test
     public void set() {
         double[] data = initVector();
 
@@ -298,23 +265,12 @@ public class AbstractVectorTest {
 
         AbstractVector testVector1 = getAbstractVector(storage1);
 
-        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, Functions.PLUS, Functions.PLUS, 0d), Arrays.stream(data0).sum() + Arrays.stream(data1).sum(), EXPECTED_DELTA);
-
         String testVal = "";
 
         for (int i = 0; i < data0.length; i++)
             testVal += data0[i] + data1[i];
 
         assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(testVector1, (string, xi) -> string.concat(xi.toString()), Functions.PLUS, ""), testVal);
-
-    }
-
-    /** */
-    @Test
-    public void foldMap() {
-        double[] data = initVector();
-
-        assertEquals(VALUE_NOT_EQUALS, testVector.foldMap(Functions.PLUS, Math::sin, 0d), Arrays.stream(data).map(Math::sin).sum(), EXPECTED_DELTA);
     }
 
     /** */
@@ -554,21 +510,6 @@ public class AbstractVectorTest {
 
         for (int i = 0; i < STORAGE_SIZE; i++)
             storage.set(i, Math.random());
-
-        return storage;
-    }
-
-    /**
-     * Create new vector storage from given data.
-     *
-     * @param data Data.
-     * @return Vector storage.
-     */
-    private VectorStorage createStorage(double[] data){
-        ArrayVectorStorage storage = new ArrayVectorStorage(data.length);
-
-        for (int i = 0; i < data.length; i++)
-            storage.set(i, data[i]);
 
         return storage;
     }
