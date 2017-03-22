@@ -55,12 +55,11 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.FastUpdateArguments;
-import org.apache.ignite.internal.processors.query.h2.dml.KeyValueSupplier;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -75,7 +74,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.Prepared;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -235,7 +233,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
 
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement)stmt);
+        Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
@@ -276,11 +274,8 @@ public class DmlStatementsProcessor {
                 }
             }, null);
 
-            GridH2RowDescriptor desc = plan.tbl.rowDescriptor();
-
             if (plan.rowsNum == 1) {
-                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next().toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                IgniteBiTuple t = rowToKeyValue(cctx, cur.iterator().next(), plan);
 
                 streamer.addData(t.getKey(), t.getValue());
 
@@ -290,8 +285,7 @@ public class DmlStatementsProcessor {
             Map<Object, Object> rows = new LinkedHashMap<>(plan.rowsNum);
 
             for (List<?> row : cur) {
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes,
-                    plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
             }
@@ -391,7 +385,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private UpdatePlan getPlanForStatement(String spaceName, PreparedStatement prepStmt,
         @Nullable Integer errKeysPos) throws IgniteCheckedException {
-        Prepared p = GridSqlQueryParser.prepared((JdbcPreparedStatement) prepStmt);
+        Prepared p = GridSqlQueryParser.prepared(prepStmt);
 
         spaceName = F.isEmpty(spaceName) ? "default" : spaceName;
 
@@ -568,7 +562,6 @@ public class DmlStatementsProcessor {
         while (it.hasNext()) {
             List<?> e = it.next();
             Object key = e.get(0);
-            Object val = (hasNewVal ? e.get(valColIdx) : e.get(1));
 
             Object newVal;
 
@@ -590,9 +583,6 @@ public class DmlStatementsProcessor {
             if (newVal == null)
                 throw new IgniteSQLException("New value for UPDATE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-            if (bin && !(val instanceof BinaryObject))
-                val = cctx.grid().binary().toBinary(val);
-
             // Skip key and value - that's why we start off with 2nd column
             for (int i = 0; i < plan.tbl.getColumns().length - 2; i++) {
                 Column c = plan.tbl.getColumn(i + 2);
@@ -604,13 +594,10 @@ public class DmlStatementsProcessor {
 
                 boolean hasNewColVal = newColVals.containsKey(c.getName());
 
-                // Binary objects get old field values from the Builder, so we can skip what we're not updating
-                if (bin && !hasNewColVal)
+                if (!hasNewColVal)
                     continue;
 
-                // Column values that have been explicitly specified have priority over field values in old or new _val
-                // If no value given for the column, then we expect to find it in value, and not in key - hence null arg.
-                Object colVal = hasNewColVal ? newColVals.get(c.getName()) : prop.value(null, val);
+                Object colVal = newColVals.get(c.getName());
 
                 // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
                 desc.setColumnValue(null, newVal, colVal, i);
@@ -784,8 +771,8 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
-                plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next(),
+                plan);
 
             cctx.cache().put(t.getKey(), t.getValue());
             return 1;
@@ -797,8 +784,7 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier, plan.valSupplier,
-                    plan.keyColIdx, plan.valColIdx, desc);
+                IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -830,8 +816,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowsNum == 1) {
-            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next().toArray(), plan.colNames, plan.colTypes,
-                plan.keySupplier, plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+            IgniteBiTuple t = rowToKeyValue(cctx, cursor.iterator().next(), plan);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -856,8 +841,7 @@ public class DmlStatementsProcessor {
             while (it.hasNext()) {
                 List<?> row = it.next();
 
-                final IgniteBiTuple t = rowToKeyValue(cctx, row.toArray(), plan.colNames, plan.colTypes, plan.keySupplier,
-                    plan.valSupplier, plan.keyColIdx, plan.valColIdx, desc);
+                final IgniteBiTuple t = rowToKeyValue(cctx, row, plan);
 
                 rows.put(t.getKey(), new InsertEntryProcessor(t.getValue()));
 
@@ -904,7 +888,7 @@ public class DmlStatementsProcessor {
      * @param rows Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     private static PageProcessingResult processPage(GridCacheContext cctx,
@@ -925,35 +909,29 @@ public class DmlStatementsProcessor {
      * Convert row presented as an array of Objects into key-value pair to be inserted to cache.
      * @param cctx Cache context.
      * @param row Row to process.
-     * @param cols Query cols.
-     * @param colTypes Column types to convert data from {@code row} to.
-     * @param keySupplier Key instantiation method.
-     * @param valSupplier Key instantiation method.
-     * @param keyColIdx Key column index, or {@code -1} if no key column is mentioned in {@code cols}.
-     * @param valColIdx Value column index, or {@code -1} if no value column is mentioned in {@code cols}.
-     * @param rowDesc Row descriptor.
+     * @param plan Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ResultOfMethodCallIgnored"})
-    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, Object[] row, String[] cols,
-        int[] colTypes, KeyValueSupplier keySupplier, KeyValueSupplier valSupplier, int keyColIdx, int valColIdx,
-        GridH2RowDescriptor rowDesc) throws IgniteCheckedException {
+    private IgniteBiTuple<?, ?> rowToKeyValue(GridCacheContext cctx, List<?> row, UpdatePlan plan)
+        throws IgniteCheckedException {
+        GridH2RowDescriptor rowDesc = plan.tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
-        Object key = keySupplier.apply(F.asList(row));
+        Object key = plan.keySupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.keyClass())) {
-            assert keyColIdx != -1;
+        if (QueryUtils.isSqlType(desc.keyClass())) {
+            assert plan.keyColIdx != -1;
 
-            key = convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
+            key = convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
         }
 
-        Object val = valSupplier.apply(F.asList(row));
+        Object val = plan.valSupplier.apply(row);
 
-        if (GridQueryProcessor.isSqlType(desc.valueClass())) {
-            assert valColIdx != -1;
+        if (QueryUtils.isSqlType(desc.valueClass())) {
+            assert plan.valColIdx != -1;
 
-            val = convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
+            val = convert(val, rowDesc, desc.valueClass(), plan.colTypes[plan.valColIdx]);
         }
 
         if (key == null)
@@ -962,17 +940,37 @@ public class DmlStatementsProcessor {
         if (val == null)
             throw new IgniteSQLException("Value for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_VALUE);
 
-        for (int i = 0; i < cols.length; i++) {
-            if (i == keyColIdx || i == valColIdx)
+        Map<String, Object> newColVals = new HashMap<>();
+
+        for (int i = 0; i < plan.colNames.length; i++) {
+            if (i == plan.keyColIdx || i == plan.valColIdx)
                 continue;
 
-            GridQueryProperty prop = desc.property(cols[i]);
+            String colName = plan.colNames[i];
+
+            GridQueryProperty prop = desc.property(colName);
 
             assert prop != null;
 
             Class<?> expCls = prop.type();
 
-            desc.setValue(cols[i], key, val, convert(row[i], rowDesc, expCls, colTypes[i]));
+            newColVals.put(colName, convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
+        }
+
+        // We update columns in the order specified by the table for a reason - table's
+        // column order preserves their precedence for correct update of nested properties.
+        Column[] cols = plan.tbl.getColumns();
+
+        // First 2 columns are _key and _val, skip 'em.
+        for (int i = 2; i < cols.length; i++) {
+            String colName = cols[i].getName();
+
+            if (!newColVals.containsKey(colName))
+                continue;
+
+            Object colVal = newColVals.get(colName);
+
+            desc.setValue(colName, key, val, colVal);
         }
 
         if (cctx.binaryMarshaller()) {

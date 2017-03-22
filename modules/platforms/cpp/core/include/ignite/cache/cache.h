@@ -40,7 +40,10 @@
 #include <ignite/cache/query/continuous/continuous_query_handle.h>
 #include <ignite/cache/query/continuous/continuous_query.h>
 #include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/cache/cache_entry_processor_holder.h>
 #include <ignite/impl/operations.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/ignite_error.h>
 
 namespace ignite
 {
@@ -153,9 +156,9 @@ namespace ignite
              */
             bool ContainsKey(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                return impl.Get()->ContainsKey(op, &err);
+                return impl.Get()->ContainsKey(op, err);
             }
 
             /**
@@ -188,9 +191,9 @@ namespace ignite
              */
             bool ContainsKeys(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                return impl.Get()->ContainsKeys(op, &err);
+                return impl.Get()->ContainsKeys(op, err);
             }
 
             /**
@@ -233,10 +236,10 @@ namespace ignite
              */
             V LocalPeek(const K& key, int32_t peekModes, IgniteError& err)
             {
-                impl::InCacheLocalPeekOperation<K> inOp(&key, peekModes);
+                impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->LocalPeek(inOp, outOp, peekModes, &err);
+                impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
 
                 return outOp.GetResult();
             }
@@ -279,10 +282,10 @@ namespace ignite
              */
             V Get(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->Get(inOp, outOp, &err);
+                impl.Get()->Get(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -325,10 +328,10 @@ namespace ignite
              */
             std::map<K, V> GetAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> inOp(&keys);
+                impl::InSetOperation<K> inOp(keys);
                 impl::OutMapOperation<K, V> outOp;
 
-                impl.Get()->GetAll(inOp, outOp, &err);
+                impl.Get()->GetAll(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -365,9 +368,9 @@ namespace ignite
              */
             void Put(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                impl.Get()->Put(op, &err);
+                impl.Get()->Put(op, err);
             }
 
             /**
@@ -400,9 +403,9 @@ namespace ignite
              */
             void PutAll(const std::map<K, V>& vals, IgniteError& err)
             {
-                impl::InMapOperation<K, V> op(&vals);
+                impl::InMapOperation<K, V> op(vals);
 
-                impl.Get()->PutAll(op, &err);
+                impl.Get()->PutAll(op, err);
             }
 
             /**
@@ -441,10 +444,10 @@ namespace ignite
              */
             V GetAndPut(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndPut(inOp, outOp, &err);
+                impl.Get()->GetAndPut(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -485,10 +488,10 @@ namespace ignite
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndReplace(inOp, outOp, &err);
+                impl.Get()->GetAndReplace(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -523,10 +526,10 @@ namespace ignite
              */
             V GetAndRemove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndRemove(inOp, outOp, &err);
+                impl.Get()->GetAndRemove(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -565,9 +568,9 @@ namespace ignite
              */
             bool PutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->PutIfAbsent(op, &err);
+                return impl.Get()->PutIfAbsent(op, err);
             }
 
             /**
@@ -620,10 +623,10 @@ namespace ignite
              */
             V GetAndPutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndPutIfAbsent(inOp, outOp, &err);
+                impl.Get()->GetAndPutIfAbsent(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -672,9 +675,9 @@ namespace ignite
              */
             bool Replace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->Replace(op, &err);
+                return impl.Get()->Replace(op, err);
             }
 
             /**
@@ -715,9 +718,9 @@ namespace ignite
              */
             bool Replace(const K& key, const V& oldVal, const V& newVal, IgniteError& err)
             {
-                impl::In3Operation<K, V, V> op(&key, &oldVal, &newVal);
+                impl::In3Operation<K, V, V> op(key, oldVal, newVal);
 
-                return impl.Get()->ReplaceIfEqual(op, &err);
+                return impl.Get()->ReplaceIfEqual(op, err);
             }
 
             /**
@@ -752,9 +755,9 @@ namespace ignite
              */
             void LocalEvict(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->LocalEvict(op, &err);
+                impl.Get()->LocalEvict(op, err);
             }
 
             /**
@@ -780,7 +783,7 @@ namespace ignite
              */
             void Clear(IgniteError& err)
             {
-                impl.Get()->Clear(&err);
+                impl.Get()->Clear(err);
             }
 
             /**
@@ -811,9 +814,9 @@ namespace ignite
              */
             void Clear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                impl.Get()->Clear(op, &err);
+                impl.Get()->Clear(op, err);
             }
 
             /**
@@ -844,9 +847,9 @@ namespace ignite
              */
             void ClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->ClearAll(op, &err);
+                impl.Get()->ClearAll(op, err);
             }
 
             /**
@@ -883,9 +886,9 @@ namespace ignite
              */
             void LocalClear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                impl.Get()->LocalClear(op, &err);
+                impl.Get()->LocalClear(op, err);
             }
 
             /**
@@ -922,9 +925,9 @@ namespace ignite
              */
             void LocalClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->LocalClearAll(op, &err);
+                impl.Get()->LocalClearAll(op, err);
             }
 
             /**
@@ -971,9 +974,9 @@ namespace ignite
              */
             bool Remove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                return impl.Get()->Remove(op, &err);
+                return impl.Get()->Remove(op, err);
             }
 
             /**
@@ -1012,9 +1015,9 @@ namespace ignite
              */
             bool Remove(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->RemoveIfEqual(op, &err);
+                return impl.Get()->RemoveIfEqual(op, err);
             }
 
             /**
@@ -1047,9 +1050,9 @@ namespace ignite
              */
             void RemoveAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->RemoveAll(op, &err);
+                impl.Get()->RemoveAll(op, err);
             }
 
             /**
@@ -1080,7 +1083,7 @@ namespace ignite
              */
             void RemoveAll(IgniteError& err)
             {
-                return impl.Get()->RemoveAll(&err);
+                return impl.Get()->RemoveAll(err);
             }
 
             /**
@@ -1138,7 +1141,7 @@ namespace ignite
              */
             int32_t LocalSize(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->Size(peekModes, true, &err);
+                return impl.Get()->Size(peekModes, true, err);
             }
 
             /**
@@ -1200,7 +1203,7 @@ namespace ignite
              */
             int32_t Size(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->Size(peekModes, false, &err);
+                return impl.Get()->Size(peekModes, false, err);
             }
 
             /**
@@ -1233,7 +1236,7 @@ namespace ignite
              */
             query::QueryCursor<K, V> Query(const query::SqlQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySql(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySql(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
@@ -1268,7 +1271,7 @@ namespace ignite
              */
             query::QueryCursor<K, V> Query(const query::TextQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryText(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryText(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
@@ -1303,7 +1306,7 @@ namespace ignite
              */
             query::QueryCursor<K, V> Query(const query::ScanQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
@@ -1338,9 +1341,119 @@ namespace ignite
              */
             query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, err);
 
                 return query::QueryFieldsCursor(cursorImpl);
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * Processor class should be registered as a cache entry processor using
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
+             * @code{.cpp}
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
+             * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
+             * @endcode
+             *
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class.
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg)
+            {
+                IgniteError err;
+
+                R res = Invoke<R>(key, processor, arg, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * Processor class should be registered as a cache entry processor using
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
+             * @code{.cpp}
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
+             * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
+             * @endcode
+             *
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class.
+             *
+             * Sets err param which should be checked for the operation result.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @param err Error.
+             * @return Result of the processing. Default-constructed value on error.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
+            {
+                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
+
+                ProcessorHolder procHolder(processor, arg);
+
+                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
+                impl::Out1Operation<R> outOp;
+
+                impl.Get()->Invoke(inOp, outOp, err);
+
+                return outOp.GetResult();
             }
 
             /**

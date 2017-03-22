@@ -828,17 +828,38 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public List<ClusterNode> nodes(int p,
+        AffinityAssignment affAssignment,
+        List<ClusterNode> affNodes) {
+        return nodes0(p, affAssignment, affNodes);
+    }
+
+    /** {@inheritDoc} */
     @Override public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         AffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
         List<ClusterNode> affNodes = affAssignment.get(p);
+
+        List<ClusterNode> nodes = nodes0(p, affAssignment, affNodes);
+
+        return nodes != null ? nodes : affNodes;
+    }
+
+    /**
+     * @param p Partition.
+     * @param affAssignment Assignments.
+     * @param affNodes Node assigned for given partition by affinity.
+     * @return Nodes responsible for given partition (primary is first).
+     */
+    @Nullable private List<ClusterNode> nodes0(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes) {
+        AffinityTopologyVersion topVer = affAssignment.topologyVersion();
 
         lock.readLock().lock();
 
         try {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
                 ", topVer2=" + this.topVer +
-                ", node=" + cctx.gridName() +
+                ", node=" + cctx.igniteInstanceName() +
                 ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
@@ -866,7 +887,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            return nodes != null ? nodes : affNodes;
+            return nodes;
         }
         finally {
             lock.readLock().unlock();
@@ -968,7 +989,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", started=" + cctx.started() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + cctx.localNode().id() +
-                ", locName=" + cctx.gridName() + ']';
+                ", locName=" + cctx.igniteInstanceName() + ']';
 
             GridDhtPartitionFullMap m = node2part;
 
@@ -1413,12 +1434,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         ClusterNode oldest = discoCache.oldestAliveServerNode();
 
-        assert oldest != null;
+        assert oldest != null || cctx.kernalContext().clientNode();
 
         ClusterNode loc = cctx.localNode();
 
         if (node2part != null) {
-            if (oldest.equals(loc) && !node2part.nodeId().equals(loc.id())) {
+            if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id())) {
                 updateSeq.setIfGreater(node2part.updateSequence());
 
                 node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq.incrementAndGet(),
@@ -1551,7 +1572,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", started=" + cctx.started() +
                 ", stopping=" + stopping +
                 ", locNodeId=" + cctx.localNode().id() +
-                ", locName=" + cctx.gridName() + ']';
+                ", locName=" + cctx.igniteInstanceName() + ']';
 
             for (GridDhtPartitionMap2 map : node2part.values()) {
                 if (map.hasMovingPartitions())
@@ -1567,7 +1588,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats(int threshold) {
-        X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>>  Cache partition topology stats [igniteInstanceName=" + cctx.igniteInstanceName() +
+            ", cache=" + cctx.name() + ']');
 
         lock.readLock().lock();
 

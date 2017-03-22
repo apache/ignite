@@ -48,8 +48,8 @@ public class GridCacheAtomicMultiNodeFullApiSelfTest extends GridCachePartitione
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(igniteInstanceName);
 
         cc.setRebalanceMode(SYNC);
         cc.setBackups(1);

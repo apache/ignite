@@ -64,8 +64,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -114,8 +114,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
 
             c.removeAll();
 
-            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + entrySet(c) + ']',
-                0, c.size());
+            assertEquals("Cache size mismatch for grid [igniteInstanceName=" + g.name() +
+                    ", entrySet=" + entrySet(c) + ']', 0, c.size());
         }
     }
 

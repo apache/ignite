@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -97,7 +98,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -151,9 +151,6 @@ public class GridCacheUtils {
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
-
-    /** Marshaller system cache name. */
-    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
@@ -894,7 +891,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
+    public static GridNearTxLocal txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1157,14 +1154,6 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is marshaller system cache.
-     */
-    public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
@@ -1184,7 +1173,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
             isAtomicsCache(cacheName);
     }
 
@@ -1268,7 +1257,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
         TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
+        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();

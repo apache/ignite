@@ -118,6 +118,10 @@ extern "C" {
         return ctx->ProcessorExtensions(static_cast<jobject>(obj));
     }
 
+    void* IGNITE_CALL IgniteProcessorExtension(gcj::JniContext* ctx, void* obj, int id) {
+        return ctx->ProcessorExtension(static_cast<jobject>(obj), id);
+    }
+
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
         return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
     }
@@ -176,6 +180,10 @@ extern "C" {
 
     void* IGNITE_CALL IgniteTargetOutObject(gcj::JniContext* ctx, void* obj, int opType) {
         return ctx->TargetOutObject(static_cast<jobject>(obj), opType);
+    }
+
+    void IGNITE_CALL IgniteTargetInStreamAsync(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
+        ctx->TargetInStreamAsync(static_cast<jobject>(obj), opType, memPtr);
     }
 
     void IGNITE_CALL IgniteTargetListenFuture(gcj::JniContext* ctx, void* obj, long long futId, int typ) {

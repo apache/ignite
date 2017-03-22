@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.planner.HadoopTestRoundRobinMrPlanner;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
@@ -91,8 +92,8 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         cfg.setMapReducePlanner(new HadoopTestRoundRobinMrPlanner());
 

@@ -37,8 +37,8 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     private boolean hasCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (hasCache) {
             CacheConfiguration ccfg = new CacheConfiguration();

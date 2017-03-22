@@ -295,7 +295,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         cfg = optimize(getConfiguration("npeGrid"));
         cfg.setGridLogger(stringLogger);
 
-        try (Ignite ignite = startGrid(cfg.getGridName(), cfg)) {
+        try (Ignite ignite = startGrid(cfg.getIgniteInstanceName(), cfg)) {
             ignite.semaphore("semaphore", 1, true, true);
         }
 

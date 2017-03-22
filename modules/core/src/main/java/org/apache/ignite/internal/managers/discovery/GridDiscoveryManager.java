@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -99,6 +98,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -635,41 +636,40 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                assert nodeId != null;
+            @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                assert dataBag != null;
+                assert dataBag.joiningNodeId() != null;
 
-                Map<Integer, Serializable> data = new HashMap<>();
-
-                for (GridComponent comp : ctx.components()) {
-                    Serializable compData = comp.collectDiscoveryData(nodeId);
-
-                    if (compData != null) {
-                        assert comp.discoveryDataType() != null;
-
-                        data.put(comp.discoveryDataType().ordinal(), compData);
-                    }
+                if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
+                    for (GridComponent c : ctx.components())
+                        c.collectJoiningNodeData(dataBag);
+                }
+                else {
+                    for (GridComponent c : ctx.components())
+                        c.collectGridNodeData(dataBag);
                 }
 
-                return data;
+                return dataBag;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
-                for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
-                    GridComponent comp = null;
-
+            @Override public void onExchange(DiscoveryDataBag dataBag) {
+                if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
+                    //NodeAdded msg reached joining node after round-trip over the ring
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
-                            comp = c;
-
-                            break;
-                        }
+                        if (c.discoveryDataType() != null)
+                            c.onGridDataReceived(dataBag.gridDiscoveryData(c.discoveryDataType().ordinal()));
                     }
+                }
+                else {
+                    //discovery data from newly joined node has to be applied to the current old node
+                    for (GridComponent c : ctx.components()) {
+                        if (c.discoveryDataType() != null) {
+                            JoiningNodeDiscoveryData data =
+                                    dataBag.newJoinerDiscoveryData(c.discoveryDataType().ordinal());
 
-                    if (comp != null)
-                        comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Received discovery data for unknown component: " + e.getKey());
+                            if (data != null)
+                                c.onJoiningNodeDataReceived(data);
+                        }
                     }
                 }
             }
@@ -1260,7 +1260,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> +----------------+" + U.nl() +
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
-                ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
+                ">>> Ignite instance name: " +
+                (ctx.igniteInstanceName() == null ? "default" : ctx.igniteInstanceName()) + U.nl() +
                 ">>> Number of server nodes: " + srvNodes.size() + U.nl() +
                 ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
@@ -1546,6 +1547,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return All non-daemon nodes in topology. */
     public Collection<ClusterNode> allNodes() {
         return discoCache().allNodes();
+    }
+
+    /** @return all alive server nodes is topology */
+    public Collection<ClusterNode> aliveServerNodes() {
+        return discoCache().aliveServerNodes();
     }
 
     /** @return Full topology size. */
@@ -2031,7 +2037,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 @Override public void run() {
                     ctx.markSegmented();
 
-                    G.stop(ctx.gridName(), true);
+                    G.stop(ctx.igniteInstanceName(), true);
                 }
             }
         ).start();
@@ -2059,7 +2065,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private SegmentCheckWorker() {
-            super(ctx.gridName(), "disco-net-seg-chk-worker", GridDiscoveryManager.this.log);
+            super(ctx.igniteInstanceName(), "disco-net-seg-chk-worker", GridDiscoveryManager.this.log);
 
             assert hasRslvrs;
             assert segChkFreq > 0;
@@ -2144,7 +2150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private DiscoveryWorker() {
-            super(ctx.gridName(), "disco-event-worker", GridDiscoveryManager.this.log);
+            super(ctx.igniteInstanceName(), "disco-event-worker", GridDiscoveryManager.this.log);
         }
 
         /**

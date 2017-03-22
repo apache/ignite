@@ -46,23 +46,23 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
+
+    /** */
+    private static final int FIRST_CLIENT_REQ_FLAG_MASK = 0x02;
+
+    /** */
+    private static final int SYNC_COMMIT_FLAG_MASK = 0x04;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Filter. */
     private CacheEntryPredicate[] filter;
-
-    /** Implicit flag. */
-    private boolean implicitTx;
-
-    /** Implicit transaction with one key flag. */
-    private boolean implicitSingleTx;
-
-    /** Flag is kept for backward compatibility. */
-    private boolean onePhaseCommit;
 
     /** Array of mapped DHT versions for this entry. */
     @GridToStringInclude
@@ -74,23 +74,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Task name hash. */
     private int taskNameHash;
 
-    /** Has transforms flag. */
-    private boolean hasTransforms;
-
-    /** Sync commit flag. */
-    private boolean syncCommit;
-
     /** TTL for create operation. */
     private long createTtl;
 
     /** TTL for read operation. */
     private long accessTtl;
 
-    /** Flag indicating whether cache operation requires a previous value. */
-    private boolean retVal;
-
-    /** {@code True} if first lock request for lock operation sent from client node. */
-    private boolean firstClientReq;
+    /** */
+    private byte flags;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -107,8 +98,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param futId Future ID.
      * @param lockVer Cache version.
      * @param isInTx {@code True} if implicit transaction lock.
-     * @param implicitTx Flag to indicate that transaction is implicit.
-     * @param implicitSingleTx Implicit-transaction-with-one-key flag.
      * @param isRead Indicates whether implicit lock is for read or write operation.
      * @param retVal Return value flag.
      * @param isolation Transaction isolation.
@@ -133,8 +122,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         IgniteUuid futId,
         GridCacheVersion lockVer,
         boolean isInTx,
-        boolean implicitTx,
-        boolean implicitSingleTx,
         boolean isRead,
         boolean retVal,
         TransactionIsolation isolation,
@@ -174,24 +161,43 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
         this.topVer = topVer;
-        this.implicitTx = implicitTx;
-        this.implicitSingleTx = implicitSingleTx;
-        this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.retVal = retVal;
-        this.firstClientReq = firstClientReq;
 
         dhtVers = new GridCacheVersion[keyCnt];
+
+        setFlag(syncCommit, SYNC_COMMIT_FLAG_MASK);
+        setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
+        setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    private void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reags flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    private boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
      * @return {@code True} if first lock request for lock operation sent from client node.
      */
     public boolean firstClientRequest() {
-        return firstClientReq;
+        return isFlag(FIRST_CLIENT_REQ_FLAG_MASK);
     }
 
     /**
@@ -216,24 +222,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Implicit transaction flag.
-     */
-    public boolean implicitTx() {
-        return implicitTx;
-    }
-
-    /**
-     * @return Implicit-transaction-with-one-key flag.
-     */
-    public boolean implicitSingleTx() {
-        return implicitSingleTx;
-    }
-
-    /**
      * @return Sync commit flag.
      */
     public boolean syncCommit() {
-        return syncCommit;
+        return isFlag(SYNC_COMMIT_FLAG_MASK);
     }
 
     /**
@@ -256,36 +248,22 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future Id.
      */
-    public void miniId(IgniteUuid miniId) {
+    public void miniId(int miniId) {
         this.miniId = miniId;
-    }
-
-    /**
-     * @param hasTransforms {@code True} if originating transaction has transform entries.
-     */
-    public void hasTransforms(boolean hasTransforms) {
-        this.hasTransforms = hasTransforms;
-    }
-
-    /**
-     * @return {@code True} if originating transaction has transform entries.
-     */
-    public boolean hasTransforms() {
-        return hasTransforms;
     }
 
     /**
      * @return Need return value flag.
      */
     public boolean needReturnValue() {
-        return retVal;
+        return isFlag(NEED_RETURN_VALUE_FLAG_MASK);
     }
 
     /**
@@ -399,73 +377,31 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeBoolean("firstClientReq", firstClientReq))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeBoolean("hasTransforms", hasTransforms))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
-                    return false;
-
-                writer.incrementState();
-
-            case 27:
-                if (!writer.writeBoolean("implicitTx", implicitTx))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 30:
-                if (!writer.writeBoolean("retVal", retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 31:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 32:
-                if (!writer.writeBoolean("syncCommit", syncCommit))
-                    return false;
-
-                writer.incrementState();
-
-            case 33:
+            case 27:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 34:
+            case 28:
                 if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 35:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -519,7 +455,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                firstClientReq = reader.readBoolean("firstClientReq");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -527,7 +463,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                hasTransforms = reader.readBoolean("hasTransforms");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -535,46 +471,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                implicitSingleTx = reader.readBoolean("implicitSingleTx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 27:
-                implicitTx = reader.readBoolean("implicitTx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 30:
-                retVal = reader.readBoolean("retVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 31:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -582,15 +478,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 32:
-                syncCommit = reader.readBoolean("syncCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 33:
+            case 27:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -598,16 +486,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 34:
+            case 28:
                 topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 35:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -626,7 +506,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 36;
+        return 29;
     }
 
     /** {@inheritDoc} */

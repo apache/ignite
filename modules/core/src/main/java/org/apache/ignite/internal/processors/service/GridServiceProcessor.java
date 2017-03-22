@@ -65,14 +65,19 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.continuous.AbstractContinuousMessage;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -90,7 +95,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.internal.util.SerializableTransient;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -158,7 +162,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Thread factory. */
-    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.gridName());
+    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName());
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
@@ -200,7 +204,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public GridServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.gridName(), "srvc-deploy"));
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
 
         String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
@@ -943,7 +947,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             else
                 nodes = null;
 
-            try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+            try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
@@ -1468,19 +1472,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         else {
             String name = e.getKey().name();
 
-            svcName.set(name);
-
-            Collection<ServiceContextImpl> ctxs;
-
-            synchronized (locSvcs) {
-                ctxs = locSvcs.remove(name);
-            }
-
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    cancel(ctxs, ctxs.size());
-                }
-            }
+            undeploy(name);
 
             // Finish deployment futures if undeployment happened.
             GridFutureAdapter<?> fut = depFuts.remove(name);
@@ -1580,12 +1572,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (evt instanceof DiscoveryCustomEvent) {
                     DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
 
-                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
-
                     if (msg instanceof CacheAffinityChangeMessage) {
                         if (!((CacheAffinityChangeMessage)msg).exchangeNeeded())
                             return;
                     }
+                    else if (msg instanceof DynamicCacheChangeBatch) {
+                        if (!((DynamicCacheChangeBatch)msg).exchangeNeeded())
+                            return;
+                    }
+                    else
+                        return;
+
+                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
                 }
                 else
                     topVer = new AffinityTopologyVersion((evt).topologyVersion(), 0);
@@ -1774,21 +1772,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
         }
         // Handle undeployment.
-        else {
-            String name = e.getKey().name();
+        else
+            undeploy(e.getKey().name());
+    }
 
-            svcName.set(name);
 
-            Collection<ServiceContextImpl> ctxs;
+    /**
+     * @param name Name.
+     */
+    private void undeploy(String name) {
+        svcName.set(name);
 
-            synchronized (locSvcs) {
-                ctxs = locSvcs.remove(name);
-            }
+        Collection<ServiceContextImpl> ctxs;
 
-            if (ctxs != null) {
-                synchronized (ctxs) {
-                    cancel(ctxs, ctxs.size());
-                }
+        synchronized (locSvcs) {
+            ctxs = locSvcs.remove(name);
+        }
+
+        if (ctxs != null) {
+            synchronized (ctxs) {
+                cancel(ctxs, ctxs.size());
             }
         }
     }

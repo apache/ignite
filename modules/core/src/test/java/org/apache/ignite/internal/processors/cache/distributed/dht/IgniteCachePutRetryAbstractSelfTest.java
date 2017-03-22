@@ -43,10 +43,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -112,8 +112,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeEventTypes();
 
@@ -152,7 +152,12 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        ignite(0).destroyCache(null);
+        try {
+            checkInternalCleanup();
+        }
+        finally {
+            ignite(0).destroyCache(null);
+        }
     }
 
     /**
@@ -456,22 +461,40 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals((Integer)iter, cache.get(i));
+    }
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal ignite = (IgniteKernal)grid(i);
-
-            Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
-
-            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
-        }
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkInternalCleanup() throws Exception{
+        checkNoAtomicFutures();
 
         checkOnePhaseCommitReturnValuesCleaned();
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    protected void checkOnePhaseCommitReturnValuesCleaned() throws IgniteInterruptedCheckedException {
+    void checkNoAtomicFutures() throws Exception {
+        for (int i = 0; i < GRID_CNT; i++) {
+            final IgniteKernal ignite = (IgniteKernal)grid(i);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.context().cache().context().mvcc().atomicFuturesCount() == 0;
+                }
+            }, 5_000);
+
+            Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
+
+            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    void checkOnePhaseCommitReturnValuesCleaned() throws Exception {
         U.sleep(DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT);
 
         for (int i = 0; i < GRID_CNT; i++) {

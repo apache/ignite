@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -349,7 +349,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
-            IgniteInternalTx txEx = txProxy.tx();
+            GridNearTxLocal txEx = txProxy.tx();
 
             assertTrue(txEx.pessimistic());
 
@@ -448,8 +448,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
@@ -473,8 +473,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);

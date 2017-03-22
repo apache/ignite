@@ -104,7 +104,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 odbcExecSvc = new IgniteThreadPoolExecutor(
                     "odbc",
-                    cfg.getGridName(),
+                    cfg.getIgniteInstanceName(),
                     odbcCfg.getThreadPoolSize(),
                     odbcCfg.getThreadPoolSize(),
                     0,
@@ -124,7 +124,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                 for (int port = hostPort.portFrom(); port <= hostPort.portTo(); port++) {
                     try {
                         GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.gridName(), odbcExecSvc, log) {
+                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), odbcExecSvc, log) {
                                 @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
                                     proceedSessionOpened(ses);
                                 }
@@ -138,7 +138,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
-                            .gridName(ctx.gridName())
+                            .igniteInstanceName(ctx.igniteInstanceName())
                             .serverName("odbc")
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)

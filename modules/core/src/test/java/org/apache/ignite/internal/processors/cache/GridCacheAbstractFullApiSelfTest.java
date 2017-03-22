@@ -212,8 +212,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -241,8 +241,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES) {
             ccfg.setMemoryMode(memoryMode());
@@ -389,20 +389,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+    @Override protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
         if (cacheCfgMap == null)
-            return super.startGrid(gridName, ctx);
+            return super.startGrid(igniteInstanceName, ctx);
 
-        IgniteConfiguration cfg = getConfiguration(gridName);
+        IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
 
-        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+        cacheCfgMap.put(igniteInstanceName, cfg.getCacheConfiguration());
 
         cfg.setCacheConfiguration();
 
-        if (!isRemoteJvm(gridName))
+        if (!isRemoteJvm(igniteInstanceName))
             return IgnitionEx.start(optimize(cfg), ctx);
         else
-            return startRemoteGrid(gridName, optimize(cfg), ctx);
+            return startRemoteGrid(igniteInstanceName, optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */

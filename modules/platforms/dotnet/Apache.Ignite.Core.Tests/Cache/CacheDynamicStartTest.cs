@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.GridName = name;
+            cfg.IgniteInstanceName = name;
             cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();

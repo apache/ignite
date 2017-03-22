@@ -66,7 +66,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,13 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor._VAL;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isGeometryClass;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isSqlType;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -2261,7 +2254,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
             GridQueryIndexDescriptor idx = idxEntry.getValue();
 
-            if (idx.type() == FULLTEXT) {
+            if (idx.type() == QueryIndexType.FULLTEXT) {
                 assert txtIdx == null;
 
                 txtIdx = new QueryIndex();
@@ -2279,7 +2272,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 QueryIndex sortedIdx = new QueryIndex();
 
-                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                sortedIdx.setIndexType(idx.type());
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 
@@ -2300,10 +2293,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils._VAL), true);
             }
             else
-                txtIdx.getFields().put(_VAL, true);
+                txtIdx.getFields().put(QueryUtils._VAL, true);
         }
 
         if (txtIdx != null)
@@ -2322,7 +2315,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static Class<?> mask(Class<?> cls) {
         assert cls != null;
 
-        return isSqlType(cls) ? cls : Object.class;
+        return QueryUtils.isSqlType(cls) ? cls : Object.class;
     }
 
     /**
@@ -2355,13 +2348,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
         @Nullable ClassProperty parent) {
-        if (U.isJdk(cls) || isGeometryClass(cls)) {
-            if (parent == null && !key && isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = _VAL + "_idx";
+        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
+            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = QueryUtils._VAL + "_idx";
 
-                type.addIndex(idxName, isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
+                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-                type.addFieldToIndex(idxName, _VAL, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils._VAL, 0, false);
             }
 
             return;
@@ -2379,13 +2373,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
 
             if (grpIdx != null)
-                type.addIndex(grpIdx.name(), SORTED);
+                type.addIndex(grpIdx.name(), QueryIndexType.SORTED);
 
             QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
                 for (QueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), SORTED);
+                    type.addIndex(idx.name(), QueryIndexType.SORTED);
             }
         }
 
@@ -2399,9 +2393,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
                 }
             }
 
@@ -2421,9 +2419,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
                 }
             }
         }
@@ -2450,7 +2452,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (sqlAnn.index()) {
                 String idxName = prop.alias() + "_idx";
 
-                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
@@ -2539,7 +2542,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @param type Index type.
          * @return Index descriptor.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
+        public IndexDescriptor addIndex(String idxName, QueryIndexType type) {
             IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
@@ -2561,7 +2564,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             IndexDescriptor desc = indexes.get(idxName);
 
             if (desc == null)
-                desc = addIndex(idxName, SORTED);
+                desc = addIndex(idxName, QueryIndexType.SORTED);
 
             desc.addField(field, orderNum, descending);
         }
@@ -2573,7 +2576,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         public void addFieldToTextIndex(String field) {
             if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(FULLTEXT);
+                fullTextIdx = new IndexDescriptor(QueryIndexType.FULLTEXT);
 
                 indexes.put(null, fullTextIdx);
             }
@@ -2673,12 +2676,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         private Collection<String> descendings;
 
         /** */
-        private final GridQueryIndexType type;
+        private final QueryIndexType type;
 
         /**
          * @param type Type.
          */
-        private IndexDescriptor(GridQueryIndexType type) {
+        private IndexDescriptor(QueryIndexType type) {
             assert type != null;
 
             this.type = type;
@@ -2718,7 +2721,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
+        @Override public QueryIndexType type() {
             return type;
         }
 
