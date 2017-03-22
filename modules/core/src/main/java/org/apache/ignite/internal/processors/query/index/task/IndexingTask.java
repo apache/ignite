@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl.task;
+package org.apache.ignite.internal.processors.query.index.task;
 
 /**
  * Marker interface for dynamic indexing change tasks. Concrete implementation are essentially a value objects,

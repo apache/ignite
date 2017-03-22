@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl.task;
+package org.apache.ignite.internal.processors.query.index.task;
 
+import org.apache.ignite.internal.processors.query.index.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Indexing cache stop task.
+ * Indexing accept task.
  */
-public class IndexingCacheStopTask implements IndexingTask {
-    /** Space. */
-    private final String space;
+public class IndexingAcceptTask implements IndexingTask {
+    /** Message */
+    private final IndexAcceptDiscoveryMessage msg;
 
-    public IndexingCacheStopTask(String space) {
-        this.space = space;
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     */
+    public IndexingAcceptTask(IndexAcceptDiscoveryMessage msg) {
+        this.msg = msg;
     }
 
     /**
-     * @return Space.
+     * @return Message.
      */
-    public String space() {
-        return space;
+    public IndexAcceptDiscoveryMessage message() {
+        return msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexingCacheStopTask.class, this);
+        return S.toString(IndexingAcceptTask.class, this);
     }
 }

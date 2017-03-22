@@ -15,37 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl.task;
+package org.apache.ignite.internal.processors.query.index.task;
 
-import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Indexing accept task.
+ * Indexing finish task.
  */
-public class IndexingAcceptTask implements IndexingTask {
+public class IndexingFinishTask implements IndexingTask {
     /** Message */
-    private final IndexAcceptDiscoveryMessage msg;
+    private final IndexFinishDiscoveryMessage msg;
 
     /**
      * Constructor.
      *
      * @param msg Message.
      */
-    public IndexingAcceptTask(IndexAcceptDiscoveryMessage msg) {
+    public IndexingFinishTask(IndexFinishDiscoveryMessage msg) {
         this.msg = msg;
     }
 
     /**
      * @return Message.
      */
-    public IndexAcceptDiscoveryMessage message() {
+    public IndexFinishDiscoveryMessage message() {
         return msg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexingAcceptTask.class, this);
+        return S.toString(IndexingFinishTask.class, this);
     }
 }

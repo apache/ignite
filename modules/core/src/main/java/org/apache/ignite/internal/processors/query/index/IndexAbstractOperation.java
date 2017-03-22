@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index;
 
 import java.io.Serializable;
 import java.util.UUID;

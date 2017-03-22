@@ -15,53 +15,77 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index;
 
+import org.apache.ignite.internal.ContextAware;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 /**
- * Index creation finished discovery message.
+ * Propose part of a distributed index create/drop operation.
  */
-public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
+public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage implements ContextAware {
     /** */
     private static final long serialVersionUID = 0L;
 
+    // TODO: Do we really need it?
+    /** Kernal context. */
+    @GridToStringExclude
+    private transient GridKernalContext ctx;
+
     /** Node reported an error. */
-    private final UUID errNodeId;
+    private UUID errNodeId;
 
     /** Error message. */
-    private final String errMsg;
+    private String errMsg;
+
     /**
      * Constructor.
      *
-     * @param op Original operation.
-     * @param errNodeId Node reported an error.
-     * @param errMsg Error message.
+     * @param op Operation.
      */
-    public IndexFinishDiscoveryMessage(IndexAbstractOperation op, UUID errNodeId, String errMsg) {
+    public IndexProposeDiscoveryMessage(IndexAbstractOperation op) {
         super(op);
-
-        this.errNodeId = errNodeId;
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        return hasError() ?
+            new IndexFinishDiscoveryMessage(op, errNodeId, errMsg) :
+            new IndexAcceptDiscoveryMessage(op);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
-        return true;
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void context(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Set error.
+     *
+     * @param errNodeId Error node ID.
+     * @param errMsg Error message.
+     */
+    public void onError(UUID errNodeId, String errMsg) {
+        if (!hasError()) {
+            this.errNodeId = errNodeId;
+            this.errMsg = errMsg;
+        }
     }
 
     /**
@@ -87,7 +111,6 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexFinishDiscoveryMessage.class, this);
+        return S.toString(IndexProposeDiscoveryMessage.class, this);
     }
-
 }

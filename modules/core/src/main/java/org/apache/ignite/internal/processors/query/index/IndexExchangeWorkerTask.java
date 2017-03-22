@@ -15,38 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl.task;
+package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Indexing finish task.
+ * Cache index exchange worker task.
  */
-public class IndexingFinishTask implements IndexingTask {
-    /** Message */
-    private final IndexFinishDiscoveryMessage msg;
+public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Message. */
+    private final IndexAbstractDiscoveryMessage msg;
 
     /**
      * Constructor.
      *
      * @param msg Message.
      */
-    public IndexingFinishTask(IndexFinishDiscoveryMessage msg) {
+    public IndexExchangeWorkerTask(IndexAbstractDiscoveryMessage msg) {
+        assert msg != null;
+
         this.msg = msg;
     }
 
     /**
      * @return Message.
      */
-    public IndexFinishDiscoveryMessage message() {
+    public IndexAbstractDiscoveryMessage message() {
         return msg;
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isExchange() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexingFinishTask.class, this);
+        return S.toString(IndexExchangeWorkerTask.class, this);
     }
 }

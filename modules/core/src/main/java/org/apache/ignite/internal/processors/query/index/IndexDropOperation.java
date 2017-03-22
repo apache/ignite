@@ -15,55 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
+
+import java.util.UUID;
 
 /**
- * Abstract discovery message for index operations.
+ * Arguments for {@code CREATE INDEX}.
  */
-public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMessage {
+public class IndexDropOperation extends IndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    /** Index name. */
+    private final String idxName;
 
-    /** Operation. */
-    @GridToStringInclude
-    protected final IndexAbstractOperation op;
+    /** Ignore operation if index doesn't exist. */
+    private final boolean ifExists;
 
     /**
      * Constructor.
      *
-     * @param op Operation.
+     * @param cliNodeId Client node ID.
+     * @param opId Operation id.
+     * @param space Space.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index doesn't exist.
      */
-    protected IndexAbstractDiscoveryMessage(IndexAbstractOperation op) {
-        this.op = op;
+    public IndexDropOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
+        super(cliNodeId, opId, space);
+
+        this.idxName = idxName;
+        this.ifExists = ifExists;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    @Override public String indexName() {
+        return idxName;
     }
 
     /**
-     * @return Operation.
+     * @return Ignore operation if index doesn't exist.
      */
-    public IndexAbstractOperation operation() {
-        return op;
+    public boolean ifExists() {
+        return ifExists;
     }
-
-    /**
-     * @return Whether request must be propagated to exchange thread.
-     */
-    public abstract boolean exchange();
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAbstractDiscoveryMessage.class, this);
+        return S.toString(IndexDropOperation.class, this);
     }
 }

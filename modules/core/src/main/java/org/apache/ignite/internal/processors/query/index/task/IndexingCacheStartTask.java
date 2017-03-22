@@ -15,55 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index.task;
 
+import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import java.util.UUID;
-
 /**
- * Arguments for {@code CREATE INDEX}.
+ * Indexing cache start task.
  */
-public class IndexDropOperation extends IndexAbstractOperation {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class IndexingCacheStartTask implements IndexingTask {
+    /** Space. */
+    private final String space;
 
-    /** Index name. */
-    private final String idxName;
-
-    /** Ignore operation if index doesn't exist. */
-    private final boolean ifExists;
+    /** Initial index states. */
+    private final QueryIndexStates initIdxStates;
 
     /**
      * Constructor.
      *
-     * @param cliNodeId Client node ID.
-     * @param opId Operation id.
      * @param space Space.
-     * @param idxName Index name.
-     * @param ifExists Ignore operation if index doesn't exist.
+     * @param initIdxStates Initial index states.
      */
-    public IndexDropOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
-        super(cliNodeId, opId, space);
-
-        this.idxName = idxName;
-        this.ifExists = ifExists;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String indexName() {
-        return idxName;
+    public IndexingCacheStartTask(String space, QueryIndexStates initIdxStates) {
+        this.space = space;
+        this.initIdxStates = initIdxStates;
     }
 
     /**
-     * @return Ignore operation if index doesn't exist.
+     * @return Space.
      */
-    public boolean ifExists() {
-        return ifExists;
+    public String space() {
+        return space;
+    }
+
+    /**
+     * @return Initial index states.
+     */
+    public QueryIndexStates initialIndexStates() {
+        return initIdxStates;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexDropOperation.class, this);
+        return S.toString(IndexingCacheStartTask.class, this);
     }
 }

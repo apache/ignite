@@ -15,44 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index.task;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Node leave exchange worker task.
+ * Indexing cache stop task.
  */
-public class IndexNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Node. */
-    @GridToStringInclude
-    private final ClusterNode node;
+public class IndexingCacheStopTask implements IndexingTask {
+    /** Space. */
+    private final String space;
 
-    /**
-     * Constructor.
-     *
-     * @param node Node.
-     */
-    public IndexNodeLeaveExchangeWorkerTask(ClusterNode node) {
-        this.node = node;
+    public IndexingCacheStopTask(String space) {
+        this.space = space;
     }
 
     /**
-     * @return Node.
+     * @return Space.
      */
-    public ClusterNode node() {
-        return node;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isExchange() {
-        return false;
+    public String space() {
+        return space;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexNodeLeaveExchangeWorkerTask.class, this);
+        return S.toString(IndexingCacheStopTask.class, this);
     }
 }

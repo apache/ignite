@@ -15,43 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.processors.query.index.IndexAbstractOperation;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Active index operation.
+ * Abstract discovery message for index operations.
  */
-public class QueryIndexActiveOperation {
+public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** ID */
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
     /** Operation. */
     @GridToStringInclude
-    private final IndexAbstractOperation op;
-
-    /** Whether operation is accepted. */
-    private boolean accepted;
+    protected final IndexAbstractOperation op;
 
     /**
      * Constructor.
      *
      * @param op Operation.
      */
-    public QueryIndexActiveOperation(IndexAbstractOperation op) {
+    protected IndexAbstractDiscoveryMessage(IndexAbstractOperation op) {
         this.op = op;
     }
 
-    /**
-     * Copy object.
-     *
-     * @return Copy.
-     */
-    public QueryIndexActiveOperation copy() {
-        QueryIndexActiveOperation copy = new QueryIndexActiveOperation(op);
-
-        copy.accepted = accepted;
-
-        return copy;
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /**
@@ -62,23 +58,12 @@ public class QueryIndexActiveOperation {
     }
 
     /**
-     * @return Whether operation is accepted.
+     * @return Whether request must be propagated to exchange thread.
      */
-    public boolean accepted() {
-        return accepted;
-    }
-
-    /**
-     * Accept operation.
-     */
-    public void accept() {
-        assert !accepted;
-
-        accepted = true;
-    }
+    public abstract boolean exchange();
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryIndexActiveOperation.class, this);
+        return S.toString(IndexAbstractDiscoveryMessage.class, this);
     }
 }

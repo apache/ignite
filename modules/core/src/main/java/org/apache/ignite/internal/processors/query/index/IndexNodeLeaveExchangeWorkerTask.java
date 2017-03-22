@@ -15,34 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index;
 
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Cache index exchange worker task.
+ * Node leave exchange worker task.
  */
-public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
-    /** Message. */
-    private final IndexAbstractDiscoveryMessage msg;
+public class IndexNodeLeaveExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+    /** Node. */
+    @GridToStringInclude
+    private final ClusterNode node;
 
     /**
      * Constructor.
      *
-     * @param msg Message.
+     * @param node Node.
      */
-    public IndexExchangeWorkerTask(IndexAbstractDiscoveryMessage msg) {
-        assert msg != null;
-
-        this.msg = msg;
+    public IndexNodeLeaveExchangeWorkerTask(ClusterNode node) {
+        this.node = node;
     }
 
     /**
-     * @return Message.
+     * @return Node.
      */
-    public IndexAbstractDiscoveryMessage message() {
-        return msg;
+    public ClusterNode node() {
+        return node;
     }
 
     /** {@inheritDoc} */
@@ -52,6 +53,6 @@ public class IndexExchangeWorkerTask implements CachePartitionExchangeWorkerTask
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexExchangeWorkerTask.class, this);
+        return S.toString(IndexNodeLeaveExchangeWorkerTask.class, this);
     }
 }

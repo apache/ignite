@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl;
+package org.apache.ignite.internal.processors.query.index;
 
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;

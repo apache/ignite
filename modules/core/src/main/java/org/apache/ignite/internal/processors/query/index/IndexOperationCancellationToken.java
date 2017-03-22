@@ -15,48 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.ddl.task;
+package org.apache.ignite.internal.processors.query.index;
 
-import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
- * Indexing cache start task.
+ * Index operation cancellation token.
  */
-public class IndexingCacheStartTask implements IndexingTask {
-    /** Space. */
-    private final String space;
-
-    /** Initial index states. */
-    private final QueryIndexStates initIdxStates;
+public class IndexOperationCancellationToken {
+    /** Cancel flag. */
+    private final AtomicBoolean flag = new AtomicBoolean();
 
     /**
-     * Constructor.
+     * Get cancel state.
      *
-     * @param space Space.
-     * @param initIdxStates Initial index states.
+     * @return {@code True} if cancelled.
      */
-    public IndexingCacheStartTask(String space, QueryIndexStates initIdxStates) {
-        this.space = space;
-        this.initIdxStates = initIdxStates;
+    public boolean isCancelled() {
+        return flag.get();
     }
 
     /**
-     * @return Space.
+     * Do cancel.
+     *
+     * @return {@code True} if cancel flag was set by this call.
      */
-    public String space() {
-        return space;
-    }
-
-    /**
-     * @return Initial index states.
-     */
-    public QueryIndexStates initialIndexStates() {
-        return initIdxStates;
+    public boolean cancel() {
+        return flag.compareAndSet(false, true);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexingCacheStartTask.class, this);
+        return S.toString(IndexOperationCancellationToken.class, this);
     }
 }
