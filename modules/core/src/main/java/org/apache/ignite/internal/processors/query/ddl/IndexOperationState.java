@@ -183,17 +183,7 @@ public class IndexOperationState {
                     errMsg = e.getMessage();
                 }
 
-                try {
-                    IndexOperationStatusResponse resp =
-                        new IndexOperationStatusResponse(ctx.localNodeId(), hnd.operation().operationId(), errMsg);
-
-                    // TODO: Proper pool!
-                    ctx.io().sendToGridTopic(nodeId, TOPIC_DYNAMIC_SCHEMA, resp, PUBLIC_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    // Node left, ignore.
-                    // TODO: Better logging all over the state and handler to simplify debug!
-                }
+                qryProc.sendStatusResponse(nodeId, hnd.operation().operationId(), errMsg);
             }
         });
     }
