@@ -35,7 +35,7 @@ import java.util.function.*;
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
  */
-public abstract class AbstractVector extends DistributionSupport implements Vector {
+public abstract class AbstractVector extends CacheSupport implements Vector {
     /** Vector storage implementation. */
     private VectorStorage sto;
 

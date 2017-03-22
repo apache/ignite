@@ -33,7 +33,7 @@ import java.util.*;
  *
  * TODO: add row/column optimization.
  */
-public abstract class AbstractMatrix extends DistributionSupport implements Matrix {
+public abstract class AbstractMatrix extends CacheSupport implements Matrix {
     // Stochastic sparsity analysis.
     private static final double Z95 = 1.959964;
     private static final double Z80 = 1.281552;

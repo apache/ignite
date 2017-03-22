@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Distribution-related misc. support.
  */
-public class DistributionSupport {
+public class CacheSupport {
     /**
      *
      * @param <K>
@@ -103,8 +103,8 @@ public class DistributionSupport {
      * @param <V>
      * @return
      */
-    protected <K, V> double sumForCache(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        Collection<Double> subSums = foldForCache(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+    protected <K, V> double cacheSum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> subSums = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             if (keyMapper.isValid(ce.entry().getKey())) {
                 double v = valMapper.toDouble(ce.entry().getValue());
 
@@ -123,31 +123,115 @@ public class DistributionSupport {
     }
 
     /**
-     * 
+     *
      * @param cacheName
-     * @param clo
+     * @param keyMapper
+     * @param valMapper
+     * @param <K>
+     * @param <V>
+     * @return
+     */
+    protected <K, V> double cacheMin(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> subSums = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            if (keyMapper.isValid(ce.entry().getKey())) {
+                double v = valMapper.toDouble(ce.entry().getValue());
+
+                return acc == null ? v : acc + v;
+            }
+            else
+                return acc;
+        });
+
+        double sum = 0.0;
+
+        for (double d : subSums)
+            sum += d;
+
+        return sum;
+    }
+
+    /**
+     * s
+     * @param cacheName
+     * @param keyMapper
+     * @param valMapper
+     * @param mapper
      * @param <K>
      * @param <V>
      */
-    protected <K, V> void iterateOverEntries(String cacheName, IgniteConsumer<CacheEntry<K, V>> clo) {
-        int partsCnt = ignite().affinity(cacheName).partitions();
+    protected <K, V> void cacheMap(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper, IgniteFunction<Double, Double> mapper) {
+        cacheForeach(cacheName, (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
 
+            if (keyMapper.isValid(k))
+                // Actual assignment.
+                ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
+        });
+    }
+
+    /**
+     * 
+     * @param cacheName
+     * @param fun
+     * @param <K>
+     * @param <V>
+     */
+    protected <K, V> void cacheForeach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
         broadcastForCache(cacheName, () -> {
-            Ignite localIgnite = Ignition.localIgnite();
-            IgniteCache<K, V> cache = localIgnite.getOrCreateCache(cacheName);
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
+
+            int partsCnt = ignite.affinity(cacheName).partitions();
 
             // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
-            Affinity affinity = localIgnite.affinity(cacheName);
-            ClusterNode localNode = localIgnite.cluster().localNode();
+            Affinity affinity = ignite.affinity(cacheName);
+            ClusterNode localNode = ignite.cluster().localNode();
 
             // Iterate over all partitions. Some of them will be stored on that local node.
             for (int part = 0; part < partsCnt; part++){
-                int finalPart = part;
+                int p = part;
+
                 // Iterate over given partition.
                 // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(finalPart) == localNode)))
-                    clo.accept(new CacheEntry<K, V>(entry, cache));
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                    fun.accept(new CacheEntry<K, V>(entry, cache));
             }
+        });
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @param folder
+     * @param <K>
+     * @param <V>
+     * @param <A>
+     * @return
+     */
+    protected <K, V, A> Collection<A> cacheFold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
+        return broadcastForCache(cacheName, () -> {
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
+
+            int partsCnt = ignite.affinity(cacheName).partitions();
+
+            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
+            Affinity affinity = ignite.affinity(cacheName);
+            ClusterNode localNode = ignite.cluster().localNode();
+
+            A a = null;
+
+            // Iterate over all partitions. Some of them will be stored on that local node.
+            for (int part = 0; part < partsCnt; part++) {
+                int p = part;
+
+                // Iterate over given partition.
+                // Query returns an empty cursor if this partition is not stored on this node.
+                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(p) == localNode)))
+                    a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
+            }
+
+            return a;
         });
     }
 
@@ -160,41 +244,5 @@ public class DistributionSupport {
      */
     protected <A> Collection<A> broadcastForCache(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
-    }
-
-    /**
-     *
-     * @param cacheName
-     * @param folder
-     * @param <K>
-     * @param <V>
-     * @param <A>
-     * @return
-     */
-    protected <K, V, A> Collection<A> foldForCache(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
-        return broadcastForCache(cacheName, () -> {
-            Ignite localIgnite = Ignition.localIgnite();
-            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache(cacheName);
-
-            int partsCnt = ignite().affinity(cacheName).partitions();
-
-            // Use affinity in filter for ScanQuery. Otherwise we accept consumer in each node which is wrong.
-            Affinity affinity = localIgnite.affinity(cacheName);
-            ClusterNode localNode = localIgnite.cluster().localNode();
-
-            A a = null;
-
-            // Iterate over all partitions. Some of them will be stored on that local node.
-            for (int part = 0; part < partsCnt; part++) {
-                int finalPart = part;
-
-                // Iterate over given partition.
-                // Query returns an empty cursor if this partition is not stored on this node.
-                for (Cache.Entry<K, V> entry : cache.query(new ScanQuery<K, V>(part, (k, v) -> affinity.mapPartitionToNode(finalPart) == localNode)))
-                    a = folder.apply(new CacheEntry<K, V>(entry, cache), a);
-            }
-
-            return a;
-        });
     }
 }

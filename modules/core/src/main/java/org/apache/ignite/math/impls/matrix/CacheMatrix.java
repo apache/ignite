@@ -126,7 +126,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return cacheSum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /**
@@ -142,7 +142,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         MatrixKeyMapper<K> keyMapper = sto.keyMapper();
         ValueMapper<V> valMapper = sto.valueMapper();
 
-        iterateOverEntries(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
+        cacheForeach(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
             K k = ce.entry().getKey();
 
             if (keyMapper.isValid(k))

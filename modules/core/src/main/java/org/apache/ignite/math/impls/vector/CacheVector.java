@@ -55,29 +55,17 @@ public class CacheVector<K, V> extends AbstractVector {
      * @param mapper
      * @return
      */
-    private Vector mapOverValues(IgniteFunction<Double, Double> mapper) {
+    private Vector mapOverCache(IgniteFunction<Double, Double> mapper) {
         CacheVectorStorage<K, V> sto = storage();
 
-        // Gets these values assigned to a local vars so that
-        // they will be available in the closure.
-        VectorKeyMapper<K> keyMapper = sto.keyMapper();
-        ValueMapper<V> valMapper = sto.valueMapper();
-
-        iterateOverEntries(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
-            K k = ce.entry().getKey();
-
-            if (keyMapper.isValid(k))
-                // Actual assignment.
-                ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
-        });
+        cacheMap(sto.cache().getName(), sto.keyMapper(), sto.valueMapper(), mapper);
 
         return this;
     }
 
-
     /** {@inheritDoc} */
     @Override public Vector map(IgniteDoubleFunction<Double> fun) {
-        return mapOverValues(fun::apply);
+        return mapOverCache(fun::apply);
     }
 
     /** {@inheritDoc} */
@@ -102,27 +90,27 @@ public class CacheVector<K, V> extends AbstractVector {
     @Override public double sum() {
         CacheVectorStorage<K, V> sto = storage();
 
-        return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return cacheSum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */
     @Override public Vector assign(double val) {
-        return mapOverValues((Double d) -> val);
+        return mapOverCache((Double d) -> val);
     }
 
     /** {@inheritDoc} */
     @Override public Vector plus(double x) {
-        return mapOverValues((Double d) -> d + x);
+        return mapOverCache((Double d) -> d + x);
     }
 
     /** {@inheritDoc} */
     @Override public Vector divide(double x) {
-        return mapOverValues((Double d) -> d / x);
+        return mapOverCache((Double d) -> d / x);
     }
 
     /** {@inheritDoc} */
     @Override public Vector times(double x) {
-        return mapOverValues((Double d) -> d * x);
+        return mapOverCache((Double d) -> d * x);
     }
 
     /**

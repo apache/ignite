@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * TODO: add description.
  */
-public class SparseDistributedMatrixStorage extends DistributionSupport implements MatrixStorage, StorageConstants {
+public class SparseDistributedMatrixStorage extends CacheSupport implements MatrixStorage, StorageConstants {
     private int rows, cols;
     private int stoMode, acsMode;
 
