@@ -66,7 +66,7 @@ void CheckPrimitive(T val)
 
     BOOST_CHECK_EXCEPTION(Read<T>(reader, NULL), IgniteError, IsBinaryError);
 
-    T readVal = Read<T>(reader, "test"); 
+    T readVal = Read<T>(reader, "test");
 
     BOOST_REQUIRE(readVal == val);
 }
@@ -350,7 +350,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     BOOST_REQUIRE(colReader.GetSize() == 0);
     BOOST_REQUIRE(!colReader.HasNext());
     BOOST_REQUIRE(!colReader.IsNull());
-    
+
     BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
