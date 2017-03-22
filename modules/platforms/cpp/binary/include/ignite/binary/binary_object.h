@@ -134,16 +134,6 @@ namespace ignite
                 return impl.HasField(name);
             }
 
-            /**
-             * Gets the value of underlying enum in int form.
-             *
-             * @return The value of underlying enum in int form.
-             */
-            int32_t GetEnumValue() const
-            {
-                return impl.GetEnumValue();
-            }
-
         private:
             /** Implementation. */
             impl::binary::BinaryObjectImpl impl;

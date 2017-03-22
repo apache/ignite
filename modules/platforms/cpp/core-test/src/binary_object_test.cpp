@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE(GetEnumValueInvalid)
     FillMem(mem, some);
 
     TemplatedBinaryIdResolver<BinaryOuter> resolver;
-    BinaryObject binObj(mem, 0, &resolver, 0);
+    BinaryObjectImpl binObj(mem, 0, &resolver, 0);
 
     BOOST_CHECK_THROW(binObj.GetEnumValue(), IgniteError);
 }
