@@ -153,11 +153,22 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      */
     public void testReplicatedOnlyTables() {
+        doTestReplicatedOnlyTables(1);
+    }
+
+    /**
+     */
+    public void testReplicatedOnlyTablesSegmented() {
+        doTestReplicatedOnlyTables(5);
+    }
+
+    /**
+     */
+    private void doTestReplicatedOnlyTables(int segments) {
         IgniteCache<Integer,Value> p = ignite(0).getOrCreateCache(cacheConfig("p", true,
-            Integer.class, Value.class));
+            Integer.class, Value.class).setQueryParallelism(segments));
         IgniteCache<Integer,Value> r = ignite(0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 

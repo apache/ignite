@@ -1113,14 +1113,14 @@ namespace ignite
                  * @param len Length.
                  */
                 static void ReadTimeArrayInternal(
-                    interop::InteropInputStream* stream, 
+                    interop::InteropInputStream* stream,
                     Time* res,
                     const int32_t len
                 );
 
                 /**
                  * Read single value in raw mode.
-                 * 
+                 *
                  * @param func Function to be invoked on stream.
                  * @return Result.
                  */

@@ -15,15 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache partition exchange worker task marker interface.
+ * Indicates that node should try reconnect to cluster.
  */
-public interface CachePartitionExchangeWorkerTask {
+public class IgniteNeedReconnectException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * @return {@code True} if task denotes standard exchange task, {@code false} if this is a custom task which
-     * must be executed from within exchange thread.
+     * @param locNode Local node.
+     * @param cause Cause.
      */
-    boolean isExchange();
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
+    }
 }
