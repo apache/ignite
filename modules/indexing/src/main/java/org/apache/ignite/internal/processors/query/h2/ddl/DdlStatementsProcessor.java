@@ -87,8 +87,10 @@ public class DdlStatementsProcessor {
                 fut = ctx.cache().dynamicIndexCreate(
                     cacheName, createIdx.tableName(), createIdx.index(), createIdx.ifNotExists());
             }
-            else if (gridStmt instanceof GridSqlDropIndex)
+            else if (gridStmt instanceof GridSqlDropIndex) {
+                // TODO: Implement.
                 throw new UnsupportedOperationException("DROP INDEX");
+            }
             else
                 throw new IgniteSQLException("Unexpected DDL operation [type=" + gridStmt.getClass() + ']',
                     IgniteQueryErrorCode.UNEXPECTED_OPERATION);

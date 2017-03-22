@@ -87,7 +87,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -275,9 +274,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** For tests. */
-    public static Class<? extends DdlStatementsProcessor> ddlProcCls;
-
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -393,13 +389,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public GridKernalContext kernalContext() {
         return ctx;
-    }
-
-    /**
-     * @return DDL statements processor.
-     */
-    public DdlStatementsProcessor getDdlStatementsProcessor() {
-        return ddlProc;
     }
 
     /**
@@ -2042,12 +2031,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
 
-            try {
-                ddlProc = ddlProcCls == null ? new DdlStatementsProcessor() : ddlProcCls.newInstance();
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to initialize DDL statements processor", e);
-            }
+            ddlProc = new DdlStatementsProcessor();
 
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
