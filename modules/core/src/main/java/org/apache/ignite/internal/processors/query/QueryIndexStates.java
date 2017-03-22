@@ -127,7 +127,6 @@ public class QueryIndexStates implements Serializable {
         synchronized (mux) {
             AbstractIndexOperation op = msg.operation();
 
-            String tblName = op.tableName();
             String idxName = op.indexName();
 
             QueryIndexActiveOperation curOp = activeOps.remove(idxName);
@@ -137,12 +136,15 @@ public class QueryIndexStates implements Serializable {
                     if (!msg.hasError()) {
                         QueryIndexState state;
 
-                        if (op instanceof CreateIndexOperation)
-                            state = new QueryIndexState(tblName, idxName, ((CreateIndexOperation) op).index());
+                        if (op instanceof CreateIndexOperation) {
+                            CreateIndexOperation op0 = (CreateIndexOperation)op;
+
+                            state = new QueryIndexState(op0.tableName(), idxName, ((CreateIndexOperation)op).index());
+                        }
                         else {
                             assert op instanceof DropIndexOperation;
 
-                            state = new QueryIndexState(tblName, idxName, null);
+                            state = new QueryIndexState(null, idxName, null);
                         }
 
                         readyOps.put(idxName, state);

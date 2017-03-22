@@ -140,7 +140,7 @@ public class IndexOperationHandler {
      * @return Worker name.
      */
     private String workerName() {
-        return "index-op-worker" + op.space() + "-" + op.tableName() + "-" + op.indexName();
+        return "index-op-worker" + op.space() + "-" + op.indexName();
     }
 
     /**

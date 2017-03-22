@@ -36,22 +36,17 @@ public abstract class AbstractIndexOperation implements Serializable {
     /** Space. */
     private final String space;
 
-    /** Table name. */
-    private final String tblName;
-
     /**
      * Constructor.
      *
      * @param cliNodeId Client node ID.
      * @param opId Operation ID.
      * @param space Space.
-     * @param tblName Table name.
      */
-    public AbstractIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName) {
+    public AbstractIndexOperation(UUID cliNodeId, UUID opId, String space) {
         this.cliNodeId = cliNodeId;
         this.opId = opId;
         this.space = space;
-        this.tblName = tblName;
     }
 
     /**
@@ -73,13 +68,6 @@ public abstract class AbstractIndexOperation implements Serializable {
      */
     public String space() {
         return space;
-    }
-
-    /**
-     * @return Table name.
-     */
-    public String tableName() {
-        return tblName;
     }
 
     /**

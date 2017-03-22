@@ -30,6 +30,9 @@ public class CreateIndexOperation extends AbstractIndexOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Table name. */
+    private final String tblName;
+
     /** Index. */
     @GridToStringInclude
     private final QueryIndex idx;
@@ -49,8 +52,9 @@ public class CreateIndexOperation extends AbstractIndexOperation {
      */
     public CreateIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
-        super(cliNodeId, opId, space, tblName);
+        super(cliNodeId, opId, space);
 
+        this.tblName = tblName;
         this.idx = idx;
         this.ifNotExists = ifNotExists;
     }
@@ -58,6 +62,13 @@ public class CreateIndexOperation extends AbstractIndexOperation {
     /** {@inheritDoc} */
     @Override public String indexName() {
         return idx.getName();
+    }
+
+    /**
+     * @return Table name.
+     */
+    public String tableName() {
+        return tblName;
     }
 
     /**

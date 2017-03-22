@@ -65,7 +65,7 @@ public class QueryIndexState implements Serializable {
     /**
      * @return Table name.
      */
-    public String tableName() {
+    @Nullable public String tableName() {
         return tblName;
     }
 

@@ -40,12 +40,11 @@ public class DropIndexOperation extends AbstractIndexOperation {
      * @param cliNodeId Client node ID.
      * @param opId Operation id.
      * @param space Space.
-     * @param tblName Table name.
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    DropIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName, String idxName, boolean ifExists) {
-        super(cliNodeId, opId, space, tblName);
+    public DropIndexOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
+        super(cliNodeId, opId, space);
 
         this.idxName = idxName;
         this.ifExists = ifExists;
