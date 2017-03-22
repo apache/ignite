@@ -793,6 +793,7 @@
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
@@ -812,10 +813,7 @@
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
-                                        <exclude>/src/test/resources/META-INF/services/org.apache.ignite.plugin.PluginProvider</exclude>
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
@@ -847,11 +845,8 @@
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
                                         <!--platforms-->
-                                        <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
-                                        <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
-                                        <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/Makefile.amrel</exclude>
