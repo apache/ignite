@@ -864,16 +864,7 @@ BOOST_AUTO_TEST_CASE(TestTimeNull)
 
     out.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        writer.WriteNull(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
 
     writer.WriteNull("test");
 
@@ -891,16 +882,7 @@ BOOST_AUTO_TEST_CASE(TestTimeNull)
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        reader.ReadTime(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadTime(NULL), IgniteError, IsBinaryError);
 
     Time expVal;
     Time actualVal = reader.ReadTime("test");
