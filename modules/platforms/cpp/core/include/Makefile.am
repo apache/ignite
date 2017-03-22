@@ -29,7 +29,6 @@ nobase_include_HEADERS = \
     ignite/cache/query/continuous/continuous_query.h \
     ignite/cache/query/continuous/continuous_query_handle.h \
     ignite/cache/query/query.h \
-    ignite/cache/query/query_argument.h \
     ignite/cache/query/query_cursor.h \
     ignite/cache/query/query_fields_cursor.h \
     ignite/cache/query/query_fields_row.h \
@@ -42,10 +41,6 @@ nobase_include_HEADERS = \
     ignite/ignite_binding_context.h \
     ignite/ignite_configuration.h \
     ignite/ignition.h \
-    ignite/transactions/transaction.h \
-    ignite/transactions/transactions.h \
-    ignite/transactions/transaction_consts.h \
-    ignite/transactions/transaction_metrics.h \
     ignite/impl/binary/binary_type_updater_impl.h \
     ignite/impl/bindings.h \
     ignite/impl/cache/cache_entry_processor_holder.h \
@@ -54,6 +49,7 @@ nobase_include_HEADERS = \
     ignite/impl/cache/event/cache_entry_event_filter_holder.h \
     ignite/impl/cache/query/continuous/continuous_query_handle_impl.h \
     ignite/impl/cache/query/continuous/continuous_query_impl.h \
+    ignite/impl/cache/query/query_argument.h \
     ignite/impl/cache/query/query_batch.h \
     ignite/impl/cache/query/query_fields_row_impl.h \
     ignite/impl/cache/query/query_impl.h \
@@ -67,7 +63,11 @@ nobase_include_HEADERS = \
     ignite/impl/module_manager.h \
     ignite/impl/operations.h \
     ignite/impl/transactions/transactions_impl.h \
-    ignite/impl/transactions/transaction_impl.h
+    ignite/impl/transactions/transaction_impl.h \
+    ignite/transactions/transaction.h \
+    ignite/transactions/transactions.h \
+    ignite/transactions/transaction_consts.h \
+    ignite/transactions/transaction_metrics.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

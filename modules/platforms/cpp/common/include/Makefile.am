@@ -32,6 +32,7 @@ nobase_include_HEADERS = \
 	ignite/guid.h \
 	ignite/ignite_error.h \
 	ignite/timestamp.h \
+	ignite/time.h \
 	ignite/reference.h
 
 uninstall-hook:

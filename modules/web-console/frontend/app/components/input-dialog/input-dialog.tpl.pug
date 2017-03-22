@@ -23,17 +23,17 @@ include /app/helpers/jade/mixins
                 button.close(ng-click='$hide()') &times;
                 h4.modal-title 
                     i.fa.fa-clone
-                    | Clone
+                    | {{ ctrl.title }}
             form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
                 div
                     .col-sm-2
-                        label.required.labelFormField New name:&nbsp;
+                        label.required.labelFormField {{ ctrl.label }}:&nbsp;
                     .col-sm-10
                         .input-tip
-                            +ignite-form-field-input('"copy-new-name"','newName', false, 'true', 'Enter new name')(
+                            +ignite-form-field-input('"input-field"', 'ctrl.value', false, 'true', 'Enter value')(
                                 data-ignite-form-field-input-autofocus='true'
-                                ignite-on-enter='form.$valid && ok(newName)'
+                                ignite-on-enter='form.$valid && ctrl.confirm()'
                             )
             .modal-footer
                 button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
-                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='ok(newName)') Confirm
+                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='ctrl.confirm()') Confirm
