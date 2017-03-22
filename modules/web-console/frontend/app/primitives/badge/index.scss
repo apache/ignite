@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-import './list-of-registered-users.scss';
+@import '../../../public/stylesheets/variables';
 
-import templateUrl from './list-of-registered-users.tpl.pug';
-import controller from './list-of-registered-users.controller';
+.badge {
+  display: inline-block;
+  min-width: 26px;
+  height: 18px;
 
-export default [() => {
-    return {
-        scope: true,
-        templateUrl,
-        controller,
-        controllerAs: '$ctrl'
-    };
-}];
+  padding: 2px 9px;
+
+  border-radius: 9px;
+
+  color: white;
+  font-family: Roboto;
+  font-size: 12px;
+  text-align: center;
+  line-height: 12px;
+
+  background-color: $brand-primary;
+}

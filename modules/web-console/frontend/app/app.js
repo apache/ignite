@@ -16,6 +16,7 @@
  */
 
 import '../public/stylesheets/style.scss';
+import '../app/primitives';
 import './components/ui-grid-header/ui-grid-header.scss';
 import './components/ui-grid-settings/ui-grid-settings.scss';
 import './components/form-field-datepicker/form-field-datepicker.scss';
