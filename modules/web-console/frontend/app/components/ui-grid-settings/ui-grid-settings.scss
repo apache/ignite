@@ -129,6 +129,16 @@
                     width: 60%;
                 }
             }
+
+            &:nth-child(2) {
+                float: left;
+
+                width: 100px;
+
+                .ignite-form-field__control {
+                    width: 100%;
+                }
+            }
         }
     }
 }
