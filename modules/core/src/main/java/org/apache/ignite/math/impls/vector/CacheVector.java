@@ -103,8 +103,7 @@ public class CacheVector<K, V> extends AbstractVector {
 
     @Override
     public Vector map(DoubleFunction<Double> fun) {
-        // TODO: provide cache-optimized implementation.
-        return super.map(fun); // TODO
+        return mapOverValues(fun::apply);
     }
 
     @Override
@@ -126,45 +125,30 @@ public class CacheVector<K, V> extends AbstractVector {
     }
 
     @Override
-    public Vector increment(int idx, double val) {
-        // TODO: provide cache-optimized implementation.
-        return super.increment(idx, val); // TODO
-    }
-
-    @Override
     public double sum() {
-        // TODO: provide cache-optimized implementation.
-        return super.sum(); // TODO
+        CacheVectorStorage<K, V> sto = storage();
+
+        return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     @Override
     public Vector assign(double val) {
-        // TODO: provide cache-optimized implementation.
-        return super.assign(val); // TODO
-    }
-
-    @Override
-    public Vector assign(IntToDoubleFunction fun) {
-        // TODO: provide cache-optimized implementation.
-        return super.assign(fun); // TODO
+        return mapOverValues((Double d) -> val);
     }
 
     @Override
     public Vector plus(double x) {
-        // TODO: provide cache-optimized implementation.
-        return super.plus(x); // TODO
+        return mapOverValues((Double d) -> d + x);
     }
 
     @Override
     public Vector divide(double x) {
-        // TODO: provide cache-optimized implementation.
-        return super.divide(x); // TODO
+        return mapOverValues((Double d) -> d / x);
     }
 
     @Override
     public Vector times(double x) {
-        // TODO: provide cache-optimized implementation.
-        return super.times(x); // TODO
+        return mapOverValues((Double d) -> d * x);
     }
 
     /**

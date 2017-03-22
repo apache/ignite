@@ -17,12 +17,10 @@
 
 package org.apache.ignite.math;
 
-import java.io.Serializable;
-
 /**
  * TODO: add description.
  */
-public interface MatrixKeyMapper<K> extends Serializable {
+public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
      * 
      * @param x
@@ -30,11 +28,4 @@ public interface MatrixKeyMapper<K> extends Serializable {
      * @return
      */
     public K apply(int x, int y);
-
-    /**
-     * Checks that a pair (x, y) exists for which method {@link #apply(int, int)} will return 'k'.
-     *
-     * @param k Key to check.
-     */
-    public boolean isValid(K k);
 }

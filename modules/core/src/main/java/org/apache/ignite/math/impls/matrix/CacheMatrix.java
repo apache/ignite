@@ -152,27 +152,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        // Gets these values assigned to a local vars so that
-        // they will be available in the closure.
-        ValueMapper<V> valMapper = sto.valueMapper();
-        MatrixKeyMapper<K> keyMapper = sto.keyMapper();
-
-        Collection<Double> subSums = foldForCache(sto.cache().getName(), (CacheEntry<K, V> ce, Double acc) -> {
-            if (keyMapper.isValid(ce.entry().getKey())) {
-                double v = valMapper.toDouble(ce.entry().getValue());
-
-                return acc == null ? v : acc + v;
-            }
-            else
-              return acc;
-        });
-
-        double sum = 0.0;
-
-        for (double d : subSums)
-            sum += d;
-
-        return sum;
+        return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /**
