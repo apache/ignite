@@ -49,7 +49,7 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
      *
      * @param op Operation.
      */
-    public IndexProposeDiscoveryMessage(AbstractIndexOperation op) {
+    public IndexProposeDiscoveryMessage(IndexAbstractOperation op) {
         super(op);
     }
 

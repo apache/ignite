@@ -21,8 +21,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-
 /**
  * {@code ACK} message which triggers local index create/drop.
  */
@@ -38,7 +36,7 @@ public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
      *
      * @param op Original operation.
      */
-    public IndexAcceptDiscoveryMessage(AbstractIndexOperation op) {
+    public IndexAcceptDiscoveryMessage(IndexAbstractOperation op) {
         super(op);
     }
 

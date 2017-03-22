@@ -23,7 +23,7 @@ import java.util.UUID;
 /**
  * Abstract operation on index.
  */
-public abstract class AbstractIndexOperation implements Serializable {
+public abstract class IndexAbstractOperation implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public abstract class AbstractIndexOperation implements Serializable {
      * @param opId Operation ID.
      * @param space Space.
      */
-    public AbstractIndexOperation(UUID cliNodeId, UUID opId, String space) {
+    public IndexAbstractOperation(UUID cliNodeId, UUID opId, String space) {
         this.cliNodeId = cliNodeId;
         this.opId = opId;
         this.space = space;

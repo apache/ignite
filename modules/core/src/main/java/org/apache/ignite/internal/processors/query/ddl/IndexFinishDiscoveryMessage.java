@@ -42,7 +42,7 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
      * @param errNodeId Node reported an error.
      * @param errMsg Error message.
      */
-    public IndexFinishDiscoveryMessage(AbstractIndexOperation op, UUID errNodeId, String errMsg) {
+    public IndexFinishDiscoveryMessage(IndexAbstractOperation op, UUID errNodeId, String errMsg) {
         super(op);
 
         this.errNodeId = errNodeId;

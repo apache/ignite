@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class DropIndexOperation extends AbstractIndexOperation {
+public class IndexDropOperation extends IndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +43,7 @@ public class DropIndexOperation extends AbstractIndexOperation {
      * @param idxName Index name.
      * @param ifExists Ignore operation if index doesn't exist.
      */
-    public DropIndexOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
+    public IndexDropOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
         super(cliNodeId, opId, space);
 
         this.idxName = idxName;
@@ -64,6 +64,6 @@ public class DropIndexOperation extends AbstractIndexOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DropIndexOperation.class, this);
+        return S.toString(IndexDropOperation.class, this);
     }
 }

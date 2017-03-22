@@ -45,9 +45,9 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexCreateOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexDropOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexOperationCancellationToken;
@@ -339,7 +339,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        IdentityHashMap<AbstractIndexOperation, String> activeOps = new IdentityHashMap<>();
+        IdentityHashMap<IndexAbstractOperation, String> activeOps = new IdentityHashMap<>();
 
         if (initIdxStates != null) {
             // Apply ready operations.
@@ -387,11 +387,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 String errMsg = null;
 
                 String idxName = acceptedOpEntry.getKey();
-                AbstractIndexOperation op = acceptedOpEntry.getValue().operation();
+                IndexAbstractOperation op = acceptedOpEntry.getValue().operation();
 
-                if (op instanceof CreateIndexOperation) {
+                if (op instanceof IndexCreateOperation) {
                     // Handle create.
-                    CreateIndexOperation op0 = (CreateIndexOperation)op;
+                    IndexCreateOperation op0 = (IndexCreateOperation)op;
 
                     QueryTypeDescriptorImpl desc = null;
 
@@ -421,7 +421,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Handle drop.
-                    DropIndexOperation op0 = (DropIndexOperation)op;
+                    IndexDropOperation op0 = (IndexDropOperation)op;
 
                     QueryTypeDescriptorImpl desc = idxTypMap.get(op0.indexName());
 
@@ -444,7 +444,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         registerCache0(space, cctx, cands);
 
         // If cache was registered successfully, start pending operations.
-        for (Map.Entry<AbstractIndexOperation, String> activeOp : activeOps.entrySet()) {
+        for (Map.Entry<IndexAbstractOperation, String> activeOp : activeOps.entrySet()) {
             String errMsg = activeOp.getValue();
 
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
@@ -523,15 +523,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idxLock.writeLock().lock();
 
         try {
-            AbstractIndexOperation op = msg.operation();
+            IndexAbstractOperation op = msg.operation();
             String space = op.space();
 
             boolean completed = false;
             String errMsg = null;
 
             // Validate.
-            if (op instanceof CreateIndexOperation) {
-                CreateIndexOperation op0 = (CreateIndexOperation)op;
+            if (op instanceof IndexCreateOperation) {
+                IndexCreateOperation op0 = (IndexCreateOperation)op;
 
                 QueryIndex idx = op0.index();
 
@@ -578,8 +578,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
             }
-            else if (op instanceof DropIndexOperation) {
-                DropIndexOperation op0 = (DropIndexOperation)op;
+            else if (op instanceof IndexDropOperation) {
+                IndexDropOperation op0 = (IndexDropOperation)op;
 
                 String idxName = op0.indexName();
 
@@ -646,7 +646,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param op Operation.
      * @param cancelToken Cancel token.
      */
-    public void processIndexOperation(AbstractIndexOperation op, IndexOperationCancellationToken cancelToken) {
+    public void processIndexOperation(IndexAbstractOperation op, IndexOperationCancellationToken cancelToken) {
         // TODO.
     }
 
@@ -1067,7 +1067,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             UUID opId = UUID.randomUUID();
             QueryIndexClientFuture fut = new QueryIndexClientFuture(opId, idxKey);
 
-            CreateIndexOperation op = new CreateIndexOperation(ctx.localNodeId(), opId, space, tblName, idx,
+            IndexCreateOperation op = new IndexCreateOperation(ctx.localNodeId(), opId, space, tblName, idx,
                 ifNotExists);
 
             try {
@@ -1440,7 +1440,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param completed Completed flag.
      * @param err Error.
      */
-    private void startIndexOperation(AbstractIndexOperation op, boolean completed, Exception err) {
+    private void startIndexOperation(IndexAbstractOperation op, boolean completed, Exception err) {
         IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, op, completed, err);
 
         hnd.init();

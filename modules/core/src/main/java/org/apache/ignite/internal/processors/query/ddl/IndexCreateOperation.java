@@ -26,7 +26,7 @@ import java.util.UUID;
 /**
  * Arguments for {@code CREATE INDEX}.
  */
-public class CreateIndexOperation extends AbstractIndexOperation {
+public class IndexCreateOperation extends IndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,7 +50,7 @@ public class CreateIndexOperation extends AbstractIndexOperation {
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
      */
-    public CreateIndexOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
+    public IndexCreateOperation(UUID cliNodeId, UUID opId, String space, String tblName, QueryIndex idx,
         boolean ifNotExists) {
         super(cliNodeId, opId, space);
 
@@ -87,6 +87,6 @@ public class CreateIndexOperation extends AbstractIndexOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CreateIndexOperation.class, this);
+        return S.toString(IndexCreateOperation.class, this);
     }
 }

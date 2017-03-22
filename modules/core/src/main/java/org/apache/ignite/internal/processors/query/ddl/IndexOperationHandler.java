@@ -44,7 +44,7 @@ public class IndexOperationHandler {
     private final IgniteLogger log;
 
     /** Target operation. */
-    private final AbstractIndexOperation op;
+    private final IndexAbstractOperation op;
 
     /** Operation future. */
     private final GridFutureAdapter opFut;
@@ -71,7 +71,7 @@ public class IndexOperationHandler {
      *     case for client nodes and for server node in-progress operations received through discovery data.
      * @param err Error for future to be completed with.
      */
-    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, AbstractIndexOperation op,
+    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, IndexAbstractOperation op,
         boolean completed, Exception err) {
         this.ctx = ctx;
         this.qryProc = qryProc;
@@ -125,7 +125,7 @@ public class IndexOperationHandler {
     /**
      * @return Operation.
      */
-    public AbstractIndexOperation operation() {
+    public IndexAbstractOperation operation() {
         return op;
     }
 

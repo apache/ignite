@@ -66,7 +66,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryIndexStates;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexExchangeWorkerTask;
@@ -2772,7 +2772,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void onIndexProposeMessageDiscovery(IndexProposeDiscoveryMessage msg) {
         UUID locNodeId = ctx.localNodeId();
 
-        AbstractIndexOperation op = msg.operation();
+        IndexAbstractOperation op = msg.operation();
 
         // Ignore in case error was reported by another node earlier.
         if (msg.hasError()) {
@@ -2800,7 +2800,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void onIndexAcceptMessageDiscovery(IndexAcceptDiscoveryMessage msg) {
-        AbstractIndexOperation op = msg.operation();
+        IndexAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 
@@ -2816,7 +2816,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param msg Message.
      */
     private void onIndexFinishMessageDiscovery(IndexFinishDiscoveryMessage msg) {
-        AbstractIndexOperation op = msg.operation();
+        IndexAbstractOperation op = msg.operation();
 
         DynamicCacheDescriptor desc = cacheDescriptor(op.space());
 

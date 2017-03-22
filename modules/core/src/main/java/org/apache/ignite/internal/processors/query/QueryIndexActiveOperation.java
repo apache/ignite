@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class QueryIndexActiveOperation {
     /** Operation. */
     @GridToStringInclude
-    private final AbstractIndexOperation op;
+    private final IndexAbstractOperation op;
 
     /** Whether operation is accepted. */
     private boolean accepted;
@@ -37,7 +37,7 @@ public class QueryIndexActiveOperation {
      *
      * @param op Operation.
      */
-    public QueryIndexActiveOperation(AbstractIndexOperation op) {
+    public QueryIndexActiveOperation(IndexAbstractOperation op) {
         this.op = op;
     }
 
@@ -57,7 +57,7 @@ public class QueryIndexActiveOperation {
     /**
      * @return Operation.
      */
-    public AbstractIndexOperation operation() {
+    public IndexAbstractOperation operation() {
         return op;
     }
 

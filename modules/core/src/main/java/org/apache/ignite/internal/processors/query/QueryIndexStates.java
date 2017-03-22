@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.query.ddl.AbstractIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.CreateIndexOperation;
-import org.apache.ignite.internal.processors.query.ddl.DropIndexOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexCreateOperation;
+import org.apache.ignite.internal.processors.query.ddl.IndexDropOperation;
 import org.apache.ignite.internal.processors.query.ddl.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.ddl.IndexProposeDiscoveryMessage;
@@ -81,7 +81,7 @@ public class QueryIndexStates implements Serializable {
      */
     public void propose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
         synchronized (mux) {
-            AbstractIndexOperation op = msg.operation();
+            IndexAbstractOperation op = msg.operation();
 
             String idxName = op.indexName();
 
@@ -101,7 +101,7 @@ public class QueryIndexStates implements Serializable {
      */
     public void accept(IndexAcceptDiscoveryMessage msg) {
         synchronized (mux) {
-            AbstractIndexOperation op = msg.operation();
+            IndexAbstractOperation op = msg.operation();
 
             String idxName = op.indexName();
 
@@ -125,7 +125,7 @@ public class QueryIndexStates implements Serializable {
      */
     public void finish(IndexFinishDiscoveryMessage msg) {
         synchronized (mux) {
-            AbstractIndexOperation op = msg.operation();
+            IndexAbstractOperation op = msg.operation();
 
             String idxName = op.indexName();
 
@@ -136,13 +136,13 @@ public class QueryIndexStates implements Serializable {
                     if (!msg.hasError()) {
                         QueryIndexState state;
 
-                        if (op instanceof CreateIndexOperation) {
-                            CreateIndexOperation op0 = (CreateIndexOperation)op;
+                        if (op instanceof IndexCreateOperation) {
+                            IndexCreateOperation op0 = (IndexCreateOperation)op;
 
-                            state = new QueryIndexState(op0.tableName(), idxName, ((CreateIndexOperation)op).index());
+                            state = new QueryIndexState(op0.tableName(), idxName, ((IndexCreateOperation)op).index());
                         }
                         else {
-                            assert op instanceof DropIndexOperation;
+                            assert op instanceof IndexDropOperation;
 
                             state = new QueryIndexState(null, idxName, null);
                         }
