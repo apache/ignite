@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -83,16 +84,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (memPlcMap == null) {
             MemoryConfiguration dbCfg = cctx.kernalContext().config().getMemoryConfiguration();
 
-            if (dbCfg == null) {
+            if (dbCfg == null)
                 dbCfg = new MemoryConfiguration();
-                dbCfg.setMemoryPolicies(dbCfg.createDefaultPolicy());
-            }
-            else
-                validateConfiguration(dbCfg);
+
+            validateConfiguration(dbCfg);
 
             pageSize = dbCfg.getPageSize();
 
-            initPageMemoryPools(dbCfg);
+            initPageMemoryPolicies(dbCfg);
 
             startPageMemoryPools();
 
@@ -106,31 +105,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initPageMemoryDataStructures(MemoryConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(memPlcMap.size());
 
-        for (MemoryPolicyConfiguration memPlc : dbCfg.getMemoryPolicies()) {
-            String plcName = memPlc.getName();
+        String dfltMemPlcName = dbCfg.getDefaultMemoryPolicyName();
+
+        for (MemoryPolicy memPlc : memPlcMap.values()) {
+            MemoryPolicyConfiguration memPlcCfg = memPlc.config();
 
             FreeListImpl freeList = new FreeListImpl(0,
                     cctx.gridName(),
-                    memoryPolicy(plcName).pageMemory(),
+                    memPlc.pageMemory(),
                     null,
                     cctx.wal(),
                     0L,
                     true);
 
-            freeListMap.put(plcName, freeList);
-
-            if (memPlc.isDefault())
-                dfltFreeList = freeList;
+            freeListMap.put(memPlcCfg.getName(), freeList);
         }
 
-        freeListMap.put(SYSTEM_MEMORY_POLICY_NAME,
-                new FreeListImpl(0,
-                        cctx.gridName(),
-                        memoryPolicy(SYSTEM_MEMORY_POLICY_NAME).pageMemory(),
-                        null,
-                        cctx.wal(),
-                        0L,
-                        true));
+        dfltFreeList = freeListMap.get(dfltMemPlcName);
     }
 
     /**
@@ -151,25 +142,60 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param dbCfg Database config.
      */
-    protected void initPageMemoryPools(MemoryConfiguration dbCfg) {
+    protected void initPageMemoryPolicies(MemoryConfiguration dbCfg) {
         MemoryPolicyConfiguration[] memPlcsCfgs = dbCfg.getMemoryPolicies();
 
-        memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
+        if (memPlcsCfgs == null) {
+            //reserve place for default and system memory policies
+            memPlcMap = U.newHashMap(2);
 
-        for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-            PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
+            dfltMemPlc = createDefaultMemoryPolicy(dbCfg);
+            memPlcMap.put(null, dfltMemPlc);
 
-            MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
+            log.warning("No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
+        }
+        else {
+            String dfltMemPlcName = dbCfg.getDefaultMemoryPolicyName();
 
-            memPlcMap.put(memPlcCfg.getName(), memPlc);
+            if (dfltMemPlcName == null) {
+                //reserve additional place for default and system memory policies
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
 
-            if (memPlcCfg.isDefault())
-                dfltMemPlc = memPlc;
+                dfltMemPlc = createDefaultMemoryPolicy(dbCfg);
+                memPlcMap.put(null, dfltMemPlc);
+
+                log.warning("No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
+            }
+            else
+                //reserve additional place for system memory policy only
+                memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
+
+            for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
+                PageMemory pageMem = initMemory(dbCfg, memPlcCfg);
+
+                MemoryPolicy memPlc = new MemoryPolicy(pageMem, memPlcCfg);
+
+                memPlcMap.put(memPlcCfg.getName(), memPlc);
+
+                if (memPlcCfg.getName().equals(dfltMemPlcName))
+                    dfltMemPlc = memPlc;
+            }
         }
 
         MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
 
         memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, new MemoryPolicy(initMemory(dbCfg, sysPlcCfg), sysPlcCfg));
+    }
+
+    /**
+     * @param dbCfg Database config.
+     */
+    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg) {
+        MemoryPolicyConfiguration dfltPlc = dbCfg.createDefaultPolicyConfig();
+
+        PageMemory pageMem = initMemory(dbCfg, dfltPlc);
+
+        return new MemoryPolicy(pageMem, dfltPlc);
     }
 
     /**
@@ -190,34 +216,33 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private void validateConfiguration(MemoryConfiguration dbCfg) throws IgniteCheckedException {
         MemoryPolicyConfiguration[] plcCfgs = dbCfg.getMemoryPolicies();
 
-        if (plcCfgs == null) {
-            plcCfgs = new MemoryPolicyConfiguration[1];
+        Set<String> plcNames = (plcCfgs != null) ? U.<String>newHashSet(plcCfgs.length) : new HashSet<String>(0);
 
-            plcCfgs[0] = dbCfg.createDefaultPolicy();
+        if (plcCfgs != null) {
+            for (MemoryPolicyConfiguration plcCfg : plcCfgs) {
+                assert plcCfg != null;
 
-            dbCfg.setMemoryPolicies(plcCfgs);
-        }
+                checkPolicyName(plcCfg.getName(), plcNames);
 
-        boolean dfltPlcPresented = false;
-        Set<String> plcsNames = U.newHashSet(plcCfgs.length);
-
-        for (MemoryPolicyConfiguration plcCfg : plcCfgs) {
-            assert plcCfg != null;
-
-            if (dfltPlcPresented) {
-                if (plcCfg.isDefault())
-                    throw new IgniteCheckedException("Only one default MemoryPolicyConfiguration must be presented.");
+                checkPolicySize(plcCfg);
             }
-            else
-                dfltPlcPresented = plcCfg.isDefault();
-
-            checkPolicyName(plcCfg, plcsNames);
-
-            checkPolicySize(plcCfg);
         }
 
-        if (!dfltPlcPresented)
-            throw new IgniteCheckedException("One default MemoryPolicyConfiguration must be presented.");
+        checkDefaultPolicyConfiguration(dbCfg.getDefaultMemoryPolicyName(), plcNames);
+    }
+
+    /**
+     * @param dfltPlcName Default MemoryPolicy name.
+     * @param plcNames All MemoryPolicy names.
+     * @throws IgniteCheckedException In case of validation violation.
+     */
+    private static void checkDefaultPolicyConfiguration(String dfltPlcName, Set<String> plcNames) throws IgniteCheckedException {
+        if (dfltPlcName != null) {
+            if (dfltPlcName.isEmpty())
+                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be non-empty");
+            if (!plcNames.contains(dfltPlcName))
+                throw new IgniteCheckedException("User-defined default MemoryPolicy name must be presented among configured MemoryPolices: " + dfltPlcName);
+        }
     }
 
     /**
@@ -229,25 +254,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param plcCfg MemoryPolicyConfiguration to validate.
-     * @param observedNames names of MemoryPolicies observed before.
+     * @param plcName MemoryPolicy name to validate.
+     * @param observedNames Names of MemoryPolicies observed before.
      */
-    private static void checkPolicyName(MemoryPolicyConfiguration plcCfg, Set<String> observedNames) throws IgniteCheckedException {
-        String name = plcCfg.getName();
+    private static void checkPolicyName(String plcName, Set<String> observedNames) throws IgniteCheckedException {
+        if (plcName == null || plcName.isEmpty())
+            throw new IgniteCheckedException("User-defined MemoryPolicyConfiguration must have non-null and non-empty name.");
 
-        if (plcCfg.isDefault() && name != null)
-            throw new IgniteCheckedException("Default MemoryPolicyConfiguration must have a null name.");
+        if (observedNames.contains(plcName))
+            throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + plcName);
 
-        if (!plcCfg.isDefault() && (name == null || name.isEmpty()))
-            throw new IgniteCheckedException("Non-default MemoryPolicyConfiguration must have non-null name.");
-
-        if (observedNames.contains(name))
-            throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + name);
-
-        if (SYSTEM_MEMORY_POLICY_NAME.equals(name))
+        if (SYSTEM_MEMORY_POLICY_NAME.equals(plcName))
             throw new IgniteCheckedException("'sysMemPlc' policy name is reserved for internal use.");
 
-        observedNames.add(name);
+        observedNames.add(plcName);
     }
 
     /**
@@ -475,7 +495,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param plc MemoryPolicyConfiguration.
      */
     @Nullable protected File buildAllocPath(MemoryPolicyConfiguration plc) {
-        String path = plc.getTmpFsPath();
+        String path = plc.getSwapFilePath();
 
         if (path == null)
             return null;

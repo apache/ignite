@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 
@@ -33,9 +34,6 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
     private static final int CONCURRENCY_LEVEL = 8;
-
-    /** */
-    private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;
 
     /** */
     private volatile Exception ex;
@@ -76,10 +74,6 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /** {@inheritDoc} */
     @Override protected void configure(MemoryConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
-
-        long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
-
-        mCfg.setDefaultMemoryPolicySize(Math.max(size, MIN_PAGE_CACHE_SIZE));
     }
 
     /**

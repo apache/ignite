@@ -27,75 +27,54 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Default MemoryPolicyConfiguration flag.
-     *
-     * Note that one and only one MemoryPolicy within the Ignite node must be marked as default.
-     */
-    private boolean dflt;
-
-    /** Unique name of MemoryPolicy (must be null for default MemoryPolicy). */
+    /** Unique name of MemoryPolicy. */
     private String name;
 
-    /** Size in bytes of {@link PageMemory} to be created. */
+    /** Size in bytes of {@link PageMemory} in bytes that will be created for this configuration. */
     private long size;
 
-    /** */
-    private String tmpFsPath;
+    /** Path for memory mapped file (won't be created if not configured). */
+    private String swapFilePath;
 
     /**
-     *
-     */
-    public boolean isDefault() {
-        return dflt;
-    }
-
-    /**
-     * @param dflt Default flag.
-     */
-    public void setDefault(boolean dflt) {
-        this.dflt = dflt;
-    }
-
-    /**
-     *
+     * Unique name of MemoryPolicy.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * @param name Name.
+     * @param name Unique name of MemoryPolicy.
      */
     public void setName(String name) {
         this.name = name;
     }
 
     /**
-     *
+     * Size in bytes of {@link PageMemory} in bytes that will be created for this configuration.
      */
     public long getSize() {
         return size;
     }
 
     /**
-     * @param size Size of {@link PageMemory} in bytes.
+     * Size in bytes of {@link PageMemory} in bytes that will be created for this configuration.
      */
     public void setSize(long size) {
         this.size = size;
     }
 
     /**
-     *
+     * @return Path for memory mapped file (won't be created if not configured).
      */
-    public String getTmpFsPath() {
-        return tmpFsPath;
+    public String getSwapFilePath() {
+        return swapFilePath;
     }
 
     /**
-     * @param tmpFsPath File path if memory-mapped file should be used.
+     * @param swapFilePath Path for memory mapped file (won't be created if not configured)..
      */
-    public void setTmpFsPath(String tmpFsPath) {
-        this.tmpFsPath = tmpFsPath;
+    public void setSwapFilePath(String swapFilePath) {
+        this.swapFilePath = swapFilePath;
     }
 }
