@@ -138,7 +138,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @return Table name.
      */
     public String tableName() {
-        return tblName;
+        return tblName != null ? tblName : name;
     }
 
     /**

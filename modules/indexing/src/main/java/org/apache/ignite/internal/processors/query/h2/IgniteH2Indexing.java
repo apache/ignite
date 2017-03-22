@@ -2744,7 +2744,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             this.type = type;
             this.schema = schema;
 
-            String tblName = escapeName(type.tableName() != null ? type.tableName() : type.name(), schema.escapeAll());
+            String tblName = escapeName(type.tableName(), schema.escapeAll());
 
             fullTblName = schema.schemaName + "." + tblName;
         }

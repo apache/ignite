@@ -468,6 +468,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         if (!type0.fields().containsKey(idxField)) {
                             completed = true;
                             errMsg = "Field doesn't exist: " + idxField;
+
+                            break;
                         }
                     }
                 }
@@ -1385,6 +1387,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Process status response.
+     *
+     * @param resp Status response.
+     */
+    private void processStatusResponse(IndexOperationStatusResponse resp) {
+        IndexOperationState idxOpState = idxOpStates.get(resp.operationId());
+
+        if (idxOpState != null)
+            idxOpState.onNodeFinished(resp.senderNodeId(), resp.errorMessage());
+        else {
+            // TODO: Log!
+        }
+    }
+
+    /**
      * Send status response.
      *
      * @param destNodeId Destination node ID.
@@ -1401,21 +1418,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         catch (IgniteCheckedException e) {
             // Node left, ignore.
             // TODO: Better logging all over the state and handler to simplify debug!
-        }
-    }
-
-    /**
-     * Process status response.
-     *
-     * @param resp Status response.
-     */
-    private void processStatusResponse(IndexOperationStatusResponse resp) {
-        IndexOperationState idxOpState = idxOpStates.get(resp.operationId());
-
-        if (idxOpState != null)
-            idxOpState.onNodeFinished(resp.senderNodeId(), resp.errorMessage());
-        else {
-            // TODO: Log!
         }
     }
 
