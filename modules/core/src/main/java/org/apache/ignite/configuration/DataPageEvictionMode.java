@@ -14,17 +14,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.database.evict;
-
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.configuration;
 
 /**
  *
  */
-public interface PageEvictionTracker {
-    public void touchPage(long pageId) throws IgniteCheckedException;
-
-    public void evictDataPage() throws IgniteCheckedException;
-
-    public void forgetPage(long pageId) throws IgniteCheckedException;
+public enum DataPageEvictionMode {
+    /** Disabled. */
+    DISABLED,
+    /** Random lru. */
+    RANDOM_LRU,
+    /** Random 2-lru. */
+    RANDOM_2_LRU,
+    /** Clock-PRO. */
+    CLOCK_PRO
 }

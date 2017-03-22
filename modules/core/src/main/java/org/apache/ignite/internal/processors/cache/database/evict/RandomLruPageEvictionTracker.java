@@ -54,7 +54,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     private final int trackingSize;
 
     /**
-     * @param pageMem
+     * @param pageMem Page memory.
+     * @param plcCfg Policy config.
      * @param sharedCtx Shared context.
      */
     public RandomLruPageEvictionTracker(
@@ -134,6 +135,13 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         }
 
         throw new IgniteCheckedException("Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void forgetPage(long pageId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        GridUnsafe.putInt(trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
     }
 
     /**

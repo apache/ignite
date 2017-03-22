@@ -21,10 +21,19 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  *
  */
-public interface PageEvictionTracker {
-    public void touchPage(long pageId) throws IgniteCheckedException;
+public class NoOpPageEvictionTracker implements PageEvictionTracker {
+    /** {@inheritDoc} */
+    @Override public void touchPage(long pageId) throws IgniteCheckedException {
+        // No-op.
+    }
 
-    public void evictDataPage() throws IgniteCheckedException;
+    /** {@inheritDoc} */
+    @Override public void evictDataPage() throws IgniteCheckedException {
+        // No-op.
+    }
 
-    public void forgetPage(long pageId) throws IgniteCheckedException;
+    /** {@inheritDoc} */
+    @Override public void forgetPage(long pageId) throws IgniteCheckedException {
+        // No-op.
+    }
 }

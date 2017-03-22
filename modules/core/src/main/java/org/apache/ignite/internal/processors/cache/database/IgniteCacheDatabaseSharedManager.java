@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -36,7 +37,9 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.database.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -113,7 +116,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             FreeListImpl freeList = new FreeListImpl(0,
                     cctx.gridName(),
-                    memoryPolicy(plcName).pageMemory(),
+                    memoryPolicy(plcName),
                     null,
                     cctx.wal(),
                     0L,
@@ -128,7 +131,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         freeListMap.put(SYSTEM_MEMORY_POLICY_NAME,
                 new FreeListImpl(0,
                         cctx.gridName(),
-                        memoryPolicy(SYSTEM_MEMORY_POLICY_NAME).pageMemory(),
+                        memoryPolicy(SYSTEM_MEMORY_POLICY_NAME),
                         null,
                         cctx.wal(),
                         0L,
@@ -446,8 +449,28 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = createPageMemory(memProvider, dbCfg.getPageSize());
 
-        return new MemoryPolicy(pageMem, plc, new RandomLruPageEvictionTracker(pageMem, plc, cctx));
+        return new MemoryPolicy(pageMem, plc, initEvictionTracker(plc, pageMem));
 
+    }
+
+    /**
+     * Factory method for creating {@link PageEvictionTracker} based on memory policy configuration.
+     *
+     * @param plc Policy configuration.
+     * @param pageMem Page memory.
+     */
+    private PageEvictionTracker initEvictionTracker(MemoryPolicyConfiguration plc, PageMemory pageMem) {
+        switch (plc.getPageEvictionMode()) {
+            case RANDOM_LRU:
+                return new RandomLruPageEvictionTracker(pageMem, plc, cctx);
+
+            case RANDOM_2_LRU:
+                // TODO
+            case CLOCK_PRO:
+                // TODO
+            default:
+                return new NoOpPageEvictionTracker();
+        }
     }
 
     /**
@@ -530,5 +553,39 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public String systemMemoryPolicyName() {
         return SYSTEM_MEMORY_POLICY_NAME;
+    }
+
+    /**
+     * See {@link GridCacheMapEntry#ensureFreeSpace()}
+     *
+     * @param memPlc Memory policy.
+     */
+    public void ensureFreeSpace(MemoryPolicy memPlc) throws IgniteCheckedException {
+        MemoryPolicyConfiguration plcCfg = memPlc.config();
+
+        if (plcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return;
+
+        long memorySize = plcCfg.getSize();
+
+        PageMemory pageMem = memPlc.pageMemory();
+
+        int sysPageSize = pageMem.systemPageSize();
+
+        FreeListImpl freeListImpl = plcCfg.isDefault() ? dfltFreeList : freeListMap.get(plcCfg.getName());
+
+        for (;;) {
+            long allocatedPagesCnt = pageMem.loadedPages();
+
+            int emptyDataPagesCnt = freeListImpl.emptyDataPages();
+
+            boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
+                emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
+
+            if (shouldEvict)
+                memPlc.evictionTracker().evictDataPage();
+            else
+                break;
+        }
     }
 }

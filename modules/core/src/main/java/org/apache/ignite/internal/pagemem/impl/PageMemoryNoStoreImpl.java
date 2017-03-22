@@ -20,8 +20,6 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -131,8 +129,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private final boolean trackAcquiredPages;
 
-    private final GridCacheSharedContext<?, ?> sharedCtx;
-
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -150,7 +146,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert log != null || sharedCtx != null;
         assert pageSize % 8 == 0;
 
-        this.sharedCtx = sharedCtx;
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;

@@ -600,7 +600,7 @@ public abstract class PagesList extends DataStructure {
         if (idx == -1)
             handlePageFull(pageId, page, pageAddr, io, dataPage, dataPageAddr, bucket);
         else {
-            if (trackBucketsSize)
+            if (trackBucketsSize || isTrackedBucket(bucket))
                 bucketsSize[bucket].increment();
 
             if (isWalDeltaRecordNeeded(wal, page))
@@ -695,7 +695,7 @@ public abstract class PagesList extends DataStructure {
 
                     assert idx != -1;
 
-                    if (trackBucketsSize)
+                    if (trackBucketsSize || isTrackedBucket(bucket))
                         bucketsSize[bucket].increment();
 
                     dataIO.setFreeListPageId(dataPageAddr, nextId);
@@ -786,7 +786,7 @@ public abstract class PagesList extends DataStructure {
                     }
                 }
                 else {
-                    if (trackBucketsSize)
+                    if (trackBucketsSize || isTrackedBucket(bucket))
                         bucketsSize[bucket].increment();
 
                     // TODO: use single WAL record for bag?
@@ -904,7 +904,7 @@ public abstract class PagesList extends DataStructure {
                     long pageId = io.takeAnyPage(tailPageAddr);
 
                     if (pageId != 0L) {
-                        if (trackBucketsSize)
+                        if (trackBucketsSize || isTrackedBucket(bucket))
                             bucketsSize[bucket].decrement();
 
                         if (isWalDeltaRecordNeeded(wal, tail))
@@ -1026,7 +1026,7 @@ public abstract class PagesList extends DataStructure {
                 if (!rmvd)
                     return false;
 
-                if (trackBucketsSize)
+                if (trackBucketsSize || isTrackedBucket(bucket))
                     bucketsSize[bucket].decrement();
 
                 if (isWalDeltaRecordNeeded(wal, page))
@@ -1065,6 +1065,14 @@ public abstract class PagesList extends DataStructure {
 
             return true;
         }
+    }
+
+    /**
+     * @param bucket Bucket.
+     * @return <tt>true</tt> if bucket size should be tracked regardless of {@link #trackBucketsSize} flag.
+     */
+    protected boolean isTrackedBucket(int bucket) {
+        return false;
     }
 
     /**

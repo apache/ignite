@@ -1031,6 +1031,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                         old = dataTree.put(dataRow);
                 }
 
+                cctx.memoryPolicy().evictionTracker().touchPage(dataRow.link());
+
                 finishUpdate(dataRow, old);
             }
             finally {
@@ -1154,9 +1156,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 row.key(key);
 
                 cctx.memoryPolicy().evictionTracker().touchPage(row.link());
-
-                System.out.println("@@@@@ touched link " + row.link() + ", pageId = " + PageIdUtils.pageId(row.link()) +
-                    ", pageIdx = " + PageIdUtils.pageIndex(row.link()));
             }
 
             return row;

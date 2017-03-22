@@ -109,8 +109,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
                 long realPageId = PageIO.getPageId(pageAddr);
 
-                System.out.println("@@@@@ real page id = " + realPageId);
-
                 int dataItemsCnt = io.getDirectCount(pageAddr);
 
                 for (int i = 0; i < dataItemsCnt; i++) {

@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
@@ -31,6 +30,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPagePayload;
@@ -73,7 +74,13 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
+    private final int emptyDataPagesBucket;
+
+    /** */
     private final PageHandler<CacheDataRow, Boolean> updateRow = new UpdateRowHandler();
+
+    /** */
+    private final PageEvictionTracker evictionTracker;
 
     /**
      *
@@ -138,6 +145,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                 put(null, page, pageAddr, bucket);
             }
+
+            if (written == rowSize)
+                evictionTracker.touchPage(page.id());
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -268,6 +278,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
                     put(null, page, pageAddr, newBucket);
             }
 
+            if (newFreeSpace == MIN_SIZE_FOR_DATA_PAGE)
+                evictionTracker.forgetPage(page.id());
+
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
         }
@@ -276,7 +289,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /**
      * @param cacheId Cache ID.
      * @param name Name (for debug purpose).
-     * @param pageMem Page memory.
+     * @param memPlc Memory policy.
      * @param reuseList Reuse list or {@code null} if this free list will be a reuse list for itself.
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
@@ -286,12 +299,13 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     public FreeListImpl(
         int cacheId,
         String name,
-        PageMemory pageMem,
+        MemoryPolicy memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, BUCKETS, wal, metaPageId);
+        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -311,6 +325,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         }
 
         this.shift = shift;
+
+        emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
 
         init(metaPageId, initNew);
     }
@@ -415,7 +431,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             }
 
             if (pageId == 0L)
-                pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+                 pageId = tryTakeEmptyPageWithFreeSpace(freeSpace, bucket);
 
             try (Page page = pageId == 0 ? allocateDataPage(row.partition()) : pageMem.page(cacheId, pageId)) {
                 // If it is an existing page, we do not need to initialize it.
@@ -427,6 +443,53 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             }
         }
         while (written != COMPLETE);
+    }
+
+    /**
+     * Takes one page from the bucket.
+     * @return Page ID if the page has enough free space, 0L otherwise (page is returned to the bucket in such case).
+     *
+     * @param freeSpace Free space.
+     * @param bucket Bucket.
+     */
+    private long tryTakeEmptyPageWithFreeSpace(int freeSpace, int bucket) throws IgniteCheckedException {
+        long pageId = takeEmptyPage(bucket, DataPageIO.VERSIONS);
+
+        if (pageId != 0L) {
+            Page page = pageMem.page(cacheId, pageId);
+
+            if (!checkPageFreeSpace(page, freeSpace)) {
+                pageId = 0L;
+
+                long pageAddr = page.getForReadPointer();
+
+                try {
+                    put(null, page, pageAddr, bucket);
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+        }
+
+        return pageId;
+    }
+
+    /**
+     * @param page Page.
+     * @param freeSpace Needed size.
+     */
+    private boolean checkPageFreeSpace(Page page, int freeSpace) throws IgniteCheckedException {
+        long pageAddr = page.getForReadPointer();
+
+        try {
+            DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+            return io.getFreeSpace(pageAddr) >= freeSpace;
+        }
+        finally {
+            page.releaseRead();
+        }
     }
 
     /** {@inheritDoc} */
@@ -485,6 +548,21 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** {@inheritDoc} */
     @Override protected boolean isReuseBucket(int bucket) {
         return bucket == REUSE_BUCKET;
+    }
+
+    /**
+     * @param bucket Bucket.
+     * @return <tt>true</tt> if bucket size should be tracked regardless of {@link #trackBucketsSize} flag.
+     */
+    @Override protected boolean isTrackedBucket(int bucket) {
+        return bucket == emptyDataPagesBucket;
+    }
+
+    /**
+     * @return Number of empty data pages in free list.
+     */
+    public int emptyDataPages() {
+        return bucketsSize[emptyDataPagesBucket].intValue();
     }
 
     /** {@inheritDoc} */
