@@ -18,8 +18,6 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.ByteString;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.ignite.mesos.resource.IgniteProvider;
 import org.apache.ignite.mesos.resource.JettyServer;
 import org.apache.ignite.mesos.resource.ResourceHandler;
@@ -27,6 +25,9 @@ import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Ignite mesos framework.
@@ -50,7 +51,7 @@ public class IgniteFramework {
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser("")
+            .setUser(System.getenv("MESOS_USER")!=null ? System.getenv("MESOS_USER"):"")
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
