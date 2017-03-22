@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: platform object proxy. */
         public const byte TypePlatformJavaObjectFactoryProxy = 99;
 
+        /** Type: platform object proxy. */
+        public const int TypeIgniteUuid = 2018070327;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -255,8 +258,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             ? (Action<Guid, IBinaryStream>)WriteGuidFast : WriteGuidSlow;
 
         /** Guid reader. */
-        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
-            ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
+        public static readonly Func<IBinaryStream, Guid> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid>)ReadGuidFast : ReadGuidSlow;
 
         /** String mode environment variable. */
         public const string IgniteBinaryMarshallerUseStringSerializationVer2 =
@@ -1170,7 +1173,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        public static unsafe Guid? ReadGuidFast(IBinaryStream stream)
+        public static unsafe Guid ReadGuidFast(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -1188,7 +1191,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <returns>Guid.</returns>
-        public static unsafe Guid? ReadGuidSlow(IBinaryStream stream)
+        public static unsafe Guid ReadGuidSlow(IBinaryStream stream)
         {
             byte* jBytes = stackalloc byte[16];
 

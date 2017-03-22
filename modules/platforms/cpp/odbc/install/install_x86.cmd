@@ -5,7 +5,10 @@ set ODBC=%1
 if [%ODBC%] == [] (
 	echo error: driver is not specified. Call format: install_x86 abs_path_to_driver.
 	pause
-) else if exist %ODBC% (
+	exit /b 1
+)
+
+if exist %ODBC% (
 	if exist %ODBC%\ (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)
@@ -19,4 +22,5 @@ if [%ODBC%] == [] (
 	echo Driver can not be found: %ODBC%
 	echo Call format: install_x86 abs_path_to_driver
 	pause
+	exit /b 1
 )

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Plugin.Cache;
@@ -171,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
             Assert.IsNull(plugin.IgniteStopped);
 
             var ctx = plugin.Context;
-            Assert.AreEqual(ignite.Name, ctx.IgniteConfiguration.GridName);
+            Assert.AreEqual(ignite.Name, ctx.IgniteConfiguration.IgniteInstanceName);
             Assert.AreEqual(cacheName, ctx.CacheConfiguration.Name);
             Assert.AreEqual(propValue, ctx.CachePluginConfiguration.TestProperty);
 
@@ -185,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = name,
+                IgniteInstanceName = name,
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration(CacheName)
@@ -202,14 +203,16 @@ namespace Apache.Ignite.Core.Tests.Plugin.Cache
         [CachePluginProviderType(typeof(CachePlugin))]
         private class NonSerializableCachePluginConfig : ICachePluginConfiguration
         {
-            // No-op.
+            public int? CachePluginConfigurationClosureFactoryId { get { return null; } }
+            public void WriteBinary(IBinaryRawWriter writer) { /* No-op. */ }
         }
 
         [Serializable]
         [CachePluginProviderType(typeof(string))]
         private class ThrowCachePluginConfig : ICachePluginConfiguration
         {
-            // No-op.
+            public int? CachePluginConfigurationClosureFactoryId { get { return null; } }
+            public void WriteBinary(IBinaryRawWriter writer) { /* No-op. */ }
         }
     }
 }

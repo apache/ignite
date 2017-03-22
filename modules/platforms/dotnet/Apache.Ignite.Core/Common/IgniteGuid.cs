@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -49,10 +50,14 @@ namespace Apache.Ignite.Core.Common
         /// Initializes a new instance of the <see cref="IgniteGuid"/> struct.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public IgniteGuid(IBinaryRawReader reader)
+        internal IgniteGuid(IBinaryRawReader reader)
         {
-            _globalId = reader.ReadGuid().GetValueOrDefault();
-            _localId = reader.ReadLong();
+            Debug.Assert(reader != null);
+
+            var stream = ((BinaryReader) reader).Stream;
+
+            _localId = stream.ReadLong();
+            _globalId = BinaryUtils.ReadGuid(stream);
         }
 
         /// <summary>
@@ -101,20 +106,6 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Reads this object from the given reader.
-        /// </summary> 
-        /// <param name="r">Reader.</param>
-        internal static IgniteGuid? Read(IBinaryRawReader r)
-        {
-            var guid = r.ReadGuid();
-
-            if (guid == null)
-                return null;
-
-            return new IgniteGuid(guid.Value, r.ReadLong());
-        }
-
-        /// <summary>
         /// Implements the operator ==.
         /// </summary>
         /// <param name="a">First item.</param>
@@ -140,13 +131,19 @@ namespace Apache.Ignite.Core.Common
             return !(a == b);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
         void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
         {
-            var raw = writer.GetRawWriter();
+            Debug.Assert(writer != null);
 
-            raw.WriteGuid(GlobalId);
-            raw.WriteLong(LocalId);
+            var stream = ((BinaryWriter) writer.GetRawWriter()).Stream;
+
+            stream.WriteLong(_localId);
+            BinaryUtils.WriteGuid(_globalId, stream);
         }
     }
 }

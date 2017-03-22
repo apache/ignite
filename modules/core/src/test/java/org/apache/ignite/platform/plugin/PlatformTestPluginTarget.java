@@ -21,18 +21,27 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformAsyncResult;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Test target.
  */
-class PlatformTestPluginTarget extends PlatformAbstractTarget {
+@SuppressWarnings("ConstantConditions")
+class PlatformTestPluginTarget implements PlatformTarget {
     /** */
     private final String name;
+
+    /** */
+    private final PlatformContext platformCtx;
 
     /**
      * Constructor.
@@ -40,7 +49,7 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
      * @param platformCtx Context.
      */
     PlatformTestPluginTarget(PlatformContext platformCtx, String name) {
-        super(platformCtx);
+        this.platformCtx = platformCtx;
 
         if (name == null) {
             // Initialize from configuration.
@@ -62,9 +71,14 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
         return val + 1;
     }
 
-    /** {@inheritDoc} */
     @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return reader.readString().length();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+            throws IgniteCheckedException {
+        return processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
@@ -87,9 +101,33 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
             throws IgniteCheckedException {
         PlatformTestPluginTarget t = (PlatformTestPluginTarget)arg;
 
-        writer.writeString(t.name);
+        writer.writeString(invokeCallback(t.name));
 
         return new PlatformTestPluginTarget(platformCtx, t.name + reader.readString());
+    }
+
+    /**
+     * Invokes the platform callback.
+     *
+     * @param val Value to send.
+     * @return Result.
+     */
+    private String invokeCallback(String val) {
+        PlatformMemory outMem = platformCtx.memory().allocate();
+        PlatformMemory inMem = platformCtx.memory().allocate();
+
+        PlatformOutputStream outStream = outMem.output();
+        BinaryRawWriterEx writer = platformCtx.writer(outStream);
+
+        writer.writeString(val);
+
+        outStream.synchronize();
+
+        platformCtx.gateway().pluginCallback(1, outMem, inMem);
+
+        BinaryRawReaderEx reader = platformCtx.reader(inMem);
+
+        return reader.readString();
     }
 
     /** {@inheritDoc} */
@@ -100,6 +138,76 @@ class PlatformTestPluginTarget extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
         return new PlatformTestPluginTarget(platformCtx, name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case 1: {
+                // Async upper case.
+                final String val = reader.readString();
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(500L);
+                            fa.onDone(val.toUpperCase());
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+
+                return new PlatformAsyncResult() {
+                    @Override public IgniteFuture future() {
+                        //noinspection unchecked
+                        return new IgniteFutureImpl(fa);
+                    }
+
+                    @Override public void write(BinaryRawWriterEx writer, Object result) {
+                        writer.writeString((String) result);
+                    }
+                };
+            }
+            case 2: {
+                // Exception.
+                throw new PlatformTestPluginException("123");
+            }
+            case 3: {
+                // Async exception.
+                final GridFutureAdapter<String> fa = new GridFutureAdapter<>();
+
+                new Thread(new Runnable() {
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(500L);
+                            fa.onDone(new PlatformTestPluginException("x"));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+
+                return new PlatformAsyncResult() {
+                    @Override public IgniteFuture future() {
+                        //noinspection unchecked
+                        return new IgniteFutureImpl(fa);
+                    }
+
+                    @Override public void write(BinaryRawWriterEx writer, Object result) {
+                        // No-op.
+                    }
+                };
+            }
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Exception convertException(Exception e) {
+        return e;
     }
 
     /**

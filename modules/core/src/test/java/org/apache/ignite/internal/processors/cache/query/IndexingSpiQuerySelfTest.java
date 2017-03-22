@@ -244,7 +244,7 @@ public class IndexingSpiQuerySelfTest extends TestCase {
         private final SortedMap<Object, Object> idx = new TreeMap<>();
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

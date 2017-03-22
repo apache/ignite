@@ -11,5 +11,6 @@ Artifacts can be found in `/target/assembly directory.`
 Writing Ignite Benchmarks
 =========================
 
-All benchmarks extend `AbstractBenchmark` class. A new benchmark should also extend this abstract class
-and implement `test` method. This is the method which actually tests performance.
+All benchmarks extend `AbstractBenchmark` class. A new benchmark should also extend
+this abstract class and implement `test` method. This method is the entry point for
+a benchmark execution.

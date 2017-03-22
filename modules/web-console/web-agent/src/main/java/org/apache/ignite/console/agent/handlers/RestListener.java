@@ -38,6 +38,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.log4j.Logger;
@@ -65,7 +66,13 @@ public class RestListener extends AbstractListener {
 
         this.cfg = cfg;
 
-        httpClient = HttpClientBuilder.create().build();
+        // Create a connection manager with custom configuration.
+        PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
+
+        connMgr.setDefaultMaxPerRoute(Integer.MAX_VALUE);
+        connMgr.setMaxTotal(Integer.MAX_VALUE);
+
+        httpClient = HttpClientBuilder.create().setConnectionManager(connMgr).build();
     }
 
     /** {@inheritDoc} */

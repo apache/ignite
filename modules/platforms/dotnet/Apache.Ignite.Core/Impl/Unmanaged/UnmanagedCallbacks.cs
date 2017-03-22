@@ -246,6 +246,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.CachePluginDestroy, CachePluginDestroy);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStart, CachePluginIgniteStart);
             AddHandler(UnmanagedCallbackOp.CachePluginIgniteStop, CachePluginIgniteStop);
+            AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
         }
 
         /// <summary>
@@ -1287,6 +1288,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             pluginProvider.OnIgniteStop(cancel != 0);
 
             return 0;
+        }
+
+        private long PluginCallbackInLongLongOutLong(long callbackId, long inPtr, long outPtr, void* arg)
+        {
+            return _ignite.PluginProcessor.InvokeCallback(callbackId, inPtr, outPtr);
         }
 
         #endregion

@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core
                 IgniteManager.CreateJvmContext(cfg, cbs, log);
                 log.Debug("JVM started.");
 
-                var gridName = cfg.GridName;
+                var gridName = cfg.IgniteInstanceName;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
