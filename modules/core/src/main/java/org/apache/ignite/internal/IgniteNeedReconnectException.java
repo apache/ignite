@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-import './list-of-registered-users.scss';
+package org.apache.ignite.internal;
 
-import templateUrl from './list-of-registered-users.tpl.pug';
-import controller from './list-of-registered-users.controller';
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
-export default [() => {
-    return {
-        scope: true,
-        templateUrl,
-        controller,
-        controllerAs: '$ctrl'
-    };
-}];
+/**
+ * Indicates that node should try reconnect to cluster.
+ */
+public class IgniteNeedReconnectException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @param locNode Local node.
+     * @param cause Cause.
+     */
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
+    }
+}

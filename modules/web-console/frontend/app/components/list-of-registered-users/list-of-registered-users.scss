@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-import './list-of-registered-users.scss';
+.list-of-registered-users {
+  & > a {
+    display: inline-block;
+    margin: 10px;
+    margin-left: 0;
 
-import templateUrl from './list-of-registered-users.tpl.pug';
-import controller from './list-of-registered-users.controller';
-
-export default [() => {
-    return {
-        scope: true,
-        templateUrl,
-        controller,
-        controllerAs: '$ctrl'
-    };
-}];
+    &.active {
+      font-weight: bold;
+    }
+  }
+}

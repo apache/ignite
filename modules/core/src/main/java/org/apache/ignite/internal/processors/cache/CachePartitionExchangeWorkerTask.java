@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.cache;
  */
 public interface CachePartitionExchangeWorkerTask {
     /**
-     * @return {@code True) if task denotes standard exchange task, {@code false} if this is a custom task which
+     * @return {@code True} if task denotes standard exchange task, {@code false} if this is a custom task which
      * must be executed from within exchange thread.
      */
     boolean isExchange();

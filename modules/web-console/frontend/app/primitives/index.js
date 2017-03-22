@@ -15,16 +15,5 @@
  * limitations under the License.
  */
 
-import './list-of-registered-users.scss';
-
-import templateUrl from './list-of-registered-users.tpl.pug';
-import controller from './list-of-registered-users.controller';
-
-export default [() => {
-    return {
-        scope: true,
-        templateUrl,
-        controller,
-        controllerAs: '$ctrl'
-    };
-}];
+import './badge/index.scss';
+import './tabs/index.scss';
