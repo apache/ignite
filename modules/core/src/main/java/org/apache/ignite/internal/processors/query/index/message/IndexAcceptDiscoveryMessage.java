@@ -15,55 +15,64 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract discovery message for index operations.
+ * {@code ACK} message which triggers local index create/drop.
  */
-public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMessage {
+public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Operation. */
-    @GridToStringInclude
-    protected final IndexAbstractOperation op;
+    /** Error message. */
+    private transient volatile String errMsg;
 
     /**
      * Constructor.
      *
-     * @param op Operation.
+     * @param op Original operation.
      */
-    protected IndexAbstractDiscoveryMessage(IndexAbstractOperation op) {
-        this.op = op;
+    public IndexAcceptDiscoveryMessage(IndexAbstractOperation op) {
+        super(op);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean exchange() {
+        return true;
     }
 
     /**
-     * @return Operation.
+     * @return Error message.
      */
-    public IndexAbstractOperation operation() {
-        return op;
+    @Nullable public String onError() {
+        return errMsg;
     }
 
     /**
-     * @return Whether request must be propagated to exchange thread.
+     * @param errMsg Error message.
      */
-    public abstract boolean exchange();
+    public void onError(String errMsg) {
+        this.errMsg = errMsg;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAbstractDiscoveryMessage.class, this);
+        return S.toString(IndexAcceptDiscoveryMessage.class, this);
     }
 }

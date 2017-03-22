@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.index;
 
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.query.index.message.IndexAbstractDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.query.index.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.IndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.IndexDropOperation;
-import org.apache.ignite.internal.processors.query.index.IndexAcceptDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.IndexFinishDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.index.IndexProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
+import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 

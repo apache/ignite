@@ -15,63 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.index.operation;
 
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 /**
- * {@code ACK} message which triggers local index create/drop.
+ * Arguments for {@code CREATE INDEX}.
  */
-public class IndexAcceptDiscoveryMessage extends IndexAbstractDiscoveryMessage {
+public class IndexDropOperation extends IndexAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Error message. */
-    private transient volatile String errMsg;
+    /** Index name. */
+    private final String idxName;
+
+    /** Ignore operation if index doesn't exist. */
+    private final boolean ifExists;
 
     /**
      * Constructor.
      *
-     * @param op Original operation.
+     * @param cliNodeId Client node ID.
+     * @param opId Operation id.
+     * @param space Space.
+     * @param idxName Index name.
+     * @param ifExists Ignore operation if index doesn't exist.
      */
-    public IndexAcceptDiscoveryMessage(IndexAbstractOperation op) {
-        super(op);
+    public IndexDropOperation(UUID cliNodeId, UUID opId, String space, String idxName, boolean ifExists) {
+        super(cliNodeId, opId, space);
+
+        this.idxName = idxName;
+        this.ifExists = ifExists;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean exchange() {
-        return true;
+    @Override public String indexName() {
+        return idxName;
     }
 
     /**
-     * @return Error message.
+     * @return Ignore operation if index doesn't exist.
      */
-    @Nullable public String onError() {
-        return errMsg;
+    public boolean ifExists() {
+        return ifExists;
     }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void onError(String errMsg) {
-        this.errMsg = errMsg;
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexAcceptDiscoveryMessage.class, this);
+        return S.toString(IndexDropOperation.class, this);
     }
 }

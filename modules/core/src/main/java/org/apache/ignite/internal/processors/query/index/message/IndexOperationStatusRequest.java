@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.index;
+package org.apache.ignite.internal.processors.query.index.message;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -26,10 +26,9 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
- * Message with index operation status. Sent from participant to coordinator when index creation is completed or
- * when coordinator changes.
+ * Operation status request.
  */
-public class IndexOperationStatusResponse implements Message {
+public class IndexOperationStatusRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,13 +38,10 @@ public class IndexOperationStatusResponse implements Message {
     /** Operation ID. */
     private UUID opId;
 
-    /** Error message. */
-    private String errMsg;
-
     /**
      * Default constructor.
      */
-    public IndexOperationStatusResponse() {
+    public IndexOperationStatusRequest() {
         // No-op.
     }
 
@@ -54,12 +50,10 @@ public class IndexOperationStatusResponse implements Message {
      *
      * @param sndNodeId Sender node ID.
      * @param opId Operation ID.
-     * @param errMsg Error message.
      */
-    public IndexOperationStatusResponse(UUID sndNodeId, UUID opId, String errMsg) {
+    public IndexOperationStatusRequest(UUID sndNodeId, UUID opId) {
         this.sndNodeId = sndNodeId;
         this.opId = opId;
-        this.errMsg = errMsg;
     }
 
     /**
@@ -74,13 +68,6 @@ public class IndexOperationStatusResponse implements Message {
      */
     public UUID operationId() {
         return opId;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public String errorMessage() {
-        return errMsg;
     }
 
     /** {@inheritDoc} */
@@ -103,12 +90,6 @@ public class IndexOperationStatusResponse implements Message {
 
             case 1:
                 if (!writer.writeUuid("opId", opId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeString("errMsg", errMsg))
                     return false;
 
                 writer.incrementState();
@@ -140,27 +121,19 @@ public class IndexOperationStatusResponse implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 2:
-                errMsg = reader.readString("errMsg");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
-        return reader.afterMessageRead(IndexOperationStatusResponse.class);
+        return reader.afterMessageRead(IndexOperationStatusRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -50;
+        return -49;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -170,6 +143,6 @@ public class IndexOperationStatusResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexOperationStatusResponse.class, this);
+        return S.toString(IndexOperationStatusRequest.class, this);
     }
 }

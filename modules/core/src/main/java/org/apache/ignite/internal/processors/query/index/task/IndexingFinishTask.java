@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.index.task;
 
-import org.apache.ignite.internal.processors.query.index.IndexFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
