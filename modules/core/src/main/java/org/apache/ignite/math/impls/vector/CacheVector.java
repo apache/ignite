@@ -101,53 +101,53 @@ public class CacheVector<K, V> extends AbstractVector {
     }
 
 
-    @Override
-    public Vector map(IgniteDoubleFunction<Double> fun) {
+    /** {@inheritDoc} */
+    @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         return mapOverValues(fun::apply);
     }
 
-    @Override
-    public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
+    /** {@inheritDoc} */
+    @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
         // TODO: provide cache-optimized implementation.
         return super.map(fun, y); // TODO
     }
 
-    @Override
-    public Element minValue() {
+    /** {@inheritDoc} */
+    @Override public Element minValue() {
         // TODO: provide cache-optimized implementation.
         return super.minValue(); // TODO
     }
 
-    @Override
-    public Element maxValue() {
+    /** {@inheritDoc} */
+    @Override public Element maxValue() {
         // TODO: provide cache-optimized implementation.
         return super.maxValue(); // TODO
     }
 
-    @Override
-    public double sum() {
+    /** {@inheritDoc} */
+    @Override public double sum() {
         CacheVectorStorage<K, V> sto = storage();
 
         return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
-    @Override
-    public Vector assign(double val) {
+    /** {@inheritDoc} */
+    @Override public Vector assign(double val) {
         return mapOverValues((Double d) -> val);
     }
 
-    @Override
-    public Vector plus(double x) {
+    /** {@inheritDoc} */
+    @Override public Vector plus(double x) {
         return mapOverValues((Double d) -> d + x);
     }
 
-    @Override
-    public Vector divide(double x) {
+    /** {@inheritDoc} */
+    @Override public Vector divide(double x) {
         return mapOverValues((Double d) -> d / x);
     }
 
-    @Override
-    public Vector times(double x) {
+    /** {@inheritDoc} */
+    @Override public Vector times(double x) {
         return mapOverValues((Double d) -> d * x);
     }
 
@@ -160,12 +160,14 @@ public class CacheVector<K, V> extends AbstractVector {
         return (CacheVectorStorage<K, V>)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         CacheVectorStorage<K, V> sto = storage();
 
         return new CacheVector<K, V>(size(), sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         throw new UnsupportedOperationException();
     }
