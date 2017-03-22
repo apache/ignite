@@ -6243,7 +6243,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 acache.invokeAll(map);
 
-                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+                results = acache.<Map<String, EntryProcessorResult<Integer>>>future().get();
             }
             else
                 results = cache.invokeAllAsync(map).get();
@@ -6284,7 +6284,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 acache.invokeAll(keys, new ResourceInjectionEntryProcessor());
 
-                results = cache.<Map<String, EntryProcessorResult<Integer>>>future().get();
+                results = acache.<Map<String, EntryProcessorResult<Integer>>>future().get();
             }
             else
                 results = cache.invokeAllAsync(keys, new ResourceInjectionEntryProcessor()).get();
@@ -6323,7 +6323,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 acache.invoke(key, new GridCacheAbstractFullApiSelfTest.ResourceInjectionEntryProcessor());
 
-                flags = cache.<Integer>future().get();
+                flags = acache.<Integer>future().get();
             }
             else
                 flags = cache.invokeAsync(key,
