@@ -31,8 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * H2 Value message factory.
  */
 public class GridH2ValueMessageFactory implements MessageFactory {
-    /** {@inheritDoc}
-     * @param type*/
+    /** {@inheritDoc} */
     @Nullable @Override public Message create(short type) {
         switch (type) {
             case -4:

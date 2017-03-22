@@ -67,7 +67,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcToNioAdapter;
@@ -3511,6 +3510,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * Write message type to byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @param type Message type.
+     */
+    private static void writeMessageType(ByteBuffer buf, short type) {
+        buf.put((byte)(type & 0xFF));
+        buf.put((byte)((type >> 8) & 0xFF));
+    }
+
+    /**
      *
      */
     private class ShmemWorker extends GridWorker {
@@ -4010,10 +4020,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Message body size in bytes. */
         private static final int MESSAGE_SIZE = 32;
 
-        /** */
+        /** Full message size (with message type) in bytes. */
         public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
         /** */
@@ -4084,7 +4094,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.putShort(directType());
+            writeMessageType(buf, directType());
 
             byte[] bytes = U.uuidToBytes(nodeId);
 
@@ -4213,10 +4223,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Message body size in bytes. */
         private static final int MESSAGE_SIZE = 8;
 
-        /** */
+        /** Full message size (with message type) in bytes. */
         public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
         /** */
@@ -4253,7 +4263,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.putShort(RECOVERY_LAST_ID_MSG_TYPE);
+            writeMessageType(buf, directType());
 
             buf.putLong(rcvCnt);
 
@@ -4294,10 +4304,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Message body size (with message type) in bytes. */
         private static final int MESSAGE_SIZE = 16;
 
-        /** */
+        /** Full message size (with message type) in bytes. */
         public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
         /** */
@@ -4323,13 +4333,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             nodeIdBytesWithType = new byte[MESSAGE_FULL_SIZE];
 
-            if (GridUnsafe.BIG_ENDIAN) {
-                nodeIdBytesWithType[0] = NODE_ID_MSG_TYPE >> 8;
-                nodeIdBytesWithType[1] = NODE_ID_MSG_TYPE;
-            } else {
-                nodeIdBytesWithType[0] = NODE_ID_MSG_TYPE;
-                nodeIdBytesWithType[1] = NODE_ID_MSG_TYPE >> 8;
-            }
+            nodeIdBytesWithType[0] = (byte)(NODE_ID_MSG_TYPE & 0xFF);
+            nodeIdBytesWithType[1] = (byte)((NODE_ID_MSG_TYPE >> 8) & 0xFF);
 
             System.arraycopy(nodeIdBytes, 0, nodeIdBytesWithType, 2, nodeIdBytes.length);
         }
@@ -4346,7 +4351,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.putShort(NODE_ID_MSG_TYPE);
+            writeMessageType(buf, directType());
+
             buf.put(nodeIdBytes);
 
             return true;
