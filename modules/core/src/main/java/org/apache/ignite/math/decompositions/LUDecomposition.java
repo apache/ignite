@@ -50,7 +50,7 @@ public class LUDecomposition {
     /** Original matrix. */
     private Matrix matrix;
     /** Entries of LU decomposition. */
-    private Matrix luMatrix;
+    private Matrix lu;
 
     /**
      * Calculates the LU-decomposition of the given matrix.
@@ -80,7 +80,7 @@ public class LUDecomposition {
 
         this.matrix = matrix;
 
-        luMatrix = copy(matrix);
+        lu = copy(matrix);
 
         pivot = likeVector(matrix);
         for (int i = 0; i < pivot.size(); i++)
@@ -94,25 +94,32 @@ public class LUDecomposition {
         cachedP = null;
 
         for (int col = 0; col < cols; col++) {
+
+            //upper
             for (int row = 0; row < col; row++) {
-                double sum = luMatrix.getX(row, col);
+                Vector luRow = lu.viewRow(row);
+                double sum = luRow.get(col);
 
                 for (int i = 0; i < row; i++)
-                    sum -= luMatrix.getX(col, i) * luMatrix.getX(i, col);
+                    sum -= luRow.getX(i) * lu.getX(i, col);
 
-                luMatrix.setX(row, col, sum);
+                luRow.setX(col, sum);
             }
 
+            // permutation row
             int max = col;
+
             double largest = Double.NEGATIVE_INFINITY;
 
+            // lower
             for (int row = col; row < rows; row++) {
-                double sum = luMatrix.getX(row, col);
+                Vector luRow = lu.viewRow(row);
+                double sum = luRow.getX(col);
 
                 for (int i = 0; i < col; i++)
-                    sum -= luMatrix.getX(col, i) * luMatrix.getX(i, col);
+                    sum -= luRow.getX(i) * lu.getX(i, col);
 
-                luMatrix.setX(row, col, sum);
+                luRow.setX(col, sum);
 
                 if (Math.abs(sum) > largest){
                     largest = Math.abs(sum);
@@ -121,7 +128,7 @@ public class LUDecomposition {
             }
 
             // Singularity check
-            if (Math.abs(luMatrix.getX(max, col)) < singularityThreshold) {
+            if (Math.abs(lu.getX(max, col)) < singularityThreshold) {
                 singular = true;
                 return;
             }
@@ -129,8 +136,8 @@ public class LUDecomposition {
             // Pivot if necessary
             if (max != col) {
                 double tmp;
-                Vector luMax = luMatrix.viewColumn(max);
-                Vector luCol = luMatrix.viewColumn(col);
+                Vector luMax = lu.viewColumn(max);
+                Vector luCol = lu.viewColumn(col);
 
                 for (int i = 0; i < cols; i++) {
                     tmp = luMax.getX(i);
@@ -139,7 +146,6 @@ public class LUDecomposition {
                 }
 
                 int temp = (int)pivot.getX(max);
-
                 pivot.setX(max, pivot.getX(col));
                 pivot.setX(col, temp);
 
@@ -147,9 +153,11 @@ public class LUDecomposition {
             }
 
             // Divide the lower elements by the "winning" diagonal elt.
-            final double luDiag = luMatrix.getX(col, col);
-            for (int row = col + 1; row < cols; row++)
-                luMatrix.setX(row, col, luMatrix.getX(row, col) / luDiag) ;
+            final double luDiag = lu.getX(col, col);
+            for (int row = col + 1; row < cols; row++){
+                double val = lu.getX(row, col) / luDiag;
+                lu.setX(row, col, val);
+            }
         }
     }
 
@@ -167,7 +175,7 @@ public class LUDecomposition {
 
             for (int i = 0; i < m; ++i) {
                 for (int j = 0; j < i; ++j)
-                    cachedL.setX(i, j, luMatrix.getX(i, j));
+                    cachedL.setX(i, j, lu.getX(i, j));
 
                 cachedL.setX(i, i, 1.0);
             }
@@ -189,7 +197,7 @@ public class LUDecomposition {
 
             for (int i = 0; i < m; ++i)
                 for (int j = i; j < m; ++j)
-                    cachedU.setX(i, j, luMatrix.getX(i, j));
+                    cachedU.setX(i, j, lu.getX(i, j));
         }
         return cachedU;
     }
@@ -207,8 +215,8 @@ public class LUDecomposition {
         if ((cachedP == null) && !singular) {
             final int m = pivot.size();
 
-            cachedU = like(matrix);
-            cachedU.assign(0.0);
+            cachedP = like(matrix);
+            cachedP.assign(0.0);
 
             for (int i = 0; i < m; ++i)
                 cachedP.setX(i, (int)pivot.get(i), 1.0);
@@ -237,7 +245,7 @@ public class LUDecomposition {
             double determinant = even ? 1 : -1;
 
             for (int i = 0; i < m; i++)
-                determinant *= luMatrix.getX(i, i);
+                determinant *= lu.getX(i, i);
 
             return determinant;
     }
