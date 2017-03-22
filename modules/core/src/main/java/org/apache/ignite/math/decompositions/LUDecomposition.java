@@ -136,8 +136,8 @@ public class LUDecomposition {
             // Pivot if necessary
             if (max != col) {
                 double tmp;
-                Vector luMax = lu.viewColumn(max);
-                Vector luCol = lu.viewColumn(col);
+                Vector luMax = lu.viewRow(max);
+                Vector luCol = lu.viewRow(col);
 
                 for (int i = 0; i < cols; i++) {
                     tmp = luMax.getX(i);
