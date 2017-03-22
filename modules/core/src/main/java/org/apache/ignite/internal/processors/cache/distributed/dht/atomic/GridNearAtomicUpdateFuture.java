@@ -761,8 +761,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
-                "left the grid)."));
+            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
+                    "partition nodes left the grid): " + cctx.name()));
 
             return;
         }
@@ -1033,8 +1033,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             List<ClusterNode> nodes = cctx.affinity().nodesByKey(cacheKey, topVer);
 
             if (F.isEmpty(nodes))
-                throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                    "(all partition nodes left the grid).");
+                throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
+                        "partition nodes left the grid): " + cctx.name());
 
             ClusterNode primary = nodes.get(0);
 
@@ -1143,8 +1143,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         List<ClusterNode> nodes = cctx.affinity().nodesByKey(cacheKey, topVer);
 
         if (F.isEmpty(nodes))
-            throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                    "(all partition nodes left the grid).");
+            throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
+                    "partition nodes left the grid): " + cctx.name());
 
         ClusterNode primary = nodes.get(0);
 
