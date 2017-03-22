@@ -39,7 +39,7 @@ public class IgniteFramework {
     private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
     /** Mesos user name in system environment. */
-    private static final String userName = "MESOS_USER";
+    private static final String MESOS_USER_NAME = "MESOS_USER";
 
     /**
      * Main methods has only one optional parameter - path to properties files.
@@ -50,12 +50,12 @@ public class IgniteFramework {
     public static void main(String[] args) throws Exception {
         final int frameworkFailoverTimeout = 0;
 
-        String mesosUserName = System.getenv(userName);
+        String userName = System.getenv(MESOS_USER_NAME);
 
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(mesosUserName!=null ? mesosUserName:"")
+            .setUser(userName!=null ? userName:"")
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
