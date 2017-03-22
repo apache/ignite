@@ -18,6 +18,8 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.ByteString;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ignite.mesos.resource.IgniteProvider;
 import org.apache.ignite.mesos.resource.JettyServer;
 import org.apache.ignite.mesos.resource.ResourceHandler;
@@ -25,9 +27,6 @@ import org.apache.ignite.mesos.resource.ResourceProvider;
 import org.apache.mesos.MesosSchedulerDriver;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Ignite mesos framework.
@@ -39,6 +38,9 @@ public class IgniteFramework {
     /** Framework name. */
     private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
+    /** Mesos user name in system environment. */
+    private static final String userName = "MESOS_USER";
+
     /**
      * Main methods has only one optional parameter - path to properties files.
      *
@@ -48,10 +50,12 @@ public class IgniteFramework {
     public static void main(String[] args) throws Exception {
         final int frameworkFailoverTimeout = 0;
 
+        String mesosUserName = System.getenv(userName);
+
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(System.getenv("MESOS_USER")!=null ? System.getenv("MESOS_USER"):"")
+            .setUser(mesosUserName!=null ? mesosUserName:"")
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
