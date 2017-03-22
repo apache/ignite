@@ -28,6 +28,8 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
+#include "ignite/test_utils.h"
+
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
@@ -389,13 +391,15 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context
 /**
  * Test setup fixture.
  */
-struct CacheInvokeTestSuiteFixture {
+struct CacheInvokeTestSuiteFixture
+{
+    Ignite node;
 
     /**
      * Constructor.
      */
     CacheInvokeTestSuiteFixture() :
-        grid(ignite_test::StartNode("cache-query.xml"))
+        node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
     {
         // No-op.
     }
@@ -405,10 +409,8 @@ struct CacheInvokeTestSuiteFixture {
      */
     ~CacheInvokeTestSuiteFixture()
     {
-        Ignition::Stop(grid.GetName(), true);
+        Ignition::StopAll(true);
     }
-
-    Ignite grid;
 };
 
 BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
@@ -418,7 +420,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     cache.Put(5, 20);
 
@@ -436,7 +438,7 @@ BOOST_AUTO_TEST_CASE(TestExisting)
  */
 BOOST_AUTO_TEST_CASE(TestNonExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced;
 
@@ -452,7 +454,7 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
  */
 BOOST_AUTO_TEST_CASE(TestSeveral)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced(2);
     Divisor div(10.0);
@@ -487,11 +489,11 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
  */
 BOOST_AUTO_TEST_CASE(TestStrings)
 {
-    IgniteBinding binding = grid.GetBinding();
+    IgniteBinding binding = node.GetBinding();
 
     binding.RegisterCacheEntryProcessor<CharRemover>();
 
-    Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
+    Cache<std::string, std::string> cache = node.GetOrCreateCache<std::string, std::string>("TestCache");
 
     CharRemover cr('.');
 

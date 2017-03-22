@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
             Assert.IsTrue(File.Exists("IgniteConfigurationSection.xsd"));
 
             // Valid schema
-            CheckSchemaValidation(@"<igniteConfiguration xmlns='http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection' gridName='myGrid'><binaryConfiguration /></igniteConfiguration>");
+            CheckSchemaValidation(@"<igniteConfiguration xmlns='http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection' igniteInstanceName='myGrid'><binaryConfiguration /></igniteConfiguration>");
 
             // Invalid schema
             Assert.Throws<XmlSchemaValidationException>(() => CheckSchemaValidation(
