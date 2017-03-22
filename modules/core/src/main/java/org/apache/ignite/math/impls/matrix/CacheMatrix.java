@@ -49,7 +49,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         int rows,
         int cols,
         IgniteCache<K, V> cache,
-        KeyMapper<K> keyMapper,
+        MatrixKeyMapper<K> keyMapper,
         ValueMapper<V> valMapper) {
         assert rows > 0;
         assert cols > 0;
@@ -75,7 +75,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
             int rows = (int)args.get("rows");
             int cols = (int)args.get("cols");
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
-            KeyMapper<K> keyMapper = (KeyMapper<K>)args.get("keyMapper");
+            MatrixKeyMapper<K> keyMapper = (MatrixKeyMapper<K>)args.get("keyMapper");
             ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
 
             setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
@@ -152,27 +152,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        // Gets these values assigned to a local vars so that
-        // they will be available in the closure.
-        ValueMapper<V> valMapper = sto.valueMapper();
-        KeyMapper<K> keyMapper = sto.keyMapper();
-
-        Collection<Double> subSums = foldForCache(sto.cache().getName(), (CacheEntry<K, V> ce, Double acc) -> {
-            if (keyMapper.isValid(ce.entry().getKey())) {
-                double v = valMapper.toDouble(ce.entry().getValue());
-
-                return acc == null ? v : acc + v;
-            }
-            else
-              return acc;
-        });
-
-        double sum = 0.0;
-
-        for (double d : subSums)
-            sum += d;
-
-        return sum;
+        return sumForCache(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /**
@@ -185,7 +165,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
 
         // Gets these values assigned to a local vars so that
         // they will be available in the closure.
-        KeyMapper<K> keyMapper = sto.keyMapper();
+        MatrixKeyMapper<K> keyMapper = sto.keyMapper();
         ValueMapper<V> valMapper = sto.valueMapper();
 
         iterateOverEntries(sto.cache().getName(), (CacheEntry<K, V> ce) -> {

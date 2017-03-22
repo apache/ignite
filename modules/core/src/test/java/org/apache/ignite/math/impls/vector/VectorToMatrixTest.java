@@ -2,6 +2,7 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
@@ -19,30 +20,36 @@ import static org.junit.Assert.*;
 public class VectorToMatrixTest {
     /** */ private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
 
+    /** */ private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
+        SingleElementVector.class, SingleElementVectorView.class);
+
     /** */ @Test
     public void testHaveLikeMatrix() throws InstantiationException, IllegalAccessException {
         for (Class<? extends Vector> key : typesMap.keySet()) {
             Class<? extends Matrix> val = typesMap.get(key);
 
-            if (val == null && !ignore(key))
+            if (val == null && likeMatrixSupported(key))
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
         }
     }
 
-    /** Ignore test for given vector type. */
-    private boolean ignore(Class<? extends Vector> clazz){
-        boolean isIgnored = false;
-        List<Class<? extends Vector>> ignoredClasses = Arrays.asList(DelegatingVector.class, FunctionVector.class,
-            SingleElementVector.class, PivotedVectorView.class, SingleElementVectorView.class);
+    /** */
+    @Test
+    public void testLikeMatrixUnsupported() throws Exception {
+        consumeSampleVectors((v, desc) -> {
+            if (likeMatrixSupported(v.getClass()))
+                return;
 
-        for (Class<? extends Vector> ignoredClass : ignoredClasses) {
-            if (ignoredClass.isAssignableFrom(clazz)){
-                isIgnored = true;
-                break;
+            boolean expECaught = false;
+
+            try {
+                assertNull("Null view instead of exception in " + desc, v.likeMatrix(1, 1));
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
             }
-        }
 
-        return isIgnored;
+            assertTrue("Expected exception was not caught in " + desc, expECaught);
+        });
     }
 
     /** */
@@ -200,7 +207,7 @@ public class VectorToMatrixTest {
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
 
-        if (ignore(v.getClass()))
+        if (!likeMatrixSupported(v.getClass()))
             return false;
 
         final boolean availableForTesting = typesMap.get(v.getClass()) != null;
@@ -211,6 +218,15 @@ public class VectorToMatrixTest {
             availableForTesting || actualLikeMatrix == null);
 
         return availableForTesting;
+    }
+
+    /** Ignore test for given vector type. */
+    private boolean likeMatrixSupported(Class<? extends Vector> clazz){
+        for (Class<? extends Vector> ignoredClass : likeMatrixUnsupported)
+            if (ignoredClass.isAssignableFrom(clazz))
+                return false;
+
+        return true;
     }
 
     /** */
@@ -228,9 +244,10 @@ public class VectorToMatrixTest {
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             put(FunctionVector.class, null);
-            put(PivotedVectorView.class, null);
+            put(PivotedVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             put(SingleElementVectorView.class, null);
             put(MatrixVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
+            put(DelegatingVector.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
             // IMPL NOTE check for presence of all implementations here will be done in testHaveLikeMatrix via Fixture
         }};
     }

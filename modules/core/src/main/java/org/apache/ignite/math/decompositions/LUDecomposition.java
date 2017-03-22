@@ -154,6 +154,7 @@ public class LUDecomposition {
 
             // Divide the lower elements by the "winning" diagonal elt.
             final double luDiag = lu.getX(col, col);
+
             for (int row = col + 1; row < cols; row++){
                 double val = lu.getX(row, col) / luDiag;
                 lu.setX(row, col, val);
@@ -180,6 +181,7 @@ public class LUDecomposition {
                 cachedL.setX(i, i, 1.0);
             }
         }
+
         return cachedL;
     }
 
@@ -199,6 +201,7 @@ public class LUDecomposition {
                 for (int j = i; j < m; ++j)
                     cachedU.setX(i, j, lu.getX(i, j));
         }
+
         return cachedU;
     }
 
@@ -221,6 +224,7 @@ public class LUDecomposition {
             for (int i = 0; i < m; ++i)
                 cachedP.setX(i, (int)pivot.get(i), 1.0);
         }
+
         return cachedP;
     }
 
@@ -242,12 +246,12 @@ public class LUDecomposition {
             return 0;
 
         final int m = pivot.size();
-            double determinant = even ? 1 : -1;
+        double determinant = even ? 1 : -1;
 
             for (int i = 0; i < m; i++)
                 determinant *= lu.getX(i, i);
 
-            return determinant;
+        return determinant;
     }
 
     /**
@@ -285,7 +289,9 @@ public class LUDecomposition {
     private Matrix copy(Matrix matrix){
         if (matrix instanceof RandomMatrix){
             DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+
             cp.assign(matrix);
+
             return cp;
         } else
             return matrix.copy();

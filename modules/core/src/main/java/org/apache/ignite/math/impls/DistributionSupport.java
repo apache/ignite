@@ -18,13 +18,12 @@
 package org.apache.ignite.math.impls;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteConsumer;
-
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.functions.*;
 import javax.cache.*;
 import java.util.*;
 
@@ -93,6 +92,34 @@ public class DistributionSupport {
      */
     protected <K> ClusterGroup groupForKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
+    }
+
+    /**
+     *
+     * @param cacheName
+     * @param keyMapper
+     * @param valMapper
+     * @param <K>
+     * @param <V>
+     * @return
+     */
+    protected <K, V> double sumForCache(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> subSums = foldForCache(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            if (keyMapper.isValid(ce.entry().getKey())) {
+                double v = valMapper.toDouble(ce.entry().getValue());
+
+                return acc == null ? v : acc + v;
+            }
+            else
+                return acc;
+        });
+
+        double sum = 0.0;
+
+        for (double d : subSums)
+            sum += d;
+
+        return sum;
     }
 
     /**

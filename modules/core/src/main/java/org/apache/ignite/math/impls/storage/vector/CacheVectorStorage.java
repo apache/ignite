@@ -20,14 +20,13 @@ package org.apache.ignite.math.impls.storage.vector;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import java.io.*;
-import java.util.function.*;
 
 /**
  * Vector storage based on arbitrary cache and index and value mapping functions.
  */
 public class CacheVectorStorage<K, V> implements VectorStorage {
     private int size;
-    private IntFunction<K> keyFunc;
+    private VectorKeyMapper<K> keyMapper;
     private ValueMapper<V> valMapper;
     private IgniteCache<K, V> cache;
 
@@ -42,18 +41,18 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      * 
      * @param size
      * @param cache
-     * @param idxFunc
+     * @param keyMapper
      * @param valMapper
      */
-    public CacheVectorStorage(int size, IgniteCache<K, V> cache, IntFunction<K> idxFunc, ValueMapper<V> valMapper) {
+    public CacheVectorStorage(int size, IgniteCache<K, V> cache, VectorKeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         assert size > 0;
         assert cache != null;
-        assert idxFunc != null;
+        assert keyMapper != null;
         assert valMapper != null;
         
         this.size = size;
         this.cache = cache;
-        this.keyFunc = idxFunc;
+        this.keyMapper = keyMapper;
         this.valMapper = valMapper;
     }
 
@@ -69,8 +68,8 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
      *
      * @return
      */
-    public IntFunction<K> keyFunction() {
-        return keyFunc;
+    public VectorKeyMapper<K> keyMapper() {
+        return keyMapper;
     }
 
     /**
@@ -86,11 +85,11 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
     }
 
     @Override public double get(int i) {
-        return valMapper.toDouble(cache.get(keyFunc.apply(i)));
+        return valMapper.toDouble(cache.get(keyMapper.apply(i)));
     }
 
     @Override public void set(int i, double v) {
-        cache.put(keyFunc.apply(i), valMapper.fromDouble(v));
+        cache.put(keyMapper.apply(i), valMapper.fromDouble(v));
     }
 
     @Override public void writeExternal(ObjectOutput out) throws IOException {

@@ -39,22 +39,36 @@
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.5.0/d3.min.js"></script>
 <script>
-    /*@DATA@*/var data = [[{d: 2.256, r: 128, g: 128, b: 128}, {d: 0.123, r: 228, g: 228, b: 228}], [{d: 2.256, r: 128, g: 128, b: 128}, {d: 0.123, r: 228, g: 228, b: 228}]];
+    /*@DATA@*/var data = [[{d: 2.256, r: 198, g: 128, b: 128}, {d: 0.123, r: 218, g: 228, b: 18}], [{d: 2.256, r: 108, g: 28, b: 108}, {d: 0.123, r: 228, g: 228, b: 228}]];
     /*@MAX@*/var max = {d: 2.256, r: 128, g: 128, b: 128};
     /*@MIN@*/var min = {d: 0.123, r: 228, g: 228, b: 228};
     /*@NAME@*/var name = "Matrix";
-
-    var W = 1000,
-        H = 1000;
 
     var rows = data.length;
     var cols = data[0].length;
 
     var range = max.d - min.d;
 
-    var rw = Math.min(Math.round(W / data.length), 5);
-    var rh = 20;
-    var rd = 0;
+    var rw, rh;
+    var W, H;
+
+    if (cols > W) {
+        rw = 1;
+        W = cols;
+    }
+    else {
+        W = 1000;
+        rw = Math.min(Math.round(W / cols), 10);
+    }
+
+    if (rows > H) {
+        rh = 1;
+        H = rows;
+    }
+    else {
+        H = 1000;
+        rh = Math.min(Math.round(H / rows), 10);
+    }
 
     d3.selectAll("body")
         .append("p")
@@ -81,15 +95,20 @@
         .attr("width", W)
         .attr("height", H);
 
-    svg.selectAll("rect")
-        .data(data)
-        .enter()
-        .append("rect")
-        .attr("x", function(d, i) { return i * (rw + rd)})
-        .attr("y", 10)
-        .attr("fill", function(d) {
-            return "rgb(" + d.r + ", " + d.g + ", " + d.b + ")";
-        })
-        .attr("width", rw)
-        .attr("height", rh);
+    var y = 0;
+
+    for (var row = 0; row < rows; row++)
+        svg.selectAll("div")
+            .data(data[row])
+            .enter()
+            .append("rect")
+            .attr("x", function (d, i) {
+                return i * rw
+            })
+            .attr("y", rh * row)
+            .attr("fill", function (d) {
+                return "rgb(" + d.r + ", " + d.g + ", " + d.b + ")";
+            })
+            .attr("width", rw)
+            .attr("height", rh);
 </script>

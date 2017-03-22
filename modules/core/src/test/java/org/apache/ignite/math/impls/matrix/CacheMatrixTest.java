@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.IdentityValueMapper;
-import org.apache.ignite.math.KeyMapper;
+import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.MathTestConstants;
@@ -73,7 +73,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -93,7 +93,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -113,7 +113,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -131,7 +131,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -153,7 +153,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         double plusVal = 2;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -174,7 +174,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         double initVal = 1;
         double divVal = 2;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -196,7 +196,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         double initVal = 1;
         double timVal = 2;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -217,7 +217,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         double initVal = 1;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -236,7 +236,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         double initVal = 1;
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -256,7 +256,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
         double[][] initVal = new double[rows][cols];
 
-        KeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
+        MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
@@ -285,8 +285,8 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private KeyMapper<Integer> getKeyMapper(final int rows, final int cols) {
-        return new KeyMapper<Integer>() {
+    private MatrixKeyMapper<Integer> getKeyMapper(final int rows, final int cols) {
+        return new MatrixKeyMapper<Integer>() {
             @Override public Integer apply(int x, int y) {
                 return x * cols + y;
             }

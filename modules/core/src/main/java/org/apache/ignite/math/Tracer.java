@@ -17,14 +17,11 @@
 
 package org.apache.ignite.math;
 
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
@@ -67,13 +64,15 @@ public class Tracer {
     }
 
     /**
-     * 
+     *
      * @param vec
+     * @param log
+     * @param fmt
      */
     static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        log.info(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt) + "]"));
+        log.info(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
     }
 
     /**
@@ -91,7 +90,77 @@ public class Tracer {
     static void showAscii(Vector vec, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        System.out.println(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt) + "]"));
+        System.out.println(String.format("%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+    }
+
+    /**
+     *
+     * @param mtx
+     */
+    static void showAscii(Matrix mtx) {
+        showAscii(mtx, "%4f");
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param row
+     * @param fmt
+     */
+    static private String rowStr(Matrix mtx, int row, String fmt) {
+        StringBuilder buf = new StringBuilder();
+
+        boolean first = true;
+
+        int cols = mtx.columnSize();
+
+        for (int col = 0; col < cols; col++) {
+            String s = String.format(fmt, mtx.get(row, col));
+
+            if (!first)
+                buf.append(", ");
+
+            buf.append(s);
+
+            first = false;
+        }
+
+        return buf.toString();
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param fmt
+     */
+    static void showAscii(Matrix mtx, String fmt) {
+        String cls = mtx.getClass().getSimpleName();
+
+        int rows = mtx.rowSize();
+        int cols = mtx.columnSize();
+
+        System.out.println(String.format("%s(%dx%d)", cls, rows, cols));
+
+        for (int row = 0; row < rows; row++)
+            System.out.println(rowStr(mtx, row, fmt));
+    }
+
+    /**
+     *
+     * @param mtx
+     * @param log
+     * @param fmt
+     */
+    static void showAscii(Matrix mtx, IgniteLogger log, String fmt) {
+        String cls = mtx.getClass().getSimpleName();
+
+        int rows = mtx.rowSize();
+        int cols = mtx.columnSize();
+
+        log.info(String.format("%s(%dx%d)", cls, rows, cols));
+
+        for (int row = 0; row < rows; row++)
+            log.info(rowStr(mtx, row, fmt));
     }
 
     /**
@@ -149,9 +218,17 @@ public class Tracer {
         // Read it every time so that we can change it at runtime.
         String tmpl = fileToString("d3-matrix-template.html");
 
-        // TODO: update template.
+        String cls = mtx.getClass().getSimpleName();
 
-        openHtmlFile(tmpl);
+        double min = mtx.minValue().get();
+        double max = mtx.maxValue().get();
+
+        openHtmlFile(tmpl.
+            replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
+            replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min))+ ";\n").
+            replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max))+ ";\n").
+            replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(mtx, cm) + ";\n")
+        );
     }
 
     /**
@@ -199,7 +276,7 @@ public class Tracer {
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
             replaceAll("/\\*@MIN@\\*/.*\n", "var min = " + dataColorJson(min, cm.apply(min))+ ";\n").
             replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max))+ ";\n").
-            replaceAll("/\\*@DATA@\\*/.*\n", "var data = [" + mkJsonString(vec, cm) + "];\n")
+            replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(vec, cm) + ";\n")
         );
     }
 
@@ -245,7 +322,7 @@ public class Tracer {
      * @param fmt {@link String#format(Locale, String, Object...)} format.
      * @return
      */
-    static String mkString(Vector vec, String fmt) {
+    private static String mkString(Vector vec, String fmt) {
         boolean first = true;
 
         StringBuilder buf = new StringBuilder();
@@ -267,13 +344,13 @@ public class Tracer {
     }
 
     /**
-     * Gets JSON string presentation of this vector.
+     * Gets JavaScript array presentation of this vector.
      *
-     * @param vec Vector to string-ify.
+     * @param vec Vector to JavaScript-ify.
      * @param cm Color mapper to user.
      * @return
      */
-    static String mkJsonString(Vector vec, ColorMapper cm) {
+    private static String mkJsArrayString(Vector vec, ColorMapper cm) {
         boolean first = true;
 
         StringBuilder buf = new StringBuilder();
@@ -287,10 +364,55 @@ public class Tracer {
                 buf.append(", ");
 
             buf.append(s);
+
             first = false;
         }
 
-        return buf.toString();
+        return '[' + buf.toString() + ']';
+    }
+
+    /**
+     * Gets JavaScript array presentation of this vector.
+     *
+     * @param mtx Matrix to JavaScript-ify.
+     * @param cm Color mapper to user.
+     * @return
+     */
+    private static String mkJsArrayString(Matrix mtx, ColorMapper cm) {
+        boolean first = true;
+
+        StringBuilder buf = new StringBuilder();
+
+        int rows = mtx.rowSize();
+        int cols = mtx.columnSize();
+
+        for (int row = 0; row < rows; row++) {
+            StringBuilder rowBuf = new StringBuilder();
+
+            boolean rowFirst = true;
+
+            for (int col = 0; col < cols; col++) {
+                double d = mtx.get(row, col);
+
+                String s = dataColorJson(d, cm.apply(d));
+
+                if (!rowFirst)
+                    rowBuf.append(", ");
+
+                rowBuf.append(s);
+
+                rowFirst = false;
+            }
+
+            if (!first)
+                buf.append(", ");
+
+            buf.append('[').append(rowBuf.toString()).append(']');
+
+            first = false;
+        }
+
+        return '[' + buf.toString() + ']';
     }
 
     /**
@@ -299,19 +421,22 @@ public class Tracer {
      * @param fmt
      * @return
      */
-    static String mkString(Matrix mtx, String fmt) {
-        StringBuffer buf = new StringBuffer();
+    private static String mkString(Matrix mtx, String fmt) {
+        StringBuilder buf = new StringBuilder();
 
-        for(int i = 0; i < mtx.rowSize(); i++) {
-            for (int j = 0; j < mtx.columnSize(); j++) {
-                String s = String.format(fmt, mtx.get(i, j));
+        int rows = mtx.rowSize();
+        int cols = mtx.columnSize();
 
-                if (j != 0)
+        for(int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                String s = String.format(fmt, mtx.get(row, col));
+
+                if (col != 0)
                     buf.append(", ");
 
                 buf.append(s);
 
-                if (j == mtx.columnSize() - 1 && i != mtx.rowSize() - 1)
+                if (col == cols - 1 && row != rows - 1)
                     buf.append(",\n");
 
             }

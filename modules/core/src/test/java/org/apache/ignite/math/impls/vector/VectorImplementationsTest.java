@@ -17,8 +17,11 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.*;
@@ -28,7 +31,7 @@ import java.util.function.*;
 import static org.junit.Assert.*;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest {
+public class VectorImplementationsTest { // todo split this to smaller cohesive test classes
     /** */ @Test
     public void vectorImplementationsFixturesTest() {
         new VectorImplementationsFixtures().selfTest();
@@ -36,19 +39,111 @@ public class VectorImplementationsTest {
 
     /** */ @Test
     public void setGetTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            vec.set(idx, val);
+
+            return val;
+        }));
+    }
+
+    /** */ @Test
+    public void setXTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            vec.setX(idx, val);
+
+            return val;
+        }));
+    }
+
+    /** */ @Test
+    public void incrementTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            double old = vec.get(idx);
+
+            vec.increment(idx, val);
+
+            return old + val;
+        }));
+    }
+
+    /** */ @Test
+    public void incrementXTest() {
+        consumeSampleVectors((v, desc) -> mutateAtIdxTest(v, desc, (vec, idx, val) -> {
+            double old = vec.getX(idx);
+
+            vec.incrementX(idx, val);
+
+            return old + val;
+        }));
+    }
+
+    /** */ @Test
+    public void operateXOutOfBoundsTest() {
         consumeSampleVectors((v, desc) -> {
-            if (readOnly(v))
-                return;
+            if (v instanceof DenseLocalOffHeapVector || v instanceof SparseLocalVector)
+                return; // todo find out if it's OK to skip by instances here
 
-            for (double val : new double[] {0, -1, 0, 1})
-                for (int idx = 0; idx < v.size(); idx++) {
-                    v.set(idx, val);
+            boolean expECaught = false;
 
-                    final Metric metric = new Metric(val, v.get(idx));
+            try {
+                v.getX(-1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
 
-                    assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
-                        + ", " + desc, metric.closeEnough());
-                }
+            if (!getXOutOfBoundsOK(v))
+                assertTrue("Expect exception at negative index getX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.setX(-1, 0);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at negative index setX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.incrementX(-1, 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at negative index incrementX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.getX(v.size());
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            if (!getXOutOfBoundsOK(v))
+                assertTrue("Expect exception at too large index getX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.setX(v.size(), 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at too large index setX in " + desc, expECaught);
+
+            expECaught = false;
+
+            try {
+                v.incrementX(v.size(), 1);
+            } catch (ArrayIndexOutOfBoundsException|IgniteException e) {
+                expECaught = true;
+            }
+
+            assertTrue("Expect exception at too large index incrementX in " + desc, expECaught);
         });
     }
 
@@ -106,34 +201,6 @@ public class VectorImplementationsTest {
     }
 
     /** */ @Test
-    public void normalizeTest() {
-        normalizeTest(2, (val, len) -> val / len, Vector::normalize);
-    }
-
-    /** */ @Test
-    public void normalizePowerTest() {
-        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            normalizeTest(pow, (val, norm) -> val / norm, (v) -> v.normalize(pow));
-    }
-
-    /** */ @Test
-    public void logNormalizeTest() {
-        normalizeTest(2, (val, len) -> Math.log1p(val) / (len * Math.log(2)), Vector::logNormalize);
-    }
-
-    /** */ @Test
-    public void logNormalizePowerTest() {
-        for (double pow : new double[] {1.1, 2, 2.5})
-            normalizeTest(pow, (val, norm) -> Math.log1p(val) / (norm * Math.log(pow)), (v) -> v.logNormalize(pow));
-    }
-
-    /** */ @Test
-    public void kNormTest() {
-        for (double pow : new double[] {0, 0.5, 1, 2, 2.5, Double.POSITIVE_INFINITY})
-            toDoubleTest(pow, ref -> new Norm(ref, pow).calculate(), v -> v.kNorm(pow));
-    }
-
-    /** */ @Test
     public void plusVectorTest() {
         operationVectorTest((operand1, operand2) -> operand1 + operand2, Vector::plus);
     }
@@ -158,74 +225,184 @@ public class VectorImplementationsTest {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
+            final int delta = size > 32 ? 3 : 1; // IMPL NOTE this is for faster test execution
 
             final ElementsChecker checker = new ElementsChecker(v, ref, desc);
 
-            for (int off = 0; off < size; off++)
-                for (int len = 1; len < size - off; len++)
+            for (int off = 0; off < size; off += delta)
+                for (int len = 1; len < size - off; len += delta)
                     checker.assertCloseEnough(v.viewPart(off, len), Arrays.copyOfRange(ref, off, off + len));
         });
     }
 
     /** */ @Test
     public void sumTest() {
-        toDoubleTest(null,
-            ref -> {
-                double sum = 0;
-
-                for (double val : ref)
-                    sum += val;
-
-                return sum;
-            },
+        toDoubleTest(
+            ref -> Arrays.stream(ref).sum(),
             Vector::sum);
     }
 
-    /** */
-    @Test
-    public void getLengthSquaredTest() {
-        toDoubleTest(2.0, ref -> new Norm(ref, 2).sumPowers(), Vector::getLengthSquared);
+    /** */ @Test
+    public void minValueTest() {
+        toDoubleTest(
+            ref -> Arrays.stream(ref).min().getAsDouble(),
+            v -> v.minValue().get());
+    }
+
+    /** */ @Test
+    public void maxValueTest() {
+        toDoubleTest(
+            ref -> Arrays.stream(ref).max().getAsDouble(),
+            v -> v.maxValue().get());
+    }
+
+    /** */ @Test
+    public void sortTest() {
+        consumeSampleVectors((v, desc) -> {
+            if(readOnly(v) || !v.isArrayBased()) {
+                boolean expECaught = false;
+
+                try {
+                    v.sort();
+                } catch (UnsupportedOperationException uoe) {
+                    expECaught = true;
+                }
+
+                assertTrue("Expected exception was not caught for sort in " + desc, expECaught);
+
+                return;
+            }
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            new ElementsChecker(v, ref, desc).assertCloseEnough(v.sort(), Arrays.stream(ref).sorted().toArray());
+        });
+    }
+
+    /** */ @Test
+    public void getMetaStorageTest() {
+        consumeSampleVectors((v, desc) -> assertNotNull("Null meta storage in " + desc, v.getMetaStorage()));
+    }
+
+    /** */ @Test
+    public void assignDoubleTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            for (double val : new double[] {0, -1, 0, 1}) {
+                v.assign(val);
+
+                for (int idx = 0; idx < v.size(); idx++) {
+                    final Metric metric = new Metric(val, v.get(idx));
+
+                    assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
+                        + ", " + desc, metric.closeEnough());
+                }
+            }
+        });
+    }
+
+    /** */ @Test
+    public void assignDoubleArrTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign(ref);
+
+            checker.assertCloseEnough(v, ref);
+
+            assignDoubleArrWrongCardinality(v, desc);
+        });
+    }
+
+    /** */ @Test
+    public void assignVectorTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign(new DenseLocalOnHeapVector(ref));
+
+            checker.assertCloseEnough(v, ref);
+
+            assignVectorWrongCardinality(v, desc);
+        });
+    }
+
+    /** */ @Test
+    public void assignFunctionTest() {
+        consumeSampleVectors((v, desc) -> {
+            if (readOnly(v))
+                return;
+
+            final int size = v.size();
+            final double[] ref = new double[size];
+
+            final ElementsChecker checker = new ElementsChecker(v, ref, desc);
+
+            for (int idx = 0; idx < size; idx++)
+                ref[idx] = -ref[idx];
+
+            v.assign((idx) -> ref[idx]);
+
+            checker.assertCloseEnough(v, ref);
+        });
     }
 
     /** */
-    @Test
-    public void getDistanceSquared() {
-        consumeSampleVectors((v, desc) -> {
-            new ElementsChecker(v, desc); // IMPL NOTE this initialises vector
+    private boolean getXOutOfBoundsOK(Vector v) {
+        // todo find out if this is indeed OK
+        return v instanceof RandomVector || v instanceof  ConstantVector
+            || v instanceof SingleElementVector || v instanceof SingleElementVectorView;
+    }
 
-            final int size = v.size();
-            final Vector vOnHeap = new DenseLocalOnHeapVector(size);
-            final Vector vOffHeap = new DenseLocalOffHeapVector(size);
+    /** */
+    private void mutateAtIdxTest(Vector v, String desc, MutateAtIdx operation) {
+        if (readOnly(v)) {
+            if (v.size() < 1)
+                return;
 
-            for (Vector.Element e : v.all()) {
-                final int idx = size - 1 - e.index();
-                final double val = e.get();
+            boolean expECaught = false;
 
-                vOnHeap.set(idx, val);
-                vOffHeap.set(idx, val);
+            try {
+                operation.apply(v, 0, 1);
+            } catch (UnsupportedOperationException uoe) {
+                expECaught = true;
             }
 
-            for (int idx = 0; idx < size; idx++) {
-                final double exp = v.get(idx);
-                final int idxMirror = size - 1 - idx;
+            assertTrue("Expect exception at attempt to mutate element in " + desc, expECaught);
 
-                assertTrue("On heap vector difference at " + desc + ", idx " + idx,
-                    exp - vOnHeap.get(idxMirror) == 0);
-                assertTrue("Off heap vector difference at " + desc + ", idx " + idx,
-                    exp - vOffHeap.get(idxMirror) == 0);
+            return;
+        }
+
+        for (double val : new double[] {0, -1, 0, 1})
+            for (int idx = 0; idx < v.size(); idx++) {
+                double exp = operation.apply(v, idx, val);
+
+                final Metric metric = new Metric(exp, v.get(idx));
+
+                assertTrue("Not close enough at index " + idx + ", val " + val + ", " + metric
+                    + ", " + desc, metric.closeEnough());
             }
-
-            final double exp = vOnHeap.minus(v).getLengthSquared(); // IMPL NOTE this won't mutate vOnHeap
-            final Metric metric = new Metric(exp, v.getDistanceSquared(vOnHeap));
-
-            assertTrue("On heap vector not close enough at " + desc + ", " + metric,
-                metric.closeEnough());
-
-            final Metric metric1 = new Metric(exp, v.getDistanceSquared(vOffHeap));
-
-            assertTrue("Off heap vector not close enough at " + desc + ", " + metric1,
-                metric1.closeEnough());
-        });
     }
 
     /** */
@@ -242,7 +419,7 @@ public class VectorImplementationsTest {
     }
 
     /** */
-    private void toDoubleTest(Double val, Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
+    private void toDoubleTest(Function<double[], Double> calcRef, Function<Vector, Double> calcVec) {
         consumeSampleVectors((v, desc) -> {
             final int size = v.size();
             final double[] ref = new double[size];
@@ -254,25 +431,7 @@ public class VectorImplementationsTest {
             final Metric metric = new Metric(exp, obtained);
 
             assertTrue("Not close enough at " + desc
-                + (val == null ? "" : ", value " + val) + ", " + metric, metric.closeEnough());
-        });
-    }
-
-    /** */
-    private void normalizeTest(double pow, BiFunction<Double, Double, Double> operation,
-        Function<Vector, Vector> vecOperation) {
-        consumeSampleVectors((v, desc) -> {
-            final int size = v.size();
-            final double[] ref = new double[size];
-            final boolean nonNegative = pow != (int)pow;
-
-            final ElementsChecker checker = new ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
-            final double norm = new Norm(ref, pow).calculate();
-
-            for (int idx = 0; idx < size; idx++)
-                ref[idx] = operation.apply(ref[idx], norm);
-
-            checker.assertCloseEnough(vecOperation.apply(v), ref);
+                + ", " + metric, metric.closeEnough());
         });
     }
 
@@ -291,7 +450,87 @@ public class VectorImplementationsTest {
                 ref[idx] = operation.apply(ref[idx], ref[idx]);
 
             checker.assertCloseEnough(vecOperation.apply(v, operand), ref);
+
+            assertWrongCardinality(v, desc, vecOperation);
         });
+    }
+
+    /** */
+    private void assignDoubleArrWrongCardinality(Vector v, String desc) {
+        boolean expECaught = false;
+
+        try {
+            v.assign(new double[v.size() + 1]);
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            v.assign(new double[v.size() - 1]);
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
+    }
+
+    /** */
+    private void assignVectorWrongCardinality(Vector v, String desc) {
+        boolean expECaught = false;
+
+        try {
+            v.assign(new DenseLocalOnHeapVector(v.size() + 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            v.assign(new DenseLocalOnHeapVector(v.size() - 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
+    }
+
+    /** */
+    private void assertWrongCardinality(Vector v, String desc, BiFunction<Vector, Vector, Vector> vecOperation) {
+        boolean expECaught = false;
+
+        try {
+            vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() + 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too large size in " + desc, expECaught);
+
+        if (v.size() < 2)
+            return;
+
+        expECaught = false;
+
+        try {
+            vecOperation.apply(v, new DenseLocalOnHeapVector(v.size() - 1));
+        } catch (CardinalityException ce) {
+            expECaught = true;
+        }
+
+        assertTrue("Expect exception at too small size in " + desc, expECaught);
     }
 
     /** */
@@ -338,73 +577,13 @@ public class VectorImplementationsTest {
     }
 
     /** */
-    private static class Norm {
+    private interface MutateAtIdx {
         /** */
-        private final double[] arr;
-
-        /** */
-        private final Double pow;
-
-        /** */
-        Norm(double[] arr, double pow) {
-            this.arr = arr;
-            this.pow = pow;
-        }
-
-        /** */
-        double calculate() {
-            if (pow.equals(0.0))
-                return countNonZeroes(); // IMPL NOTE this is beautiful if you think of it
-
-            if (pow.equals(Double.POSITIVE_INFINITY))
-                return maxAbs();
-
-            return Math.pow(sumPowers(), 1 / pow);
-        }
-
-        /** */
-        double sumPowers() {
-            if (pow.equals(0.0))
-                return countNonZeroes();
-
-            double norm = 0;
-
-            for (double val : arr)
-                norm += pow == 1 ? Math.abs(val) : Math.pow(val, pow);
-
-            return norm;
-        }
-
-        /** */
-        private int countNonZeroes() {
-            int cnt = 0;
-
-            final Double zero = 0.0;
-
-            for (double val : arr)
-                if (!zero.equals(val))
-                    cnt++;
-
-            return cnt;
-        }
-
-        /** */
-        private double maxAbs() {
-            double res = 0;
-
-            for (double val : arr) {
-                final double abs = Math.abs(val);
-
-                if (abs > res)
-                    res = abs;
-            }
-
-            return res;
-        }
+        double apply(Vector v, int idx, double val);
     }
 
     /** */
-    private static class ElementsChecker {
+    static class ElementsChecker {
         /** */
         private final String fixtureDesc;
 
@@ -498,7 +677,7 @@ public class VectorImplementationsTest {
     }
 
     /** */
-    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+    static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
         /** */
         private final double exp;
 

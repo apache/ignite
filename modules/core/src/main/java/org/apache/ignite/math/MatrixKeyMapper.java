@@ -17,16 +17,15 @@
 
 package org.apache.ignite.math;
 
-import java.io.Serializable;
-
 /**
  * TODO: add description.
  */
-public interface KeyMapper<K> extends Serializable {
+public interface MatrixKeyMapper<K> extends KeyMapper<K> {
     /**
-     * Checks given cache key corresponds to a valid index in vector or matrix.
-     *
-     * @param k Key to check.
+     * 
+     * @param x
+     * @param y
+     * @return
      */
-    public boolean isValid(K k);
+    public K apply(int x, int y);
 }

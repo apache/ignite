@@ -38,6 +38,21 @@ public class TracerTest {
     private static final double DEFAULT_DELTA = 0.000000001d;
 
     /**
+     * Color mapper that maps [0, 1] range into three distinct RGB segments.
+     */
+    private static final Tracer.ColorMapper COLOR_MAPPER = new Tracer.ColorMapper() {
+        @Override
+        public Color apply(Double d) {
+            if (d <= 0.33)
+                return Color.RED;
+            else if (d <= 0.66)
+                return Color.GREEN;
+            else
+                return Color.BLUE;
+        }
+    };
+
+    /**
      *
      * @param size
      * @return
@@ -48,6 +63,21 @@ public class TracerTest {
         vec.assign((idx) -> Math.random());
 
         return vec;
+    }
+
+    /**
+     *
+     * @param rows
+     * @param cols
+     * @return
+     */
+    private Matrix makeRandomMatrix(int rows, int cols) {
+        DenseLocalOnHeapMatrix mtx = new DenseLocalOnHeapMatrix(rows, cols);
+
+        // Missing assign(f)?
+        mtx.map((d) -> Math.random());
+
+        return mtx;
     }
 
     /**
@@ -66,6 +96,18 @@ public class TracerTest {
      *
      */
     @Test
+    public void testAsciiMatrixTracer() {
+        Matrix mtx = makeRandomMatrix(10, 10);
+
+        Tracer.showAscii(mtx);
+        Tracer.showAscii(mtx, "%2f");
+        Tracer.showAscii(mtx, "%.3g");
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testHtmlVectorTracer() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
@@ -73,20 +115,29 @@ public class TracerTest {
         Tracer.showHtml(vec1);
 
         // Custom color mapping.
-        Tracer.showHtml(vec1, new Tracer.ColorMapper() {
-            @Override
-            public Color apply(Double d) {
-                if (d <= 0.33)
-                    return Color.RED;
-                else if (d <= 0.66)
-                    return Color.GREEN;
-                else
-                    return Color.BLUE;
-            }
-        });
+        Tracer.showHtml(vec1, COLOR_MAPPER);
 
         // Default color mapping with sorted vector.
         Tracer.showHtml(vec1.sort());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testHtmlMatrixTracer() throws IOException {
+        Matrix mtx1 = makeRandomMatrix(100, 100);
+        
+        // Custom color mapping.
+        Tracer.showHtml(mtx1, COLOR_MAPPER);
+
+        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
+
+        Tracer.showHtml(mtx2);
     }
 
     /** */
@@ -113,7 +164,7 @@ public class TracerTest {
             assertEquals("Unexpected value.", csvVal, vector.get(i), DEFAULT_DELTA);
         }
 
-        //Files.deleteIfExists(file);
+        Files.deleteIfExists(file);
     }
 
     /** */
@@ -142,6 +193,6 @@ public class TracerTest {
                 assertEquals("Unexpected value.", csvVal, matrix.get(i, j), DEFAULT_DELTA);
             }
 
-        //Files.deleteIfExists(file);
+        Files.deleteIfExists(file);
     }
 }

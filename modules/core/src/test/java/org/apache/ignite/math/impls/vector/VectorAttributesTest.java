@@ -40,7 +40,8 @@ public class VectorAttributesTest {
             RandomVector.class, ConstantVector.class, SingleElementVector.class),
         new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
         new AttrCfg("isRandomAccess", Vector::isRandomAccess,
-            DenseLocalOnHeapVector.class),
+            DenseLocalOnHeapVector.class, DenseLocalOffHeapVector.class, RandomVector.class, ConstantVector.class,
+            SingleElementVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
         new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */
@@ -48,9 +49,11 @@ public class VectorAttributesTest {
         new Specification(new DenseLocalOnHeapVector(1)),
         new Specification(new DenseLocalOffHeapVector(1)),
         new Specification(new DelegatingVector(new DenseLocalOnHeapVector(1)),
-            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new DelegatingVector(new DenseLocalOffHeapVector(1)),
-            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new SparseLocalVectorSequentialAccess(1)),
         new Specification(new SparseLocalVectorRandomAccess(1)),
         new Specification(new RandomVector(1)),
@@ -58,17 +61,23 @@ public class VectorAttributesTest {
         new Specification(new FunctionVector(1, idx -> (double)idx)),
         new Specification(new SingleElementVector(1, 0, 1.0)),
         new Specification(new PivotedVectorView(new DenseLocalOnHeapVector(1), new int[] {0}),
-            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+            DenseLocalOnHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new PivotedVectorView(new DenseLocalOffHeapVector(1), new int[] {0}),
-            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess"),
+            DenseLocalOffHeapVector.class, "isDense", "isArrayBased", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new SingleElementVectorView(new DenseLocalOnHeapVector(1), 0),
-            DenseLocalOnHeapVector.class, "isDense", "isSequentialAccess"),
+            DenseLocalOnHeapVector.class, "isDense", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new SingleElementVectorView(new DenseLocalOffHeapVector(1), 0),
-            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess"),
+            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"),
         new Specification(new MatrixVectorView(new DenseLocalOnHeapMatrix(1, 1), 0, 0, 1, 1),
-            DenseLocalOnHeapVector.class, "isDense"), // todo find out why "isSequentialAccess" fails here
+            DenseLocalOnHeapVector.class, "isDense",
+            "isRandomAccess", "isDistributed"), // todo find out why "isSequentialAccess" fails here
         new Specification(new MatrixVectorView(new DenseLocalOffHeapMatrix(1, 1), 0, 0, 1, 1),
-            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess"));
+            DenseLocalOffHeapVector.class, "isDense", "isSequentialAccess",
+            "isRandomAccess", "isDistributed"));
 
     /** */ @Test
     public void isDenseTest() {
@@ -88,7 +97,16 @@ public class VectorAttributesTest {
     /** */ @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
+    }
 
+    /** */ @Test
+    public void isRandomAccessTest() {
+        assertAttribute("isRandomAccess");
+    }
+
+    /** */ @Test
+    public void isDistributedTest() {
+        assertAttribute("isDistributed");
     }
 
     /** */

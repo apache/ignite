@@ -44,15 +44,17 @@ import org.junit.runners.Suite;
     SingleElementVectorConstructorTest.class,
     PivotedVectorViewConstructorTest.class,
     SingleElementVectorViewConstructorTest.class,
-    // Common vectors tests.
+    DelegatingVectorConstructorTest.class,
+    // Various vectors tests.
     AbstractVectorTest.class,
     VectorImplementationsTest.class,
     VectorViewTest.class,
     MatrixVectorViewTest.class,
-    // Vector utils tests.
+    // Vector particular features tests.
     VectorIterableTest.class,
     VectorAttributesTest.class,
     VectorToMatrixTest.class,
+    VectorNormTest.class,
     // Vector storage tests
     VectorArrayStorageTest.class,
     VectorOffheapStorageTest.class,

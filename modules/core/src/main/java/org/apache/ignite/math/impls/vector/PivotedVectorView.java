@@ -142,7 +142,7 @@ public class PivotedVectorView extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return vec.likeMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */

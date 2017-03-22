@@ -44,14 +44,22 @@
     /*@MIN@*/var min = {d: 0.123, r: 228, g: 228, b: 228};
     /*@NAME@*/var name = "Vector";
 
-    var W = 1000,
-        H = 1000;
+    var W, H = 1000;
 
     var range = max.d - min.d;
 
-    var rw = Math.min(Math.round(W / data.length), 5);
-    var rh = 20;
-    var rd = 0;
+    var rh = 20; // Constant.
+
+    var rw;
+
+    if (data.length > W) {
+        rw = 1;
+        W = data.length;
+    }
+    else {
+        W = 1000;
+        rw = Math.min(Math.round(W / data.length), 5);
+    }
 
     d3.selectAll("body")
         .append("p")
@@ -82,7 +90,7 @@
         .data(data)
         .enter()
         .append("rect")
-            .attr("x", function(d, i) { return i * (rw + rd)})
+            .attr("x", function(d, i) { return i * rw})
             .attr("y", 10)
             .attr("fill", function(d) {
                 return "rgb(" + d.r + ", " + d.g + ", " + d.b + ")";
