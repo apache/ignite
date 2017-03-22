@@ -38,9 +38,6 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
     @GridToStringInclude
     protected final AbstractIndexOperation op;
 
-    /** Whether request must be propagated to exchange worker for final processing. */
-    private transient boolean exchange;
-
     /**
      * Constructor.
      *
@@ -63,18 +60,9 @@ public abstract class IndexAbstractDiscoveryMessage implements DiscoveryCustomMe
     }
 
     /**
-     * @return Whether request must be propagated to exchange worker for final processing.
+     * @return Whether request must be propagated to exchange thread.
      */
-    public boolean exchange() {
-        return exchange;
-    }
-
-    /**
-     * @param exchange Whether request must be propagated to exchange worker for final processing.
-     */
-    public void exchange(boolean exchange) {
-        this.exchange = exchange;
-    }
+    public abstract boolean exchange();
 
     /** {@inheritDoc} */
     @Override public String toString() {

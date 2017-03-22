@@ -2808,8 +2808,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             msg.onError("Cache was stopped concurrently.");
         else
             desc.tryAccept(msg);
-
-        msg.exchange(true);
     }
 
     /**
@@ -2826,8 +2824,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         desc.tryFinish(msg);
-
-        msg.exchange(true);
     }
 
     /**

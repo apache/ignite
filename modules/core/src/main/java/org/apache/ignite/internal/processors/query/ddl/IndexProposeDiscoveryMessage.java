@@ -66,6 +66,11 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean exchange() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void context(GridKernalContext ctx) {
         this.ctx = ctx;
     }

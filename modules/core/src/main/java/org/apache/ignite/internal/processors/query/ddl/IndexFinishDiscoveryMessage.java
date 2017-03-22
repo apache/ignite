@@ -59,6 +59,11 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean exchange() {
+        return true;
+    }
+
     /**
      * @return {@code True} if error was reported during init.
      */
