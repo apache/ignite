@@ -1498,7 +1498,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     if (DdlStatementsProcessor.isDdlStatement(prepared)) {
                         try {
-                            return ddlProc.runDdlStatement(stmt);
+                            return ddlProc.runDdlStatement(cctx.name(), stmt);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']',
@@ -2200,10 +2200,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Stopping cache query index...");
 
 //        unregisterMBean(); TODO https://issues.apache.org/jira/browse/IGNITE-2139
-
-        if (ddlProc != null)
-            ddlProc.stop();
-
         for (Schema schema : schemas.values())
             schema.onDrop();
 

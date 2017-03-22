@@ -61,7 +61,7 @@ public class DdlInitDiscoveryMessage extends DdlAbstractDiscoveryMessage impleme
     /** {@inheritDoc} */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return ((IgniteH2Indexing)ctx.query().getIndexing()).getDdlStatementsProcessor().onInitFinished(this);
+        return null;
     }
 
     /** {@inheritDoc} */
