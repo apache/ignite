@@ -29,7 +29,7 @@ import java.util.Map;
 public class CacheMatrixStorage<K, V> implements MatrixStorage {
     private int rows, cols;
     private IgniteCache<K, V> cache;
-    private KeyMapper<K> keyMapper;
+    private MatrixKeyMapper<K> keyMapper;
     private ValueMapper<V> valMapper;
 
     /**
@@ -47,7 +47,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      * @param keyMapper
      * @param valMapper
      */
-    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+    public CacheMatrixStorage(int rows, int cols, IgniteCache<K, V> cache, MatrixKeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
         assert rows > 0;
         assert cols > 0;
         assert cache != null;
@@ -81,7 +81,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
      *
      * @return Key mapper.
      */
-    public KeyMapper<K> keyMapper() {
+    public MatrixKeyMapper<K> keyMapper() {
         return keyMapper;
     }
 
@@ -128,7 +128,7 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         rows = in.readInt();
         cols = in.readInt();
         cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
-        keyMapper = (KeyMapper<K>)in.readObject();
+        keyMapper = (MatrixKeyMapper<K>)in.readObject();
         valMapper = (ValueMapper<V>)in.readObject();
     }
 

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
 
 import java.util.*;
@@ -48,7 +49,7 @@ public class CacheVector<K, V> extends AbstractVector {
     public CacheVector(
         int size,
         IgniteCache<K, V> cache,
-        IntFunction<K> keyFunc,
+        VectorKeyMapper<K> keyFunc,
         ValueMapper<V> valMapper) {
         setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
     }
@@ -66,13 +67,104 @@ public class CacheVector<K, V> extends AbstractVector {
             args.containsKey("cacheName")) {
             int size = (int)args.get("size");
             IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
-            IntFunction<K> keyFunc = (IntFunction<K>)args.get("keyFunc");
+            VectorKeyMapper<K> keyFunc = (VectorKeyMapper<K>)args.get("keyFunc");
             ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
 
             setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
         }
         else
             throw new UnsupportedOperationException("Invalid constructor argument(s).");
+    }
+
+    /**
+     *
+     * @param mapper
+     * @return
+     */
+    private Vector mapOverValues(IgniteFunction<Double, Double> mapper) {
+        CacheVectorStorage<K, V> sto = storage();
+
+        // Gets these values assigned to a local vars so that
+        // they will be available in the closure.
+        VectorKeyMapper<K> keyMapper = sto.keyMapper();
+        ValueMapper<V> valMapper = sto.valueMapper();
+
+        iterateOverEntries(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
+            K k = ce.entry().getKey();
+
+            if (keyMapper.isValid(k))
+                // Actual assignment.
+                ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
+        });
+
+        return this;
+    }
+
+
+    @Override
+    public Vector map(DoubleFunction<Double> fun) {
+        // TODO: provide cache-optimized implementation.
+        return super.map(fun); // TODO
+    }
+
+    @Override
+    public Vector map(BiFunction<Double, Double, Double> fun, double y) {
+        // TODO: provide cache-optimized implementation.
+        return super.map(fun, y); // TODO
+    }
+
+    @Override
+    public Element minValue() {
+        // TODO: provide cache-optimized implementation.
+        return super.minValue(); // TODO
+    }
+
+    @Override
+    public Element maxValue() {
+        // TODO: provide cache-optimized implementation.
+        return super.maxValue(); // TODO
+    }
+
+    @Override
+    public Vector increment(int idx, double val) {
+        // TODO: provide cache-optimized implementation.
+        return super.increment(idx, val); // TODO
+    }
+
+    @Override
+    public double sum() {
+        // TODO: provide cache-optimized implementation.
+        return super.sum(); // TODO
+    }
+
+    @Override
+    public Vector assign(double val) {
+        // TODO: provide cache-optimized implementation.
+        return super.assign(val); // TODO
+    }
+
+    @Override
+    public Vector assign(IntToDoubleFunction fun) {
+        // TODO: provide cache-optimized implementation.
+        return super.assign(fun); // TODO
+    }
+
+    @Override
+    public Vector plus(double x) {
+        // TODO: provide cache-optimized implementation.
+        return super.plus(x); // TODO
+    }
+
+    @Override
+    public Vector divide(double x) {
+        // TODO: provide cache-optimized implementation.
+        return super.divide(x); // TODO
+    }
+
+    @Override
+    public Vector times(double x) {
+        // TODO: provide cache-optimized implementation.
+        return super.times(x); // TODO
     }
 
     /**
@@ -87,7 +179,7 @@ public class CacheVector<K, V> extends AbstractVector {
     @Override public Vector like(int crd) {
         CacheVectorStorage<K, V> sto = storage();
 
-        return new CacheVector<K, V>(size(), sto.cache(), sto.keyFunction(), sto.valueMapper());
+        return new CacheVector<K, V>(size(), sto.cache(), sto.keyMapper(), sto.valueMapper());
     }
 
     @Override public Matrix likeMatrix(int rows, int cols) {

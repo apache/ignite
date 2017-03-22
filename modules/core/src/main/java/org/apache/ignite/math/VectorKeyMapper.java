@@ -22,17 +22,15 @@ import java.io.Serializable;
 /**
  * TODO: add description.
  */
-public interface KeyMapper<K> extends Serializable {
+public interface VectorKeyMapper<K> extends Serializable {
     /**
-     * 
-     * @param x
-     * @param y
-     * @return
+     *
+     * @param i
      */
-    public K apply(int x, int y);
+    public K apply(int i);
 
     /**
-     * Checks that a pair (x, y) exists for which method {@link #apply(int, int)} will return 'k'.
+     * Checks that an index exists in the vector for which method {@link #apply(int)} will return 'k'.
      *
      * @param k Key to check.
      */
