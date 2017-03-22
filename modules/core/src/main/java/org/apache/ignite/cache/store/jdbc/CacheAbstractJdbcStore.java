@@ -438,8 +438,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                 PreparedStatement stmt = null;
 
-                ResultSet rs = null;
-
                 try {
                     conn = openConnection(true);
 
@@ -461,7 +459,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                             for (int j = 0; j < i; j++)
                                 stmt.setObject(idx++, upperBound[j]);
 
-                    rs = stmt.executeQuery();
+                    ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
                         K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.keyCols, em.loadColIdxs, rs);
@@ -469,14 +467,6 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         clo.apply(key, val);
                     }
-                }
-                catch (NullPointerException e){
-                    //todo only for investigation
-                    System.out.println("Got NPE");
-
-                    e.printStackTrace();
-
-                    System.out.println("thread:" + Thread.currentThread().getName() + " conn:" + conn + " stmt:" + stmt + " rs:" + rs);
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to load cache", e);
