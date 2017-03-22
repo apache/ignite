@@ -18,14 +18,8 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.ConstantVector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.math.impls.vector.SingleElementVectorView;
-import org.apache.ignite.math.impls.storage.matrix.DiagonalMatrixStorage;
-
-import java.util.*;
+import org.apache.ignite.math.impls.storage.matrix.*;
+import org.apache.ignite.math.impls.vector.*;
 
 /**
  * TODO: add description.
@@ -60,23 +54,6 @@ public class DiagonalMatrix extends AbstractMatrix {
      */
     public DiagonalMatrix(double[] vals) {
         super(new DiagonalMatrixStorage(new DenseLocalOnHeapVector(vals)));
-    }
-
-    /**
-     *
-     * @param args
-     */
-    public DiagonalMatrix(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("vals"))
-            setStorage(new DiagonalMatrixStorage(new DenseLocalOnHeapVector((double[])args.get("vals"))));
-        else if (args.containsKey("matrix"))
-            setStorage(new DiagonalMatrixStorage(((Matrix)args.get("matrix")).viewDiagonal()));
-        else if (args.containsKey("vector"))
-            setStorage(new DiagonalMatrixStorage((Vector)args.get("vector")));
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**

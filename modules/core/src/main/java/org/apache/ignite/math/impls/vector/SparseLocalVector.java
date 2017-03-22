@@ -18,10 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.storage.vector.*;
-import java.util.*;
 
 /**
  * Local on-heap sparse vector based on hash map storage.
@@ -43,24 +40,6 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
         assertAccessMode(acsMode);
 
         setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
-    }
-
-    /**
-     * @param args
-     */
-    public SparseLocalVector(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("size") && args.containsKey("acsMode")) {
-            int size = (int)args.get("size");
-            int acsMode = (int)args.get("acsMode");
-
-            assertAccessMode(acsMode);
-
-            setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     private SparseLocalOnHeapVectorStorage storage() {

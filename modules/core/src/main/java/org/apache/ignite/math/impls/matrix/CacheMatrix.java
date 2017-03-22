@@ -20,10 +20,8 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.storage.matrix.*;
-import java.util.*;
 
 /**
  * Matrix based on existing cache and key and value mapping functions.
@@ -58,30 +56,6 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         assert valMapper != null;
         
         setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
-    }
-
-    /**
-     * @param args
-     */
-    @SuppressWarnings({"unchecked"})
-    public CacheMatrix(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("rows") &&
-            args.containsKey("cols") &&
-            args.containsKey("keyMapper") &&
-            args.containsKey("valMapper") &&
-            args.containsKey("cacheName")) {
-            int rows = (int)args.get("rows");
-            int cols = (int)args.get("cols");
-            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
-            MatrixKeyMapper<K> keyMapper = (MatrixKeyMapper<K>)args.get("keyMapper");
-            ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
-
-            setStorage(new CacheMatrixStorage<K, V>(rows, cols, cache, keyMapper, valMapper));
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**

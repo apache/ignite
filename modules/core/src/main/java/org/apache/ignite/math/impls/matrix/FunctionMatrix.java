@@ -19,11 +19,8 @@ package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.storage.matrix.FunctionMatrixStorage;
-
-import java.util.*;
+import org.apache.ignite.math.impls.storage.matrix.*;
 
 /**
  * TODO: add description.
@@ -65,33 +62,6 @@ public class FunctionMatrix extends AbstractMatrix {
         assert getFunc != null;
 
         setStorage(new FunctionMatrixStorage(rows, cols, getFunc));
-    }
-
-    /**
-     * @param args
-     */
-    public FunctionMatrix(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("rows") && args.containsKey("cols") &&
-            args.containsKey("getFunc") && args.containsKey("setFunc")) {
-            IntIntToDoubleFunction getFunc = (IntIntToDoubleFunction)args.get("getFunc");
-            IntIntDoubleToVoidFunction setFunc = (IntIntDoubleToVoidFunction)args.get("setFunc");
-            int rows = (int)args.get("rows");
-            int cols = (int)args.get("cols");
-
-            setStorage(new FunctionMatrixStorage(rows, cols, getFunc, setFunc));
-        }
-        else if (args.containsKey("rows") && args.containsKey("cols") &&
-            args.containsKey("getFunc") && args.containsKey("setFunc")) {
-            IntIntToDoubleFunction getFunc = (IntIntToDoubleFunction)args.get("getFunc");
-            int rows = (int)args.get("rows");
-            int cols = (int)args.get("cols");
-
-            setStorage(new FunctionMatrixStorage(rows, cols, getFunc));
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**

@@ -19,13 +19,11 @@ package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.functions.*;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
 /**
  * Convenient class that can be used to add decorations to an existing vector. Subclasses
@@ -54,21 +52,6 @@ public class DelegatingVector implements Vector {
         assert dlg != null;
 
         this.dlg = dlg;
-    }
-
-    /**
-     * @param args
-     */
-    public DelegatingVector(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("delegate")) {
-            dlg = (Vector)args.get("delegate");
-
-            assert dlg != null;
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /** {@inheritDoc} */

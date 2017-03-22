@@ -17,68 +17,14 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.StorageConstants;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.junit.Test;
+import org.apache.ignite.math.*;
+import org.junit.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class SparseLocalVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
-
-    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
-    public void mapInvalidArgsTest() {
-        assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new SparseLocalVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
-    }
-
-    /** */ @Test(expected = UnsupportedOperationException.class)
-    public void mapMissingArgsTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("paramMissing", "whatever");
-            put("acsMode", StorageConstants.RANDOM_ACCESS_MODE);
-        }};
-
-        assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
-            new SparseLocalVector(test).size());
-    }
-
-    /** */ @Test(expected = ClassCastException.class)
-    public void mapInvalidArrTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("size", "whatever");
-            put("acsMode", StorageConstants.RANDOM_ACCESS_MODE);
-        }};
-
-        assertEquals("Expect exception due to invalid arr type.", IMPOSSIBLE_SIZE,
-            new SparseLocalVector(test).size());
-    }
-
-    /** */ @Test(expected = AssertionError.class)
-    public void mapNullTest() {
-        //noinspection ConstantConditions
-        assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new SparseLocalVector(null).size());
-    }
-
-    /** */ @Test
-    public void mapTest() {
-        assertEquals("Size from args, random access.", 99,
-            new SparseLocalVector(new HashMap<String, Object>(){{
-                put("size", 99);
-                put("acsMode", StorageConstants.RANDOM_ACCESS_MODE);
-            }}).size());
-
-        assertEquals("Size from args, sequential access.", 99,
-            new SparseLocalVector(new HashMap<String, Object>(){{
-                put("size", 99);
-                put("acsMode", StorageConstants.SEQUENTIAL_ACCESS_MODE);
-            }}).size());
-    }
 
     /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {

@@ -20,11 +20,8 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.functions.*;
-import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
-
-import java.util.*;
+import org.apache.ignite.math.impls.storage.vector.*;
 
 /**
  * Vector based on existing cache and index and value mapping functions.
@@ -51,28 +48,6 @@ public class CacheVector<K, V> extends AbstractVector {
         VectorKeyMapper<K> keyFunc,
         ValueMapper<V> valMapper) {
         setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
-    }
-
-    /**
-     * @param args
-     */
-    @SuppressWarnings({"unchecked"})
-    public CacheVector(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("size") &&
-            args.containsKey("keyFunc") &&
-            args.containsKey("valMapper") &&
-            args.containsKey("cacheName")) {
-            int size = (int)args.get("size");
-            IgniteCache<K, V> cache = Ignition.localIgnite().getOrCreateCache((String)args.get("cacheName"));
-            VectorKeyMapper<K> keyFunc = (VectorKeyMapper<K>)args.get("keyFunc");
-            ValueMapper<V> valMapper = (ValueMapper<V>)args.get("valMapper");
-
-            setStorage(new CacheVectorStorage<K, V>(size, cache, keyFunc, valMapper));
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /**

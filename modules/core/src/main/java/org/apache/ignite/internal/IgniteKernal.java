@@ -120,10 +120,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridKernalContextImpl ctx;
 
-    /** */
-    @GridToStringExclude
-    private IgniteMathImpl mathImpl;
-
     /** Configuration. */
     private IgniteConfiguration cfg;
 
@@ -202,15 +198,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteKernal() {
         this(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public IgniteMath math() {
-        if (mathImpl == null)
-            mathImpl = new IgniteMathImpl(ctx, false);
-
-        return mathImpl;
     }
 
     /**

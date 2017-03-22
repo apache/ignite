@@ -17,49 +17,14 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.Vector;
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.ignite.math.*;
+import org.junit.*;
 
 import static org.junit.Assert.*;
 
 /** */
 public class DelegatingVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
-
-    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
-    public void mapInvalidArgsTest() {
-        assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new DelegatingVector(new HashMap<String, Object>(){{put("invalid", "whatever");}}).size());
-    }
-
-    /** */ @Test(expected = ClassCastException.class)
-    public void mapInvalidParamTypeTest() {
-        assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
-            new DelegatingVector(new HashMap<String, Object>(){{put("delegate", "whatever");}}).size());
-    }
-
-    /** */ @Test(expected = AssertionError.class)
-    public void mapNullParamTest() {
-        assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
-            new DelegatingVector(new HashMap<String, Object>(){{put("delegate", null);}}).size());
-    }
-
-    /** */ @Test(expected = AssertionError.class)
-    public void mapNullTest() {
-        //noinspection ConstantConditions
-        assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new DelegatingVector((Map<String, Object>)null).size());
-    }
-
-    /** */ @Test
-    public void mapTest() {
-        assertEquals("Size from args.", 99,
-            new DelegatingVector(
-                new HashMap<String, Object>(){{ put("delegate", new DenseLocalOnHeapVector(99)); }}).size());
-    }
 
     /** */ @Test
     public void basicTest() {

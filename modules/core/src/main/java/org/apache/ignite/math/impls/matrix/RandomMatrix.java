@@ -18,13 +18,9 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.RandomVector;
-import org.apache.ignite.math.impls.storage.matrix.RandomMatrixStorage;
-
+import org.apache.ignite.math.impls.storage.matrix.*;
+import org.apache.ignite.math.impls.vector.*;
 import java.io.*;
-import java.util.*;
 
 /**
  * TODO: add description.
@@ -60,28 +56,6 @@ public class RandomMatrix extends AbstractMatrix {
      */
     public RandomMatrix(int rows, int cols) {
         this(rows, cols, true);
-    }
-
-    /**
-     * @param args
-     */
-    public RandomMatrix(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("rows") && args.containsKey("cols") && args.containsKey("fastHash")) {
-            int rows = (int)args.get("rows");
-            int cols = (int)args.get("cols");
-
-            setStorage(mkStorage(rows, cols, (boolean)args.get("fastHash")));
-        }
-        else if (args.containsKey("rows") && args.containsKey("cols")) {
-            int rows = (int)args.get("rows");
-            int cols = (int)args.get("cols");
-
-            setStorage(mkStorage(rows, cols, true));
-        }
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     /** */

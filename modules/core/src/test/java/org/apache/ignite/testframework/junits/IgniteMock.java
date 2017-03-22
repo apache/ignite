@@ -155,11 +155,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMath math() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteServices services() {
         return null;
     }

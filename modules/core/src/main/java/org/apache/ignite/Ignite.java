@@ -104,13 +104,6 @@ public interface Ignite extends AutoCloseable {
     public IgniteCluster cluster();
 
     /**
-     * Gets an instance of {@link IgniteMath} interface.
-     *
-     * @return Instance of {@link IgniteMath} interface.
-     */
-    public IgniteMath math();
-
-    /**
      * Gets {@code compute} facade over all cluster nodes started in server mode.
      *
      * @return Compute instance over all cluster nodes started in server mode.

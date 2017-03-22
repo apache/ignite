@@ -177,13 +177,6 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMath math() {
-        throwUnsupported();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
         throwUnsupported();
 

@@ -186,13 +186,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMath math() {
-        checkIgnite();
-
-        return g.math();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEvents events() {
         checkIgnite();
 

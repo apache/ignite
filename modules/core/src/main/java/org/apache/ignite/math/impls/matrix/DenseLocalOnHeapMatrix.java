@@ -18,12 +18,8 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.*;
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.math.impls.storage.matrix.ArrayMatrixStorage;
-
-import java.util.*;
+import org.apache.ignite.math.impls.storage.matrix.*;
+import org.apache.ignite.math.impls.vector.*;
 
 /**
  * Basic implementation for matrix.
@@ -73,21 +69,6 @@ public class DenseLocalOnHeapMatrix extends AbstractMatrix {
         setStorage(new ArrayMatrixStorage(orig.rowSize(), orig.columnSize()));
 
         assign(orig);
-    }
-
-    /**
-     *
-     * @param args
-     */
-    public DenseLocalOnHeapMatrix(Map<String, Object> args) {
-        assert args != null;
-
-        if (args.containsKey("rows") && args.containsKey("cols"))
-            setStorage(new ArrayMatrixStorage((int)args.get("rows"), (int)args.get("cols")));
-        else if (args.containsKey("arr"))
-            setStorage(new ArrayMatrixStorage((double[][])args.get("arr")));
-        else
-            throw new UnsupportedOperationException("Invalid constructor argument(s).");
     }
 
     @Override public Matrix copy() {

@@ -344,11 +344,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMath math() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }

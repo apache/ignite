@@ -17,71 +17,13 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.junit.Test;
+import org.junit.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /** */
 public class DenseLocalOffHeapVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
-
-    /** */ @Test(expected = org.apache.ignite.math.exceptions.UnsupportedOperationException.class)
-    public void mapInvalidArgsTest() {
-        assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
-    }
-
-    /** */ @Test(expected = UnsupportedOperationException.class)
-    public void mapMissingArgsTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("arr",  new double[0]);
-            put("paramMissing", "whatever");
-        }};
-
-        assertEquals("Expect exception due to missing args.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector(test).size());
-    }
-
-    /** */ @Test(expected = ClassCastException.class)
-    public void mapInvalidParamTypeTest() {
-        final Map<String, Object> test = new HashMap<String, Object>(){{
-            put("size", "whatever");
-        }};
-
-        assertEquals("Expect exception due to invalid param type.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector(test).size());
-    }
-
-    /** */ @Test(expected = AssertionError.class)
-    public void mapNullTest() {
-        //noinspection ConstantConditions
-        assertEquals("Null map args.", IMPOSSIBLE_SIZE,
-            new DenseLocalOffHeapVector((Map<String, Object>)null).size());
-    }
-
-    /** */ @Test
-    public void mapTest() {
-        assertEquals("Size from args.", 99,
-            new DenseLocalOffHeapVector(new HashMap<String, Object>(){{ put("size", 99); }}).size());
-
-        final double[] test = new double[99];
-
-        assertEquals("Size from array in args.", test.length,
-            new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", false);
-            }}).size());
-
-        assertEquals("Size from array in args, with copy.", test.length,
-            new DenseLocalOffHeapVector(new HashMap<String, Object>(){{
-                put("arr", test);
-                put("copy", true);
-            }}).size());
-    }
 
     /** */ @Test(expected = AssertionError.class)
     public void negativeSizeTest() {
