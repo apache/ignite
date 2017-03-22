@@ -179,8 +179,17 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
             consumeSampleVectors((v, desc) -> {
                 Class<? extends Vector> expType = expLikeType(v);
 
-                if (expType == null)
+                if (expType == null) {
+                    try {
+                        v.like(1);
+                    } catch (UnsupportedOperationException uoe) {
+                        return;
+                    }
+
+                    fail("Expected exception wasn't caught for " + desc);
+
                     return;
+                }
 
                 Vector vLike = v.like(card);
 
