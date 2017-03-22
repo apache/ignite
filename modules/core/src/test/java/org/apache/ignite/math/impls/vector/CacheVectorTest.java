@@ -6,8 +6,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.*;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.*;
 import org.apache.ignite.testframework.junits.common.*;
+
+import static org.apache.ignite.math.impls.MathTestConstants.SECOND_ARG;
 
 /**
  * Tests for {@link CacheVector}.
@@ -90,6 +94,21 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testMapBiFunc(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        cacheVector.map(Functions.PLUS, 1d);
+
+        for (int i = 0; i < size; i++)
+            assertEquals("Unexpected value.", cacheVector.get(i), 1d, 0d);
+    }
+
+    /** */
     public void testSum(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
 
@@ -165,6 +184,179 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < size; i++)
             assertEquals("Unexpected value.", cacheVector.get(i), i, 0d);
+    }
+
+    /** */
+    public void testPlus(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        cacheVector.plus(1d);
+
+        for (int i = 0; i < size; i++)
+            assertEquals("Unexpected value.", cacheVector.get(i), 1d, 0d);
+    }
+
+    /** */
+    public void testPlusVec(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        Vector testVec = new DenseLocalOnHeapVector(IntStream.range(0, size).asDoubleStream().toArray());
+
+        try {
+            cacheVector.plus(testVec);
+            fail();
+        } catch (UnsupportedOperationException e){
+
+        }
+    }
+
+    /** */
+    public void testDivide(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        cacheVector.assign(1d);
+
+        cacheVector.divide(2d);
+
+        for (int i = 0; i < size; i++)
+            assertEquals("Unexpected value.", cacheVector.get(i), 1d/2d, 0d);
+    }
+
+    /** */
+    public void testTimes(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        cacheVector.assign(1d);
+
+        cacheVector.times(2d);
+
+        for (int i = 0; i < size; i++)
+            assertEquals("Unexpected value.", cacheVector.get(i), 2d, 0d);
+    }
+
+    /** */
+    public void testTimesVector(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        cacheVector.assign(1d);
+        Vector testVec = new DenseLocalOnHeapVector(IntStream.range(0, size).asDoubleStream().toArray());
+
+        try {
+            cacheVector.times(testVec);
+            fail();
+        } catch (UnsupportedOperationException e){
+
+        }
+
+
+    }
+
+    /** */
+    public void testMin(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        Vector testVec = new DenseLocalOnHeapVector(IntStream.range(0, size).asDoubleStream().toArray());
+
+        cacheVector.assign(testVec);
+
+        assertEquals("Unexpected value.", cacheVector.minValue().get(), 0d, 0d);
+    }
+
+    /** */
+    public void testMax(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        Vector testVec = new DenseLocalOnHeapVector(IntStream.range(0, size).asDoubleStream().toArray());
+
+        cacheVector.assign(testVec);
+
+        assertEquals("Unexpected value.", cacheVector.maxValue().get(), testVec.get(size -1), 0d);
+    }
+
+    /** */
+    public void testLike(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        try {
+            cacheVector.like(size);
+            fail("Unsupported case");
+        } catch (UnsupportedOperationException ex){
+
+        }
+    }
+
+    /** */
+    public void testLikeMatrix(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        try {
+            cacheVector.likeMatrix(size, size);
+            fail("Unsupported case");
+        } catch (UnsupportedOperationException ex){
+
+        }
+    }
+
+    /** */
+    public void testCopy(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        IdentityValueMapper valueMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valueMapper);
+
+        try {
+            cacheVector.copy();
+            fail("Unsupported case");
+        } catch (UnsupportedOperationException ex){
+
+        }
     }
 
     /** */

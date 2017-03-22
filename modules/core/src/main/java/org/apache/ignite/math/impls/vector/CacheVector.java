@@ -25,7 +25,6 @@ import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
 
 import java.util.*;
-import java.util.function.*;
 
 /**
  * Vector based on existing cache and index and value mapping functions.
@@ -162,9 +161,7 @@ public class CacheVector<K, V> extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        CacheVectorStorage<K, V> sto = storage();
-
-        return new CacheVector<K, V>(size(), sto.cache(), sto.keyMapper(), sto.valueMapper());
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
