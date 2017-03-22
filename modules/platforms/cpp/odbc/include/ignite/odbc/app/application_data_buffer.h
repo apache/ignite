@@ -25,6 +25,7 @@
 #include <ignite/guid.h>
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include <ignite/time.h>
 #include <ignite/common/decimal.h>
 
 #include "ignite/odbc/common_types.h"
@@ -182,6 +183,13 @@ namespace ignite
                 void PutTimestamp(const Timestamp& value);
 
                 /**
+                 * Put time to buffer.
+                 *
+                 * @param value Value to put.
+                 */
+                void PutTime(const Time& value);
+
+                /**
                  * Get string.
                  *
                  * @return String value of buffer.
@@ -250,6 +258,13 @@ namespace ignite
                  * @return Value of type Timestamp.
                  */
                 Timestamp GetTimestamp() const;
+
+                /**
+                 * Get value of type Time.
+                 *
+                 * @return Value of type Timestamp.
+                 */
+                Time GetTime() const;
 
                 /**
                  * Get value of type Decimal.

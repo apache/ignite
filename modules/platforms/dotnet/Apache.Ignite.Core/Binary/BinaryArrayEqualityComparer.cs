@@ -88,7 +88,10 @@ namespace Apache.Ignite.Core.Binary
 
             var arg = new KeyValuePair<int, int>(GetDataStart(binObj), GetDataLength(binObj));
 
-            return new BinaryHeapStream(binObj.Data).Apply(this, arg);
+            using (var stream = new BinaryHeapStream(binObj.Data))
+            {
+                return stream.Apply(this, arg);
+            }
         }
 
         /** <inheritdoc /> */

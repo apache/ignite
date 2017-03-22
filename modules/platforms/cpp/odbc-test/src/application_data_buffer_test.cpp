@@ -114,18 +114,6 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
     BOOST_CHECK(reslen == strlen("1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
 }
 
-BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
-{
-    char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
-    SqlLen reslen = sizeof(buffer) - 1;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
-
-    ignite::Guid guid = appBuf.GetGuid();
-
-    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
-}
-
 BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 {
     char buffer[1024];
@@ -413,20 +401,6 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
     BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("1999-02-22"));
 }
 
-BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
-{
-    char strBuf[64] = { 0 };
-    SqlLen reslen = 0;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
-
-    Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
-
-    appBuf.PutTimestamp(date);
-
-    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
-}
-
 BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 {
     SQL_DATE_STRUCT buf = { 0 };
@@ -446,6 +420,77 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
     BOOST_CHECK_EQUAL(27, buf.day);
 }
 
+BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = common::MakeDateGmt(1984, 5, 27);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(1984, buf.year);
+    BOOST_CHECK_EQUAL(5, buf.month);
+    BOOST_CHECK_EQUAL(27, buf.day);
+    BOOST_CHECK_EQUAL(0, buf.hour);
+    BOOST_CHECK_EQUAL(0, buf.minute);
+    BOOST_CHECK_EQUAL(0, buf.second);
+    BOOST_CHECK_EQUAL(0, buf.fraction);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimeToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Time time = common::MakeTimeGmt(7, 15, 0);
+
+    appBuf.PutTime(time);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("07:15:00"));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimeToTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIME, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Time time = common::MakeTimeGmt(23, 51, 1);
+
+    appBuf.PutTime(time);
+
+    BOOST_CHECK_EQUAL(23, buf.hour);
+    BOOST_CHECK_EQUAL(51, buf.minute);
+    BOOST_CHECK_EQUAL(1, buf.second);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
+
+    appBuf.PutTimestamp(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
+}
+
 BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 {
     SQL_DATE_STRUCT buf = { 0 };
@@ -463,6 +508,25 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
     BOOST_CHECK_EQUAL(2004, buf.year);
     BOOST_CHECK_EQUAL(8, buf.month);
     BOOST_CHECK_EQUAL(14, buf.day);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIME, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(6, buf.hour);
+    BOOST_CHECK_EQUAL(34, buf.minute);
+    BOOST_CHECK_EQUAL(51, buf.second);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
@@ -488,28 +552,16 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
     BOOST_CHECK_EQUAL(573948623, buf.fraction);
 }
 
-BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
+BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
 {
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
+    SqlLen reslen = sizeof(buffer) - 1;
 
-    SqlLen reslen = sizeof(buf);
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
+    ignite::Guid guid = appBuf.GetGuid();
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
-
-    Date date = common::MakeDateGmt(1984, 5, 27);
-
-    appBuf.PutDate(date);
-
-    BOOST_CHECK_EQUAL(1984, buf.year);
-    BOOST_CHECK_EQUAL(5, buf.month);
-    BOOST_CHECK_EQUAL(27, buf.day);
-    BOOST_CHECK_EQUAL(0, buf.hour);
-    BOOST_CHECK_EQUAL(0, buf.minute);
-    BOOST_CHECK_EQUAL(0, buf.second);
-    BOOST_CHECK_EQUAL(0, buf.fraction);
+    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
@@ -835,6 +887,32 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
     BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetTimeFromString)
+{
+    char buf[] = "17:5:59";
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(17, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(5, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(59, tmTime.tm_sec);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 {
     char buf[] = "2018-11-01 17:45:59";
@@ -923,6 +1001,37 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
     BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIME, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(51, tmTime.tm_sec);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 {
     SQL_TIMESTAMP_STRUCT buf = { 0 };
@@ -992,6 +1101,41 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
     BOOST_CHECK_EQUAL(6, tmDate.tm_hour);
     BOOST_CHECK_EQUAL(34, tmDate.tm_min);
     BOOST_CHECK_EQUAL(51, tmDate.tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetTimeFromTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    buf.year = 2004;
+    buf.month = 8;
+    buf.day = 14;
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+    buf.fraction = 573948623;
+
+    SqlLen reslen = sizeof(buf);
+
+    int offset = 0;
+    int* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(51, tmTime.tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
