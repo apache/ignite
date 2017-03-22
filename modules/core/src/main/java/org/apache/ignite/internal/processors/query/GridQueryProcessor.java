@@ -1761,7 +1761,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param valCls value class
      * @param pathStr property name
      * @param resType property type
-     * @return
+     * @return Property initialization exception.
      */
     public static String propertyInitializationExceptionMessage(Class<?> keyCls, Class<?> valCls, String pathStr,
         Class<?> resType) {

@@ -517,7 +517,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                 while(cursor.next()) {
                     GridH2Row row = cursor.get();
 
-                    // Check for interruptions every 1000 iterations.
+                    // Check for interruptions every 1024 iterations.
                     if ((++j & 1024) == 0 && thread.isInterrupted())
                         throw new InterruptedException();
 

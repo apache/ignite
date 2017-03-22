@@ -1203,7 +1203,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         final Map<Long,Long> map = new ConcurrentHashMap8<>();
 
-        final int loops = reuseList == null ? 200_000 : 400_000;
+        final int loops = reuseList == null ? 100_000 : 200_000;
 
         final GridStripedLock lock = new GridStripedLock(256);
 
@@ -1295,7 +1295,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 16, "put-remove");
+        }, Runtime.getRuntime().availableProcessors(), "put-remove");
 
         final AtomicBoolean stop = new AtomicBoolean();
 
