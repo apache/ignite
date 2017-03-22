@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 // Start another server node so that store is initialized there
                 using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "grid2"
+                    IgniteInstanceName = "grid2"
                 }))
                 {
                     var dynCache2 = ignite2.GetCache<int, Foo>(dynCache.Name);
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 using (var igniteClient = Ignition.Start(new IgniteConfiguration(cfg)
                 {
                     ClientMode = true,
-                    GridName = "grid2"
+                    IgniteInstanceName = "grid2"
                 }))
                 {
                     var fooClient = igniteClient.GetCache<int, Foo>(null)[1];
@@ -232,7 +232,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "grid2",
+                    IgniteInstanceName = "grid2",
                     ClientMode = clientMode
                 }))
                 {

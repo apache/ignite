@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
