@@ -3187,6 +3187,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveLoadAsync() throws Exception {
+        if (isMultiJvm())
+            return;
+
         int cnt = 10;
 
         Set<String> keys = new HashSet<>();
