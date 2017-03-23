@@ -326,8 +326,9 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         ignite4.close(); // With late affinity exchange on server leave is completed by discovery message.
 
         if (lateAff) {
-            // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = fairAffinity;
+            // With FairAffinityFunction and new RendezvousAffinityFunction with balanced partition distribution
+            // affinity calculation is different, this causes one more topology change.
+            boolean exchangeAfterRebalance = true;
 
             waitForTopologyUpdate(4,
                 exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
