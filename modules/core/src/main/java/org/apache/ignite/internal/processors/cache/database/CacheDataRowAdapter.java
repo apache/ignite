@@ -553,16 +553,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param pageId Page ID.
-     * @param cctx Cache context.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
-        return cctx.memoryPolicy().pageMemory().page(cctx.cacheId(), pageId);
-    }
-
-    /**
      *
      */
     public enum RowData {
