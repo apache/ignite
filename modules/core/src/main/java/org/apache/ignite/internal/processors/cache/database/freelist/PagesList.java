@@ -1141,14 +1141,6 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * @param bucket Bucket.
-     * @return <tt>true</tt> if bucket size should be tracked regardless of {@link #trackBucketsSize} flag.
-     */
-    protected boolean isTrackedBucket(int bucket) {
-        return false;
-    }
-
-    /**
      * @param page Page.
      * @param pageId Page ID.
      * @param pageAddr Page address.

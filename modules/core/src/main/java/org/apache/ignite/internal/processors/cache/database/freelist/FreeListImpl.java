@@ -551,14 +551,6 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /**
-     * @param bucket Bucket.
-     * @return <tt>true</tt> if bucket size should be tracked regardless of {@link #trackBucketsSize} flag.
-     */
-    @Override protected boolean isTrackedBucket(int bucket) {
-        return bucket == emptyDataPagesBucket;
-    }
-
-    /**
      * @return Number of empty data pages in free list.
      */
     public int emptyDataPages() {
