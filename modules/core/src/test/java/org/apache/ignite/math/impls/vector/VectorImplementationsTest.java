@@ -255,14 +255,14 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     public void minValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).min().getAsDouble(),
-            v -> v.minValue());
+            Vector::minValue);
     }
 
     /** */ @Test
     public void maxValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).max().getAsDouble(),
-            v -> v.maxValue());
+            Vector::maxValue);
     }
 
     /** */ @Test
@@ -375,6 +375,59 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             checker.assertCloseEnough(v, ref);
         });
+    }
+
+    /** */ @Test
+    public void minElementTest() {
+        consumeSampleVectors((v, desc) -> {
+            final ElementsChecker checker = new ElementsChecker(v, desc);
+
+            final Vector.Element minE = v.minElement();
+
+            final int minEIdx = minE.index();
+
+            assertTrue("Unexpected index from minElement " + minEIdx + ", " + desc,
+                minEIdx >= 0 && minEIdx < v.size());
+
+            final Metric metric = new Metric(minE.get(), v.minValue());
+
+            assertTrue("Not close enough minElement at index " + minEIdx + ", " + metric
+                + ", " + desc, metric.closeEnough());
+
+            checker.assertNewMinElement(v);
+        });
+    }
+
+    /** */ @Test
+    public void maxElementTest() {
+        consumeSampleVectors((v, desc) -> {
+            final ElementsChecker checker = new ElementsChecker(v, desc);
+
+            final Vector.Element maxE = v.maxElement();
+
+            final int minEIdx = maxE.index();
+
+            assertTrue("Unexpected index from minElement " + minEIdx + ", " + desc,
+                minEIdx >= 0 && minEIdx < v.size());
+
+            final Metric metric = new Metric(maxE.get(), v.maxValue());
+
+            assertTrue("Not close enough maxElement at index " + minEIdx + ", " + metric
+                + ", " + desc, metric.closeEnough());
+
+            checker.assertNewMaxElement(v);
+        });
+    }
+
+    /** */
+    @Test
+    public void externalizeTest() {
+        (new ExternalizeTest<Vector>() {
+            /** {@inheritDoc} */
+            @Override public void externalizeTest() {
+                consumeSampleVectors((v, desc) -> externalizeTest(v));
+            }
+        }).externalizeTest();
     }
 
     /** */
@@ -573,17 +626,6 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
-    @Test
-    public void externalizeTest() {
-        (new ExternalizeTest<Vector>() {
-            /** {@inheritDoc} */
-            @Override public void externalizeTest() {
-                consumeSampleVectors((v, desc) -> externalizeTest(v));
-            }
-        }).externalizeTest();
-    }
-
-    /** */
     private interface MutateAtIdx {
         /** */
         double apply(Vector v, int idx, double val);
@@ -642,6 +684,30 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
         /** */
         void assertCloseEnough(Vector obtained) {
             assertCloseEnough(obtained, null);
+        }
+
+        /** */
+        void assertNewMinElement(Vector v) {
+            if (readOnly(v))
+                return;
+
+            int exp = v.size() / 2;
+
+            v.set(exp, -(v.size() * 2 + 1));
+
+            assertEquals("Unexpected minElement index at " + fixtureDesc, exp, v.minElement().index());
+        }
+
+        /** */
+        void assertNewMaxElement(Vector v) {
+            if (readOnly(v))
+                return;
+
+            int exp = v.size() / 2;
+
+            v.set(exp, v.size() * 2 + 1);
+
+            assertEquals("Unexpected minElement index at " + fixtureDesc, exp, v.maxElement().index());
         }
 
         /** */

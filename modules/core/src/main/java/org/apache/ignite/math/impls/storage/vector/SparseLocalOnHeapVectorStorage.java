@@ -70,7 +70,7 @@ public class SparseLocalOnHeapVectorStorage implements VectorStorage, StorageCon
     }
 
     @Override public double get(int i) {
-        return sto.get(i);
+        return sto.containsKey(i) ? sto.get(i) : 0.0;
     }
 
     @Override public void set(int i, double v) {
