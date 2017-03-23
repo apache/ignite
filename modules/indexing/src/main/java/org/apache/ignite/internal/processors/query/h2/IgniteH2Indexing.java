@@ -1967,11 +1967,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
-        if (JdbcUtils.serializer != null)
-            U.warn(log, "Custom H2 serialization is already configured, will override.");
-
-        JdbcUtils.serializer = h2Serializer();
-
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
@@ -2026,6 +2021,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
         }
+
+        if (JdbcUtils.serializer != null)
+            U.warn(log, "Custom H2 serialization is already configured, will override.");
+
+        JdbcUtils.serializer = h2Serializer();
+
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
