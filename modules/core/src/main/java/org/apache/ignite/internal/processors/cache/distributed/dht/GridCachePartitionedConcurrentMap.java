@@ -81,17 +81,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
-        try {
-            GridDhtLocalPartition part = localPartition(key, topVer, create);
+        GridDhtLocalPartition part = localPartition(key, topVer, create);
 
-            if (part == null)
-                return null;
-
-            return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
-        }
-        catch (GridDhtInvalidPartitionException ex) {
+        if (part == null)
             return null;
-        }
+
+        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
     /** {@inheritDoc} */
