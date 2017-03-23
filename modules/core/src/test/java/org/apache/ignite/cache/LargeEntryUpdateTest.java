@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -74,7 +75,12 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
         MemoryConfiguration mem = new MemoryConfiguration();
 
         mem.setPageSize(PAGE_SIZE);
-        mem.setPageCacheSize(PAGE_CACHE_SIZE);
+
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+
+        plcCfg.setSize(PAGE_CACHE_SIZE);
+
+        mem.setMemoryPolicies(plcCfg);
 
         cfg.setMemoryConfiguration(mem);
 
