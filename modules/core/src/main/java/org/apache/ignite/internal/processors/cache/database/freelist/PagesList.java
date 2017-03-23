@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.Page;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -76,10 +76,7 @@ public abstract class PagesList extends DataStructure {
             Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
 
     /** */
-    private final boolean trackBucketsSize = IgniteSystemProperties.getBoolean("IGNITE_PAGES_LIST_TRACK_SIZE", false);
-
-    /** */
-    protected final LongAdder8[] bucketsSize;
+    protected final AtomicLong[] bucketsSize;
 
     /** Page ID to store list metadata. */
     private final long metaPageId;
@@ -117,7 +114,7 @@ public abstract class PagesList extends DataStructure {
 
             return TRUE;
         }
-    };
+    }
 
     /**
      * @param cacheId Cache ID.
@@ -142,10 +139,10 @@ public abstract class PagesList extends DataStructure {
         this.buckets = buckets;
         this.metaPageId = metaPageId;
 
-        bucketsSize = new LongAdder8[buckets];
+        bucketsSize = new AtomicLong[buckets];
 
         for (int i = 0; i < buckets; i++)
-            bucketsSize[i] = new LongAdder8();
+            bucketsSize[i] = new AtomicLong();
     }
 
     /**
@@ -191,6 +188,7 @@ public abstract class PagesList extends DataStructure {
 
                 for (Map.Entry<Integer, GridLongList> e : bucketsData.entrySet()) {
                     int bucket = e.getKey();
+                    long bucketSize = 0;
 
                     Stripe[] old = getBucket(bucket);
                     assert old == null;
@@ -199,11 +197,43 @@ public abstract class PagesList extends DataStructure {
 
                     Stripe[] tails = new Stripe[upd.length];
 
-                    for (int i = 0; i < upd.length; i++)
-                        tails[i] = new Stripe(upd[i]);
+                    for (int i = 0; i < upd.length; i++) {
+                        long tailId = upd[i];
+
+                        long pageId = tailId;
+                        int cnt = 0;
+
+                        while (pageId != 0L) {
+                            try (Page page = page(pageId)) {
+                                long pageAddr = readLock(page);
+
+                                assert pageAddr != 0L;
+
+                                try {
+                                    PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
+
+                                    cnt += io.getCount(pageAddr);
+                                    pageId = io.getPreviousId(pageAddr);
+
+                                    // In reuse bucket the page itself can be used as a free page.
+                                    if (isReuseBucket(bucket) && pageId != 0L)
+                                        cnt++;
+                                }
+                                finally {
+                                    readUnlock(page, pageAddr);
+                                }
+                            }
+                        }
+
+                        Stripe stripe = new Stripe(tailId, cnt == 0);
+                        tails[i] = stripe;
+                        bucketSize += cnt;
+                    }
 
                     boolean ok = casBucket(bucket, null, tails);
                     assert ok;
+
+                    bucketsSize[bucket].set(bucketSize);
                 }
             }
         }
@@ -363,7 +393,7 @@ public abstract class PagesList extends DataStructure {
             initPage(pageMem, page, this, PagesListNodeIO.VERSIONS.latest(), wal);
         }
 
-        Stripe stripe = new Stripe(pageId);
+        Stripe stripe = new Stripe(pageId, true);
 
         for (;;) {
             Stripe[] old = getBucket(bucket);
@@ -490,24 +520,31 @@ public abstract class PagesList extends DataStructure {
             for (Stripe tail : tails) {
                 long pageId = tail.tailId;
 
-                try (Page page = page(pageId)) {
-                    long pageAddr = readLock(page); // No correctness guaranties.
+                while (pageId != 0L) {
+                    try (Page page = page(pageId)) {
+                        long pageAddr = readLock(page);
 
-                    try {
-                        PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
+                        assert pageAddr != 0L;
 
-                        int cnt = io.getCount(pageAddr);
+                        try {
+                            PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
-                        assert cnt >= 0;
+                            res += io.getCount(pageAddr);
+                            pageId = io.getPreviousId(pageAddr);
 
-                        res += cnt;
-                    }
-                    finally {
-                        readUnlock(page, pageAddr);
+                            // In reuse bucket the page itself can be used as a free page.
+                            if (isReuseBucket(bucket) && pageId != 0L)
+                                res++;
+                        }
+                        finally {
+                            readUnlock(page, pageAddr);
+                        }
                     }
                 }
             }
         }
+
+        assert res == bucketsSize[bucket].get() : "Wrong bucket size counter [exp=" + res + ", cntr=" + bucketsSize[bucket].get() + ']';
 
         return res;
     }
@@ -600,8 +637,7 @@ public abstract class PagesList extends DataStructure {
         if (idx == -1)
             handlePageFull(pageId, page, pageAddr, io, dataPage, dataPageAddr, bucket);
         else {
-            if (trackBucketsSize || isTrackedBucket(bucket))
-                bucketsSize[bucket].increment();
+            bucketsSize[bucket].incrementAndGet();
 
             if (isWalDeltaRecordNeeded(wal, page))
                 wal.log(new PagesListAddPageRecord(cacheId, pageId, dataPageId));
@@ -660,6 +696,9 @@ public abstract class PagesList extends DataStructure {
                     dataPageId,
                     pageId, 0L));
 
+            // In reuse bucket the page itself can be used as a free page.
+            bucketsSize[bucket].incrementAndGet();
+
             updateTail(bucket, pageId, dataPageId);
         }
         else {
@@ -695,13 +734,12 @@ public abstract class PagesList extends DataStructure {
 
                     assert idx != -1;
 
-                    if (trackBucketsSize || isTrackedBucket(bucket))
-                        bucketsSize[bucket].increment();
-
                     dataIO.setFreeListPageId(dataPageAddr, nextId);
 
                     if (isWalDeltaRecordNeeded(wal, dataPage))
                         wal.log(new DataPageSetFreeListPageRecord(cacheId, dataPageId, nextId));
+
+                    bucketsSize[bucket].incrementAndGet();
 
                     updateTail(bucket, pageId, nextId);
                 }
@@ -778,6 +816,10 @@ public abstract class PagesList extends DataStructure {
                                 0L
                             ));
 
+                        // In reuse bucket the page itself can be used as a free page.
+                        if (isReuseBucket(bucket))
+                            bucketsSize[bucket].incrementAndGet();
+
                         // Switch to this new page, which is now a part of our list
                         // to add the rest of the bag to the new page.
                         prevPageAddr = nextPageAddr;
@@ -786,12 +828,11 @@ public abstract class PagesList extends DataStructure {
                     }
                 }
                 else {
-                    if (trackBucketsSize || isTrackedBucket(bucket))
-                        bucketsSize[bucket].increment();
-
                     // TODO: use single WAL record for bag?
                     if (isWalDeltaRecordNeeded(wal, page))
                         wal.log(new PagesListAddPageRecord(cacheId, prevId, nextId));
+
+                    bucketsSize[bucket].incrementAndGet();
                 }
             }
         }
@@ -816,10 +857,22 @@ public abstract class PagesList extends DataStructure {
     private Stripe getPageForTake(int bucket) {
         Stripe[] tails = getBucket(bucket);
 
-        if (tails == null)
+        if (tails == null || bucketsSize[bucket].get() == 0)
             return null;
 
-        return randomTail(tails);
+        int len = tails.length;
+        int init = randomInt(len);
+        int cur = init;
+
+        while (true) {
+            Stripe stripe = tails[cur];
+
+            if (!stripe.empty)
+                return stripe;
+
+            if ((cur = (cur + 1) % len) == init)
+                return null;
+        }
     }
 
     /**
@@ -873,7 +926,7 @@ public abstract class PagesList extends DataStructure {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
 
-            if (stripe == null || stripe.empty)
+            if (stripe == null)
                 return 0L;
 
             long tailId = stripe.tailId;
@@ -888,24 +941,38 @@ public abstract class PagesList extends DataStructure {
                     continue;
                 }
 
+                if (stripe.empty) {
+                    // Another thread took the last page.
+                    writeUnlock(tail, tailPageAddr, false);
+
+                    if (bucketsSize[bucket].get() > 0) {
+                        lockAttempt--; // Ignore current attempt.
+
+                        continue;
+                    }
+                    else
+                        return 0L;
+                }
+
                 assert PageIO.getPageId(tailPageAddr) == tailId : "tailId = " + tailId + ", tailPageId = " + PageIO.getPageId(tailPageAddr);
                 assert PageIO.getType(tailPageAddr) == PageIO.T_PAGE_LIST_NODE;
 
                 boolean dirty = false;
-                long ret = 0L;
+                long ret;
                 long recycleId = 0L;
 
                 try {
                     PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(tailPageAddr);
 
-                    if (io.getNextId(tailPageAddr) != 0)
+                    if (io.getNextId(tailPageAddr) != 0) {
+                        // It is not a tail anymore, retry.
                         continue;
+                    }
 
                     long pageId = io.takeAnyPage(tailPageAddr);
 
                     if (pageId != 0L) {
-                        if (trackBucketsSize || isTrackedBucket(bucket))
-                            bucketsSize[bucket].decrement();
+                        bucketsSize[bucket].decrementAndGet();
 
                         if (isWalDeltaRecordNeeded(wal, tail))
                             wal.log(new PagesListRemovePageRecord(cacheId, tailId, pageId));
@@ -914,59 +981,66 @@ public abstract class PagesList extends DataStructure {
 
                         ret = pageId;
 
-                        // If we got an empty page in non-reuse bucket, move it back to reuse list
-                        // to prevent empty page leak to data pages.
-                        if (io.isEmpty(tailPageAddr) && !isReuseBucket(bucket)) {
+                        if (io.isEmpty(tailPageAddr)) {
                             long prevId = io.getPreviousId(tailPageAddr);
 
-                            if (prevId != 0L) {
-                                try (Page prev = page(prevId)) {
-                                    // Lock pages from next to previous.
-                                    Boolean ok = writePage(pageMem, prev, this, cutTail, null, bucket, FALSE);
+                            // If we got an empty page in non-reuse bucket, move it back to reuse list
+                            // to prevent empty page leak to data pages.
+                            if (!isReuseBucket(bucket)) {
+                                if (prevId != 0L) {
+                                    try (Page prev = page(prevId)) {
+                                        // Lock pages from next to previous.
+                                        Boolean ok = writePage(pageMem, prev, this, cutTail, null, bucket, FALSE);
 
-                                    assert ok == TRUE : ok;
+                                        assert ok == TRUE : ok;
+                                    }
+
+                                    recycleId = recyclePage(tailId, tail, tailPageAddr);
                                 }
-
-                                recycleId = recyclePage(tailId, tail, tailPageAddr);
+                                else
+                                    stripe.empty = true;
                             }
+                            else
+                                stripe.empty = prevId == 0L;
                         }
                     }
                     else {
-                        // The tail page is empty. We can unlink and return it if we have a previous page.
+                        // The tail page is empty, but stripe is not. It might
+                        // happen only if we are in reuse bucket and it has
+                        // a previous page, so, the current page can be collected
+                        assert isReuseBucket(bucket);
+
                         long prevId = io.getPreviousId(tailPageAddr);
 
-                        if (prevId != 0L) {
-                            // This can only happen if we are in the reuse bucket.
-                            assert isReuseBucket(bucket);
+                        assert prevId != 0L;
 
-                            try (Page prev = page(prevId)) {
-                                // Lock pages from next to previous.
-                                Boolean ok = writePage(pageMem, prev, this, cutTail, null, bucket, FALSE);
+                        try (Page prev = page(prevId)) {
+                            // Lock pages from next to previous.
+                            Boolean ok = writePage(pageMem, prev, this, cutTail, null, bucket, FALSE);
 
-                                assert ok == TRUE : ok;
+                            assert ok == TRUE : ok;
+
+                            bucketsSize[bucket].decrementAndGet();
+                        }
+
+                        if (initIoVers != null) {
+                            tailId = PageIdUtils.changeType(tailId, FLAG_DATA);
+
+                            PageIO initIo = initIoVers.latest();
+
+                            initIo.initNewPage(tailPageAddr, tailId, pageSize());
+
+                            if (isWalDeltaRecordNeeded(wal, tail)) {
+                                wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(),
+                                    initIo.getVersion(), tailId));
                             }
-
-                            if (initIoVers != null) {
-                                tailId = PageIdUtils.changeType(tailId, FLAG_DATA);
-
-                                PageIO initIo = initIoVers.latest();
-
-                                initIo.initNewPage(tailPageAddr, tailId, pageSize());
-
-                                if (isWalDeltaRecordNeeded(wal, tail)) {
-                                    wal.log(new InitNewPageRecord(cacheId, tail.id(), initIo.getType(),
-                                        initIo.getVersion(), tailId));
-                                }
-                            }
-                            else
-                                tailId = recyclePage(tailId, tail, tailPageAddr);
-
-                            dirty = true;
-
-                            ret = tailId;
                         }
                         else
-                            stripe.empty = true;
+                            tailId = recyclePage(tailId, tail, tailPageAddr);
+
+                        dirty = true;
+
+                        ret = tailId;
                     }
 
                     // If we do not have a previous page (we are at head), then we still can return
@@ -1026,8 +1100,7 @@ public abstract class PagesList extends DataStructure {
                 if (!rmvd)
                     return false;
 
-                if (trackBucketsSize || isTrackedBucket(bucket))
-                    bucketsSize[bucket].decrement();
+                bucketsSize[bucket].decrementAndGet();
 
                 if (isWalDeltaRecordNeeded(wal, page))
                     wal.log(new PagesListRemovePageRecord(cacheId, pageId, dataPageId));
@@ -1320,9 +1393,11 @@ public abstract class PagesList extends DataStructure {
 
         /**
          * @param tailId Tail ID.
+         * @param empty Empty flag.
          */
-        Stripe(long tailId) {
+        Stripe(long tailId, boolean empty) {
             this.tailId = tailId;
+            this.empty = empty;
         }
     }
 }
