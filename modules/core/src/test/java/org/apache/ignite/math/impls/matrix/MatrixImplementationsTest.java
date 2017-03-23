@@ -436,7 +436,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
         } else {
             for (int i = 0; i < m.rowSize(); i++)
                 for (int j = 0; j < m.columnSize(); j++)
-                    arr[i][j] = i * m.rowSize() + j;
+                    arr[i][j] = i * m.rowSize() + j + 1;
 
             m.assign(arr);
         }
