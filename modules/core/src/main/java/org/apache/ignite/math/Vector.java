@@ -20,11 +20,10 @@ package org.apache.ignite.math;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.exceptions.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.*;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
 /**
  * A vector interface.
@@ -314,18 +313,32 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     double kNorm(double power);
 
     /**
+     * Gets minimal value in this vector.
+     *
+     * @return Minimal value.
+     */
+    double minValue();
+
+    /**
+     * Gets maximum value in this vector.
+     *
+     * @return Maximum c.
+     */
+    double maxValue();
+
+    /**
      * Gets minimal element in this vector.
      *
      * @return Minimal element.
      */
-    Element minValue();
+    Element minElement();
 
     /**
      * Gets maximum element in this vector.
      *
      * @return Maximum element.
      */
-    Element maxValue();
+    Element maxElement();
 
     /**
      * Creates new vector containing sum of each element in this vector and argument.

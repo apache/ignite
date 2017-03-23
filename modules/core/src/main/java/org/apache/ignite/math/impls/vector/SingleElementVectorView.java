@@ -51,12 +51,12 @@ public class SingleElementVectorView extends AbstractVector {
     }
 
     /** {@inheritDoc} */
-    @Override public Element minValue() {
+    @Override public Element minElement() {
         return makeElement(storage().index());
     }
 
     /** {@inheritDoc} */
-    @Override public Element maxValue() {
+    @Override public Element maxElement() {
         return makeElement(storage().index());
     }
 

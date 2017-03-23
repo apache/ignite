@@ -1,17 +1,14 @@
 package org.apache.ignite.math.impls.vector;
 
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.functions.Functions;
+import org.apache.ignite.math.functions.*;
 import org.apache.ignite.math.impls.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import static org.apache.ignite.math.impls.MathTestConstants.SECOND_ARG;
+import java.util.stream.*;
 
 /**
  * Tests for {@link CacheVector}.
@@ -289,7 +286,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         cacheVector.assign(testVec);
 
-        assertEquals("Unexpected value.", cacheVector.minValue().get(), 0d, 0d);
+        assertEquals("Unexpected value.", cacheVector.minValue(), 0d, 0d);
     }
 
     /** */
@@ -305,7 +302,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         cacheVector.assign(testVec);
 
-        assertEquals("Unexpected value.", cacheVector.maxValue().get(), testVec.get(size -1), 0d);
+        assertEquals("Unexpected value.", cacheVector.maxValue(), testVec.get(size -1), 0d);
     }
 
     /** */

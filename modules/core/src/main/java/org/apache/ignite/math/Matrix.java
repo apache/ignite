@@ -72,18 +72,32 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     }
 
     /**
+     * Gets the maximum value in this matrix.
+     *
+     * @return Maximum value in this matrix.
+     */
+    double maxValue();
+
+    /**
+     * Gets the minimum value in this matrix.
+     *
+     * @return Minimum value in this matrix.
+     */
+    double minValue();
+
+    /**
      * Gets the maximum element in this matrix.
      *
      * @return Maximum element in this matrix.
      */
-    Element maxValue();
+    Element maxElement();
 
     /**
      * Gets the minimum element in this matrix.
      *
      * @return Minimum element in this matrix.
      */
-    Element minValue();
+    Element minElement();
 
     /**
      * Gets the matrix's element at the given coordinates.

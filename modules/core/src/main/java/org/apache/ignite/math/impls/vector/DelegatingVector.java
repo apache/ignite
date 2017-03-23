@@ -100,6 +100,16 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
+    @Override public double minValue() {
+        return dlg.minValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        return dlg.maxValue();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return dlg.isSequentialAccess();
     }
@@ -235,13 +245,13 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Element minValue() {
-        return dlg.minValue();
+    @Override public Element minElement() {
+        return dlg.minElement();
     }
 
     /** {@inheritDoc} */
-    @Override public Element maxValue() {
-        return dlg.maxValue();
+    @Override public Element maxElement() {
+        return dlg.maxElement();
     }
 
     /** {@inheritDoc} */

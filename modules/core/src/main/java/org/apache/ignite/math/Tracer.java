@@ -54,13 +54,13 @@ public class Tracer {
     // Default vector color mapper implementation that map given double value
     // to continues red-blue (R_B) specter.
     static private ColorMapper mkVectorColorMapper(Vector vec) {
-        return defaultColorMapper(vec.minValue().get(), vec.maxValue().get());
+        return defaultColorMapper(vec.minValue(), vec.maxValue());
     }
 
     // Default matrix color mapper implementation that map given double value
     // to continues red-blue (R_B) specter.
     static private ColorMapper mkMatrixColorMapper(Matrix mtx) {
-        return defaultColorMapper(mtx.minValue().get(), mtx.maxValue().get());
+        return defaultColorMapper(mtx.minValue(), mtx.maxValue());
     }
 
     /**
@@ -220,8 +220,8 @@ public class Tracer {
 
         String cls = mtx.getClass().getSimpleName();
 
-        double min = mtx.minValue().get();
-        double max = mtx.maxValue().get();
+        double min = mtx.minValue();
+        double max = mtx.maxValue();
 
         openHtmlFile(tmpl.
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").
@@ -269,8 +269,8 @@ public class Tracer {
 
         String cls = vec.getClass().getSimpleName();
 
-        double min = vec.minValue().get();
-        double max = vec.maxValue().get();
+        double min = vec.minValue();
+        double max = vec.maxValue();
 
         openHtmlFile(tmpl.
             replaceAll("/\\*@NAME@\\*/.*\n", "var name = \"" + cls + "\";\n").

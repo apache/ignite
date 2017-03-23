@@ -73,19 +73,7 @@ public class CacheVector<K, V> extends AbstractVector {
         // TODO: provide cache-optimized implementation.
         return super.map(fun, y); // TODO
     }
-
-    /** {@inheritDoc} */
-    @Override public Element minValue() {
-        // TODO: provide cache-optimized implementation.
-        return super.minValue(); // TODO
-    }
-
-    /** {@inheritDoc} */
-    @Override public Element maxValue() {
-        // TODO: provide cache-optimized implementation.
-        return super.maxValue(); // TODO
-    }
-
+    
     /** {@inheritDoc} */
     @Override public double sum() {
         CacheVectorStorage<K, V> sto = storage();

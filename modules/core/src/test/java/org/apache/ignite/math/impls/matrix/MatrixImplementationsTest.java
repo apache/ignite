@@ -17,26 +17,17 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.IntStream;
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.ExternalizeTest;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.functions.IntIntToDoubleFunction;
-import org.apache.ignite.math.impls.vector.DenseLocalOffHeapVector;
-import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.math.impls.vector.RandomVector;
-import org.junit.Test;
+import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.functions.*;
+import org.apache.ignite.math.impls.vector.*;
+import org.junit.*;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
 
-import java.util.function.BiConsumer;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link Matrix} implementations.
@@ -414,7 +405,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for(int j = 0; j < m.columnSize(); j++)
                     max = max < doubles[i][j] ? doubles[i][j] : max;
 
-            assertEquals("Unexpected value for " + desc, m.maxValue().get(), max, 0d);
+            assertEquals("Unexpected value for " + desc, m.maxValue(), max, 0d);
         });
     }
 
@@ -429,7 +420,7 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
                 for(int j = 0; j < m.columnSize(); j++)
                     min = min > doubles[i][j] ? doubles[i][j] : min;
 
-            assertEquals("Unexpected value for " + desc, m.minValue().get(), min, 0d);
+            assertEquals("Unexpected value for " + desc, m.minValue(), min, 0d);
         });
     }
 

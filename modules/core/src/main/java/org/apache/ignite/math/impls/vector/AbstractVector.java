@@ -232,7 +232,7 @@ public abstract class AbstractVector extends CacheSupport implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Element minValue() {
+    @Override public Element minElement() {
         if (minElm == null) {
             int minIdx = 0;
             int len = size();
@@ -248,7 +248,7 @@ public abstract class AbstractVector extends CacheSupport implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public Element maxValue() {
+    @Override public Element maxElement() {
         if (maxElm == null) {
             int maxIdx = 0;
             int len = size();
@@ -261,6 +261,16 @@ public abstract class AbstractVector extends CacheSupport implements Vector {
         }
 
         return maxElm;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double minValue() {
+        return minElement().get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        return maxElement().get();
     }
 
     /** {@inheritDoc} */

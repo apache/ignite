@@ -255,14 +255,14 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     public void minValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).min().getAsDouble(),
-            v -> v.minValue().get());
+            v -> v.minValue());
     }
 
     /** */ @Test
     public void maxValueTest() {
         toDoubleTest(
             ref -> Arrays.stream(ref).max().getAsDouble(),
-            v -> v.maxValue().get());
+            v -> v.maxValue());
     }
 
     /** */ @Test

@@ -101,7 +101,7 @@ public abstract class AbstractMatrix extends CacheSupport implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Element maxValue() {
+    @Override public Element maxElement() {
         if (maxElm == null) {
             double max = Double.NEGATIVE_INFINITY;
             int row = 0, col = 0;
@@ -127,7 +127,7 @@ public abstract class AbstractMatrix extends CacheSupport implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public Element minValue() {
+    @Override public Element minElement() {
         if (minElm == null) {
             double min = Double.MAX_VALUE;
             int row = 0, col = 0;
@@ -150,6 +150,16 @@ public abstract class AbstractMatrix extends CacheSupport implements Matrix {
         }
 
         return minElm;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        return maxElement().get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public double minValue() {
+        return minElement().get();
     }
 
     /**
