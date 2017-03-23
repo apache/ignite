@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,7 +41,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
          IgniteSpringHelper spring = SPRING.create(false);
 
         Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "fileSystemConfiguration",
-            "typeMetadata").get1();
+            "queryEntities").get1();
 
         assertNotNull(cfgs);
         assertEquals(1, cfgs.size());
@@ -49,7 +50,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
 
         assertEquals(1, cfg.getCacheConfiguration().length);
 
-        assertNull(cfg.getCacheConfiguration()[0].getQueryEntities());
+        assertTrue(F.isEmpty(cfg.getCacheConfiguration()[0].getQueryEntities()));
 
         assertNull(cfg.getFileSystemConfiguration());
 
