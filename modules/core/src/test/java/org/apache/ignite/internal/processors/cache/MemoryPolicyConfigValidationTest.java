@@ -38,28 +38,8 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         MemoryPolicyConfiguration[] plcs = null;
 
         switch (violationType) {
-            case DUPLICATE_DEFAULTS:
-                plcs = createDuplicateDefaultsPlcsCfg();
-
-                break;
-
-            case MISSING_DEFAULT:
-                plcs = createMissingDefaultPlcsCfg();
-
-                break;
-
             case NAMES_CONFLICT:
                 plcs = createPlcsWithNamesConflictCfg();
-
-                break;
-
-            case NULL_NAME_ON_NON_DEFAULT:
-                plcs = createPlcWithNullNameOnNonDefaultCfg();
-
-                break;
-
-            case EMPTY_NAME_ON_NON_DEFAULT:
-                plcs = createPlcWithEmptyNameOnNonDefaultCfg();
 
                 break;
 
@@ -72,6 +52,18 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
                 plcs = createTooSmallMemoryCfg();
 
                 break;
+
+            case NULL_NAME_ON_USER_DEFINED_POLICY:
+                plcs = createPlcWithNullName();
+
+                break;
+
+            case MISSING_USER_DEFINED_DEFAULT:
+                plcs = createMissingUserDefinedDefault();
+
+                memCfg.setDefaultMemoryPolicyName("missingMemoryPolicyName");
+
+                break;
         }
 
         memCfg.setMemoryPolicies(plcs);
@@ -81,13 +73,29 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    private MemoryPolicyConfiguration[] createMissingUserDefinedDefault() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy("presentedPolicyCfg", 10 * 1024 * 1024);
+
+        return res;
+    }
+
+    private MemoryPolicyConfiguration[] createPlcWithNullName() {
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
+
+        res[0] = createMemoryPolicy(null, 10 * 1024 * 1024);
+
+        return res;
+    }
+
     /**
      *
      */
     private MemoryPolicyConfiguration[] createTooSmallMemoryCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(null, 10, true);
+        res[0] = createMemoryPolicy("dflt", 10);
 
         return res;
     }
@@ -96,34 +104,9 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      *
      */
     private MemoryPolicyConfiguration[] createPlcWithReservedNameMisuseCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
+        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
 
-        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
-        res[1] = createMemoryPolicy("sysMemPlc", 1024 * 1024, false);
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private MemoryPolicyConfiguration[] createPlcWithNullNameOnNonDefaultCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
-
-        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
-        res[1] = createMemoryPolicy(null, 1024 * 1024, false);
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private MemoryPolicyConfiguration[] createPlcWithEmptyNameOnNonDefaultCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
-
-        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
-        res[1] = createMemoryPolicy("", 1024 * 1024, false);
+        res[0] = createMemoryPolicy("sysMemPlc", 1024 * 1024);
 
         return res;
     }
@@ -132,34 +115,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      *
      */
     private MemoryPolicyConfiguration[] createPlcsWithNamesConflictCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[3];
-
-        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
-        res[1] = createMemoryPolicy("cflt0", 1024 * 1024, false);
-        res[2] = createMemoryPolicy("cflt0", 1024 * 1024, false);
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private MemoryPolicyConfiguration[] createMissingDefaultPlcsCfg() {
-        MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[1];
-
-        res[0] = createMemoryPolicy("nonDflt0", 1024 * 1024, false);
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private MemoryPolicyConfiguration[] createDuplicateDefaultsPlcsCfg() {
         MemoryPolicyConfiguration[] res = new MemoryPolicyConfiguration[2];
 
-        res[0] = createMemoryPolicy(null, 1024 * 1024, true);
-        res[1] = createMemoryPolicy(null, 1024 * 1024, true);
+        res[0] = createMemoryPolicy("cflt0", 1024 * 1024);
+        res[1] = createMemoryPolicy("cflt0", 1024 * 1024);
 
         return res;
     }
@@ -174,14 +133,12 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * @param name Name of MemoryPolicyConfiguration.
      * @param size Size of MemoryPolicyConfiguration in bytes.
-     * @param dflt Default flag.
      */
-    private MemoryPolicyConfiguration createMemoryPolicy(String name, long size, boolean dflt) {
+    private MemoryPolicyConfiguration createMemoryPolicy(String name, long size) {
         MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
 
         plc.setName(name);
         plc.setSize(size);
-        plc.setDefault(dflt);
 
         return plc;
     }
@@ -196,19 +153,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * All non-default policies must have a non-empty name.
+     * If user defines default is must be presented among configured memory policies.
      */
-    public void testEmptyNameOnNonDefaultPolicy() throws Exception {
-        violationType = ValidationViolationType.EMPTY_NAME_ON_NON_DEFAULT;
-
-        doTest(violationType);
-    }
-
-    /**
-     * All non-default policies must have a non-null name.
-     */
-    public void testNullNameOnNonDefaultPolicy() throws Exception {
-        violationType = ValidationViolationType.NULL_NAME_ON_NON_DEFAULT;
+    public void testMissingUserDefinedDefault() throws Exception {
+        violationType = ValidationViolationType.MISSING_USER_DEFINED_DEFAULT;
 
         doTest(violationType);
     }
@@ -223,19 +171,10 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * There should be exactly one MemoryPolicyConfiguration marked as 'default'.
+     * User-defined policy must have a non-null non-empty name.
      */
-    public void testDuplicateDefaults() throws Exception {
-        violationType = ValidationViolationType.DUPLICATE_DEFAULTS;
-
-        doTest(violationType);
-    }
-
-    /**
-     * One MemoryPolicyConfiguration must be marked as 'default'.
-     */
-    public void testMissingDefault() throws Exception {
-        violationType = ValidationViolationType.MISSING_DEFAULT;
+    public void testNullNameOnUserDefinedPolicy() throws Exception {
+        violationType = ValidationViolationType.NULL_NAME_ON_USER_DEFINED_POLICY;
 
         doTest(violationType);
     }
@@ -275,25 +214,19 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      */
     private enum ValidationViolationType {
         /** */
-        DUPLICATE_DEFAULTS("Only one default MemoryPolicyConfiguration must be presented."),
-
-        /** */
-        MISSING_DEFAULT("One default MemoryPolicyConfiguration must be presented."),
-
-        /** */
         NAMES_CONFLICT("Two MemoryPolicies have the same name: "),
-
-        /** */
-        NULL_NAME_ON_NON_DEFAULT("Non-default MemoryPolicyConfiguration must have non-null name."),
-
-        /** */
-        EMPTY_NAME_ON_NON_DEFAULT("Non-default MemoryPolicyConfiguration must have non-null name."),
 
         /** */
         RESERVED_MEMORY_POLICY_MISUSE("'sysMemPlc' policy name is reserved for internal use."),
 
         /** */
-        TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 1MB: ");
+        TOO_SMALL_MEMORY_SIZE("MemoryPolicy must have size more than 1MB: "),
+
+        /** */
+        NULL_NAME_ON_USER_DEFINED_POLICY("User-defined MemoryPolicyConfiguration must have non-null and non-empty name."),
+
+        /** */
+        MISSING_USER_DEFINED_DEFAULT("User-defined default MemoryPolicy name is not presented among configured MemoryPolicies: ");
 
         /**
          * @param violationMsg Violation message.

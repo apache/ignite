@@ -16,7 +16,10 @@
  */
 package org.apache.ignite.internal.processors.cache.database;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jsr166.LongAdder8;
 
 /**
@@ -37,11 +40,26 @@ public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
     private volatile boolean metricsEnabled;
 
+    /** */
+    private final LongAdder8[] cntrs = new LongAdder8[5];
+
+    /** */
+    private final AtomicInteger cntIndex = new AtomicInteger(0);
+
+    /** */
+    private final AtomicLong lastUpdatedTime = new AtomicLong(0);
+
+    /** 60 seconds by default */
+    private volatile int rateTimeInterval = 60;
+
     /**
      * @param name Name.
      */
     public MemoryMetricsImpl(String name) {
         this.name = name;
+
+        for (int i = 0; i < 5; i++)
+            cntrs[i] = new LongAdder8();
     }
 
     /** {@inheritDoc} */
@@ -83,8 +101,15 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
-        if (metricsEnabled)
+        if (metricsEnabled) {
             totalAllocatedPages.increment();
+
+            updateAllocationRateMetrics();
+        }
+    }
+
+    private void updateAllocationRateMetrics() {
+        IgniteUtils.currentTimeMillis();
     }
 
     /**
@@ -109,6 +134,12 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
     @Override public void disableMetrics() {
         metricsEnabled = false;
+    }
 
+    /**
+     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
+     */
+    public void rateTimeInterval(int rateTimeInterval) {
+        this.rateTimeInterval = rateTimeInterval;
     }
 }

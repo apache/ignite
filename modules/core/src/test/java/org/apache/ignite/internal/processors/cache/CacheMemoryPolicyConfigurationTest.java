@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -80,7 +81,17 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
      */
     public void testTooSmallMemoryPolicy() throws Exception {
         memCfg = new MemoryConfiguration();
-        memCfg.setDefaultMemoryPolicySize(1024 * 1024);
+
+        MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
+        dfltPlcCfg.setName("dfltPlc");
+        dfltPlcCfg.setSize(1024 * 1024);
+
+        MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
+        bigPlcCfg.setName("bigPlc");
+        bigPlcCfg.setSize(1024 * 1024 * 1024);
+
+        memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
         ccfg = new CacheConfiguration();
 
@@ -123,9 +134,20 @@ public class CacheMemoryPolicyConfigurationTest extends GridCommonAbstractTest {
      */
     public void testProperlySizedMemoryPolicy() throws Exception {
         memCfg = new MemoryConfiguration();
-        memCfg.setDefaultMemoryPolicySize(50 * 1024 * 1024);
+
+        MemoryPolicyConfiguration dfltPlcCfg = new MemoryPolicyConfiguration();
+        dfltPlcCfg.setName("dfltPlc");
+        dfltPlcCfg.setSize(1024 * 1024);
+
+        MemoryPolicyConfiguration bigPlcCfg = new MemoryPolicyConfiguration();
+        bigPlcCfg.setName("bigPlc");
+        bigPlcCfg.setSize(1024 * 1024 * 1024);
+
+        memCfg.setMemoryPolicies(dfltPlcCfg, bigPlcCfg);
+        memCfg.setDefaultMemoryPolicyName("dfltPlc");
 
         ccfg = new CacheConfiguration();
+        ccfg.setMemoryPolicyName("bigPlc");
 
         IgniteEx ignite0 = startGrid(0);
 

@@ -1938,7 +1938,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     // We prefer runLocal to runLocalSafe, because the latter can produce deadlock here.
                     ctx.closure().runLocal(new GridPlainRunnable() {
                         @Override public void run() {
-                            locNodeHnd.apply(finalLocNode, finalMsg);
+                            if (!busyLock.enterBusy())
+                                return;
+
+                            try {
+                                locNodeHnd.apply(finalLocNode, finalMsg);
+                            }
+                            finally {
+                                busyLock.leaveBusy();
+                            }
                         }
                     }, plc).listen(logger);
                 }

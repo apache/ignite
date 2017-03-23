@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
