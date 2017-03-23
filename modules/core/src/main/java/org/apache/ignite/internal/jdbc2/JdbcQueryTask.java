@@ -98,6 +98,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
+    /** timeout **/
+    private final int timeout;
+    
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
@@ -123,8 +126,38 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
+        this.timeout = -1;
     }
 
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param sql Sql query.
+     * @param loc Local execution flag.
+     * @param args Args.
+     * @param fetchSize Fetch size.
+     * @param uuid UUID.
+     * @param locQry Local query flag.
+     * @param collocatedQry Collocated query flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param timeout query time out 
+     */
+    public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
+        boolean loc, Object[] args, int fetchSize, UUID uuid,
+        boolean locQry, boolean collocatedQry, boolean distributedJoins, int timeout) {
+        this.ignite = ignite;
+        this.args = args;
+        this.uuid = uuid;
+        this.cacheName = cacheName;
+        this.sql = sql;
+        this.fetchSize = fetchSize;
+        this.loc = loc;
+        this.locQry = locQry;
+        this.collocatedQry = collocatedQry;
+        this.distributedJoins = distributedJoins;
+        this.timeout = timeout;
+    }
+    
     /** {@inheritDoc} */
     @Override public JdbcQueryTask.QueryResult call() throws Exception {
         Cursor cursor = CURSORS.get(uuid);
@@ -158,6 +191,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
+            // if timeout is set ( > 0), set the timeout to sql query 
+            if (timeout > 0){
+            	qry.setTimeout(timeout, TimeUnit.SECONDS);	
+            }
+            
             QueryCursor<List<?>> qryCursor = cache.query(qry);
 
             Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)qryCursor).fieldsMeta();
