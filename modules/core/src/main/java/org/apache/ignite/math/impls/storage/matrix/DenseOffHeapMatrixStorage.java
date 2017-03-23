@@ -47,9 +47,13 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     /** */
     public DenseOffHeapMatrixStorage(double[][] data) {
         assert data != null;
-        
+        assert data[0] != null;
+
         this.rows = data.length;
         this.cols = data[0].length;
+
+        assert rows > 0;
+        assert cols > 0;
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)

@@ -50,15 +50,19 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /**
-     * 
+     *
      * @param data
      */
     public ArrayMatrixStorage(double[][] data) {
         assert data != null;
+        assert data[0] != null;
 
         this.data = data;
         this.rows = data.length;
         this.cols = data[0].length;
+
+        assert rows > 0;
+        assert cols > 0;
     }
 
     /** {@inheritDoc} */

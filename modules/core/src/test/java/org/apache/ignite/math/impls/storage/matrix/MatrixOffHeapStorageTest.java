@@ -33,24 +33,6 @@ public class MatrixOffHeapStorageTest extends MatrixBaseStorageTest<DenseOffHeap
 
     /** */
     @Test
-    public void isArrayBased() throws Exception {
-        assertFalse(UNEXPECTED_VALUE, storage.isArrayBased());
-    }
-
-    /** */
-    @Test
-    public void isSequentialAccess() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.isSequentialAccess());
-    }
-
-    /** */
-    @Test
-    public void isDense() throws Exception {
-        assertTrue(UNEXPECTED_VALUE, storage.isDense());
-    }
-
-    /** */
-    @Test
     public void data() throws Exception {
         assertNull(UNEXPECTED_VALUE, storage.data());
     }
