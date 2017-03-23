@@ -9,7 +9,7 @@ if [%ODBC%] == [] (
 )
 
 if exist %ODBC% (
-	if exist %ODBC%\ (
+	for %%i IN (%ODBC%) DO IF EXIST %%~si\NUL (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)
 	echo Installing driver: %ODBC%
