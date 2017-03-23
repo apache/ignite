@@ -98,6 +98,8 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         List<IgniteBiTuple<GridCacheEntryEx, GridCacheVersion>> evictEntriesAndVersions = new ArrayList<>();
 
+        List<CacheDataRowAdapter> rowsToEvict = new ArrayList<>();
+
         try (Page page = pageMem.page(0, fakePageId)) {
             long pageAddr = page.getForReadPointerForce();
 
@@ -129,9 +131,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
                     row.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
 
-                    GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(row.key());
-
-                    evictEntriesAndVersions.add(new IgniteBiTuple<>(entryEx, row.version()));
+                    rowsToEvict.add(row);
                 }
             }
             finally {
@@ -141,8 +141,22 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         boolean evictionDone = false;
 
-        for (IgniteBiTuple<GridCacheEntryEx, GridCacheVersion> tuple : evictEntriesAndVersions)
-            evictionDone |= tuple.get1().evictInternal(tuple.get2(), null, true);
+        for (CacheDataRowAdapter dataRow : rowsToEvict) {
+            int cacheId = dataRow.cacheId();
+
+            assert cacheId != 0 : "Cache ID should be stored in rows of evictable page";
+
+            GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(cacheId);
+
+            if (!cacheCtx.userCache())
+                continue;
+
+            dataRow.initCacheObjects(CacheDataRowAdapter.RowData.KEY_ONLY, cacheCtx.cacheObjectContext());
+
+            GridCacheEntryEx entryEx = cacheCtx.cache().entryEx(dataRow.key());
+
+            evictionDone |= entryEx.evictInternal(dataRow.version(), null, true);
+        }
 
         return evictionDone;
     }
