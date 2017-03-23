@@ -46,9 +46,6 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     private static final String DYNAMIC_CACHE_NAME = "dynamicCache";
 
     /** */
-    private static final String SYNC_CACHE_NAME = "syncCache";
-
-    /** */
     private static final Object NULL;
 
     /**
@@ -67,9 +64,6 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private GridSpringDynamicCacheTestService dynamicSvc;
-
-    /** */
-    private GridSpringSyncCacheTestService syncSvc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -111,11 +105,9 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         svc = (GridSpringCacheTestService)factory.getBean("testService");
         dynamicSvc = (GridSpringDynamicCacheTestService)factory.getBean("dynamicTestService");
-        syncSvc = (GridSpringSyncCacheTestService)factory.getBean("syncTestService");
 
         svc.reset();
         dynamicSvc.reset();
-        syncSvc.reset();
     }
 
     /** {@inheritDoc} */
@@ -457,27 +449,22 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSyncCache() throws Exception {
-        IgniteCache<Object, Object> igniteCache = grid().getOrCreateCache(SYNC_CACHE_NAME);
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
 
-        final SpringCache springCache = new SpringCache(igniteCache);
+        cacheCfg.setName(DYNAMIC_CACHE_NAME);
+
+        IgniteCache<Integer, String> cache = grid().createCache(cacheCfg);
 
         final int iterationsNumber = 1000;
 
         Callable cacheGetCall = new Callable() {
 
             @Override public Object call() throws Exception {
-                for (int iter = 0; iter < iterationsNumber; iter++) {
+                for (int i = 0; i < iterationsNumber; i++) {
                     BARRIER.arriveAndAwaitAdvance();
 
-                    final int key = iter;
-
-                    springCache.get(key, new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            syncSvc.cacheable(key);
-
-                            return key;
-                        }
-                    });
+                    assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                    assertEquals("value" + i, dynamicSvc.cacheableSync(i));
                 }
 
                 return null;
@@ -486,7 +473,12 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(cacheGetCall, THREADS_NUMBER, "testSyncCache");
 
-        assertEquals(iterationsNumber, igniteCache.size());
-        assertEquals(iterationsNumber, syncSvc.called());
+        assertEquals(iterationsNumber, cache.size());
+
+        assertEquals(iterationsNumber, dynamicSvc.called());
+
+        assertEquals("value" + 1, cache.get(1));
+
+        assertEquals("value" + 500, cache.get(500));
     }
 }

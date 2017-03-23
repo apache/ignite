@@ -34,11 +34,6 @@
     <bean id="dynamicTestService" class="org.apache.ignite.cache.spring.GridSpringDynamicCacheTestService"/>
 
     <!--
-        Test service with cacheable methods (sync cache).
-    -->
-    <bean id="syncTestService" class="org.apache.ignite.cache.spring.GridSpringSyncCacheTestService"/>
-
-    <!--
         Cache manager.
     -->
     <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
