@@ -132,22 +132,46 @@ public class CacheSupport {
      * @return
      */
     protected <K, V> double cacheMin(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        Collection<Double> subSums = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+        Collection<Double> mins = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             if (keyMapper.isValid(ce.entry().getKey())) {
                 double v = valMapper.toDouble(ce.entry().getValue());
 
-                return acc == null ? v : acc + v;
+                if (acc == null)
+                    return v;
+                else
+                    return Math.min(acc, v);
             }
             else
                 return acc;
         });
 
-        double sum = 0.0;
+        return Collections.min(mins);
+    }
 
-        for (double d : subSums)
-            sum += d;
+    /**
+     *
+     * @param cacheName
+     * @param keyMapper
+     * @param valMapper
+     * @param <K>
+     * @param <V>
+     * @return
+     */
+    protected <K, V> double cacheMax(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> maxes = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+            if (keyMapper.isValid(ce.entry().getKey())) {
+                double v = valMapper.toDouble(ce.entry().getValue());
 
-        return sum;
+                if (acc == null)
+                    return v;
+                else
+                    return Math.max(acc, v);
+            }
+            else
+                return acc;
+        });
+
+        return Collections.max(maxes);
     }
 
     /**

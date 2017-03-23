@@ -64,6 +64,20 @@ public class CacheVector<K, V> extends AbstractVector {
     }
 
     /** {@inheritDoc} */
+    @Override public double minValue() {
+        CacheVectorStorage<K, V> sto = storage();
+
+        return cacheMin(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        CacheVectorStorage<K, V> sto = storage();
+
+        return cacheMax(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector map(IgniteDoubleFunction<Double> fun) {
         return mapOverCache(fun::apply);
     }
