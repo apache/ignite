@@ -72,7 +72,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -113,7 +113,7 @@ public class RandomMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
