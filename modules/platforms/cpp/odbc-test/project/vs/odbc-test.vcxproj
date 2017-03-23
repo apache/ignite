@@ -208,6 +208,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-default.xml" />
     <None Include="..\..\config\queries-test-noodbc.xml" />
     <None Include="..\..\config\queries-test.xml" />
   </ItemGroup>
