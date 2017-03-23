@@ -47,7 +47,7 @@ public class PageEvictionMultinodeTest extends GridCommonAbstractTest {
     private static final int PAGE_SIZE = 2048;
 
     /** Number of entries. */
-    private static final int ENTRIES = 500_000;
+    private static final int ENTRIES = 400_000;
 
     /** Empty pages pool size. */
     private static final int EMPTY_PAGES_POOL_SIZE = 100;
@@ -63,8 +63,8 @@ public class PageEvictionMultinodeTest extends GridCommonAbstractTest {
         CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL};
 
     /** Write modes. */
-    private static final CacheWriteSynchronizationMode[] WRITE_MODES = {CacheWriteSynchronizationMode.FULL_ASYNC,
-        CacheWriteSynchronizationMode.PRIMARY_SYNC, CacheWriteSynchronizationMode.FULL_SYNC};
+    private static final CacheWriteSynchronizationMode[] WRITE_MODES = {CacheWriteSynchronizationMode.PRIMARY_SYNC,
+        CacheWriteSynchronizationMode.FULL_SYNC, CacheWriteSynchronizationMode.FULL_ASYNC};
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -97,6 +97,11 @@ public class PageEvictionMultinodeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
     }
 
     /**
