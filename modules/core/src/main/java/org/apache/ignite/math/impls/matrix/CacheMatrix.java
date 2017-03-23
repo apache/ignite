@@ -129,6 +129,20 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         return cacheSum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
+    /** {@inheritDoc} */
+    @Override public double maxValue() {
+        CacheMatrixStorage<K, V> sto = storage();
+
+        return cacheMax(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double minValue() {
+        CacheMatrixStorage<K, V> sto = storage();
+
+        return cacheMin(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+    }
+
     /**
      * 
      * @param mapper

@@ -489,9 +489,7 @@ public abstract class AbstractMatrix extends CacheSupport implements Matrix {
 
     /** {@inheritDoc} */
     @Override public double determinant() {
-        LUDecomposition luDecomposition = new LUDecomposition(this);
-
-        return luDecomposition.determinant();
+        return new LUDecomposition(this).determinant();
     }
 
     /** {@inheritDoc} */
