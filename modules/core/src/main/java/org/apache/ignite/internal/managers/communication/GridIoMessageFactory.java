@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
@@ -491,8 +490,8 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 45:
-                msg = new GridDhtPartitionSupplyMessage();
-
+                // Empty ID.
+                // GridDhtPartitionSupplyMessage was removed on v2.0
                 break;
 
             case 46:
@@ -806,7 +805,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 114:
-                msg = new GridDhtPartitionSupplyMessageV2();
+                msg = new GridDhtPartitionSupplyMessage();
 
                 break;
 

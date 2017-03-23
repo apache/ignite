@@ -380,7 +380,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessageV2 s) {
+    public void handleSupplyMessage(int idx, UUID id, final GridDhtPartitionSupplyMessage s) {
         if (!enterBusy())
             return;
 
