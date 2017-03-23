@@ -4112,19 +4112,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @SuppressWarnings("unchecked")
     public void awaitLastFut() {
-        FutureHolder holder = lastFut.get();
-
-        IgniteInternalFuture fut = holder.future();
-
-        if (fut != null && !fut.isDone()) {
-            try {
-                // Ignore any exception from previous async operation as it should be handled by user.
-                fut.get();
-            }
-            catch (IgniteCheckedException ignored) {
-                // No-op.
-            }
-        }
+        // fixme: remove method execution if all tests pass
+        // No-op.
     }
 
     /**
@@ -4136,8 +4125,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @SuppressWarnings({"TypeMayBeWeakened", "ErrorNotRethrown", "AssignmentToCatchBlockParameter"})
     @Nullable private <T> T syncOp(SyncOp<T> op) throws IgniteCheckedException {
         checkJta();
-
-        awaitLastFut();
 
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
