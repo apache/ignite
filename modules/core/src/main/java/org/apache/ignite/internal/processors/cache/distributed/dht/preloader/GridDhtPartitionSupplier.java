@@ -267,6 +267,8 @@ class GridDhtPartitionSupplier {
 
                 int part = row.partition();
 
+                assert d.partitions().hasPartition(part);
+
                 if (!iter.isPartitionMissing(part) && !cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                     // Demander no longer needs this partition,
                     // so we send '-1' partition and move on.

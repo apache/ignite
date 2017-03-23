@@ -131,6 +131,8 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
 
         CacheDataRow result = current.getValue().nextX();
 
+        assert result.partition() == current.getKey();
+
         advance();
 
         return result;
