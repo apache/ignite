@@ -60,7 +60,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
@@ -621,7 +620,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         ccfg.setCacheMode(cacheMode);
         ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(writeMode);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);

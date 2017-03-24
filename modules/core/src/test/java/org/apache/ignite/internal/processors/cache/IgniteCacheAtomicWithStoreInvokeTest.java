@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.cache.store.CacheStore;
 
 /**
- * Tests reloadAll for colocated cache with primary write order.
+ *
  */
-public class GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest extends GridCacheAtomicReloadAllSelfTest {
+public class IgniteCacheAtomicWithStoreInvokeTest extends
+    IgniteCacheAtomicInvokeTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 }

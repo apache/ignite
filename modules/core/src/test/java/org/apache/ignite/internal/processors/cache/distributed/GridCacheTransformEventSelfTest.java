@@ -47,7 +47,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -131,7 +130,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(BACKUP_CNT);

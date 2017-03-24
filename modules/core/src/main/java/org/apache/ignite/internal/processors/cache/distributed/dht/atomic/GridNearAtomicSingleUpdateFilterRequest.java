@@ -55,8 +55,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
 
     /**
      * Constructor.
-     *
-     * @param cacheId Cache ID.
+     *  @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.

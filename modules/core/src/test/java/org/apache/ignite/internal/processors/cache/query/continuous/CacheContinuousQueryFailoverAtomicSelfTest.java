@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  *
  */
-public class IgniteCacheAtomicPrimaryWriteOrderStoreValueTest extends IgniteCacheAtomicStoreValueTest {
+public class CacheContinuousQueryFailoverAtomicSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

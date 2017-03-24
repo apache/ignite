@@ -50,7 +50,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
@@ -110,7 +109,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }
