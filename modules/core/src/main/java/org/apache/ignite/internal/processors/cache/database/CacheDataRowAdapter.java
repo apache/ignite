@@ -54,21 +54,21 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected KeyCacheObject key;
 
-    /* TODO IGNITE-4534: Field is used only during initialization. Can be refactored into main class and builder. */
-    byte[] marshalledKey;
+    /** */
+    private byte[] marshalledKey;
 
-    /* TODO IGNITE-4534: Field is used only during initialization. Can be refactored into main class and builder. */
-    byte keyType;
+    /** */
+    private byte keyType;
 
     /** */
     @GridToStringInclude
     protected CacheObject val;
 
-    /* TODO IGNITE-4534: Field is used only during initialization. Can be refactored into main class and builder. */
-    byte[] marshalledVal;
+    /** */
+    private byte[] marshalledVal;
 
-    /* TODO IGNITE-4534: Field is used only during initialization. Can be refactored into main class and builder. */
-    byte valType;
+    /** */
+    private byte valType;
 
     /** */
     protected long expireTime = -1;
