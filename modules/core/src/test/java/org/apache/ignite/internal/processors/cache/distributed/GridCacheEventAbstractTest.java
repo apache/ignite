@@ -165,7 +165,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
     private void runTest(TestCacheRunnable run, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            info(">>> Running test for grid [idx=" + i + ", grid=" + grid(i).name() +
+            info(">>> Running test for grid [idx=" + i + ", igniteInstanceName=" + grid(i).name() +
                 ", id=" + grid(i).localNode().id() + ']');
 
             try {

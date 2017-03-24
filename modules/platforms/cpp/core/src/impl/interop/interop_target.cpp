@@ -42,7 +42,7 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError* err)
+            int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError& err)
             {
                 BinaryTypeManager* metaMgr = env.Get()->GetTypeManager();
 
@@ -57,7 +57,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), err))
+                    if (!metaMgr->ProcessPendingUpdates(env.Get()->GetTypeUpdater(), &err))
                         return 0;
                 }
 
@@ -67,13 +67,25 @@ namespace ignite
             void InteropTarget::ReadFrom(InteropMemory* mem, OutputOperation& outOp)
             {
                 InteropInputStream in(mem);
-
                 BinaryReaderImpl reader(&in);
 
                 outOp.ProcessOutput(reader);
             }
 
-            bool InteropTarget::OutOp(int32_t opType, InputOperation& inOp, IgniteError* err)
+            void InteropTarget::ReadError(InteropMemory* mem, IgniteError& err)
+            {
+                InteropInputStream in(mem);
+                BinaryReaderImpl reader(&in);
+
+                // Reading and skipping error class name.
+                reader.ReadObject<std::string>();
+
+                std::string msg = reader.ReadObject<std::string>();
+
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+            }
+
+            bool InteropTarget::OutOp(int32_t opType, InputOperation& inOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -94,7 +106,7 @@ namespace ignite
                 return false;
             }
 
-            bool InteropTarget::OutOp(int32_t opType, IgniteError* err)
+            bool InteropTarget::OutOp(int32_t opType, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -108,7 +120,7 @@ namespace ignite
                 return false;
             }
 
-            bool InteropTarget::InOp(int32_t opType, OutputOperation& outOp, IgniteError* err)
+            bool InteropTarget::InOp(int32_t opType, OutputOperation& outOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -128,7 +140,18 @@ namespace ignite
                 return false;
             }
 
-            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            jobject InteropTarget::InOpObject(int32_t opType, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                jobject res = env.Get()->Context()->TargetOutObject(javaRef, opType, &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                return res;
+            }
+
+            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -149,7 +172,7 @@ namespace ignite
                 }
             }
 
-            void InteropTarget::OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            void InteropTarget::OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -167,13 +190,15 @@ namespace ignite
                         ReadFrom(outInMem.Get(), outOp);
                     else if (res == ResultNull)
                         outOp.SetNull();
-
-                    //Read and process error if res == ResultError here.
+                    else if (res == ResultError)
+                        ReadError(outInMem.Get(), err);
+                    else
+                        assert(false);
                 }
             }
 
             InteropTarget::OperationResult InteropTarget::InStreamOutLong(int32_t opType,
-                InteropMemory& outInMem, IgniteError* err)
+                InteropMemory& outInMem, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -191,7 +216,7 @@ namespace ignite
                 return ResultError;
             }
 
-            int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError* err)
+            int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 

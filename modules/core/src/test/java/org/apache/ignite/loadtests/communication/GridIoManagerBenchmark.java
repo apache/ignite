@@ -249,7 +249,7 @@ public class GridIoManagerBenchmark {
                 testMsg.bytes(null);
 
                 try {
-                    io.send(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
+                    io.sendToCustomTopic(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     e.printStackTrace();
@@ -293,7 +293,7 @@ public class GridIoManagerBenchmark {
                     else
                         sem.acquire();
 
-                    io.send(
+                    io.sendToCustomTopic(
                         dst,
                         TEST_TOPIC,
                         new GridTestMessage(msgId, testHeavyMsgs ? arrs[rnd.nextInt(arrs.length)] : null),

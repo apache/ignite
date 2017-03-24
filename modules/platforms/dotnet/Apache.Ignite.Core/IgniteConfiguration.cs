@@ -41,8 +41,8 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Transactions;
-    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -172,11 +172,16 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
+        /// Initializes a new instance of the <see cref="IgniteConfiguration" /> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader)
+        /// <param name="baseConfig">The base configuration.</param>
+        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
         {
+            Debug.Assert(binaryReader != null);
+            Debug.Assert(baseConfig != null);
+
+            CopyLocalProperties(baseConfig);
             Read(binaryReader);
         }
 
@@ -326,6 +331,34 @@ namespace Apache.Ignite.Core
             }
             else
                 writer.WriteBoolean(false);
+
+            // Plugins
+            if (PluginConfigurations != null)
+            {
+                var pos = writer.Stream.Position;
+
+                writer.WriteInt(0); // reserve count
+
+                var cnt = 0;
+
+                foreach (var cfg in PluginConfigurations)
+                {
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
+
+                        cfg.WriteBinary(writer);
+
+                        cnt++;
+                    }
+                }
+
+                writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /// <summary>
@@ -347,7 +380,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        private void ReadCore(IBinaryRawReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -438,11 +471,9 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        private void Read(IBinaryRawReader binaryReader)
         {
             ReadCore(binaryReader);
-
-            CopyLocalProperties(binaryReader.Marshaller.Ignite.Configuration);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
@@ -461,7 +492,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
-            GridName = cfg.GridName;
+            IgniteInstanceName = cfg.IgniteInstanceName;
 
             if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
@@ -471,7 +502,7 @@ namespace Apache.Ignite.Core
             {
                 BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
             }
-            
+
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
@@ -480,12 +511,31 @@ namespace Apache.Ignite.Core
             Logger = cfg.Logger;
             JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
             JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+            PluginConfigurations = cfg.PluginConfigurations;
         }
 
         /// <summary>
-        /// Grid name which is used if not provided in configuration file.
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
-        public string GridName { get; set; }
+        public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
+        /// </summary>
+        [Obsolete("Use IgniteInstanceName instead.")]
+        public string GridName
+        {
+            get { return IgniteInstanceName; }
+            set { IgniteInstanceName = value; }
+        }
 
         /// <summary>
         /// Gets or sets the binary configuration.
@@ -843,5 +893,11 @@ namespace Apache.Ignite.Core
             get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
             set { _failureDetectionTimeout = value; }
         }
+
+        /// <summary>
+        /// Gets or sets the configurations for plugins to be started.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
     }
 }

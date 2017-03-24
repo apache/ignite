@@ -65,16 +65,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Ignite extends AutoCloseable {
     /**
-     * Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
-     * Note that single Java VM can have multiple grid instances all belonging to different grids. Grid
-     * name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
-     * local node) belongs to.
+     * Gets the name of the Ignite instance.
+     * The name allows having multiple Ignite instances with different names within the same Java VM.
      * <p>
-     * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link Ignition} documentation
-     * for information on how to start named grids.
+     * If default Ignite instance is used, then {@code null} is returned.
+     * Refer to {@link Ignition} documentation for information on how to start named ignite Instances.
      *
-     * @return Name of the grid, or {@code null} for default grid.
+     * @return Name of the Ignite instance, or {@code null} for default Ignite instance.
      */
     public String name();
 
@@ -582,7 +579,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
-     * {@link G#stop(String, boolean) G.stop(gridName, true)}.
+     * {@link G#stop(String, boolean) G.stop(igniteInstanceName, true)}.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.

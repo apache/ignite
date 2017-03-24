@@ -163,6 +163,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** */
     private final boolean recovery;
 
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -491,7 +494,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -505,7 +508,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -920,27 +923,25 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                     first = false;
                                 }
 
-                                req = new GridNearLockRequest(
-                                    cctx.cacheId(),
-                                    topVer,
-                                    cctx.nodeId(),
-                                    threadId,
-                                    futId,
-                                    lockVer,
-                                    inTx(),
-                                    implicitTx(),
-                                    implicitSingleTx(),
-                                    read,
-                                    retval,
-                                    isolation(),
-                                    isInvalidate(),
-                                    timeout,
-                                    mappedKeys.size(),
-                                    inTx() ? tx.size() : mappedKeys.size(),
-                                    inTx() && tx.syncMode() == FULL_SYNC,
-                                    inTx() ? tx.subjectId() : null,
-                                    inTx() ? tx.taskNameHash() : 0,
-                                    read ? createTtl : -1L,
+                                    assert !implicitTx() && !implicitSingleTx() : tx;req = new GridNearLockRequest(
+                                        cctx.cacheId(),
+                                        topVer,
+                                        cctx.nodeId(),
+                                        threadId,
+                                        futId,
+                                        lockVer,
+                                        inTx(),
+                                        read,
+                                        retval,
+                                        isolation(),
+                                        isInvalidate(),
+                                        timeout,
+                                        mappedKeys.size(),
+                                        inTx() ? tx.size() : mappedKeys.size(),
+                                        inTx() && tx.syncMode() == FULL_SYNC,
+                                        inTx() ? tx.subjectId() : null,
+                                        inTx() ? tx.taskNameHash() : 0,
+                                        read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
                                     skipStore,
                                     keepBinary,
@@ -984,9 +985,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     assert tx == null || marked;
                 }
             }
-
-            if (inTx() && req != null)
-                req.hasTransforms(tx.hasTransforms());
 
             if (!distributedKeys.isEmpty()) {
                 mapping.distributedKeys(distributedKeys);
@@ -1055,7 +1053,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (node.isLocal())
             lockLocally(mappedKeys, req.topologyVersion());
         else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys);
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
 
@@ -1399,7 +1397,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Node ID. */
         @GridToStringExclude
@@ -1415,19 +1413,22 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /**
          * @param node Node.
          * @param keys Keys.
+         * @param futId Mini future ID.
          */
         MiniFuture(
             ClusterNode node,
-            Collection<KeyCacheObject> keys
+            Collection<KeyCacheObject> keys,
+            int futId
         ) {
             this.node = node;
             this.keys = keys;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

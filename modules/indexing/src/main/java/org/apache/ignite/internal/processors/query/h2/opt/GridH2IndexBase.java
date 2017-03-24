@@ -190,16 +190,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
-     * If the index supports rebuilding it has to creates its own copy.
-     *
-     * @return Rebuilt copy.
-     * @throws InterruptedException If interrupted.
-     */
-    public GridH2IndexBase rebuild() throws InterruptedException {
-        return this;
-    }
-
-    /**
      * Puts row.
      *
      * @param row Row.

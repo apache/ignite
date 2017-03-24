@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSnapTreeMap;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.snaptree.SnapTreeMap;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -497,39 +496,6 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         @Override public void decrementRefCount() {
             throw new IllegalStateException();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridH2TreeIndex rebuild() throws InterruptedException {
-        IndexColumn[] cols = getIndexColumns();
-
-        GridH2TreeIndex idx = new GridH2TreeIndex(getName(), getTable(),
-            getIndexType().isUnique(), F.asList(cols), segments.length);
-
-        Thread thread = Thread.currentThread();
-
-        long j = 0;
-
-        for (int i = 0; i < segments.length; i++) {
-            try {
-                GridCursor<GridH2Row> cursor = segments[i].find(null, null);
-
-                while(cursor.next()) {
-                    GridH2Row row = cursor.get();
-
-                    // Check for interruptions every 1024 iterations.
-                    if ((++j & 1024) == 0 && thread.isInterrupted())
-                        throw new InterruptedException();
-
-                    idx.put(row);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
-        }
-
-        return idx;
     }
 
     /**

@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,15 +41,18 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 
 /**
  * Binary class descriptor.
@@ -156,7 +160,7 @@ public class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || GridQueryProcessor.isGeometryClass(cls);
+        useOptMarshaller = serializer == null || isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -189,8 +193,7 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) &&
-            !GridQueryProcessor.isGeometryClass(cls)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
@@ -222,6 +225,7 @@ public class BinaryClassDescriptor {
             case UUID:
             case DATE:
             case TIMESTAMP:
+            case TIME:
             case BYTE_ARR:
             case SHORT_ARR:
             case INT_ARR:
@@ -235,6 +239,7 @@ public class BinaryClassDescriptor {
             case UUID_ARR:
             case DATE_ARR:
             case TIMESTAMP_ARR:
+            case TIME_ARR:
             case OBJECT_ARR:
             case COL:
             case MAP:
@@ -611,6 +616,11 @@ public class BinaryClassDescriptor {
 
                 break;
 
+            case TIME:
+                writer.doWriteTime((Time)obj);
+
+                break;
+
             case BYTE_ARR:
                 writer.doWriteByteArray((byte[])obj);
 
@@ -673,6 +683,11 @@ public class BinaryClassDescriptor {
 
             case TIMESTAMP_ARR:
                 writer.doWriteTimestampArray((Timestamp[]) obj);
+
+                break;
+
+            case TIME_ARR:
+                writer.doWriteTimeArray((Time[]) obj);
 
                 break;
 
@@ -806,58 +821,66 @@ public class BinaryClassDescriptor {
      * @throws BinaryObjectException If failed.
      */
     Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
-        assert reader != null;
-        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
+        try {
+            assert reader != null;
+            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
-        Object res;
+            Object res;
 
-        switch (mode) {
-            case BINARY:
-                res = newInstance();
+            switch (mode) {
+                case BINARY:
+                    res = newInstance();
 
-                reader.setHandle(res);
+                    reader.setHandle(res);
 
-                if (serializer != null)
-                    serializer.readBinary(res, reader);
-                else
-                    ((Binarylizable)res).readBinary(reader);
+                    if (serializer != null)
+                        serializer.readBinary(res, reader);
+                    else
+                        ((Binarylizable)res).readBinary(reader);
 
-                break;
+                    break;
 
-            case OBJECT:
-                res = newInstance();
+                case OBJECT:
+                    res = newInstance();
 
-                reader.setHandle(res);
+                    reader.setHandle(res);
 
-                for (BinaryFieldAccessor info : fields)
-                    info.read(res, reader);
+                    for (BinaryFieldAccessor info : fields)
+                        info.read(res, reader);
 
-                break;
+                    break;
 
-            default:
-                assert false : "Invalid mode: " + mode;
+                default:
+                    assert false : "Invalid mode: " + mode;
 
-                return null;
+                    return null;
+            }
+
+            if (readResolveMtd != null) {
+                try {
+                    res = readResolveMtd.invoke(res);
+
+                    reader.setHandle(res);
+                }
+                catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                catch (InvocationTargetException e) {
+                    if (e.getTargetException() instanceof BinaryObjectException)
+                        throw (BinaryObjectException)e.getTargetException();
+
+                    throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
+                }
+            }
+
+            return res;
         }
-
-        if (readResolveMtd != null) {
-            try {
-                res = readResolveMtd.invoke(res);
-
-                reader.setHandle(res);
-            }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() instanceof BinaryObjectException)
-                    throw (BinaryObjectException)e.getTargetException();
-
-                throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
-            }
+        catch (Exception e) {
+            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+                throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
+            else
+                throw new BinaryObjectException("Failed to deserialize object [typeId=" + typeId + ']', e);
         }
-
-        return res;
     }
 
     /**

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -93,11 +94,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public UUID localNodeId();
 
     /**
-     * Gets grid name.
+     * Gets Ignite instance name.
      *
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName();
+    public String igniteInstanceName();
 
     /**
      * Gets logger for given category.
@@ -296,6 +297,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public PoolProcessor pools();
 
     /**
+     * Gets grid marshaller mapping processor.
+     *
+     * @return Mapping processor.
+     */
+    public GridMarshallerMappingProcessor mapping();
+
+    /**
      * Gets Hadoop helper.
      *
      * @return Hadoop helper.
@@ -308,13 +316,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
-
-    /**
-     * Gets marshaller cache pool.
-     *
-     * @return Marshaller cache pool.
-     */
-    public ExecutorService marshallerCachePool();
 
     /**
      * Gets async callback pool.
@@ -563,6 +564,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing executor service.
      */
     @Nullable public ExecutorService getIndexingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
 
     /**
      * Gets exception registry.

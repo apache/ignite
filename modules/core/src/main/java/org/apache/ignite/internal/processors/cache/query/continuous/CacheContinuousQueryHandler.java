@@ -426,7 +426,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                                     onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                                 }
-                            });
+                            }, sync);
                         }
                     }
                 }

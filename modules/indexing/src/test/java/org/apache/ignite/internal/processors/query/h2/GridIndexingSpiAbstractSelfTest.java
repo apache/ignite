@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,8 +104,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     protected void startIndexing(IgniteH2Indexing spi) throws Exception {
         spi.start(null, null);
 
-        spi.registerCache(null, cacheCfg("A"));
-        spi.registerCache(null, cacheCfg("B"));
+        CacheConfiguration ccfgA = cacheCfg("A");
+        CacheConfiguration ccfgB = cacheCfg("B");
+
+        spi.registerCache(ccfgA.getName(), null, ccfgA);
+        spi.registerCache(ccfgB.getName(), null, ccfgB);
     }
 
     /**
@@ -394,23 +397,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(2, spi.size(typeAB.space(), typeAB));
         assertEquals(0, spi.size(typeBA.space(), typeBA));
 
-        boolean h2IdxOffheap = offheap();
-
-        // At the time of this writing index rebuilding is not supported for GridH2Indexing with off-heap storage.
-        if (!h2IdxOffheap) {
-            // Rebuild
-
-            spi.rebuildIndexes(typeAB.space(), typeAB);
-
-            assertEquals(1, spi.size(typeAA.space(), typeAA));
-            assertEquals(2, spi.size(typeAB.space(), typeAB));
-            assertEquals(0, spi.size(typeBA.space(), typeBA));
-
-            // For invalid space name/type should not fail.
-            spi.rebuildIndexes("not_existing_space", typeAA);
-            spi.rebuildIndexes(typeAA.space(), new TypeDesc("C", "C", fieldsAA, null));
-        }
-
         // Unregister.
         spi.unregisterType(typeAA.space(), typeAA);
 
@@ -504,8 +490,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
-            return GridQueryIndexType.FULLTEXT;
+        @Override public QueryIndexType type() {
+            return QueryIndexType.FULLTEXT;
         }
 
         /** {@inheritDoc} */
@@ -596,6 +582,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 /** */
                 @Override public boolean key() {
                     return false;
+                }
+
+                /** */
+                @Override public GridQueryProperty parent() {
+                    return null;
                 }
             };
         }

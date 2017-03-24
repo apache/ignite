@@ -142,7 +142,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridDhtUnlockRequest.class);
@@ -155,6 +154,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 9;
     }
 }

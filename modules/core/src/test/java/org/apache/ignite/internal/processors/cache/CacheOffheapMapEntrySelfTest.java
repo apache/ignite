@@ -67,7 +67,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param memoryMode Memory mode.
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
@@ -75,14 +75,14 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @return Cache configuration.
      * @throws Exception If failed.
      */
-    private CacheConfiguration cacheConfiguration(String gridName,
+    private CacheConfiguration cacheConfiguration(String igniteInstanceName,
         CacheMemoryMode memoryMode,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         String cacheName)
         throws Exception
     {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);

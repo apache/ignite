@@ -69,8 +69,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     protected static final String TRANSACTIONAL_BYTEARR_CACHE_NAME = "transactionalByteArr";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

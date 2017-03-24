@@ -369,7 +369,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
                     try {
-                        ses.sendNoFuture(nodeIdMessage());
+                        ses.sendNoFuture(nodeIdMessage(), null);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
@@ -1864,7 +1864,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assert locHost != null;
 
         // Start SPI start stopwatch.
@@ -1914,7 +1914,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
+        registerMBean(igniteInstanceName, this, TcpCommunicationSpiMBean.class);
 
         connectGate = new ConnectGateway();
 
@@ -1926,7 +1926,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker(gridName);
+        commWorker = new CommunicationWorker(igniteInstanceName);
 
         commWorker.start();
 
@@ -2081,7 +2081,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .listener(srvLsnr)
                         .logger(log)
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .igniteInstanceName(igniteInstanceName)
                         .serverName("tcp-comm")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
@@ -2158,7 +2158,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 IgniteConfiguration cfg = ignite.configuration();
 
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), gridName, cfg.getWorkDirectory());
+                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), igniteInstanceName, cfg.getWorkDirectory());
 
                 srv.setPort(port);
 
@@ -3496,7 +3496,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
+            super(igniteInstanceName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
 
             this.srv = srv;
         }
@@ -3540,7 +3540,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint) {
-            super(gridName, "shmem-worker", TcpCommunicationSpi.this.log);
+            super(igniteInstanceName, "shmem-worker", TcpCommunicationSpi.this.log);
 
             this.endpoint = endpoint;
         }
@@ -3642,10 +3642,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          */
-        private CommunicationWorker(String gridName) {
-            super(gridName, "tcp-comm-worker", log);
+        private CommunicationWorker(String igniteInstanceName) {
+            super(igniteInstanceName, "tcp-comm-worker", log);
         }
 
         /** {@inheritDoc} */

@@ -104,8 +104,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -251,7 +251,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             l1.await();
 
             // This will wait until data streamer finishes loading.
-            stopGrid(getTestGridName(1), false);
+            stopGrid(getTestIgniteInstanceName(1), false);
 
             f1.get();
 
@@ -529,7 +529,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                                 U.sleep(1000);
 
-                                stopGrid(getTestGridName(restartNodeIdx), true);
+                                stopGrid(getTestIgniteInstanceName(restartNodeIdx), true);
 
                                 info(">>>>>>> Stopped node: " + id);
                             }
@@ -629,7 +629,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             ldr = g1.dataStreamer(null);
 
             // This will close loader.
-            stopGrid(getTestGridName(1), false);
+            stopGrid(getTestIgniteInstanceName(1), false);
 
             try {
                 ldr.addData(0, 0);

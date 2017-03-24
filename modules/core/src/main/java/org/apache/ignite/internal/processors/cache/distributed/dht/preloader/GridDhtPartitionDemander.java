@@ -672,8 +672,8 @@ public class GridDhtPartitionDemander {
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
 
-                        assert reserved : "Failed to reserve partition [gridName=" +
-                            cctx.gridName() + ", cacheName=" + cctx.namex() + ", part=" + part + ']';
+                        assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                            cctx.igniteInstanceName() + ", cacheName=" + cctx.namex() + ", part=" + part + ']';
 
                         part.lock();
 
@@ -1423,8 +1423,9 @@ public class GridDhtPartitionDemander {
                                 if (part.state() == MOVING) {
                                     boolean reserved = part.reserve();
 
-                                    assert reserved : "Failed to reserve partition [gridName=" +
-                                        cctx.gridName() + ", cacheName=" + cctx.namex() + ", part=" + part + ']';
+                                    assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                                        cctx.igniteInstanceName() + ", cacheName=" + cctx.namex() +
+                                        ", part=" + part + ']';
 
                                     part.lock();
 

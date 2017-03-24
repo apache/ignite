@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             var cfg = new IgniteConfiguration
             {
-                GridName = GridName,
+                IgniteInstanceName = GridName,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-store.xml",

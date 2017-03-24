@@ -75,8 +75,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -234,7 +234,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         int cnt = 0;
 
         for (Ignite ignite : Ignition.allGrids()) {
-            if (getTestGridName(crdIdx).equals(ignite.name()) || ignite.configuration().isClientMode())
+            if (getTestIgniteInstanceName(crdIdx).equals(ignite.name()) || ignite.configuration().isClientMode())
                 continue;
 
             TestRecordingCommunicationSpi commSpi0 =

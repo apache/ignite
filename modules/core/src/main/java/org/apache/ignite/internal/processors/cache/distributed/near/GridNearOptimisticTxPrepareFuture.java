@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
@@ -74,6 +73,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /** */
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
+
+    /** */
+    private int miniId;
+
+    /** */
+    private GridDhtTxMapping txMapping;
 
     /**
      * @param cctx Context.
@@ -232,7 +237,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -246,7 +251,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -352,7 +357,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
-        if (mapping.node().isLocal()) {
+        if (mapping.primary().isLocal()) {
             if (write.context().isNear())
                 tx.nearLocallyMapped(true);
             else if (write.context().isColocated())
@@ -377,7 +382,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         proceedPrepare(mapping, null);
     }
@@ -414,12 +419,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 updated.last(true);
 
-                GridDistributedTxMapping prev = map.put(updated.node().id(), updated);
+                GridDistributedTxMapping prev = map.put(updated.primary().id(), updated);
 
                 if (prev != null)
                     prev.last(false);
 
-                if (updated.node().isLocal()) {
+                if (updated.primary().isLocal()) {
                     if (write.context().isNear())
                         tx.nearLocallyMapped(true);
                     else if (write.context().isColocated())
@@ -446,7 +451,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         tx.transactionNodes(txMapping.transactionNodes());
 
-        checkOnePhase();
+        checkOnePhase(txMapping);
 
         proceedPrepare(mappings);
     }
@@ -480,7 +485,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         try {
             assert !m.empty();
 
-            final ClusterNode n = m.node();
+            final ClusterNode n = m.primary();
 
             long timeout = tx.remainingTime();
 
@@ -521,7 +526,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     }
                 }
 
-                final MiniFuture fut = new MiniFuture(this, m, mappings);
+                final MiniFuture fut = new MiniFuture(this, m, ++miniId, mappings);
 
                 req.miniId(fut.futureId());
 
@@ -639,7 +644,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             }
         }
 
-        if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
+        if (cur == null || !cur.primary().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
             boolean clientFirst = cur == null && !topLocked && cctx.kernalContext().clientNode();
 
             cur = new GridDistributedTxMapping(primary);
@@ -771,7 +776,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         private final GridNearOptimisticTxPrepareFuture parent;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Keys. */
         @GridToStringInclude
@@ -787,19 +792,23 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param parent Parent.
          * @param m Mapping.
+         * @param futId Mini future ID.
          * @param mappings Queue of mappings to proceed with.
          */
-        MiniFuture(GridNearOptimisticTxPrepareFuture parent, GridDistributedTxMapping m,
+        MiniFuture(GridNearOptimisticTxPrepareFuture parent,
+            GridDistributedTxMapping m,
+            int futId,
             Queue<GridDistributedTxMapping> mappings) {
             this.parent = parent;
             this.m = m;
+            this.futId = futId;
             this.mappings = mappings;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
@@ -807,7 +816,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @return Node ID.
          */
         public ClusterNode node() {
-            return m.node();
+            return m.primary();
         }
 
         /**
@@ -840,7 +849,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + parent.tx.nearXidVersion() +
-                    ", node=" + m.node().id() + ']');
+                    ", node=" + m.primary().id() + ']');
             }
 
             if (isDone())

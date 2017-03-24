@@ -514,7 +514,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridDhtLockRequest.class);
@@ -527,7 +526,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 31;
+        return 30;
     }
 
     /** {@inheritDoc} */

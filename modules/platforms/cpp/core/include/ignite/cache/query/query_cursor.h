@@ -213,7 +213,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0) {
-                        impl::OutQueryGetAllOperation<K, V> outOp(&res);
+                        impl::OutQueryGetAllOperation<K, V> outOp(res);
 
                         impl0->GetAll(outOp, err);
                     }

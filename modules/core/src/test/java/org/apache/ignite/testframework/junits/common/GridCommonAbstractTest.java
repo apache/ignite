@@ -551,7 +551,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             IgniteKernal g0 = (IgniteKernal)g;
 
-            names.add(g0.configuration().getGridName());
+            names.add(g0.configuration().getIgniteInstanceName());
 
             if (startTime != -1) {
                 if (startTime != g0.context().discovery().gridStartTime())
@@ -603,7 +603,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     LT.warn(log(), "Waiting for topology map update [" +
-                                        "grid=" + g.name() +
+                                        "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
@@ -620,7 +620,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             }
                             else {
                                 LT.warn(log(), "Waiting for topology map update [" +
-                                    "grid=" + g.name() +
+                                    "igniteInstanceName=" + g.name() +
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
                                     ", topVer=" + top.topologyVersion() +
@@ -641,7 +641,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         printPartitionState(c);
 
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
-                                        "grid=" + g.name() +
+                                        "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
@@ -656,8 +656,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             }
 
                             if (i > 0)
-                                log().warning("Finished waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) + "ms]");
+                                log().warning("Finished waiting for topology map update [igniteInstanceName=" +
+                                    g.name() + ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) +
+                                    "ms]");
 
                             break;
                         }
@@ -680,7 +681,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         U.dumpThreads(log);
 
                                         throw new IgniteException("Timeout of waiting for partition state update [" +
-                                            "grid=" + g.name() +
+                                            "igniteInstanceName=" + g.name() +
                                             ", cache=" + cfg.getName() +
                                             ", cacheId=" + dht.context().cacheId() +
                                             ", topVer=" + top.topologyVersion() +

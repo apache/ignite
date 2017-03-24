@@ -40,7 +40,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -286,7 +286,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx,
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx,
                                 semView,
                                 PESSIMISTIC, REPEATABLE_READ)
                             ) {
@@ -360,7 +360,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
                             try (
-                                IgniteInternalTx tx = CU.txStartInternal(ctx,
+                                GridNearTxLocal tx = CU.txStartInternal(ctx,
                                     semView,
                                     PESSIMISTIC, REPEATABLE_READ)
                             ) {
@@ -455,7 +455,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 sync = CU.outTx(
                     retryTopologySafe(new Callable<Sync>() {
                         @Override public Sync call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx,
+                            try (GridNearTxLocal tx = CU.txStartInternal(ctx,
                                 semView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheSemaphoreState val = semView.get(key);
 
@@ -466,7 +466,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                                     return null;
                                 }
 
-                                final int count = val.getCount();
+                                final int cnt = val.getCount();
 
                                 Map<UUID, Integer> waiters = val.getWaiters();
 
@@ -474,7 +474,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
 
                                 tx.commit();
 
-                                return new Sync(count, waiters, failoverSafe);
+                                return new Sync(cnt, waiters, failoverSafe);
                             }
                         }
                     }),
@@ -677,7 +677,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                 retryTopologySafe(new Callable<Integer>() {
                     @Override public Integer call() throws Exception {
                         try (
-                            IgniteInternalTx tx = CU.txStartInternal(ctx,
+                            GridNearTxLocal tx = CU.txStartInternal(ctx,
                                 semView, PESSIMISTIC, REPEATABLE_READ)
                         ) {
                             GridCacheSemaphoreState val = semView.get(key);
@@ -685,11 +685,11 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Ignit
                             if (val == null)
                                 throw new IgniteException("Failed to find semaphore with given name: " + name);
 
-                            int count = val.getCount();
+                            int cnt = val.getCount();
 
                             tx.rollback();
 
-                            return count;
+                            return cnt;
                         }
                     }
                 }),

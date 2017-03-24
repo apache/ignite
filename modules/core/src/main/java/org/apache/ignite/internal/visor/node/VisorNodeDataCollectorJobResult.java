@@ -32,8 +32,8 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Node topology version. */
     private long topVer;
@@ -66,17 +66,17 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     private long errCnt;
 
     /**
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName() {
-        return gridName;
+    public String igniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
-     * @param gridName New grid name value.
+     * @param igniteInstanceName New Ignite instance name.
      */
-    public void gridName(String gridName) {
-        this.gridName = gridName;
+    public void igniteInstanceName(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
     }
 
     /**

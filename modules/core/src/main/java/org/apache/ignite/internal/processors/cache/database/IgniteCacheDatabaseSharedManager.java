@@ -88,7 +88,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      */
     protected void initDataStructures() throws IgniteCheckedException {
-        freeList = new FreeListImpl(0, cctx.gridName(), pageMem, null, cctx.wal(), 0L, true);
+        freeList = new FreeListImpl(0, cctx.igniteInstanceName(), pageMem, null, cctx.wal(), 0L, true);
     }
 
     /**

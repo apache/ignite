@@ -59,6 +59,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -201,9 +203,6 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
@@ -1895,19 +1894,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return schema.spaceName;
     }
 
-    /** {@inheritDoc} */
-    @Override public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type) {
-        TableDescriptor tbl = tableDescriptor(spaceName, type);
-
-        if (tbl == null)
-            return;
-
-        if (tbl.schema.offheap != null)
-            throw new UnsupportedOperationException("Index rebuilding is not supported when off-heap memory is used");
-
-        tbl.tbl.rebuildIndexes();
-    }
-
     /**
      * Rebuild indexes from hash index.
      *
@@ -2115,7 +2101,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
-        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
+        // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**
@@ -2164,7 +2150,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         ((GridCacheQueryMarshallable)msg).marshall(marshaller);
                 }
 
-                ctx.io().send(node, topic, topicOrd, msg, plc);
+                ctx.io().sendGeneric(node, topic, topicOrd, msg, plc);
             }
             catch (IgniteCheckedException e) {
                 ok = false;
@@ -2292,14 +2278,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(GridCacheContext<?, ?> cctx, CacheConfiguration<?, ?> ccfg)
+    @Override public void registerCache(String spaceName, GridCacheContext<?, ?> cctx, CacheConfiguration<?, ?> ccfg)
         throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema, cctx, ccfg)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
+        if (schemas.putIfAbsent(schema, new Schema(spaceName, schema, cctx, ccfg)) != null)
+            throw new IgniteCheckedException("Cache already registered: " + U.maskName(spaceName));
 
-        space2schema.put(emptyIfNull(ccfg.getName()), schema);
+        space2schema.put(emptyIfNull(spaceName), schema);
 
         createSchema(schema);
 
@@ -2307,13 +2293,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
-        String schema = schema(ccfg.getName());
+    @Override public void unregisterCache(String spaceName) {
+        String schema = schema(spaceName);
         Schema rmv = schemas.remove(schema);
 
         if (rmv != null) {
             space2schema.remove(emptyIfNull(rmv.spaceName));
-            mapQryExec.onCacheStop(ccfg.getName());
+            mapQryExec.onCacheStop(spaceName);
 
             rmv.onDrop();
 
@@ -2321,7 +2307,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 dropSchema(schema);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
+                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(spaceName), e);
             }
 
             for (TableDescriptor tblDesc : rmv.tbls.values())
@@ -2332,7 +2318,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 it.hasNext(); ) {
                 Map.Entry<TwoStepCachedQueryKey, TwoStepCachedQuery> e = it.next();
 
-                if (F.eq(e.getKey().space, ccfg.getName()))
+                if (F.eq(e.getKey().space, spaceName))
                     it.remove();
             }
         }
@@ -2908,7 +2894,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 String name = e.getKey();
                 GridQueryIndexDescriptor idx = e.getValue();
 
-                if (idx.type() == FULLTEXT) {
+                if (idx.type() == QueryIndexType.FULLTEXT) {
                     try {
                         luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
                     }
@@ -2930,7 +2916,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             idx.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
                     }
 
-                    if (idx.type() == SORTED) {
+                    if (idx.type() == QueryIndexType.SORTED) {
                         // We don't care about number of fields in affinity index, just affinity key must be the first.
                         affIdxFound |= affCol != null && equal(cols.get(0), affCol);
 
@@ -2938,7 +2924,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         idxs.add(createSortedIndex(cacheId, name, tbl, false, cols, idx.inlineSize()));
                     }
-                    else if (idx.type() == GEO_SPATIAL)
+                    else if (idx.type() == QueryIndexType.GEOSPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols.toArray(new IndexColumn[cols.size()])));
                     else
                         throw new IllegalStateException("Index type: " + idx.type());

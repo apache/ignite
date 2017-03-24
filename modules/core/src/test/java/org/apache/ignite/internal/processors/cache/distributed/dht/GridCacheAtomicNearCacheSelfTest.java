@@ -39,9 +39,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +52,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Tests near cache with various atomic cache configuration.
@@ -78,8 +80,8 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     private int lastKey;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -239,7 +241,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (Integer key : nearKeys.keySet())
                 nearKeys.put(key, val);
 
-            log.info("PutAll [grid=" + grid(i).name() + ", val=" + val + ']');
+            log.info("PutAll [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
             cache.putAll(nearKeys);
 
@@ -322,7 +324,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
             atomicClockModeDelay(cache);
 
-            log.info("Transform [grid=" + grid(i).name() + ", val=" + val + ']');
+            log.info("Transform [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
             cache.invoke(nearKey, new Processor(val));
 
@@ -418,7 +420,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             for (Integer key : nearKeys)
                 nearKeys.add(key);
 
-            log.info("TransformAll [grid=" + grid(i).name() + ", val=" + val + ']');
+            log.info("TransformAll [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
             cache.invokeAll(nearKeys, new Processor(val));
 
@@ -536,7 +538,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
             atomicClockModeDelay(cache);
 
-            log.info("Put [grid=" + grid(i).name() + ", val=" + val + ']');
+            log.info("Put [igniteInstanceName=" + grid(i).name() + ", val=" + val + ']');
 
             cache.put(nearKey, val);
 
@@ -635,7 +637,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         }
 
         IgniteCache<Integer, Integer> primaryCache = G.ignite(
-            (String)aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME)).cache(null);
+            (String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME)).cache(null);
 
         atomicClockModeDelay(cache0);
 
@@ -681,7 +683,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             checkEntry(grid(i), nearKey, null, i == 0);
 
-        Ignite primaryNode = G.ignite((String)aff.mapKeyToNode(nearKey).attribute(ATTR_GRID_NAME));
+        Ignite primaryNode = G.ignite((String)aff.mapKeyToNode(nearKey).attribute(ATTR_IGNITE_INSTANCE_NAME));
 
         IgniteCache<Integer, Integer> primaryCache = primaryNode.cache(null);
 
@@ -701,8 +703,12 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private void checkEntry(Ignite ignite, Integer key, @Nullable Integer val, boolean expectNear, UUID... expReaders)
-        throws Exception {
+    private void checkEntry(Ignite ignite,
+        Integer key,
+        @Nullable Integer val,
+        boolean expectNear,
+        final UUID... expReaders) throws Exception
+    {
         GridCacheAdapter<Integer, Integer> near = ((IgniteKernal)ignite).internalCache();
 
         assertTrue(near.isNear());
@@ -728,9 +734,20 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
         GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)near).dht();
 
         if (expectDht) {
-            GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.entryEx(key);
+            final GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.entryEx(key);
 
             assertNotNull("No dht entry for: " + key + ", grid: " + ignite.name(), dhtEntry);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        return dhtEntry.readers().size() == expReaders.length;
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }, 5000);
 
             Collection<UUID> readers = dhtEntry.readers();
 
