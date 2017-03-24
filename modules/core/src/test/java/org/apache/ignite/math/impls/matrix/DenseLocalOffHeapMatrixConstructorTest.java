@@ -43,7 +43,7 @@ public class DenseLocalOffHeapMatrixConstructorTest {
             new DenseLocalOffHeapMatrix(1, 2).rowSize());
 
         assertEquals("Expected number of rows, double[][] parameter.", 1,
-            new DenseLocalOffHeapMatrix(new double[][] {new double[2]}).rowSize()); // todo find what's wrong
+            new DenseLocalOffHeapMatrix(new double[][] {new double[2]}).rowSize());
 
         assertEquals("Expected number of cols, int parameters.", 1,
             new DenseLocalOffHeapMatrix(2, 1).columnSize());
