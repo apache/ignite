@@ -568,6 +568,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return (int)sizeLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long sizeLong() {
+        long sum = 0;
+
+        for (GridDhtLocalPartition p : topology().currentLocalPartitions())
+            sum += p.dataStore().size();
+
+        return sum;
+    }
+
+    /** {@inheritDoc} */
     @Override public int primarySize() {
         return (int)primarySizeLong();
     }
@@ -580,7 +595,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
-                sum += p.publicSize();
+                sum += p.dataStore().size();
         }
 
         return sum;
