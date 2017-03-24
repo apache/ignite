@@ -145,29 +145,28 @@ class SpringCache implements Cache {
      * @param <T> The type of the return value
      */
     private class ValueLoaderEntryProcessor<T> implements EntryProcessor<Object, Object, T> {
-
         @SuppressWarnings("unchecked")
         @Override
-        public T process(MutableEntry<Object, Object> entry, Object... arguments)
+        public T process(MutableEntry<Object, Object> entry, Object... args)
             throws EntryProcessorException {
-            Callable<T> valueLoader = (Callable<T>)arguments[0];
+            Callable<T> valueLoader = (Callable<T>)args[0];
 
             if (entry.exists())
                 return (T)fromStoreValue(entry.getValue());
             else {
-                T value;
+                T val;
 
                 try {
-                    value = valueLoader.call();
+                    val = valueLoader.call();
                 }
-                catch (Exception ex) {
+                catch (Exception e) {
                     throw new EntryProcessorException("Value loader '" + valueLoader + "' failed " +
-                        "to compute  value for key '" + entry.getKey() + "'", ex);
+                        "to compute  value for key '" + entry.getKey() + "'", e);
                 }
 
-                entry.setValue(toStoreValue(value));
+                entry.setValue(toStoreValue(val));
 
-                return value;
+                return val;
             }
         }
     }

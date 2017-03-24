@@ -54,6 +54,7 @@ public class GridSpringDynamicCacheTestService {
 
         return "value" + key;
     }
+
     /**
      * @param key Key.
      * @return Value.

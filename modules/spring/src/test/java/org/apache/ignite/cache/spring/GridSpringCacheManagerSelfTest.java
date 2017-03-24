@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -443,7 +443,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     private static final int THREADS_NUMBER = 10;
 
     /** */
-    private static final Phaser BARRIER = new Phaser(THREADS_NUMBER);
+    private static final CyclicBarrier BARRIER = new CyclicBarrier(THREADS_NUMBER);
 
     /**
      * @throws Exception If failed.
@@ -455,13 +455,12 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = grid().createCache(cacheCfg);
 
-        final int iterationsNumber = 1000;
+        final int num = 1000;
 
         Callable cacheGetCall = new Callable() {
-
             @Override public Object call() throws Exception {
-                for (int i = 0; i < iterationsNumber; i++) {
-                    BARRIER.arriveAndAwaitAdvance();
+                for (int i = 0; i < num; i++) {
+                    BARRIER.await();
 
                     assertEquals("value" + i, dynamicSvc.cacheableSync(i));
                     assertEquals("value" + i, dynamicSvc.cacheableSync(i));
@@ -473,12 +472,11 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(cacheGetCall, THREADS_NUMBER, "testSyncCache");
 
-        assertEquals(iterationsNumber, cache.size());
+        assertEquals(num, cache.size());
 
-        assertEquals(iterationsNumber, dynamicSvc.called());
+        assertEquals(num, dynamicSvc.called());
 
-        assertEquals("value" + 1, cache.get(1));
-
-        assertEquals("value" + 500, cache.get(500));
+        for (int i = 0; i < num; i++)
+            assertEquals("value" + i, cache.get(i));
     }
 }
