@@ -219,8 +219,12 @@ public class JdbcConnection implements Connection {
 
                             ignite = Ignition.start();
                         }
-                        else
-                            ignite = Ignition.start(loadConfiguration(cfgUrl));
+                        else {
+                            IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> cfgAndCtx =
+                                loadConfiguration(cfgUrl);
+
+                            ignite = IgnitionEx.start(cfgAndCtx.get1(), cfgAndCtx.get2());
+                        }
 
                         fut.onDone(ignite);
                     }
@@ -241,8 +245,9 @@ public class JdbcConnection implements Connection {
 
     /**
      * @param cfgUrl Config URL.
+     * @return Ignite config and Spring context.
      */
-    private IgniteConfiguration loadConfiguration(String cfgUrl) {
+    private IgniteBiTuple<IgniteConfiguration, ? extends GridSpringResourceContext> loadConfiguration(String cfgUrl) {
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap =
                 IgnitionEx.loadConfigurations(cfgUrl);
@@ -254,7 +259,7 @@ public class JdbcConnection implements Connection {
 
             cfg.setClientMode(true); // Force client mode.
 
-            return cfg;
+            return new IgniteBiTuple<>(cfg, cfgMap.getValue());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
