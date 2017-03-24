@@ -439,44 +439,42 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
         assertEquals(0, c.size());
     }
 
-    /** */
-    private static final int THREADS_NUMBER = 10;
-
-    /** */
-    private static final CyclicBarrier BARRIER = new CyclicBarrier(THREADS_NUMBER);
-
     /**
      * @throws Exception If failed.
      */
     public void testSyncCache() throws Exception {
+        final int threads = 10;
+        final int entries = 1000;
+
+        final CyclicBarrier barrier = new CyclicBarrier(threads);
+
         CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
 
         cacheCfg.setName(DYNAMIC_CACHE_NAME);
 
         IgniteCache<Integer, String> cache = grid().createCache(cacheCfg);
 
-        final int num = 1000;
+        GridTestUtils.runMultiThreaded(
+            new Callable() {
+                @Override public Object call() throws Exception {
+                    for (int i = 0; i < entries; i++) {
+                        barrier.await();
 
-        Callable cacheGetCall = new Callable() {
-            @Override public Object call() throws Exception {
-                for (int i = 0; i < num; i++) {
-                    BARRIER.await();
+                        assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                        assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                    }
 
-                    assertEquals("value" + i, dynamicSvc.cacheableSync(i));
-                    assertEquals("value" + i, dynamicSvc.cacheableSync(i));
+                    return null;
                 }
+            },
+            threads,
+            "testSyncCache");
 
-                return null;
-            }
-        };
+        assertEquals(entries, cache.size());
 
-        GridTestUtils.runMultiThreaded(cacheGetCall, THREADS_NUMBER, "testSyncCache");
+        assertEquals(entries, dynamicSvc.called());
 
-        assertEquals(num, cache.size());
-
-        assertEquals(num, dynamicSvc.called());
-
-        for (int i = 0; i < num; i++)
+        for (int i = 0; i < entries; i++)
             assertEquals("value" + i, cache.get(i));
     }
 }

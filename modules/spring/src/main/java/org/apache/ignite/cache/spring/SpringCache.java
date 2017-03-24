@@ -80,8 +80,14 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Callable<T> valueLoader) {
         try {
+            Object val = cache.get(key);
+
+            if (val != null)
+                return (T)fromStoreValue(val);
+
             return cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader);
         }
         catch (Exception e) {
@@ -145,9 +151,9 @@ class SpringCache implements Cache {
      * @param <T> The type of the return value
      */
     private class ValueLoaderEntryProcessor<T> implements EntryProcessor<Object, Object, T> {
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override
-        public T process(MutableEntry<Object, Object> entry, Object... args)
+        @Override public T process(MutableEntry<Object, Object> entry, Object... args)
             throws EntryProcessorException {
             Callable<T> valueLoader = (Callable<T>)args[0];
 
