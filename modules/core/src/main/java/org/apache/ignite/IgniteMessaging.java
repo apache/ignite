@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,9 +79,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * All local listeners will be executed in the calling thread.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
@@ -90,11 +89,22 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public void send(@Nullable Object topic, Object msg) throws IgniteException;
 
     /**
+     * Sends given message with specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * All local listeners will be executed public thread pool (it is user's  responsibility to implement
+     * back-pressure and limit number of concurrently executed async messages).
+     *
+     * @param topic Topic to send to, {@code null} for default topic.
+     * @param msg Message to send.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
+     */
+    public void sendAsync(@Nullable Object topic, Object msg) throws IgniteException;
+
+    /**
      * Sends given messages with the specified topic to the nodes in the underlying cluster group.
      * <p>
-     * By default all local listeners will be executed in the calling thread, or if you use
-     * {@link #withAsync()}, listeners will execute in public thread pool (in this case it is user's
-     * responsibility to implement back-pressure and limit number of concurrently executed async messages).
+     * All local listeners will be executed in the calling thread.
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
@@ -103,6 +113,20 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
     public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
+
+    /**
+     * Sends given messages with the specified topic to the nodes in the underlying cluster group.
+     * <p>
+     * All local listeners will be executed in public thread pool (it is user's responsibility to implement
+     * back-pressure and limit number of concurrently executed async messages).
+     *
+     * @param topic Topic to send to, {@code null} for default topic.
+     * @param msgs Messages to send. Order of the sending is undefined. If the method produces
+     *      the exception none or some messages could have been sent already.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
+     */
+    public void sendAsync(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
 
     /**
      * Sends given message with specified topic to the nodes in the underlying cluster group. Messages sent with
@@ -159,6 +183,22 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
 
     /**
+     * Asynchronously adds a message listener for a given topic to all nodes in the cluster group (possibly including
+     * this node if it belongs to the cluster group as well). This means that any node within this cluster
+     * group can send a message for a given topic and all nodes within the cluster group will receive
+     * listener notifications.
+     *
+     * @param topic Topic to subscribe to, {@code null} means default topic.
+     * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
+     *      then it will be unsubscribed from any further notifications.
+     * @return a Future representing pending completion of the operation. The completed future contains
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @throws IgniteException If failed to add listener.
+     */
+    public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
+        throws IgniteException;
+
+    /**
      * Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -169,6 +209,16 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
+    /**
+     * Asynchronously unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
+     *
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, IgniteBiPredicate)} method.
+     * @return a Future representing pending completion of the operation.
+     * @throws IgniteException If failed to unregister listeners.
+     */
+    public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException;
+
     /** {@inheritDoc} */
+    @Deprecated
     @Override IgniteMessaging withAsync();
 }
