@@ -23,8 +23,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
@@ -107,26 +105,5 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
         assertTrue(resultingSize < ENTRIES / 2);
 
         ignite(0).destroyCache(cfg.getName());
-    }
-
-
-    /**
-     *
-     */
-    public static class RandomLru extends PageEvictionMultinodeTest {
-        /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
-        }
-    }
-
-    /**
-     *
-     */
-    public static class Random2Lru extends PageEvictionMultinodeTest {
-        /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, super.getConfiguration(gridName));
-        }
     }
 }

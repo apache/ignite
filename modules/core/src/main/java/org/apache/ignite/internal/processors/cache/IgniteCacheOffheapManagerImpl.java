@@ -28,6 +28,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.database.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -968,7 +968,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException
         {
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cctx.cacheId());
+            int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
+                0 : cctx.cacheId();
+
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -999,8 +1002,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                int cacheId = /*TODO IGNITE-4534: cctx.memoryPolicy().pageEvictionEnabled() ? cctx.cacheId() : 0*/
-                    cctx.cacheId();
+                int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED ?
+                    cctx.cacheId() : 0;
 
                 DataRow dataRow = new DataRow(key, val, ver, p, expireTime, cacheId);
 

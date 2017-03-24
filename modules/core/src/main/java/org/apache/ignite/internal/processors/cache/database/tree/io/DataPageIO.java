@@ -1040,6 +1040,8 @@ public class DataPageIO extends PageIO {
         final int prevLen;
         final int curLen;
 
+        int cacheIdSize = row.cacheId() == 0 ? 0 : 4;
+
         switch (type) {
             case KEY:
                 prevLen = 0;
@@ -1055,20 +1057,19 @@ public class DataPageIO extends PageIO {
 
             case CACHE_ID:
                 prevLen = keySize + 8;
-                curLen = keySize + 8 + 4;
-                /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
+                curLen = keySize + 8 + cacheIdSize;
 
                 break;
 
             case VALUE:
-                prevLen = keySize + 8 + 4;
-                curLen = keySize + valSize + 8 + 4;
+                prevLen = keySize + 8 + cacheIdSize;
+                curLen = keySize + valSize + 8 + cacheIdSize;
 
                 break;
 
             case VERSION:
-                prevLen = keySize + valSize + 8 + 4;
-                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8 + 4;
+                prevLen = keySize + valSize + 8 + cacheIdSize;
+                curLen = keySize + valSize + CacheVersionIO.size(row.version(), false) + 8 + cacheIdSize;
 
                 break;
 
@@ -1156,8 +1157,10 @@ public class DataPageIO extends PageIO {
      * @param prevLen Prev length.
      */
     private void writeCacheIdFragment(ByteBuffer buf, int cacheId, int rowOff, int len, int prevLen) {
+        if (cacheId == 0)
+            return;
+
         int size = 4;
-        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
 
         if (size <= len)
             buf.putInt(cacheId);
@@ -1380,8 +1383,8 @@ public class DataPageIO extends PageIO {
         PageUtils.putLong(addr, 0, row.expireTime());
         addr += 8;
 
-        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
-        PageUtils.putInt(addr, 0, row.cacheId());
+        if (row.cacheId() != 0)
+            PageUtils.putInt(addr, 0, row.cacheId());
     }
 
     /**

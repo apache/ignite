@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -108,7 +109,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
-        readRowData(cctx.memoryPolicy().pageMemory(), rowData, cctx.cacheId());
+        DataPageEvictionMode mode = cctx.memoryPolicy().config().getPageEvictionMode();
+
+        int cacheId = mode == DataPageEvictionMode.DISABLED ? cctx.cacheId() : 0;
+
+        readRowData(cctx.memoryPolicy().pageMemory(), rowData, cacheId);
 
         CacheObjectContext cacheObjCtx = cctx.cacheObjectContext();
 
@@ -129,14 +134,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param pageMem Page mem.
-     * @param rowData Row data.
-     */
-    public void readRowData(PageMemory pageMem, RowData rowData) throws IgniteCheckedException {
-        readRowData(pageMem, rowData, 0);
-    }
-
-    /**
      * @param pageMem Page memory.
      * @param rowData Row data.
      * @param cacheId Cache id.
@@ -148,6 +145,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         long nextLink = link;
         IncompleteObject<?> incomplete = null;
         boolean first = true;
+        this.cacheId = cacheId;
 
         do {
             try (Page page = pageMem.page(cacheId, pageId(nextLink))) {
@@ -229,8 +227,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         if (cacheId == 0) {
-            // TODO IGNITE-4534: Distinguish situations [cache is not evictable, cacheId = 0] and
-            // TODO IGNITE-4534: [cacheId is fragmented, first part is read, cacheId = 0].
             incomplete = readIncompleteCacheId(buf, incomplete);
 
             if (cacheId == 0)
@@ -296,8 +292,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
         expireTime = PageUtils.getLong(addr, off);
         off += 8;
 
-        /* TODO IGNITE-4534: store less than 4 bytes for non-evictable caches */
-        cacheId = PageUtils.getInt(addr, off);
+        if (cacheId == 0)
+            cacheId = PageUtils.getInt(addr, off);
     }
 
     /**

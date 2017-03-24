@@ -132,7 +132,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
                     CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-                    row.readRowData(pageMem, CacheDataRowAdapter.RowData.FULL);
+                    row.readRowData(pageMem, CacheDataRowAdapter.RowData.FULL, 0);
 
                     int cacheId = row.cacheId();
 
