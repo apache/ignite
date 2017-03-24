@@ -1181,9 +1181,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 old = entry.innerGet(
                                     null,
                                     this,
+                                    /*read through*/false,
                                     /*metrics*/retval,
                                     /*events*/retval,
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     entryProcessor,
                                     resolveTaskName(),
@@ -1266,9 +1266,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                         drVer,
                         skipStore,
                         keepBinary);
-
-                    if (!implicit() && readCommitted())
-                        cacheCtx.evicts().touch(entry, topologyVersion());
 
                     if (enlisted != null)
                         enlisted.add(cacheKey);
@@ -1570,6 +1567,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock for remove on keys: " + enlisted);
+                    U.debug(log, "Acquired transaction lock for remove on keys: " + enlisted);
 
                     postLockWrite(cacheCtx,
                         enlisted,
@@ -1778,13 +1776,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                             readVer = getRes.version();
                                         }
                                     }
-                                    else{
+                                    else {
                                         val = cached.innerGet(
                                             null,
                                             GridNearTxLocal.this,
+                                            /*read through*/false,
                                             /*metrics*/true,
                                             /*events*/!skipVals,
-                                            /*temporary*/false,
                                             CU.subjectId(GridNearTxLocal.this, cctx),
                                             transformClo,
                                             resolveTaskName(),
@@ -2075,9 +2073,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 val = txEntry.cached().innerGet(
                                     null,
                                     this,
+                                    /*read-through*/false,
                                     /*metrics*/true,
                                     /*event*/!skipVals,
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     transformClo,
                                     resolveTaskName(),

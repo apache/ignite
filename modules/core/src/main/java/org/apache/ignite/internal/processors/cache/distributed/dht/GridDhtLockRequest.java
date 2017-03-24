@@ -359,61 +359,61 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         }
 
         switch (writer.state()) {
-            case 21:
+            case 20:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 21:
                 if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
+            case 24:
                 if (!writer.writeObjectArray("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 26:
+            case 25:
                 if (!writer.writeObjectArray("ownedValues", ownedValues, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 27:
+            case 26:
                 if (!writer.writeBitSet("preloadKeys", preloadKeys))
                     return false;
 
                 writer.incrementState();
 
-            case 28:
+            case 27:
                 if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 29:
+            case 28:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 30:
+            case 29:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -435,7 +435,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             return false;
 
         switch (reader.state()) {
-            case 21:
+            case 20:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
@@ -443,7 +443,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 21:
                 invalidateEntries = reader.readBitSet("invalidateEntries");
 
                 if (!reader.isLastRead())
@@ -451,7 +451,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -459,7 +459,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -467,7 +467,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 25:
+            case 24:
                 ownedKeys = reader.readObjectArray("ownedKeys", MessageCollectionItemType.MSG, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
@@ -475,7 +475,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 26:
+            case 25:
                 ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -483,7 +483,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 27:
+            case 26:
                 preloadKeys = reader.readBitSet("preloadKeys");
 
                 if (!reader.isLastRead())
@@ -491,7 +491,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 28:
+            case 27:
                 subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
@@ -499,7 +499,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 29:
+            case 28:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -507,13 +507,14 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 30:
+            case 29:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtLockRequest.class);

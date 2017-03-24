@@ -1522,16 +1522,16 @@ public class IgniteTxHandler {
                                         }
 
                                         CacheObject val = cached.innerGet(
-                                        /*ver*/null,
+                                            /*ver*/null,
                                             tx,
-                                        /*readThrough*/false,
-                                        /*updateMetrics*/false,
-                                        /*evt*/false,
+                                            /*readThrough*/false,
+                                            /*updateMetrics*/false,
+                                            /*evt*/false,
                                             tx.subjectId(),
-                                        /*transformClo*/null,
+                                            /*transformClo*/null,
                                             tx.resolveTaskName(),
-                                        /*expiryPlc*/null,
-                                        /*keepBinary*/true);
+                                            /*expiryPlc*/null,
+                                            /*keepBinary*/true);
 
                                         if (val == null)
                                             val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));

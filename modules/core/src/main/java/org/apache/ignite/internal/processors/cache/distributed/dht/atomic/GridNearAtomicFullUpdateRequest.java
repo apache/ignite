@@ -500,6 +500,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -587,6 +588,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearAtomicFullUpdateRequest.class);

@@ -408,7 +408,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -534,7 +534,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -554,7 +554,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 18;
+        return 17;
     }
 
     /** {@inheritDoc} */

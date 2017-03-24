@@ -400,25 +400,25 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeBooleanArray("retVals", retVals))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -516,7 +516,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 retVals = reader.readBooleanArray("retVals");
 
                 if (!reader.isLastRead())
@@ -524,7 +524,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -532,7 +532,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -540,7 +540,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -560,7 +560,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 20;
     }
 
     /** {@inheritDoc} */

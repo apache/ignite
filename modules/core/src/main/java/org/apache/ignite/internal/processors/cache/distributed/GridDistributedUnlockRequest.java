@@ -164,7 +164,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 8;
     }
 
     /** {@inheritDoc} */
