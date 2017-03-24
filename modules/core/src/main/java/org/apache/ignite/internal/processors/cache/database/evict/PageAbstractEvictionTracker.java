@@ -30,15 +30,26 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  *
  */
 public abstract class PageAbstractEvictionTracker implements PageEvictionTracker {
+    /** This number of least significant bits is dropped from timestamp. */
+    private static final int COMPACT_TS_SHIFT = 8; // Enough if grid works for less than 17 years.
+
+    /** Millis in day. */
+    private final static int DAY = 24 * 60 * 60 * 1000;
+
     /** Page memory. */
     protected final PageMemory pageMem;
+
+    /** Tracking array size. */
+    final int trackingSize;
+
+    /** Base compact timestamp. */
+    private final long baseCompactTs;
+
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
@@ -88,15 +99,18 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         idxMask = ~(-1 << idxBits);
         /* <<<< */
+
+        trackingSize = segmentPageCount << segBits;
+
+        baseCompactTs = (System.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
+        // We subtract day to avoid fail in case of daylight shift or timezone change.
     }
 
     /**
      * @param pageIdx Page index.
      */
-    public boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
+    boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
         long fakePageId = PageIdUtils.pageId(0, (byte)0, pageIdx);
-
-        List<IgniteBiTuple<GridCacheEntryEx, GridCacheVersion>> evictEntriesAndVersions = new ArrayList<>();
 
         List<CacheDataRowAdapter> rowsToEvict = new ArrayList<>();
 
@@ -161,18 +175,63 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         return evictionDone;
     }
 
+    /**
+     * @param epochMilli Time millis.
+     */
+    long compactTimestamp(long epochMilli) {
+        return (epochMilli >> COMPACT_TS_SHIFT) - baseCompactTs;
+    }
+
+    /**
+     * Resolves position in tracking array by page index.
+     *
+     * @param pageIdx Page index.
+     */
+    int trackingIdx(int pageIdx) {
+        int inSegmentPageIdx = inSegmentPageIdx(pageIdx);
+
+        assert inSegmentPageIdx < segmentPageCount;
+
+        int trackingIdx = segmentIdx(pageIdx) * segmentPageCount + inSegmentPageIdx;
+
+        assert trackingIdx < trackingSize;
+
+        return trackingIdx;
+    }
+
+    /**
+     * Reverse of {@link #trackingIdx(int)}.
+     *
+     * @param trackingIdx Tracking index.
+     */
+    int pageIdx(int trackingIdx) {
+        assert trackingIdx < trackingSize;
+
+        long res = 0;
+
+        long segIdx = trackingIdx / segmentPageCount;
+        long pageIdx = trackingIdx % segmentPageCount;
+
+        res = (res << segBits) | (segIdx & segMask);
+        res = (res << idxBits) | (pageIdx & idxMask);
+
+        assert (res & (-1L << 32)) == 0;
+
+        return (int)res;
+    }
+
     /* Will be removed after segments refactoring >>>> */
     /**
      * @param pageIdx Page index.
      */
-    int segmentIdx(int pageIdx) {
+    private int segmentIdx(int pageIdx) {
         return (pageIdx >> idxBits) & segMask;
     }
 
     /**
      * @param pageIdx Page index.
      */
-    int inSegmentPageIdx(int pageIdx) {
+    private int inSegmentPageIdx(int pageIdx) {
         return pageIdx & idxMask;
     }
     /* <<<< */

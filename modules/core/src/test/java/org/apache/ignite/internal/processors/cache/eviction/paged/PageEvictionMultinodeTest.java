@@ -23,11 +23,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
  */
-public class PageEvictionMultinodeTest extends PageEvictionAbstractTest {
+public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest {
     /** Cache modes. */
     private static final CacheMode[] CACHE_MODES = {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
@@ -78,13 +80,20 @@ public class PageEvictionMultinodeTest extends PageEvictionAbstractTest {
     private void createCacheAndTestEvcition(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
 
-        for (int i = 0; i < ENTRIES; i++) {
+        for (int i = 1; i <= ENTRIES; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
 
             if (r.nextInt() % 5 == 0)
                 cache.put(i, new TestObject(PAGE_SIZE / 4 - 50 + r.nextInt(5000))); // Fragmented object.
             else
                 cache.put(i, new TestObject(r.nextInt(PAGE_SIZE / 4 - 50))); // Fits in one page.
+
+            if (r.nextInt() % 7 == 0)
+                cache.get(r.nextInt(i)); // Touch.
+            else if (r.nextInt() % 11 == 0)
+                cache.remove(r.nextInt(i)); // Remove.
+            else if (r.nextInt() % 13 == 0)
+                cache.put(r.nextInt(i), new TestObject(r.nextInt(PAGE_SIZE / 2))); // Update.
 
             if (i % (ENTRIES / 10) == 0)
                 System.out.println(">>> Entries put: " + i);
@@ -98,5 +107,26 @@ public class PageEvictionMultinodeTest extends PageEvictionAbstractTest {
         assertTrue(resultingSize < ENTRIES / 2);
 
         ignite(0).destroyCache(cfg.getName());
+    }
+
+
+    /**
+     *
+     */
+    public static class RandomLru extends PageEvictionMultinodeTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Random2Lru extends PageEvictionMultinodeTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, super.getConfiguration(gridName));
+        }
     }
 }

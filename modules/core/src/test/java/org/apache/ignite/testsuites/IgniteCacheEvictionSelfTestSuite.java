@@ -73,8 +73,10 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheSynchronousEvictionsFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictableEntryEqualsSelfTest.class));
 
-        suite.addTest(new TestSuite(PageEvictionMultinodeTest.class));
-        suite.addTest(new TestSuite(PageEvictionWithRebalanceTest.class));
+        suite.addTest(new TestSuite(PageEvictionMultinodeTest.RandomLru.class));
+        suite.addTest(new TestSuite(PageEvictionMultinodeTest.Random2Lru.class));
+        suite.addTest(new TestSuite(PageEvictionWithRebalanceTest.RandomLru.class));
+        suite.addTest(new TestSuite(PageEvictionWithRebalanceTest.Random2Lru.class));
 
         return suite;
     }

@@ -23,11 +23,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  *
  */
-public class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
+public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
     /**
      *
      */
@@ -39,7 +41,7 @@ public class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
 
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(cfg);
 
-        for (int i = 0; i < ENTRIES; i++) {
+        for (int i = 1; i <= ENTRIES; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
 
             if (r.nextInt() % 5 == 0)
@@ -72,6 +74,26 @@ public class PageEvictionWithRebalanceTest extends PageEvictionAbstractTest {
             assertTrue(rebalanceSize < size);
 
             size = rebalanceSize;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class RandomLru extends PageEvictionWithRebalanceTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            return setEvictionMode(DataPageEvictionMode.RANDOM_LRU, super.getConfiguration(gridName));
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Random2Lru extends PageEvictionWithRebalanceTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            return setEvictionMode(DataPageEvictionMode.RANDOM_2_LRU, super.getConfiguration(gridName));
         }
     }
 }

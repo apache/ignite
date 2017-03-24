@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.database.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.database.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
@@ -465,7 +466,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 return new RandomLruPageEvictionTracker(pageMem, plc, cctx);
 
             case RANDOM_2_LRU:
-                // TODO
+                return new Random2LruPageEvictionTracker(pageMem, plc, cctx);
+
             case CLOCK_PRO:
                 // TODO
             default:

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  *
  */
-public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
+public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** Evict attempts limit. */
     private static final int EVICT_ATTEMPTS_LIMIT = 30;
 
@@ -46,7 +46,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
      * @param plcCfg Policy config.
      * @param sharedCtx Shared context.
      */
-    public RandomLruPageEvictionTracker(
+    public Random2LruPageEvictionTracker(
         PageMemory pageMem,
         MemoryPolicyConfiguration plcCfg,
         GridCacheSharedContext sharedCtx
@@ -57,20 +57,34 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         assert plcCfg.getSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 
-        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4);
+        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 8);
 
-        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4, (byte)0);
+        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 8, (byte)0);
     }
 
     /** {@inheritDoc} */
     @Override public void touchPage(long pageId) throws IgniteCheckedException {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        long res = compactTimestamp(System.currentTimeMillis());
-        
-        assert res >= 0 && res < Integer.MAX_VALUE;
-        
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
+        long latestTs = compactTimestamp(System.currentTimeMillis());
+
+        assert latestTs >= 0 && latestTs < Integer.MAX_VALUE;
+
+        boolean success;
+        do {
+            int trackingIdx = trackingIdx(pageIdx);
+
+            int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
+
+            int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+
+            if (firstTs <= secondTs)
+                success = GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx * 8, firstTs, (int)latestTs);
+            else {
+                success = GridUnsafe.compareAndSwapInt(
+                    null, trackingArrPtr + trackingIdx * 8 + 4, secondTs, (int)latestTs);
+            }
+        } while (!success);
     }
 
     /** {@inheritDoc} */
@@ -90,16 +104,22 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             int sampleSpinCnt = 0;
 
             while (dataPagesCnt < SAMPLE_SIZE) {
-                int sampleTrackingIdx = rnd.nextInt(trackingSize);
+                int trackingIdx = rnd.nextInt(trackingSize);
 
-                int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4);
+                int firstTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8);
 
-                if (compactTs != 0) {
+                int secondTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 8 + 4);
+
+                int minTs = Math.min(firstTs, secondTs);
+
+                int maxTs = Math.max(firstTs, secondTs);
+
+                if (maxTs != 0) {
                     // We chose data page with at least one touch.
-                    if (compactTs < lruCompactTs) {
-                        lruTrackingIdx = sampleTrackingIdx;
+                    if (minTs < lruCompactTs) {
+                        lruTrackingIdx = trackingIdx;
 
-                        lruCompactTs = compactTs;
+                        lruCompactTs = minTs;
                     }
 
                     dataPagesCnt++;
@@ -124,6 +144,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, 0);
+        int trackingIdx = trackingIdx(pageIdx);
+
+        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8, 0L);
     }
 }

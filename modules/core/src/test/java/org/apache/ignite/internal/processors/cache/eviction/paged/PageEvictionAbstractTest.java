@@ -52,6 +52,19 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** Eviction threshold. */
     private static final double EVICTION_THRESHOLD = 0.9;
 
+    /**
+     * @param mode Eviction mode.
+     * @param configuration Configuration.
+     */
+    static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
+        MemoryPolicyConfiguration[] policies = configuration.getMemoryConfiguration().getMemoryPolicies();
+
+        for (MemoryPolicyConfiguration plcCfg : policies)
+            plcCfg.setPageEvictionMode(mode);
+
+        return configuration;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -64,7 +77,6 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         plc.setDefault(true);
         plc.setSize(SIZE);
-        plc.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         plc.setEmptyPagesPoolSize(EMPTY_PAGES_POOL_SIZE);
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
 
