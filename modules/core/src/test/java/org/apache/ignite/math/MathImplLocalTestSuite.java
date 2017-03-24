@@ -18,10 +18,7 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.math.decompositions.LUDecompositionTest;
-import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrixConstructorTest;
-import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrixConstructorTest;
-import org.apache.ignite.math.impls.matrix.DiagonalMatrixTest;
-import org.apache.ignite.math.impls.matrix.MatrixImplementationsTest;
+import org.apache.ignite.math.impls.matrix.*;
 import org.apache.ignite.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixOffHeapStorageTest;
 import org.apache.ignite.math.impls.storage.matrix.MatrixStorageImplementationTest;
@@ -70,6 +67,7 @@ import org.junit.runners.Suite;
     // Matrix constructors tests.
     DenseLocalOnHeapMatrixConstructorTest.class,
     DenseLocalOffHeapMatrixConstructorTest.class,
+    RandomMatrixConstructorTest.class,
     // Matrix tests.
     MatrixImplementationsTest.class,
     DiagonalMatrixTest.class,
