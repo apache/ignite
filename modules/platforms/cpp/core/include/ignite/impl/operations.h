@@ -540,6 +540,8 @@ namespace ignite
             {
                 int32_t cnt = reader.ReadInt32();
 
+                res.reserve(res.size() + cnt);
+
                 for (int i = 0; i < cnt; i++) 
                 {
                     K key = reader.ReadTopObject<K>();
@@ -559,6 +561,47 @@ namespace ignite
             std::vector<ignite::cache::CacheEntry<K, V> >& res;
             
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperation)
+        };
+
+        /**
+         * Output query GET ALL operation.
+         */
+        template<typename K, typename V, typename I>
+        class OutQueryGetAllOperationIter : public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            OutQueryGetAllOperationIter(I iter) : iter(iter)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(binary::BinaryReaderImpl& reader)
+            {
+                int32_t cnt = reader.ReadInt32();
+
+                for (int i = 0; i < cnt; i++) 
+                {
+                    K key = reader.ReadTopObject<K>();
+                    V val = reader.ReadTopObject<V>();
+
+                    *iter = ignite::cache::CacheEntry<K, V>(key, val);
+                    ++iter;
+                }
+            }
+
+            virtual void SetNull()
+            {
+                // No-op.
+            }
+
+        private:
+            /** Out iter. */
+            I iter;
+            
+            IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperationIter)
         };
     }
 }
