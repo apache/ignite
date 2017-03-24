@@ -23,12 +23,71 @@ import org.apache.ignite.MemoryMetrics;
  */
 @MXBeanDescription("MBean that provides access to MemoryMetrics of current Ignite node.")
 public interface MemoryMetricsMXBean extends MemoryMetrics {
+    /** {@inheritDoc} */
+    @MXBeanDescription("Name of PageMemory metrics are collected for.")
+    public String name();
+
+    /**
+     * @return Returns size (in MBytes) of MemoryPolicy observed by this MemoryMetrics MBean.
+     */
+    @MXBeanDescription("Size of PageMemory in MBytes.")
+    public int size();
+
+    /**
+     * @return Path of memory-mapped file used to swap PageMemory pages to disk.
+     */
+    @MXBeanDescription("File path of memory-mapped swap file.")
+    public String swapFilePath();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Name of MemoryPolicy metrics are collected for.")
-    public String name();
+    @MXBeanDescription("Enables metrics gathering.")
+    public void enableMetrics();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Disables metrics gathering.")
+    public void disableMetrics();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of allocated pages.")
     public long getTotalAllocatedPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Allocation rate (pages per second) averaged across rateTimeInternal.")
+    public float getAllocationRate();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Eviction rate (pages per second).")
+    public float getEvictionRate();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Percentage of pages fully occupied by large entities' fragments.")
+    public float getLargeEntriesPagesPercentage();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Pages fill factor: size of all entries in cache over size of all allocated pages.")
+    public float getPagesFillFactor();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription(
+            "Sets time interval average allocation rate (pages per second) is calculated over."
+    )
+    @MXBeanParametersNames(
+            "rateTimeInterval"
+    )
+    @MXBeanParametersDescriptions(
+            "Time interval (in seconds) to set."
+    )
+    public void rateTimeInterval(int rateTimeInterval);
+
+    /** {@inheritDoc} */
+    @MXBeanDescription(
+            "Sets number of subintervals to calculate allocationRate metrics."
+    )
+    @MXBeanParametersNames(
+            "subInts"
+    )
+    @MXBeanParametersDescriptions(
+            "Number of subintervals to set."
+    )
+    public void subIntervals(int subInts);
 }

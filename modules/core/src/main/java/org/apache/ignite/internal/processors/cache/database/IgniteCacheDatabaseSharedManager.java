@@ -23,10 +23,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.mxbean.MemoryMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -114,14 +117,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (MemoryPolicy memPlc : memPlcMap.values()) {
             MemoryPolicyConfiguration memPlcCfg = memPlc.config();
 
+            MemoryMetricsImpl memMetrics = (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
+
             FreeListImpl freeList = new FreeListImpl(0,
                     cctx.gridName(),
                     memPlc.pageMemory(),
-                    (MemoryMetricsImpl) memMetricsMap.get(memPlcCfg.getName()),
+                    memMetrics,
                     null,
                     cctx.wal(),
                     0L,
                     true);
+
+            memMetrics.freeList(freeList);
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
@@ -156,9 +163,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             memMetricsMap = U.newHashMap(2);
 
-            MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(null);
+            MemoryPolicyConfiguration dfltPlcCfg = dbCfg.createDefaultPolicyConfig();
 
-            dfltMemPlc = createDefaultMemoryPolicy(dbCfg, memMetrics);
+            MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(dfltPlcCfg);
+
+            registerMetricsMBean(memMetrics);
+
+            dfltMemPlc = createDefaultMemoryPolicy(dbCfg, dfltPlcCfg, memMetrics);
 
             memPlcMap.put(null, dfltMemPlc);
             memMetricsMap.put(null, memMetrics);
@@ -171,27 +182,34 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (dfltMemPlcName == null) {
                 //reserve additional place for default and system memory policies
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 2);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 2);
 
-                MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(null);
+                MemoryPolicyConfiguration dfltPlcCfg = dbCfg.createDefaultPolicyConfig();
 
-                dfltMemPlc = createDefaultMemoryPolicy(dbCfg, memMetrics);
+                MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(dfltPlcCfg);
+
+                dfltMemPlc = createDefaultMemoryPolicy(dbCfg, dfltPlcCfg, memMetrics);
                 memPlcMap.put(null, dfltMemPlc);
                 memMetricsMap.put(null, memMetrics);
 
                 log.warning("No user-defined default MemoryPolicy found; system default of 1GB size will be used.");
             }
-            else
+            else {
                 //reserve additional place for system memory policy only
                 memPlcMap = U.newHashMap(memPlcsCfgs.length + 1);
+                memMetricsMap = U.newHashMap(memPlcsCfgs.length + 1);;
+            }
 
             for (MemoryPolicyConfiguration memPlcCfg : memPlcsCfgs) {
-                MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg.getName());
+                MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg);
 
                 PageMemory pageMem = initMemory(dbCfg, memPlcCfg, memMetrics);
 
                 MemoryPolicy memPlc = new MemoryPolicy(pageMem, memMetrics, memPlcCfg);
 
                 memPlcMap.put(memPlcCfg.getName(), memPlc);
+
+                memMetricsMap.put(memPlcCfg.getName(), memMetrics);
 
                 if (memPlcCfg.getName().equals(dfltMemPlcName))
                     dfltMemPlc = memPlc;
@@ -200,7 +218,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         MemoryPolicyConfiguration sysPlcCfg = createSystemMemoryPolicy(dbCfg.getSystemCacheMemorySize());
 
-        MemoryMetricsImpl sysMemMetrics = new MemoryMetricsImpl(SYSTEM_MEMORY_POLICY_NAME);
+        MemoryMetricsImpl sysMemMetrics = new MemoryMetricsImpl(sysPlcCfg);
 
         memPlcMap.put(SYSTEM_MEMORY_POLICY_NAME, new MemoryPolicy(initMemory(dbCfg, sysPlcCfg, sysMemMetrics), sysMemMetrics, sysPlcCfg));
 
@@ -208,15 +226,34 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param memMetrics Mem metrics.
+     */
+    private void registerMetricsMBean(MemoryMetricsImpl memMetrics) {
+        IgniteConfiguration cfg = cctx.gridConfig();
+
+        try {
+            U.registerMBean(
+                    cfg.getMBeanServer(),
+                    cfg.getGridName(),
+                    "MemoryMetrics",
+                    memMetrics.name(),
+                    memMetrics,
+                    MemoryMetricsMXBean.class);
+        }
+        catch (JMException e) {
+            log.warning("Failed to register MBean for MemoryMetrics with name: '" + memMetrics.name() + "'");
+        }
+    }
+
+    /**
      * @param dbCfg Database configuration.
+     * @param memPlcCfg MemoryPolicy configuration.
      * @param memMetrics MemoryMetrics instance.
      */
-    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg, MemoryMetricsImpl memMetrics) {
-        MemoryPolicyConfiguration dfltPlc = dbCfg.createDefaultPolicyConfig();
+    private MemoryPolicy createDefaultMemoryPolicy(MemoryConfiguration dbCfg, MemoryPolicyConfiguration memPlcCfg, MemoryMetricsImpl memMetrics) {
+        PageMemory pageMem = initMemory(dbCfg, memPlcCfg, memMetrics);
 
-        PageMemory pageMem = initMemory(dbCfg, dfltPlc, memMetrics);
-
-        return new MemoryPolicy(pageMem, memMetrics, dfltPlc);
+        return new MemoryPolicy(pageMem, memMetrics, memPlcCfg);
     }
 
     /**

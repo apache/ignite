@@ -62,4 +62,24 @@ public interface MemoryMetrics {
      * @return Free space to overall size ratio across all pages in FreeList.
      */
     public float getPagesFillFactor();
+
+    /**
+     * Sets interval of time (in seconds) to monitor allocation rate.
+     *
+     * E.g. after setting rateTimeInterval to 60 seconds subsequent calls to {@link #getAllocationRate()}
+     * will return average allocation rate (pages per second) for the last minute.
+     *
+     * @param rateTimeInterval Time interval used to calculate allocation/eviction rate.
+     */
+    public void rateTimeInterval(int rateTimeInterval);
+
+    /**
+     * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate,
+     * 5 by default.
+     * Setting it to bigger number allows more precise calculation and smaller drops of allocationRate metric
+     * when next subinterval has to be recycled but introduces bigger calculation overhead.
+     *
+     * @param subInts Number of subintervals.
+     */
+    public void subIntervals(int subInts);
 }

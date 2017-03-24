@@ -325,6 +325,28 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         init(metaPageId, initNew);
     }
 
+    /**
+     * Calculates average fill factor over FreeListImpl instance.
+     */
+    public float fillFactor() {
+        long pageSize = pageSize();
+
+        long totalSize = 0;
+        long loadSize = 0;
+
+        for (int b = BUCKETS - 2; b > 0; b--) {
+            long bsize = pageSize - ((REUSE_BUCKET - b) << shift);
+
+            long pages = bucketsSize[b].longValue();
+
+            loadSize += pages * (pageSize - bsize);
+
+            totalSize += pages * pageSize;
+        }
+
+        return totalSize == 0 ? -1L : ((float) loadSize / totalSize);
+    }
+
     /** {@inheritDoc} */
     @Override public void dumpStatistics(IgniteLogger log) {
         long dataPages = 0;
