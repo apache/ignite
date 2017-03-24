@@ -55,6 +55,8 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
         assert rows > 0;
         assert cols > 0;
 
+        allocateMemory(rows, cols);
+
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
                 set(i,j,data[i][j]);
