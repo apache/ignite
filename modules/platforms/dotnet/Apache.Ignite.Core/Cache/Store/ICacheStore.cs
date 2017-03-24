@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
@@ -194,6 +195,7 @@ namespace Apache.Ignite.Core.Cache.Store
     /// Non-generic base type for <see cref="ICacheStore{TK,TV}"/>, used only for configuration property.
     /// Users should implement generic <see cref="ICacheStore{TK,TV}"/>.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ICacheStore
     {
         // No-op.
