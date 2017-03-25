@@ -57,21 +57,21 @@ public class GridSwapSpaceSpiConsistencySelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (GRID_WITHOUT_SWAP_SPACE.equals(gridName))
+        if (GRID_WITHOUT_SWAP_SPACE.equals(igniteInstanceName))
             cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
-        if (GRID_WITH_SWAP_SPACE.equals(gridName))
+        if (GRID_WITH_SWAP_SPACE.equals(igniteInstanceName))
             cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        if (GRID_CLIENT_WITHOUT_SWAP_SPACE.equals(gridName)) {
+        if (GRID_CLIENT_WITHOUT_SWAP_SPACE.equals(igniteInstanceName)) {
             cfg.setClientMode(true);
             cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
         }
 
-        if (GRID_CLIENT_WITH_SWAP_SPACE.equals(gridName)) {
+        if (GRID_CLIENT_WITH_SWAP_SPACE.equals(igniteInstanceName)) {
             cfg.setClientMode(true);
             cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
         }

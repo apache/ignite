@@ -18,7 +18,7 @@
 import paragraphRateTemplateUrl from 'views/sql/paragraph-rate.tpl.pug';
 import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
 import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
-import showQueryTemplateUrl from 'views/templates/message.tpl.pug';
+import messageTemplateUrl from 'views/templates/message.tpl.pug';
 
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -53,7 +53,7 @@ const _fullColName = (col) => {
 let paragraphId = 0;
 
 class Paragraph {
-    constructor($animate, $timeout, paragraph) {
+    constructor($animate, $timeout, JavaTypes, paragraph) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
@@ -140,13 +140,36 @@ class Paragraph {
         }});
 
         Object.defineProperty(this, 'chartHistory', {value: []});
+
+        Object.defineProperty(this, 'error', {value: {
+            root: {},
+            message: ''
+        }});
+
+        this.setError = (err) => {
+            this.error.root = err;
+            this.error.message = err.message;
+
+            let cause = err;
+
+            while (_.nonNil(cause)) {
+                if (_.nonEmpty(cause.className) &&
+                    _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
+                    this.error.message = cause.message;
+
+                    break;
+                }
+
+                cause = cause.cause;
+            }
+        };
     }
 
     resultType() {
         if (_.isNil(this.queryArgs))
             return null;
 
-        if (!_.isEmpty(this.errMsg))
+        if (_.nonEmpty(this.error.message))
             return 'error';
 
         if (_.isEmpty(this.rows))
@@ -172,7 +195,7 @@ class Paragraph {
     }
 
     queryExecuted() {
-        return !_.isEmpty(this.meta) || !_.isEmpty(this.errMsg);
+        return _.nonEmpty(this.meta) || _.nonEmpty(this.error.message);
     }
 
     scanExplain() {
@@ -184,17 +207,17 @@ class Paragraph {
     }
 
     chartColumnsConfigured() {
-        return !_.isEmpty(this.chartKeyCols) && !_.isEmpty(this.chartValCols);
+        return _.nonEmpty(this.chartKeyCols) && _.nonEmpty(this.chartValCols);
     }
 
     chartTimeLineEnabled() {
-        return !_.isEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
+        return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
 }
 
 // Controller for SQL notebook screen.
-export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData) {
+export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes) {
         const $ctrl = this;
 
         // Define template urls.
@@ -909,7 +932,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                     $scope.notebook.paragraphs = [];
 
                 $scope.notebook.paragraphs = _.map($scope.notebook.paragraphs,
-                    (paragraph) => new Paragraph($animate, $timeout, paragraph));
+                    (paragraph) => new Paragraph($animate, $timeout, JavaTypes, paragraph));
 
                 if (_.isEmpty($scope.notebook.paragraphs))
                     $scope.addQuery();
@@ -981,7 +1004,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             ActivitiesData.post({ action: '/queries/add/query' });
 
-            const paragraph = new Paragraph($animate, $timeout, {
+            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
                 name: 'Query' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
@@ -1009,7 +1032,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             ActivitiesData.post({ action: '/queries/add/scan' });
 
-            const paragraph = new Paragraph($animate, $timeout, {
+            const paragraph = new Paragraph($animate, $timeout, JavaTypes, {
                 name: 'Scan' + (sz === 0 ? '' : sz),
                 query: '',
                 pageSize: $scope.pageSizes[1],
@@ -1246,7 +1269,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
 
             paragraph.resNodeId = res.responseNodeId;
 
-            delete paragraph.errMsg;
+            paragraph.setError({message: ''});
 
             // Prepare explain results for display in table.
             if (paragraph.queryArgs.query && paragraph.queryArgs.query.startsWith('EXPLAIN') && res.rows) {
@@ -1341,7 +1364,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 .then((nid) => agentMonitor.query(nid, args.cacheName, args.query, args.nonCollocatedJoins,
                     args.enforceJoinOrder, !!args.localNid, args.pageSize))
                 .then(_processQueryResult.bind(this, paragraph, false))
-                .catch((err) => paragraph.errMsg = err.message);
+                .catch((err) => paragraph.setError(err));
         };
 
         const _tryStartRefresh = function(paragraph) {
@@ -1419,7 +1442,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                             _tryStartRefresh(paragraph);
                         })
                         .catch((err) => {
-                            paragraph.errMsg = err.message;
+                            paragraph.setError(err);
 
                             _showLoading(paragraph, false);
 
@@ -1468,7 +1491,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 })
                 .then(_processQueryResult.bind(this, paragraph, true))
                 .catch((err) => {
-                    paragraph.errMsg = err.message;
+                    paragraph.setError(err);
 
                     _showLoading(paragraph, false);
                 })
@@ -1506,7 +1529,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         })
                         .then((res) => _processQueryResult(paragraph, true, res))
                         .catch((err) => {
-                            paragraph.errMsg = err.message;
+                            paragraph.setError(err);
 
                             _showLoading(paragraph, false);
                         });
@@ -1560,7 +1583,7 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                         delete paragraph.queryId;
                 })
                 .catch((err) => {
-                    paragraph.errMsg = err.message;
+                    paragraph.setError(err);
 
                     _showLoading(paragraph, false);
                 })
@@ -1756,15 +1779,36 @@ export default ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', 
                 }
                 else if (paragraph.queryArgs.query .startsWith('EXPLAIN ')) {
                     scope.title = 'Explain query';
-                    scope.content = [paragraph.queryArgs.query];
+                    scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
                 else {
                     scope.title = 'SQL query';
-                    scope.content = [paragraph.queryArgs.query];
+                    scope.content = paragraph.queryArgs.query.split(/\r?\n/);
                 }
 
                 // Show a basic modal from a controller
-                $modal({scope, templateUrl: showQueryTemplateUrl, placement: 'center', show: true});
+                $modal({scope, templateUrl: messageTemplateUrl, placement: 'center', show: true});
+            }
+        };
+
+        $scope.showStackTrace = function(paragraph) {
+            if (!_.isNil(paragraph)) {
+                const scope = $scope.$new();
+
+                scope.title = 'Error details';
+                scope.content = [];
+
+                let cause = paragraph.error.root;
+
+                while (_.nonNil(cause)) {
+                    scope.content.push((scope.content.length > 0 ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '') +
+                        '[' + JavaTypes.shortClassName(cause.className) + '] ' + cause.message);
+
+                    cause = cause.cause;
+                }
+
+                // Show a basic modal from a controller
+                $modal({scope, templateUrl: messageTemplateUrl, placement: 'center', show: true});
             }
         };
     }

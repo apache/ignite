@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ReadHandlers[BinaryUtils.TypeString] = new BinarySystemReader<string>(BinaryUtils.ReadString);
 
             // 4. Guid.
-            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(BinaryUtils.ReadGuid);
+            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
 
             // 5. Primitive arrays.
             ReadHandlers[BinaryUtils.TypeArrayBool] = new BinarySystemReader<bool[]>(BinaryUtils.ReadBooleanArray);
@@ -527,15 +527,19 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryUtils.WriteGuidArray((Guid?[])obj, ctx.Stream);
         }
-        
-        /**
-         * <summary>Write enum array.</summary>
-         */
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
         private static void WriteEnumArray(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayEnum);
 
-            BinaryUtils.WriteArray((Array)obj, ctx);
+            var desc = ctx.Marshaller.GetDescriptor(obj.GetType());
+
+            int typeId = desc == null ? BinaryUtils.ObjTypeId : desc.TypeId;
+
+            BinaryUtils.WriteArray((Array)obj, ctx, typeId);
         }
 
         /**

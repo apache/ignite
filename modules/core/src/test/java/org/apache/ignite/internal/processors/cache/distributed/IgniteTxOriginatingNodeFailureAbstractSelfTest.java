@@ -37,7 +37,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -169,14 +169,14 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
-                IgniteInternalTx txEx = tx.tx();
+                GridNearTxLocal txEx = tx.tx();
 
                 assertTrue(txEx.optimistic());
 
                 cache.putAll(map);
 
                 try {
-                    txEx.prepareAsync().get(3, TimeUnit.SECONDS);
+                    txEx.prepareNearTxLocal().get(3, TimeUnit.SECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
                     info("Failed to wait for prepare future completion: " + partial);
@@ -248,8 +248,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
@@ -265,8 +265,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);

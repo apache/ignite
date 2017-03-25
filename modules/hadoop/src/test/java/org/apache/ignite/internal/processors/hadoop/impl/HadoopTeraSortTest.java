@@ -384,8 +384,8 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration igc = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration igc = super.getConfiguration(igniteInstanceName);
 
         HadoopConfiguration hc = createHadoopConfiguration();
 

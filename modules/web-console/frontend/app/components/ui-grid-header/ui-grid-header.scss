@@ -28,6 +28,12 @@
         height: 30px;
     }
 
+    .ui-grid-header-cell {
+        .ui-grid-cell-contents > span:not(.ui-grid-header-cell-label) {
+            right: 3px;
+        }
+    }
+
     .ui-grid-header-cell [role="columnheader"] {
         display: flex;
         

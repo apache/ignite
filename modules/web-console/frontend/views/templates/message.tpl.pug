@@ -22,7 +22,7 @@
                 h4.modal-title
                     i.fa.fa-info-circle
                     | {{title}}
-            .modal-body(ng-show='content')
-                p(ng-bind-html='content.join("<br/>")' style='text-align: left;')
+            .modal-body(ng-show='content' style='overflow: auto; max-height: 300px;')
+                p(ng-bind-html='content.join("<br/>")' style='text-align: left; white-space: nowrap;')
             .modal-footer
                 button.btn.btn-primary(id='confirm-btn-confirm' ng-click='$hide()') Ok

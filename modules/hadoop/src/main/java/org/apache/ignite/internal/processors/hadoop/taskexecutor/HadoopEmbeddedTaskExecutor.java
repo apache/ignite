@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -53,7 +53,7 @@ public class HadoopEmbeddedTaskExecutor extends HadoopTaskExecutorAdapter {
 
         jobTracker = ctx.jobTracker();
 
-        exec = new HadoopExecutorService(log, ctx.kernalContext().gridName(),
+        exec = new HadoopExecutorService(log, ctx.kernalContext().igniteInstanceName(),
             ctx.configuration().getMaxParallelTasks(), ctx.configuration().getMaxTaskQueueSize());
     }
 
@@ -76,7 +76,7 @@ public class HadoopEmbeddedTaskExecutor extends HadoopTaskExecutorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void run(final HadoopJob job, Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
+    @Override public void run(final HadoopJobEx job, Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Submitting tasks for local execution [locNodeId=" + ctx.localNodeId() +
                 ", tasksCnt=" + tasks.size() + ']');
@@ -128,8 +128,8 @@ public class HadoopEmbeddedTaskExecutor extends HadoopTaskExecutorAdapter {
      * for this job ID.
      * <p>
      * It is guaranteed that this method will not be called concurrently with
-     * {@link #run(org.apache.ignite.internal.processors.hadoop.HadoopJob, Collection)} method. No more job submissions will be performed via
-     * {@link #run(org.apache.ignite.internal.processors.hadoop.HadoopJob, Collection)} method for given job ID after this method is called.
+     * {@link #run(HadoopJobEx, Collection)} method. No more job submissions will be performed via
+     * {@link #run(HadoopJobEx, Collection)} method for given job ID after this method is called.
      *
      * @param jobId Job ID to cancel.
      */

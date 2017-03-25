@@ -61,10 +61,10 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(NODES - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODES - 1)))
             cfg.setClientMode(true);
 
         return cfg;
