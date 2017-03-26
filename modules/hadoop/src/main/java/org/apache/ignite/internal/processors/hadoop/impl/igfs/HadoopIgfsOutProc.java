@@ -103,9 +103,6 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
-    /** Grid name. */
-    private final String grid;
-
     /** IGFS name. */
     private final String igfs;
 
@@ -126,26 +123,26 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    public HadoopIgfsOutProc(String host, int port, String grid, String igfs, Log log, String user) throws IOException {
-        this(host, port, grid, igfs, false, log, user);
+    public HadoopIgfsOutProc(String host, int port, String igfs, Log log, String user) throws IOException {
+        this(host, port, igfs, false, log, user);
     }
 
     /**
      * Constructor for shmem endpoint.
      *
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    public HadoopIgfsOutProc(int port, String grid, String igfs, Log log, String user) throws IOException {
-        this(null, port, grid, igfs, true, log, user);
+    public HadoopIgfsOutProc(int port, String igfs, Log log, String user) throws IOException {
+        this(null, port, igfs, true, log, user);
     }
 
     /**
@@ -153,20 +150,19 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
      * @param igfs IGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
+     * @param user User name.
      * @throws IOException If failed.
      */
-    private HadoopIgfsOutProc(String host, int port, String grid, String igfs, boolean shmem, Log log, String user)
+    private HadoopIgfsOutProc(String host, int port, String igfs, boolean shmem, Log log, String user)
         throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
 
         String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
-        this.grid = grid;
         this.igfs = igfs;
         this.log = log;
         this.userName = IgfsUtils.fixUserName(user);
@@ -180,7 +176,6 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
         final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
-        req.gridName(grid);
         req.igfsName(igfs);
         req.logDirectory(logDir);
 
@@ -223,7 +218,8 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
+    @Override public Boolean setTimes(IgfsPath path, long accessTime, long modificationTime)
+        throws IgniteCheckedException {
         final IgfsPathControlRequest msg = new IgfsPathControlRequest();
 
         msg.command(SET_TIMES);

@@ -49,7 +49,8 @@ ignite_tests_LDADD = \
     -lboost_chrono
 
 ignite_tests_LDFLAGS = \
-    -static-libtool-libs
+    -static-libtool-libs \
+    -rdynamic
 
 ignite_tests_SOURCES = \
     src/reference_test.cpp \
@@ -63,6 +64,8 @@ ignite_tests_SOURCES = \
     src/ignition_test.cpp \
     src/interop_memory_test.cpp \
     src/interop_test.cpp \
+    src/cluster_test.cpp \
+    src/cache_invoke_test.cpp \
     src/handle_registry_test.cpp \
     src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \
@@ -70,6 +73,7 @@ ignite_tests_SOURCES = \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
     src/binary_session_test.cpp \
+    src/date_time_test.cpp \
     src/decimal_test.cpp \
     src/dynamic_size_array_test.cpp \
     src/fixed_size_array_test.cpp \

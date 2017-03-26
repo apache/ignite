@@ -33,8 +33,6 @@
             <list>
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <property name="name" value="test"/>
-                    <property name="metaCacheName" value="meta"/>
-                    <property name="dataCacheName" value="data"/>
 
                     <property name="maxSpaceSize" value="#{100L * 1024 * 1024}"/>
 

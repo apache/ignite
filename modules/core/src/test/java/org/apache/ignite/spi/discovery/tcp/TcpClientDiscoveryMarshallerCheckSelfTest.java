@@ -34,10 +34,10 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith("0"))
+        if (igniteInstanceName.endsWith("0"))
             cfg.setMarshaller(new JdkMarshaller());
         else {
             cfg.setClientMode(true);

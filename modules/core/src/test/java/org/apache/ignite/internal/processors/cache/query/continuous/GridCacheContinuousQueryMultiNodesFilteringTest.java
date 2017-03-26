@@ -247,15 +247,15 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
     /** */
     private Ignite startGrid(final int idx, boolean isClientMode) throws Exception {
-        String gridName = getTestGridName(idx);
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
 
-        IgniteConfiguration cfg = optimize(getConfiguration(gridName)).setClientMode(isClientMode);
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName)).setClientMode(isClientMode);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setUserAttributes(Collections.singletonMap("idx", idx));
 
-        Ignite node = startGrid(gridName, cfg);
+        Ignite node = startGrid(igniteInstanceName, cfg);
 
         IgnitePredicate<ClusterNode> nodeFilter = new NodeFilter(idx);
 
@@ -303,8 +303,8 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(client);
 
