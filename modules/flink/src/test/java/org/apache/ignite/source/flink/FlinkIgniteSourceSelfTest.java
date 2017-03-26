@@ -48,7 +48,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 20_000;
+        return 10_000;
     }
 
     /** {@inheritDoc} */
@@ -99,16 +99,6 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests for the Flink source for large batch.
-     * Ignite started in source based on what is specified in the configuration file.
-     *
-     * @throws Exception
-     */
-    public void testFlinkIgniteSourceWithLargeBatch() throws Exception {
-        checkIgniteSource(100, 1, null);
-    }
-
-    /**
      * Validation for the Flink source with EventCount and IgnitePredicate Filter.
      * Ignite started in source based on what is specified in the configuration file.
      *
@@ -119,7 +109,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
      */
     private void checkIgniteSource(final int evtCount, final int parallelismCnt,
         IgnitePredicate<CacheEvent> filter) throws Exception {
-        Ignite ignite = G.ignite(GRID_NAME);
+        final Ignite ignite = G.ignite(GRID_NAME);
         IgniteCache cache = ignite.getOrCreateCache(TEST_CACHE);
 
         final IgniteSource igniteSrc = new IgniteSource(TEST_CACHE);
@@ -150,16 +140,16 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         }
 
         stream.addSink(new SinkFunction<CacheEvent>() {
-            List<CacheEvent> resultList = new ArrayList<>();
+            List<Integer> resultList = new ArrayList<>();
 
             @Override public void invoke(CacheEvent evt) throws Exception {
-                resultList.add(evt.key());
+                resultList.add((Integer) evt.key());
 
                 Collections.sort(resultList);
 
                 if (parallelismCnt == 1) {
-                    assertEquals(eventList, resultList);
-                    igniteSrc.cancel();
+                        assertEquals(eventList, resultList);
+                        igniteSrc.cancel();
                 }
                 else {
                     for (Integer i : eventList) {
@@ -173,5 +163,4 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         env.execute();
     }
 }
-
 
