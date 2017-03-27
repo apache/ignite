@@ -7,6 +7,15 @@ Module includes on heap and off heap, dense and sparse, local and distributed im
 
 Based on ideas from Apache Mahout.
 
+# Local build with javadoc
+
+1. Locally deploy Apache Ignite License Generator module.
+    mvn clean deploy -DskipTests=true
+2. Locally build Math module
+    mvn clean package -DskipTests=true
+
+Find generated jars in target folder.
+
 Importing Math Module In Maven Project
 ---------------------------------------
 
