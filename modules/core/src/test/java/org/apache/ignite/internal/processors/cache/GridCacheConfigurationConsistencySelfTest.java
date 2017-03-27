@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicy;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -382,7 +382,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             new C1<CacheConfiguration, Void>() {
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
-                    cfg.setEvictionPolicy(new RandomEvictionPolicy());
+                    cfg.setEvictionPolicy(new SortedEvictionPolicy());
                     return null;
                 }
             },
@@ -632,7 +632,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                nearCfg.setNearEvictionPolicy(new RandomEvictionPolicy());
+                nearCfg.setNearEvictionPolicy(new LruEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
 

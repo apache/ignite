@@ -34,9 +34,7 @@ angular.module('ignite-console.sql', [
                 .state('base.sql', {
                     url: '/queries',
                     abstract: true,
-                    template: '<ui-view></ui-view>',
-                    controller,
-                    controllerAs: '$ctrl'
+                    template: '<ui-view></ui-view>'
                 })
                 .state('base.sql.notebook', {
                     url: '/notebook/{noteId}',
@@ -44,7 +42,9 @@ angular.module('ignite-console.sql', [
                     onEnter: AclRoute.checkAccess('query'),
                     metaTags: {
                         title: 'Query notebook'
-                    }
+                    },
+                    controller,
+                    controllerAs: '$ctrl'
                 })
                 .state('base.sql.demo', {
                     url: '/demo',
@@ -52,7 +52,9 @@ angular.module('ignite-console.sql', [
                     onEnter: AclRoute.checkAccess('query'),
                     metaTags: {
                         title: 'SQL demo'
-                    }
+                    },
+                    controller,
+                    controllerAs: '$ctrl'
                 });
         }]
     )

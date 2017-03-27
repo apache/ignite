@@ -164,6 +164,12 @@ namespace ignite
             /** Type: timestamp array. */
             const int8_t IGNITE_TYPE_ARRAY_TIMESTAMP = 34;
 
+            /** Type: time. */
+            const int8_t IGNITE_TYPE_TIME = 36;
+
+            /** Type: time array. */
+            const int8_t IGNITE_TYPE_ARRAY_TIME = 37;
+
             /** Read/write single object. */
             const int32_t IGNITE_BINARY_MODE_SINGLE = 0;
 

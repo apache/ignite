@@ -254,9 +254,18 @@ public class OdbcMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row) {
-                        if (obj instanceof java.sql.Timestamp)
+                        if (obj == null) {
+                            writer.writeObjectDetached(null);
+                            continue;
+                        }
+
+                        Class<?> cls = obj.getClass();
+
+                        if (cls == java.sql.Time.class)
+                            writer.writeTime((java.sql.Time)obj);
+                        else if (cls == java.sql.Timestamp.class)
                             writer.writeTimestamp((java.sql.Timestamp)obj);
-                        else if (obj instanceof java.util.Date)
+                        else if (cls == java.sql.Date.class)
                             writer.writeDate((java.util.Date)obj);
                         else
                             writer.writeObjectDetached(obj);

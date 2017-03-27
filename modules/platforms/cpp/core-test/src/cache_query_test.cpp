@@ -1130,30 +1130,23 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
 
     cursor = cache.Query(qry);
 
-    try
-    {
-        BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasNext());
 
-        QueryFieldsRow row = cursor.GetNext();
+    QueryFieldsRow row = cursor.GetNext();
 
-        BOOST_REQUIRE(row.HasNext());
+    BOOST_REQUIRE(row.HasNext());
 
-        int age = row.GetNext<int>();
+    int age = row.GetNext<int>();
 
-        BOOST_REQUIRE(age == 10);
+    BOOST_REQUIRE(age == 10);
 
-        std::string name = row.GetNext<std::string>();
+    std::string name = row.GetNext<std::string>();
 
-        BOOST_REQUIRE(name == "A1");
+    BOOST_REQUIRE(name == "A1");
 
-        BOOST_REQUIRE(!row.HasNext());
+    BOOST_REQUIRE(!row.HasNext());
 
-        CheckEmpty(cursor);
-    }
-    catch (IgniteError& error)
-    {
-        BOOST_FAIL(error.GetText());
-    }
+    CheckEmpty(cursor);
 }
 
 /**
@@ -1632,6 +1625,46 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
     BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
     BOOST_CHECK(recordCreated == MakeTimestampGmt(2016, 1, 1, 9, 18, 0));
+
+    BOOST_REQUIRE(!row.HasNext());
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for Time type.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryTimeEqual)
+{
+    // Test simple query.
+    Cache<int, Time> cache = grid.GetOrCreateCache<int, Time>("TimeCache");
+
+    // Test query with field of type 'Timestamp'.
+    SqlFieldsQuery qry("select _key from Time where _val='04:11:02'");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        int secs = i % 60;
+        int mins = i / 60;
+        cache.Put(i, MakeTimeGmt(4, mins, secs));
+    }
+
+    cursor = cache.Query(qry);
+
+    BOOST_REQUIRE(cursor.HasNext());
+
+    QueryFieldsRow row = cursor.GetNext();
+
+    BOOST_REQUIRE(row.HasNext());
+
+    int key = row.GetNext<int>();
+
+    BOOST_CHECK(key == 662);
 
     BOOST_REQUIRE(!row.HasNext());
 

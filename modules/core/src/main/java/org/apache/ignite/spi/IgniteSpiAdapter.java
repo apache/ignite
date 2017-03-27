@@ -728,7 +728,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -928,6 +928,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
             ((IgniteKernal)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Object> nodeAttributes() {
+            return Collections.emptyMap();
         }
     }
 }

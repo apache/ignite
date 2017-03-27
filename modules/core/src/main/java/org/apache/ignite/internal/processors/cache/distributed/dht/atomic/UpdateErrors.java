@@ -201,7 +201,7 @@ public class UpdateErrors implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -46;
     }
 

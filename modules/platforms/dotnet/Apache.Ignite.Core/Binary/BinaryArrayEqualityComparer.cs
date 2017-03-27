@@ -30,6 +30,11 @@ namespace Apache.Ignite.Core.Binary
         IBinaryStreamProcessor<KeyValuePair<int,int>, int>
     {
         /// <summary>
+        /// Singleton instance.
+        /// </summary>
+        public static readonly BinaryArrayEqualityComparer Instance = new BinaryArrayEqualityComparer();
+
+        /// <summary>
         /// Determines whether the specified objects are equal.
         /// </summary>
         /// <param name="x">The first object to compare.</param>
@@ -88,7 +93,10 @@ namespace Apache.Ignite.Core.Binary
 
             var arg = new KeyValuePair<int, int>(GetDataStart(binObj), GetDataLength(binObj));
 
-            return new BinaryHeapStream(binObj.Data).Apply(this, arg);
+            using (var stream = new BinaryHeapStream(binObj.Data))
+            {
+                return stream.Apply(this, arg);
+            }
         }
 
         /** <inheritdoc /> */
