@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.index.message;
 
-import org.apache.ignite.internal.ContextAware;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,14 +27,9 @@ import java.util.UUID;
 /**
  * Propose part of a distributed index create/drop operation.
  */
-public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage implements ContextAware {
+public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    // TODO: Do we really need it?
-    /** Kernal context. */
-    @GridToStringExclude
-    private transient GridKernalContext ctx;
 
     /** Node reported an error. */
     private UUID errNodeId;
@@ -56,8 +48,7 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return hasError() ?
-            new IndexFinishDiscoveryMessage(op, errNodeId, errMsg) :
+        return hasError() ? new IndexFinishDiscoveryMessage(op, errNodeId, errMsg) :
             new IndexAcceptDiscoveryMessage(op);
     }
 
@@ -69,11 +60,6 @@ public class IndexProposeDiscoveryMessage extends IndexAbstractDiscoveryMessage 
     /** {@inheritDoc} */
     @Override public boolean exchange() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void context(GridKernalContext ctx) {
-        this.ctx = ctx;
     }
 
     /**
