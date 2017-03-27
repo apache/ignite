@@ -26,6 +26,8 @@ public class IdentityValueMapper implements ValueMapper<Double> {
     }
 
     @Override public double toDouble(Double v) {
+        assert v != null;
+
         return v;
     }
 }
