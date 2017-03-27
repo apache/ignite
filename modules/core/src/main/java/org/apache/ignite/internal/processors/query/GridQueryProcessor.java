@@ -764,47 +764,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Removes index tables for all classes belonging to given class loader.
-     *
-     * @param space Space name.
-     * @param ldr Class loader to undeploy.
-     * @throws IgniteCheckedException If undeploy failed.
-     */
-    public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Undeploy [space=" + space + "]");
-
-        if (idx == null)
-            return;
-
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to process undeploy event (grid is stopping).");
-
-        try {
-            Iterator<Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl>> it = types.entrySet().iterator();
-
-            while (it.hasNext()) {
-                Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e = it.next();
-
-                if (!F.eq(e.getKey().space(), space))
-                    continue;
-
-                QueryTypeDescriptorImpl desc = e.getValue();
-
-                if (ldr.equals(U.detectClassLoader(desc.valueClass())) ||
-                    ldr.equals(U.detectClassLoader(desc.keyClass()))) {
-                    idx.unregisterType(e.getKey().space(), desc);
-
-                    it.remove();
-                }
-            }
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
      * Gets types for space.
      *
      * @param space Space name.

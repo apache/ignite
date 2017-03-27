@@ -110,9 +110,6 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
-    /** Flag: no hash code has been set. */
-    public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
-
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 

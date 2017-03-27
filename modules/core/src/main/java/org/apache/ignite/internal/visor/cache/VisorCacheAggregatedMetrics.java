@@ -206,7 +206,7 @@ public class VisorCacheAggregatedMetrics implements Serializable, LessNamingBean
      * @return Off heap entries count.
      */
     private long offHeapEntriesCount(VisorCacheMetrics metric) {
-        return metric instanceof VisorCacheMetricsV2 ? ((VisorCacheMetricsV2) metric).offHeapEntriesCount() : 0;
+        return metric.offHeapEntriesCount();
     }
 
     /**

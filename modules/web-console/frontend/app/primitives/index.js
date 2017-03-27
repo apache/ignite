@@ -15,20 +15,5 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Binary
-{
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
-
-    /// <summary>
-    /// Tests with array equality comparer (identity resolver).
-    /// </summary>
-    public class BinaryBuilderSelfTestArrayIdentity : BinaryBuilderSelfTest
-    {
-        /** <inheritdoc /> */
-        protected override IEqualityComparer<IBinaryObject> GetIdentityResolver()
-        {
-            return new BinaryArrayEqualityComparer();
-        }
-    }
-}
+import './badge/index.scss';
+import './tabs/index.scss';

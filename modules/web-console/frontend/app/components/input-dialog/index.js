@@ -15,30 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+import angular from 'angular';
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.jetbrains.annotations.Nullable;
+import inputDialog from './input-dialog.service';
 
-/**
- * Async target.
- */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
-
-    /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
-     */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
-}
+angular
+    .module('ignite-console.input-dialog', [])
+    .service('IgniteInput', inputDialog);

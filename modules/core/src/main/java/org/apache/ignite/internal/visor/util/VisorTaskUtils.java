@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
@@ -53,23 +52,20 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEventV2;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
 import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -390,17 +386,6 @@ public class VisorTaskUtils {
     /** Mapper from grid event to Visor data transfer object. */
     public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
-    /** Mapper from grid event to Visor data transfer object. */
-    public static final VisorEventMapper EVT_MAPPER_V2 = new VisorEventMapper() {
-        @Override protected VisorGridEvent discoveryEvent(DiscoveryEvent de, int type, IgniteUuid id, String name,
-            UUID nid, long ts, String msg, String shortDisplay) {
-            ClusterNode node = de.eventNode();
-
-            return new VisorGridDiscoveryEventV2(type, id, name, nid, ts, msg, shortDisplay, node.id(),
-                F.first(node.addresses()), node.isDaemon(), de.topologyVersion());
-        }
-    };
-
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
@@ -693,11 +678,11 @@ public class VisorTaskUtils {
         if (plc instanceof LruEvictionPolicyMBean)
             return ((LruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (plc instanceof RandomEvictionPolicyMBean)
-            return ((RandomEvictionPolicyMBean)plc).getMaxSize();
-
         if (plc instanceof FifoEvictionPolicyMBean)
             return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+
+        if (plc instanceof SortedEvictionPolicyMBean)
+            return ((SortedEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }

@@ -253,7 +253,6 @@ SQLSMALLINT unsupportedSql[] = {
         SQL_WLONGVARCHAR,
         SQL_REAL,
         SQL_NUMERIC,
-        SQL_TYPE_TIME,
         SQL_INTERVAL_MONTH,
         SQL_INTERVAL_YEAR,
         SQL_INTERVAL_YEAR_TO_MONTH,

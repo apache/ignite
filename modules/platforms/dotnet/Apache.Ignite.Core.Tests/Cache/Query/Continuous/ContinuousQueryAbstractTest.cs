@@ -111,11 +111,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\cache-query-continuous.xml";
 
-            cfg.GridName = "grid-1";
+            cfg.IgniteInstanceName = "grid-1";
             grid1 = Ignition.Start(cfg);
             cache1 = grid1.GetCache<int, BinarizableEntry>(cacheName);
 
-            cfg.GridName = "grid-2";
+            cfg.IgniteInstanceName = "grid-2";
             grid2 = Ignition.Start(cfg);
             cache2 = grid2.GetCache<int, BinarizableEntry>(cacheName);
         }

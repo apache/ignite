@@ -87,9 +87,6 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h">
       <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\cache\query\query_argument.h">
-      <Filter>Code\cache\query</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\cache\query\query_cursor.h">
       <Filter>Code\cache\query</Filter>
     </ClInclude>
@@ -191,6 +188,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\ignite_binding_context.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_argument.h">
+      <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

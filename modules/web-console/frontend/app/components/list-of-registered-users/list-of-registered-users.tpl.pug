@@ -34,25 +34,39 @@ mixin grid-settings()
         li
             a(ng-click='$hide()') Close
 
-.panel.panel-default
-    .panel-heading.ui-grid-settings
-        +grid-settings
-        label Total users: 
-            strong {{ $ctrl.gridOptions.data.length }}&nbsp;&nbsp;&nbsp;
-        label Showing users:
-            strong {{ $ctrl.gridApi.grid.getVisibleRows().length }}
-            sub(ng-show='users.length === $ctrl.gridApi.grid.getVisibleRows().length') all
 
-        form.pull-right(ng-form=form novalidate)
+.list-of-registered-users
+    ul.tabs
+        li(role='presentation' ng-class='{ active: $ctrl.groupBy === "user" }') 
+            a(ng-click='$ctrl.groupByUser()') 
+                span Users
+                span.badge {{ $ctrl.gridOptions.data.length }}
+        li(role='presentation' ng-class='{ active: $ctrl.groupBy === "company" }')
+            a(ng-click='$ctrl.groupByCompany()') 
+                span Companies
+                span.badge {{ $ctrl.companies.length }}
+        li(role='presentation' ng-class='{ active: $ctrl.groupBy === "country" }')
+            a(ng-click='$ctrl.groupByCountry()')
+                span Countries
+                span.badge {{ $ctrl.countries.length }}
+
+    .panel.panel-default
+        .panel-heading.ui-grid-settings
+            +grid-settings
+            label(ng-show='$ctrl.groupBy === "user"') Showing users:&nbsp;
+                strong {{ $ctrl.gridApi.grid.getVisibleRows().length }}
+                sub(ng-show='users.length === $ctrl.gridApi.grid.getVisibleRows().length') all
+
             -var form = 'admin'
+            form.pull-right(name=form novalidate)
+                button.btn.btn-primary(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv') Export
 
-            button.btn.btn-primary(ng-click='$ctrl.exportCsv()' bs-tooltip data-title='Export table to csv') Export
+                .ui-grid-settings-dateperiod
+                    +ignite-form-field-datepicker('Period:', '$ctrl.params.startDate', '"period"', null, '$ctrl.params.endDate')
+                    +ignite-form-field-datepicker('Period:', '$ctrl.params.endDate', null, '$ctrl.params.startDate', null)
 
-            .ui-grid-settings-dateperiod
-                +ignite-form-field-datepicker('Period:', '$ctrl.params.startDate', '"period"')
+                .ui-grid-settings-filter
+                    +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
 
-            .ui-grid-settings-filter
-                +ignite-form-field-text('Exclude:', '$ctrl.params.companiesExclude', '"exclude"', false, false, 'Exclude by company name...')
-
-    .panel-collapse
-        .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning)
+        .panel-collapse
+            .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping)
