@@ -35,6 +35,7 @@ import java.util.concurrent.CyclicBarrier;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -48,8 +49,6 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      */
     protected IgfsDualAbstractSelfTest(IgfsMode mode) {
         super(mode);
-
-        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
     }
 
     /** {@inheritDoc} */
@@ -72,10 +71,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             assert igfs.exists(p);
 
         assert igfs.modeResolver().resolveMode(gg) == mode;
-        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "sync")) == IgfsMode.DUAL_SYNC;
-        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "async")) == IgfsMode.DUAL_ASYNC;
-        assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
-        assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
+
+        if (mode != PROXY) {
+            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "sync")) == IgfsMode.DUAL_SYNC;
+            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "async")) == IgfsMode.DUAL_ASYNC;
+            assert igfs.modeResolver().resolveMode(new IgfsPath(gg, "primary")) == IgfsMode.PRIMARY;
+            assert !igfsSecondary.exists("/ignite/primary"); // PRIMARY mode path must exist in upper level fs only.
+        }
 
         // All the child paths of "/ignite/" must be visible in listings:
         assert igfs.listFiles(gg).size() == 3;
@@ -1587,18 +1589,20 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         if (!timesSupported())
             return;
 
-        create(igfs, paths(DIR), null);
+        create(igfs, paths(DIR, SUBDIR), null);
 
         createFile(igfsSecondary, FILE, chunk);
 
-        igfs.setTimes(FILE, Long.MAX_VALUE - 1, Long.MAX_VALUE);
+        final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
+
+        igfs.setTimes(FILE, MAX_ALIGN_ON_SECOND - 1000, MAX_ALIGN_ON_SECOND);
 
         IgfsFile info = igfs.info(FILE);
 
         assert info != null;
 
-        assertEquals(Long.MAX_VALUE - 1, info.accessTime());
-        assertEquals(Long.MAX_VALUE, info.modificationTime());
+        assertEquals(MAX_ALIGN_ON_SECOND - 1000, info.accessTime());
+        assertEquals(MAX_ALIGN_ON_SECOND, info.modificationTime());
 
         T2<Long, Long> secondaryTimes = igfsSecondary.times(FILE.toString());
 
@@ -1606,7 +1610,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         assertEquals(info.modificationTime(), (long) secondaryTimes.get2());
 
         try {
-            igfs.setTimes(FILE2, Long.MAX_VALUE, Long.MAX_VALUE);
+            igfs.setTimes(FILE2, MAX_ALIGN_ON_SECOND, MAX_ALIGN_ON_SECOND);
 
             fail("Exception is not thrown for missing file.");
         } catch (Exception ignore) {

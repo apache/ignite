@@ -142,7 +142,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Count of keys referenced in candidates array (needed only locally for optimization).
      */
-    public int keysCount() {
+    int keysCount() {
         return cnt;
     }
 

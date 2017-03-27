@@ -178,7 +178,7 @@ public class GridClockDeltaVersion implements Message, Comparable<GridClockDelta
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 83;
     }
 

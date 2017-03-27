@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Platform target that is invoked via JNI and propagates calls to underlying {@link PlatformTarget}.
@@ -35,6 +35,10 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     /** Underlying target. */
     private final PlatformTarget target;
 
+    /**
+     * @param target Platform target.
+     * @param platformCtx Platform context.
+     */
     public PlatformTargetProxyImpl(PlatformTarget target, PlatformContext platformCtx) {
         assert platformCtx != null;
         assert target != null;
@@ -97,6 +101,41 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     @Override public Object outObject(int type) throws Exception {
         try {
             return wrapProxy(target.processOutObject(type));
+        }
+        catch (Exception e) {
+            throw target.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void inStreamAsync(int type, long memPtr) throws Exception {
+        try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
+            BinaryRawReaderEx reader = platformCtx.reader(mem);
+
+            long futId = reader.readLong();
+            int futTyp = reader.readInt();
+
+            final PlatformAsyncResult res = target.processInStreamAsync(type, reader);
+
+            if (res == null)
+                throw new IgniteException("PlatformTarget.processInStreamAsync should not return null.");
+
+            IgniteFuture fut = res.future();
+
+            if (fut == null)
+                throw new IgniteException("PlatformAsyncResult.future() should not return null.");
+
+            PlatformFutureUtils.listen(platformCtx, fut, futId, futTyp, new PlatformFutureUtils.Writer() {
+                /** {@inheritDoc} */
+                @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
+                    res.write(writer, obj);
+                }
+
+                /** {@inheritDoc} */
+                @Override public boolean canWrite(Object obj, Throwable err) {
+                    return err == null;
+                }
+            }, target);
         }
         catch (Exception e) {
             throw target.convertException(e);
@@ -172,32 +211,8 @@ public class PlatformTargetProxyImpl implements PlatformTargetProxy {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, target);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), target);
-    }
-
-    /** {@inheritDoc} */
     @Override public PlatformTarget unwrap() {
         return target;
-    }
-
-    /**
-     * @return Future writer.
-     */
-    private PlatformFutureUtils.Writer futureWriter(int opId) {
-        return ((PlatformAsyncTarget)target).futureWriter(opId);
-    }
-
-    /**
-     * @return Current future.
-     */
-    private IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((PlatformAsyncTarget)target).currentFuture();
     }
 
     /**

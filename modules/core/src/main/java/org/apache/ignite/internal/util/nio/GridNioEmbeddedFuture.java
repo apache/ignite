@@ -31,6 +31,13 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
     private static final long serialVersionUID = 0L;
 
     /**
+     *
+     */
+    public GridNioEmbeddedFuture() {
+        super(null);
+    }
+
+    /**
      * Callback to notify that future is finished.
      * This method must delegate to {@link #onDone(GridNioFuture, Throwable)} method.
      *

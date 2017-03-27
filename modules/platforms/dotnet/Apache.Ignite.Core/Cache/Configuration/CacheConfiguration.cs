@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin.Cache;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -283,6 +284,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicy = EvictionPolicyBase.Read(reader);
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
+
+            count = reader.ReadInt();
+            PluginConfigurations = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => reader.ReadObject<ICachePluginConfiguration>()).ToList();
         }
 
         /// <summary>
@@ -358,6 +364,40 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            if (PluginConfigurations != null)
+            {
+                writer.WriteInt(PluginConfigurations.Count);
+
+                foreach (var cachePlugin in PluginConfigurations)
+                {
+                    if (cachePlugin == null)
+                        throw new InvalidOperationException("Invalid cache configuration: " +
+                                                            "ICachePluginConfiguration can't be null.");
+
+                    if (cachePlugin.CachePluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+                        cachePlugin.WriteBinary(writer);
+                    }
+                    else
+                    {
+                        if (!cachePlugin.GetType().IsSerializable)
+                        {
+                            throw new InvalidOperationException("Invalid cache configuration: " +
+                                                                "ICachePluginConfiguration should be Serializable.");
+                        }
+
+                        writer.WriteBoolean(false);
+                        writer.WriteObject(cachePlugin);
+                    }
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /// <summary>
@@ -712,5 +752,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
         /// </summary>
         public bool EnableStatistics { get; set; }
+
+        /// <summary>
+        /// Gets or sets the plugin configurations.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
     }
 }

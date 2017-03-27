@@ -16,10 +16,10 @@
  */
 
 import '../public/stylesheets/style.scss';
-import '../app/components/ui-grid-header/ui-grid-header.scss';
-import '../app/components/ui-grid-settings/ui-grid-settings.scss';
-import '../app/components/form-field-datepicker/form-field-datepicker.scss';
-import './helpers/jade/mixins.jade';
+import '../app/primitives';
+import './components/ui-grid-header/ui-grid-header.scss';
+import './components/ui-grid-settings/ui-grid-settings.scss';
+import './components/form-field-datepicker/form-field-datepicker.scss';
 
 import './app.config';
 
@@ -81,7 +81,6 @@ import igniteRetainSelection from './directives/retain-selection.directive';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Clone from './services/Clone.service.js';
 import Confirm from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
@@ -118,11 +117,12 @@ import resetPassword from './controllers/reset-password.controller';
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
+import './components/input-dialog';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
 
-import baseTemplate from '../views/base.jade';
+import baseTemplate from 'views/base.pug';
 
 angular
 .module('ignite-console', [
@@ -150,6 +150,7 @@ angular
     'ignite-console.core',
     'ignite-console.ace',
     'ignite-console.Form',
+    'ignite-console.input-dialog',
     'ignite-console.user',
     'ignite-console.branding',
     'ignite-console.socket',
@@ -204,7 +205,6 @@ angular
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Clone)
 .service(...Confirm)
 .service(...ConfirmBatch)
 .service(...CopyToClipboard)
@@ -242,12 +242,12 @@ angular
         .state('base', {
             url: '',
             abstract: true,
-            templateUrl: baseTemplate
+            template: baseTemplate
         })
         .state('settings', {
             url: '/settings',
             abstract: true,
-            templateUrl: baseTemplate
+            template: baseTemplate
         });
 
     $urlRouterProvider.otherwise('/404');
