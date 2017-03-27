@@ -950,18 +950,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeByteField(@Nullable Byte val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeByteField(@Nullable Byte val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeByteFieldPrimitive(val);
-
-            return off;
-        }
+        writeByteFieldPrimitive(val);
     }
 
     /**
@@ -983,19 +976,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     *
-     * @return Filed offset.
      */
-    int writeShortField(@Nullable Short val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeShortField(@Nullable Short val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeShortFieldPrimitive(val);
-
-            return off;
-        }
+        writeShortFieldPrimitive(val);
     }
 
     /**
@@ -1010,18 +995,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeIntField(@Nullable Integer val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeIntField(@Nullable Integer val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeIntFieldPrimitive(val);
-
-            return off;
-        }
+        writeIntFieldPrimitive(val);
     }
 
     /**
@@ -1036,18 +1014,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeLongField(@Nullable Long val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeLongField(@Nullable Long val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeLongFieldPrimitive(val);
-
-            return off;
-        }
+        writeLongFieldPrimitive(val);
     }
 
     /**
@@ -1062,18 +1033,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeFloatField(@Nullable Float val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeFloatField(@Nullable Float val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeFloatFieldPrimitive(val);
-
-            return off;
-        }
+        writeFloatFieldPrimitive(val);
     }
 
     /**
@@ -1088,18 +1052,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeDoubleField(@Nullable Double val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDoubleField(@Nullable Double val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeDoubleFieldPrimitive(val);
-
-            return off;
-        }
+        writeDoubleFieldPrimitive(val);
     }
 
     /**
@@ -1114,18 +1071,11 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Filed offset.
      */
-    int writeCharField(@Nullable Character val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeCharField(@Nullable Character val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeCharFieldPrimitive(val);
-
-            return off;
-        }
+        writeCharFieldPrimitive(val);
     }
 
     /**
@@ -1140,163 +1090,94 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeBooleanField(@Nullable Boolean val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeBooleanField(@Nullable Boolean val) {
+        assert val != null : "Null value must be written as special offset";
 
-            writeBooleanFieldPrimitive(val);
-
-            return off;
-        }
+        writeBooleanFieldPrimitive(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDecimalField(@Nullable BigDecimal val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDecimalField(@Nullable BigDecimal val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDecimal(val);
-
-            return off;
-        }
+        doWriteDecimal(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeStringField(@Nullable String val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeStringField(@Nullable String val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteString(val);
+        doWriteString(val);
 
-            return off;
-        }
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeUuidField(@Nullable UUID val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeUuidField(@Nullable UUID val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteUuid(val);
-
-            return off;
-        }
+        doWriteUuid(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeDateField(@Nullable Date val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeDateField(@Nullable Date val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteDate(val);
-
-            return off;
-        }
+        doWriteDate(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimestampField(@Nullable Timestamp val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimestampField(@Nullable Timestamp val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTimestamp(val);
-
-            return off;
-        }
+        doWriteTimestamp(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeTimeField(@Nullable Time val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeTimeField(@Nullable Time val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteTime(val);
-
-            return off;
-        }
+        doWriteTime(val);
     }
 
     /**
      * @param obj Object.
-     * @return Field offset.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    int writeObjectField(@Nullable Object obj) throws BinaryObjectException {
-        if (obj == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeObjectField(@Nullable Object obj) throws BinaryObjectException {
+        assert obj != null : "Null value must be written as special offset";
 
-            doWriteObject(obj);
-
-            return off;
-        }
+        doWriteObject(obj);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeByteArrayField(@Nullable byte[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeByteArrayField(@Nullable byte[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteByteArray(val);
-
-            return off;
-        }
+        doWriteByteArray(val);
     }
 
     /**
      * @param val Value.
-     * @return Field offset.
      */
-    int writeShortArrayField(@Nullable short[] val) {
-        if (val == null)
-            return BinaryUtils.NULL_4;
-        else {
-            int off = currentOffset();
+    void writeShortArrayField(@Nullable short[] val) {
+        assert val != null : "Null value must be written as special offset";
 
-            doWriteShortArray(val);
-
-            return off;
-        }
+        doWriteShortArray(val);
     }
 
     /**
