@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.direct.newnodes;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -141,8 +140,6 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    IgniteCompute comp = ignite.compute().withAsync();
-
                     while (end - System.currentTimeMillis() > 0
                         && !Thread.currentThread().isInterrupted()) {
                         long start = System.currentTimeMillis();
@@ -150,9 +147,8 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
                         try {
                             int levels = 3;
 
-                            comp.execute(new GridSingleSplitNewNodesTestTask(), levels);
-
-                            ComputeTaskFuture<Integer> fut = comp.future();
+                            ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
+                                new GridSingleSplitNewNodesTestTask(), levels);
 
                             int res = fut.get();
 
