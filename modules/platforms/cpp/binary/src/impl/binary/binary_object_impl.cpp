@@ -209,11 +209,7 @@ namespace ignite
                 if (idRslvr)
                     return;
 
-                if (!metaMgr)
-                {
-                    IGNITE_ERROR_FORMATTED_1(ignite::IgniteError::IGNITE_ERR_BINARY,
-                        "Metadata manager is not specified for the binary object", "memPtr", mem->PointerLong());
-                }
+                assert(metaMgr != 0);
 
                 BinaryObjectHeader header(mem->Data() + start);
 
