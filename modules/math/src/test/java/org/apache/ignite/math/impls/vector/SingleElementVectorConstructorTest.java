@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -29,13 +30,13 @@ import static org.junit.Assert.*;
 public class SingleElementVectorConstructorTest {
     /** */ private static final int IMPOSSIBLE_SIZE = -1;
 
-    /** */ @Test(expected = java.lang.UnsupportedOperationException.class)
+    /** */ @Test(expected = UnsupportedOperationException.class)
     public void mapInvalidArgsTest() {
         assertEquals("Expect exception due to invalid args.", IMPOSSIBLE_SIZE,
             new SingleElementVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
-    /** */ @Test(expected = java.lang.UnsupportedOperationException.class)
+    /** */ @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("size",  1);
@@ -134,7 +135,7 @@ public class SingleElementVectorConstructorTest {
 
             try {
                 v.set(i, 1.0);
-            } catch (java.lang.UnsupportedOperationException uoe) {
+            } catch (UnsupportedOperationException uoe) {
                 eCaught = true;
             }
 

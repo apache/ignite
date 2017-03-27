@@ -28,7 +28,7 @@
         <artifactId>ignite-parent</artifactId>
         <groupId>org.apache.ignite</groupId>
         <version>1</version>
-        <relativePath>../../parent/pom.xml</relativePath>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-math</artifactId>

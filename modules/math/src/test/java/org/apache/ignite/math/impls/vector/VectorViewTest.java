@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.MathTestConstants;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -114,7 +115,7 @@ public class VectorViewTest {
 
             try {
                 assertNull("Null view instead of exception in " + desc, new VectorView(v, 0, 1).likeMatrix(1, 1));
-            } catch (java.lang.UnsupportedOperationException uoe) {
+            } catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 
