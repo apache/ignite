@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -2364,15 +2365,31 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         else {
             SB sb = new SB();
 
-            for (CacheConfiguration c : cacheCfgs) {
-                String name = U.maskName(c.getName());
+            HashMap<String, ArrayList<String>> memPlcNamesMapping = new HashMap<>();
 
-                sb.a("'").a(name).a("', ");
+            for (CacheConfiguration c : cacheCfgs) {
+                String cacheName = U.maskName(c.getName());
+
+                String memPlcName = U.maskName(c.getMemoryPolicyName());
+
+                if (!memPlcNamesMapping.containsKey(memPlcName))
+                    memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
+
+                ArrayList<String> cacheNames = memPlcNamesMapping.get(memPlcName);
+
+                cacheNames.add(cacheName);
             }
 
-            String names = sb.toString();
+            for (Map.Entry<String, ArrayList<String>> e : memPlcNamesMapping.entrySet()) {
+                sb.a("in '").a(e.getKey()).a("' memoryPolicy: [");
 
-            U.log(log, "Configured caches [" + names.substring(0, names.length() - 2) + ']');
+                for (String s : e.getValue())
+                    sb.a("'").a(s).a("', ");
+
+                sb.d(sb.length() - 2, sb.length()).a("]");
+            }
+
+            U.log(log, "Configured caches [" + sb.toString() + ']');
         }
     }
 
