@@ -62,6 +62,9 @@ class BinaryBuilderSerializer {
     public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
         assert !(forceCol && forceMap);
 
+        if (val == null)
+            return;
+
         if (val instanceof BinaryBuilderSerializationAware) {
             ((BinaryBuilderSerializationAware)val).writeTo(writer, this);
 
