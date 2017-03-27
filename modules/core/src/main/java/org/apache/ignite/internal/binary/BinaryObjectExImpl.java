@@ -23,7 +23,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;

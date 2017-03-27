@@ -221,8 +221,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
      * @throws CacheLoaderException If failed to construct cache object.
      */
     protected abstract <R> R buildObject(@Nullable String cacheName, String typeName, TypeKind typeKind,
-        JdbcTypeField[] flds, Map<String, Integer> loadColIdxs, ResultSet rs)
-        throws CacheLoaderException;
+        JdbcTypeField[] flds, Map<String, Integer> loadColIdxs, ResultSet rs) throws CacheLoaderException;
 
     /**
      * Calculate type ID for object.
@@ -456,8 +455,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                     ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
-                        K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.loadColIdxs, rs);
-                        V val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), em.loadColIdxs, rs);
+                        K key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(),
+                            em.loadColIdxs, rs);
+
+                        V val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(),
+                            em.loadColIdxs, rs);
 
                         clo.apply(key, val);
                     }
@@ -2088,8 +2090,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 Map<K1, V1> entries = U.newHashMap(keys.size());
 
                 while (rs.next()) {
-                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(), em.loadColIdxs, rs);
-                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(), em.loadColIdxs, rs);
+                    K1 key = buildObject(em.cacheName, em.keyType(), em.keyKind(), em.keyColumns(),
+                        em.loadColIdxs, rs);
+
+                    V1 val = buildObject(em.cacheName, em.valueType(), em.valueKind(), em.valueColumns(),
+                        em.loadColIdxs, rs);
 
                     entries.put(key, val);
                 }

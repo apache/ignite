@@ -43,7 +43,6 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -120,9 +119,6 @@ public class BinaryClassDescriptor {
     private final boolean excluded;
 
     /** */
-    private final boolean overridesHashCode;
-
-    /** */
     private final Class<?>[] intfs;
 
     /** Whether stable schema was published. */
@@ -175,8 +171,6 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
-
-        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
         schemaReg = ctx.schemaRegistry(typeId);
 
@@ -905,7 +899,7 @@ public class BinaryClassDescriptor {
      * @param writer Writer.
      */
     private void postWrite(BinaryWriterExImpl writer) {
-            writer.postWrite(userType, registered);
+        writer.postWrite(userType, registered);
     }
 
     /**

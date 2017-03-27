@@ -2027,7 +2027,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
-
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
     }
@@ -2123,16 +2122,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
-                @Override public byte[] serialize(Object obj) throws Exception {
-                    return U.marshal(marshaller, obj);
-                }
+            @Override public byte[] serialize(Object obj) throws Exception {
+                return U.marshal(marshaller, obj);
+            }
 
-                @Override public Object deserialize(byte[] bytes) throws Exception {
-                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
+            @Override public Object deserialize(byte[] bytes) throws Exception {
+                ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
 
-                    return U.unmarshal(marshaller, bytes, clsLdr);
-                }
-            };
+                return U.unmarshal(marshaller, bytes, clsLdr);
+            }
+        };
     }
 
     /**
