@@ -42,7 +42,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -84,7 +83,6 @@ import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
@@ -101,10 +99,6 @@ public class DmlStatementsProcessor {
 
     /** Logger. */
     private IgniteLogger log;
-
-    /** Set of binary type ids for which warning about missing identity in configuration has been printed. */
-    private final static Set<Integer> WARNED_TYPES =
-        Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
 
     /** Default size for update plan cache. */
     private static final int PLAN_CACHE_SIZE = 1024;
