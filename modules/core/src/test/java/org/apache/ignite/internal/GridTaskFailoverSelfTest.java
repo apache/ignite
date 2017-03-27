@@ -81,8 +81,6 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
      */
     public void testExecuteTaskWithInvalidName() throws Exception {
         try {
-            ignite.compute().localDeployTask(GridFailoverTestTask.class, GridFailoverTestTask.class.getClassLoader());
-
             ComputeTaskFuture<?> fut = ignite.compute().execute("invalid.task.name", null);
 
             fut.get();
