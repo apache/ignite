@@ -328,7 +328,7 @@ public class Tracer {
         StringBuilder buf = new StringBuilder();
 
         for (Vector.Element x : vec.all()) {
-            String s = String.format(fmt, x.get());
+            String s = String.format(Locale.US, fmt, x.get());
 
             if (!first) {
                 buf.append(", ");
@@ -429,7 +429,7 @@ public class Tracer {
 
         for(int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                String s = String.format(fmt, mtx.get(row, col));
+                String s = String.format(Locale.US, fmt, mtx.get(row, col));
 
                 if (col != 0)
                     buf.append(", ");
