@@ -959,7 +959,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     outStream.WriteInt(arrLen);
 
                     for (int i = 0; i < arrLen; i++)
-                        Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
+                        Mutate0(ctx, inStream, outStream, false, EmptyVals);
 
                     break;
 
