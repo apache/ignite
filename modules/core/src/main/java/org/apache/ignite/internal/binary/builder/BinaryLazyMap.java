@@ -86,9 +86,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     }
 
     /** {@inheritDoc} */
-    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        int writeOff = writer.currentOffset();
-
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntPositioned(off + 1);
 
@@ -115,8 +113,6 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
                 ctx.writeValue(writer, entry.getValue());
             }
         }
-
-        return writeOff;
     }
 
     /** {@inheritDoc} */

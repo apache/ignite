@@ -42,16 +42,12 @@ public class BinaryPlainBinaryObject implements BinaryLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        int writeOff = writer.currentOffset();
-
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         BinaryObject val = binaryObj;
 
         if (val instanceof BinaryObjectOffheapImpl)
             val = ((BinaryObjectOffheapImpl)val).heapCopy();
 
         writer.doWriteBinaryObject((BinaryObjectImpl)val);
-
-        return writeOff;
     }
 }

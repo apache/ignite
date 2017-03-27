@@ -81,9 +81,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     }
 
     /** {@inheritDoc} */
-    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        int writeOff = writer.currentOffset();
-
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         writer.writeByte(GridBinaryMarshaller.ENUM);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
@@ -94,8 +92,6 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
             writer.writeInt(typeId);
 
         writer.writeInt(ordinal);
-
-        return writeOff;
     }
 
     /** {@inheritDoc} */

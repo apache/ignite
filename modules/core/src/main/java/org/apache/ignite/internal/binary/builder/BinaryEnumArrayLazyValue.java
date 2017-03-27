@@ -98,20 +98,16 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-        int writeOff = writer.currentOffset();
-
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
                 ctx.writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, clsName);
             else
                 ctx.writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
-            return writeOff;
+            return;
         }
 
         writer.write(reader.array(), valOff, len);
-
-        return writeOff;
     }
 }

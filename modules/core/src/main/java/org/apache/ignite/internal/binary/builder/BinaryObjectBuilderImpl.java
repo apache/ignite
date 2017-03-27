@@ -254,9 +254,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         Object assignedVal = assignedFldsById.remove(fieldId);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
-                            int off = serializer.writeValue(writer, assignedVal);
-
-                            writer.writeFieldId(fieldId, off);
+                            if (assignedVal == null)
+                                writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                            else {
+                                writer.writeFieldId(fieldId, writer.currentOffset());
+                                serializer.writeValue(writer, assignedVal);
+                            }
                         }
                     }
                     else {
@@ -280,9 +283,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                             else
                                 val = readCache.get(fieldId);
 
-                            int off = serializer.writeValue(writer, val);
-
-                            writer.writeFieldId(fieldId, off);
+                            if (val == null)
+                                writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                            else {
+                                writer.writeFieldId(fieldId, writer.currentOffset());
+                                serializer.writeValue(writer, val);
+                            }
                         }
                     }
 
@@ -304,9 +310,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    int off = serializer.writeValue(writer, val);
-
-                    writer.writeFieldId(fieldId, off);
+                    if (val == null)
+                        writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
+                    else {
+                        writer.writeFieldId(fieldId, writer.currentOffset());
+                        serializer.writeValue(writer, val);
+                    }
 
                     if (reader == null)
                         // Metadata has already been checked.

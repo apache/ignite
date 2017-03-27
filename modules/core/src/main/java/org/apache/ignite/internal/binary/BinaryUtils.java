@@ -374,40 +374,53 @@ public class BinaryUtils {
      *
      * @param writer W
      * @param val Value.
-     * @return Filed offset.
      */
-    public static int writePlainObject(BinaryWriterExImpl writer, Object val) {
+    public static void writePlainObject(BinaryWriterExImpl writer, Object val) {
         Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
-
-        int off = writer.currentOffset();
 
         if (flag == null)
             throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
 
         switch (flag) {
             case GridBinaryMarshaller.BYTE:
-                return writer.writeByteField((Byte)val);
+                writer.writeByteField((Byte)val);
+
+                break;
 
             case GridBinaryMarshaller.SHORT:
-                return writer.writeShortField((Short)val);
+                writer.writeShortField((Short)val);
+
+                break;
 
             case GridBinaryMarshaller.INT:
-                return writer.writeIntField((Integer)val);
+                writer.writeIntField((Integer)val);
+
+                break;
 
             case GridBinaryMarshaller.LONG:
-                return writer.writeLongField((Long)val);
+                writer.writeLongField((Long)val);
+
+                break;
 
             case GridBinaryMarshaller.FLOAT:
-                return writer.writeFloatField((Float)val);
+                writer.writeFloatField((Float)val);
+
+                break;
 
             case GridBinaryMarshaller.DOUBLE:
-                return writer.writeDoubleField((Double)val);
+                writer.writeDoubleField((Double)val);
+
+                break;
 
             case GridBinaryMarshaller.CHAR:
-                return writer.writeCharField((Character)val);
+                writer.writeCharField((Character)val);
+
+                break;
 
             case GridBinaryMarshaller.BOOLEAN:
-                return writer.writeBooleanField((Boolean)val);
+                writer.writeBooleanField((Boolean)val);
+
+                break;
 
             case GridBinaryMarshaller.DECIMAL:
                 writer.doWriteDecimal((BigDecimal)val);
@@ -512,8 +525,6 @@ public class BinaryUtils {
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
-
-        return off;
     }
 
     /**

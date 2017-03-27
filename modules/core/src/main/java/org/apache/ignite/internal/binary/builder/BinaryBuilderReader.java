@@ -144,6 +144,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
+     * @param off Offset related to {@link #pos}.
      * @return Read int value.
      */
     public byte readByte(int off) {
@@ -887,8 +888,8 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public int writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
-            return ctx.writeValue(writer, wrappedCollection());
+        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+            ctx.writeValue(writer, wrappedCollection());
         }
 
         /** {@inheritDoc} */
