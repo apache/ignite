@@ -64,9 +64,14 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
         ignite.configuration().setPeerClassLoadingEnabled(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite.destroyCache(CACHE_NAME);
+    }
+
     /** */
     public void testCacheCreation() throws Exception {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -78,7 +83,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
 
     /** */
     public void testSetGet() throws Exception {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -98,7 +103,7 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
 
     /** */
     public void testAttibutes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;

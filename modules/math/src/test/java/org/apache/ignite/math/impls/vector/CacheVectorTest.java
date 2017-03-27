@@ -23,6 +23,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
+    /** Cache size. */
+    private final int size = MathTestConstants.STORAGE_SIZE;
     /** Grid instance. */
     private Ignite ignite;
     // Default kep mapper.
@@ -33,8 +35,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         }
 
         @Override
-        public boolean isValid(Integer o) {
-            return true;
+        public boolean isValid(Integer i) {
+            return i < size;
         }
     };
 
@@ -56,19 +58,20 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     *  {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ignite = grid(NODE_COUNT);
 
         ignite.configuration().setPeerClassLoadingEnabled(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite.destroyCache(CACHE_NAME);
+    }
+
     /** */
     public void testGetSet() throws Exception {
-        final int size = MathTestConstants.STORAGE_SIZE;
-
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
@@ -81,12 +84,12 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testMap(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        cacheVector.assign(1d); // create cache entries.
 
         cacheVector.map(value -> 110d);
 
@@ -96,9 +99,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testMapBiFunc(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -111,14 +112,10 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testSum(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
-
-        assert cacheVector.sum() == 0d;
 
         cacheVector.assign(1d);
 
@@ -126,10 +123,24 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testAssign(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+    public void testSumNegative(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IdentityValueMapper valMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        try {
+            double d = cacheVector.sum();
+            System.out.println(d);
+            fail();
+        } catch (NullPointerException e){
+            // No-op.
+        }
+    }
+
+    /** */
+    public void testAssign(){
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -142,9 +153,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testAssignRange(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -157,9 +166,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testAssignVector(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -174,9 +181,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testAssignFunc(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -189,12 +194,12 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testPlus(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        cacheVector.assign(0d);
 
         cacheVector.plus(1d);
 
@@ -204,9 +209,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testPlusVec(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -223,7 +226,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testDivide(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int size = MathTestConstants.STORAGE_SIZE;
 
@@ -240,7 +243,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testTimes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int size = MathTestConstants.STORAGE_SIZE;
 
@@ -257,9 +260,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testTimesVector(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -279,9 +280,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testMin(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -295,9 +294,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testMax(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -311,9 +308,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testLike(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -328,9 +323,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testLikeMatrix(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
@@ -345,9 +338,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
     /** */
     public void testCopy(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
-
-        final int size = MathTestConstants.STORAGE_SIZE;
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);

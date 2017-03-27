@@ -69,6 +69,11 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         ignite.configuration().setPeerClassLoadingEnabled(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        ignite.destroyCache(CACHE_NAME);
+    }
+
     /** */
     public void testGetSet() throws Exception {
         final int rows = MathTestConstants.STORAGE_SIZE;
@@ -147,7 +152,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testPlus(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -167,7 +172,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testDivide(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -189,7 +194,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testTimes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -211,7 +216,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testSum(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -230,7 +235,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testAssignSingleValue(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
@@ -250,7 +255,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testAssignArray(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getGridName());
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         final int rows = MathTestConstants.STORAGE_SIZE;
         final int cols = MathTestConstants.STORAGE_SIZE;
