@@ -1988,6 +1988,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the equality comparer.
+        /// </summary>
+        public static IBinaryEqualityComparer GetEqualityComparer(IBinaryTypeDescriptor descriptor)
+        {
+            var res = descriptor != null ? descriptor.EqualityComparer : null;
+
+            return res ?? BinaryArrayEqualityComparer.Instance;
+        }
+
+        /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
         private static T CreateInstance<T>(BinaryReader reader)
