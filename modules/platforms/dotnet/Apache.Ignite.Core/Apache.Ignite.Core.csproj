@@ -191,6 +191,8 @@
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
     <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
@@ -299,7 +301,7 @@
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryUtils.cs" />
     <Compile Include="Impl\Cache\Query\FieldsQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursor.cs" />
-    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStoreInternal.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSession.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSessionProxy.cs" />
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />

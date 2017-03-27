@@ -291,7 +291,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 126;
     }
 }

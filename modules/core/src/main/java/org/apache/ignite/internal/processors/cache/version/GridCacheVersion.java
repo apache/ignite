@@ -338,7 +338,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 86;
     }
 

@@ -30,6 +30,11 @@ namespace Apache.Ignite.Core.Binary
         IBinaryStreamProcessor<KeyValuePair<int,int>, int>
     {
         /// <summary>
+        /// Singleton instance.
+        /// </summary>
+        public static readonly BinaryArrayEqualityComparer Instance = new BinaryArrayEqualityComparer();
+
+        /// <summary>
         /// Determines whether the specified objects are equal.
         /// </summary>
         /// <param name="x">The first object to compare.</param>
