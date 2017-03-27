@@ -557,6 +557,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             private GridCursor<? extends CacheDataRow> cur;
 
             /** */
+            private int curPart;
+
+            /** */
             private CacheDataRow next;
 
             @Override protected CacheDataRow onNext() {
@@ -573,14 +576,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 while (true) {
                     if (cur == null) {
-                        if (dataIt.hasNext())
-                            cur = dataIt.next().cursor();
+                        if (dataIt.hasNext()) {
+                            CacheDataStore ds = dataIt.next();
+
+                            curPart = ds.partId();
+                            cur = ds.cursor();
+                        }
                         else
                             break;
                     }
 
                     if (cur.next()) {
                         next = cur.get();
+                        next.key().partition(curPart);
 
                         break;
                     }
@@ -800,6 +808,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 if (amount != -1 && cleared > amount)
                     return true;
+
+                if (row.key.partition() == -1)
+                    row.key.partition(cctx.affinity().partition(row.key));
 
                 assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
