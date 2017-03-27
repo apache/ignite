@@ -2217,14 +2217,8 @@ public class GridNioServer<T> {
          * @return {@code True} if this call closed the ses.
          */
         protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
-            if (e != null) {
-                // Print stack trace only if has runtime exception in it's cause.
-                if (e.hasCause(IOException.class))
-                    U.warn(log, "Closing NIO session because of unhandled exception [cls=" + e.getClass() +
-                        ", msg=" + e.getMessage() + ']');
-                else
-                    U.error(log, "Closing NIO session because of unhandled exception.", e);
-            }
+            if (e != null)
+                U.error(log, "Closing NIO session because of unhandled exception.", e);
 
             sessions.remove(ses);
             workerSessions.remove(ses);

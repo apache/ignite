@@ -129,12 +129,14 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
 
         /** {@inheritDoc} */
         @Override protected boolean registerClassName(int id, String clsName) {
-            throw new UnsupportedOperationException(clsName);
+            throw new UnsupportedOperationException("Registering classes is not supported with " +
+                "GridClientOptimizedMarshaller (use 'classnames.properties'), clsName=" + clsName);
         }
 
         /** {@inheritDoc} */
         @Override protected String className(int id) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Resolving classes is not supported with " +
+                "GridClientOptimizedMarshaller (use 'classnames.properties')");
         }
     }
 }

@@ -265,7 +265,7 @@ class OptimizedMarshallerUtils {
         try {
             cls = ctx.getClass(id, ldr);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new IOException("Failed to resolve class for ID: " + id, e);
         }
 
