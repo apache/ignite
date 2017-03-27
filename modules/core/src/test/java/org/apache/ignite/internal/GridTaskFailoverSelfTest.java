@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -30,7 +29,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -40,9 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
-    /** Grid instance. */
-    private Ignite ignite;
-
     /** Don't change it value. */
     public static final int SPLIT_COUNT = 2;
 
@@ -51,52 +46,13 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         super(false);
     }
 
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setPeerClassLoadingEnabled(false);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     *  {@inheritDoc}
-     */
-    @Override protected void beforeTest() throws Exception {
-        ignite = grid();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExecuteTaskWithInvalidName() throws Exception {
-        try {
-            ComputeTaskFuture<?> fut = ignite.compute().execute("invalid.task.name", null);
-
-            fut.get();
-
-            assert false : "Should never be reached due to exception thrown.";
-        }
-        catch (IgniteDeploymentException e) {
-            info("Received correct exception: " + e);
-        }
-    }
-
     /**
      * @throws Exception If test failed.
      */
     @SuppressWarnings("unchecked")
     public void testFailover() throws Exception {
+        Ignite ignite = startGrid();
+
         try {
             ignite.compute().localDeployTask(GridFailoverTestTask.class, GridFailoverTestTask.class.getClassLoader());
 
@@ -110,6 +66,9 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         }
         catch (ClusterTopologyException e) {
             info("Received correct exception: " + e);
+        }
+        finally {
+            stopGrid();
         }
     }
 
