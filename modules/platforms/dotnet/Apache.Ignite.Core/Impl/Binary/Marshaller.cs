@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
@@ -60,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="cfg">Configurtaion.</param>
+        /// <param name="cfg">Configuration.</param>
         public Marshaller(BinaryConfiguration cfg)
         {
             // Validation.
@@ -609,6 +610,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(0, r => new AffinityKey(r), "affKey");
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
+            AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
         }
     }
 }

@@ -270,7 +270,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(baseDir), "!F.isEmpty(baseDir)");
         assertParameter(maxSparsity >= 0 && maxSparsity < 1, "maxSparsity >= 0 && maxSparsity < 1");
         assertParameter(readStripesNum == -1 || (readStripesNum & (readStripesNum - 1)) == 0,
@@ -294,9 +294,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         startStopwatch();
 
-        registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
+        registerMBean(igniteInstanceName, this, FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
+        String path = baseDir + File.separator + igniteInstanceName + File.separator + ignite.configuration().getNodeId();
 
         try {
             dir = U.resolveWorkDirectory(ignite.configuration().getWorkDirectory(), path, true);
@@ -1521,7 +1521,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
                         final Object mux = new Object();
 
-                        writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
+                        writer = new IgniteSpiThread(igniteInstanceName,  "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 while (!isInterrupted()) {
                                     SwapValues vals = que.take();
@@ -1540,7 +1540,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                             }
                         };
 
-                        compactor = new IgniteSpiThread(gridName, "Swap compactor: " + name, log) {
+                        compactor = new IgniteSpiThread(igniteInstanceName, "Swap compactor: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 SwapFile w = null;
                                 SwapFile c = null;

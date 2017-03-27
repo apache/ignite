@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -523,7 +523,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         int ord = (int)(reservations >> 32);
 
-        if (isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
+        if (isEmpty() && !QueryUtils.isEnabled(cctx.config()) &&
             ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 &&
             casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
@@ -576,7 +576,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            if (!GridQueryProcessor.isEnabled(cctx.config()))
+            if (!QueryUtils.isEnabled(cctx.config()))
                 clearSwap();
 
             if (cctx.isDrEnabled())
@@ -599,7 +599,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     private void clearSwap() {
         assert state() == EVICTED;
-        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
+        assert !QueryUtils.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
 
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
@@ -693,7 +693,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 
-        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
+        if (swap && QueryUtils.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
             Iterator<GridDhtCacheEntry> unswapIt = null;
 
             try {

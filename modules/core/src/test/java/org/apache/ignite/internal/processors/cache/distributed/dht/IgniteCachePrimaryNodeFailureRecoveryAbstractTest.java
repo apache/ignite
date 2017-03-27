@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -80,8 +81,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -210,11 +211,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             log.info("Start prepare.");
 
-            IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+            GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
             commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-            IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+            IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
             waitPrepared(ignite(1));
 
@@ -371,11 +372,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         log.info("Start prepare.");
 
-        IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+        GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
         commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-        IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+        IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
         waitPrepared(ignite(1));
 

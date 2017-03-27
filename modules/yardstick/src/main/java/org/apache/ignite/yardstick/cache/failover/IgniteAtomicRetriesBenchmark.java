@@ -39,26 +39,22 @@ public class IgniteAtomicRetriesBenchmark extends IgniteFailoverAbstractBenchmar
 
         switch (opNum) {
             case 0:
-                asyncCache.get(key);
-                asyncCache.future().get(timeout);
+                cache.getAsync(key).get(timeout);
 
                 break;
 
             case 1:
-                asyncCache.put(key, String.valueOf(key));
-                asyncCache.future().get(timeout);
+                cache.putAsync(key, String.valueOf(key)).get(timeout);
 
                 break;
 
             case 2:
-                asyncCache.invoke(key, new TestCacheEntryProcessor());
-                asyncCache.future().get(timeout);
+                cache.invokeAsync(key, new TestCacheEntryProcessor()).get(timeout);
 
                 break;
 
             case 3:
-                asyncCache.remove(key);
-                asyncCache.future().get(timeout);
+                cache.removeAsync(key).get(timeout);
 
                 break;
 

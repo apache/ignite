@@ -73,8 +73,8 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     private static final int BACKUP_ACK_THRESHOLD = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 

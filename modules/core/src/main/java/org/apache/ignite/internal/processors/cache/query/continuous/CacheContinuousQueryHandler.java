@@ -425,7 +425,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                                     onEntryUpdate(evt, notify, loc, recordIgniteEvt);
                                 }
-                            });
+                            }, sync);
                         }
                     }
                 }
@@ -1324,7 +1324,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     for (AffinityTopologyVersion topVer : t.get2()) {
                         for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
-                            if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
+                            if (!node.isLocal()) {
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                                 }

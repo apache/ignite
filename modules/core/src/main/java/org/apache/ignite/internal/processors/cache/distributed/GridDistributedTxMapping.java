@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -33,19 +29,15 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Transaction node mapping.
  */
-public class GridDistributedTxMapping implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDistributedTxMapping {
     /** Mapped node. */
     @GridToStringExclude
-    private ClusterNode node;
+    private ClusterNode primary;
 
     /** Entries. */
     @GridToStringInclude
@@ -67,17 +59,10 @@ public class GridDistributedTxMapping implements Externalizable {
     private boolean clientFirst;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * @param primary Primary node.
      */
-    public GridDistributedTxMapping() {
-        // No-op.
-    }
-
-    /**
-     * @param node Mapped node.
-     */
-    public GridDistributedTxMapping(ClusterNode node) {
-        this.node = node;
+    public GridDistributedTxMapping(ClusterNode primary) {
+        this.primary = primary;
 
         entries = new LinkedHashSet<>();
     }
@@ -127,8 +112,8 @@ public class GridDistributedTxMapping implements Externalizable {
     /**
      * @return Node.
      */
-    public ClusterNode node() {
-        return node;
+    public ClusterNode primary() {
+        return primary;
     }
 
     /**
@@ -235,21 +220,7 @@ public class GridDistributedTxMapping implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(node);
-
-        U.writeCollection(out, entries);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        node = (ClusterNode)in.readObject();
-
-        entries = U.readCollection(in);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedTxMapping.class, this, "node", node.id());
+        return S.toString(GridDistributedTxMapping.class, this, "node", primary.id());
     }
 }
