@@ -59,12 +59,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlEnum;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -87,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -108,6 +109,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueEnumCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -376,6 +378,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
     };
+
+    /** */
+    public final GridH2CustomDataTypesHandler h2CustomDataTypesHandler = new GridH2CustomDataTypesHandler();
 
     /**
      * @return Kernal context.
@@ -1810,6 +1815,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DB type name.
      */
     private String dbTypeFromClass(Class<?> cls) {
+        if (cls.isEnum()) {
+            int typeId = ctx.cacheObjects().typeId(cls.getName());
+            if (typeId == 0) {
+                typeId = cls.getName().hashCode();
+                if (typeId < 0) {
+                    typeId = -typeId;
+                }
+            }
+            QuerySqlEnum annotation = cls.getAnnotation(QuerySqlEnum.class);
+            return h2CustomDataTypesHandler.registerEnum(typeId, cls, annotation==null?null:annotation.alias());
+        }
         return DBTypeEnum.fromClass(cls).dBTypeAsString();
     }
 
@@ -1971,6 +1987,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.warn(log, "Custom H2 serialization is already configured, will override.");
 
         JdbcUtils.serializer = h2Serializer();
+
+        if (JdbcUtils.customDataTypesHandler != null)
+            U.warn(log, "Custom H2 data types handler is already configured, will override.");
+
+        JdbcUtils.customDataTypesHandler = h2CustomDataTypesHandler;
 
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
@@ -3286,6 +3307,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 case Value.GEOMETRY:
                     return ValueGeometry.getFromGeometry(obj);
+
+                default:
+                    if (obj instanceof Enum) {
+                        return GridH2ValueEnumCache.get(type, obj.getClass(), ((Enum) obj).ordinal());
+                    }
+                    if (obj instanceof BinaryObject) {
+                        if (((BinaryObject) obj).type().isEnum()) {
+                            Enum val = (Enum) ((BinaryObject) obj).deserialize();
+                            return GridH2ValueEnumCache.get(type, val.getClass(), val.ordinal());
+                        }
+                    }
             }
 
             throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");

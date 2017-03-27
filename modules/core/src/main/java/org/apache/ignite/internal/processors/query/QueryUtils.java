@@ -130,12 +130,12 @@ public class QueryUtils {
 
         if (binaryEnabled && !keyOrValMustDeserialize) {
             // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
+            if (SQL_TYPES.contains(valCls) || valCls.isEnum())
                 desc.valueClass(valCls);
             else
                 desc.valueClass(Object.class);
 
-            if (SQL_TYPES.contains(keyCls))
+            if (SQL_TYPES.contains(keyCls) || keyCls.isEnum())
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
@@ -251,12 +251,12 @@ public class QueryUtils {
 
         if (binaryEnabled && !keyOrValMustDeserialize) {
             // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
+            if (SQL_TYPES.contains(valCls) || valCls.isEnum())
                 desc.valueClass(valCls);
             else
                 desc.valueClass(Object.class);
 
-            if (SQL_TYPES.contains(keyCls))
+            if (SQL_TYPES.contains(keyCls) || keyCls.isEnum())
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
@@ -297,7 +297,7 @@ public class QueryUtils {
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
-    
+
     /**
      * Processes declarative metadata for class.
      *
@@ -365,7 +365,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
     }
-    
+
     /**
      * @param d Type descriptor.
      * @param keyCls Key class.
@@ -425,7 +425,7 @@ public class QueryUtils {
                 d.addFieldToIndex(idxName, propName, idxOrder, idxType == IndexType.DESC);
         }
     }
-    
+
     /**
      * Processes declarative metadata for binary object.
      *
@@ -506,7 +506,7 @@ public class QueryUtils {
                 d.addProperty(prop, false);
         }
     }
-    
+
     /**
      * Processes declarative metadata for binary object.
      *
@@ -557,7 +557,7 @@ public class QueryUtils {
 
         processIndexes(qryEntity, d);
     }
-    
+
     /**
      * Processes declarative metadata for binary object.
      *
@@ -586,7 +586,7 @@ public class QueryUtils {
 
         processIndexes(qryEntity, d);
     }
-    
+
     /**
      * Processes indexes based on query entity.
      *
@@ -644,7 +644,7 @@ public class QueryUtils {
             }
         }
     }
-    
+
     /**
      * Builds binary object property.
      *
@@ -679,7 +679,7 @@ public class QueryUtils {
 
         return res;
     }
-    
+
     /**
      * @param keyCls Key class.
      * @param valCls Value class.
@@ -723,7 +723,7 @@ public class QueryUtils {
             resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
             "Make sure that one of these classes contains respective getter method or field.";
     }
-    
+
     /**
      * @param key If this is a key property.
      * @param cls Source type class.
@@ -768,7 +768,7 @@ public class QueryUtils {
 
         return res;
     }
-    
+
     /**
      * Find a member (either a getter method or a field) with given name of given class.
      * @param prop Property name.
@@ -999,5 +999,5 @@ public class QueryUtils {
         /** Text index. */
         TEXT
     }
-    
+
 }
