@@ -752,8 +752,7 @@ button.form-control {
         .error {
             padding: 10px 10px;
 
-            text-align: center;
-            color: $brand-primary;
+            text-align: left;
         }
 
         .empty {
@@ -2302,6 +2301,8 @@ html,body,.splash-screen {
 
 .admin-page {
     .panel-heading {
+        height: 38px;
+
         border-bottom: 0;
         padding-bottom: 0;
 

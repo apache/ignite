@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Async target.
+ * Indicates that node should try reconnect to cluster.
  */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
+public class IgniteNeedReconnectException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
+     * @param locNode Local node.
+     * @param cause Cause.
      */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
+    }
 }

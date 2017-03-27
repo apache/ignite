@@ -227,10 +227,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        Guid elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_UUID);
-                        BinaryUtils::WriteGuid(stream, elem);
+                        BinaryUtils::WriteGuid(stream, val[i]);
                     }
                 }
                 else
@@ -262,11 +260,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        Guid elem = *(val + i);
-
-                        WriteTopObject(elem);
-                    }
+                        WriteTopObject(val[i]);
                 }
                 else
                 {
@@ -296,10 +290,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        const Date& elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_DATE);
-                        BinaryUtils::WriteDate(stream, elem);
+                        BinaryUtils::WriteDate(stream, val[i]);
                     }
                 }
                 else
@@ -331,11 +323,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        const Date& elem = *(val + i);
-
-                        WriteTopObject(elem);
-                    }
+                        WriteTopObject(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -363,10 +351,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        const Timestamp& elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_TIMESTAMP);
-                        BinaryUtils::WriteTimestamp(stream, elem);
+                        BinaryUtils::WriteTimestamp(stream, val[i]);
                     }
                 }
                 else
@@ -398,11 +384,68 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        const Timestamp& elem = *(val + i);
+                        WriteTopObject(val[i]);
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
 
-                        WriteTopObject(elem);
+            void BinaryWriterImpl::WriteTime(const Time& val)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_TIME);
+
+                BinaryUtils::WriteTime(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimeArray(const Time* val, const int32_t len)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIME);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        stream->WriteInt8(IGNITE_TYPE_TIME);
+                        BinaryUtils::WriteTime(stream, val[i]);
                     }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            void BinaryWriterImpl::WriteTime(const char* fieldName, const Time& val)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_TIME);
+
+                stream->WriteInt8(IGNITE_TYPE_TIME);
+
+                BinaryUtils::WriteTime(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimeArray(const char* fieldName, const Time* val, const int32_t len)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY_TIME);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIME);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                        WriteTopObject(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -703,6 +746,24 @@ namespace ignite
             void BinaryWriterImpl::WriteTopObject<Timestamp>(const Timestamp& obj)
             {
                 WriteTopObject0<Timestamp>(obj, BinaryUtils::WriteTimestamp, IGNITE_TYPE_TIMESTAMP);
+            }
+
+            template <>
+            void BinaryWriterImpl::WriteTopObject<Time>(const Time& obj)
+            {
+                WriteTopObject0<Time>(obj, BinaryUtils::WriteTime, IGNITE_TYPE_TIME);
+            }
+
+            template<>
+            void BinaryWriterImpl::WriteTopObject(const std::string& obj)
+            {
+                const char* obj0 = obj.c_str();
+
+                int32_t len = static_cast<int32_t>(obj.size());
+
+                stream->WriteInt8(IGNITE_TYPE_STRING);
+
+                BinaryUtils::WriteString(stream, obj0, len);
             }
 
             void BinaryWriterImpl::PostWrite()
