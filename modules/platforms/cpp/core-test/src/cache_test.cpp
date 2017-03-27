@@ -452,6 +452,18 @@ BOOST_AUTO_TEST_CASE(TestPutGetDate)
     BOOST_REQUIRE(now == cache.Get(5));
 }
 
+BOOST_AUTO_TEST_CASE(TestPutGetTime)
+{
+    // Get existing cache
+    cache::Cache<int, Time> cache = grid0.GetOrCreateCache<int, Time>("partitioned");
+
+    Time now = Time(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
 BOOST_AUTO_TEST_CASE(TestPutGetTimestamp)
 {
     // Get existing cache

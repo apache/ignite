@@ -105,7 +105,7 @@ public class JobStealingRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 82;
     }
 

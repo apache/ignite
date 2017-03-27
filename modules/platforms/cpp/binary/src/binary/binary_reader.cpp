@@ -138,7 +138,17 @@ namespace ignite
         {
             return impl->ReadTimestampArray(fieldName, res, len);
         }
-        
+
+        Time BinaryReader::ReadTime(const char* fieldName)
+        {
+            return impl->ReadTime(fieldName);
+        }
+
+        int32_t BinaryReader::ReadTimeArray(const char* fieldName, Time* res, const int32_t len)
+        {
+            return impl->ReadTimeArray(fieldName, res, len);
+        }
+
         int32_t BinaryReader::ReadString(const char* fieldName, char* res, int32_t len)
         {
             return impl->ReadString(fieldName, res, len);

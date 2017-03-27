@@ -28,6 +28,8 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
+#include "ignite/test_utils.h"
+
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
@@ -387,45 +389,17 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context
 /**
  * Test setup fixture.
  */
-struct CacheInvokeTestSuiteFixture {
-
-    Ignite CreateGrid()
-    {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 512;
-#else
-        cfg.jvmInitMem = 512;
-        cfg.jvmMaxMem = 2048;
-#endif
-
-        cfg.springCfgPath = std::string(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")) + "/cache-query.xml";
-
-        IgniteError err;
-
-        Ignite grid0 = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
-
-        return grid0;
-    }
+struct CacheInvokeTestSuiteFixture
+{
+    Ignite node;
 
     /**
      * Constructor.
      */
-    CacheInvokeTestSuiteFixture()
+    CacheInvokeTestSuiteFixture() :
+        node(ignite_test::StartNode("cache-query.xml", "InvokeTest"))
     {
-        grid = CreateGrid();
+        // No-op.
     }
 
     /**
@@ -433,10 +407,8 @@ struct CacheInvokeTestSuiteFixture {
      */
     ~CacheInvokeTestSuiteFixture()
     {
-        Ignition::Stop(grid.GetName(), true);
+        Ignition::StopAll(true);
     }
-
-    Ignite grid;
 };
 
 BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
@@ -446,7 +418,7 @@ BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     cache.Put(5, 20);
 
@@ -464,7 +436,7 @@ BOOST_AUTO_TEST_CASE(TestExisting)
  */
 BOOST_AUTO_TEST_CASE(TestNonExisting)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced;
 
@@ -480,7 +452,7 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
  */
 BOOST_AUTO_TEST_CASE(TestSeveral)
 {
-    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = node.GetOrCreateCache<int, int>("TestCache");
 
     CacheEntryModifier ced(2);
     Divisor div(10.0);
@@ -515,11 +487,11 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
  */
 BOOST_AUTO_TEST_CASE(TestStrings)
 {
-    IgniteBinding binding = grid.GetBinding();
+    IgniteBinding binding = node.GetBinding();
 
     binding.RegisterCacheEntryProcessor<CharRemover>();
 
-    Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
+    Cache<std::string, std::string> cache = node.GetOrCreateCache<std::string, std::string>("TestCache");
 
     CharRemover cr('.');
 

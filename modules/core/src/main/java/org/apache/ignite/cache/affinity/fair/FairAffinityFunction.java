@@ -911,37 +911,37 @@ public class FairAffinityFunction implements AffinityFunction {
             if (exclNeighbors)
                 return allowNeighbors || !neighborsContainPartition(node, part);
             else if (affinityBackupFilter != null) {
-                List<ClusterNode> assigment = assignments.get(part);
+                List<ClusterNode> assignment = assignments.get(part);
 
-                assert assigment.size() > 0;
+                if (assignment.isEmpty())
+                    return true;
 
                 List<ClusterNode> newAssignment;
 
                 if (tier == 0) {
-                    for (int t = 1; t < assigment.size(); t++) {
-                        newAssignment = new ArrayList<>(assigment.size() - 1);
+                    for (int t = 1; t < assignment.size(); t++) {
+                        newAssignment = new ArrayList<>(assignment.size() - 1);
 
                         newAssignment.add(node);
 
                         if (t != 1)
-                            newAssignment.addAll(assigment.subList(1, t));
+                            newAssignment.addAll(assignment.subList(1, t));
 
-                        if (t + 1 < assigment.size())
-                            newAssignment.addAll(assigment.subList(t + 1, assigment.size()));
+                        if (t + 1 < assignment.size())
+                            newAssignment.addAll(assignment.subList(t + 1, assignment.size()));
 
-                        if (!affinityBackupFilter.apply(assigment.get(t), newAssignment))
+                        if (!affinityBackupFilter.apply(assignment.get(t), newAssignment))
                             return false;
-
                     }
 
                     return true;
                 }
-                else if (tier < assigment.size()) {
-                    newAssignment = new ArrayList<>(assigment.size() - 1);
+                else if (tier < assignment.size()) {
+                    newAssignment = new ArrayList<>(assignment.size() - 1);
 
                     int i = 0;
 
-                    for (ClusterNode assignmentNode: assigment) {
+                    for (ClusterNode assignmentNode: assignment) {
                         if (i != tier)
                             newAssignment.add(assignmentNode);
 
@@ -949,17 +949,18 @@ public class FairAffinityFunction implements AffinityFunction {
                     }
                 }
                 else
-                    newAssignment = assigment;
+                    newAssignment = assignment;
 
                 return affinityBackupFilter.apply(node, newAssignment);
             }
             else if (backupFilter != null) {
                 if (tier == 0) {
-                    List<ClusterNode> assigment = assignments.get(part);
+                    List<ClusterNode> assignment = assignments.get(part);
 
-                    assert assigment.size() > 0;
+                    if (assignment.isEmpty())
+                        return true;
 
-                    List<ClusterNode> backups = assigment.subList(1, assigment.size());
+                    List<ClusterNode> backups = assignment.subList(1, assignment.size());
 
                     return !F.exist(backups, new IgnitePredicate<ClusterNode>() {
                         @Override public boolean apply(ClusterNode n) {
