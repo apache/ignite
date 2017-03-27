@@ -10,7 +10,7 @@ if [%ODBC_AMD64%] == [] (
 )
 
 if exist %ODBC_AMD64% (
-	if exist %ODBC_AMD64%\ (
+	for %%i IN (%ODBC_AMD64%) DO IF EXIST %%~si\NUL (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)
 	echo Installing 64-bit driver: %ODBC_AMD64%
@@ -33,7 +33,7 @@ if [%ODBC_X86%] == [] (
 )
 
 if exist %ODBC_X86% (
-	if exist %ODBC_X86%\ (
+	for %%i IN (%ODBC_X86%) DO IF EXIST %%~si\NUL (
 		echo warning: The path you have specified seems to be a directory. Note that you have to specify path to driver file itself instead.
 	)
 	echo Installing 32-bit driver: %ODBC_X86%

@@ -43,10 +43,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     TypeConfigurations =
                     {
-                        new BinaryTypeConfiguration(typeof(Key))
-                        {
-                            EqualityComparer = new BinaryArrayEqualityComparer()
-                        },
+                        new BinaryTypeConfiguration(typeof(Key)),
                         new BinaryTypeConfiguration(typeof(Key2))
                         {
                             EqualityComparer = new BinaryFieldEqualityComparer("Hi", "Lo")

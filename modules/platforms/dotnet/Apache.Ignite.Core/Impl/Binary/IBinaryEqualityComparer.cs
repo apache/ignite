@@ -43,6 +43,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             Marshaller marshaller, IBinaryTypeDescriptor desc);
 
         /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        int GetHashCode(IBinaryObject obj);
+
+
+        /// <summary>
         /// Returns a value indicating that two binary object are equal.
         /// </summary>
         /// <param name="x">First object.</param>

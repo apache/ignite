@@ -77,6 +77,18 @@ void CheckOperators(const T& val1, const T& val2, const T& val3)
     BOOST_CHECK(val3 >= val1);
 }
 
+void CheckTime(int hour, int mins, int sec)
+{
+    Time time = common::MakeTimeGmt(hour, mins, sec);
+    tm res;
+
+    common::TimeToCTm(time, res);
+
+    BOOST_CHECK_EQUAL(res.tm_hour, hour);
+    BOOST_CHECK_EQUAL(res.tm_min, mins);
+    BOOST_CHECK_EQUAL(res.tm_sec, sec);
+}
+
 void CheckDate(int year, int mon, int day)
 {
     Date date = common::MakeDateGmt(year, mon, day);
@@ -240,6 +252,16 @@ BOOST_AUTO_TEST_CASE(MakeTimestamp)
     BOOST_CHECK_EQUAL(MakeTimestampGmt(2000, 12, 31, 23, 59, 59, 999999999).GetDate().GetMilliseconds(), 978307199999);
     BOOST_CHECK_EQUAL(MakeTimestampGmt(2001, 9, 9, 1, 46, 39, 999999999).GetDate().GetMilliseconds(), 999999999999);
     BOOST_CHECK_EQUAL(MakeTimestampGmt(2017, 3, 20, 18, 43, 19, 170038645).GetDate().GetMilliseconds(), 1490035399170);
+}
+
+BOOST_AUTO_TEST_CASE(CastTimeToTm)
+{
+    CheckTime(21, 8, 5);
+    CheckTime(12, 41, 11);
+    CheckTime(1, 28, 18);
+    CheckTime(8, 12, 59);
+    CheckTime(17, 52, 31);
+    CheckTime(21, 56, 21);
 }
 
 BOOST_AUTO_TEST_CASE(CastDateToTm)

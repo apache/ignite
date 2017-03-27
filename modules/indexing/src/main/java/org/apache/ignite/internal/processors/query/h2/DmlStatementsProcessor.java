@@ -989,43 +989,9 @@ public class DmlStatementsProcessor {
 
             if (val instanceof BinaryObjectBuilder)
                 val = ((BinaryObjectBuilder) val).build();
-
-            if (key instanceof BinaryObject)
-                key = updateHashCodeIfNeeded(cctx, (BinaryObject) key);
-
-            if (val instanceof BinaryObject)
-                val = updateHashCodeIfNeeded(cctx, (BinaryObject) val);
         }
 
         return new IgniteBiTuple<>(key, val);
-    }
-
-    /**
-     * Set hash code to binary object if it does not have one.
-     *
-     * @param cctx Cache context.
-     * @param binObj Binary object.
-     * @return Binary object with hash code set.
-     */
-    private BinaryObject updateHashCodeIfNeeded(GridCacheContext cctx, BinaryObject binObj) {
-        if (U.isHashCodeEmpty(binObj)) {
-            if (WARNED_TYPES.add(binObj.type().typeId()))
-                U.warn(log, "Binary object's type does not have identity resolver explicitly set, therefore " +
-                    "BinaryArrayIdentityResolver is used to generate hash codes for its instances, and therefore " +
-                    "hash code of this binary object will most likely not match that of its non serialized form. " +
-                    "For finer control over identity of this type, please update your BinaryConfiguration accordingly." +
-                    " [typeId=" + binObj.type().typeId() + ", typeName=" + binObj.type().typeName() + ']');
-
-            int hash = BinaryArrayIdentityResolver.instance().hashCode(binObj);
-
-            // Empty hash code means no identity set for the type, therefore, we can safely set hash code
-            // via this Builder as it won't be overwritten.
-            return cctx.grid().binary().builder(binObj)
-                .hashCode(hash)
-                .build();
-        }
-        else
-            return binObj;
     }
 
     /** */

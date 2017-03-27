@@ -36,7 +36,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -312,10 +312,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                     GridDhtPartitionFullMap fullMap = top.partitionMap(true);
 
-                    for (Map.Entry<UUID, GridDhtPartitionMap2> fe : fullMap.entrySet()) {
+                    for (Map.Entry<UUID, GridDhtPartitionMap> fe : fullMap.entrySet()) {
                         UUID nodeId = fe.getKey();
 
-                        GridDhtPartitionMap2 m = fe.getValue();
+                        GridDhtPartitionMap m = fe.getValue();
 
                         for (Map.Entry<Integer, GridDhtPartitionState> e : m.entrySet()) {
                             int p = e.getKey();
@@ -453,12 +453,12 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                     assert orig.keySet().equals(cmp.keySet());
 
-                    for (Map.Entry<UUID, GridDhtPartitionMap2> entry : orig.entrySet()) {
+                    for (Map.Entry<UUID, GridDhtPartitionMap> entry : orig.entrySet()) {
                         UUID nodeId = entry.getKey();
 
-                        GridDhtPartitionMap2 nodeMap = entry.getValue();
+                        GridDhtPartitionMap nodeMap = entry.getValue();
 
-                        GridDhtPartitionMap2 cmpMap = cmp.get(nodeId);
+                        GridDhtPartitionMap cmpMap = cmp.get(nodeId);
 
                         assert cmpMap != null;
 
