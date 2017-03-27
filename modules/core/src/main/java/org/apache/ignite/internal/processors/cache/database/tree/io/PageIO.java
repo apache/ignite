@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -62,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageLockLi
  *
  * 7. It is almost always preferable to read or write (especially write) page contents using
  *    static methods on {@link PageHandler}. To just initialize new page use
- *    {@link PageHandler#initPage(PageMemory, Page, PageLockListener, PageIO, IgniteWriteAheadLogManager)}
+ *    {@link PageHandler#initPage(PageMemory, int, long, PageIO, IgniteWriteAheadLogManager, PageLockListener)}
  *    method with needed IO instance.
  */
 public abstract class PageIO {

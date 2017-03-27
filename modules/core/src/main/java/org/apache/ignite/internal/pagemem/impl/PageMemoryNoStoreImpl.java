@@ -22,17 +22,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.OutOfMemoryException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
@@ -67,7 +66,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
-    public static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
+    private static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
 
     /** Full relative pointer mask. */
     private static final long RELATIVE_PTR_MASK = 0xFFFFFFFFFFFFFFL;
@@ -85,16 +84,16 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private static final long COUNTER_INC = ADDRESS_MASK + 1;
 
     /** Page ID offset. */
-    public static final int PAGE_ID_OFFSET = 8;
+    private static final int PAGE_ID_OFFSET = 8;
 
     /** Page pin counter offset. */
-    public static final int LOCK_OFFSET = 16;
+    private static final int LOCK_OFFSET = 16;
 
     /**
      * Need a 8-byte pointer for linked list, 8 bytes for internal needs (flags),
      * 4 bytes cache ID, 8 bytes timestamp.
      */
-    public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
+    static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
 
     /** Page size. */
     private int sysPageSize;
@@ -269,24 +268,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public Page page(int cacheId, long pageId) throws IgniteCheckedException {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-
-        Segment seg = segment(pageIdx);
-
-        return seg.acquirePage(pageIdx, pageId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void releasePage(Page p) {
-        if (trackAcquiredPages) {
-            Segment seg = segment(PageIdUtils.pageIndex(p.id()));
-
-            seg.onPageRelease();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public int pageSize() {
         return sysPageSize - PAGE_OVERHEAD;
     }
@@ -296,7 +277,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return sysPageSize;
     }
 
-    /** */
+    /**
+     * @return Next index.
+     */
     private int nextRoundRobinIndex() {
         while (true) {
             int idx = selector.get();
@@ -339,7 +322,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             seg.readLock().lock();
 
             try {
-                total += seg.acquiredPages();
+                int acquired = seg.acquiredPages();
+
+                assert acquired >= 0;
+
+                total += acquired;
             }
             finally {
                 seg.readLock().unlock();
@@ -347,68 +334,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         return total;
-    }
-
-    /**
-     * @param absPtr Page absolute address.
-     */
-    boolean readLockPage(long absPtr, int tag) {
-        return rwLock.readLock(absPtr + LOCK_OFFSET, tag);
-    }
-
-    /**
-     * @param absPtr Page absolute address.
-     */
-    void readUnlockPage(long absPtr) {
-        rwLock.readUnlock(absPtr + LOCK_OFFSET);
-    }
-
-    /**
-     * @param absPtr Page absolute address.
-     */
-    boolean writeLockPage(long absPtr, int tag) {
-        return rwLock.writeLock(absPtr + LOCK_OFFSET, tag);
-    }
-
-    /**
-     * @param absPtr Page absolute address.
-     * @return {@code True} if locked page.
-     */
-    boolean tryWriteLockPage(long absPtr, int tag) {
-        return rwLock.tryWriteLock(absPtr + LOCK_OFFSET, tag);
-    }
-
-    /**
-     * @param absPtr Page absolute address.
-     */
-    void writeUnlockPage(long absPtr, int newTag) {
-        rwLock.writeUnlock(absPtr + LOCK_OFFSET, newTag);
-    }
-
-    /**
-     * @param absPtr Absolute pointer to the page.
-     * @return {@code True} if write lock acquired for the page.
-     */
-    boolean isPageWriteLocked(long absPtr) {
-        return rwLock.isWriteLocked(absPtr + LOCK_OFFSET);
-    }
-
-    /**
-     * @param absPtr Absolute pointer to the page.
-     * @return {@code True} if read lock acquired for the page.
-     */
-    boolean isPageReadLocked(long absPtr) {
-        return rwLock.isReadLocked(absPtr + LOCK_OFFSET);
-    }
-
-    /**
-     * Reads page ID from the page at the given absolute position.
-     *
-     * @param absPtr Absolute memory pointer to the page header.
-     * @return Page ID written to the page.
-     */
-    long readPageId(long absPtr) {
-        return GridUnsafe.getLong(absPtr + PAGE_ID_OFFSET);
     }
 
     /**
@@ -451,6 +376,68 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         res = (res << idxBits) | (pageIdx & idxMask);
 
         return res;
+    }
+
+    // *** PageSupport methods ***
+
+    /** {@inheritDoc} */
+    @Override public long acquirePage(int cacheId, long pageId) {
+        int pageIdx = PageIdUtils.pageIndex(pageId);
+
+        Segment seg = segment(pageIdx);
+
+        return seg.acquire(pageIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releasePage(int cacheId, long pageId, long page) {
+        if (trackAcquiredPages) {
+            Segment seg = segment(PageIdUtils.pageIndex(pageId));
+
+            seg.onPageRelease();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLock(int cacheId, long pageId, long page) {
+        if (rwLock.readLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page + PAGE_OVERHEAD;
+
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readUnlock(int cacheId, long pageId, long page) {
+        rwLock.readUnlock(page + LOCK_OFFSET);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long writeLock(int cacheId, long pageId, long page) {
+        if (rwLock.writeLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page + PAGE_OVERHEAD;
+
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long tryWriteLock(int cacheId, long pageId, long page) {
+        if (rwLock.tryWriteLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
+            return page + PAGE_OVERHEAD;
+
+        return 0L;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeUnlock(int cacheId, long pageId, long page,
+        Boolean walPlc,
+        boolean dirtyFlag) {
+        long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
+        rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
+    }
+
+    @Override public boolean isDirty(int cacheId, long pageId, long page) {
+        // always false for page no store.
+        return false;
     }
 
     /**
@@ -516,11 +503,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         /**
          * @param pageIdx Page index.
-         * @param pageId Page ID to pin.
-         * @return Pinned page impl.
+         * @return Page absolute pointer.
          */
-        @SuppressWarnings("TypeMayBeWeakened")
-        private PageNoStoreImpl acquirePage(int pageIdx, long pageId) {
+        private long acquire(int pageIdx) {
             long absPtr = absolute(pageIdx);
 
             assert absPtr % 8 == 0 : absPtr;
@@ -528,7 +513,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (trackAcquiredPages)
                 acquiredPages.incrementAndGet();
 
-            return new PageNoStoreImpl(PageMemoryNoStoreImpl.this, absPtr, pageId);
+            return absPtr;
         }
 
         /**
@@ -604,12 +589,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
                 if (freePageRelPtr != INVALID_REL_PTR) {
-                    long freePageAbsPtr = absolute(PageIdUtils.pageIndex(freePageRelPtr));
+                    long freePage = absolute(PageIdUtils.pageIndex(freePageRelPtr));
 
-                    long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
+                    long nextFreePageRelPtr = GridUnsafe.getLong(freePage) & ADDRESS_MASK;
 
                     if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
-                        GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
+                        GridUnsafe.putLong(freePage, PAGE_MARKER);
 
                         allocatedPages.incrementAndGet();
 
