@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Store
+namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Session for the cache store operations. The main purpose of cache store session
-    /// is to hold context between multiple store invocations whenever in transaction. For example,
-    /// you can save current database connection in the session <see cref="Properties"/> map. You can then
-    /// commit this connection in the <see cref="ICacheStore{K,V}.SessionEnd(bool)"/> method.
+    /// Provides a non-generic way to work with <see cref="CacheStoreInternal{TK, TV}"/>.
     /// </summary>
-    public interface ICacheStoreSession
+    internal interface ICacheStoreInternal
     {
         /// <summary>
-        /// Cache name for the current store operation. Note that if the same store
-        /// is reused between different caches, then the cache name will change between
-        /// different store operations.
+        /// Invokes a store operation.
         /// </summary>
-        string CacheName { get; }
+        /// <param name="stream">Input stream.</param>
+        /// <param name="grid">Grid.</param>
+        /// <returns>Invocation result.</returns>
+        /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
+        int Invoke(IBinaryStream stream, Ignite grid);
 
         /// <summary>
-        /// Current session properties. You can add properties directly to the returned map.
+        /// Initializes this instance with a grid.
         /// </summary>
-        IDictionary<object, object> Properties { get; }
+        /// <param name="grid">Grid.</param>
+        void Init(Ignite grid);
     }
 }
