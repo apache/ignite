@@ -61,14 +61,6 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
         this.cache = cache;
         this.keyMapper = keyMapper;
         this.valMapper = valMapper;
-
-        Map batchInitVals = new HashMap();
-
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                batchInitVals.put(keyMapper.apply(i, j), 0d);
-
-        cache.putAll(batchInitVals);
     }
 
     /**

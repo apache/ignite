@@ -30,6 +30,8 @@ import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
+import static junit.framework.TestCase.assertTrue;
+
 /**
  * Tests for {@link CacheMatrix}.
  */
@@ -41,6 +43,10 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "test-cache";
     /** Grid instance. */
     private Ignite ignite;
+    /** Matrix rows */
+    private final int rows = MathTestConstants.STORAGE_SIZE;
+    /** Matrix cols */
+    private final int cols = MathTestConstants.STORAGE_SIZE;
 
     /**
      * Default constructor.
@@ -76,9 +82,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testGetSet() throws Exception {
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
@@ -96,9 +99,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testCopy() throws Exception{
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
@@ -116,9 +116,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testLike() throws Exception{
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
@@ -134,9 +131,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
 
     /** */
     public void testLikeVector() throws Exception{
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
@@ -154,14 +148,13 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     public void testPlus(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         double plusVal = 2;
 
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        initMatrix(cacheMatrix);
 
         cacheMatrix.plus(plusVal);
 
@@ -174,9 +167,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     public void testDivide(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         double initVal = 1;
         double divVal = 2;
 
@@ -184,20 +174,18 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
+        initMatrix(cacheMatrix);
         cacheMatrix.assign(initVal);
         cacheMatrix.divide(divVal);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                TestCase.assertTrue(Double.compare(cacheMatrix.get(i, j), initVal / divVal) == 0);
+                assertTrue(Double.compare(cacheMatrix.get(i, j), initVal / divVal) == 0);
     }
 
     /** */
     public void testTimes(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
 
         double initVal = 1;
         double timVal = 2;
@@ -206,45 +194,49 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
+        initMatrix(cacheMatrix);
         cacheMatrix.assign(initVal);
         cacheMatrix.times(timVal);
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                TestCase.assertTrue(Double.compare(cacheMatrix.get(i, j), initVal * timVal) == 0);
+                assertTrue(Double.compare(cacheMatrix.get(i, j), initVal * timVal) == 0);
     }
 
     /** */
     public void testSum(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         double initVal = 1;
 
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
 
-        cacheMatrix.assign(initVal);
-        double sum = cacheMatrix.sum();
+        double sum = 0;
 
-        TestCase.assertTrue(Double.compare(sum, rows * cols) == 0);
+        initMatrix(cacheMatrix);
+        sum = cacheMatrix.sum();
+
+        assertTrue(Double.compare(sum, 0d) == 0);
+
+        cacheMatrix.assign(1d);
+        sum = cacheMatrix.sum();
+
+        assertTrue(Double.compare(sum, rows * cols) == 0);
     }
 
     /** */
     public void testAssignSingleValue(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
         double initVal = 1;
 
         MatrixKeyMapper<Integer> keyMapper = getKeyMapper(rows, cols);
         IgniteCache<Integer, Double> cache = getCache();
         CacheMatrix<Integer, Double> cacheMatrix = new CacheMatrix<>(rows, cols, cache, keyMapper, new IdentityValueMapper());
+
+        initMatrix(cacheMatrix);
 
         cacheMatrix.assign(initVal);
 
@@ -256,9 +248,6 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
     /** */
     public void testAssignArray(){
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
 
         double[][] initVal = new double[rows][cols];
 
@@ -303,10 +292,17 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
         };
     }
 
-    /** */
+    /** Init the given matrix by random values. */
     private void fillMatrix(Matrix m){
         for (int i = 0; i < m.rowSize(); i++)
             for (int j = 0; j < m.columnSize(); j++)
                 m.set(i, j, Math.random());
+    }
+
+    /** Init the given matrix by zeros. */
+    private void initMatrix(Matrix m){
+        for (int i = 0; i < m.rowSize(); i++)
+            for (int j = 0; j < m.columnSize(); j++)
+                m.set(i, j, 0d);
     }
 }
