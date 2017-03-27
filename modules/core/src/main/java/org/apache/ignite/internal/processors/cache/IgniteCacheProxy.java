@@ -99,16 +99,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
-        /** */
-        private static final long serialVersionUID = -1640538788290240617L;
-
-        @Override public boolean apply(Object k, Object v) {
-            return true;
-        }
-    };
-
     /** Context. */
     private GridCacheContext<K, V> ctx;
 
@@ -379,9 +369,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(ctx.cache().isLocal() ?
-                        ctx.cache().localLoadCacheAsync(p, args)
-                        : ctx.cache().globalLoadCacheAsync(p, args));
+                    if (ctx.cache().isLocal())
+                        setFuture(ctx.cache().localLoadCacheAsync(p, args));
+                    else
+                        setFuture(ctx.cache().globalLoadCacheAsync(p, args));
                 }
                 else {
                     if (ctx.cache().isLocal())
@@ -408,8 +399,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
-                return (IgniteFuture<Void>)createFuture(ctx.cache().isLocal() ?
-                    ctx.cache().localLoadCacheAsync(p, args) : ctx.cache().globalLoadCacheAsync(p, args));
+                if (ctx.cache().isLocal())
+                    return (IgniteFuture<Void>)createFuture(ctx.cache().localLoadCacheAsync(p, args));
+                else
+                    return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
             }
             finally {
                 onLeave(gate, prev);
