@@ -2159,9 +2159,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                                 val = entry.innerGet(
                                     null,
                                     this,
+                                    /*read-through*/false,
                                     /*metrics*/true,
-                                    /*event*/true,
-                                    /*temporary*/false,
+                                    /*event*/!skipVals,
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
