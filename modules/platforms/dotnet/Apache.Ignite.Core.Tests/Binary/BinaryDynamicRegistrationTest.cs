@@ -402,7 +402,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
-        private class CacheStore : CacheStoreAdapter
+        private class CacheStore : CacheStoreAdapter<object, object>
         {
             private static readonly Dictionary<object, object>  Dict = new Dictionary<object, object>();
 
