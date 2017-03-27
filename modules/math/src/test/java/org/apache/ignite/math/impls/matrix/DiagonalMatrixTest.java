@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.ExternalizeTest;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
@@ -33,12 +34,13 @@ import static org.junit.Assert.fail;
  * Tests for {@link DiagonalMatrix}.
  */
 public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
-    public static final String UNEXPECTED_VALUE = "Unexpected value.";
-    private DiagonalMatrix testMatrix;
+    /** */ public static final String UNEXPECTED_VALUE = "Unexpected value";
+
+    /** */ private DiagonalMatrix testMatrix;
 
     /** */
     @Before
-    public void setup(){
+    public void setup() {
         DenseLocalOnHeapMatrix parent = new DenseLocalOnHeapMatrix(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
         fillMatrix(parent);
         testMatrix = new DiagonalMatrix(parent);
@@ -51,39 +53,35 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
     /** */
     @Test
-    public void testSetGet(){
+    public void testSetGetBasic() {
         double testVal = 42;
         for (int i = 0; i < MathTestConstants.STORAGE_SIZE; i++) {
             testMatrix.set(i, i, testVal);
 
-            assertEquals(UNEXPECTED_VALUE, testMatrix.get(i, i), testVal, 0d);
+            assertEquals(UNEXPECTED_VALUE + " at (" + i + "," + i + ")", testMatrix.get(i, i), testVal, 0d);
         }
     }
 
     /** */
     @Test
-    public void testSetGetNegative(){
-        double testVal = 42;
+    public void testSetGet() {
+        verifyDiagonal(testMatrix);
 
-        for(int i = 0; i < MathTestConstants.STORAGE_SIZE; i++)
-            for(int j = 0; j < MathTestConstants.STORAGE_SIZE; j++)
-                try {
-                    testMatrix.set(i, j, testVal);
+        final int size = MathTestConstants.STORAGE_SIZE;
 
-                    if (i != j)
-                        fail("UnsupportedOperationException expected.");
+        for (Matrix m : new Matrix[] {
+            new DenseLocalOnHeapMatrix(size + 1, size),
+            new DenseLocalOnHeapMatrix(size, size + 1)}) {
+            fillMatrix(m);
 
-                    assertEquals(UNEXPECTED_VALUE, testMatrix.get(i, i), testVal, 0d);
+            verifyDiagonal(new DiagonalMatrix(m));
+        }
 
-                }
-                catch (UnsupportedOperationException e) {
-                    // No-op.
-                }
     }
 
     /** */
     @Test
-    public void testAttributes(){
+    public void testAttributes() {
         assertTrue(UNEXPECTED_VALUE, testMatrix.rowSize() == MathTestConstants.STORAGE_SIZE);
         assertTrue(UNEXPECTED_VALUE, testMatrix.columnSize() == MathTestConstants.STORAGE_SIZE);
 
@@ -96,10 +94,58 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
     }
 
     /** */
-    private void fillMatrix(Matrix m){
-        for (int i = 0; i < m.rowSize(); i++)
-            for (int j = 0; j < m.columnSize(); j++)
-                m.set(i, j, Math.random());
+    @Test
+    public void testNullParams() {
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((Matrix)null), "Null Matrix parameter");
+
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((Vector)null), "Null Vector parameter");
+
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((double[])null), "Null double[] parameter");
     }
 
+    /** */
+    private void verifyDiagonal(Matrix m) {
+        final int rows = m.rowSize(), cols = m.columnSize();
+
+        final String sizeDetails = "rows" + "X" + "cols " + rows + "X" + cols;
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++) {
+                final String details = " at (" + i + "," + j + "), " + sizeDetails;
+
+                final boolean diagonal = i == j;
+
+                final double old = m.get(i, j);
+
+                if (!diagonal)
+                    assertEquals(UNEXPECTED_VALUE + details, 0, old, 0d);
+
+                final double exp = diagonal ? old + 1 : old;
+
+                boolean expECaught = false;
+
+                try {
+                    m.set(i, j, exp);
+                } catch (UnsupportedOperationException uoe) {
+                    expECaught = true;
+                }
+
+                if (!diagonal && !expECaught)
+                    fail("Expected exception was not caught " + details);
+
+                assertEquals(UNEXPECTED_VALUE + details, exp, m.get(i, j), 0d);
+            }
+    }
+
+
+    /** */
+    private void fillMatrix(Matrix m){
+        final int rows = m.rowSize(), cols = m.columnSize();
+
+        boolean negative = false;
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                m.set(i, j, (negative = !negative) ? -(i * cols + j + 1) : i * cols + j + 1);
+    }
 }
