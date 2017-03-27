@@ -111,7 +111,7 @@ import org.jetbrains.annotations.Nullable;
  * {@code META-INF/} entry may contain {@code ignite.xml} file which is a
  * task descriptor file. The purpose of task descriptor XML file is to specify
  * all tasks to be deployed. This file is a regular
- * <a href="http://www.springframework.org/documentation">Spring</a> XML
+ * <a href="https://spring.io/docs">Spring</a> XML
  * definition file.  {@code META-INF/} entry may also contain any other file
  * specified by JAR format.
  * </li>
@@ -510,7 +510,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -523,7 +523,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
         initializeTemporaryDirectoryPath();
 
-        registerMBean(gridName, this, UriDeploymentSpiMBean.class);
+        registerMBean(igniteInstanceName, this, UriDeploymentSpiMBean.class);
 
         FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -621,7 +621,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
 
             for (UriDeploymentScanner scanner : scanners) {
                 if (scanner.acceptsURI(uri)) {
-                    mgr = new UriDeploymentScannerManager(gridName, uri, file, freq > 0 ? freq :
+                    mgr = new UriDeploymentScannerManager(igniteInstanceName, uri, file, freq > 0 ? freq :
                         scanner.getDefaultScanFrequency(), filter, lsnr, log, scanner);
 
                     break;

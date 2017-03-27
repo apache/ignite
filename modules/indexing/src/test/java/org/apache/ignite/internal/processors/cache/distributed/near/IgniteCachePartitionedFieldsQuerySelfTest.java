@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.List;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
@@ -53,5 +59,24 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
         cc.setNearConfiguration(nearConfiguration());
 
         return cc;
+    }
+
+    /** @throws Exception If failed. */
+    public void testLocalQuery() throws Exception {
+        IgniteCache<Object, Object> cache = grid(0).cache( null);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        int expected = 0;
+
+        for(Cache.Entry e: cache.localEntries(CachePeekMode.PRIMARY)){
+            if(e.getValue() instanceof Integer)
+                expected++;
+        }
+
+        QueryCursor<List<?>> qry = cache
+            .query(new SqlFieldsQuery("select _key, _val from Integer").setLocal(true));
+
+        assertEquals(expected, qry.getAll().size());
     }
 }

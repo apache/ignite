@@ -73,8 +73,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     private static final int HEAP_ENTRIES = 30;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setSwapSpaceSpi(spi());
 
@@ -102,8 +102,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
@@ -394,8 +394,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         if (cacheMode() == LOCAL) {
             IgniteCache<Integer, String> cache0 = jcache(0);
 
-            IgniteCache<Integer, String> cacheAsync0 = cache0.withAsync();
-
             for (int i = 0; i < HEAP_ENTRIES; i++) {
                 cache0.put(i, String.valueOf(i));
 
@@ -413,13 +411,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(size, cache0.size(NEAR));
                 assertEquals(size, cache0.size(ALL));
 
-                cacheAsync0.size();
+                assertEquals(size, (int) cache0.sizeAsync().get());
 
-                assertEquals(size, cacheAsync0.future().get());
-
-                cacheAsync0.size(PRIMARY);
-
-                assertEquals(size, cacheAsync0.future().get());
+                assertEquals(size, (int) cache0.sizeAsync(PRIMARY).get());
             }
 
             for (int i = 0; i < HEAP_ENTRIES; i++) {
@@ -439,9 +433,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(size, cache0.size(NEAR));
                 assertEquals(size, cache0.size(ALL));
 
-                cacheAsync0.size();
-
-                assertEquals(size, cacheAsync0.future().get());
+                assertEquals(size, (int) cache0.sizeAsync().get());
             }
 
             checkEmpty();
@@ -514,8 +506,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         int part = 0;
         IgniteCache<Integer, String> cache0 = jcache(0);
 
-        IgniteCache<Integer, String> cacheAsync0 = cache0.withAsync();
-
         for (int i = 0; i < HEAP_ENTRIES; i++) {
             cache0.put(i, String.valueOf(i));
 
@@ -533,13 +523,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             assertEquals(size, cache0.sizeLong(part, NEAR));
             assertEquals(size, cache0.sizeLong(part, ALL));
 
-            cacheAsync0.size();
+            assertEquals(size, (long) cache0.sizeAsync().get());
 
-            assertEquals(size, (long) cacheAsync0.<Integer>future().get());
-
-            cacheAsync0.sizeLong(part, PRIMARY);
-
-            assertEquals(size, cacheAsync0.future().get());
+            assertEquals(size, (long) cache0.sizeLongAsync(part, PRIMARY).get());
         }
 
         for (int i = 0; i < HEAP_ENTRIES; i++) {
@@ -559,9 +545,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             assertEquals(size, cache0.sizeLong(part, NEAR));
             assertEquals(size, cache0.sizeLong(part, ALL));
 
-            cacheAsync0.size();
-
-            assertEquals(size, (long) cacheAsync0.<Integer>future().get());
+            assertEquals(size, (long) cache0.sizeAsync().get());
         }
     }
 
@@ -995,6 +979,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @param nodeIdx Node index.
      * @param part Cache partition
      * @return Tuple with number of primary and backup keys (one or both will be zero).
+     * @throws IgniteCheckedException If failed.
      */
     private T2<Integer, Integer> swapKeysCount(int nodeIdx, int part) throws IgniteCheckedException {
         GridCacheContext ctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache().context();
@@ -1009,9 +994,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }
@@ -1081,9 +1066,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         //And then find out whether they are primary or backup ones.
         int primaryCnt = 0;
         int backupCnt = 0;
-        if (affinity.primary(ctx.localNode(), part, topVer))
+        if (affinity.primaryByPartition(ctx.localNode(), part, topVer))
             primaryCnt = cnt;
-        else if (affinity.backup(ctx.localNode(), part, topVer))
+        else if (affinity.backupByPartition(ctx.localNode(), part, topVer))
             backupCnt = cnt;
         return new T2<>(primaryCnt, backupCnt);
     }
@@ -1331,15 +1316,11 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         for (int i = 0; i < gridCount(); i++) {
             IgniteCache<Integer, String> cache = jcache(i);
 
-            IgniteCache<Integer, String> cacheAsync = cache.withAsync();
-
             assertEquals(exp, cache.size(PRIMARY));
 
             size += cache.localSize(PRIMARY);
 
-            cacheAsync.size(PRIMARY);
-
-            assertEquals(exp, cacheAsync.future().get());
+            assertEquals(exp, (int) cache.sizeAsync(PRIMARY).get());
         }
 
         assertEquals(exp, size);

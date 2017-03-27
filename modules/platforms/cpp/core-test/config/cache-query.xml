@@ -69,16 +69,6 @@
                                     </list>
                                 </property>
                             </bean>
-
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="QueryRelation"/>
-                                <property name="queryFields">
-                                    <map>
-                                        <entry key="personId" value="java.lang.Integer"/>
-                                        <entry key="someVal" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                            </bean>
                         </list>
                     </property>
                 </bean>
@@ -105,6 +95,29 @@
                                         <entry key="someVal" value="java.lang.Integer"/>
                                     </map>
                                 </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="TimeCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+                    
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="java.sql.Time"/>
                             </bean>
                         </list>
                     </property>

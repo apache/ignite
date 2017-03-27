@@ -29,13 +29,15 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -85,6 +87,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private volatile GridCacheContext ctx;
 
     /** Local value of sequence. */
+    @GridToStringInclude(sensitive = true)
     private long locVal;
 
     /**  Upper bound of local counter. */
@@ -251,8 +254,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         while (true) {
             if (updateGuard.compareAndSet(false, true)) {
                 try {
-                    // This call must be outside lock.
-                    return CU.outTx(updateCall, ctx);
+                    try {
+                        return updateCall.call();
+                    }
+                    catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
                 }
                 finally {
                     lock.lock();
@@ -476,7 +486,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
         return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicSequenceValue seq = seqView.get(key);
 
                     checkRemoved();

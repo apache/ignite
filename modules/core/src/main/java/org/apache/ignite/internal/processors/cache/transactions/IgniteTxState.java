@@ -104,7 +104,7 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is allowed to use store and transactions spans one or more caches with
      *      store enabled.
      */
-    public boolean storeUsed(GridCacheSharedContext cctx);
+    public boolean storeWriteThrough(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

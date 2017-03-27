@@ -208,7 +208,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
         ignite(0).createCache(cacheConfiguration(TestMemoryMode.HEAP, false));
@@ -249,7 +249,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                         for (int i = 0; i < keysCnt; i++)
                             cache.invoke(i, new SetEntryProcessor(val));
                     }
-                    catch (Exception e) {
+                    catch (Exception ignored) {
                         // No-op.
                     }
                 }

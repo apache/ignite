@@ -85,12 +85,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Context of BinaryObject reading process. Or {@code null} if object is not created from BinaryObject. */
     private final BinaryBuilderReader reader;
 
-    /** */
-    private int hashCode;
-
-    /** */
-    private boolean isHashCodeSet;
-
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -122,7 +116,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
         this(new BinaryBuilderReader(obj), obj.start());
-        isHashCodeSet = !obj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
         reader.registerObject(this);
     }
 
@@ -143,7 +136,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
-        hashCode = reader.readIntPositioned(start + GridBinaryMarshaller.HASH_CODE_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
@@ -338,7 +330,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             //noinspection NumberEquality
-            writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
+            writer.postWrite(true, registeredType);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -406,8 +398,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         if (oldFldTypeName == null) {
             // It's a new field, we have to add it to metadata.
-            if (fieldsMeta == null)
-                fieldsMeta = new HashMap<>();
+            if (fieldsMeta == null) {
+                if (BinaryUtils.FIELDS_SORTED_ORDER)
+                    fieldsMeta = new TreeMap<>();
+                else
+                    fieldsMeta = new LinkedHashMap<>();
+            }
 
             fieldsMeta.put(name, newFldTypeId);
         }
@@ -426,16 +422,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         }
 
         return fieldsMeta;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("UnnecessaryBoxing")
-    @Override public BinaryObjectBuilderImpl hashCode(int hashCode) {
-        this.hashCode = hashCode;
-
-        isHashCodeSet = true;
-
-        return this;
     }
 
     /**
@@ -538,11 +524,12 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     @Override public BinaryObjectBuilder setField(String name, Object val0) {
         Object val = val0 == null ? new BinaryValueWithType(BinaryUtils.typeByClass(Object.class), null) : val0;
 
-        if (assignedVals == null)
+        if (assignedVals == null) {
             if (BinaryUtils.FIELDS_SORTED_ORDER)
                 assignedVals = new TreeMap<>();
             else
                 assignedVals = new LinkedHashMap<>();
+        }
 
         Object oldVal = assignedVals.put(name, val);
 

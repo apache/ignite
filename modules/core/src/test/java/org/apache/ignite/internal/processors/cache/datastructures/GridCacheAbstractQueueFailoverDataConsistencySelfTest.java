@@ -79,8 +79,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMetricsLogFrequency(0);
 
@@ -365,7 +365,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         for (int i = 0; i < gridCount(); i++) {
             for (GridCacheEntryEx e : ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).allEntries()) {
-                if (aff.primary(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
+                if (aff.primaryByKey(grid(i).localNode(), e.key(), AffinityTopologyVersion.NONE)
                     && e.key().value(cctx.cacheObjectContext(), false) instanceof GridCacheQueueHeaderKey)
                     return i;
             }

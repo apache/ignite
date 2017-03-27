@@ -41,8 +41,10 @@ import org.apache.hadoop.util.ToolRunner;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -135,8 +137,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /**
      * Does actual test TeraSort job Through Ignite API
+     *
+     * @param gzip Whether to use GZIP.
      */
-    protected final void teraSort() throws Exception {
+    protected final void teraSort(boolean gzip) throws Exception {
         System.out.println("TeraSort ===============================================================");
 
         getFileSystem().delete(new Path(sortOutDir), true);
@@ -160,6 +164,15 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         // Force the split to be of the desired size:
         jobConf.set("mapred.min.split.size", String.valueOf(splitSize));
         jobConf.set("mapred.max.split.size", String.valueOf(splitSize));
+
+        jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
+        jobConf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
+
+        if (gzip)
+            jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
+
+        jobConf.set(HadoopJobProperty.JOB_PARTIALLY_RAW_COMPARATOR.propertyName(),
+            TextPartiallyRawComparator.class.getName());
 
         Job job = setupConfig(jobConf);
 
@@ -340,19 +353,39 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /**
      * Runs generate/sort/validate phases of the terasort sample.
-     * @throws Exception
+     *
+     * @throws Exception If failed.
      */
     public void testTeraSort() throws Exception {
+        checkTeraSort(false);
+    }
+
+    /**
+     * Runs generate/sort/validate phases of the terasort sample.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTeraSortGzip() throws Exception {
+        checkTeraSort(true);
+    }
+
+    /**
+     * Check terasort.
+     *
+     * @param gzip GZIP flag.
+     * @throws Exception If failed.
+     */
+    private void checkTeraSort(boolean gzip) throws Exception {
         teraGenerate();
 
-        teraSort();
+        teraSort(gzip);
 
         teraValidate();
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration igc = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration igc = super.getConfiguration(igniteInstanceName);
 
         HadoopConfiguration hc = createHadoopConfiguration();
 

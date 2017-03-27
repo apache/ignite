@@ -31,7 +31,10 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -98,12 +101,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     private Map<String, ?> props;
 
     /** Native factory. */
+    @GridToStringInclude
     private final Object nativeFactory;
 
     /** Interop processor. */
+    @GridToStringExclude
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
+    @GridToStringExclude
     protected long ptr;
 
     /**
@@ -195,7 +201,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys0);
+
+                    writer.writeInt(keys0.size());
+
+                    for (Object o : keys0)
+                        writer.writeObject(o);
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
@@ -305,7 +315,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys);
+
+                    writer.writeInt(keys.size());
+
+                    for (Object o : keys)
+                        writer.writeObject(o);
                 }
             }, null);
         }
@@ -442,5 +456,10 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             return res;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformDotNetCacheStore.class, this);
     }
 }
