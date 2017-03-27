@@ -219,7 +219,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        globalState = (ClusterState)data.commonData();
+        ClusterState state = (ClusterState)data.commonData();
+
+        if (state != null)
+            globalState = state;
     }
 
     /**
