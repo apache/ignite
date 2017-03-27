@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
@@ -148,7 +148,7 @@ public interface GridDhtPartitionTopology {
     /**
      * @return Local IDs.
      */
-    public GridDhtPartitionMap2 localPartitionMap();
+    public GridDhtPartitionMap localPartitionMap();
 
     /**
      * @param nodeId Node ID.
@@ -230,7 +230,7 @@ public interface GridDhtPartitionTopology {
      * @return {@code True} if topology state changed.
      */
     @Nullable public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap2 parts,
+        GridDhtPartitionMap parts,
         @Nullable Map<Integer, Long> cntrMap,
         boolean checkEvictions);
 
