@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     /// <summary>
     /// Binary field metadata.
     /// </summary>
-    internal class BinaryField : IBinaryField
+    internal struct BinaryField
     {
         /** Type ID. */
         private readonly int _typeId;

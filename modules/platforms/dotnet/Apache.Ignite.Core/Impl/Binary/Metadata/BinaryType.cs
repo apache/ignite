@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary metadata implementation.
@@ -32,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */
-        private static readonly IDictionary<string, IBinaryField> EmptyDict = new Dictionary<string, IBinaryField>();
+        private static readonly IDictionary<string, BinaryField> EmptyDict = new Dictionary<string, BinaryField>();
 
         /** Empty list. */
         private static readonly ICollection<string> EmptyList = new List<string>().AsReadOnly();
@@ -41,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         private static readonly string[] TypeNames = new string[byte.MaxValue];
 
         /** Fields. */
-        private readonly IDictionary<string, IBinaryField> _fields;
+        private readonly IDictionary<string, BinaryField> _fields;
 
         /** Enum flag. */
         private readonly bool _isEnum;
@@ -124,7 +125,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
             int fieldsNum = reader.ReadInt();
 
-            _fields = new Dictionary<string, IBinaryField>(fieldsNum);
+            _fields = new Dictionary<string, BinaryField>(fieldsNum);
 
             for (int i = 0; i < fieldsNum; ++i)
             {
@@ -142,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         /// <param name="desc">Descriptor.</param>
         /// <param name="fields">Fields.</param>
-        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, IBinaryField> fields = null) 
+        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields = null) 
             : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
             _descriptor = desc;
@@ -156,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        public BinaryType(int typeId, string typeName, IDictionary<string, IBinaryField> fields,
+        public BinaryType(int typeId, string typeName, IDictionary<string, BinaryField> fields,
             string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
@@ -200,13 +201,18 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </returns>
         public string GetFieldTypeName(string fieldName)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
             if (_fields != null)
             {
-                IBinaryField fieldMeta;
+                BinaryField fieldMeta;
 
-                _fields.TryGetValue(fieldName, out fieldMeta);
+                if (!_fields.TryGetValue(fieldName, out fieldMeta))
+                {
+                    throw new BinaryObjectException("BinaryObject field does not exist: " + fieldName);
+                }
 
-                return GetTypeName(fieldMeta == null ? 0 : fieldMeta.TypeId);
+                return GetTypeName(fieldMeta.TypeId);
             }
             
             return null;
@@ -238,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Gets fields map.
         /// </summary>
         /// <returns>Fields map.</returns>
-        public IDictionary<string, IBinaryField> GetFieldsMap()
+        public IDictionary<string, BinaryField> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
         }
@@ -246,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Updates the fields.
         /// </summary>
-        public void UpdateFields(IDictionary<string, IBinaryField> fields)
+        public void UpdateFields(IDictionary<string, BinaryField> fields)
         {
             if (fields == null || fields.Count == 0)
                 return;

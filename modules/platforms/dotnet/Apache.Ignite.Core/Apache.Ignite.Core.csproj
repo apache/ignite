@@ -189,7 +189,6 @@
     <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
-    <Compile Include="Impl\Binary\Metadata\IBinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
