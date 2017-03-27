@@ -370,11 +370,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            IgniteCompute comp = ignite.compute(ignite.cluster().forNodeIds(nids)).withAsync();
-            
-            comp.execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
+            IgniteCompute comp = ignite.compute(ignite.cluster().forNodeIds(nids));
 
-            fut = comp.future();
+            fut = comp.executeAsync(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
 
             fut.listen(new CI1<IgniteFuture<Object>>() {
                 @Override public void apply(IgniteFuture<Object> f) {
