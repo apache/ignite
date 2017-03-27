@@ -59,6 +59,8 @@ namespace ignite
 
             const std::string SqlTypeName::TIMESTAMP("TIMESTAMP");
 
+            const std::string SqlTypeName::TIME("TIME");
+
             const std::string SqlTypeName::GUID("GUID");
 
 #ifdef ODBC_DEBUG
@@ -154,6 +156,9 @@ namespace ignite
                 case IGNITE_TYPE_TIMESTAMP:
                     return SqlTypeName::TIMESTAMP;
 
+                case IGNITE_TYPE_TIME:
+                    return SqlTypeName::TIME;
+
                 case IGNITE_TYPE_OBJECT:
                 case IGNITE_TYPE_ARRAY_BYTE:
                 case IGNITE_TYPE_ARRAY_SHORT:
@@ -206,6 +211,7 @@ namespace ignite
                     case SQL_DECIMAL:
                     case SQL_TYPE_DATE:
                     case SQL_TYPE_TIMESTAMP:
+                    case SQL_TYPE_TIME:
                         return true;
 
                     case SQL_WCHAR:
@@ -213,7 +219,6 @@ namespace ignite
                     case SQL_WLONGVARCHAR:
                     case SQL_REAL:
                     case SQL_NUMERIC:
-                    case SQL_TYPE_TIME:
                     case SQL_INTERVAL_MONTH:
                     case SQL_INTERVAL_YEAR:
                     case SQL_INTERVAL_YEAR_TO_MONTH:
@@ -280,6 +285,9 @@ namespace ignite
 
                     case SQL_TYPE_TIMESTAMP:
                         return IGNITE_TYPE_TIMESTAMP;
+
+                    case SQL_TYPE_TIME:
+                        return IGNITE_TYPE_TIME;
 
                     default:
                         break;
@@ -401,6 +409,9 @@ namespace ignite
 
                     case IGNITE_TYPE_TIMESTAMP:
                         return SQL_TYPE_TIMESTAMP;
+
+                    case IGNITE_TYPE_TIME:
+                        return SQL_TYPE_TIME;
 
                     case IGNITE_TYPE_ARRAY_BYTE:
                     case IGNITE_TYPE_ARRAY_SHORT:

@@ -202,7 +202,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte)202;
+        public static final short DIRECT_TYPE = 202;
 
         /** */
         @GridDirectCollection(TestMessage1.class)
@@ -228,7 +228,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -293,7 +293,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     */
     static class TestMessage1 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 203;
+        public static final short DIRECT_TYPE = 203;
 
         /** Body. */
         private String body;
@@ -302,11 +302,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         private Message msg;
 
         /**
-         * @param mes Message.
+         * @param msg Message.
+         * @param body Message body.
          */
-        public void init(Message mes, String body) {
-            this.msg = mes;
-
+        public void init(Message msg, String body) {
+            this.msg = msg;
             this.body = body;
         }
 
@@ -330,7 +330,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -409,7 +409,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 205;
+        public static final short DIRECT_TYPE = 205;
 
         /** Node id. */
         private UUID nodeId;
@@ -467,7 +467,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 

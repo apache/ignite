@@ -15,34 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Data transfer object for cache store configuration properties.
+ * Indicates that node should try reconnect to cluster.
  */
-public class VisorCacheStoreConfigurationV2 extends VisorCacheStoreConfiguration {
+public class IgniteNeedReconnectException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
-
-    /** {@inheritDoc} */
-    @Override public VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
-        super.from(ignite, ccfg);
-
-        storeKeepBinary = ccfg.isStoreKeepBinary();
-
-        return this;
-    }
-
     /**
-     * @return Keep binary in store flag.
+     * @param locNode Local node.
+     * @param cause Cause.
      */
-    public boolean storeKeepBinary() {
-        return storeKeepBinary;
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
     }
 }

@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -459,6 +459,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else
                         U.warn(log, "Still waiting for initial partition map exchange [fut=" + fut + ']');
                 }
+                catch (IgniteNeedReconnectException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    if (fut.reconnectOnError(e))
+                        throw new IgniteNeedReconnectException(cctx.localNode(), e);
+
+                    throw e;
+                }
             }
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -843,21 +852,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 lastVer,
                 exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
-        boolean useOldApi = false;
-
-        if (nodes != null) {
-            for (ClusterNode node : nodes) {
-                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0) {
-                    useOldApi = true;
-                    compress = false;
-
-                    break;
-                }
-                else if (!canUsePartitionMapCompression(node))
-                    compress = false;
-            }
-        }
-
         m.compress(compress);
 
         Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
@@ -879,13 +873,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (affCache != null) {
                         GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
-
-                        if (useOldApi) {
-                            locMap = new GridDhtPartitionFullMap(locMap.nodeId(),
-                                locMap.nodeOrder(),
-                                locMap.updateSequence(),
-                                locMap);
-                        }
 
                         addFullPartitionsMap(m,
                             dupData,
@@ -945,7 +932,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     map.nodeOrder(),
                     map.updateSequence());
 
-                for (Map.Entry<UUID, GridDhtPartitionMap2> e : map.entrySet())
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : map.entrySet())
                     map0.put(e.getKey(), e.getValue().emptyCopy());
 
                 map = map0;
@@ -997,25 +984,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         boolean clientOnlyExchange,
         boolean sndCounters)
     {
-        boolean compress = canUsePartitionMapCompression(targetNode);
-
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
-            compress);
+            true);
 
         Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
-
-                if (targetNode.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                    locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
+                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
 
                 addPartitionMap(m,
                     dupData,
-                    compress,
+                    true,
                     cacheCtx.cacheId(),
                     locMap,
                     cacheCtx.affinity().affinityCache().similarAffinityKey());
@@ -1029,11 +1011,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (m.partitions() != null && m.partitions().containsKey(top.cacheId()))
                 continue;
 
-            GridDhtPartitionMap2 locMap = top.localPartitionMap();
+            GridDhtPartitionMap locMap = top.localPartitionMap();
 
             addPartitionMap(m,
                 dupData,
-                compress,
+                true,
                 top.cacheId(),
                 locMap,
                 top.similarAffinityKey());
@@ -1057,7 +1039,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Map<Object, T2<Integer, Map<Integer, GridDhtPartitionState>>> dupData,
         boolean compress,
         Integer cacheId,
-        GridDhtPartitionMap2 map,
+        GridDhtPartitionMap map,
         Object affKey) {
         Integer dupDataCache = null;
 
@@ -1282,7 +1264,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
+                for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
                     Integer cacheId = entry.getKey();
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
@@ -1565,24 +1547,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param node Target node.
-     * @return {@code True} if can use compression for partition map messages.
-     */
-    @SuppressWarnings("SimplifiableIfStatement")
-    private boolean canUsePartitionMapCompression(ClusterNode node) {
-        IgniteProductVersion ver = node.version();
-
-        if (ver.compareToIgnoreTimestamp(GridDhtPartitionsAbstractMessage.PART_MAP_COMPRESS_SINCE) >= 0) {
-            if (ver.minor() == 7 && ver.maintenance() < 4)
-                return false;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
      */
@@ -1776,6 +1740,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         dumpedObjects++;
                                     }
                                 }
+                                catch (Exception e) {
+                                    if (exchFut.reconnectOnError(e))
+                                        throw new IgniteNeedReconnectException(cctx.localNode(), e);
+
+                                    throw e;
+                                }
                             }
 
 
@@ -1916,7 +1886,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException ignored) {
+                catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
+                    assert cctx.discovery().reconnectSupported();
+
+                    U.warn(log,"Local node failed to complete partition map exchange due to " +
+                        "network issues, will try to reconnect to cluster", e);
+
+                    cctx.discovery().reconnect();
+
                     return;
                 }
                 catch (IgniteCheckedException e) {

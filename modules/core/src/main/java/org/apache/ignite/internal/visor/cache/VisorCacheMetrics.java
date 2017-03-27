@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -156,6 +157,12 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
     /** Number of cached rolled back DHT transaction IDs. */
     private int txDhtRolledbackVersionsSize;
 
+    /** Memory size allocated in off-heap. */
+    private long offHeapAllocatedSize;
+
+    /** Number of cache entries stored in off-heap memory. */
+    private long offHeapEntriesCount;
+
     /**
      * Calculate rate of metric per second.
      *
@@ -227,6 +234,11 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
         txDhtStartVerCountsSize = m.getTxDhtStartVersionCountsSize();
         txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
         txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
+
+        GridCacheAdapter<Object, Object> ca = cacheProcessor.internalCache(cacheName);
+
+        offHeapAllocatedSize = ca.offHeapAllocatedSize();
+        offHeapEntriesCount = ca.offHeapEntriesCount();
 
         return this;
     }
@@ -518,6 +530,20 @@ public class VisorCacheMetrics implements Serializable, LessNamingBean {
      */
     public int txDhtRolledbackVersionsSize() {
         return txDhtRolledbackVersionsSize;
+    }
+
+    /**
+     * @return Memory size allocated in off-heap.
+     */
+    public long offHeapAllocatedSize() {
+        return offHeapAllocatedSize;
+    }
+
+    /**
+     * @return Number of cache entries stored in off-heap memory.
+     */
+    public long offHeapEntriesCount() {
+        return offHeapEntriesCount;
     }
 
     /** {@inheritDoc} */

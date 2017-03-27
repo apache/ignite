@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
@@ -243,9 +242,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         lock1.lock();
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -281,8 +278,6 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                 return null;
             }
         });
-
-        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 
