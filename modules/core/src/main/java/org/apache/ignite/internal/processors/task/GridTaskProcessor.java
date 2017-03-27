@@ -621,7 +621,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
-            dep != null && dep.internalTask(task, taskCls),
+            dep != null && taskCls != null && dep.internalTask(task, taskCls),
             subjId);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
