@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -34,7 +35,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
             new DenseLocalOnHeapVector(new HashMap<String, Object>(){{put("invalid", 99);}}).size());
     }
 
-    /** */ @Test(expected = java.lang.UnsupportedOperationException.class)
+    /** */ @Test(expected = UnsupportedOperationException.class)
     public void mapMissingArgsTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("arr",  new double[0]);
@@ -55,7 +56,7 @@ public class DenseLocalOnHeapVectorConstructorTest {
             new DenseLocalOnHeapVector(test).size());
     }
 
-    /** */ @Test(expected = java.lang.UnsupportedOperationException.class)
+    /** */ @Test(expected = UnsupportedOperationException.class)
     public void mapInvalidCopyTypeTest() {
         final Map<String, Object> test = new HashMap<String, Object>(){{
             put("arr", new double[0]);

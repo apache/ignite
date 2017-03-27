@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 
@@ -181,7 +182,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
                 if (expType == null) {
                     try {
                         v.like(card);
-                    } catch (java.lang.UnsupportedOperationException uoe) {
+                    } catch (UnsupportedOperationException uoe) {
                         return;
                     }
 
@@ -272,7 +273,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
                 try {
                     v.sort();
-                } catch (java.lang.UnsupportedOperationException uoe) {
+                } catch (UnsupportedOperationException uoe) {
                     expECaught = true;
                 }
 
@@ -446,7 +447,7 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
 
             try {
                 operation.apply(v, 0, 1);
-            } catch (java.lang.UnsupportedOperationException uoe) {
+            } catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 

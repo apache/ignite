@@ -5,6 +5,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -43,7 +44,7 @@ public class VectorToMatrixTest {
 
             try {
                 assertNull("Null view instead of exception in " + desc, v.likeMatrix(1, 1));
-            } catch (java.lang.UnsupportedOperationException uoe) {
+            } catch (UnsupportedOperationException uoe) {
                 expECaught = true;
             }
 

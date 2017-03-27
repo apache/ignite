@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.matrix;
 import org.apache.ignite.math.ExternalizeTest;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -75,7 +76,7 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
                     assertEquals(UNEXPECTED_VALUE, testMatrix.get(i, i), testVal, 0d);
 
                 }
-                catch (java.lang.UnsupportedOperationException e) {
+                catch (UnsupportedOperationException e) {
                     // No-op.
                 }
     }
