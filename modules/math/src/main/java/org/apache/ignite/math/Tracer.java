@@ -27,7 +27,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 /**
- * This object allows to display matrices and vectors using GUI.
+ *
  */
 public class Tracer {
     /**

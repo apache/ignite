@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.function.BiConsumer;
 
 /**
- * Serializable bi consumer.
+ * Serializable binary consumer.
  *
  * @see java.util.function.BiConsumer
  */

@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.function.BiFunction;
 
 /**
- * Serializable bi function.
+ * Serializable binary function.
  *
  * @see java.util.function.BiFunction
  */
