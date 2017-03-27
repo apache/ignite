@@ -55,9 +55,10 @@ public class StripedExecutor implements ExecutorService {
     private final IgniteLogger log;
 
     /**
-     * Constructor.
-     *
      * @param cnt Count.
+     * @param gridName Node name.
+     * @param poolName Pool name.
+     * @param log Logger.
      */
     public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
         A.ensure(cnt > 0, "cnt > 0");
@@ -124,11 +125,11 @@ public class StripedExecutor implements ExecutorService {
 
                 GridStringBuilder sb = new GridStringBuilder();
 
-                sb.a(">>> Possible starvation in striped pool: ")
-                    .a(stripe.thread.getName()).a(U.nl())
-                    .a(stripe.queueToString()).a(U.nl())
-                    .a("deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("completed: ").a(completedCnt).a(U.nl());
+                sb.a(">>> Possible starvation in striped pool.").a(U.nl())
+                    .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
+                    .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
+                    .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
+                    .a("    Completed: ").a(completedCnt).a(U.nl());
 
                 U.printStackTrace(
                     stripe.thread.getId(),
@@ -265,6 +266,56 @@ public class StripedExecutor implements ExecutorService {
             cnt += stripe.completedCnt;
 
         return cnt;
+    }
+
+    /**
+     * @return Completed tasks per stripe count.
+     */
+    public long[] stripesCompletedTasks() {
+        long[] res = new long[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].completedCnt;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks per stripe.
+     */
+    public boolean[] stripesActiveStatuses() {
+        boolean[] res = new boolean[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].active;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks.
+     */
+    public int activeStripesCount() {
+        int res = 0;
+
+        for (boolean status : stripesActiveStatuses()) {
+            if (status)
+                res++;
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Size of queue per stripe.
+     */
+    public int[] stripesQueueSizes() {
+        int[] res = new int[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].queueSize();
+
+        return res;
     }
 
     /**

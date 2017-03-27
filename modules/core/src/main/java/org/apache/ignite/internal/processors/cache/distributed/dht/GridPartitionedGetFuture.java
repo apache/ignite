@@ -33,6 +33,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -446,11 +447,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 if (entry != null) {
                     boolean isNew = entry.isNewLocked();
 
+                    EntryGetResult getRes = null;
                     CacheObject v = null;
                     GridCacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        getRes = entry.innerGetVersioned(
                             null,
                             null,
                             /*swap*/true,
@@ -461,11 +463,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializeBinary);
+                            !deserializeBinary,
+                            null);
 
-                        if (res != null) {
-                            v = res.get1();
-                            ver = res.get2();
+                        if (getRes != null) {
+                            v = getRes.value();
+                            ver = getRes.version();
                         }
                     }
                     else {
@@ -499,7 +502,11 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             keepCacheObjects,
                             deserializeBinary,
                             true,
-                            ver);
+                            getRes,
+                            ver,
+                            0,
+                            0,
+                            needVer);
 
                         return true;
                     }
@@ -558,7 +565,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     keepCacheObjects,
                     deserializeBinary,
                     false,
-                    needVer ? info.version() : null);
+                    needVer ? info.version() : null,
+                    0,
+                    0);
             }
 
             return map;

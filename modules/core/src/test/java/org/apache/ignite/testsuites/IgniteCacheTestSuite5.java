@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsiste
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
+import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
@@ -64,6 +65,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
 
         suite.addTestSuite(CacheRebalancingSelfTest.class);
+
+        suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
 
         return suite;
     }

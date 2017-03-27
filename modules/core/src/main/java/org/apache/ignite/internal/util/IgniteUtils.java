@@ -73,6 +73,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -366,6 +368,9 @@ public abstract class IgniteUtils {
     /** Indicates whether current OS is Mac OS. */
     private static boolean mac;
 
+    /** Indicates whether current OS is of RedHat family. */
+    private static boolean redHat;
+
     /** Indicates whether current OS architecture is Sun Sparc. */
     private static boolean sparc;
 
@@ -524,6 +529,8 @@ public abstract class IgniteUtils {
         finally {
             assertionsEnabled = assertionsEnabled0;
         }
+
+        redHat = Files.exists(Paths.get("/etc/redhat-release")); // RedHat family OS (Fedora, CentOS, RedHat)
 
         String osName = System.getProperty("os.name");
 
@@ -1843,15 +1850,16 @@ public abstract class IgniteUtils {
 
     /**
      * @param addrs Addresses.
+     * @return List of reachable addresses.
      */
-    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
+    public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
         final int reachTimeout = 2000;
 
         if (addrs.isEmpty())
             return Collections.emptyList();
 
         if (addrs.size() == 1) {
-            InetAddress addr = addrs.get(0);
+            InetAddress addr = F.first(addrs);
 
             if (reachable(addr, reachTimeout))
                 return Collections.singletonList(addr);
@@ -1867,8 +1875,7 @@ public abstract class IgniteUtils {
 
         for (final InetAddress addr : addrs) {
             futs.add(executor.submit(new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     if (reachable(addr, reachTimeout)) {
                         synchronized (res) {
                             res.add(addr);
@@ -1881,11 +1888,13 @@ public abstract class IgniteUtils {
         for (Future<?> fut : futs) {
             try {
                 fut.get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw new IgniteException(e);
             }
         }
@@ -6279,6 +6288,13 @@ public abstract class IgniteUtils {
      */
     public static boolean isMacOs() {
         return mac;
+    }
+
+    /**
+     * @return {@code True} if current OS is RedHat.
+     */
+    public static boolean isRedHat() {
+        return redHat;
     }
 
     /**
