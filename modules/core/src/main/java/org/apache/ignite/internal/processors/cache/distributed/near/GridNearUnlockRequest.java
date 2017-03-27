@@ -79,7 +79,7 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 57;
     }
 

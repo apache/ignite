@@ -1394,12 +1394,22 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public void close() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public void rollback() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
             throw new UnsupportedOperationException();
         }
 

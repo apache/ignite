@@ -301,7 +301,7 @@ public class GridCacheSqlQuery implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 112;
     }
 

@@ -86,12 +86,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     /** Context of BinaryObject reading process. Or {@code null} if object is not created from BinaryObject. */
     private final BinaryBuilderReader reader;
 
-    /** */
-    private int hashCode;
-
-    /** */
-    private boolean isHashCodeSet;
-
     /**
      * @param clsName Class name.
      * @param ctx Binary context.
@@ -123,7 +117,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      */
     public BinaryObjectBuilderImpl(BinaryObjectImpl obj) {
         this(new BinaryBuilderReader(obj), obj.start());
-        isHashCodeSet = !obj.isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
         reader.registerObject(this);
     }
 
@@ -144,7 +137,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
-        hashCode = reader.readIntPositioned(start + GridBinaryMarshaller.HASH_CODE_POS);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int mark = reader.position();
@@ -339,7 +331,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             }
 
             //noinspection NumberEquality
-            writer.postWrite(true, registeredType, hashCode, isHashCodeSet);
+            writer.postWrite(true, registeredType);
 
             // Update metadata if needed.
             int schemaId = writer.schemaId();
@@ -432,16 +424,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         }
 
         return fieldsMeta;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("UnnecessaryBoxing")
-    @Override public BinaryObjectBuilderImpl hashCode(int hashCode) {
-        this.hashCode = hashCode;
-
-        isHashCodeSet = true;
-
-        return this;
     }
 
     /**
