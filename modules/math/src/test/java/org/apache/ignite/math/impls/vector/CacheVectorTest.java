@@ -89,7 +89,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
-        cacheVector.assign(1d); // create cache entries.
+        initVector(cacheVector);
 
         cacheVector.map(value -> 110d);
 
@@ -104,6 +104,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
+        initVector(cacheVector);
+
         cacheVector.map(Functions.PLUS, 1d);
 
         for (int i = 0; i < size; i++)
@@ -116,6 +118,10 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        initVector(cacheVector);
+
+        assertEquals("Unexpected value.", cacheVector.sum(), 0d, 0d);
 
         cacheVector.assign(1d);
 
@@ -131,7 +137,6 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         try {
             double d = cacheVector.sum();
-            System.out.println(d);
             fail();
         } catch (NullPointerException e){
             // No-op.
@@ -144,6 +149,8 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        initVector(cacheVector);
 
         cacheVector.assign(1d);
 
@@ -199,7 +206,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
-        cacheVector.assign(0d);
+        initVector(cacheVector);
 
         cacheVector.plus(1d);
 
@@ -233,6 +240,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
+        initVector(cacheVector);
         cacheVector.assign(1d);
 
         cacheVector.divide(2d);
@@ -250,6 +258,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
+        initVector(cacheVector);
         cacheVector.assign(1d);
 
         cacheVector.times(2d);
@@ -349,6 +358,12 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         } catch (UnsupportedOperationException ignored){
 
         }
+    }
+
+    /** */
+    private void initVector(CacheVector cacheVector){
+        for (int i = 0; i < cacheVector.size(); i++)
+            cacheVector.set(i, 0d);
     }
 
     /** */
