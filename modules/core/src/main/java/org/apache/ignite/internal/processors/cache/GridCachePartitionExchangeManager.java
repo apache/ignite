@@ -783,33 +783,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Refreshing partitions [oldest=" + oldest.id() + ", loc=" + cctx.localNodeId() + ']');
 
-        // Check rebalance state & send CacheAffinityChangeMessage if need.
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!cacheCtx.isLocal()) {
-                if (cacheCtx == null)
-                    continue;
-
-                GridDhtPartitionTopology top = clientTops.get(cacheCtx.cacheId());
-
-                if (!cacheCtx.isLocal())
-                    top = cacheCtx.topology();
-
-                if (top != null)
-                    cctx.affinity().checkRebalanceState(top, cacheCtx.cacheId());
-            }
-        }
-
-        Collection<ClusterNode> rmts;
-
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
+            // Check rebalance state & send CacheAffinityChangeMessage if need.
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal()) {
+                    if (cacheCtx == null)
+                        continue;
+
+                    GridDhtPartitionTopology top = null;
+
+                    if (!cacheCtx.isLocal())
+                        top = cacheCtx.topology();
+
+                    if (top != null)
+                        cctx.affinity().checkRebalanceState(top, cacheCtx.cacheId());
+                }
+            }
+
             GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
 
             // No need to send to nodes which did not finish their first exchange.
             AffinityTopologyVersion rmtTopVer =
                 lastFut != null ? lastFut.topologyVersion() : AffinityTopologyVersion.NONE;
 
-            rmts = CU.remoteNodes(cctx, rmtTopVer);
+            Collection<ClusterNode> rmts = CU.remoteNodes(cctx, rmtTopVer);
 
             if (log.isDebugEnabled())
                 log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());

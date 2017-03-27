@@ -85,6 +85,12 @@ import org.jetbrains.annotations.Nullable;
  *      nodes that pass this filter will be selected as backup nodes. If not provided, then
  *      primary and backup nodes will be selected out of all nodes available for this cache.
  * </li>
+ * <li>
+ *      {@code balanced} - Flag to use nodes / partitions balancer to make the partitions distribution closer to
+ *      the even distribution. Default value if {@code true}. This is optimized for stable topology.
+ *      In this case, the additional workload may occur if the topology is changed. If the {@code balanced == false}
+ *      the topology changes will be faster but partition distribution may be worse.
+ * /li>
  * </ul>
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
@@ -99,7 +105,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Default number of partitions. */
     public static final int MAX_BALANCED_REPLICAS = 8;
 
-    /** Default value of the {@link #useBalancer} flag. */
+    /** Default value of the {@link #balanced} flag. */
     public static final boolean DFLT_BALANCED = true;
 
     /** Comparator. */
@@ -126,7 +132,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private AffinityNodeHashResolver hashIdRslvr = null;
 
     /** Use partition balancer . */
-    private boolean useBalancer;
+    private boolean balanced;
 
     /** Logger instance. */
     @LoggerResource
@@ -160,10 +166,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
-     * @param useBalancer flag to use the partition distribution balancer.
+     * @param balanced flag to use the partition distribution balancer.
      */
-    public RendezvousAffinityFunction(boolean exclNeighbors, boolean useBalancer) {
-        this(exclNeighbors, DFLT_PARTITION_COUNT, useBalancer);
+    public RendezvousAffinityFunction(boolean exclNeighbors, boolean balanced) {
+        this(exclNeighbors, DFLT_PARTITION_COUNT, balanced);
     }
 
     /**
@@ -189,10 +195,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
      *      of each other.
      * @param parts Total number of partitions.
-     * @param useBalancer flag to use the partition distribution balancer.
+     * @param balanced flag to use the partition distribution balancer.
      */
-    public RendezvousAffinityFunction(boolean exclNeighbors, int parts, boolean useBalancer) {
-        this(exclNeighbors, parts, null, useBalancer);
+    public RendezvousAffinityFunction(boolean exclNeighbors, int parts, boolean balanced) {
+        this(exclNeighbors, parts, null, balanced);
     }
 
     /**
@@ -222,11 +228,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      *      argument is node being tested.
      * <p>
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     * @param useBalancer flag to use the partition distribution balancer.
+     * @param balanced flag to use the partition distribution balancer.
      */
     public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter,
-        boolean useBalancer) {
-        this(false, parts, backupFilter, useBalancer);
+        boolean balanced) {
+        this(false, parts, backupFilter, balanced);
     }
 
     /**
@@ -235,16 +241,16 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param exclNeighbors Exclude neighbors flag.
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
-     * @param useBalancer flag to use the partition distribution balancer.
+     * @param balanced flag to use the partition distribution balancer.
      */
     private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter, boolean useBalancer) {
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter, boolean balanced) {
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
-        this.useBalancer = useBalancer;
+        this.balanced = balanced;
     }
 
     /**
@@ -278,15 +284,15 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * @return {@code true} if the partition distribution balancer is used. Otherwise returns {@code false}.
      */
-    public boolean isUseBalancer() {
-        return useBalancer;
+    public boolean isBalanced() {
+        return balanced;
     }
 
     /**
-     * @param useBalancer flag to use the partition distribution balancer.
+     * @param balanced flag to use the partition distribution balancer.
      */
-    public void setUseBalancer(boolean useBalancer) {
-        this.useBalancer = useBalancer;
+    public void setBalanced(boolean balanced) {
+        this.balanced = balanced;
     }
 
     /**
@@ -663,7 +669,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             : Math.min(affCtx.backups() + 1, nodes.size());
 
 
-        Map<ClusterNode, int[]> balanceMap =  useBalancer && replCnt < MAX_BALANCED_REPLICAS ?
+        Map<ClusterNode, int[]> balanceMap =  balanced && replCnt < MAX_BALANCED_REPLICAS ?
             createBalanceMap(nodes, replCnt) : null;
 
         for (int i = 0; i < parts; i++) {
@@ -705,7 +711,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         out.writeBoolean(exclNeighbors);
         out.writeObject(hashIdRslvr);
         out.writeObject(backupFilter);
-        out.writeBoolean(useBalancer);
+        out.writeBoolean(balanced);
     }
 
     /** {@inheritDoc} */
@@ -715,7 +721,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
-        useBalancer = in.readBoolean();
+        balanced = in.readBoolean();
     }
 
     /**
