@@ -82,12 +82,12 @@ class SpringCache implements Cache {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Callable<T> valueLoader) {
+        Object val = cache.get(key);
+
+        if (val != null)
+            return (T)fromStoreValue(val);
+
         try {
-            Object val = cache.get(key);
-
-            if (val != null)
-                return (T)fromStoreValue(val);
-
             return cache.invoke(key, new ValueLoaderEntryProcessor<T>(), valueLoader);
         }
         catch (Exception e) {
