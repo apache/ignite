@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             // Start 2 nodes: PlatformNativeException does not occur in local scenario
             using (var ignite = Ignition.Start(GetConfigWithLogger()))
-            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "1"}))
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "1"}))
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 

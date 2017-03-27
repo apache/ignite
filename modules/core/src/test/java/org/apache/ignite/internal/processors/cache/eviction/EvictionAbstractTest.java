@@ -103,8 +103,8 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -1030,7 +1030,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
          */
         public long getCurrentMemorySize() {
             try {
-                return (Long)plc.getClass().getDeclaredMethod("getCurrentMemorySize").invoke(plc);
+                return (Long)plc.getClass().getMethod("getCurrentMemorySize").invoke(plc);
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -1056,7 +1056,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             try {
                 plc.getClass()
-                    .getDeclaredMethod("onEntryAccessed", boolean.class, EvictableEntry.class)
+                    .getMethod("onEntryAccessed", boolean.class, EvictableEntry.class)
                     .invoke(plc, rmv, entry);
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {

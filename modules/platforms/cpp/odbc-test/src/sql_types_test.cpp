@@ -25,6 +25,7 @@
 #include "test_utils.h"
 
 using namespace ignite;
+using namespace ignite_test;
 
 using namespace boost::unit_test;
 
@@ -192,7 +193,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 {
     TestType in1;
     in1.i32Field = 1;
-    in1.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2017, 1, 13, 19, 54, 01, 987654321);
+    in1.timestampField = common::MakeTimestampGmt(2017, 1, 13, 19, 54, 01, 987654321);
 
     testCache.Put(1, in1);
 
@@ -230,7 +231,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampInsert)
     data.fraction = 987654321;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = BinaryUtils::MakeTimestampGmt(data.year, data.month, data.day, data.hour,
+    Timestamp expected = common::MakeTimestampGmt(data.year, data.month, data.day, data.hour,
         data.minute, data.second, data.fraction);
 
     SQLLEN lenInd = sizeof(data);
@@ -252,29 +253,22 @@ BOOST_AUTO_TEST_CASE(TestTimestampInsert)
 
 BOOST_AUTO_TEST_CASE(TestTimeSelect)
 {
-    SQL_TIME_STRUCT ts;
-    ts.hour = 19;
-    ts.minute = 54;
-    ts.second = 1;
-
     TestType in1;
     in1.i32Field = 1;
-    in1.timestampField = impl::binary::BinaryUtils::MakeTimestampGmt(2017, 1, 13, ts.hour, ts.minute, ts.second);
+    in1.timeField = common::MakeTimeGmt(19, 54, 01);
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<SQL_TIME_STRUCT>(
-        "SELECT CAST(timestampField AS TIME) FROM TestType WHERE i32Field = 1", ts);
+    CheckSingleResult<int32_t>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
 
-    CheckSingleResult<int32_t>(
-        "SELECT i32Field FROM TestType WHERE CAST(timestampField AS TIME) = '19:54:01'", in1.i32Field);
+    CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
 }
 
-BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
+BOOST_AUTO_TEST_CASE(TestTimeInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, timestampField) VALUES(?, ?)";
+    SQLCHAR request[] = "INSERT INTO TestType(_key, timeField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -293,11 +287,10 @@ BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
     data.second = 1;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = BinaryUtils::MakeTimestampGmt(1970, 1, 1, data.hour,
-        data.minute, data.second, 0);
+    Time expected = common::MakeTimeGmt(data.hour, data.minute, data.second);
 
     SQLLEN lenInd = sizeof(data);
-    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIMESTAMP, sizeof(data), 0, &data, sizeof(data), &lenInd);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, sizeof(data), 0, &data, sizeof(data), &lenInd);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -309,8 +302,7 @@ BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
 
     TestType out = testCache.Get(key);
 
-    BOOST_REQUIRE_EQUAL(out.timestampField.GetSeconds(), expected.GetSeconds());
-    BOOST_REQUIRE_EQUAL(out.timestampField.GetSecondFraction(), expected.GetSecondFraction());
+    BOOST_REQUIRE_EQUAL(out.timeField.GetSeconds(), expected.GetSeconds());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

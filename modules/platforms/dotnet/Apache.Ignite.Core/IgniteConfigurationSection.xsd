@@ -532,6 +532,27 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="pluginConfigurations" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Cache plugin configurations.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="iCachePluginConfiguration" maxOccurs="unbounded">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Cache plugin configuration.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string">
                                         <xs:annotation>
@@ -1180,8 +1201,34 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="pluginConfigurations" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Plugin configurations.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="iPluginConfiguration" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation>Plugin configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="pluginConfigurationClosureFactoryId" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Id to locate PlatformPluginConfigurationClosureFactory on Java side.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
-            <xs:attribute name="gridName" type="xs:string">
+            <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
                 </xs:annotation>

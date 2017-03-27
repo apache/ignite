@@ -487,10 +487,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
         }
-        catch (IgfsException ignore) {
+        catch (IgfsException e) {
             // Currently Ok for Hadoop fs:
             if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
+                throw e;
         }
 
         try {
@@ -501,10 +501,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         catch (IgfsParentNotDirectoryException ignore) {
             // No-op.
         }
-        catch (IgfsException ignore) {
+        catch (IgfsException e) {
             // Currently Ok for Hadoop fs:
             if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
+                throw e;
         }
 
         create(igfs, paths(DIR, SUBDIR), null);
@@ -736,7 +736,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if(!propertiesSupported())
             return;
 
-        if (dual && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
+        if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
             // In case of Hadoop dual mode only user name, group name, and permission properties are updated,
             // an arbitrary named property is just ignored:
             checkRootPropertyUpdate("foo", "moo", null);
@@ -863,13 +863,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only access time.
-            igfs.setTimes(path, info.accessTime() + 1, -1);
+            igfs.setTimes(path, info.accessTime() + 1000, -1);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
             assertEquals(info.modificationTime(), newInfo.modificationTime());
 
             if (dual) {
@@ -880,14 +880,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change only modification time.
-            igfs.setTimes(path, -1, info.modificationTime() + 1);
+            igfs.setTimes(path, -1, info.modificationTime() + 1000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 1, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 1, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 1000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 1000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
@@ -897,14 +897,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             }
 
             // Change both.
-            igfs.setTimes(path, info.accessTime() + 2, info.modificationTime() + 2);
+            igfs.setTimes(path, info.accessTime() + 2000, info.modificationTime() + 2000);
 
             newInfo = igfs.info(path);
 
             assert newInfo != null;
 
-            assertEquals(info.accessTime() + 2, newInfo.accessTime());
-            assertEquals(info.modificationTime() + 2, newInfo.modificationTime());
+            assertEquals(info.accessTime() + 2000, newInfo.accessTime());
+            assertEquals(info.modificationTime() + 2000, newInfo.modificationTime());
 
             if (dual) {
                 T2<Long, Long> newSecondaryTimes = igfsSecondary.times(path.toString());
@@ -942,8 +942,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
-            // okay
+        } catch (IgniteException ignored) {
+            // No-op.
         }
 
         checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
@@ -953,7 +953,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
         checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -964,7 +964,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
         checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -976,7 +976,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
 
             fail("Exception expected");
-        } catch (IgniteException e) {
+        } catch (IgniteException ignored) {
             // okay
         }
 
@@ -1337,7 +1337,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
                         createCtr.incrementAndGet();
                     }
-                    catch (IgniteException e) {
+                    catch (IgniteException ignored) {
                         // No-op.
                     }
                     catch (IOException e) {
@@ -1439,7 +1439,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));
@@ -1457,7 +1457,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -1471,7 +1471,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/k/l/m"));
@@ -1488,7 +1488,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
 
@@ -1519,7 +1519,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 }
 
                 fail("Exception expected");
-            } catch (IgniteException e) {
+            } catch (IgniteException ignored) {
                 // okay
             }
             checkNotExist(igfs, igfsSecondary, new IgfsPath("/d1"));

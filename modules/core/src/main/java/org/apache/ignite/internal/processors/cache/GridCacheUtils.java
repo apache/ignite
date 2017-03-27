@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -74,12 +75,10 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -99,7 +98,6 @@ import org.jsr166.ConcurrentHashMap8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -154,8 +152,8 @@ public class GridCacheUtils {
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
-    /** Marshaller system cache name. */
-    public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
+    /** */
+    public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
 
     /** */
     public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
@@ -453,7 +451,7 @@ public class GridCacheUtils {
      *      that may have already left).
      */
     public static Collection<ClusterNode> allNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheNodes(ctx.namex(), topOrder);
+        return ctx.discovery().cacheNodes(ctx.cacheId(), topOrder);
     }
 
     /**
@@ -486,7 +484,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
-        return ctx.discovery().cacheAffinityNodes(ctx.namex(), AffinityTopologyVersion.NONE);
+        return ctx.discovery().cacheAffinityNodes(ctx.cacheId(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -497,7 +495,7 @@ public class GridCacheUtils {
      * @return Affinity nodes.
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().cacheAffinityNodes(ctx.namex(), topOrder);
+        return ctx.discovery().cacheAffinityNodes(ctx.cacheId(), topOrder);
     }
 
     /**
@@ -893,7 +891,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
+    public static GridNearTxLocal txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -950,26 +948,6 @@ public class GridCacheUtils {
 
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
             unwindEvicts(cacheCtx);
-    }
-
-    /**
-     * Gets primary node on which given key is cached.
-     *
-     * @param ctx Cache.
-     * @param key Key to find primary node for.
-     * @return Primary node for the key.
-     */
-    @SuppressWarnings( {"unchecked"})
-    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
-        assert ctx != null;
-        assert key != null;
-
-        CacheConfiguration cfg = ctx.cache().configuration();
-
-        if (cfg.getCacheMode() != PARTITIONED)
-            return ctx.localNode();
-
-        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -1176,14 +1154,6 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is marshaller system cache.
-     */
-    public static boolean isMarshallerCache(String cacheName) {
-        return MARSH_CACHE_NAME.equals(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
@@ -1203,7 +1173,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
             isAtomicsCache(cacheName);
     }
 
@@ -1287,7 +1257,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
         TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
+        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();

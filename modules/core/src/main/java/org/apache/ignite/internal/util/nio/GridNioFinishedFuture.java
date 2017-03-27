@@ -59,11 +59,6 @@ public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void ackClosure(IgniteInClosure<IgniteException> closure) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
     }

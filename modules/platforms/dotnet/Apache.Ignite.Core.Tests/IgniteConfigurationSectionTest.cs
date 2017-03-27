@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
 
-            Assert.AreEqual("myGrid1", section.IgniteConfiguration.GridName);
+            Assert.AreEqual("myGrid1", section.IgniteConfiguration.IgniteInstanceName);
             Assert.AreEqual("cacheName", section.IgniteConfiguration.CacheConfiguration.Single().Name);
         }
 

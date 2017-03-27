@@ -97,6 +97,15 @@ public interface PlatformTargetProxy {
     Object outObject(int type) throws Exception;
 
     /**
+     * Asynchronous operation accepting memory stream.
+     *
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @throws Exception If case of failure.
+     */
+    void inStreamAsync(int type, long memPtr) throws Exception;
+
+    /**
      * Start listening for the future.
      *
      * @param futId Future ID.

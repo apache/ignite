@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 

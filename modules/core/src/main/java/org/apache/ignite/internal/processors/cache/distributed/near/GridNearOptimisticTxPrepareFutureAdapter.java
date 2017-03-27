@@ -62,6 +62,19 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         if (topVer != null) {
+            try {
+                IgniteCheckedException err = tx.txState().validateTopology(cctx, topologyReadLock());
+
+                if (err != null) {
+                    onDone(err);
+
+                    return;
+                }
+            }
+            finally {
+                topologyReadUnlock();
+            }
+
             tx.topologyVersion(topVer);
 
             cctx.mvcc().addFuture(this);

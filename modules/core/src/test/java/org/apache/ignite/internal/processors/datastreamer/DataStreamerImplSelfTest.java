@@ -65,8 +65,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -179,7 +179,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
                 streamer.addData(1, "1");
             }
-            catch (CacheException ex) {
+            catch (CacheException ignored) {
                 failed = true;
             }
         }
@@ -212,13 +212,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
                 streamer.flush();
             }
-            catch (IllegalStateException ex) {
+            catch (IllegalStateException ignored) {
                 try {
                     fut.get();
 
                     fail("DataStreamer ignores failed streaming.");
                 }
-                catch (CacheServerNotFoundException ignored) {
+                catch (CacheServerNotFoundException ignored2) {
                     // No-op.
                 }
 

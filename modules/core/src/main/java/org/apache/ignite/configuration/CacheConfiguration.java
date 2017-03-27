@@ -17,29 +17,66 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.*;
-import org.jetbrains.annotations.*;
-import javax.cache.*;
-import javax.cache.configuration.*;
-import javax.cache.expiry.*;
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
-
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.*;
+import java.io.Serializable;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.configuration.CompleteConfiguration;
+import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheTypeMetadata;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.eviction.EvictionFilter;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
+import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -178,6 +215,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
+
+    /** Default query parallelism. */
+    public static final int DFLT_QUERY_PARALLELISM = 1;
 
     /** Cache name. */
     private String name;
@@ -366,6 +406,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
+    /** */
+    private int qryParallelism = DFLT_QUERY_PARALLELISM;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -418,6 +461,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
+        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
@@ -750,7 +794,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether expired cache entries will be eagerly removed from cache. When
+     * Gets flag indicating whether expired cache entries will be eagerly removed from cache.
+     * If there is at least one cache configured with this flag set to {@code true}, Ignite
+     * will create a single thread to clean up expired entries in background. When flag is
      * set to {@code false}, expired entries will be removed on next entry access.
      * <p>
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
@@ -1720,7 +1766,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether copy of the value stored in cache should be created
+     * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      *
@@ -2062,6 +2108,40 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Defines a hint to query execution engine on desired degree of parallelism within a single node.
+     * Query executor may or may not use this hint depending on estimated query costs. Query executor may define
+     * certain restrictions on parallelism depending on query type and/or cache type.
+     * <p>
+     * As of {@code Apache Ignite 1.9} this hint is only supported for SQL queries with the following restrictions:
+     * <ul>
+     *     <li>All caches participating in query must have the same degree of parallelism, exception is thrown
+     *     otherwise</li>
+     *     <li>All queries on the given cache will follow provided degree of parallelism</li>
+     * </ul>
+     * These restrictions will be removed in future versions of Apache Ignite.
+     * <p>
+     * Defaults to {@link #DFLT_QUERY_PARALLELISM}.
+     *
+     * @return Query parallelism.
+     */
+    public int getQueryParallelism() {
+        return qryParallelism;
+    }
+
+    /**
+     * Sets query parallelism.
+     *
+     * @param qryParallelism Query parallelism.
+     * @see #getQueryParallelism()
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K,V> setQueryParallelism(int qryParallelism) {
+        this.qryParallelism = qryParallelism;
+
+        return this;
+    }
+
+    /**
      * Gets topology validator.
      * <p>
      * See {@link TopologyValidator} for details.
@@ -2174,7 +2254,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
             GridQueryIndexDescriptor idx = idxEntry.getValue();
 
-            if (idx.type() == FULLTEXT) {
+            if (idx.type() == QueryIndexType.FULLTEXT) {
                 assert txtIdx == null;
 
                 txtIdx = new QueryIndex();
@@ -2192,7 +2272,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 QueryIndex sortedIdx = new QueryIndex();
 
-                sortedIdx.setIndexType(idx.type() == SORTED ? QueryIndexType.SORTED : QueryIndexType.GEOSPATIAL);
+                sortedIdx.setIndexType(idx.type());
 
                 LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
 
@@ -2213,10 +2293,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
+                txtIdx.setFieldNames(Arrays.asList(QueryUtils._VAL), true);
             }
             else
-                txtIdx.getFields().put(_VAL, true);
+                txtIdx.getFields().put(QueryUtils._VAL, true);
         }
 
         if (txtIdx != null)
@@ -2235,7 +2315,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static Class<?> mask(Class<?> cls) {
         assert cls != null;
 
-        return isSqlType(cls) ? cls : Object.class;
+        return QueryUtils.isSqlType(cls) ? cls : Object.class;
     }
 
     /**
@@ -2268,13 +2348,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
         @Nullable ClassProperty parent) {
-        if (U.isJdk(cls) || isGeometryClass(cls)) {
-            if (parent == null && !key && isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = _VAL + "_idx";
+        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
+            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
+                String idxName = QueryUtils._VAL + "_idx";
 
-                type.addIndex(idxName, isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
+                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
-                type.addFieldToIndex(idxName, _VAL, 0, false);
+                type.addFieldToIndex(idxName, QueryUtils._VAL, 0, false);
             }
 
             return;
@@ -2292,13 +2373,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
 
             if (grpIdx != null)
-                type.addIndex(grpIdx.name(), SORTED);
+                type.addIndex(grpIdx.name(), QueryIndexType.SORTED);
 
             QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
                 for (QueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), SORTED);
+                    type.addIndex(idx.name(), QueryIndexType.SORTED);
             }
         }
 
@@ -2312,9 +2393,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, field.getType(), prop, type);
                 }
             }
 
@@ -2334,9 +2419,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                     prop.parent(parent);
 
-                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
-
+                    // Add parent property before its possible nested properties so that
+                    // resulting parent column comes before columns corresponding to those
+                    // nested properties in the resulting table - that way nested
+                    // properties override will happen properly (first parent, then children).
                     type.addProperty(prop, key, true);
+
+                    processAnnotation(key, sqlAnn, txtAnn, mtd.getReturnType(), prop, type);
                 }
             }
         }
@@ -2363,7 +2452,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (sqlAnn.index()) {
                 String idxName = prop.alias() + "_idx";
 
-                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
+                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
@@ -2452,7 +2542,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @param type Index type.
          * @return Index descriptor.
          */
-        public IndexDescriptor addIndex(String idxName, GridQueryIndexType type) {
+        public IndexDescriptor addIndex(String idxName, QueryIndexType type) {
             IndexDescriptor idx = new IndexDescriptor(type);
 
             if (indexes.put(idxName, idx) != null)
@@ -2474,7 +2564,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             IndexDescriptor desc = indexes.get(idxName);
 
             if (desc == null)
-                desc = addIndex(idxName, SORTED);
+                desc = addIndex(idxName, QueryIndexType.SORTED);
 
             desc.addField(field, orderNum, descending);
         }
@@ -2486,7 +2576,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         public void addFieldToTextIndex(String field) {
             if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(FULLTEXT);
+                fullTextIdx = new IndexDescriptor(QueryIndexType.FULLTEXT);
 
                 indexes.put(null, fullTextIdx);
             }
@@ -2586,12 +2676,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         private Collection<String> descendings;
 
         /** */
-        private final GridQueryIndexType type;
+        private final QueryIndexType type;
 
         /**
          * @param type Type.
          */
-        private IndexDescriptor(GridQueryIndexType type) {
+        private IndexDescriptor(QueryIndexType type) {
             assert type != null;
 
             this.type = type;
@@ -2631,7 +2721,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridQueryIndexType type() {
+        @Override public QueryIndexType type() {
             return type;
         }
 

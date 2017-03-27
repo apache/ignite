@@ -73,8 +73,8 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     private boolean fairAffinity;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
@@ -519,7 +519,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         ccfg.setName(CACHE_NAME1);
 
         if (srvNode)
-            ccfg.setNodeFilter(new TestFilter(getTestGridName(2)));
+            ccfg.setNodeFilter(new TestFilter(getTestIgniteInstanceName(2)));
 
         ignite0.createCache(ccfg);
 
@@ -627,7 +627,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
+            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME));
         }
     }
 

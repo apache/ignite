@@ -79,4 +79,37 @@ class VisorMemoryCommandSpec extends FunSpec with Matchers {
             visor.mlist()
         }
     }
+
+    describe("A 'mcompact' visor command") {
+        it("should compact variable") {
+            visor.mset("key1", "value1")
+            visor.mset("key3", "value3")
+
+            visor.mset("n0", "value0")
+            visor.mset("n1", "value1")
+            visor.mset("n2", "value2")
+            visor.mset("n3", "value3")
+
+            visor.mset("c1", "value1")
+            visor.mset("c3", "value3")
+
+            visor.mcompact()
+
+            assertResult(None)(visor.mgetOpt("key0"))
+            assertResult(Some("value1"))(visor.mgetOpt("key1"))
+            assertResult(None)(visor.mgetOpt("key2"))
+            assertResult(Some("value3"))(visor.mgetOpt("key3"))
+
+            assertResult(Some("value0"))(visor.mgetOpt("n0"))
+            assertResult(Some("value1"))(visor.mgetOpt("n1"))
+            assertResult(Some("value2"))(visor.mgetOpt("n2"))
+            assertResult(Some("value3"))(visor.mgetOpt("n3"))
+
+            assertResult(Some("value1"))(visor.mgetOpt("c0"))
+            assertResult(Some("value3"))(visor.mgetOpt("c1"))
+            assertResult(None)(visor.mgetOpt("c3"))
+
+            visor.mlist()
+        }
+    }
 }

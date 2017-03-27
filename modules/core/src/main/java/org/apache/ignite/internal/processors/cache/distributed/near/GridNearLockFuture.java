@@ -148,6 +148,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     @GridToStringExclude
     private List<GridDistributedCacheEntry> entries;
 
+    /** TTL for create operation. */
+    private long createTtl;
+
     /** TTL for read operation. */
     private long accessTtl;
 
@@ -161,6 +164,9 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     /** Keep binary context flag. */
     private final boolean keepBinary;
 
+    /** */
+    private int miniId;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -168,6 +174,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore skipStore
@@ -180,6 +187,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         boolean read,
         boolean retval,
         long timeout,
+        long createTtl,
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
@@ -195,6 +203,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.filter = filter;
         this.skipStore = skipStore;
@@ -526,7 +535,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             int size = futuresCountNoLock();
@@ -540,7 +549,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -1036,6 +1045,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 first = false;
                                             }
 
+                                            assert !implicitTx() && !implicitSingleTx() : tx;
+
                                             req = new GridNearLockRequest(
                                                 cctx.cacheId(),
                                                 topVer,
@@ -1044,8 +1055,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 futId,
                                                 lockVer,
                                                 inTx(),
-                                                implicitTx(),
-                                                implicitSingleTx(),
                                                 read,
                                                 retval,
                                                 isolation(),
@@ -1056,6 +1065,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 inTx() && tx.syncMode() == FULL_SYNC,
                                                 inTx() ? tx.subjectId() : null,
                                                 inTx() ? tx.taskNameHash() : 0,
+                                                read ? createTtl : -1L,
                                                 read ? accessTtl : -1L,
                                                 skipStore,
                                                 keepBinary,
@@ -1171,7 +1181,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             req.filter(filter, cctx);
 
         if (node.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
+            req.miniId(-1);
 
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
@@ -1309,7 +1319,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                 fut));
         }
         else {
-            final MiniFuture fut = new MiniFuture(node, mappedKeys);
+            final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
 
@@ -1366,7 +1376,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
-        ClusterNode primary = cctx.affinity().primary(key, topVer);
+        ClusterNode primary = cctx.affinity().primaryByKey(key, topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
@@ -1482,7 +1492,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId;
 
         /** Node ID. */
         @GridToStringExclude
@@ -1498,19 +1508,22 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         /**
          * @param node Node.
          * @param keys Keys.
+         * @param futId Mini future ID.
          */
         MiniFuture(
             ClusterNode node,
-            Collection<KeyCacheObject> keys
+            Collection<KeyCacheObject> keys,
+            int futId
         ) {
             this.node = node;
             this.keys = keys;
+            this.futId = futId;
         }
 
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 

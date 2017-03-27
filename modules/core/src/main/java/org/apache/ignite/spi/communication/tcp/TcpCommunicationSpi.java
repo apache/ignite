@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -360,15 +361,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             @Override public void onConnected(GridNioSession ses) {
                 if (ses.accepted()) {
+                    if (log.isInfoEnabled())
+                        log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
+
                     if (log.isDebugEnabled())
                         log.debug("Sending local node ID to newly accepted session: " + ses);
 
                     try {
-                        ses.sendNoFuture(nodeIdMessage());
+                        ses.sendNoFuture(nodeIdMessage(), null);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send message: " + e, e);
                     }
+                }
+                else {
+                    if (log.isInfoEnabled())
+                        log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
+                            ", rmtAddr=" + ses.remoteAddress() + ']');
                 }
             }
 
@@ -1822,7 +1832,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assert locHost != null;
 
         // Start SPI start stopwatch.
@@ -1872,7 +1882,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +
                 "due to message queues growth on sender and receiver sides.");
 
-        registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
+        registerMBean(igniteInstanceName, this, TcpCommunicationSpiMBean.class);
 
         connectGate = new ConnectGateway();
 
@@ -1884,7 +1894,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker(gridName);
+        commWorker = new CommunicationWorker(igniteInstanceName);
 
         commWorker.start();
 
@@ -2039,7 +2049,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .listener(srvLsnr)
                         .logger(log)
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .igniteInstanceName(igniteInstanceName)
                         .serverName("tcp-comm")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
@@ -2116,7 +2126,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 IgniteConfiguration cfg = ignite.configuration();
 
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), gridName, cfg.getWorkDirectory());
+                    new IpcSharedMemoryServerEndpoint(log, cfg.getNodeId(), igniteInstanceName, cfg.getWorkDirectory());
 
                 srv.setPort(port);
 
@@ -2766,6 +2776,31 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (isExtAddrsExist)
             addrs.addAll(extAddrs);
 
+        Set<InetAddress> allInetAddrs = U.newHashSet(addrs.size());
+
+        for (InetSocketAddress addr : addrs)
+            allInetAddrs.add(addr.getAddress());
+
+        List<InetAddress> reachableInetAddrs = U.filterReachable(allInetAddrs);
+
+        if (reachableInetAddrs.size() < allInetAddrs.size()) {
+            LinkedHashSet<InetSocketAddress> addrs0 = U.newLinkedHashSet(addrs.size());
+
+            for (InetSocketAddress addr : addrs) {
+                if (reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+            }
+            for (InetSocketAddress addr : addrs) {
+                if (!reachableInetAddrs.contains(addr.getAddress()))
+                    addrs0.add(addr);
+            }
+
+            addrs = addrs0;
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Addresses to connect for node [rmtNode=" + node.id() + ", addrs=" + addrs.toString() + ']');
+
         boolean conn = false;
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
@@ -2987,6 +3022,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
+
+            if (getSpiContext().node(node.id()) != null && (CU.clientNode(node) || !CU.clientNode(getLocalNode())) &&
+                X.hasCause(errs, ConnectException.class, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                    IgniteSpiOperationTimeoutException.class)) {
+                LT.warn(log, "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                    "cluster [" +
+                    "rmtNode=" + node +
+                    ", err=" + errs +
+                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+
+                getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                    "rmtNode=" + node +
+                    ", errs=" + errs +
+                    ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+            }
 
             throw errs;
         }
@@ -3414,7 +3464,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
+            super(igniteInstanceName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
 
             this.srv = srv;
         }
@@ -3458,7 +3508,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint) {
-            super(gridName, "shmem-worker", TcpCommunicationSpi.this.log);
+            super(igniteInstanceName, "shmem-worker", TcpCommunicationSpi.this.log);
 
             this.endpoint = endpoint;
         }
@@ -3560,10 +3610,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          */
-        private CommunicationWorker(String gridName) {
-            super(gridName, "tcp-comm-worker", log);
+        private CommunicationWorker(String igniteInstanceName) {
+            super(igniteInstanceName, "tcp-comm-worker", log);
         }
 
         /** {@inheritDoc} */
@@ -3771,7 +3821,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             e);
                     }
                 }
-                catch (IgniteClientDisconnectedException e0) {
+                catch (IgniteClientDisconnectedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to ping node, client disconnected.");
                 }

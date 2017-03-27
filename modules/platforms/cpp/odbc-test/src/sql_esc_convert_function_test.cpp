@@ -137,23 +137,21 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionGuid)
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionDate)
 {
     using ignite::impl::binary::BinaryUtils;
-    Date date = BinaryUtils::MakeDateGmt(1983, 3, 14);
+    Date date = common::MakeDateGmt(1983, 3, 14);
     CheckSingleResult<Date>("SELECT {fn CONVERT('1983-03-14', SQL_DATE)}", date);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTime)
 {
-    SQL_TIME_STRUCT exp;
-    exp.hour = 13;
-    exp.minute = 20;
-    exp.second = 15;
-    CheckSingleResult<SQL_TIME_STRUCT>("SELECT {fn CONVERT('13:20:15', SQL_TIME)}", exp);
+    using ignite::impl::binary::BinaryUtils;
+    Time time = common::MakeTimeGmt(13, 20, 15);
+    CheckSingleResult<Time>("SELECT {fn CONVERT('13:20:15', SQL_TIME)}", time);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTimestamp)
 {
     using ignite::impl::binary::BinaryUtils;
-    Timestamp ts = BinaryUtils::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999999);
+    Timestamp ts = common::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999999);
     CheckSingleResult<Timestamp>("SELECT {fn CONVERT('1983-03-14 13:20:15.999999999', SQL_TIMESTAMP)}", ts);
 }
 

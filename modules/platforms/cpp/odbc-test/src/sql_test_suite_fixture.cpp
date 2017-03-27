@@ -19,6 +19,8 @@
 
 #include "test_utils.h"
 
+using namespace ignite_test;
+
 namespace ignite
 {
     SqlTestSuiteFixture::SqlTestSuiteFixture():
@@ -27,35 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
-
-        BOOST_REQUIRE(cfgPath != 0);
-
-        cfg.springCfgPath.assign(cfgPath).append("/queries-test.xml");
-
-        IgniteError err;
-
-        grid = Ignition::Start(cfg, &err);
-
-        if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_FAIL(err.GetText()) ;
+        grid = StartNode("queries-test.xml");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -84,7 +58,7 @@ namespace ignite
 
         if (!SQL_SUCCEEDED(ret))
         {
-            Ignition::Stop(grid.GetName(), true);
+            Ignition::StopAll(true);
 
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
         }
@@ -107,7 +81,7 @@ namespace ignite
         SQLFreeHandle(SQL_HANDLE_DBC, dbc);
         SQLFreeHandle(SQL_HANDLE_ENV, env);
 
-        ignite::Ignition::Stop(grid.GetName(), true);
+        ignite::Ignition::StopAll(true);
     }
 
     void SqlTestSuiteFixture::CheckSingleResult0(const char* request,
@@ -287,6 +261,14 @@ namespace ignite
     }
 
     template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+    }
+
+    template<>
     void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected)
     {
         SQLCHAR res[ODBC_BUFFER_SIZE] = { 0 };
@@ -321,22 +303,10 @@ namespace ignite
         CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
-        Date actual = BinaryUtils::MakeDateGmt(res.year, res.month, res.day);
+        Date actual = common::MakeDateGmt(res.year, res.month, res.day);
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
-
-    template<>
-    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected)
-    {
-        SQL_TIME_STRUCT res;
-
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
-
-        BOOST_REQUIRE_EQUAL(res.hour, expected.hour);
-        BOOST_REQUIRE_EQUAL(res.minute, expected.minute);
-        BOOST_REQUIRE_EQUAL(res.second, expected.second);
-    }
-
+    
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
     {
@@ -345,9 +315,22 @@ namespace ignite
         CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
-        Timestamp actual = BinaryUtils::MakeTimestampGmt(res.year, res.month, res.day, res.hour, res.minute, res.second, res.fraction);
+        Timestamp actual = common::MakeTimestampGmt(res.year, res.month, res.day, res.hour, res.minute, res.second, res.fraction);
 
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
         BOOST_REQUIRE_EQUAL(actual.GetSecondFraction(), expected.GetSecondFraction());
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request, const Time& expected)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+
+        using ignite::impl::binary::BinaryUtils;
+        Time actual = common::MakeTimeGmt(res.hour, res.minute, res.second);
+
+        BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
 }

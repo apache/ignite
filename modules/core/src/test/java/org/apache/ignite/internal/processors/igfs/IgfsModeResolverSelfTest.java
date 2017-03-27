@@ -98,8 +98,8 @@ public class IgfsModeResolverSelfTest extends TestCase {
 
             fail("IgniteCheckedException expected");
         }
-        catch (IgniteCheckedException ice) {
-            // Expected.
+        catch (IgniteCheckedException ignored) {
+            // No-op.
         }
 
         // PRIMARY default mode and non-primary subfolder:
@@ -111,8 +111,8 @@ public class IgfsModeResolverSelfTest extends TestCase {
 
                     fail("IgniteCheckedException expected");
                 }
-                catch (IgniteCheckedException ice) {
-                    // Expected.
+                catch (IgniteCheckedException ignored) {
+                    // No-op.
                 }
             }
         }

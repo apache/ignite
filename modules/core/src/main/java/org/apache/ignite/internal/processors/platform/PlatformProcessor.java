@@ -188,6 +188,13 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTargetProxy extensions();
 
     /**
+     * Gets platform extension by id.
+     *
+     * @return Platform extension target.
+     */
+    public PlatformTargetProxy extension(int id);
+
+    /**
      * Register cache store.
      *
      * @param store Store.
