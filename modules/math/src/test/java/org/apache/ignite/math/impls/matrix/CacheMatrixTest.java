@@ -26,6 +26,7 @@ import org.apache.ignite.math.IdentityValueMapper;
 import org.apache.ignite.math.MatrixKeyMapper;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.impls.MathTestConstants;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -103,7 +104,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
             cacheMatrix.copy();
 
             TestCase.fail("UnsupportedOperationException expected");
-        } catch (java.lang.UnsupportedOperationException e){
+        } catch (UnsupportedOperationException e){
             // No-op.
         }
     }
@@ -121,7 +122,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
             cacheMatrix.like(rows, cols);
 
             TestCase.fail("UnsupportedOperationException expected");
-        } catch (java.lang.UnsupportedOperationException e){
+        } catch (UnsupportedOperationException e){
             // No-op.
         }
     }
@@ -139,7 +140,7 @@ public class CacheMatrixTest extends GridCommonAbstractTest {
             cacheMatrix.likeVector(cols);
 
             TestCase.fail("UnsupportedOperationException expected");
-        } catch (java.lang.UnsupportedOperationException e){
+        } catch (UnsupportedOperationException e){
             // No-op.
         }
     }

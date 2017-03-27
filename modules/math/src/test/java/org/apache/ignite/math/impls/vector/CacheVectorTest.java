@@ -10,6 +10,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.VectorKeyMapper;
 import org.apache.ignite.math.functions.Functions;
 import org.apache.ignite.math.impls.MathTestConstants;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.testframework.junits.common.*;
 import java.util.stream.*;
 
@@ -118,9 +119,9 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
         assert cacheVector.sum() == 0d;
-        
+
         cacheVector.assign(1d);
-        
+
         assertEquals("Unexpected value.", cacheVector.sum(), size, 0d);
     }
 
@@ -215,7 +216,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.plus(testVec);
             TestCase.fail();
-        } catch (java.lang.UnsupportedOperationException e){
+        } catch (UnsupportedOperationException ignored){
 
         }
     }
@@ -269,7 +270,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.times(testVec);
             TestCase.fail();
-        } catch (java.lang.UnsupportedOperationException e){
+        } catch (UnsupportedOperationException ignored){
 
         }
 
@@ -320,7 +321,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.like(size);
             TestCase.fail("Unsupported case");
-        } catch (java.lang.UnsupportedOperationException ex){
+        } catch (UnsupportedOperationException ignored){
 
         }
     }
@@ -337,7 +338,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.likeMatrix(size, size);
             TestCase.fail("Unsupported case");
-        } catch (java.lang.UnsupportedOperationException ex){
+        } catch (UnsupportedOperationException ignored){
 
         }
     }
@@ -354,7 +355,7 @@ public class CacheVectorTest extends GridCommonAbstractTest {
         try {
             cacheVector.copy();
             TestCase.fail("Unsupported case");
-        } catch (java.lang.UnsupportedOperationException ex){
+        } catch (UnsupportedOperationException ignored){
 
         }
     }
