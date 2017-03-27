@@ -108,7 +108,7 @@ public class MemoryConfiguration implements Serializable {
     }
 
     /**
-     * @return array of MemoryPolicyConfiguration objects.
+     * @return Array of MemoryPolicyConfiguration objects.
      */
     public MemoryPolicyConfiguration[] getMemoryPolicies() {
         return memPlcs;

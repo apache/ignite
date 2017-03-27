@@ -18,18 +18,19 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Data transfer object for memory configuration.
  */
-public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
+public class VisorMemoryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Concurrency level. */
-    private int concLvl;
 
     /** File cache allocation path. */
     private String fileCacheAllocationPath;
@@ -40,28 +41,41 @@ public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
     /** Page size. */
     private int pageSize;
 
+    /** Concurrency level. */
+    private int concLvl;
+
+    /** Name of MemoryPolicy to be used as default. */
+    private String dfltMemPlcName;
+
+    /** Memory policies. */
+    private List<VisorMemoryPolicyConfiguration> memPlcs;
+
     /**
      * Create data transfer object.
      *
      * @param memCfg Memory configuration.
-     * @return Data transfer object.
      */
-    public static VisorMemoryConfiguration from(MemoryConfiguration memCfg) {
-        VisorMemoryConfiguration res = new VisorMemoryConfiguration();
+    public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
+        assert memCfg != null;
 
-        res.concLvl = memCfg.getConcurrencyLevel();
-        //TODO IGNITE-4758
-//        res.fileCacheAllocationPath = memCfg.getFileCacheAllocationPath();
-//        res.pageCacheSize = memCfg.getPageCacheSize();
-        res.pageSize = memCfg.getPageSize();
+        pageSize = memCfg.getPageSize();
+        concLvl = memCfg.getConcurrencyLevel();
+        dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
 
-        return res;
+        MemoryPolicyConfiguration[] plcs = memCfg.getMemoryPolicies();
+
+        if (!F.isEmpty(plcs)) {
+            memPlcs = new ArrayList<>(plcs.length);
+
+            for (MemoryPolicyConfiguration plc : plcs)
+                memPlcs.add(new VisorMemoryPolicyConfiguration(plc));
+        }
     }
 
     /**
      * @return Concurrency level.
      */
-    public int concurrencyLevel() {
+    public int getConcurrencyLevel() {
         return concLvl;
     }
 
@@ -84,5 +98,19 @@ public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
      */
     public int getPageSize() {
         return pageSize;
+    }
+
+    /**
+     * @return Name of MemoryPolicy to be used as default.
+     */
+    public String getDefaultMemoryPolicyName() {
+        return dfltMemPlcName;
+    }
+
+    /**
+     * @return Collection of MemoryPolicyConfiguration objects.
+     */
+    public List<VisorMemoryPolicyConfiguration> getMemoryPolicies() {
+        return memPlcs;
     }
 }
