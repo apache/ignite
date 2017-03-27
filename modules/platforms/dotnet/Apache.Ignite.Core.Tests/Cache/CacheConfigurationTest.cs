@@ -703,7 +703,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test store.
         /// </summary>
-        private class CacheStoreTest : CacheStoreAdapter
+        private class CacheStoreTest : CacheStoreAdapter<object, object>
         {
             /** <inheritdoc /> */
             public override object Load(object key)
