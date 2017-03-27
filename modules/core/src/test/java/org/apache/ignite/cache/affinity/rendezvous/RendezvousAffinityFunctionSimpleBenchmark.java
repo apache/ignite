@@ -363,7 +363,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         GridTestUtils.setFieldValue(aff0, "ignite", ignite);
 
-        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024, false);
+        AffinityFunction aff1 = new RendezvousAffinityFunction(true, 1024);
 
         affinityDistribution(aff0, aff1);
     }

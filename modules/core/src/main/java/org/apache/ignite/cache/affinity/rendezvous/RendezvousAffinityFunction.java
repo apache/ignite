@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
@@ -66,6 +67,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_RENDEZVOUS_AFF_BALANCED;
 
 /**
  * Affinity function for partitioned cache based on Highest Random Weight algorithm.
@@ -85,12 +88,6 @@ import org.jetbrains.annotations.Nullable;
  *      nodes that pass this filter will be selected as backup nodes. If not provided, then
  *      primary and backup nodes will be selected out of all nodes available for this cache.
  * </li>
- * <li>
- *      {@code balanced} - Flag to use nodes / partitions balancer to make the partitions distribution closer to
- *      the even distribution. Default value if {@code true}. This is optimized for stable topology.
- *      In this case, the additional workload may occur if the topology is changed. If the {@code balanced == false}
- *      the topology changes will be faster but partition distribution may be worse.
- * /li>
  * </ul>
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
@@ -102,11 +99,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
 
-    /** Default number of partitions. */
+    /** Max count of replicas when balancer will be used. */
     public static final int MAX_BALANCED_REPLICAS = 8;
-
-    /** Default value of the {@link #balanced} flag. */
-    public static final boolean DFLT_BALANCED = true;
 
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
@@ -131,8 +125,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
 
-    /** Use partition balancer . */
-    private boolean balanced;
+    /** Use partition balancer. */
+    private boolean balanced = IgniteSystemProperties.getBoolean(IGNITE_RENDEZVOUS_AFF_BALANCED, true);
 
     /** Logger instance. */
     @LoggerResource
@@ -159,20 +153,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
-     * and specified number of backups.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
-     *      of each other.
-     * @param balanced flag to use the partition distribution balancer.
-     */
-    public RendezvousAffinityFunction(boolean exclNeighbors, boolean balanced) {
-        this(exclNeighbors, DFLT_PARTITION_COUNT, balanced);
-    }
-
-    /**
      * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
      * and specified number of backups and partitions.
      * <p>
@@ -183,22 +163,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param parts Total number of partitions.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
-        this(exclNeighbors, parts, null, DFLT_BALANCED);
-    }
-
-    /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
-     * and specified number of backups and partitions.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
-     *      of each other.
-     * @param parts Total number of partitions.
-     * @param balanced flag to use the partition distribution balancer.
-     */
-    public RendezvousAffinityFunction(boolean exclNeighbors, int parts, boolean balanced) {
-        this(exclNeighbors, parts, null, balanced);
+        this(exclNeighbors, parts, null);
     }
 
     /**
@@ -214,25 +179,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
     public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
-        this(false, parts, backupFilter, DFLT_BALANCED);
-    }
-
-    /**
-     * Initializes optional counts for replicas and backups.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     *
-     * @param parts Total number of partitions.
-     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
-     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
-     *      argument is node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
-     * @param balanced flag to use the partition distribution balancer.
-     */
-    public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter,
-        boolean balanced) {
-        this(false, parts, backupFilter, balanced);
+        this(false, parts, backupFilter);
     }
 
     /**
@@ -241,16 +188,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param exclNeighbors Exclude neighbors flag.
      * @param parts Partitions count.
      * @param backupFilter Backup filter.
-     * @param balanced flag to use the partition distribution balancer.
      */
     private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
-        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter, boolean balanced) {
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts > 0, "parts > 0");
 
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
-        this.balanced = balanced;
     }
 
     /**
