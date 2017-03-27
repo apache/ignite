@@ -431,15 +431,12 @@ class VisorCacheCommand {
 
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
-                            cm match {
-                                case v2: VisorCacheMetricsV2 => (
-                                    "Total: " + (v2.keySize() + v2.offHeapEntriesCount()),
-                                    "  Heap: " + v2.keySize(),
-                                    "  Off-Heap: " + v2.offHeapEntriesCount(),
-                                    "  Off-Heap Memory: " + formatMemory(v2.offHeapAllocatedSize())
-                                )
-                                case v1 => v1.keySize()
-                            },
+                            (
+                                "Total: " + (cm.keySize() + cm.offHeapEntriesCount()),
+                                "  Heap: " + cm.keySize(),
+                                "  Off-Heap: " + cm.offHeapEntriesCount(),
+                                "  Off-Heap Memory: " + formatMemory(cm.offHeapAllocatedSize())
+                            ),
                             (
                                 "Hi: " + cm.hits(),
                                 "Mi: " + cm.misses(),
@@ -923,7 +920,7 @@ object VisorCacheCommand {
         cacheT += ("Store Class", safe(storeCfg.store()))
         cacheT += ("Store Factory Class", storeCfg.storeFactory())
         cacheT += ("Store Keep Binary", storeCfg match {
-            case cfg: VisorCacheStoreConfigurationV2 => cfg.storeKeepBinary()
+            case cfg: VisorCacheStoreConfiguration => cfg.storeKeepBinary()
             case _ => false
         })
         cacheT += ("Store Read Through", bool2Str(storeCfg.readThrough()))
@@ -949,7 +946,7 @@ object VisorCacheCommand {
 
         cacheT +=("Query Execution Time Threshold", queryCfg.longQueryWarningTimeout())
         cacheT +=("Query Schema Name", queryCfg match {
-            case cfg: VisorCacheQueryConfigurationV2 => cfg.sqlSchema()
+            case cfg: VisorCacheQueryConfiguration => cfg.sqlSchema()
             case _ => null
         })
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.sqlEscapeAll()))
