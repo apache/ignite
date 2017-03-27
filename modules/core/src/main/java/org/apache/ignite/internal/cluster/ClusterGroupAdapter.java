@@ -212,7 +212,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, subjId, false);
+            compute = new IgniteComputeImpl(ctx, this, subjId);
         }
 
         return compute;

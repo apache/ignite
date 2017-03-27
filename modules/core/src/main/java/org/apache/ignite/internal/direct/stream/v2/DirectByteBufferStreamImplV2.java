@@ -653,7 +653,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 lastFinished = false;
         }
         else
-            writeByte(Byte.MIN_VALUE);
+            writeShort(Short.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -1133,15 +1133,15 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining()) {
+            if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
 
                 return null;
             }
 
-            byte type = readByte();
+            short type = readShort();
 
-            msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
+            msg = type == Short.MIN_VALUE ? null : msgFactory.create(type);
 
             msgTypeDone = true;
         }
@@ -1356,6 +1356,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param typeSize Primitive type size in bytes. Needs for byte reverse.
+     * @param shiftCnt Shift for length.
      * @return Whether array was fully written.
      */
     private boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {

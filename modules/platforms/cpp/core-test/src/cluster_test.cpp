@@ -37,7 +37,7 @@ struct ClusterTestSuiteFixture {
      * Constructor.
      */
     ClusterTestSuiteFixture() :
-        grid(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
+        node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
     {
         // No-op.
     }
@@ -48,17 +48,16 @@ struct ClusterTestSuiteFixture {
     ~ClusterTestSuiteFixture()
     {
         Ignition::StopAll(true);
-        grid = Ignite();
     }
 
-    Ignite grid;
+    Ignite node;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(IgniteImplProjection)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(grid);
+    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
 
     BOOST_REQUIRE(impl != 0);
     BOOST_REQUIRE(impl->GetProjection().IsValid());
@@ -66,7 +65,7 @@ BOOST_AUTO_TEST_CASE(IgniteImplProjection)
 
 BOOST_AUTO_TEST_CASE(IgniteImplForServers)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(grid);
+    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
 
     BOOST_REQUIRE(impl != 0);
 
