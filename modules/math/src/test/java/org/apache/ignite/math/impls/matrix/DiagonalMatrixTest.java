@@ -18,6 +18,7 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.math.ExternalizeTest;
+import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
@@ -33,8 +34,9 @@ import static org.junit.Assert.fail;
  * Tests for {@link DiagonalMatrix}.
  */
 public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
-    public static final String UNEXPECTED_VALUE = "Unexpected value.";
-    private DiagonalMatrix testMatrix;
+    /** */ public static final String UNEXPECTED_VALUE = "Unexpected value.";
+
+    /** */ private DiagonalMatrix testMatrix;
 
     /** */
     @Before
@@ -51,7 +53,7 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
     /** */
     @Test
-    public void testSetGet(){
+    public void testSetGet() {
         double testVal = 42;
         for (int i = 0; i < MathTestConstants.STORAGE_SIZE; i++) {
             testMatrix.set(i, i, testVal);
@@ -93,6 +95,16 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
         assertEquals(UNEXPECTED_VALUE, testMatrix.isRandomAccess(), !testMatrix.isSequentialAccess());
         assertTrue(UNEXPECTED_VALUE, testMatrix.isRandomAccess());
+    }
+
+    /** */
+    @Test
+    public void testNullParams() {
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((Matrix)null), "Null Matrix parameter");
+
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((Vector)null), "Null Vector parameter");
+
+        DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DiagonalMatrix((double[])null), "Null double[] parameter");
     }
 
     /** */

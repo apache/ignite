@@ -48,7 +48,7 @@ public class DiagonalMatrix extends AbstractMatrix {
      * @param mtx
      */
     public DiagonalMatrix(Matrix mtx) {
-        super(new DiagonalMatrixStorage(mtx.viewDiagonal()));
+        super(new DiagonalMatrixStorage(mtx == null ? null : mtx.viewDiagonal()));
     }
 
     /**
