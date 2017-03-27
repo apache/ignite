@@ -231,11 +231,11 @@ public class HadoopSkipList extends HadoopMultimapBase {
      * @return Next level.
      */
     public static int randomLevel(Random rnd) {
-        int x = rnd.nextInt();
+        long x = rnd.nextLong();
 
         int level = 0;
 
-        while ((x & 1) != 0) { // Count sequential 1 bits.
+        while ((x & 1L) != 0) { // Count sequential 1 bits.
             level++;
 
             x >>>= 1;
