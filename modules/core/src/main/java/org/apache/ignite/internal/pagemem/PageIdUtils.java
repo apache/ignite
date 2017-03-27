@@ -149,6 +149,18 @@ public final class PageIdUtils {
     }
 
     /**
+     * Sets tag bytes in link.
+     *
+     * @param link Link.
+     * @param tag Tag.
+     */
+    public static long withTag(long link, int tag) {
+        long noTagLink = link & ((1L << (PAGE_IDX_SIZE + PART_ID_SIZE)) - 1);
+
+        return noTagLink | ((long)tag << (PAGE_IDX_SIZE + PART_ID_SIZE));
+    }
+
+    /**
      * @param partId Partition ID.
      * @return Part ID constructed from the given cache ID and partition ID.
      */

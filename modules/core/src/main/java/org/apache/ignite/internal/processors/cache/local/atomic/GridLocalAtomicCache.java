@@ -932,6 +932,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         UUID subjId,
         String taskName
     ) throws IgniteCheckedException {
+        ctx.shared().database().ensureFreeSpace(ctx.memoryPolicy());
+
         List<GridCacheEntryEx> locked = lockEntries(keys);
 
         try {

@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -333,7 +335,9 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        return new FreeListImpl(1, "freelist", pageMem, null, null, metaPageId, true);
+        MemoryPolicy memPlc = new MemoryPolicy(pageMem, null, new NoOpPageEvictionTracker());
+
+        return new FreeListImpl(1, "freelist", memPlc, null, null, metaPageId, true);
     }
 
     /**
@@ -405,6 +409,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hash() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int cacheId() {
+            return 0;
         }
     }
 

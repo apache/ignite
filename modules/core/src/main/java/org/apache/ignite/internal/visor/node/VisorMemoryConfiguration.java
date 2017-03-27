@@ -50,8 +50,9 @@ public class VisorMemoryConfiguration implements Serializable, LessNamingBean {
         VisorMemoryConfiguration res = new VisorMemoryConfiguration();
 
         res.concLvl = memCfg.getConcurrencyLevel();
-        res.fileCacheAllocationPath = memCfg.getFileCacheAllocationPath();
-        res.pageCacheSize = memCfg.getPageCacheSize();
+        //TODO IGNITE-4758
+//        res.fileCacheAllocationPath = memCfg.getFileCacheAllocationPath();
+//        res.pageCacheSize = memCfg.getPageCacheSize();
         res.pageSize = memCfg.getPageSize();
 
         return res;

@@ -28,6 +28,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.database.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -162,9 +162,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             pendingEntries = new PendingEntriesTree(cctx,
                 name,
-                cctx.shared().database().pageMemory(),
+                cctx.memoryPolicy().pageMemory(),
                 rootPage,
-                cctx.shared().database().globalReuseList(),
+                cctx.reuseList(),
                 true);
         }
     }
@@ -631,12 +631,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private long allocateForTree() throws IgniteCheckedException {
-        ReuseList reuseList = cctx.shared().database().globalReuseList();
+        ReuseList reuseList = cctx.reuseList();
 
         long pageId;
 
         if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L)
-            pageId = cctx.shared().database().pageMemory().allocatePage(cctx.cacheId(), INDEX_PARTITION, FLAG_IDX);
+            pageId = cctx.memoryPolicy().pageMemory().allocatePage(cctx.cacheId(), INDEX_PARTITION, FLAG_IDX);
 
         return pageId;
     }
@@ -655,7 +655,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
     /** {@inheritDoc} */
     @Override public ReuseList reuseListForIndex(String idxName) {
-        return cctx.shared().database().globalReuseList();
+        return cctx.reuseList();
     }
 
     /** {@inheritDoc} */
@@ -728,21 +728,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      */
     protected CacheDataStore createCacheDataStore0(int p)
         throws IgniteCheckedException {
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
         final long rootPage = allocateForTree();
 
-        FreeList freeList = cctx.shared().database().globalFreeList();
-
-        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
+        CacheDataRowStore rowStore = new CacheDataRowStore(cctx, cctx.freeList());
 
         String idxName = treeName(p);
 
         CacheDataTree dataTree = new CacheDataTree(idxName,
-            cctx.shared().database().globalReuseList(),
+            cctx.reuseList(),
             rowStore,
             cctx,
-            dbMgr.pageMemory(),
             rootPage,
             true);
 
@@ -973,7 +968,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException
         {
-            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime);
+            int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() == DataPageEvictionMode.DISABLED ?
+                0 : cctx.cacheId();
+
+            DataRow dataRow = new DataRow(key, val, ver, partId, expireTime, cacheId);
 
             if (canUpdateOldRow(oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow))
                 dataRow.link(oldRow.link());
@@ -1004,7 +1002,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                DataRow dataRow = new DataRow(key, val, ver, p, expireTime);
+                int cacheId = cctx.memoryPolicy().config().getPageEvictionMode() != DataPageEvictionMode.DISABLED ?
+                    cctx.cacheId() : 0;
+
+                DataRow dataRow = new DataRow(key, val, ver, p, expireTime, cacheId);
 
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1032,6 +1033,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                     else
                         old = dataTree.put(dataRow);
                 }
+
+                cctx.memoryPolicy().evictionTracker().touchPage(dataRow.link());
 
                 finishUpdate(dataRow, old);
             }
@@ -1152,8 +1155,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             CacheDataRow row = dataTree.findOne(new SearchRow(key), CacheDataRowAdapter.RowData.NO_KEY);
 
-            if (row != null)
+            if (row != null) {
                 row.key(key);
+
+                cctx.memoryPolicy().evictionTracker().touchPage(row.link());
+            }
 
             return row;
         }
@@ -1354,7 +1360,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param part Partition.
          * @param expireTime Expire time.
          */
-        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime) {
+        DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
             super(0);
 
             this.hash = key.hashCode();
@@ -1363,6 +1369,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.ver = ver;
             this.part = part;
             this.expireTime = expireTime;
+            this.cacheId = cacheId;
         }
 
         /** {@inheritDoc} */
@@ -1396,7 +1403,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param reuseList Reuse list.
          * @param rowStore Row store.
          * @param cctx Context.
-         * @param pageMem Page memory.
          * @param metaPageId Meta page ID.
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
@@ -1406,12 +1412,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             ReuseList reuseList,
             CacheDataRowStore rowStore,
             GridCacheContext cctx,
-            PageMemory pageMem,
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(name, cctx.cacheId(), pageMem, cctx.shared().wal(), cctx.offheap().globalRemoveId(), metaPageId,
-                reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
+            super(name,
+                    cctx.cacheId(),
+                    cctx.memoryPolicy().pageMemory(),
+                    cctx.shared().wal(),
+                    cctx.offheap().globalRemoveId(),
+                    metaPageId,
+                    reuseList,
+                    DataInnerIO.VERSIONS,
+                    DataLeafIO.VERSIONS);
 
             assert rowStore != null;
 
@@ -1460,7 +1472,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private int compareKeys(KeyCacheObject key, final long link) throws IgniteCheckedException {
             byte[] bytes = key.valueBytes(cctx.cacheObjectContext());
 
-            PageMemory pageMem = cctx.shared().database().pageMemory();
+            PageMemory pageMem = cctx.memoryPolicy().pageMemory();
 
             try (Page page = page(pageId(link))) {
                 long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.

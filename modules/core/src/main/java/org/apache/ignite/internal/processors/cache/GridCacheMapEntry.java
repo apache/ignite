@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
@@ -664,6 +665,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (ret == null && !evt)
             return null;
 
+        ensureFreeSpace();
+
         synchronized (this) {
             long ttl = ttlExtras();
 
@@ -741,6 +744,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean touch = false;
 
         try {
+            ensureFreeSpace();
+
             synchronized (this) {
                 long ttl = ttlExtras();
 
@@ -839,6 +844,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object val0 = null;
 
         long updateCntr0;
+
+        ensureFreeSpace();
 
         synchronized (this) {
             checkObsolete();
@@ -1244,6 +1251,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         EntryProcessorResult<Object> invokeRes = null;
 
+        ensureFreeSpace();
+
         synchronized (this) {
             boolean internal = isInternal() || !context().userCache();
 
@@ -1572,6 +1581,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert cctx.atomic() && !detached();
 
         AtomicCacheUpdateClosure c;
+
+        ensureFreeSpace();
 
         synchronized (this) {
             checkObsolete();
@@ -2497,6 +2508,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridDrType drType,
         boolean fromStore
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        ensureFreeSpace();
+
         synchronized (this) {
             checkObsolete();
 
@@ -2677,56 +2690,59 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized GridCacheVersion versionedValue(CacheObject val,
+    @Override public GridCacheVersion versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
+        ensureFreeSpace();
 
-        checkObsolete();
+        synchronized (this) {
+            checkObsolete();
 
-        if (curVer == null || curVer.equals(ver)) {
-            if (val != this.val) {
-                GridCacheMvcc mvcc = mvccExtras();
+            if (curVer == null || curVer.equals(ver)) {
+                if (val != this.val) {
+                    GridCacheMvcc mvcc = mvccExtras();
 
-                if (mvcc != null && !mvcc.isEmpty())
-                    return null;
+                    if (mvcc != null && !mvcc.isEmpty())
+                        return null;
 
-                if (newVer == null)
-                    newVer = cctx.versions().next();
+                    if (newVer == null)
+                        newVer = cctx.versions().next();
 
-                long ttl;
-                long expTime;
+                    long ttl;
+                    long expTime;
 
-                if (loadExpiryPlc != null) {
-                    IgniteBiTuple<Long, Long> initTtlAndExpireTime = initialTtlAndExpireTime(loadExpiryPlc);
+                    if (loadExpiryPlc != null) {
+                        IgniteBiTuple<Long, Long> initTtlAndExpireTime = initialTtlAndExpireTime(loadExpiryPlc);
 
-                    ttl = initTtlAndExpireTime.get1();
-                    expTime = initTtlAndExpireTime.get2();
+                        ttl = initTtlAndExpireTime.get1();
+                        expTime = initTtlAndExpireTime.get2();
+                    }
+                    else {
+                        ttl = ttlExtras();
+                        expTime = expireTimeExtras();
+                    }
+
+                    // Detach value before index update.
+                    val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+
+                    if (val != null) {
+                        storeValue(val, expTime, newVer, null);
+
+                        if (deletedUnlocked())
+                            deletedUnlocked(false);
+                    }
+
+                    // Version does not change for load ops.
+                    update(val, expTime, ttl, newVer, true);
+
+                    return newVer;
                 }
-                else {
-                    ttl = ttlExtras();
-                    expTime = expireTimeExtras();
-                }
-
-                // Detach value before index update.
-                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-                if (val != null) {
-                    storeValue(val, expTime, newVer, null);
-
-                    if (deletedUnlocked())
-                        deletedUnlocked(false);
-                }
-
-                // Version does not change for load ops.
-                update(val, expTime, ttl, newVer, true);
-
-                return newVer;
             }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -3272,6 +3288,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
+     * Evicts necessary number of data pages if per-page eviction is configured in current {@link MemoryPolicy}.
+     */
+    public void ensureFreeSpace() throws IgniteCheckedException {
+        // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
+        if (!Thread.holdsLock(this))
+            cctx.shared().database().ensureFreeSpace(cctx.memoryPolicy());
+    }
+
+    /**
      * @return Entry which holds key, value and version.
      */
     private synchronized <K, V> CacheEntryImplEx<K, V> wrapVersionedWithValue() {
@@ -3281,8 +3306,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter)
-        throws IgniteCheckedException {
+    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter,
+        boolean evictOffheap) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
@@ -3304,6 +3329,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                         // Nullify value after swap.
                         value(null);
+
+                        if (evictOffheap)
+                            removeValue();
 
                         marked = true;
 
@@ -3344,6 +3372,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                             // Nullify value after swap.
                             value(null);
+
+                            if (evictOffheap)
+                                removeValue();
 
                             marked = true;
 

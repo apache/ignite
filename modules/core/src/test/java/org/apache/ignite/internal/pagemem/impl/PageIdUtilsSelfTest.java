@@ -143,4 +143,21 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
             assertEquals(msg, pageId, PageIdUtils.pageId(link));
         }
     }
+
+    /**
+     *
+     */
+    public void testWithTag() throws Exception {
+        Random random = new Random();
+
+        for (int i = 0; i < 1000; i++) {
+            long randomLink = random.nextLong();
+
+            int randomTag = random.nextInt() & ((1 << 16) - 1);
+
+            long withTag = PageIdUtils.withTag(randomLink, randomTag);
+
+            assertEquals(randomTag, PageIdUtils.tag(withTag));
+        }
+    }
 }

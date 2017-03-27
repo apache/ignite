@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.database.DataStructure;
 
@@ -79,7 +80,11 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         long size = (1024 * (isLargePage() ? 16 : 1) + 24) * pagesMax();
 
-        mCfg.setPageCacheSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
+        MemoryPolicyConfiguration plcCfg = new MemoryPolicyConfiguration();
+
+        plcCfg.setSize(Math.max(size, MIN_PAGE_CACHE_SIZE));
+
+        mCfg.setMemoryPolicies(plcCfg);
     }
 
     /**
@@ -231,7 +236,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @throws Exception If failed.
      */
     protected void check(IgniteEx ig) throws Exception {
-        long pagesActual = ig.context().cache().context().database().pageMemory().loadedPages();
+        long pagesActual = ig.context().cache().context().database().memoryPolicy(null).pageMemory().loadedPages();
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;

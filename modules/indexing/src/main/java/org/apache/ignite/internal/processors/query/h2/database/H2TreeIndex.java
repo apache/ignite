@@ -100,7 +100,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             inlineIdxs = getAvailableInlineColumns(cols);
 
             tree = new H2Tree(name, cctx.offheap().reuseListForIndex(name), cctx.cacheId(),
-                dbMgr.pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
+                cctx.memoryPolicy().pageMemory(), cctx.shared().wal(), cctx.offheap().globalRemoveId(),
                 tbl.rowFactory(), page.pageId().pageId(), page.isAllocated(), cols, inlineIdxs, computeInlineSize(inlineIdxs, inlineSize)) {
                 @Override public int compareValues(Value v1, Value v2) {
                     return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);

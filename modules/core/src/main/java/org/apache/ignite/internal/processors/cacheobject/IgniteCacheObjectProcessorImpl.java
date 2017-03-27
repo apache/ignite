@@ -188,22 +188,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException {
-        int len = buf.getInt();
-
-        if (len == 0)
-            return null;
-
-        byte type = buf.get();
-
-        byte[] data = new byte[len];
-
-        buf.get(data);
-
-        return toKeyCacheObject(ctx, type, data);
-    }
-
-    /** {@inheritDoc} */
     @Override public IncompleteCacheObject toCacheObject(
         final CacheObjectContext ctx,
         final ByteBuffer buf,
@@ -219,26 +203,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         if (incompleteObj.isReady())
             incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
-
-        return incompleteObj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IncompleteCacheObject toKeyCacheObject(
-        final CacheObjectContext ctx,
-        final ByteBuffer buf,
-        @Nullable IncompleteCacheObject incompleteObj
-    ) throws IgniteCheckedException {
-        if (incompleteObj == null)
-            incompleteObj = new IncompleteCacheObject(buf);
-
-        if (incompleteObj.isReady())
-            return incompleteObj;
-
-        incompleteObj.readData(buf);
-
-        if (incompleteObj.isReady())
-            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
 
         return incompleteObj;
     }

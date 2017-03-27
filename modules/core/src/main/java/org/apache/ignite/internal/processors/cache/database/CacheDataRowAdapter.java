@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -54,8 +55,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
     protected KeyCacheObject key;
 
     /** */
+    private byte[] marshalledKey;
+
+    /** */
+    private byte keyType;
+
+    /** */
     @GridToStringInclude
     protected CacheObject val;
+
+    /** */
+    private byte[] marshalledVal;
+
+    /** */
+    private byte valType;
 
     /** */
     protected long expireTime = -1;
@@ -63,6 +76,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** */
     @GridToStringInclude
     protected GridCacheVersion ver;
+
+    /** Cache id, specified only for data rows of evictable cache.*/
+    protected int cacheId;
 
     /**
      * @param link Link.
@@ -93,20 +109,46 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     public final void initFromLink(GridCacheContext<?, ?> cctx, RowData rowData) throws IgniteCheckedException {
-        assert cctx != null : "cctx";
+        DataPageEvictionMode mode = cctx.memoryPolicy().config().getPageEvictionMode();
+
+        int cacheId = mode == DataPageEvictionMode.DISABLED ? cctx.cacheId() : 0;
+
+        readRowData(cctx.memoryPolicy().pageMemory(), rowData, cacheId);
+
+        CacheObjectContext cacheObjCtx = cctx.cacheObjectContext();
+
+        initCacheObjects(rowData, cacheObjCtx);
+    }
+
+    /**
+     * @param rowData Row data.
+     * @param cacheObjCtx Cache object context.
+     */
+    public void initCacheObjects(RowData rowData,
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        if (rowData != RowData.NO_KEY)
+            key = cacheObjCtx.processor().toKeyCacheObject(cacheObjCtx, keyType, marshalledKey);
+
+        if (rowData != RowData.KEY_ONLY)
+            val = cacheObjCtx.processor().toCacheObject(cacheObjCtx, valType, marshalledVal);
+    }
+
+    /**
+     * @param pageMem Page memory.
+     * @param rowData Row data.
+     * @param cacheId Cache id.
+     */
+    public void readRowData(PageMemory pageMem, RowData rowData, int cacheId) throws IgniteCheckedException {
         assert link != 0 : "link";
         assert key == null : "key";
-
-        final CacheObjectContext coctx = cctx.cacheObjectContext();
 
         long nextLink = link;
         IncompleteObject<?> incomplete = null;
         boolean first = true;
+        this.cacheId = cacheId;
 
         do {
-            PageMemory pageMem = cctx.shared().database().pageMemory();
-
-            try (Page page = page(pageId(nextLink), cctx)) {
+            try (Page page = pageMem.page(cacheId, pageId(nextLink))) {
                 long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
 
                 assert pageAddr != 0L : nextLink;
@@ -123,7 +165,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                     if (first) {
                         if (nextLink == 0) {
                             // Fast path for a single page row.
-                            readFullRow(coctx, pageAddr + data.offset(), rowData);
+                            readFullRow(pageAddr + data.offset(), rowData);
 
                             return;
                         }
@@ -138,9 +180,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
                     boolean keyOnly = rowData == RowData.KEY_ONLY;
 
-                    incomplete = readFragment(coctx, buf, keyOnly, incomplete);
+                    incomplete = readFragment(buf, keyOnly, incomplete);
 
-                    if (keyOnly && key != null)
+                    if (keyOnly && marshalledKey != null)
                         return;
                 }
                 finally {
@@ -154,7 +196,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param keyOnly {@code true} If need to read only key object.
      * @param incomplete Incomplete object.
@@ -162,16 +203,15 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Read object.
      */
     private IncompleteObject<?> readFragment(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         boolean keyOnly,
         IncompleteObject<?> incomplete
     ) throws IgniteCheckedException {
         // Read key.
-        if (key == null) {
-            incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
+        if (marshalledKey == null) {
+            incomplete = readIncompleteKey(buf, (IncompleteCacheObject)incomplete);
 
-            if (key == null || keyOnly)
+            if (marshalledKey == null || keyOnly)
                 return incomplete;
 
             incomplete = null;
@@ -186,11 +226,20 @@ public class CacheDataRowAdapter implements CacheDataRow {
             incomplete = null;
         }
 
-        // Read value.
-        if (val == null) {
-            incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
+        if (cacheId == 0) {
+            incomplete = readIncompleteCacheId(buf, incomplete);
 
-            if (val == null)
+            if (cacheId == 0)
+                return incomplete;
+
+            incomplete = null;
+        }
+
+        // Read value.
+        if (marshalledVal == null) {
+            incomplete = readIncompleteValue(buf, (IncompleteCacheObject)incomplete);
+
+            if (marshalledVal == null)
                 return incomplete;
 
             incomplete = null;
@@ -204,25 +253,22 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param coctx Cache object context.
      * @param addr Address.
      * @param rowData Required row data.
      * @throws IgniteCheckedException If failed.
      */
-    private void readFullRow(CacheObjectContext coctx, long addr, RowData rowData) throws IgniteCheckedException {
+    private void readFullRow(long addr, RowData rowData) throws IgniteCheckedException {
         int off = 0;
 
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
         if (rowData != RowData.NO_KEY) {
-            byte type = PageUtils.getByte(addr, off);
+            keyType = PageUtils.getByte(addr, off);
             off++;
 
-            byte[] bytes = PageUtils.getBytes(addr, off, len);
+            marshalledKey = PageUtils.getBytes(addr, off, len);
             off += len;
-
-            key = coctx.processor().toKeyCacheObject(coctx, type, bytes);
 
             if (rowData == RowData.KEY_ONLY)
                 return;
@@ -233,67 +279,111 @@ public class CacheDataRowAdapter implements CacheDataRow {
         len = PageUtils.getInt(addr, off);
         off += 4;
 
-        byte type = PageUtils.getByte(addr, off);
+        valType = PageUtils.getByte(addr, off);
         off++;
 
-        byte[] bytes = PageUtils.getBytes(addr, off, len);
+        marshalledVal = PageUtils.getBytes(addr, off, len);
         off += len;
-
-        val = coctx.processor().toCacheObject(coctx, type, bytes);
 
         ver = CacheVersionIO.read(addr + off, false);
 
         off += CacheVersionIO.size(ver, false);
 
         expireTime = PageUtils.getLong(addr, off);
+        off += 8;
+
+        if (cacheId == 0)
+            cacheId = PageUtils.getInt(addr, off);
     }
 
     /**
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
     private IncompleteCacheObject readIncompleteKey(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toKeyCacheObject(coctx, buf, incomplete);
+        if (incomplete == null)
+            incomplete = new IncompleteCacheObject(buf);
+
+        if (incomplete.isReady())
+            return incomplete;
+
+        incomplete.readData(buf);
 
         if (incomplete.isReady()) {
-            key = (KeyCacheObject)incomplete.object();
+            marshalledKey = incomplete.data();
 
-            assert key != null;
+            keyType = incomplete.type();
         }
-        else
-            assert !buf.hasRemaining();
 
         return incomplete;
     }
 
     /**
-     * @param coctx Cache object context.
      * @param buf Buffer.
      * @param incomplete Incomplete object.
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
     private IncompleteCacheObject readIncompleteValue(
-        CacheObjectContext coctx,
         ByteBuffer buf,
         IncompleteCacheObject incomplete
     ) throws IgniteCheckedException {
-        incomplete = coctx.processor().toCacheObject(coctx, buf, incomplete);
+        if (incomplete == null)
+            incomplete = new IncompleteCacheObject(buf);
+
+        if (incomplete.isReady())
+            return incomplete;
+
+        incomplete.readData(buf);
 
         if (incomplete.isReady()) {
-            val = incomplete.object();
+            marshalledVal = incomplete.data();
 
-            assert val != null;
+            valType = incomplete.type();
         }
-        else
-            assert !buf.hasRemaining();
+
+        return incomplete;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param incomplete Incomplete.
+     */
+    private IncompleteObject<?> readIncompleteCacheId(
+        ByteBuffer buf,
+        IncompleteObject<?> incomplete
+    ) throws IgniteCheckedException {
+        if (incomplete == null) {
+            int remaining = buf.remaining();
+
+            if (remaining == 0)
+                return null;
+
+            int size = 4;
+
+            if (remaining >= size) {
+                cacheId = buf.getInt();
+
+                return null;
+            }
+
+            incomplete = new IncompleteObject<>(new byte[size]);
+        }
+
+        incomplete.readData(buf);
+
+        if (incomplete.isReady()) {
+            final ByteBuffer timeBuf = ByteBuffer.wrap(incomplete.data());
+
+            timeBuf.order(buf.order());
+
+            cacheId = timeBuf.getInt();
+        }
 
         return incomplete;
     }
@@ -395,7 +485,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return {@code True} if entry is ready.
      */
     public boolean isReady() {
-        return ver != null && val != null && key != null;
+        return ver != null && marshalledKey != null && marshalledVal != null;
     }
 
     /** {@inheritDoc} */
@@ -453,14 +543,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * @param pageId Page ID.
-     * @param cctx Cache context.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheId;
     }
 
     /**

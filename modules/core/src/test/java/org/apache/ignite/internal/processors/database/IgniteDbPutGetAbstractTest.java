@@ -30,17 +30,32 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 
@@ -48,6 +63,136 @@ import org.junit.Assert;
  *
  */
 public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /**
+     * @return Node count.
+     */
+    protected abstract int gridCount();
+
+    /**
+     * @return {@code True} if indexing is enabled.
+     */
+    protected abstract boolean indexingEnabled();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        MemoryConfiguration dbCfg = new MemoryConfiguration();
+
+        if (isLargePage()) {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+            dbCfg.setPageSize(16 * 1024);
+
+            MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+            plc.setDefault(true);
+            plc.setSize(200 * 1024 * 1024);
+
+            dbCfg.setMemoryPolicies(plc);
+        }
+        else {
+            dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+            dbCfg.setPageSize(1024);
+
+            MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+
+            plc.setDefault(true);
+            plc.setSize(200 * 1024 * 1024);
+
+            dbCfg.setMemoryPolicies(plc);
+        }
+
+        cfg.setMemoryConfiguration(dbCfg);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        if (indexingEnabled())
+            ccfg.setIndexedTypes(Integer.class, DbValue.class);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
+
+        if (indexingEnabled())
+            ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
+
+        ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        CacheConfiguration ccfg3 = new CacheConfiguration("large");
+
+        if (indexingEnabled())
+            ccfg3.setIndexedTypes(Integer.class, LargeDbValue.class);
+
+        ccfg3.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg3.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg3.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
+
+        ccfg4.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg4.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg4.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg4.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        final AffinityFunction aff = new RendezvousAffinityFunction(1, null);
+
+        ccfg4.setAffinity(aff);
+
+        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoSpi);
+        cfg.setMarshaller(null);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+
+        long seed = 1464583813940L; // System.currentTimeMillis();
+
+        info("Seed: " + seed + "L");
+
+        BPlusTree.rnd = new Random(seed);
+
+        startGrids(gridCount());
+
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        BPlusTree.rnd = null;
+
+        stopAllGrids();
+
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * @return {@code True} if use large page.
+     */
+    protected boolean isLargePage() {
+        return false;
+    };
+
     /**
      *
      */
