@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
-    private static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
+    public static final long PAGE_MARKER = 0xBEEAAFDEADBEEF01L;
 
     /** Full relative pointer mask. */
     private static final long RELATIVE_PTR_MASK = 0xFFFFFFFFFFFFFFL;
@@ -84,16 +84,16 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private static final long COUNTER_INC = ADDRESS_MASK + 1;
 
     /** Page ID offset. */
-    private static final int PAGE_ID_OFFSET = 8;
+    public static final int PAGE_ID_OFFSET = 8;
 
     /** Page pin counter offset. */
-    private static final int LOCK_OFFSET = 16;
+    public static final int LOCK_OFFSET = 16;
 
     /**
      * Need a 8-byte pointer for linked list, 8 bytes for internal needs (flags),
      * 4 bytes cache ID, 8 bytes timestamp.
      */
-    static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
+    public static final int PAGE_OVERHEAD = LOCK_OFFSET + OffheapReadWriteLock.LOCK_SIZE;
 
     /** Page size. */
     private int sysPageSize;
@@ -386,7 +386,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         Segment seg = segment(pageIdx);
 
-        return seg.acquire(pageIdx);
+        return seg.acquirePage(pageIdx);
     }
 
     /** {@inheritDoc} */
@@ -505,7 +505,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
          * @param pageIdx Page index.
          * @return Page absolute pointer.
          */
-        private long acquire(int pageIdx) {
+        private long acquirePage(int pageIdx) {
             long absPtr = absolute(pageIdx);
 
             assert absPtr % 8 == 0 : absPtr;
@@ -589,12 +589,12 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
                 if (freePageRelPtr != INVALID_REL_PTR) {
-                    long freePage = absolute(PageIdUtils.pageIndex(freePageRelPtr));
+                    long freePageAbsPtr = absolute(PageIdUtils.pageIndex(freePageRelPtr));
 
-                    long nextFreePageRelPtr = GridUnsafe.getLong(freePage) & ADDRESS_MASK;
+                    long nextFreePageRelPtr = GridUnsafe.getLong(freePageAbsPtr) & ADDRESS_MASK;
 
                     if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
-                        GridUnsafe.putLong(freePage, PAGE_MARKER);
+                        GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
 
                         allocatedPages.incrementAndGet();
 

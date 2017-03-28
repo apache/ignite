@@ -1835,10 +1835,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long cnt = 0;
 
         while (pageId != 0) {
-            long pageId0 = pageId;
-            long page = acquirePage(pageId0);
+            long curId = pageId;
+            long curPage = acquirePage(curId);
             try {
-                long curAddr = readLock(pageId0, page); // No correctness guaranties.
+                long curAddr = readLock(curId, curPage); // No correctness guaranties.
 
                 try {
                     if (io == null) {
@@ -1852,11 +1852,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     pageId = io.getForward(curAddr);
                 }
                 finally {
-                    readUnlock(pageId0, page, curAddr);
+                    readUnlock(curId, curPage, curAddr);
                 }
             }
             finally {
-                releasePage(pageId0, page);
+                releasePage(curId, curPage);
             }
         }
 

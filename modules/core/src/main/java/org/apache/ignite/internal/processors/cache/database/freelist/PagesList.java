@@ -257,12 +257,12 @@ public abstract class PagesList extends DataStructure {
         assert metaPageId != 0;
 
         long curId = 0L;
-        long cur = 0L;
+        long curPage = 0L;
         long curAddr = 0L;
 
         PagesListMetaIO curIo = null;
 
-        long nextId = metaPageId;
+        long nextPageId = metaPageId;
 
         try {
             for (int bucket = 0; bucket < buckets; bucket++) {
@@ -275,36 +275,36 @@ public abstract class PagesList extends DataStructure {
                         int written = curAddr != 0L ? curIo.addTails(pageMem.pageSize(), curAddr, bucket, tails, tailIdx) : 0;
 
                         if (written == 0) {
-                            if (nextId == 0L) {
-                                nextId = allocatePageNoReuse();
+                            if (nextPageId == 0L) {
+                                nextPageId = allocatePageNoReuse();
 
                                 if (curAddr != 0L) {
-                                    curIo.setNextMetaPageId(curAddr, nextId);
+                                    curIo.setNextMetaPageId(curAddr, nextPageId);
 
-                                    releaseAndClose(curId, cur, curAddr);
+                                    releaseAndClose(curId, curPage, curAddr);
                                 }
 
-                                curId = nextId;
-                                cur = acquirePage(curId);
-                                curAddr = writeLock(curId, cur);
+                                curId = nextPageId;
+                                curPage = acquirePage(curId);
+                                curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
 
                                 curIo.initNewPage(curAddr, curId, pageSize());
                             }
                             else {
-                                releaseAndClose(curId, cur, curAddr);
+                                releaseAndClose(curId, curPage, curAddr);
 
-                                curId = nextId;
-                                cur = acquirePage(curId);
-                                curAddr = writeLock(curId, cur);
+                                curId = nextPageId;
+                                curPage = acquirePage(curId);
+                                curAddr = writeLock(curId, curPage);
 
                                 curIo = PagesListMetaIO.VERSIONS.forPage(curAddr);
 
                                 curIo.resetCount(curAddr);
                             }
 
-                            nextId = curIo.getNextMetaPageId(curAddr);
+                            nextPageId = curIo.getNextMetaPageId(curAddr);
                         }
                         else
                             tailIdx += written;
@@ -313,11 +313,11 @@ public abstract class PagesList extends DataStructure {
             }
         }
         finally {
-            releaseAndClose(curId, cur, curAddr);
+            releaseAndClose(curId, curPage, curAddr);
         }
 
-        while (nextId != 0L) {
-            long pageId = nextId;
+        while (nextPageId != 0L) {
+            long pageId = nextPageId;
 
             long page = acquirePage(pageId);
             try {
@@ -331,7 +331,7 @@ public abstract class PagesList extends DataStructure {
                     if (needWalDeltaRecord(pageId, page, null))
                         wal.log(new PageListMetaResetCountRecord(cacheId, pageId));
 
-                    nextId = io.getNextMetaPageId(pageAddr);
+                    nextPageId = io.getNextMetaPageId(pageAddr);
                 }
                 finally {
                     writeUnlock(pageId, page, pageAddr, true);
@@ -350,7 +350,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     private void releaseAndClose(long pageId, long page, long pageAddr) throws IgniteCheckedException {
-        if (pageAddr != 0L) {
+        if (pageAddr != 0L && page != 0L) {
             try {
                 // No special WAL record because we most likely changed the whole page.
                 writeUnlock(pageId, page, pageAddr, TRUE, true);

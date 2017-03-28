@@ -66,7 +66,8 @@ public interface PageSupport {
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @return ByteBuffer for modifying the page.
+     * @return Address of a buffer with contents of the given page or
+     *            {@code 0L} if attempt to take the write lock failed.
      */
     public long writeLock(int cacheId, long pageId, long page);
 
@@ -75,7 +76,8 @@ public interface PageSupport {
      * @param cacheId Cache ID.
      * @param pageId Page ID.
      * @param page Page pointer.
-     * @return ByteBuffer for modifying the page of {@code null} if failed to get write lock.
+     * @return Address of a buffer with contents of the given page or
+     *            {@code 0L} if attempt to take the write lock failed.
      */
     public long tryWriteLock(int cacheId, long pageId, long page);
 

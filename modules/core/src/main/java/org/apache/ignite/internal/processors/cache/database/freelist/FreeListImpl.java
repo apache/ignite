@@ -400,7 +400,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
      * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private long allocate(int part) throws IgniteCheckedException {
+    private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
 
@@ -438,7 +438,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             boolean allocated = pageId == 0L;
 
             if(allocated)
-                pageId = allocate(row.partition());
+                pageId = allocateDataPage(row.partition());
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
 

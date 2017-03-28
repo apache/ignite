@@ -136,6 +136,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      */
     private int getMetaInlineSize() throws IgniteCheckedException {
         final long metaPage = acquirePage(metaPageId);
+
         try {
             long pageAddr = readLock(metaPageId, metaPage); // Meta can't be removed.
 

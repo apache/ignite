@@ -176,15 +176,11 @@ public abstract class PageHandler<X, R> {
         long pageId,
         long page,
         PageLockListener lsnr) {
-        boolean notifyLsnr = lsnr != null;
-
-        if(notifyLsnr)
-            lsnr.onBeforeReadLock(cacheId, pageId, page);
+        lsnr.onBeforeReadLock(cacheId, pageId, page);
 
         long pageAddr = pageMem.readLock(cacheId, pageId, page);
 
-        if(notifyLsnr)
-            lsnr.onReadLock(cacheId, pageId, page, pageAddr);
+        lsnr.onReadLock(cacheId, pageId, page, pageAddr);
 
         return pageAddr;
     }
@@ -204,8 +200,7 @@ public abstract class PageHandler<X, R> {
         long page,
         long pageAddr,
         PageLockListener lsnr) {
-        if(lsnr != null)
-            lsnr.onReadUnlock(cacheId, pageId, page, pageAddr);
+        lsnr.onReadUnlock(cacheId, pageId, page, pageAddr);
 
         pageMem.readUnlock(cacheId, pageId, page);
     }
@@ -294,7 +289,7 @@ public abstract class PageHandler<X, R> {
             }
         }
         finally {
-            if(releaseAfterWrite)
+            if (releaseAfterWrite)
                 pageMem.releasePage(cacheId, pageId, page);
         }
     }
@@ -379,8 +374,7 @@ public abstract class PageHandler<X, R> {
         PageLockListener lsnr,
         Boolean walPlc,
         boolean dirty) {
-        if(lsnr != null)
-            lsnr.onWriteUnlock(cacheId, pageId, page, pageAddr);
+        lsnr.onWriteUnlock(cacheId, pageId, page, pageAddr);
 
         pageMem.writeUnlock(cacheId, pageId, page, walPlc, dirty);
     }
@@ -401,15 +395,11 @@ public abstract class PageHandler<X, R> {
         long page,
         PageLockListener lsnr,
         boolean tryLock) {
-        boolean notifyLsnr = lsnr != null;
-
-        if(notifyLsnr)
-            lsnr.onBeforeWriteLock(cacheId, pageId, page);
+        lsnr.onBeforeWriteLock(cacheId, pageId, page);
 
         long pageAddr = tryLock ? pageMem.tryWriteLock(cacheId, pageId, page) : pageMem.writeLock(cacheId, pageId, page);
 
-        if(notifyLsnr)
-            lsnr.onWriteLock(cacheId, pageId, page, pageAddr);
+        lsnr.onWriteLock(cacheId, pageId, page, pageAddr);
 
         return pageAddr;
     }
