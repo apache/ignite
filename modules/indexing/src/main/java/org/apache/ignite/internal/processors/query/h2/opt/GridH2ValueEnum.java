@@ -60,7 +60,7 @@ public class GridH2ValueEnum extends Value {
     /** {@inheritDoc} */
     @Override
     public String getSQL() {
-        return name;
+        return "'" + name + "'";
     }
 
     /** {@inheritDoc} */

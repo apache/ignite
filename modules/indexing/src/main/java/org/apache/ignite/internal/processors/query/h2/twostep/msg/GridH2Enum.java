@@ -143,7 +143,7 @@ public class GridH2Enum  extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -49;
     }
 

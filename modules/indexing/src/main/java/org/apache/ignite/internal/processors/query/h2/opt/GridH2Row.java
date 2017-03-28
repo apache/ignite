@@ -25,7 +25,7 @@ import org.h2.value.Value;
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public abstract class GridH2Row extends Row implements GridSearchRowPointer {
+public abstract class GridH2Row implements GridSearchRowPointer, Row {
     /** {@inheritDoc} */
     @Override public long pointer() {
         throw new IllegalStateException();
