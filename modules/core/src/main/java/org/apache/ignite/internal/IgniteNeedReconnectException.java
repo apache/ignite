@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * MBean for {@code random} eviction policy.
+ * Indicates that node should try reconnect to cluster.
  */
-@MXBeanDescription("MBean for random cache eviction policy.")
-public interface RandomEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
+public class IgniteNeedReconnectException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
+     * @param locNode Local node.
+     * @param cause Cause.
      */
-    @MXBeanDescription("Sets maximum allowed cache size.")
-    public void setMaxSize(int max);
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
+    }
 }

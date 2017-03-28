@@ -143,11 +143,9 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionDate)
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTime)
 {
-    SQL_TIME_STRUCT exp;
-    exp.hour = 13;
-    exp.minute = 20;
-    exp.second = 15;
-    CheckSingleResult<SQL_TIME_STRUCT>("SELECT {fn CONVERT('13:20:15', SQL_TIME)}", exp);
+    using ignite::impl::binary::BinaryUtils;
+    Time time = common::MakeTimeGmt(13, 20, 15);
+    CheckSingleResult<Time>("SELECT {fn CONVERT('13:20:15', SQL_TIME)}", time);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTimestamp)

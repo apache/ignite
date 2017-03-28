@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+export default class InputDialogController {
+    static $inject = ['deferred', 'ui'];
 
-import org.apache.ignite.binary.BinaryObject;
+    constructor(deferred, {title, label, value, toValidValue}) {
+        this.deferred = deferred;
+        this.title = title;
+        this.label = label;
+        this.value = value;
+        this.toValidValue = toValidValue;
+    }
 
-/**
- * Test GETs with binary hashed key.
- */
-public class IgniteLegacyBinaryIdentityGetBenchmark extends IgniteBinaryIdentityGetBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
+    confirm() {
+        if (_.isFunction(this.toValidValue))
+            return this.deferred.resolve(this.toValidValue(this.value));
+
+        this.deferred.resolve(this.value);
     }
 }

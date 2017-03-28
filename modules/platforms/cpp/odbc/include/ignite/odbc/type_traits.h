@@ -151,6 +151,9 @@ namespace ignite
                 /** TIMESTAMP SQL type name constant. */
                 static const std::string TIMESTAMP;
 
+                /** TIME SQL type name constant. */
+                static const std::string TIME;
+
                 /** GUID SQL type name constant. */
                 static const std::string GUID;
             };
@@ -190,7 +193,7 @@ namespace ignite
             /**
              * Convert ODBC type to driver type alias.
              *
-             * @param ODBC type;
+             * @param type ODBC type;
              * @return Internal driver type.
              */
             IgniteSqlType ToDriverType(int16_t type);

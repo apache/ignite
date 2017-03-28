@@ -204,11 +204,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     info("Before commitAsync");
 
-                    tx = (Transaction)tx.withAsync();
-
-                    tx.commit();
-
-                    IgniteFuture<Transaction> fut = tx.future();
+                    IgniteFuture<?> fut = tx.commitAsync();
 
                     info("Got future for commitAsync().");
 

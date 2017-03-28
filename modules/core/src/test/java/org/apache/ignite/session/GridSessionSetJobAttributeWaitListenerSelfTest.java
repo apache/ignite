@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -92,11 +91,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         for (int i = 0; i < 5; i++) {
             refreshInitialData();
 
-            IgniteCompute comp = ignite.compute().withAsync();
-
-            comp.execute(GridTaskSessionTestTask.class.getName(), null);
-
-            ComputeTaskFuture<?> fut = comp.future();
+            ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), null);
 
             assert fut != null;
 

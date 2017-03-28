@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -225,9 +224,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
         assertEquals(-2, semaphore1.availablePermits());
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -263,8 +260,6 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
                 return null;
             }
         });
-
-        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 
