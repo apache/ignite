@@ -356,6 +356,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
+            Assert.AreEqual(x.TableName, y.TableName);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
             AssertConfigsAreEqual(x.Aliases, y.Aliases);
@@ -630,6 +631,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         KeyTypeName = "Integer",
                         ValueTypeName = "java.lang.String",
+                        TableName = "MyTable",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 

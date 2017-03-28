@@ -86,9 +86,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private String affKey;
 
-    /** SPI can decide not to register this type. */
-    private boolean registered;
-
     /**
      * Constructor.
      *
@@ -103,20 +100,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public String space() {
         return space;
-    }
-
-    /**
-     * @return {@code True} if type registration in SPI was finished and type was not rejected.
-     */
-    public boolean registered() {
-        return registered;
-    }
-
-    /**
-     * @param registered Sets registered flag.
-     */
-    public void registered(boolean registered) {
-        this.registered = registered;
     }
 
     /** {@inheritDoc} */
