@@ -320,7 +320,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
                     snapshot.version(), snapshot.deltas());
 
                 try {
-                    ctx.io().send(n, TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
+                    ctx.io().sendToGridTopic(n, TOPIC_TIME_SYNC, msg, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     if (ctx.discovery().pingNodeNoError(n.id()))
@@ -356,7 +356,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
          * @param evt Discovery event on which this node became a coordinator.
          */
         protected TimeCoordinator(DiscoveryEvent evt) {
-            super(ctx.gridName(), "grid-time-coordinator", GridClockSyncProcessor.this.log);
+            super(ctx.igniteInstanceName(), "grid-time-coordinator", GridClockSyncProcessor.this.log);
 
             lastSnapshot = new GridDiscoveryTopologySnapshot(evt.topologyVersion(), evt.topologyNodes());
         }

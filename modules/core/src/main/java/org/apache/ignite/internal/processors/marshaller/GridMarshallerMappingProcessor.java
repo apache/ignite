@@ -178,7 +178,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             String resolvedClsName = marshallerCtx.resolveMissedMapping(platformId, typeId);
 
             try {
-                ioMgr.send(
+                ioMgr.sendToGridTopic(
                         nodeId,
                         TOPIC_MAPPING_MARSH,
                         new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),

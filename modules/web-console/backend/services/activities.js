@@ -35,10 +35,12 @@ module.exports.factory = (_, mongo) => {
          * Update page activities.
          *
          * @param {String} owner - User ID
-         * @param {Object} page - The page
+         * @param {String} action - Action string presentation.
+         * @param {String} group - Action group string presentation.
+         * @param {Date} [now] - Optional date to save in activity.
          * @returns {Promise.<mongo.ObjectId>} that resolve activity
          */
-        static merge(owner, {action, group}) {
+        static merge(owner, {action, group}, now = new Date()) {
             mongo.Account.findById(owner)
                 .then((user) => {
                     user.lastActivity = new Date();
@@ -46,10 +48,7 @@ module.exports.factory = (_, mongo) => {
                     return user.save();
                 });
 
-            const date = new Date();
-
-            date.setDate(1);
-            date.setHours(0, 0, 0, 0);
+            const date = Date.UTC(now.getFullYear(), now.getMonth(), 1);
 
             return mongo.Activities.findOne({owner, action, date}).exec()
                 .then((activity) => {
@@ -61,25 +60,6 @@ module.exports.factory = (_, mongo) => {
 
                     return mongo.Activities.create({owner, action, group, date});
                 });
-        }
-
-        /**
-         * Get user activities
-         * @param {String} owner - User ID
-         * @returns {Promise.<mongo.ObjectId>} that resolve activities
-         */
-        static listByUser(owner, {startDate, endDate}) {
-            const $match = {owner};
-
-            if (startDate)
-                $match.date = {$gte: new Date(startDate)};
-
-            if (endDate) {
-                $match.date = $match.date || {};
-                $match.date.$lt = new Date(endDate);
-            }
-
-            return mongo.Activities.find($match);
         }
 
         static total({startDate, endDate}) {

@@ -32,26 +32,31 @@ BOOST_FIXTURE_TEST_SUITE(SqlDateTimeFunctionTestSuite, ignite::SqlTestSuiteFixtu
 BOOST_AUTO_TEST_CASE(TestCurrentDate)
 {
     CheckSingleResult<Date>("SELECT {fn CURRENT_DATE()}");
+    CheckSingleResult<Timestamp>("SELECT {fn CURRENT_DATE()}");
 }
 
 BOOST_AUTO_TEST_CASE(TestCurdate)
 {
     CheckSingleResult<Date>("SELECT {fn CURDATE()}");
+    CheckSingleResult<Timestamp>("SELECT {fn CURDATE()}");
 }
 
 BOOST_AUTO_TEST_CASE(TestCurrentTime)
 {
     CheckSingleResult<Timestamp>("SELECT {fn CURRENT_TIME()}");
+    CheckSingleResult<Time>("SELECT {fn CURRENT_TIME()}");
 }
 
 BOOST_AUTO_TEST_CASE(TestCurtime)
 {
     CheckSingleResult<Timestamp>("SELECT {fn CURTIME()}");
+    CheckSingleResult<Time>("SELECT {fn CURTIME()}");
 }
 
 BOOST_AUTO_TEST_CASE(TestCurrentTimestamp)
 {
     CheckSingleResult<Timestamp>("SELECT {fn CURRENT_TIMESTAMP()}");
+    CheckSingleResult<Time>("SELECT {fn CURRENT_TIMESTAMP()}");
 }
 
 BOOST_AUTO_TEST_CASE(TestDayname)

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryFieldIdentityResolver;
 import org.apache.ignite.binary.BinaryIdentityResolver;
@@ -44,12 +45,21 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
-import org.apache.ignite.platform.dotnet.*;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
+import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformCachePluginConfigurationClosureFactory;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosure;
+import org.apache.ignite.plugin.platform.PlatformPluginConfigurationClosureFactory;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -68,14 +78,18 @@ import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.HashSet;
 
 /**
  * Configuration utils.
@@ -203,12 +217,23 @@ public class PlatformConfigurationUtils {
         int pluginCnt = in.readInt();
 
         if (pluginCnt > 0) {
-            CachePluginConfiguration[] plugins = new CachePluginConfiguration[pluginCnt];
+            ArrayList<CachePluginConfiguration> plugins = new ArrayList<>();
 
-            for (int i = 0; i < pluginCnt; i++)
-                plugins[i] = new PlatformCachePluginConfiguration(in.readObjectDetached());
+            for (int i = 0; i < pluginCnt; i++) {
+                if (in.readBoolean()) {
+                    // Java cache plugin.
+                    readCachePluginConfiguration(ccfg, in);
+                } else {
+                    // Platform cache plugin.
+                    plugins.add(new PlatformCachePluginConfiguration(in.readObjectDetached()));
+                }
+            }
 
-            ccfg.setPluginConfigurations(plugins);
+            if (ccfg.getPluginConfigurations() != null) {
+                Collections.addAll(plugins, ccfg.getPluginConfigurations());
+            }
+
+            ccfg.setPluginConfigurations(plugins.toArray(new CachePluginConfiguration[plugins.size()]));
         }
 
         return ccfg;
@@ -444,6 +469,7 @@ public class PlatformConfigurationUtils {
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
+        res.setTableName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -647,6 +673,8 @@ public class PlatformConfigurationUtils {
             default:
                 assert swapType == SWAP_TYP_NONE;
         }
+
+        readPluginConfiguration(cfg, in);
     }
 
     /**
@@ -872,6 +900,7 @@ public class PlatformConfigurationUtils {
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
+        writer.writeString(queryEntity.getTableName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();
@@ -1260,6 +1289,97 @@ public class PlatformConfigurationUtils {
         else {
             w.writeByte((byte)0);
         }
+    }
+
+    /**
+     * Reads the plugin configuration.
+     *
+     * @param cfg Ignite configuration to update.
+     * @param in Reader.
+     */
+    private static void readPluginConfiguration(IgniteConfiguration cfg, BinaryRawReader in) {
+        int cnt = in.readInt();
+
+        if (cnt == 0)
+            return;
+
+        for (int i = 0; i < cnt; i++) {
+            int plugCfgFactoryId = in.readInt();
+
+            PlatformPluginConfigurationClosure plugCfg = pluginConfiguration(plugCfgFactoryId);
+
+            plugCfg.apply(cfg, in);
+        }
+    }
+
+    /**
+     * Create PlatformPluginConfigurationClosure for the given factory ID.
+     *
+     * @param factoryId Factory ID.
+     * @return PlatformPluginConfigurationClosure.
+     */
+    private static PlatformPluginConfigurationClosure pluginConfiguration(final int factoryId) {
+        PlatformPluginConfigurationClosureFactory factory = AccessController.doPrivileged(
+                new PrivilegedAction<PlatformPluginConfigurationClosureFactory>() {
+                    @Override public PlatformPluginConfigurationClosureFactory run() {
+                        for (PlatformPluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformPluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
+
+                        return null;
+                    }
+                });
+
+        if (factory == null) {
+            throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
+                    "(did you put into the classpath?): " + factoryId);
+        }
+
+        return factory.create();
+    }
+
+    /**
+     * Reads the plugin configuration.
+     *
+     * @param cfg Ignite configuration to update.
+     * @param in Reader.
+     */
+    private static void readCachePluginConfiguration(CacheConfiguration cfg, BinaryRawReader in) {
+        int plugCfgFactoryId = in.readInt();
+
+        PlatformCachePluginConfigurationClosure plugCfg = cachePluginConfiguration(plugCfgFactoryId);
+
+        plugCfg.apply(cfg, in);
+    }
+
+    /**
+     * Create PlatformCachePluginConfigurationClosure for the given factory ID.
+     *
+     * @param factoryId Factory ID.
+     * @return PlatformCachePluginConfigurationClosure.
+     */
+    private static PlatformCachePluginConfigurationClosure cachePluginConfiguration(final int factoryId) {
+        PlatformCachePluginConfigurationClosureFactory factory = AccessController.doPrivileged(
+                new PrivilegedAction<PlatformCachePluginConfigurationClosureFactory>() {
+                    @Override public PlatformCachePluginConfigurationClosureFactory run() {
+                        for (PlatformCachePluginConfigurationClosureFactory factory :
+                                ServiceLoader.load(PlatformCachePluginConfigurationClosureFactory.class)) {
+                            if (factory.id() == factoryId)
+                                return factory;
+                        }
+
+                        return null;
+                    }
+                });
+
+        if (factory == null) {
+            throw new IgniteException("PlatformPluginConfigurationClosureFactory is not found " +
+                    "(did you put into the classpath?): " + factoryId);
+        }
+
+        return factory.create();
     }
 
     /**

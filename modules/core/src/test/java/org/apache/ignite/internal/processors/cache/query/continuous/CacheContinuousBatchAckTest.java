@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
 /**
  * Continuous queries tests.
@@ -76,15 +76,15 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith(CLIENT)) {
+        if (igniteInstanceName.endsWith(CLIENT)) {
             cfg.setClientMode(true);
 
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(true, false));
         }
-        else if (gridName.endsWith(SERVER2))
+        else if (igniteInstanceName.endsWith(SERVER2))
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, true));
         else
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, false));
@@ -315,7 +315,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
         if (filter)
             ccfg.setNodeFilter(new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    return !node.attributes().get(ATTR_GRID_NAME).equals(SERVER2);
+                    return !node.attributes().get(ATTR_IGNITE_INSTANCE_NAME).equals(SERVER2);
                 }
             });
 

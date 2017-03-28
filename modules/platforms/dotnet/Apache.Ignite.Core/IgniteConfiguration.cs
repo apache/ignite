@@ -336,6 +336,34 @@
 
             // Swap space
             SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+
+            // Plugins
+            if (PluginConfigurations != null)
+            {
+                var pos = writer.Stream.Position;
+
+                writer.WriteInt(0); // reserve count
+
+                var cnt = 0;
+
+                foreach (var cfg in PluginConfigurations)
+                {
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
+
+                        cfg.WriteBinary(writer);
+
+                        cnt++;
+                    }
+                }
+
+                writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
 
         /// <summary>
@@ -472,7 +500,7 @@
         /// </summary>
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
-            GridName = cfg.GridName;
+            IgniteInstanceName = cfg.IgniteInstanceName;
 
             if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
             {
@@ -495,9 +523,27 @@
         }
 
         /// <summary>
-        /// Grid name which is used if not provided in configuration file.
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
-        public string GridName { get; set; }
+        public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
+        /// </summary>
+        [Obsolete("Use IgniteInstanceName instead.")]
+        public string GridName
+        {
+            get { return IgniteInstanceName; }
+            set { IgniteInstanceName = value; }
+        }
 
         /// <summary>
         /// Gets or sets the binary configuration.

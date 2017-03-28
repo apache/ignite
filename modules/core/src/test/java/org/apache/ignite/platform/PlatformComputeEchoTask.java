@@ -107,6 +107,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: enum array from cache. */
     private static final int TYPE_ENUM_ARRAY_FROM_CACHE = 21;
 
+    /** Type: ignite uuid. */
+    private static final int TYPE_IGNITE_UUID = 22;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
@@ -218,6 +221,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
                 case TYPE_AFFINITY_KEY:
                     return new AffinityKey<>("interopAffinityKey");
+
+                case TYPE_IGNITE_UUID:
+                    return ignite.cache(null).get(TYPE_IGNITE_UUID);
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

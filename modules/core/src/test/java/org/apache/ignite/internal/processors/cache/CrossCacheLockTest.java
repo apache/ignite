@@ -46,12 +46,12 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        if (gridName.equals(getTestGridName(GRID_CNT - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
             cfg.setClientMode(true);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();

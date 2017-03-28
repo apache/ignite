@@ -375,11 +375,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
                         throw new InvalidOperationException("Invalid cache configuration: " +
                                                             "ICachePluginConfiguration can't be null.");
 
-                    if (!cachePlugin.GetType().IsSerializable)
-                        throw new InvalidOperationException("Invalid cache configuration: " +
-                                                            "ICachePluginConfiguration should be Serializable.");
+                    if (cachePlugin.CachePluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+                        cachePlugin.WriteBinary(writer);
+                    }
+                    else
+                    {
+                        if (!cachePlugin.GetType().IsSerializable)
+                        {
+                            throw new InvalidOperationException("Invalid cache configuration: " +
+                                                                "ICachePluginConfiguration should be Serializable.");
+                        }
 
-                    writer.WriteObject(cachePlugin);
+                        writer.WriteBoolean(false);
+                        writer.WriteObject(cachePlugin);
+                    }
                 }
             }
             else
@@ -590,7 +602,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Maximum batch size for write-behind cache store operations. 
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
-        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
+        /// <see cref="ICacheStore{K, V}.WriteAll"/> or <see cref="ICacheStore{K, V}.DeleteAll"/> methods. 
         /// </summary>
         [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }

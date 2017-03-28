@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Class that defines the piece for application-to-network and vice-versa data conversions
@@ -111,11 +113,12 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     @Override public GridNioFuture<?> proceedSessionWrite(
         GridNioSession ses,
         Object msg,
-        boolean fut
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
         checkNext();
 
-        return nextFilter.onSessionWrite(ses, msg, fut);
+        return nextFilter.onSessionWrite(ses, msg, fut, ackC);
     }
 
     /** {@inheritDoc} */

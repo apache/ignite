@@ -18,6 +18,7 @@
 package org.apache.ignite.binary;
 
 import java.math.BigDecimal;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
@@ -131,6 +132,13 @@ public interface BinaryWriter {
 
     /**
      * @param fieldName Field name.
+     * @param val Time to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeTime(String fieldName, @Nullable Time val) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
      * @param obj Value to write.
      * @throws BinaryObjectException In case of error.
      */
@@ -226,6 +234,13 @@ public interface BinaryWriter {
      * @throws BinaryObjectException In case of error.
      */
     public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException;
+
+    /**
+     * @param fieldName Field name.
+     * @param val Value to write.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException;
 
     /**
      * @param fieldName Field name.
