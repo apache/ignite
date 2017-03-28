@@ -160,21 +160,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES);
     }
 
-    @Override protected long getTestTimeout() {
-        return 500 * super.getTestTimeout();
-    }
-
-    /**
-     * TODO: temporary test, remove it.
-     */
-    public void testLevelRepeated() {
-       for (int i = 0 ; i<500 ; i++) {
-           System.out.println("============================= REPETITION " + i);
-
-           testLevel();
-       }
-    }
-
     /**
      * Geometric distribution test implementation.
      *
