@@ -429,6 +429,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 @Override public CacheContinuousQueryHandler apply() {
                     CacheContinuousQueryHandler hnd;
 
+                    //noinspection unchecked
                     hnd = new CacheContinuousQueryHandlerV2(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
@@ -446,6 +447,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         else
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
+                    //noinspection unchecked
                     return new CacheContinuousQueryHandler(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),

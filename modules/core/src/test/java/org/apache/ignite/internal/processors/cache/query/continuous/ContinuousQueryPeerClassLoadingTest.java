@@ -28,7 +28,7 @@ import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Throws NPE or AssertionError when peer class loading enabled.
+ * Checks if filter factory correctly deployed on all nodes.
  */
 public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest {
     /** */
@@ -39,23 +39,51 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(!gridName.endsWith("0"));
+        cfg.setClientMode(gridName.contains("client"));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testRemoteFilter() throws Exception {
-        final Ignite srv = startGrid(0);
+    public void testRemoteFilterFactoryClient() throws Exception {
+        check("server", "client1", "client2");
+    }
 
-        final IgniteCache<Integer, String> cache = srv.getOrCreateCache(CACHE_NAME);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilterFactoryServer1() throws Exception {
+        check("server1", "server2", "client");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilterFactoryServer2() throws Exception {
+        check("server1", "server2", "server3");
+    }
+
+    /**
+     * @param node1Name Node 1 name.
+     * @param node2Name Node 2 name.
+     * @param node3Name Node 3 name.
+     */
+    private void check(String node1Name, String node2Name, String node3Name) throws Exception {
+        final Ignite node1 = startGrid(node1Name);
+
+        final IgniteCache<Integer, String> cache = node1.getOrCreateCache(CACHE_NAME);
 
         for (int i = 0; i < 10; i++)
             cache.put(i, String.valueOf(i));
 
-        final Ignite client1 = startGrid(1);
+        final Ignite node2 = startGrid(node2Name);
 
         final ContinuousQuery<Integer, String> qry1 = new ContinuousQuery<>();
         final ContinuousQuery<Integer, String> qry2 = new ContinuousQuery<>();
@@ -77,7 +105,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
             }
         });
 
-        final IgniteCache<Integer, String> cache1 = client1.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache1 = node2.cache(CACHE_NAME);
 
         cache1.query(qry1);
 
@@ -85,9 +113,9 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
             cache.put(i, String.valueOf(i));
 
         // Fail on start second client.
-        final Ignite client2 = startGrid(2);
+        final Ignite node3 = startGrid(node3Name);
 
-        final IgniteCache<Integer, String> cache2 = client2.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache2 = node3.cache(CACHE_NAME);
 
         cache2.query(qry2);
 
