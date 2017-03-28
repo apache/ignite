@@ -18,20 +18,15 @@
 package org.apache.ignite.math.impls.vector;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.math.impls.CacheSupport;
-import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.VectorStorage;
-import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.exceptions.IndexException;
+import org.apache.ignite.math.exceptions.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.functions.*;
+import org.apache.ignite.math.impls.matrix.*;
 import java.io.*;
 import java.util.*;
 import java.util.function.*;
-import org.apache.ignite.math.functions.Functions;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.math.impls.matrix.MatrixView;
 
 /**
  * This class provides a helper implementation of the {@link Vector}
@@ -39,7 +34,7 @@ import org.apache.ignite.math.impls.matrix.MatrixView;
  * Subclasses may override some of the implemented methods if a more
  * specific or optimized implementation is desirable.
  */
-public abstract class AbstractVector extends CacheSupport implements Vector {
+public abstract class AbstractVector implements Vector {
     /** Vector storage implementation. */
     private VectorStorage sto;
 

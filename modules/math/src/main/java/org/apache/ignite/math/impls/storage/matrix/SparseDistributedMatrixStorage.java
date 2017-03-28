@@ -18,17 +18,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import java.io.*;
 import java.util.*;
 import org.apache.ignite.math.StorageConstants;
-import org.apache.ignite.math.impls.CacheSupport;
+import org.apache.ignite.math.impls.CacheUtils;
 import org.apache.ignite.math.MatrixStorage;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * TODO: add description.
  */
-public class SparseDistributedMatrixStorage extends CacheSupport implements MatrixStorage, StorageConstants {
+public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants {
     private int rows, cols;
     private int stoMode, acsMode;
 

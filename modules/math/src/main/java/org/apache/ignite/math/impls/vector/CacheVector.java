@@ -17,16 +17,12 @@
 
 package org.apache.ignite.math.impls.vector;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.math.VectorKeyMapper;
+import org.apache.ignite.*;
+import org.apache.ignite.math.*;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
-import org.apache.ignite.math.Matrix;
-import org.apache.ignite.math.ValueMapper;
-import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.math.functions.IgniteFunction;
-import org.apache.ignite.math.impls.storage.vector.CacheVectorStorage;
+import org.apache.ignite.math.functions.*;
+import org.apache.ignite.math.impls.*;
+import org.apache.ignite.math.impls.storage.vector.*;
 
 /**
  * Vector based on existing cache and index and value mapping functions.
@@ -63,7 +59,7 @@ public class CacheVector<K, V> extends AbstractVector {
     private Vector mapOverCache(IgniteFunction<Double, Double> mapper) {
         CacheVectorStorage<K, V> sto = storage();
 
-        cacheMap(sto.cache().getName(), sto.keyMapper(), sto.valueMapper(), mapper);
+        CacheUtils.map(sto.cache().getName(), sto.keyMapper(), sto.valueMapper(), mapper);
 
         return this;
     }
@@ -72,14 +68,14 @@ public class CacheVector<K, V> extends AbstractVector {
     @Override public double minValue() {
         CacheVectorStorage<K, V> sto = storage();
 
-        return cacheMin(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.min(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
         CacheVectorStorage<K, V> sto = storage();
 
-        return cacheMax(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.max(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */
@@ -97,7 +93,7 @@ public class CacheVector<K, V> extends AbstractVector {
     @Override public double sum() {
         CacheVectorStorage<K, V> sto = storage();
 
-        return cacheSum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.sum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */

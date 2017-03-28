@@ -18,28 +18,21 @@
 package org.apache.ignite.math.impls.matrix;
 
 import org.apache.ignite.lang.*;
-import java.io.*;
-import java.util.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import org.apache.ignite.math.exceptions.CardinalityException;
-import org.apache.ignite.math.functions.Functions;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteFunction;
-import org.apache.ignite.math.impls.CacheSupport;
-import org.apache.ignite.math.impls.vector.MatrixVectorView;
-import org.apache.ignite.math.decompositions.LUDecomposition;
-import org.apache.ignite.math.exceptions.ColumnIndexException;
-import org.apache.ignite.math.exceptions.RowIndexException;
-import org.apache.ignite.math.functions.IgniteDoubleFunction;
-import org.apache.ignite.math.functions.IntIntToDoubleFunction;
+import org.apache.ignite.math.decompositions.*;
+import org.apache.ignite.math.exceptions.*;
+import org.apache.ignite.math.functions.*;
+import org.apache.ignite.math.impls.vector.*;
+import java.io.*;
+import java.util.*;
 
 /**
  * TODO: add description.
  *
  * TODO: add row/column optimization.
  */
-public abstract class AbstractMatrix extends CacheSupport implements Matrix {
+public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     private static final double Z95 = 1.959964;
     private static final double Z80 = 1.281552;

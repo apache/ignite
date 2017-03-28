@@ -22,18 +22,15 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.functions.*;
 import javax.cache.*;
 import java.util.*;
-import org.apache.ignite.math.KeyMapper;
-import org.apache.ignite.math.ValueMapper;
-import org.apache.ignite.math.functions.IgniteBiFunction;
-import org.apache.ignite.math.functions.IgniteConsumer;
-import org.apache.ignite.math.functions.IgniteFunction;
 
 /**
  * Distribution-related misc. support.
  */
-public class CacheSupport {
+public class CacheUtils {
     /**
      *
      * @param <K>
@@ -73,17 +70,8 @@ public class CacheSupport {
     /**
      * Gets local Ignite instance.
      */
-    protected Ignite ignite() {
+    public static Ignite ignite() {
         return Ignition.localIgnite();
-    }
-
-    /**
-     *
-     * @param cacheName
-     * @param run
-     */
-    protected void broadcastForCache(String cacheName, IgniteRunnable run) {
-        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
     }
 
     /**
@@ -93,7 +81,7 @@ public class CacheSupport {
      * @param <K>
      * @return
      */
-    protected <K> ClusterGroup groupForKey(String cacheName, K k) {
+    public static <K> ClusterGroup groupForKey(String cacheName, K k) {
         return ignite().cluster().forNode(ignite().affinity(cacheName).mapKeyToNode(k));
     }
 
@@ -106,8 +94,8 @@ public class CacheSupport {
      * @param <V>
      * @return
      */
-    protected <K, V> double cacheSum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        Collection<Double> subSums = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+    public static <K, V> double sum(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> subSums = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             if (keyMapper.isValid(ce.entry().getKey())) {
                 double v = valMapper.toDouble(ce.entry().getValue());
 
@@ -134,8 +122,8 @@ public class CacheSupport {
      * @param <V>
      * @return
      */
-    protected <K, V> double cacheMin(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        Collection<Double> mins = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+    public static <K, V> double min(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> mins = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             if (keyMapper.isValid(ce.entry().getKey())) {
                 double v = valMapper.toDouble(ce.entry().getValue());
 
@@ -160,8 +148,8 @@ public class CacheSupport {
      * @param <V>
      * @return
      */
-    protected <K, V> double cacheMax(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        Collection<Double> maxes = cacheFold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
+    public static <K, V> double max(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
+        Collection<Double> maxes = fold(cacheName, (CacheEntry<K, V> ce, Double acc) -> {
             if (keyMapper.isValid(ce.entry().getKey())) {
                 double v = valMapper.toDouble(ce.entry().getValue());
 
@@ -186,8 +174,8 @@ public class CacheSupport {
      * @param <K>
      * @param <V>
      */
-    protected <K, V> void cacheMap(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper, IgniteFunction<Double, Double> mapper) {
-        cacheForeach(cacheName, (CacheEntry<K, V> ce) -> {
+    public static <K, V> void map(String cacheName, KeyMapper<K> keyMapper, ValueMapper<V> valMapper, IgniteFunction<Double, Double> mapper) {
+        foreach(cacheName, (CacheEntry<K, V> ce) -> {
             K k = ce.entry().getKey();
 
             if (keyMapper.isValid(k))
@@ -203,8 +191,8 @@ public class CacheSupport {
      * @param <K>
      * @param <V>
      */
-    protected <K, V> void cacheForeach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
-        broadcastForCache(cacheName, () -> {
+    public static <K, V> void foreach(String cacheName, IgniteConsumer<CacheEntry<K, V>> fun) {
+        bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
@@ -235,8 +223,8 @@ public class CacheSupport {
      * @param <A>
      * @return
      */
-    protected <K, V, A> Collection<A> cacheFold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
-        return broadcastForCache(cacheName, () -> {
+    public static <K, V, A> Collection<A> fold(String cacheName, IgniteBiFunction<CacheEntry<K, V>, A, A> folder) {
+        return bcast(cacheName, () -> {
             Ignite ignite = Ignition.localIgnite();
             IgniteCache<K, V> cache = ignite.getOrCreateCache(cacheName);
 
@@ -263,13 +251,22 @@ public class CacheSupport {
     }
 
     /**
+     *
+     * @param cacheName
+     * @param run
+     */
+    public static void bcast(String cacheName, IgniteRunnable run) {
+        ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(run);
+    }
+
+    /**
      * 
      * @param cacheName
      * @param call
      * @param <A>
      * @return
      */
-    protected <A> Collection<A> broadcastForCache(String cacheName, IgniteCallable<A> call) {
+    public static <A> Collection<A> bcast(String cacheName, IgniteCallable<A> call) {
         return ignite().compute(ignite().cluster().forCacheNodes(cacheName)).broadcast(call);
     }
 }

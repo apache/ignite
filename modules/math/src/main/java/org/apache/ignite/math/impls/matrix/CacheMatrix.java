@@ -24,6 +24,7 @@ import org.apache.ignite.math.ValueMapper;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.functions.IgniteFunction;
+import org.apache.ignite.math.impls.*;
 import org.apache.ignite.math.impls.storage.matrix.CacheMatrixStorage;
 import org.apache.ignite.math.functions.IgniteDoubleFunction;
 
@@ -130,21 +131,21 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     @Override public double sum() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return cacheSum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.sum(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */
     @Override public double maxValue() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return cacheMax(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.max(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /** {@inheritDoc} */
     @Override public double minValue() {
         CacheMatrixStorage<K, V> sto = storage();
 
-        return cacheMin(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
+        return CacheUtils.min(sto.cache().getName(), sto.keyMapper(), sto.valueMapper());
     }
 
     /**
@@ -160,7 +161,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
         MatrixKeyMapper<K> keyMapper = sto.keyMapper();
         ValueMapper<V> valMapper = sto.valueMapper();
 
-        cacheForeach(sto.cache().getName(), (CacheEntry<K, V> ce) -> {
+        CacheUtils.foreach(sto.cache().getName(), (CacheUtils.CacheEntry<K, V> ce) -> {
             K k = ce.entry().getKey();
 
             if (keyMapper.isValid(k))
