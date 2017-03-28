@@ -1456,8 +1456,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private static ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
-                .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
-                    new QueryEntity(typeof (int), typeof (Person))) {CacheMode = CacheMode.Replicated});
+                .GetOrCreateCache<int, Person>(
+                    new CacheConfiguration(PersonSecondCacheName,
+                        new QueryEntity(typeof(int), typeof(Person))
+                        {
+                            TableName = "CustomPersons"
+                        })
+                    {
+                        CacheMode = CacheMode.Replicated
+                    });
         }
 
         /// <summary>
