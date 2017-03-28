@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +41,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -65,6 +68,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -529,10 +533,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             throw e;
         }
-        catch (Throwable e) {
-            U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
-
+        catch (IgniteNeedReconnectException e) {
             onDone(e);
+        }
+        catch (Throwable e) {
+            if (reconnectOnError(e))
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+            else {
+                U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
+
+                onDone(e);
+            }
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1318,7 +1329,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         catch (IgniteCheckedException e) {
-            onDone(e);
+            if (reconnectOnError(e))
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+            else
+                onDone(e);
         }
     }
 
@@ -1335,8 +1349,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
-                log.debug("Failed to send full partition map to node, node left grid " +
-                    "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send full partition map to node, node left grid " +
+                        "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+
+                return;
+            }
+
+            if (reconnectOnError(e)) {
+                onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
 
                 return;
             }
@@ -1455,7 +1476,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
-        for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
+        for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -1666,6 +1687,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
                         }
                     }
+                    catch (Exception e) {
+                        if (reconnectOnError(e))
+                            onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
+                        else
+                            throw e;
+                    }
                     finally {
                         leaveBusy();
                     }
@@ -1675,6 +1702,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @param e Exception.
+     * @return {@code True} if local node should try reconnect in case of error.
+     */
+    public boolean reconnectOnError(Throwable e) {
+        return X.hasCause(e, IOException.class, IgniteClientDisconnectedCheckedException.class) &&
+            cctx.discovery().reconnectSupported();
     }
 
     /** {@inheritDoc} */

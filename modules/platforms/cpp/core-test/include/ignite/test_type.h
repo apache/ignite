@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TEST_TEST_TYPE
-#define _IGNITE_ODBC_TEST_TEST_TYPE
+#ifndef _IGNITE_CORE_TEST_TEST_TYPE
+#define _IGNITE_CORE_TEST_TEST_TYPE
 
 #include <string>
 
 #include "ignite/ignite.h"
-#include "ignite/ignition.h"
 
 namespace ignite
 {
@@ -98,10 +97,7 @@ namespace ignite
         Timestamp timestampField;
         std::vector<int8_t> i8ArrayField;
     };
-}
 
-namespace ignite
-{
     namespace binary
     {
         IGNITE_BINARY_TYPE_START(ignite::TestType)
@@ -190,4 +186,4 @@ namespace ignite
     }
 };
 
-#endif // _IGNITE_ODBC_TEST_TEST_TYPE
+#endif // _IGNITE_CORE_TEST_TEST_TYPE

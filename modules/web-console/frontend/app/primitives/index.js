@@ -15,16 +15,5 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.binary.BinaryObject;
-
-/**
- * Test PUTs with binary hashed key.
- */
-public class IgniteLegacyBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
-    }
-}
+import './badge/index.scss';
+import './tabs/index.scss';

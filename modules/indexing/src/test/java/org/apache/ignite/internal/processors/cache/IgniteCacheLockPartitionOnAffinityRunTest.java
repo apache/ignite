@@ -589,7 +589,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 
         try {
-            grid(1).compute().withAsync().affinityRun(
+            grid(1).compute().affinityRunAsync(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new IgniteRunnable() {
@@ -630,7 +630,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
 
 
         try {
-            grid(1).compute().withAsync().affinityCall(
+            grid(1).compute().affinityCallAsync(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new IgniteCallable<Object>() {
@@ -678,7 +678,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
         final int orgId = primaryKey(grid(0).cache(Organization.class.getSimpleName()));
 
         try {
-            grid(1).compute().withAsync().affinityRun(
+            grid(1).compute().affinityRunAsync(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new RunnableWithMasterLeave() {

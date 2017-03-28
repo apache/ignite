@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -29,6 +30,13 @@ namespace Apache.Ignite.Core.Binary
     public sealed class BinaryArrayEqualityComparer : IEqualityComparer<IBinaryObject>, IBinaryEqualityComparer,
         IBinaryStreamProcessor<KeyValuePair<int,int>, int>
     {
+        /// <summary>
+        /// Singleton instance.
+        /// </summary>
+        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes",
+            Justification = "Type is immutable.")]
+        public static readonly BinaryArrayEqualityComparer Instance = new BinaryArrayEqualityComparer();
+
         /// <summary>
         /// Determines whether the specified objects are equal.
         /// </summary>
@@ -88,7 +96,10 @@ namespace Apache.Ignite.Core.Binary
 
             var arg = new KeyValuePair<int, int>(GetDataStart(binObj), GetDataLength(binObj));
 
-            return new BinaryHeapStream(binObj.Data).Apply(this, arg);
+            using (var stream = new BinaryHeapStream(binObj.Data))
+            {
+                return stream.Apply(this, arg);
+            }
         }
 
         /** <inheritdoc /> */

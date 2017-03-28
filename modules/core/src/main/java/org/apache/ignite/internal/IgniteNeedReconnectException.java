@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Test GETs with binary hashed key.
+ * Indicates that node should try reconnect to cluster.
  */
-public class IgniteLegacyBinaryIdentityGetBenchmark extends IgniteBinaryIdentityGetBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
+public class IgniteNeedReconnectException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * @param locNode Local node.
+     * @param cause Cause.
+     */
+    public IgniteNeedReconnectException(ClusterNode locNode, @Nullable Throwable cause) {
+        super("Local node need try to reconnect [locNodeId=" + locNode.id() + ']', cause);
+
+        assert locNode.isClient();
     }
 }

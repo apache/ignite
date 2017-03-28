@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -83,9 +81,6 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
-        private static final IgniteProductVersion V2_SINCE = IgniteProductVersion.fromString("1.5.8");
-
         /**
          * Create job with given argument.
          *
@@ -120,18 +115,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
                 if (ca.context().started()) {
                     String cacheName = ca.getName();
 
-                    boolean compatibilityMode = false;
-
-                    for (ClusterNode node : ignite.cluster().nodes()) {
-                        if (node.version().compareToIgnoreTimestamp(V2_SINCE) < 0) {
-                            compatibilityMode = true;
-
-                            break;
-                        }
-                    }
-
-                    VisorCacheMetrics cm = (compatibilityMode ? new VisorCacheMetrics() : new VisorCacheMetricsV2())
-                            .from(ignite, cacheName);
+                    VisorCacheMetrics cm = new VisorCacheMetrics().from(ignite, cacheName);
 
                     if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.system()))
                         res.add(cm);
