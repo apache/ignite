@@ -152,10 +152,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select * from table0('aaa', 100)");
         checkQuery("select * from table0('aaa', 100) t0");
         checkQuery("select x.a, y.b from table0('aaa', 100) x natural join table0('bbb', 100) y");
-        checkQuery("select * from table0('aaa', 100) x join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
-        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
-        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a where x.b = 'bbb'");
-        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x join table0('bbb', 100) y on x.a=y.a and x.b = 1");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a and x.b = 1");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a where x.b = 1");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 1");
 
         checkQuery("select avg(old) from Person left join Address on Person.addrId = Address.id " +
             "where lower(Address.street) = lower(?)");
@@ -284,6 +284,21 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUseIndexHints() throws Exception {
+        checkQuery("select * from Person use index (\"name_idx\")");
+        checkQuery("select * from Person use index (\"parentName_idx\")");
+        checkQuery("select * from Person use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person use index ()");
+
+        checkQuery("select * from Person p use index (\"name_idx\")");
+        checkQuery("select * from Person p use index (\"parentName_idx\")");
+        checkQuery("select * from Person p use index (\"name_idx\", \"parentName_idx\")");
+        checkQuery("select * from Person p use index ()");
+    }
+
+    /**
      * Query AST transformation heavily depends on this behavior.
      *
      * @throws Exception If failed.
@@ -337,7 +352,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
             "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
         checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
-            "Person where date='20110312'");
+            "Person where date='2011-03-12'");
 
         /* Subqueries. */
         checkQuery("merge into Person(old, name) select old, parentName from Person");
@@ -377,7 +392,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("insert into Person SET name = CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), old = " +
             "select (5, 6)");
         checkQuery("insert into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
-            "Person where date='20110312'");
+            "Person where date='2011-03-12'");
 
         /* Subqueries. */
         checkQuery("insert into Person(old, name) select old, parentName from Person");
