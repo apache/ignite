@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -85,6 +86,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private String affKey;
+
+    /** Obsolete. */
+    private volatile boolean obsolete;
 
     /**
      * Constructor.
@@ -186,6 +190,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     @Override public Map<String, GridQueryIndexDescriptor> indexes() {
         synchronized (idxMux) {
             return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(idxs);
+        }
+    }
+
+    /**
+     * Get index by name.
+     *
+     * @param name Name.
+     * @return Index.
+     */
+    @Nullable public QueryIndexDescriptorImpl index(String name) {
+        synchronized (idxMux) {
+            return idxs.get(name);
         }
     }
 
@@ -364,6 +380,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void aliases(Map<String, String> aliases) {
         this.aliases = aliases;
+    }
+
+    /**
+     * @return {@code True} if obsolete.
+     */
+    public boolean obsolete() {
+        return obsolete;
+    }
+
+    /**
+     * Mark index as obsolete.
+     */
+    public void markObsolete() {
+        obsolete = true;
     }
 
     /** {@inheritDoc} */

@@ -24,15 +24,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
-import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
-import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -201,35 +198,23 @@ public class IndexOperationState {
     }
 
     /**
-     * Callback invoked when finish confirmation is received.
+     * Get local error (if any).
      *
-     * @param msg Message.
+     * @return Local error.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void onFinish(IndexFinishDiscoveryMessage msg) {
+    @Nullable public Throwable localError() {
         IgniteInternalFuture fut = hnd.future();
 
         assert fut.isDone();
 
-        if (fut.error() == null && !msg.hasError()) {
-            IndexAbstractOperation op = msg.operation();
+        return fut.error();
+    }
 
-            try {
-                if (op instanceof IndexCreateOperation) {
-                    IndexCreateOperation op0 = (IndexCreateOperation) op;
-
-                    QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
-                }
-                else {
-                    assert op instanceof IndexDropOperation;
-
-                    QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
-            }
-        }
+    /**
+     * @return Type.
+     */
+    public QueryTypeDescriptorImpl type() {
+        return type;
     }
 
     /**

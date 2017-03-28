@@ -95,7 +95,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 
 /**
  * Indexing processor.
@@ -611,6 +611,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param msg Message.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().operationId();
 
@@ -618,8 +619,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!msg.hasError()) {
             IndexOperationState idxOpState = idxOpStates.remove(opId);
 
-            if (idxOpState != null)
-                idxOpState.onFinish(msg);
+            if (idxOpState != null) {
+                Throwable locErr = idxOpState.localError();
+
+                if (locErr == null)
+                    // At this point everything is clear, so we can proceed.
+                    onIndexFinishMessage0(idxOpState.type(), msg.operation());
+            }
         }
 
         // Complete client future.
@@ -633,6 +639,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             else
                 cliFut.onDone();
+        }
+    }
+
+    /**
+     * Apply index operation result.
+     *
+     * @param type Type.
+     * @param op Operation.
+     */
+    public void onIndexFinishMessage0(QueryTypeDescriptorImpl type, IndexAbstractOperation op) {
+        if (type == null || type.obsolete())
+            return;
+
+        QueryIndexKey idxKey = new QueryIndexKey(op.space(), op.indexName());
+
+        try {
+            if (op instanceof IndexCreateOperation) {
+                IndexCreateOperation op0 = (IndexCreateOperation) op;
+
+                QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
+
+                QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
+
+                idxs.put(idxKey, idxDesc);
+            }
+            else {
+                assert op instanceof IndexDropOperation;
+
+                QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
+
+                idxs.remove(idxKey);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
         }
     }
 
@@ -733,6 +774,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     it.remove();
 
                     typesByName.remove(new QueryTypeNameKey(space, entry.getValue().name()));
+
+                    entry.getValue().markObsolete();
                 }
             }
 
@@ -1516,8 +1559,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             IndexOperationStatusResponse resp = new IndexOperationStatusResponse(ctx.localNodeId(), opId, errMsg);
 
-            // TODO: Proper pool!
-            ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, PUBLIC_POOL);
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_DYNAMIC_SCHEMA, resp, QUERY_POOL);
         }
         catch (IgniteCheckedException e) {
             // Node left, ignore.
