@@ -185,7 +185,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (altTypeId != null)
                     types.put(altTypeId, desc);
 
-                desc.registered(idx.registerType(space, desc));
+                idx.registerType(space, desc);
             }
         }
         catch (IgniteCheckedException | RuntimeException e) {
@@ -362,7 +362,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             QueryTypeDescriptorImpl desc = types.get(id);
 
-            if (desc == null || !desc.registered())
+            if (desc == null)
                 return;
 
             if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
@@ -775,7 +775,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
             QueryTypeDescriptorImpl desc = e.getValue();
 
-            if (desc.registered() && F.eq(e.getKey().space(), space))
+            if (F.eq(e.getKey().space(), space))
                 spaceTypes.add(desc);
         }
 
@@ -793,7 +793,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public QueryTypeDescriptorImpl type(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
-        if (type == null || !type.registered())
+        if (type == null)
             throw new IgniteCheckedException("Failed to find SQL table for type: " + typeName);
 
         return type;
