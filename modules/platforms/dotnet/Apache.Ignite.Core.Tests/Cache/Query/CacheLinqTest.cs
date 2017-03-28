@@ -420,6 +420,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
+                .OrderBy(x => x.Key.Bar)
                 .ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
@@ -433,7 +434,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestCrossCacheJoinInline()
         {
             var res = GetPersonCache().AsCacheQueryable().Join(GetRoleCache().AsCacheQueryable(), 
-                person => person.Key, role => role.Key.Foo, (person, role) => role).ToArray();
+                person => person.Key, role => role.Key.Foo, (person, role) => role)
+                .OrderBy(x => x.Key.Bar).ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
             Assert.AreEqual(101, res[0].Key.Bar);
@@ -1026,6 +1028,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 (int a, int b, string sep) =>
                     roles
                         .Where(x => x.Key.Bar > a)
+                        .OrderBy(x => x.Key.Bar)
                         .Join(persons.Where(x => x.Key < b && x.Key > 0),
                             r => r.Key.Foo,
                             p => p.Value.Address.Zip,

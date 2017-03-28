@@ -167,7 +167,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite client = startGrid(4);
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         if (!blockRebalance)
             awaitPartitionMapExchange();
@@ -196,9 +195,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         log.info("Start put [key1=" + key1 + ", key2=" + key2 + ']');
 
-        nearAsyncCache.putAll(map);
-
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAllAsync(map);
 
         U.sleep(500);
 
@@ -244,7 +241,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite client = startGrid(4);
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         if (!blockRebalance)
             awaitPartitionMapExchange();
@@ -264,9 +260,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         log.info("Start put [map=" + map + ']');
 
-        nearAsyncCache.putAll(map);
-
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAllAsync(map);
 
         U.sleep(500);
 
@@ -308,7 +302,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite client = startGrid(4);
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         if (!blockRebalance)
             awaitPartitionMapExchange();
@@ -323,9 +316,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         log.info("Start put [key=" + key + ']');
 
-        nearAsyncCache.put(key, key);
-
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAsync(key, key);
 
         U.sleep(500);
 
@@ -438,7 +429,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         client = false;
 
         final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, PRIMARY_SYNC));
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         awaitPartitionMapExchange();
 
@@ -449,9 +439,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         testSpi(srv0).blockMessages(GridDhtAtomicSingleUpdateRequest.class, srv1.name());
 
-        nearAsyncCache.put(key, key);
-
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAsync(key, key);
 
         fut.get(5, TimeUnit.SECONDS);
 
@@ -481,7 +469,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite clientNode = startGrid(2);
 
         final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         awaitPartitionMapExchange();
 
@@ -490,7 +477,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         final Integer key = primaryKey(srv0.cache(TEST_CACHE));
 
-        nearAsyncCache.put(key, key);
+        nearCache.putAsync(key, key);
 
         testSpi(srv1).blockMessages(GridDhtAtomicNearResponse.class, clientNode.name());
 
@@ -521,7 +508,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite clientNode = startGrid(SRVS);
 
         final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         awaitPartitionMapExchange();
 
@@ -533,7 +519,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++)
             map.put(i, i);
 
-        nearAsyncCache.putAll(map);
+        nearCache.putAllAsync(map);
 
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -678,7 +664,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite client = startGrid(4);
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
             @Override public boolean apply(GridIoMessage msg) {
@@ -690,8 +675,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         log.info("Start put [key=" + key + ']');
 
-        nearAsyncCache.put(key, key);
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAsync(key, key);
 
         U.sleep(500);
 
@@ -735,7 +719,6 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         Ignite client = startGrid(4);
 
         IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-        IgniteCache<Integer, Integer> nearAsyncCache = nearCache.withAsync();
 
         if (fail0) {
             testSpi(ignite(0)).blockMessages(new IgnitePredicate<GridIoMessage>() {
@@ -761,8 +744,7 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         map.put(key1, 10);
         map.put(key2, 20);
 
-        nearAsyncCache.putAll(map);
-        IgniteFuture<?> fut = nearAsyncCache.future();
+        IgniteFuture<?> fut = nearCache.putAllAsync(map);
 
         U.sleep(500);
 

@@ -1983,11 +1983,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
-        if (JdbcUtils.serializer != null)
-            U.warn(log, "Custom H2 serialization is already configured, will override.");
-
-        JdbcUtils.serializer = h2Serializer();
-
         if (JdbcUtils.customDataTypesHandler != null)
             U.warn(log, "Custom H2 data types handler is already configured, will override.");
 
@@ -2047,6 +2042,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
         }
+
+        if (JdbcUtils.serializer != null)
+            U.warn(log, "Custom H2 serialization is already configured, will override.");
+
+        JdbcUtils.serializer = h2Serializer();
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);
@@ -2143,16 +2143,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
-                @Override public byte[] serialize(Object obj) throws Exception {
-                    return U.marshal(marshaller, obj);
-                }
+            @Override public byte[] serialize(Object obj) throws Exception {
+                return U.marshal(marshaller, obj);
+            }
 
-                @Override public Object deserialize(byte[] bytes) throws Exception {
-                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
+            @Override public Object deserialize(byte[] bytes) throws Exception {
+                ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
 
-                    return U.unmarshal(marshaller, bytes, clsLdr);
-                }
-            };
+                return U.unmarshal(marshaller, bytes, clsLdr);
+            }
+        };
     }
 
     /**

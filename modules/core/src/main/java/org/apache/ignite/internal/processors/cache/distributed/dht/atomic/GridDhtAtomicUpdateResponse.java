@@ -255,7 +255,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 39;
     }
 
