@@ -198,6 +198,8 @@ namespace ignite
             jobject binaryProc = Context()->ProcessorBinaryProcessor(proc.Get());
             metaUpdater = new BinaryTypeUpdaterImpl(*this, binaryProc);
 
+            metaMgr->SetUpdater(metaUpdater);
+
             common::dynamic::Module currentModule = common::dynamic::GetCurrent();
             moduleMgr.Get()->RegisterModule(currentModule);
         }
@@ -335,7 +337,7 @@ namespace ignite
             if (local)
                 throw IgniteError(IgniteError::IGNITE_ERR_UNSUPPORTED_OPERATION, "Local invokation is not supported.");
 
-            BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position());
+            BinaryObjectImpl binProcHolder = BinaryObjectImpl::FromMemory(*mem.Get(), inStream.Position(), 0);
             BinaryObjectImpl binProc = binProcHolder.GetField(0);
 
             int64_t procId = binProc.GetTypeId();
