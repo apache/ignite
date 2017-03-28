@@ -39,6 +39,7 @@ import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
@@ -351,17 +352,39 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                     // No error console appender => create console appender with no level limit.
                     rootCategory.addAppender(createConsoleAppender(Level.OFF));
 
-                if (logLevel != null)
+                // Won't raise LogLevel if there is other loggers configured. As LogLevel can be inherited.
+                if (logLevel != null && (!logLevel.isGreaterOrEqual(impl.getEffectiveLevel()) || !hasOtherLoggers())) {
                     impl.setLevel(logLevel);
+
+                    impl.info("RootLogger log level has been dropped for auto-created console appender.");
+                }
             }
 
-            // If still don't have appenders, disable logging.
-            if (!isConfigured())
+            // If still don't have appenders and other loggers configured, disable logging.
+            if (!isConfigured() && !hasOtherLoggers())
                 impl.setLevel(Level.OFF);
 
             quiet0 = quiet;
             inited = true;
         }
+    }
+
+    /**
+     * Checks if there is other loggers configured.
+     *
+     * @return {@code True} if other logger found.
+     */
+    private boolean hasOtherLoggers() {
+        final Enumeration loggers = LogManager.getCurrentLoggers();
+
+        while (loggers.hasMoreElements()) {
+            Logger c = (Logger)loggers.nextElement();
+
+            if (c != impl && c.getAllAppenders().hasMoreElements())
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -531,5 +554,16 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
                 a.activateOptions();
             }
         }
+    }
+
+    /**
+     * For test purposes only.
+     */
+    static void reset(){
+        inited = false;
+
+        quiet0 = false;
+
+        fileAppenders.clear();
     }
 }
