@@ -118,7 +118,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
@@ -129,12 +129,12 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
+        /// Delegates to <see cref="ICacheStore{K, V}.LoadCache" /> method to load state
         /// from the underlying persistent storage. The loaded values will then be given
         /// to the optionally passed in predicate, and, if the predicate returns true,
         /// will be stored in cache. If predicate is null, then all loaded values will be stored in cache.
@@ -143,12 +143,12 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
+        /// Delegates to <see cref="ICacheStore{K, V}.LoadCache" /> method to load state
         /// from the underlying persistent storage. The loaded values will then be given
         /// to the optionally passed in predicate, and, if the predicate returns true,
         /// will be stored in cache. If predicate is null, then all loaded values will be stored in cache.
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 

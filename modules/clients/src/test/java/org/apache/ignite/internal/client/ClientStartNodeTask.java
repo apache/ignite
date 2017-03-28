@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -159,14 +158,9 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private static void changeTopology(Ignite parent, int add, int rmv, String type) {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
-        IgniteCompute comp = parent.compute().withAsync();
-
         // Start nodes in parallel.
-        while (add-- > 0) {
-            comp.execute(ClientStartNodeTask.class, type);
-
-            tasks.add(comp.future());
-        }
+        while (add-- > 0)
+            tasks.add(parent.compute().executeAsync(ClientStartNodeTask.class, type));
 
         for (ComputeTaskFuture<?> task : tasks)
             task.get();

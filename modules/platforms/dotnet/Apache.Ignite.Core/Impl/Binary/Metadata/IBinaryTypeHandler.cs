@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     /// <summary>
     /// Binary type metadata handler.
     /// </summary>
-    public interface IBinaryTypeHandler
+    internal interface IBinaryTypeHandler
     {
         /// <summary>
         /// Callback invoked when named field is written.
