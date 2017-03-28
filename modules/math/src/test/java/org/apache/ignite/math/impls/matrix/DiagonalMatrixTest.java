@@ -106,6 +106,24 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
 
     /** */
     @Test
+    public void testConstant() {
+        final int size = MathTestConstants.STORAGE_SIZE;
+
+        for (double val : new double[] {-1.0, 0.0, 1.0}) {
+            Matrix m = new DiagonalMatrix(size, val);
+
+            assertEquals("Rows in matrix", size, m.rowSize());
+            assertEquals("Cols in matrix", size, m.columnSize());
+
+            for (int i = 0; i < size; i++)
+                assertEquals(UNEXPECTED_VALUE + " at index " + i, val, m.get(i, i), 0d);
+
+            verifyDiagonal(m, true);
+        }
+    }
+
+    /** */
+    @Test
     public void testAttributes() {
         assertTrue(UNEXPECTED_VALUE, testMatrix.rowSize() == MathTestConstants.STORAGE_SIZE);
         assertTrue(UNEXPECTED_VALUE, testMatrix.columnSize() == MathTestConstants.STORAGE_SIZE);
@@ -129,7 +147,7 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
     }
 
     /** */
-    private void verifyDiagonal(Matrix m) {
+    private void verifyDiagonal(Matrix m, boolean readonly) {
         final int rows = m.rowSize(), cols = m.columnSize();
 
         final String sizeDetails = "rows" + "X" + "cols " + rows + "X" + cols;
@@ -145,26 +163,30 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
                 if (!diagonal)
                     assertEquals(UNEXPECTED_VALUE + details, 0, old, 0d);
 
-                final double exp = diagonal ? old + 1 : old;
+                final double exp = diagonal && !readonly ? old + 1 : old;
 
                 boolean expECaught = false;
 
                 try {
                     m.set(i, j, exp);
                 } catch (UnsupportedOperationException uoe) {
-                    if (diagonal)
+                    if (diagonal && !readonly)
                         throw uoe;
 
                     expECaught = true;
                 }
 
-                if (!diagonal && !expECaught)
+                if ((!diagonal || readonly) && !expECaught)
                     fail("Expected exception was not caught " + details);
 
                 assertEquals(UNEXPECTED_VALUE + details, exp, m.get(i, j), 0d);
             }
     }
 
+    /** */
+    private void verifyDiagonal(Matrix m) {
+        verifyDiagonal(m, false);
+    }
 
     /** */
     private void fillMatrix(Matrix m){
