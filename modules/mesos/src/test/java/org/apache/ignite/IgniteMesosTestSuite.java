@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.mesos.IgniteFrameworkInfoTest;
 import org.apache.ignite.mesos.IgniteSchedulerSelfTest;
 
 /**
@@ -33,6 +34,7 @@ public class IgniteMesosTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgniteSchedulerSelfTest.class));
 
+        suite.addTest(new TestSuite(IgniteFrameworkInfoTest.class));
         return suite;
     }
 }

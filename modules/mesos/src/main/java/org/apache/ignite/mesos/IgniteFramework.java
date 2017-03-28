@@ -18,8 +18,10 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.ByteString;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.apache.ignite.mesos.resource.IgniteProvider;
 import org.apache.ignite.mesos.resource.JettyServer;
 import org.apache.ignite.mesos.resource.ResourceHandler;
@@ -35,11 +37,20 @@ public class IgniteFramework {
     /** */
     private static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
 
-    /** Framework name. */
+    /**
+     * Framework name.
+     */
     private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
-    /** Mesos user name in system environment. */
+    /**
+     * Mesos user name in system environment.
+     */
     private static final String MESOS_USER_NAME = "MESOS_USER";
+
+    /**
+     * Mesos user name in system environment.
+     */
+    private static final String MESOS_ROLE = "MESOS_ROLE";
 
     /**
      * Main methods has only one optional parameter - path to properties files.
@@ -51,12 +62,14 @@ public class IgniteFramework {
         final int frameworkFailoverTimeout = 0;
 
         String userName = System.getenv(MESOS_USER_NAME);
+        String mesosRole = System.getenv(MESOS_ROLE);
 
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-            .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(userName!=null ? userName:"")
-            .setFailoverTimeout(frameworkFailoverTimeout);
+                .setName(IGNITE_FRAMEWORK_NAME)
+                .setUser(userName != null ? userName : "")
+                .setRole(mesosRole != null ? mesosRole : "*")
+                .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
             log.info("Enabling checkpoint for the framework");
@@ -71,8 +84,8 @@ public class IgniteFramework {
         JettyServer httpSrv = new JettyServer();
 
         httpSrv.start(
-            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
-            clusterProps
+                new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
+                clusterProps
         );
 
         ResourceProvider provider = new ResourceProvider();
@@ -103,16 +116,15 @@ public class IgniteFramework {
             }
 
             Protos.Credential cred = Protos.Credential.newBuilder()
-                .setPrincipal(System.getenv("DEFAULT_PRINCIPAL"))
-                .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
-                .build();
+                    .setPrincipal(System.getenv("DEFAULT_PRINCIPAL"))
+                    .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
+                    .build();
 
             frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl(),
-                cred);
-        }
-        else {
+                    cred);
+        } else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl());
