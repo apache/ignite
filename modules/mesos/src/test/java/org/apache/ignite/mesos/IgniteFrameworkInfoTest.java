@@ -37,10 +37,10 @@ public class IgniteFrameworkInfoTest extends TestCase {
     public void setUp() throws Exception {
 
         userName = (System.getenv(MESOS_USER_NAME) != null
-                ? System.getenv(MESOS_USER_NAME) : "");
+            ? System.getenv(MESOS_USER_NAME) : "");
 
         mesosRole = System.getenv(MESOS_ROLE) != null
-                ? System.getenv(MESOS_ROLE) : "*";
+            ? System.getenv(MESOS_ROLE) : "*";
     }
 
     /**
@@ -49,10 +49,10 @@ public class IgniteFrameworkInfoTest extends TestCase {
     public void testFrameworkInfo() throws Exception {
 
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-                .setName(IGNITE_FRAMEWORK_NAME)
-                .setUser(userName != null ? userName : "")
-                .setRole(mesosRole != null ? mesosRole : "*")
-                .setFailoverTimeout(frameworkFailoverTimeout);
+            .setName(IGNITE_FRAMEWORK_NAME)
+            .setUser(userName != null ? userName : "")
+            .setRole(mesosRole != null ? mesosRole : "*")
+            .setFailoverTimeout(frameworkFailoverTimeout);
 
         assertThat(userName, Is.is(frameworkBuilder.getUser()));
         assertThat(mesosRole, Is.is(frameworkBuilder.getRole()));

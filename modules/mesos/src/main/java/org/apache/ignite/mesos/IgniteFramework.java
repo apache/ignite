@@ -66,10 +66,10 @@ public class IgniteFramework {
 
         // Have Mesos fill in the current user.
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-                .setName(IGNITE_FRAMEWORK_NAME)
-                .setUser(userName != null ? userName : "")
-                .setRole(mesosRole != null ? mesosRole : "*")
-                .setFailoverTimeout(frameworkFailoverTimeout);
+            .setName(IGNITE_FRAMEWORK_NAME)
+            .setUser(userName != null ? userName : "")
+            .setRole(mesosRole != null ? mesosRole : "*")
+            .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
             log.info("Enabling checkpoint for the framework");
@@ -84,8 +84,8 @@ public class IgniteFramework {
         JettyServer httpSrv = new JettyServer();
 
         httpSrv.start(
-                new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
-                clusterProps
+            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir()),
+            clusterProps
         );
 
         ResourceProvider provider = new ResourceProvider();
@@ -116,14 +116,14 @@ public class IgniteFramework {
             }
 
             Protos.Credential cred = Protos.Credential.newBuilder()
-                    .setPrincipal(System.getenv("DEFAULT_PRINCIPAL"))
-                    .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
-                    .build();
+                .setPrincipal(System.getenv("DEFAULT_PRINCIPAL"))
+                .setSecret(ByteString.copyFrom(System.getenv("DEFAULT_SECRET").getBytes()))
+                .build();
 
             frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl(),
-                    cred);
+                cred);
         } else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
 
