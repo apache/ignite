@@ -545,7 +545,8 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
             log.debug(configInfo("maxStealingAttempts", maxStealingAttempts));
         }
 
-        registerMBean(igniteInstanceName, new JobStealingCollisionSpiMBeanImpl(this), JobStealingCollisionSpiMBean.class);
+        registerMBean(igniteInstanceName, new JobStealingCollisionSpiMBeanImpl(this),
+            JobStealingCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -798,7 +799,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                 // requested to be stolen. Note, that we use lose total steal request
                 // counter to prevent excessive iteration over nodes under load.
                 for (Iterator<Entry<UUID, MessageInfo>> iter = rcvMsgMap.entrySet().iterator();
-                    iter.hasNext() && stealReqs.get() > 0; ) {
+                    iter.hasNext() && stealReqs.get() > 0;) {
                     Entry<UUID, MessageInfo> entry = iter.next();
 
                     UUID nodeId = entry.getKey();
@@ -1098,8 +1099,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     }
 
     /** {@inheritDoc} */
-    @Override
-    public JobStealingCollisionSpi setName(String name) {
+    @Override public JobStealingCollisionSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -1158,7 +1158,8 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     /**
      * MBean implementation for JobStealingCollisionSpi.
      */
-    private class JobStealingCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter implements JobStealingCollisionSpiMBean {
+    private class JobStealingCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements JobStealingCollisionSpiMBean {
         /** {@inheritDoc} */
         JobStealingCollisionSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
             super(spiAdapter);

@@ -736,7 +736,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @param reducerMigrationThresholdWeight Reducer migration threshold weight.
      * @return {@code this} for chaining.
      */
-    public IgniteHadoopWeightedMapReducePlanner setPreferLocalReducerThresholdWeight(int reducerMigrationThresholdWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setPreferLocalReducerThresholdWeight(
+        int reducerMigrationThresholdWeight) {
         this.preferLocReducerThresholdWeight = reducerMigrationThresholdWeight;
 
         return this;

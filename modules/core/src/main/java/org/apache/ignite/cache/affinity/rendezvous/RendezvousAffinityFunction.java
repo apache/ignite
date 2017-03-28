@@ -293,7 +293,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @return {@code this} for chaining.
      */
     @Deprecated
-    public RendezvousAffinityFunction setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+    public RendezvousAffinityFunction setBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
 
         return this;
@@ -322,7 +323,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.
      */
-    public RendezvousAffinityFunction setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+    public RendezvousAffinityFunction setAffinityBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
         this.affinityBackupFilter = affinityBackupFilter;
 
         return this;

@@ -255,8 +255,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
-    @Override
-    public CacheCheckpointSpi setName(String name) {
+    @Override public CacheCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;

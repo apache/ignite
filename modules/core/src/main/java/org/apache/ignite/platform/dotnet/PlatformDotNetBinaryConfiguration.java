@@ -83,7 +83,8 @@ public class PlatformDotNetBinaryConfiguration {
      * @param typesCfg New type cfgs.
      * @return {@code this} for chaining.
      */
-    public PlatformDotNetBinaryConfiguration setTypesConfiguration(Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg) {
+    public PlatformDotNetBinaryConfiguration setTypesConfiguration(
+        Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg) {
         this.typesCfg = typesCfg;
 
         return this;

@@ -517,8 +517,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     }
 
     /** {@inheritDoc} */
-    @Override
-    public SharedFsCheckpointSpi setName(String name) {
+    @Override public SharedFsCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;

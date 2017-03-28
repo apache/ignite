@@ -580,8 +580,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public S3CheckpointSpi setName(String name) {
+    @Override public S3CheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;

@@ -301,8 +301,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
-    @Override
-    public MemoryEventStorageSpi setName(String name) {
+    @Override public MemoryEventStorageSpi setName(String name) {
         super.setName(name);
 
         return this;

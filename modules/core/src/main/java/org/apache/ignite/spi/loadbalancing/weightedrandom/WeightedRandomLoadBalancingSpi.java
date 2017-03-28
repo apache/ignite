@@ -428,8 +428,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override
-    public WeightedRandomLoadBalancingSpi setName(String name) {
+    @Override public WeightedRandomLoadBalancingSpi setName(String name) {
         super.setName(name);
 
         return this;

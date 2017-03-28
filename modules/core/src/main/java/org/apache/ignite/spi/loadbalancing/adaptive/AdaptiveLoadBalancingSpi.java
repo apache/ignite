@@ -314,7 +314,8 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         if (log.isDebugEnabled())
             log.debug(configInfo("loadProbe", probe));
 
-        registerMBean(igniteInstanceName, new AdaptiveLoadBalancingSpiMBeanImpl(this), AdaptiveLoadBalancingSpiMBean.class);
+        registerMBean(igniteInstanceName, new AdaptiveLoadBalancingSpiMBeanImpl(this),
+            AdaptiveLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -613,8 +614,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /** {@inheritDoc} */
-    @Override
-    public AdaptiveLoadBalancingSpi setName(String name) {
+    @Override public AdaptiveLoadBalancingSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -628,7 +628,8 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     /**
      * MBean implementation for AdaptiveLoadBalancingSpi.
      */
-    private class AdaptiveLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter implements AdaptiveLoadBalancingSpiMBean {
+    private class AdaptiveLoadBalancingSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements AdaptiveLoadBalancingSpiMBean {
         /** {@inheritDoc} */
         AdaptiveLoadBalancingSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
             super(spiAdapter);

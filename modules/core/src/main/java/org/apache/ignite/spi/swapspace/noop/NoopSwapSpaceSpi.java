@@ -146,8 +146,7 @@ public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public NoopSwapSpaceSpi setName(String name) {
+    @Override public NoopSwapSpaceSpi setName(String name) {
         super.setName(name);
 
         return this;

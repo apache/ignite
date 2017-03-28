@@ -2131,8 +2131,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public TcpDiscoverySpi setName(String name) {
+    @Override public TcpDiscoverySpi setName(String name) {
         super.setName(name);
 
         return this;

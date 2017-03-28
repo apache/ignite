@@ -261,7 +261,8 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.
      */
-    public FairAffinityFunction setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+    public FairAffinityFunction setAffinityBackupFilter(
+        @Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
         this.affinityBackupFilter = affinityBackupFilter;
 
         return this;

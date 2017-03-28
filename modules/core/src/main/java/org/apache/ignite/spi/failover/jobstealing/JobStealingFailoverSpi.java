@@ -370,8 +370,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /** {@inheritDoc} */
-    @Override
-    public JobStealingFailoverSpi setName(String name) {
+    @Override public JobStealingFailoverSpi setName(String name) {
         super.setName(name);
 
         return this;

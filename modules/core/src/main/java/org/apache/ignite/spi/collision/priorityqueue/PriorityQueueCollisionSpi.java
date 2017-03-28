@@ -478,7 +478,8 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
             log.debug(configInfo("preventStarvation", preventStarvation));
         }
 
-        registerMBean(igniteInstanceName, new PriorityQueueCollisionSpiMBeanImpl(this), PriorityQueueCollisionSpiMBean.class);
+        registerMBean(igniteInstanceName, new PriorityQueueCollisionSpiMBeanImpl(this),
+            PriorityQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -669,8 +670,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     }
 
     /** {@inheritDoc} */
-    @Override
-    public PriorityQueueCollisionSpi setName(String name) {
+    @Override public PriorityQueueCollisionSpi setName(String name) {
         super.setName(name);
 
         return this;
@@ -734,7 +734,8 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     /**
      * MBean implementation for PriorityQueueCollisionSpi.
      */
-    private class PriorityQueueCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter implements PriorityQueueCollisionSpiMBean {
+    private class PriorityQueueCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements PriorityQueueCollisionSpiMBean {
         /** {@inheritDoc} */
         PriorityQueueCollisionSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
             super(spiAdapter);

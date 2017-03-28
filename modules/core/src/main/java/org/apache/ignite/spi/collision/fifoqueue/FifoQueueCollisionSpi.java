@@ -291,8 +291,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     }
 
     /** {@inheritDoc} */
-    @Override
-    public FifoQueueCollisionSpi setName(String name) {
+    @Override public FifoQueueCollisionSpi setName(String name) {
         super.setName(name);
 
         return this;

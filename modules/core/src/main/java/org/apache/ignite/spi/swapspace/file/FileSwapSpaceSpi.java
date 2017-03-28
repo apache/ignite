@@ -731,8 +731,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public FileSwapSpaceSpi setName(String name) {
+    @Override public FileSwapSpaceSpi setName(String name) {
         super.setName(name);
 
         return this;

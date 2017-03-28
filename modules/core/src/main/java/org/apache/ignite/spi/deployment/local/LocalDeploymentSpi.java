@@ -396,8 +396,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     }
 
     /** {@inheritDoc} */
-    @Override
-    public LocalDeploymentSpi setName(String name) {
+    @Override public LocalDeploymentSpi setName(String name) {
         super.setName(name);
 
         return this;
