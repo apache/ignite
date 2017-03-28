@@ -54,7 +54,11 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -132,6 +136,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> sharedCtx;
+
+    /** Memory policy. */
+    private MemoryPolicy memPlc;
+
+    /** FreeList instance this cache is associated with. */
+    private FreeList freeList;
+
+    /** ReuseList instance this cache is associated with */
+    private ReuseList reuseList;
 
     /** Logger. */
     private IgniteLogger log;
@@ -256,6 +269,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param memPlc MemoryPolicy instance.
+     * @param freeList FreeList instance.
      * @param affNode {@code True} if local node is affinity node.
      * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.
@@ -278,6 +293,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheType cacheType,
         boolean affNode,
         boolean updatesAllowed,
+        MemoryPolicy memPlc,
+        FreeList freeList,
+        ReuseList reuseList,
 
         /*
          * Managers in starting order!
@@ -320,6 +338,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
         this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
+
+        this.memPlc = memPlc;
+        this.freeList = freeList;
+        this.reuseList = reuseList;
 
         /*
          * Managers in starting order!
@@ -678,6 +700,27 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public String name() {
         return cacheName;
+    }
+
+    /**
+     * @return Memory policy.
+     */
+    public MemoryPolicy memoryPolicy() {
+        return memPlc;
+    }
+
+    /**
+     * @return Free List.
+     */
+    public FreeList freeList() {
+        return freeList;
+    }
+
+    /**
+     * @return Reuse List.
+     */
+    public ReuseList reuseList() {
+        return reuseList;
     }
 
     /**

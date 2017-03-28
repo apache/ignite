@@ -72,6 +72,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.snapshot.StartFullSnapshotAckDiscoveryMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -79,6 +80,9 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -676,6 +680,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             cacheType = CacheType.USER;
 
+        if (cacheType != CacheType.USER)
+            cfg.setMemoryPolicyName(sharedCtx.database().systemMemoryPolicyName());
+
         boolean template = cfg.getName() != null && cfg.getName().endsWith("*");
 
         DynamicCacheDescriptor desc = new DynamicCacheDescriptor(ctx,
@@ -1181,7 +1188,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheCtx.onStarted();
 
         if (log.isInfoEnabled())
-            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode() + ']');
+            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", memoryPolicyName=" + cfg.getMemoryPolicyName() + ", mode=" + cfg.getCacheMode() + ']');
     }
 
     /**
@@ -1416,6 +1423,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean affNode = cfg.getCacheMode() == LOCAL || CU.affinityNode(ctx.discovery().localNode(), cfg.getNodeFilter());
 
+        String memPlcName = cfg.getMemoryPolicyName();
+
+        MemoryPolicy memPlc = sharedCtx.database().memoryPolicy(memPlcName);
+        FreeList freeList = sharedCtx.database().freeList(memPlcName);
+        ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
             sharedCtx,
@@ -1423,6 +1436,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheType,
             affNode,
             updatesAllowed,
+            memPlc,
+            freeList,
+            reuseList,
 
             /*
              * Managers in starting order!
@@ -1551,6 +1567,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheType,
                 affNode,
                 true,
+                memPlc,
+                freeList,
+                reuseList,
 
                 /*
                  * Managers in starting order!

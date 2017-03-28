@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -81,6 +82,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -107,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.MemoryPolicy;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -753,6 +756,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackClassPaths(rtBean);
         ackSystemProperties();
         ackEnvironmentVariables();
+        ackMemoryConfiguration();
         ackCacheConfiguration();
         ackP2pConfiguration();
         ackRebalanceConfiguration();
@@ -1138,7 +1142,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 sysPoolQSize = exec.getQueue().size();
                             }
 
-                            PageMemory pageMem = ctx.cache().context().database().pageMemory();
+                            int loadedPages = 0;
+
+                            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+                                MemoryPolicy memPlc = cctx.memoryPolicy();
+
+                                loadedPages += memPlc != null ? memPlc.pageMemory().loadedPages() : 0;
+                            }
 
                             String id = U.id8(localNode().id());
 
@@ -1148,7 +1158,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                                "    ^-- PageMemory [pages=" + (pageMem != null ? pageMem.loadedPages() : 0) + "]" + NL +
+                                "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
                                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
                                 "    ^-- Non heap [used=" + dblFmt.format(nonHeapUsedInMBytes) + "MB, free=" +
@@ -2335,6 +2345,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      *
      */
+    private void ackMemoryConfiguration() {
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+
+        U.log(log, "System cache MemoryPolicy size is configured to " +
+                (memCfg.getSystemCacheMemorySize() / (1024 * 1024)) +
+        "MB size. " +
+                "Use MemoryConfiguration.systemCacheMemorySize property to change it.");
+    }
+
+    /**
+     *
+     */
     private void ackCacheConfiguration() {
         CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
@@ -2343,15 +2365,31 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         else {
             SB sb = new SB();
 
-            for (CacheConfiguration c : cacheCfgs) {
-                String name = U.maskName(c.getName());
+            HashMap<String, ArrayList<String>> memPlcNamesMapping = new HashMap<>();
 
-                sb.a("'").a(name).a("', ");
+            for (CacheConfiguration c : cacheCfgs) {
+                String cacheName = U.maskName(c.getName());
+
+                String memPlcName = U.maskName(c.getMemoryPolicyName());
+
+                if (!memPlcNamesMapping.containsKey(memPlcName))
+                    memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
+
+                ArrayList<String> cacheNames = memPlcNamesMapping.get(memPlcName);
+
+                cacheNames.add(cacheName);
             }
 
-            String names = sb.toString();
+            for (Map.Entry<String, ArrayList<String>> e : memPlcNamesMapping.entrySet()) {
+                sb.a("in '").a(e.getKey()).a("' memoryPolicy: [");
 
-            U.log(log, "Configured caches [" + names.substring(0, names.length() - 2) + ']');
+                for (String s : e.getValue())
+                    sb.a("'").a(s).a("', ");
+
+                sb.d(sb.length() - 2, sb.length()).a("]");
+            }
+
+            U.log(log, "Configured caches [" + sb.toString() + ']');
         }
     }
 
