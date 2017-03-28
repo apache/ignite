@@ -617,7 +617,7 @@ public class QueryUtils {
     }
 
     /**
-     * Process dnamic index change.
+     * Process dynamic index change.
      *
      * @param idx Index.
      * @param d Type descriptor to populate.
