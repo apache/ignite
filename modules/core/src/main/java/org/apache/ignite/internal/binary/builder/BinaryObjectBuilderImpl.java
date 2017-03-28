@@ -254,7 +254,8 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         Object assignedVal = assignedFldsById.remove(fieldId);
 
                         if (assignedVal != REMOVED_FIELD_MARKER) {
-                            if (assignedVal == null)
+                            if (assignedVal == null || (assignedVal instanceof BinaryLazyValue
+                                && ((BinaryLazyValue)assignedVal).value() == null))
                                 writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                             else {
                                 writer.writeFieldId(fieldId, writer.currentOffset());
@@ -310,7 +311,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     if (remainsFlds != null && !remainsFlds.contains(fieldId))
                         continue;
 
-                    if (val == null)
+                    if (val == null || (val instanceof BinaryLazyValue && ((BinaryLazyValue)val).value() == null))
                         writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                     else {
                         writer.writeFieldId(fieldId, writer.currentOffset());

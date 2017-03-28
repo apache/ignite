@@ -1551,7 +1551,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeByteArrayField(val);
@@ -1566,7 +1566,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeShortArrayField(val);
@@ -1581,7 +1581,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeIntArrayField(val);
@@ -1596,7 +1596,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeLongArrayField(val);
@@ -1611,7 +1611,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeFloatArrayField(val);
@@ -1627,7 +1627,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeDoubleArray(String fieldName, @Nullable double[] val)
         throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeDoubleArrayField(val);
@@ -1642,7 +1642,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeCharArrayField(val);
@@ -1658,7 +1658,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val)
         throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeBooleanArrayField(val);
@@ -1674,7 +1674,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeDecimalArray(String fieldName, @Nullable BigDecimal[] val)
         throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeDecimalArrayField(val);
@@ -1690,7 +1690,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public void writeStringArray(String fieldName, @Nullable String[] val)
         throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeStringArrayField(val);
@@ -1705,7 +1705,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeUuidArray(String fieldName, @Nullable UUID[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeUuidArrayField(val);
@@ -1720,7 +1720,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeDateArray(String fieldName, @Nullable Date[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeDateArrayField(val);
@@ -1735,7 +1735,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimestampArray(String fieldName, @Nullable Timestamp[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeTimestampArrayField(val);
@@ -1750,7 +1750,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public void writeTimeArray(String fieldName, @Nullable Time[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeTimeArrayField(val);
@@ -1765,7 +1765,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
      /** {@inheritDoc} */
     @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeObjectArrayField(val);
@@ -1781,7 +1781,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col)
         throws BinaryObjectException {
         if (col == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeCollectionField(col);
@@ -1797,7 +1797,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map)
         throws BinaryObjectException {
         if (map == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeMapField(map);
@@ -1812,7 +1812,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeEnumField(val);
@@ -1827,7 +1827,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** {@inheritDoc} */
     @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws BinaryObjectException {
         if (val == null)
-            out.writeByte(GridBinaryMarshaller.NULL);
+            writeFieldId(fieldName, BinaryUtils.NULL_4);
         else {
             writeFieldId(fieldName, currentOffset());
             writeEnumArrayField(val);
