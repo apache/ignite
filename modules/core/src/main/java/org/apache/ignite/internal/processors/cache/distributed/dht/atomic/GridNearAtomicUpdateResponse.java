@@ -370,7 +370,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         }
 
         if (err == null)
-            err = new IgniteCheckedException("Failed to update keys on primary node.");
+            err = new IgniteCheckedException("Failed to update keys on primary node.", e);
 
         err.addSuppressed(e);
     }
