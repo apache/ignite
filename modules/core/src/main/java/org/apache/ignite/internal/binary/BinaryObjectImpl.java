@@ -35,8 +35,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.binary.compression.CompressionType;
-import org.apache.ignite.internal.binary.compression.compressors.CompressionUtils;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -94,8 +92,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         assert ctx != null;
         assert arr != null;
 
-        if (CompressionUtils.isCompressionType(arr[0]))
-            arr = CompressionUtils.decompress(ctx, CompressionType.ofTypeId(arr[0]), Arrays.copyOfRange(arr, 1, arr.length));
+        if (arr[0] == GridBinaryMarshaller.COMPRESSED)
+            arr = U.decompress(ctx.configuration().getCompressor(), Arrays.copyOfRange(arr, 1, arr.length));
 
         this.ctx = ctx;
         this.arr = arr;
@@ -365,18 +363,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
 
-        if (CompressionUtils.isCompressionType(hdr)) {
-            assert BinaryPrimitives.readByte(arr, fieldPos + 1) == GridBinaryMarshaller.BYTE_ARR;
-
-            int len = BinaryPrimitives.readInt(arr, fieldPos + 1 + 1);
-
-            byte[] compressed = BinaryPrimitives.readByteArray(arr, fieldPos + 1 + 1 + 4, len);
-
-            byte[] decompressed = CompressionUtils.decompress(ctx, CompressionType.ofTypeId(hdr), compressed);
-
-            return (F) BinaryUtils.unmarshal(BinaryHeapInputStream.create(decompressed, 0), ctx, null);
-        }
-
         switch (hdr) {
             case GridBinaryMarshaller.INT:
                 val = BinaryPrimitives.readInt(arr, fieldPos + 1);
@@ -487,6 +473,20 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 val = null;
 
                 break;
+
+            case GridBinaryMarshaller.COMPRESSED: {
+                assert BinaryPrimitives.readByte(arr, fieldPos + 1) == GridBinaryMarshaller.BYTE_ARR;
+
+                int len = BinaryPrimitives.readInt(arr, fieldPos + 1 + 1);
+
+                byte[] compressed = BinaryPrimitives.readByteArray(arr, fieldPos + 1 + 1 + 4, len);
+
+                byte[] decompressed = U.decompress(ctx.configuration().getCompressor(), compressed);
+
+                val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(decompressed, 0), ctx, null);
+
+                break;
+            }
 
             default:
                 val = BinaryUtils.unmarshal(BinaryHeapInputStream.create(arr, fieldPos), ctx, null);

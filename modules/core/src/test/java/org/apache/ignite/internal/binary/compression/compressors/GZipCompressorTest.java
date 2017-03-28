@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.binary.compression.compressors;
 
 import java.util.Arrays;
+import org.apache.ignite.internal.binary.compression.Compressor;
+import org.apache.ignite.internal.binary.compression.GZipCompressor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**

@@ -15,36 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.compression.compressors;
+package org.apache.ignite.internal.binary.compression;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Implementation of {@link Compressor} which use GZIP compression library for compressing data.
+ * Implementation of {@link Compressor} which use ZLIB compression library for compressing data.
  *
- * @see GZIPInputStream
- * @see GZIPOutputStream
+ * @see Inflater
+ * @see Deflater
  */
-public class GZipCompressor implements Compressor {
+public class DeflaterCompressor implements Compressor {
     /**
      * {@inheritDoc}
      *
-     * @see GZIPOutputStream
+     * @see Deflater
      */
     @Override public byte[] compress(@NotNull byte[] bytes) throws IOException {
+        Deflater compressor = new Deflater();
+
         try (
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            OutputStream out = new GZIPOutputStream(baos);
+            DeflaterOutputStream deflaterStream = new DeflaterOutputStream(baos, compressor)
         ) {
-            out.write(bytes);
-            out.close();// need it, otherwise EOFException at decompressing
+            deflaterStream.write(bytes);
+            deflaterStream.finish();
+
             return baos.toByteArray();
         }
     }
@@ -52,19 +54,25 @@ public class GZipCompressor implements Compressor {
     /**
      * {@inheritDoc}
      *
-     * @see GZIPInputStream
+     * @see Inflater
      */
     @Override public byte[] decompress(@NotNull byte[] bytes) throws IOException {
+        Inflater decompressor = new Inflater();
+        decompressor.setInput(bytes);
+
         try (
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream in = new GZIPInputStream(new ByteArrayInputStream(bytes));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream()
         ) {
-            byte[] buffer = new byte[32];
-            int length;
-            while ((length = in.read(buffer)) != -1)
+            byte[] buffer = new byte[100];
+
+            while (!decompressor.finished()) {
+                int length = decompressor.inflate(buffer);
                 baos.write(buffer, 0, length);
-            baos.flush();
+            }
             return baos.toByteArray();
+        }
+        catch (DataFormatException ignored) {
+            return new byte[0];
         }
     }
 }

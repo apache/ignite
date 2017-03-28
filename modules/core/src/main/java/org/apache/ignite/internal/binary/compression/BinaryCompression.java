@@ -32,8 +32,4 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface BinaryCompression {
-    /**
-     * Type of compression, which will be used when serializing of annotated field.
-     */
-    CompressionType type() default CompressionType.GZIP;
 }

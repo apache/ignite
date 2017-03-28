@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.compression.compressors;
+package org.apache.ignite.internal.binary.compression;
 
 import java.io.IOException;
 import org.jetbrains.annotations.NotNull;

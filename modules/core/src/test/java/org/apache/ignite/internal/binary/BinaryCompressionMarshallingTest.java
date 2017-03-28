@@ -27,12 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.compression.BinaryCompression;
-import org.apache.ignite.internal.binary.compression.CompressionType;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.logger.NullLogger;
@@ -113,10 +108,10 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         @BinaryCompression
         private String data_default;
 
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private String data_gzip;
 
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private String data_deflate;
 
         private TestsClassAnnotatedStringFields(String data) {
@@ -286,11 +281,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private byte b;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private short s;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private int i;
 
         /** */
@@ -298,11 +293,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private long l;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private float f;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private double d;
 
         /** */
@@ -310,11 +305,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private char c;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private boolean bool;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private String str;
 
         /** */
@@ -322,11 +317,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private UUID uuid;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private Date date;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private Timestamp ts;
 
         /** */
@@ -334,11 +329,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private Time time;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private byte[] bArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private short[] sArr;
 
         /** */
@@ -346,11 +341,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private int[] iArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private long[] lArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private float[] fArr;
 
         /** */
@@ -358,11 +353,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private double[] dArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private char[] cArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private boolean[] boolArr;
 
         /** */
@@ -370,11 +365,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private String[] strArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private UUID[] uuidArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private Date[] dateArr;
 
         /** */
@@ -382,11 +377,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private Time[] timeArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private Object[] objArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private BigDecimal[] bdArr;
 
         /** */
@@ -394,11 +389,11 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private Collection<String> col;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private Map<Integer, String> map;
 
         /** */
-        @BinaryCompression(type = CompressionType.DEFLATE)
+        @BinaryCompression
         private TestEnum enumVal;
 
         /** */
@@ -406,7 +401,7 @@ public class BinaryCompressionMarshallingTest extends BinaryMarshallerSelfTest {
         private TestEnum[] enumArr;
 
         /** */
-        @BinaryCompression(type = CompressionType.GZIP)
+        @BinaryCompression
         private SimpleObjectAnnotatedFields inner;
 
         /** {@inheritDoc} */
