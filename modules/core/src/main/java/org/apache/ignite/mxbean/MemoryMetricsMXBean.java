@@ -25,19 +25,15 @@ import org.apache.ignite.MemoryMetrics;
 public interface MemoryMetricsMXBean extends MemoryMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Name of PageMemory metrics are collected for.")
-    public String name();
+    public String getName();
 
-    /**
-     * @return Returns size (in MBytes) of MemoryPolicy observed by this MemoryMetrics MBean.
-     */
+    /** {@inheritDoc} */
     @MXBeanDescription("Size of PageMemory in MBytes.")
-    public int size();
+    public int getSize();
 
-    /**
-     * @return Path of memory-mapped file used to swap PageMemory pages to disk.
-     */
+    /** {@inheritDoc} */
     @MXBeanDescription("File path of memory-mapped swap file.")
-    public String swapFilePath();
+    public String getSwapFilePath();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Enables metrics gathering.")

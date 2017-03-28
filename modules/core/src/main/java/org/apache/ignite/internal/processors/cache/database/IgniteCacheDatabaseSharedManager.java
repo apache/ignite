@@ -236,12 +236,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     cfg.getMBeanServer(),
                     cfg.getGridName(),
                     "MemoryMetrics",
-                    memMetrics.name(),
+                    memMetrics.getName(),
                     memMetrics,
                     MemoryMetricsMXBean.class);
         }
         catch (JMException e) {
-            log.warning("Failed to register MBean for MemoryMetrics with name: '" + memMetrics.name() + "'");
+            log.warning("Failed to register MBean for MemoryMetrics with name: '" + memMetrics.getName() + "'");
         }
     }
 

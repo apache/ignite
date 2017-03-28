@@ -24,7 +24,17 @@ public interface MemoryMetrics {
     /**
      * @return Memory policy name.
      */
-    public String name();
+    public String getName();
+
+    /**
+     * @return Returns size (in MBytes) of MemoryPolicy observed by this MemoryMetrics MBean.
+     */
+    public int getSize();
+
+    /**
+     * @return Path of memory-mapped file used to swap PageMemory pages to disk.
+     */
+    public String getSwapFilePath();
 
     /**
      * Enables collecting memory metrics.

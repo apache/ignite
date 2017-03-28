@@ -74,17 +74,17 @@ public class MemoryMetricsImpl implements MemoryMetrics, MemoryMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
+    @Override public String getName() {
         return U.maskName(memPlcCfg.getName());
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int getSize() {
         return (int) (memPlcCfg.getSize() / (1024 * 1024));
     }
 
     /** {@inheritDoc} */
-    @Override public String swapFilePath() {
+    @Override public String getSwapFilePath() {
         return memPlcCfg.getSwapFilePath();
     }
 
