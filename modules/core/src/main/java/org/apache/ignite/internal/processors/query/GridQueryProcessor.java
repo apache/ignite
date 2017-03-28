@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -339,7 +340,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
 
-        IdentityHashMap<IndexAbstractOperation, String> activeOps = new IdentityHashMap<>();
+        IdentityHashMap<IndexAbstractOperation, T2<String, QueryTypeDescriptorImpl>> activeOps =
+            new IdentityHashMap<>();
 
         if (initIdxStates != null) {
             // Apply ready operations.
@@ -389,11 +391,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 String idxName = acceptedOpEntry.getKey();
                 IndexAbstractOperation op = acceptedOpEntry.getValue().operation();
 
+                QueryTypeDescriptorImpl desc = null;
+
                 if (op instanceof IndexCreateOperation) {
                     // Handle create.
                     IndexCreateOperation op0 = (IndexCreateOperation)op;
-
-                    QueryTypeDescriptorImpl desc = null;
 
                     for (QueryTypeCandidate cand : cands) {
                         if (F.eq(cand.descriptor().tableName(), op0.tableName())) {
@@ -423,7 +425,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     // Handle drop.
                     IndexDropOperation op0 = (IndexDropOperation)op;
 
-                    QueryTypeDescriptorImpl desc = idxTypMap.get(op0.indexName());
+                    desc = idxTypMap.get(op0.indexName());
 
                     if (desc == null) {
                         if (!op0.ifExists())
@@ -436,7 +438,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                activeOps.put(op, errMsg);
+                activeOps.put(op, new T2<>(errMsg, desc));
             }
         }
 
@@ -444,12 +446,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         registerCache0(space, cctx, cands);
 
         // If cache was registered successfully, start pending operations.
-        for (Map.Entry<IndexAbstractOperation, String> activeOp : activeOps.entrySet()) {
-            String errMsg = activeOp.getValue();
+        for (Map.Entry<IndexAbstractOperation, T2<String, QueryTypeDescriptorImpl>> activeOp : activeOps.entrySet()) {
+            String errMsg = activeOp.getValue().get1();
+            QueryTypeDescriptorImpl type = activeOp.getValue().get2();
 
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperation(activeOp.getKey(), true, err);
+            startIndexOperation(type, activeOp.getKey(), true, err);
         }
 
         // Warn about possible implicit deserialization.
@@ -530,6 +533,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String errMsg = null;
 
             // Validate.
+            QueryTypeDescriptorImpl type = null;
+
             if (op instanceof IndexCreateOperation) {
                 IndexCreateOperation op0 = (IndexCreateOperation)op;
 
@@ -538,24 +543,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // Make sure table exists.
                 String tblName = op0.tableName();
 
-                QueryTypeDescriptorImpl type0 = null;
+                type = type(space, tblName);
 
-                for (QueryTypeDescriptorImpl type : types.values()) {
-                    if (F.eq(tblName, type.tableName())) {
-                        type0 = type;
-
-                        break;
-                    }
-                }
-
-                if (type0 == null) {
+                if (type == null) {
                     completed = true;
                     errMsg = "Table doesn't exist: " + tblName;
                 }
                 else {
                     // Make sure that index can be applied to the given table.
                     for (String idxField : idx.getFieldNames()) {
-                        if (!type0.fields().containsKey(idxField)) {
+                        if (!type.fields().containsKey(idxField)) {
                             completed = true;
                             errMsg = "Field doesn't exist: " + idxField;
 
@@ -591,6 +588,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (!op0.ifExists())
                         errMsg = "Index doesn't exist: " + idxName;
                 }
+                else
+                    type = oldIdx.typeDescriptor();
             }
             else {
                 completed = true;
@@ -600,7 +599,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Start async operation.
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperation(op, completed, err);
+            startIndexOperation(type, op, completed, err);
         }
         finally {
             idxLock.writeLock().unlock();
@@ -615,8 +614,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().operationId();
 
-        idxOpStates.remove(opId);
+        // Add index info to descriptor.
+        if (!msg.hasError()) {
+            IndexOperationState idxOpState = idxOpStates.remove(opId);
 
+            if (idxOpState != null)
+                idxOpState.onFinish(msg);
+        }
+
+        // Complete client future.
         QueryIndexClientFuture cliFut = idxCliFuts.remove(opId);
 
         if (cliFut != null) {
@@ -983,7 +989,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     @Override public QueryCursor<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
                         String type = qry.getType();
 
-                        String typeName = type(cctx.name(), type);
+                        String typeName = typeName(cctx.name(), type);
 
                         qry.setType(typeName);
 
@@ -1238,7 +1244,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
-                        String typeName = type(space, resType);
+                        String typeName = typeName(space, resType);
 
                         return idx.queryLocalText(space, clause, typeName, filters);
                     }
@@ -1323,6 +1329,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Get type descriptor for the given space and table name.
+     * @param space Space.
+     * @param tblName Table name.
+     * @return Type (if any).
+     */
+    @Nullable private QueryTypeDescriptorImpl type(@Nullable String space, String tblName) {
+        for (QueryTypeDescriptorImpl type : types.values()) {
+            if (F.eq(space, type.space()) && F.eq(tblName, type.tableName()))
+                return type;
+        }
+
+        return null;
+    }
+
+    /**
      * Gets type name for provided space and type name if type is still valid.
      *
      * @param space Space name.
@@ -1330,7 +1351,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private String type(@Nullable String space, String typeName) throws IgniteCheckedException {
+    private String typeName(@Nullable String space, String typeName) throws IgniteCheckedException {
         QueryTypeDescriptorImpl type = typesByName.get(new QueryTypeNameKey(space, typeName));
 
         if (type == null)
@@ -1434,16 +1455,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Start index operation.
      *
+     * @param type Affected type.
      * @param op Operation.
      * @param completed Completed flag.
      * @param err Error.
      */
-    private void startIndexOperation(IndexAbstractOperation op, boolean completed, Exception err) {
+    private void startIndexOperation(QueryTypeDescriptorImpl type, IndexAbstractOperation op, boolean completed,
+        Exception err) {
         IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, op, completed, err);
 
         hnd.init();
 
-        IndexOperationState state = new IndexOperationState(ctx, this, hnd);
+        IndexOperationState state = new IndexOperationState(ctx, this, type, hnd);
 
         idxOpStates.put(op.operationId(), state);
 

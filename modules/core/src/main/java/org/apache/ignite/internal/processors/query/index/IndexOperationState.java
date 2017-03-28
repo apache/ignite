@@ -23,8 +23,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
+import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
+import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -36,7 +41,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DYNAMIC_SCHEMA;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 
 /**
  * Current index operation state.
@@ -50,6 +55,9 @@ public class IndexOperationState {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Type. */
+    private final QueryTypeDescriptorImpl type;
 
     /** Operation handler. */
     private final IndexOperationHandler hnd;
@@ -71,14 +79,17 @@ public class IndexOperationState {
      *
      * @param ctx Context.
      * @param qryProc Query processor.
+     * @param type Affected type.
      * @param hnd Operation handler.
      */
-    public IndexOperationState(GridKernalContext ctx, GridQueryProcessor qryProc, IndexOperationHandler hnd) {
+    public IndexOperationState(GridKernalContext ctx, GridQueryProcessor qryProc, QueryTypeDescriptorImpl type,
+        IndexOperationHandler hnd) {
         this.ctx = ctx;
 
         log = ctx.log(IndexOperationState.class);
 
         this.qryProc = qryProc;
+        this.type = type;
         this.hnd = hnd;
     }
 
@@ -103,8 +114,7 @@ public class IndexOperationState {
 
                     if (!alive.isLocal()) {
                         try {
-                            // TODO: Proper pool!
-                            ctx.io().sendToGridTopic(alive, TOPIC_DYNAMIC_SCHEMA, req, PUBLIC_POOL);
+                            ctx.io().sendToGridTopic(alive, TOPIC_DYNAMIC_SCHEMA, req, QUERY_POOL);
                         }
                         catch (IgniteCheckedException e) {
                             // Node has left the grid.
@@ -188,6 +198,38 @@ public class IndexOperationState {
                 qryProc.sendStatusResponse(nodeId, hnd.operation().operationId(), errMsg);
             }
         });
+    }
+
+    /**
+     * Callback invoked when finish confirmation is received.
+     *
+     * @param msg Message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void onFinish(IndexFinishDiscoveryMessage msg) {
+        IgniteInternalFuture fut = hnd.future();
+
+        assert fut.isDone();
+
+        if (fut.error() == null && !msg.hasError()) {
+            IndexAbstractOperation op = msg.operation();
+
+            try {
+                if (op instanceof IndexCreateOperation) {
+                    IndexCreateOperation op0 = (IndexCreateOperation) op;
+
+                    QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
+                }
+                else {
+                    assert op instanceof IndexDropOperation;
+
+                    QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
+            }
+        }
     }
 
     /**

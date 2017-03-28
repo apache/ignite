@@ -22,8 +22,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 
 /**
@@ -58,6 +60,10 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
         QueryIndex idx = new QueryIndex().setName("my_idx").setFields(idxFields);
 
         cacheProc.dynamicIndexCreate(CACHE_NAME, ValueClass.class.getSimpleName(), idx, false).get();
+
+        Collection<GridQueryTypeDescriptor> descs = node1.context().query().types(CACHE_NAME);
+
+        System.out.println(descs);
     }
 
     /**

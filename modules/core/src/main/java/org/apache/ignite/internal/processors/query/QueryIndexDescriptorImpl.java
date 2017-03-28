@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -47,6 +48,7 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
     private Collection<String> descendings;
 
     /** Type descriptor. */
+    @GridToStringExclude
     private final QueryTypeDescriptorImpl typDesc;
 
     /** Index name. */
