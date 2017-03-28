@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Reservations support.
  */
@@ -27,9 +25,8 @@ public interface GridReservable {
      * Reserves.
      *
      * @return {@code true} If reserved successfully.
-     * @throws IgniteCheckedException If failed.
      */
-    public boolean reserve() throws IgniteCheckedException;
+    public boolean reserve();
 
     /**
      * Releases.

@@ -55,8 +55,8 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     private volatile boolean record = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new DelayableCommunicationSpi();
 
@@ -115,21 +115,21 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
         startGrid(2);
         startGrid(3);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         for (int i = 0; i < 2; i++) {
             stopGrid(3);
 
-            awaitPartitionMapExchange(true, true);
+            awaitPartitionMapExchange(true, true, null);
 
             startGrid(3);
 
-            awaitPartitionMapExchange(true, true);
+            awaitPartitionMapExchange(true, true, null);
         }
 
         startGrid(4);
 
-        awaitPartitionMapExchange(true, true);
+        awaitPartitionMapExchange(true, true, null);
 
         assert rs.isEmpty();
 

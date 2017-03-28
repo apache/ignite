@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -62,10 +63,9 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
-     * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+    private static CacheConfiguration cacheConfig(String name, boolean partitioned) {
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -90,9 +90,9 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
+                final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true)
                     .setSqlSchema("InsensitiveCache");
-                final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Integer.class)
+                final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true)
                     .setSqlSchema("Insensitivecache");
                 IgniteConfiguration icfg = new IgniteConfiguration()
                     .setLocalHost("127.0.0.1")
@@ -102,7 +102,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "Schema for cache already registered");
+        }, IgniteException.class, "Cache already registered: ");
     }
 
     /**
@@ -113,9 +113,9 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     public void testCacheUnregistration() throws Exception {
         startGridsMultiThreaded(3, true);
 
-        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true, Integer.class, Fact.class)
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true)
             .setSqlSchema("Insensitive_Cache");
-        final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Fact.class)
+        final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true)
             .setSqlSchema("Insensitive_Cache");
 
         IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
@@ -152,11 +152,11 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     public void testSchemaEscapeAll() throws Exception {
         startGridsMultiThreaded(3, true);
 
-        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true, Integer.class, Fact.class)
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true)
             .setSqlSchema("SchemaName1")
             .setSqlEscapeAll(true);
 
-        final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
+        final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true)
             .setSqlSchema("\"SchemaName2\"")
             .setSqlEscapeAll(true);
 
@@ -185,7 +185,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
                 cache.query(qryWrong);
                 return null;
             }
-        }, IgniteException.class, "Failed to parse query");
+        }, CacheException.class, "Failed to parse query");
 
         SqlFieldsQuery qryCorrect = new SqlFieldsQuery("select f.\"id\", f.\"name\" " +
             "from \""+schemaName+"\".\"Fact\" f");

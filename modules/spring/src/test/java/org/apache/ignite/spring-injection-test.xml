@@ -18,7 +18,7 @@
 -->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -38,6 +38,6 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="gridName" value="springInjectionTest"/>
+        <property name="igniteInstanceName" value="springInjectionTest"/>
     </bean>
 </beans>

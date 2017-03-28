@@ -41,6 +41,15 @@ namespace ignite
                 /** Operation: get single entry. */
                 const int32_t OP_GET_SINGLE = 3;
 
+                /** Operation: start iterator. */
+                const int32_t OP_ITERATOR = 4;
+
+                /** Operation: close iterator. */
+                const int32_t OP_ITERATOR_CLOSE = 5;
+
+                /** Operation: close iterator. */
+                const int32_t OP_ITERATOR_HAS_NEXT = 6;
+
                 QueryCursorImpl::QueryCursorImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                     env(env),
                     javaRef(javaRef),
@@ -58,7 +67,7 @@ namespace ignite
                     delete batch;
 
                     // 2. Close the cursor.
-                    env.Get()->Context()->QueryCursorClose(javaRef);
+                    env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_CLOSE, 0);
 
                     // 3. Release Java reference.
                     JniContext::Release(javaRef);
@@ -169,7 +178,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetOutStream(javaRef, OP_GET_ALL, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                     {
@@ -190,9 +199,9 @@ namespace ignite
 
                     JniErrorInfo jniErr;
 
-                    env.Get()->Context()->QueryCursorIterator(javaRef, &jniErr);
+                    env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR, 0, &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         iterCalled = true;
@@ -219,7 +228,7 @@ namespace ignite
                     env.Get()->Context()->TargetOutStream(
                         javaRef, OP_GET_BATCH, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                         return false;
@@ -240,9 +249,9 @@ namespace ignite
                 {
                     JniErrorInfo jniErr;
 
-                    bool res = env.Get()->Context()->QueryCursorIteratorHasNext(javaRef, &jniErr);
+                    bool res = env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_HAS_NEXT, 0, &jniErr) == 1;
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         return res;

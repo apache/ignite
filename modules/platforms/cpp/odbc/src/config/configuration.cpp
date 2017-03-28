@@ -38,6 +38,8 @@ namespace ignite
             const std::string Configuration::Key::address           = "address";
             const std::string Configuration::Key::server            = "server";
             const std::string Configuration::Key::port              = "port";
+            const std::string Configuration::Key::distributedJoins  = "distributed_joins";
+            const std::string Configuration::Key::enforceJoinOrder  = "enforce_join_order";
             const std::string Configuration::Key::protocolVersion   = "protocol_version";
             const std::string Configuration::Key::pageSize          = "page_size";
 
@@ -49,6 +51,9 @@ namespace ignite
 
             const uint16_t Configuration::DefaultValue::port    = 10800;
             const int32_t Configuration::DefaultValue::pageSize = 1024;
+
+            const bool Configuration::DefaultValue::distributedJoins = false;
+            const bool Configuration::DefaultValue::enforceJoinOrder = false;
 
             const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 
@@ -141,6 +146,33 @@ namespace ignite
                 }
             }
 
+            void Configuration::SetTcpPort(uint16_t port)
+            {
+                arguments[Key::port] = common::LexicalCast<std::string>(port);
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.port = port;
+            }
+
+            void Configuration::SetHost(const std::string& server)
+            {
+                arguments[Key::server] = server;
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.host = server;
+            }
+
+            void Configuration::SetAddress(const std::string& address)
+            {
+                arguments[Key::address] = address;
+
+                ParseAddress(address, endPoint);
+            }
+
             ProtocolVersion Configuration::GetProtocolVersion() const
             {
                 ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
@@ -179,6 +211,29 @@ namespace ignite
                 return dflt;
             }
 
+            bool Configuration::GetBoolValue(const std::string& key, bool dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                {
+                    std::string lowercaseVal = common::ToLower(it->second);
+
+                    if (lowercaseVal != "true" && lowercaseVal != "false")
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid argument value: Boolean value is expected (true or false).", "key", key);
+
+                    return lowercaseVal == "true";
+                }
+
+                return dflt;
+            }
+
+            void Configuration::SetBoolValue(const std::string& key, bool val)
+            {
+                arguments[key] = val ? "true" : "false";
+            }
+
             void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)
             {
                 std::string connect_str(str, len);
@@ -210,7 +265,7 @@ namespace ignite
 
                         utility::IntoLower(key);
 
-                        if (value.front() == '{' && value.back() == '}')
+                        if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);
 
                         args[key] = value;

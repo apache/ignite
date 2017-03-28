@@ -53,7 +53,7 @@ import java.lang.annotation.Target;
  *     private ApplicationContext springCtx;
  *     ...
  *     &#64;SpringApplicationContextResource
- *     public void setApplicationContext(MBeanServer springCtx) {
+ *     public void setApplicationContext(ApplicationContext springCtx) {
  *          this.springCtx = springCtx;
  *     }
  *     ...

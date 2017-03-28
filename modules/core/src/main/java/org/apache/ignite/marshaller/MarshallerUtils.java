@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  * Utility marshaller methods.
  */
 public class MarshallerUtils {
+    /** Job sender node version. */
+    private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
+
     /**
      * Set node name to marshaller context if possible.
      *
@@ -54,5 +58,23 @@ public class MarshallerUtils {
      */
     private MarshallerUtils() {
         // No-op.
+    }
+
+    /**
+     * Sets thread local job sender node version.
+     *
+     * @param ver Thread local job sender node version.
+     */
+    public static void jobSenderVersion(IgniteProductVersion ver) {
+        JOB_SND_NODE_VER.set(ver);
+    }
+
+    /**
+     * Returns thread local job sender node version.
+     *
+     * @return Thread local job sender node version.
+     */
+    public static IgniteProductVersion jobSenderVersion() {
+        return JOB_SND_NODE_VER.get();
     }
 }

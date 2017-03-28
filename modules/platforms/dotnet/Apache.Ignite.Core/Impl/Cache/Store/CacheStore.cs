@@ -17,74 +17,37 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Store
 {
-    using System.Collections;
+    using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Binary;
+    using System.Globalization;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
-    /// Interop cache store.
+    /// Interop cache store, delegates to generic <see cref="CacheStoreInternal{TK,TV}"/> wrapper.
     /// </summary>
     internal class CacheStore
     {
-        /** */
-        private const byte OpLoadCache = 0;
-
-        /** */
-        private const byte OpLoad = 1;
-
-        /** */
-        private const byte OpLoadAll = 2;
-
-        /** */
-        private const byte OpPut = 3;
-
-        /** */
-        private const byte OpPutAll = 4;
-
-        /** */
-        private const byte OpRmv = 5;
-
-        /** */
-        private const byte OpRmvAll = 6;
-
-        /** */
-        private const byte OpSesEnd = 7;
-        
-        /** */
-        private readonly bool _convertBinary;
-
         /** Store. */
-        private readonly ICacheStore _store;
-
-        /** Session. */
-        private readonly CacheStoreSessionProxy _sesProxy;
+        private readonly ICacheStoreInternal _store;
 
         /** */
         private readonly long _handle;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheStore" /> class.
         /// </summary>
         /// <param name="store">Store.</param>
-        /// <param name="convertBinary">Whether to convert binary objects.</param>
         /// <param name="registry">The handle registry.</param>
-        private CacheStore(ICacheStore store, bool convertBinary, HandleRegistry registry)
+        private CacheStore(ICacheStoreInternal store, HandleRegistry registry)
         {
             Debug.Assert(store != null);
 
             _store = store;
-            _convertBinary = convertBinary;
-
-            _sesProxy = new CacheStoreSessionProxy();
-
-            ResourceProcessor.InjectStoreSession(store, _sesProxy);
 
             _handle = registry.AllocateCritical(this);
         }
@@ -97,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <returns>
         /// Interop cache store.
         /// </returns>
-        internal static CacheStore CreateInstance(long memPtr, HandleRegistry registry)
+        public static CacheStore CreateInstance(long memPtr, HandleRegistry registry)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
@@ -109,19 +72,29 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                 ICacheStore store;
 
                 if (factory != null)
+                {
                     store = factory.CreateInstance();
+
+                    if (store == null)
+                    {
+                        throw new IgniteException("Cache store factory should not return null: " + factory.GetType());
+                    }
+                }
                 else
                 {
                     var className = reader.ReadString();
                     var propertyMap = reader.ReadDictionaryAsGeneric<string, object>();
 
-                    store = IgniteUtils.CreateInstance<ICacheStore>(className);
-
-                    IgniteUtils.SetProperties(store, propertyMap);
+                    store = IgniteUtils.CreateInstance<ICacheStore>(className, propertyMap);
                 }
 
+                var iface = GetCacheStoreInterface(store);
 
-                return new CacheStore(store, convertBinary, registry);
+                var storeType = typeof(CacheStoreInternal<,>).MakeGenericType(iface.GetGenericArguments());
+
+                var storeInt = (ICacheStoreInternal)Activator.CreateInstance(storeType, store, convertBinary);
+
+                return new CacheStore(storeInt, registry);
             }
         }
 
@@ -139,142 +112,46 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
         /// <param name="grid">Grid.</param>
         public void Init(Ignite grid)
         {
-            ResourceProcessor.Inject(_store, grid);
+            _store.Init(grid);
         }
 
         /// <summary>
         /// Invokes a store operation.
         /// </summary>
-        /// <param name="input">Input stream.</param>
-        /// <param name="cb">Callback.</param>
+        /// <param name="stream">Input stream.</param>
         /// <param name="grid">Grid.</param>
         /// <returns>Invocation result.</returns>
         /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
-        public int Invoke(IBinaryStream input, IUnmanagedTarget cb, Ignite grid)
+        public long Invoke(PlatformMemoryStream stream, Ignite grid)
         {
-            IBinaryReader reader = grid.Marshaller.StartUnmarshal(input,
-                _convertBinary ? BinaryMode.Deserialize : BinaryMode.ForceBinary);
-            
-            IBinaryRawReader rawReader = reader.GetRawReader();
-
-            int opType = rawReader.ReadByte();
-
-            // Setup cache sessoin for this invocation.
-            long sesId = rawReader.ReadLong();
-            
-            CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
-
-            ses.CacheName = rawReader.ReadString();
-
-            _sesProxy.SetSession(ses);
-
-            try
-            {
-                // Perform operation.
-                switch (opType)
-                {
-                    case OpLoadCache:
-                        _store.LoadCache((k, v) => WriteObjects(cb, grid, k, v), rawReader.ReadArray<object>());
-
-                        break;
-
-                    case OpLoad:
-                        object val = _store.Load(rawReader.ReadObject<object>());
-
-                        if (val != null)
-                            WriteObjects(cb, grid, val);
-
-                        break;
-
-                    case OpLoadAll:
-                        var keys = rawReader.ReadCollection();
-
-                        var result = _store.LoadAll(keys);
-
-                        foreach (DictionaryEntry entry in result)
-                            WriteObjects(cb, grid, entry.Key, entry.Value);
-
-                        break;
-
-                    case OpPut:
-                        _store.Write(rawReader.ReadObject<object>(), rawReader.ReadObject<object>());
-
-                        break;
-
-                    case OpPutAll:
-                        var size = rawReader.ReadInt();
-
-                        var dict = new Hashtable(size);
-
-                        for (int i = 0; i < size; i++)
-                            dict[rawReader.ReadObject<object>()] = rawReader.ReadObject<object>();
-
-                        _store.WriteAll(dict);
-
-                        break;
-
-                    case OpRmv:
-                        _store.Delete(rawReader.ReadObject<object>());
-
-                        break;
-
-                    case OpRmvAll:
-                        _store.DeleteAll(rawReader.ReadCollection());
-
-                        break;
-
-                    case OpSesEnd:
-                        grid.HandleRegistry.Release(sesId);
-
-                        _store.SessionEnd(rawReader.ReadBoolean());
-
-                        break;
-
-                    default:
-                        throw new IgniteException("Invalid operation type: " + opType);
-                }
-
-                return 0;
-            }
-            finally
-            {
-                _sesProxy.ClearSession();
-            }
+            return _store.Invoke(stream, grid);
         }
-
+                
         /// <summary>
-        /// Writes objects to the marshaller.
+        /// Gets the generic <see cref="ICacheStore{TK,TV}"/> interface type.
         /// </summary>
-        /// <param name="cb">Optional callback.</param>
-        /// <param name="grid">Grid.</param>
-        /// <param name="objects">Objects.</param>
-        private static void WriteObjects(IUnmanagedTarget cb, Ignite grid, params object[] objects)
+        private static Type GetCacheStoreInterface(ICacheStore store)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            var ifaces = store.GetType().GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICacheStore<,>))
+                .ToArray();
+
+            if (ifaces.Length == 0)
             {
-                BinaryWriter writer = grid.Marshaller.StartMarshal(stream);
-
-                try
-                {
-                    foreach (var obj in objects)
-                    {
-                        var obj0 = obj;
-
-                        writer.WithDetach(w => w.WriteObject(obj0));
-                    }
-                }
-                finally
-                {
-                    grid.Marshaller.FinishMarshal(writer);
-                }
-
-                if (cb != null)
-                {
-                    stream.SynchronizeOutput();
-
-                    UnmanagedUtils.CacheStoreCallbackInvoke(cb, stream.MemoryPointer);
-                }
+                throw new IgniteException(string.Format(
+                    CultureInfo.InvariantCulture, "Cache store should implement generic {0} interface: {1}",
+                    typeof(ICacheStore<,>), store.GetType()));
             }
+
+            if (ifaces.Length > 1)
+            {
+                throw new IgniteException(string.Format(
+                    CultureInfo.InvariantCulture, "Cache store should not implement generic {0} " +
+                                                  "interface more than once: {1}",
+                    typeof(ICacheStore<,>), store.GetType()));
+            }
+
+            return ifaces[0];
         }
     }
 }

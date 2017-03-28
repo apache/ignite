@@ -79,10 +79,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
-    /** Partition IDs of keys to lock. */
-    @GridDirectCollection(int.class)
-    protected List<Integer> partIds;
-
     /** Array indicating whether value should be returned for a key. */
     @GridToStringInclude
     private boolean[] retVals;
@@ -226,13 +222,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Return flags.
-     */
-    public boolean[] returnFlags() {
-        return retVals;
-    }
-
-    /**
      * Sets skip store flag value.
      *
      * @param skipStore Skip store flag.
@@ -289,14 +278,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         boolean retVal,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
-        if (keys == null) {
+        if (keys == null)
             keys = new ArrayList<>(keysCount());
-            partIds = new ArrayList<>(keysCount());
-        }
 
         keys.add(key);
-
-        partIds.add(key.partition());
 
         retVals[idx] = retVal;
 
@@ -308,6 +293,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public List<KeyCacheObject> keys() {
         return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
     /**
@@ -339,13 +329,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        if (partIds != null && !partIds.isEmpty()) {
-            assert partIds.size() == keys.size();
-
-            for (int i = 0; i < keys.size(); i++)
-                keys.get(i).partition(partIds.get(i));
-        }
     }
 
     /** {@inheritDoc} */
@@ -571,7 +554,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 21;
     }
 

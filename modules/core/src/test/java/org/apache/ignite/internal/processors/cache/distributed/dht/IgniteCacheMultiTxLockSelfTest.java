@@ -64,8 +64,8 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -86,13 +86,17 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(100000);
 
         ccfg.setEvictionPolicy(plc);
-        ccfg.setEvictSynchronized(true);
 
         c.setCacheConfiguration(ccfg);
 
         c.setClientMode(client);
 
         return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 60_000;
     }
 
     /**

@@ -32,6 +32,7 @@ import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
 import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -111,51 +112,55 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
         if (factory != null && factory instanceof CacheJdbcPojoStoreFactory) {
              CacheJdbcPojoStoreFactory jdbcFactory = (CacheJdbcPojoStoreFactory) factory;
 
-            for (JdbcType jdbcType : jdbcFactory.getTypes()) {
-                VisorCacheTypeMetadata meta = metaMap.get(jdbcType.getKeyType());
+            JdbcType[] jdbcTypes = jdbcFactory.getTypes();
 
-                boolean notFound = meta == null;
+            if (jdbcTypes != null && jdbcTypes.length > 0) {
+                for (JdbcType jdbcType : jdbcTypes) {
+                    VisorCacheTypeMetadata meta = metaMap.get(jdbcType.getKeyType());
 
-                if (notFound) {
-                    meta = new VisorCacheTypeMetadata();
+                    boolean notFound = meta == null;
 
-                    meta.keyType = jdbcType.getKeyType();
-                    meta.valType = jdbcType.getValueType();
+                    if (notFound) {
+                        meta = new VisorCacheTypeMetadata();
 
-                    meta.qryFlds = Collections.emptyMap();
-                    meta.ascFlds = Collections.emptyMap();
-                    meta.descFlds = Collections.emptyMap();
-                    meta.txtFlds = Collections.emptyList();
-                    meta.grps = Collections.emptyMap();
+                        meta.keyType = jdbcType.getKeyType();
+                        meta.valType = jdbcType.getValueType();
+
+                        meta.qryFlds = Collections.emptyMap();
+                        meta.ascFlds = Collections.emptyMap();
+                        meta.descFlds = Collections.emptyMap();
+                        meta.txtFlds = Collections.emptyList();
+                        meta.grps = Collections.emptyMap();
+                    }
+
+                    meta.dbSchema = jdbcType.getDatabaseSchema();
+                    meta.dbTbl = jdbcType.getDatabaseTable();
+
+                    JdbcTypeField[] keyFields = jdbcType.getKeyFields();
+
+                    if (keyFields != null) {
+                        meta.keyFields = new ArrayList<>(keyFields.length);
+
+                        for (JdbcTypeField fld : keyFields)
+                            meta.keyFields.add(new VisorCacheTypeFieldMetadata(
+                                fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                                fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    }
+
+                    JdbcTypeField[] valFields = jdbcType.getValueFields();
+
+                    if (valFields != null) {
+                        meta.valFields = new ArrayList<>(valFields.length);
+
+                        for (JdbcTypeField fld : valFields)
+                            meta.valFields.add(new VisorCacheTypeFieldMetadata(
+                                fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
+                                fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
+                    }
+
+                    if (notFound)
+                        metas.add(meta);
                 }
-
-                meta.dbSchema = jdbcType.getDatabaseSchema();
-                meta.dbTbl = jdbcType.getDatabaseTable();
-
-                JdbcTypeField[] keyFields = jdbcType.getKeyFields();
-
-                if (keyFields != null) {
-                    meta.keyFields = new ArrayList<>(keyFields.length);
-
-                    for (JdbcTypeField fld : keyFields)
-                        meta.keyFields.add(new VisorCacheTypeFieldMetadata(
-                            fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                            fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
-                }
-
-                JdbcTypeField[] valFields = jdbcType.getValueFields();
-
-                if (valFields != null) {
-                    meta.valFields = new ArrayList<>(valFields.length);
-
-                    for (JdbcTypeField fld : valFields)
-                        meta.valFields.add(new VisorCacheTypeFieldMetadata(
-                            fld.getDatabaseFieldName(), fld.getDatabaseFieldType(),
-                            fld.getDatabaseFieldName(), U.compact(fld.getJavaFieldType().getName())));
-                }
-
-                if (notFound)
-                    metas.add(meta);
             }
         }
 
@@ -367,5 +372,10 @@ public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
      */
     public Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> grps() {
         return grps;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorCacheTypeMetadata.class, this);
     }
 }

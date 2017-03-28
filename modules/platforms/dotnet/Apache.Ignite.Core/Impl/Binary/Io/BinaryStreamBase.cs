@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Base class for managed and unmanaged data streams.
     /// </summary>
-    internal unsafe abstract class BinaryStreamBase : IBinaryStream
+    internal abstract unsafe class BinaryStreamBase : IBinaryStream
     {
         /** Byte: zero. */
         private const byte ByteZero = 0;
@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         {
             int val = ReadInt();
 
-            return *(float*)(&val);
+            return BinaryUtils.IntToFloatBits(val);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         {
             long val = ReadLong();
 
-            return *(double*)(&val);
+            return BinaryUtils.LongToDoubleBits(val);
         }
 
         /// <summary>
@@ -957,20 +957,6 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// Amounts of bytes written.
         /// </returns>
         public abstract int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding);
-
-        /// <summary>
-        /// Internal string write routine.
-        /// </summary>
-        /// <param name="chars">Chars.</param>
-        /// <param name="charCnt">Chars count.</param>
-        /// <param name="byteCnt">Bytes count.</param>
-        /// <param name="enc">Encoding.</param>
-        /// <param name="data">Data.</param>
-        /// <returns>Amount of bytes written.</returns>
-        protected static int WriteString0(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
-        {
-            return enc.GetBytes(chars, charCnt, data, byteCnt);
-        }
 
         /// <summary>
         /// Write arbitrary data.
@@ -1084,13 +1070,10 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <returns>
         ///   <c>True</c> if they are same.
         /// </returns>
-        public virtual bool IsSameArray(byte[] arr)
-        {
-            return false;
-        }
-
+        public abstract bool IsSameArray(byte[] arr);
+        
         /// <summary>
-        /// Seek to the given positoin.
+        /// Seek to the given position.
         /// </summary>
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>
@@ -1134,6 +1117,19 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
             Pos = newPos;
 
             return Pos;
+        }
+
+        /// <summary>
+        /// Returns a hash code for the specified byte range.
+        /// </summary>
+        public abstract T Apply<TArg, T>(IBinaryStreamProcessor<TArg, T> proc, TArg arg);
+
+        /// <summary>
+        /// Flushes the data to underlying storage.
+        /// </summary>
+        public void Flush()
+        {
+            // No-op.
         }
 
         /** <inheritdoc /> */

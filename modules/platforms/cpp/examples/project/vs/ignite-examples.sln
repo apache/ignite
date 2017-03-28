@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-example", "..\..\odbc-
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "query-example", "..\..\query-example\project\vs\query-example.vcxproj", "{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "continuous-query-example", "..\..\continuous-query-example\project\vs\continuous-query-example.vcxproj", "{73BB124A-0CD4-4961-A6CD-61F9C71028A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -25,6 +27,10 @@ Global
 		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x64.Build.0 = Release|x64
 		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x86.ActiveCfg = Release|Win32
 		{9FB34AB4-01DD-4C6F-99BF-681019D0E4DD}.Release|x86.Build.0 = Release|Win32
+		{73BB124A-0CD4-4961-A6CD-61F9C71028A6}.Release|x64.ActiveCfg = Release|x64
+		{73BB124A-0CD4-4961-A6CD-61F9C71028A6}.Release|x64.Build.0 = Release|x64
+		{73BB124A-0CD4-4961-A6CD-61F9C71028A6}.Release|x86.ActiveCfg = Release|Win32
+		{73BB124A-0CD4-4961-A6CD-61F9C71028A6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

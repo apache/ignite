@@ -184,6 +184,9 @@ namespace Apache.Ignite.Linq.Impl
                          || op is DefaultIfEmptyResultOperator || op is SkipResultOperator || op is TakeResultOperator)
                     // Will be processed later
                     break;
+                else if (op is ContainsResultOperator)
+                    // Should be processed already
+                    break;
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
@@ -422,15 +425,15 @@ namespace Apache.Ignite.Linq.Impl
 
                 VisitQueryModel(subQuery.QueryModel, true);
 
-                var queryable = ExpressionWalker.GetCacheQueryable(subQuery.QueryModel.MainFromClause);
-                var alias = _aliases.GetTableAlias(queryable);
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
             {
                 var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
                 var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetTableAlias(tableName));
+                var alias = _aliases.GetTableAlias(joinClause);
+                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);

@@ -887,8 +887,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 else
                 {
-                    // Unregistered enum, write as serializable
-                    Write(new SerializableObjectHolder(val));
+                    // Unregistered enum, write with object type id.
+                    _stream.WriteByte(BinaryUtils.TypeEnum);
+                    _stream.WriteInt(BinaryUtils.ObjTypeId);
+                    _stream.WriteInt(TypeCaster<int>.Cast(val));
                 }
             }
         }
@@ -1166,7 +1168,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var pos = _stream.Position;
 
                 // Dealing with handles.
-                if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
+                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
                     return;
 
                 // Skip header length as not everything is known now
@@ -1195,9 +1197,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Write object fields.
                     desc.Serializer.WriteBinary(obj, this);
+                    var dataEnd = _stream.Position;
 
                     // Write schema
-                    var schemaOffset = _stream.Position - pos;
+                    var schemaOffset = dataEnd - pos;
 
                     int schemaId;
                     
@@ -1230,8 +1233,12 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     var len = _stream.Position - pos;
 
-                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, flags);
+                    var comparer = BinaryUtils.GetEqualityComparer(desc);
+
+                    var hashCode = comparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
+                            dataEnd - pos - BinaryObjectHeader.Size, _schema, schemaIdx, _marsh, desc);
+
+                    var header = new BinaryObjectHeader(desc.TypeId, hashCode, len, schemaId, schemaOffset, flags);
 
                     BinaryObjectHeader.Write(header, _stream, pos);
 
@@ -1259,8 +1266,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Are we dealing with a well-known type?
                 var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                if (handler == null) // We did our best, object cannot be marshalled.
+                    throw BinaryUtils.GetUnsupportedTypeException(type, obj);
                 
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
@@ -1316,7 +1323,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteLongField(*(long*)&val0);
             }
             else
-                throw new BinaryObjectException("Unsupported object type [type=" + type.FullName + ", object=" + val + ']');
+                throw BinaryUtils.GetUnsupportedTypeException(type, val);
         }
 
         /// <summary>
@@ -1439,26 +1446,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal ICollection<BinaryType> GetBinaryTypes()
         {
             return _metas == null ? null : _metas.Values;
-        }
-
-        /// <summary>
-        /// Check whether the given object is binarizeble, i.e. it can be serialized with binary marshaller.
-        /// </summary>
-        /// <param name="obj">Object.</param>
-        /// <returns>True if binarizable.</returns>
-        internal bool IsBinarizable(object obj)
-        {
-            if (obj != null)
-            {
-                Type type = obj.GetType();
-
-                // We assume object as binarizable only in case it has descriptor.
-                // Collections, Enums and non-primitive arrays do not have descriptors
-                // and this is fine here because we cannot know whether their members are binarizable.
-                return _marsh.GetDescriptor(type) != null || BinarySystemHandlers.GetWriteHandler(type) != null;
-            }
-
-            return true;
         }
 
         /// <summary>

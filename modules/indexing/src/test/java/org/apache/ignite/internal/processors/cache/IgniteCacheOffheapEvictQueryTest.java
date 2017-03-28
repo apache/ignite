@@ -52,8 +52,8 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -85,6 +85,13 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
@@ -174,7 +181,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        LT.warn(log, null, e.getMessage());
+                        LT.warn(log, e.getMessage());
 
                         return;
                     }
@@ -190,7 +197,7 @@ public class IgniteCacheOffheapEvictQueryTest extends GridCommonAbstractTest {
 
             X.println("___ all keys removed");
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutCheckedException ignored) {
             X.println("___ timeout");
             X.println("___ keys: " + keys.get());
 

@@ -22,7 +22,10 @@
 #include <ignite/cache/query/query_sql.h>
 #include <ignite/cache/query/query_text.h>
 #include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
 #include <ignite/impl/cache/query/query_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 
 #include <ignite/impl/interop/interop_target.h>
 
@@ -60,21 +63,13 @@ namespace ignite
                 const char* GetName() const;
 
                 /**
-                 * Perform IsEmpty.
-                 *
-                 * @param err Error.
-                 * @return Result.
-                 */
-                bool IsEmpty(IgniteError* err);
-
-                /**
                  * Perform ContainsKey.
                  *
                  * @param inOp Input.
                  * @param err Error.
                  * @return Result.
                  */
-                bool ContainsKey(InputOperation& inOp, IgniteError* err);
+                bool ContainsKey(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform ContainsKeys.
@@ -83,7 +78,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result.
                  */
-                bool ContainsKeys(InputOperation& inOp, IgniteError* err);
+                bool ContainsKeys(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform LocalPeek.
@@ -94,7 +89,7 @@ namespace ignite
                  * @param err Error.
                  */
                 void LocalPeek(InputOperation& inOp, OutputOperation& outOp, 
-                    int32_t peekModes, IgniteError* err);
+                    int32_t peekModes, IgniteError& err);
 
                 /**
                  * Perform Get.
@@ -103,7 +98,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void Get(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void Get(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
                 
                 /**
                  * Perform GetAll.
@@ -112,7 +107,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void GetAll(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Perform Put.
@@ -120,7 +115,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void Put(InputOperation& inOp, IgniteError* err);
+                void Put(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform PutAll.
@@ -128,7 +123,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void PutAll(InputOperation& inOp, IgniteError* err);
+                void PutAll(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform GetAndPut.
@@ -137,7 +132,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void GetAndPut(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Perform GetAndReplace.
@@ -146,7 +141,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void GetAndReplace(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Perform GetAndRemove.
@@ -155,7 +150,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void GetAndRemove(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Perform PutIfAbsent.
@@ -164,7 +159,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result
                  */
-                bool PutIfAbsent(InputOperation& inOp, IgniteError* err);
+                bool PutIfAbsent(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform GetAndPutIfAbsent.
@@ -173,7 +168,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void GetAndPutIfAbsent(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Perform Replace(K, V).
@@ -182,7 +177,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result
                  */
-                bool Replace(InputOperation& inOp, IgniteError* err);
+                bool Replace(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform Replace(K, V, V).
@@ -191,7 +186,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result
                  */
-                bool ReplaceIfEqual(InputOperation& inOp, IgniteError* err);
+                bool ReplaceIfEqual(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform LocalEvict.
@@ -199,14 +194,14 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void LocalEvict(InputOperation& inOp, IgniteError* err);
+                void LocalEvict(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform Clear.
                  *
                  * @param err Error.
                  */
-                void Clear(IgniteError* err);
+                void Clear(IgniteError& err);
 
                 /**
                  * Perform Clear.
@@ -214,7 +209,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void Clear(InputOperation& inOp, IgniteError* err);
+                void Clear(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform ClearAll.
@@ -222,7 +217,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void ClearAll(InputOperation& inOp, IgniteError* err);
+                void ClearAll(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform LocalClear.
@@ -230,7 +225,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void LocalClear(InputOperation& inOp, IgniteError* err);
+                void LocalClear(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform LocalClearAll.
@@ -238,7 +233,7 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void LocalClearAll(InputOperation& inOp, IgniteError* err);
+                void LocalClearAll(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform Remove(K).
@@ -247,7 +242,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result
                  */
-                bool Remove(InputOperation& inOp, IgniteError* err);
+                bool Remove(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform Remove(K, V).
@@ -256,7 +251,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result
                  */
-                bool RemoveIfEqual(InputOperation& inOp, IgniteError* err);
+                bool RemoveIfEqual(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform RemoveAll.
@@ -264,32 +259,23 @@ namespace ignite
                  * @param inOp Input.
                  * @param err Error.
                  */
-                void RemoveAll(InputOperation& inOp, IgniteError* err);
+                void RemoveAll(InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Perform RemoveAll.
                  *
                  * @param err Error.
                  */
-                void RemoveAll(IgniteError* err);
+                void RemoveAll(IgniteError& err);
 
                 /**
-                 * Perform Size.
-                 *
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t Size(const int32_t peekModes, IgniteError* err);
-
-                /**
-                 * Perform LocalSize.
-                 * 
-                 * @param peekModes Peek modes.
-                 * @param err Error.
-                 * @return Result.
-                 */
-                int32_t LocalSize(const int32_t peekModes, IgniteError* err);
+                * Perform Size.
+                *
+                * @param peekModes Peek modes.
+                * @param local Local flag.
+                * @param err Error.
+                */
+                int32_t Size(int32_t peekModes, bool local, IgniteError& err);
 
                 /**
                  * Invoke query.
@@ -298,7 +284,7 @@ namespace ignite
                  * @param err Error.
                  * @return Query cursor.
                  */
-                query::QueryCursorImpl* QuerySql(const ignite::cache::query::SqlQuery& qry, IgniteError* err);
+                query::QueryCursorImpl* QuerySql(const ignite::cache::query::SqlQuery& qry, IgniteError& err);
 
                 /**
                  * Invoke text query.
@@ -307,7 +293,7 @@ namespace ignite
                  * @param err Error.
                  * @return Query cursor.
                  */
-                query::QueryCursorImpl* QueryText(const ignite::cache::query::TextQuery& qry, IgniteError* err);
+                query::QueryCursorImpl* QueryText(const ignite::cache::query::TextQuery& qry, IgniteError& err);
 
                 /**
                  * Invoke scan query.
@@ -316,7 +302,7 @@ namespace ignite
                  * @param err Error.
                  * @return Query cursor.
                  */
-                query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError* err);
+                query::QueryCursorImpl* QueryScan(const ignite::cache::query::ScanQuery& qry, IgniteError& err);
 
                 /**
                  * Invoke sql fields query.
@@ -325,23 +311,88 @@ namespace ignite
                  * @param err Error.
                  * @return Query cursor.
                  */
-                query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
-                
-            private:
-                /** Name. */
-                char* name; 
-                
-                IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
+                query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError& err);
 
                 /**
-                 * Internal cache size routine.
+                 * Perform Invoke.
                  *
-                 * @param peekModes Peek modes.
-                 * @param loc Local flag.
+                 * @param inOp Input.
+                 * @param outOp Output.
                  * @param err Error.
-                 * @return Size.
                  */
-                int SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err);
+                void Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
+
+                /**
+                 * Start continuous query execution.
+                 *
+                 * @param qry Continuous query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::SqlQuery& initialQry, IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::TextQuery& initialQry, IgniteError& err);
+
+                /**
+                 * Start continuous query execution with initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const ignite::cache::query::ScanQuery& initialQry, IgniteError& err);
+
+                /**
+                 * Executes LocalLoadCache on all cache nodes.
+                 *
+                 * @param err Error.
+                 */
+                void LoadCache(IgniteError& err);
+
+                /**
+                 * Loads state from the underlying persistent storage.
+                 *
+                 * This method is not transactional and may end up loading a stale value into
+                 * cache if another thread has updated the value immediately after it has been
+                 * loaded. It is mostly useful when pre-loading the cache from underlying
+                 * data store before start, or for read-only caches.
+                 *
+                 * @param err Error.
+                 */
+                void LocalLoadCache(IgniteError& err);
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
+
+                /** Name. */
+                char* name; 
 
                 /**
                  * Internal query execution routine.
@@ -351,7 +402,7 @@ namespace ignite
                  * @param err Error.
                  */
                 template<typename T>
-                query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError* err)
+                query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError& err)
                 {
                     ignite::jni::java::JniErrorInfo jniErr;
 
@@ -373,7 +424,63 @@ namespace ignite
                     if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
                         return new query::QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
                     else
-                        return NULL;
+                        return 0;
+                }
+
+                /**
+                 * Start continuous query execution with the initial query.
+                 *
+                 * @param qry Continuous query.
+                 * @param initialQry Initial query to be executed.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                template<typename T>
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const common::concurrent::SharedPointer<query::continuous::ContinuousQueryImplBase> qry,
+                    const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
+                {
+                    jni::java::JniErrorInfo jniErr;
+
+                    common::concurrent::SharedPointer<interop::InteropMemory> mem = GetEnvironment().AllocateMemory();
+                    interop::InteropMemory* mem0 = mem.Get();
+                    interop::InteropOutputStream out(mem0);
+                    binary::BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                    ignite::binary::BinaryRawWriter rawWriter(&writer);
+
+                    const query::continuous::ContinuousQueryImplBase& qry0 = *qry.Get();
+
+                    int64_t handle = GetEnvironment().GetHandleRegistry().Allocate(qry);
+
+                    rawWriter.WriteInt64(handle);
+                    rawWriter.WriteBool(qry0.GetLocal());
+
+                    // Filters are not supported for now.
+                    rawWriter.WriteBool(false);
+                    rawWriter.WriteNull();
+
+                    rawWriter.WriteInt32(qry0.GetBufferSize());
+                    rawWriter.WriteInt64(qry0.GetTimeInterval());
+
+                    // Autounsubscribe is a filter feature.
+                    rawWriter.WriteBool(false);
+
+                    // Writing initial query. When there is not initial query writing -1.
+                    rawWriter.WriteInt32(typ);
+                    if (typ != -1)
+                        initialQry.Write(rawWriter);
+
+                    out.Synchronize();
+
+                    jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
+                        cmd, mem.Get()->PointerLong(), &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    if (jniErr.code == java::IGNITE_JNI_ERR_SUCCESS)
+                        return new query::continuous::ContinuousQueryHandleImpl(GetEnvironmentPointer(), handle, qryJavaRef);
+
+                    return 0;
                 }
             };
         }

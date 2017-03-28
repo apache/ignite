@@ -19,9 +19,11 @@ package org.apache.ignite.internal.util.nio;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Verifies that first bytes received in accepted (incoming)
@@ -62,13 +64,21 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+    @Override public void onExceptionCaught(
+        GridNioSession ses,
+        IgniteCheckedException ex
+    ) throws IgniteCheckedException {
         proceedExceptionCaught(ses, ex);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
-        return proceedSessionWrite(ses, msg);
+    @Override public GridNioFuture<?> onSessionWrite(
+        GridNioSession ses,
+        Object msg,
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
+    ) throws IgniteCheckedException {
+        return proceedSessionWrite(ses, msg, fut, ackC);
     }
 
     /** {@inheritDoc} */
@@ -115,7 +125,7 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
             else {
                 ses.close();
 
-                LT.warn(log, null, "Unknown connection detected (is some other software connecting to this " +
+                LT.warn(log, "Unknown connection detected (is some other software connecting to this " +
                     "Ignite port?) [rmtAddr=" + ses.remoteAddress() + ", locAddr=" + ses.localAddress() + ']');
             }
         }

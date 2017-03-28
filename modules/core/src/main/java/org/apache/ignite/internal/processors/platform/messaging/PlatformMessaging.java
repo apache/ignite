@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.platform.messaging;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
 
 import java.util.UUID;
 
@@ -56,6 +56,15 @@ public class PlatformMessaging extends PlatformAbstractTarget {
     public static final int OP_STOP_REMOTE_LISTEN = 7;
 
     /** */
+    public static final int OP_WITH_ASYNC = 8;
+
+    /** */
+    public static final int OP_REMOTE_LISTEN_ASYNC = 9;
+
+    /** */
+    public static final int OP_STOP_REMOTE_LISTEN_ASYNC = 10;
+
+    /** */
     private final IgniteMessaging messaging;
 
     /**
@@ -72,20 +81,8 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         this.messaging = messaging;
     }
 
-    /**
-     * Gets messaging with asynchronous mode enabled.
-     *
-     * @return Messaging with asynchronous mode enabled.
-     */
-    public PlatformMessaging withAsync() {
-        if (messaging.isAsync())
-            return this;
-
-        return new PlatformMessaging (platformCtx, messaging.withAsync());
-    }
-
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
+    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_SEND:
@@ -129,6 +126,18 @@ public class PlatformMessaging extends PlatformAbstractTarget {
                 return TRUE;
             }
 
+            case OP_REMOTE_LISTEN_ASYNC: {
+                readAndListenFuture(reader, startRemoteListenAsync(reader, messaging));
+
+                return TRUE;
+            }
+
+            case OP_STOP_REMOTE_LISTEN_ASYNC: {
+                readAndListenFuture(reader, messaging.stopRemoteListenAsync(reader.readUuid()));
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -136,21 +145,11 @@ public class PlatformMessaging extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_REMOTE_LISTEN:{
-                Object nativeFilter = reader.readObjectDetached();
-
-                long ptr = reader.readLong();  // interop pointer
-
-                Object topic = reader.readObjectDetached();
-
-                PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
-
-                UUID listenId = messaging.remoteListen(topic, filter);
-
-                writer.writeUuid(listenId);
+                writer.writeUuid(startRemoteListen(reader, messaging));
 
                 break;
             }
@@ -160,8 +159,52 @@ public class PlatformMessaging extends PlatformAbstractTarget {
         }
     }
 
-    /** <inheritDoc /> */
-    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)messaging.future()).internalFuture();
+    /**
+     * Starts the remote listener.
+     * @param reader Reader.
+     * @param messaging Messaging.
+     * @return Listen id.
+     */
+    private UUID startRemoteListen(BinaryRawReaderEx reader, IgniteMessaging messaging) {
+        Object nativeFilter = reader.readObjectDetached();
+
+        long ptr = reader.readLong();  // interop pointer
+
+        Object topic = reader.readObjectDetached();
+
+        PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
+
+        return messaging.remoteListen(topic, filter);
+    }
+
+    /**
+     * Starts the remote listener.
+     * @param reader Reader.
+     * @param messaging Messaging.
+     * @return Future of the operation.
+     */
+    private IgniteFuture<UUID> startRemoteListenAsync(BinaryRawReaderEx reader, IgniteMessaging messaging) {
+        Object nativeFilter = reader.readObjectDetached();
+
+        long ptr = reader.readLong();  // interop pointer
+
+        Object topic = reader.readObjectDetached();
+
+        PlatformMessageFilter filter = platformCtx.createRemoteMessageFilter(nativeFilter, ptr);
+
+        return messaging.remoteListenAsync(topic, filter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_WITH_ASYNC:
+                if (messaging.isAsync())
+                    return this;
+
+                return new PlatformMessaging (platformCtx, messaging.withAsync());
+        }
+
+        return super.processOutObject(type);
     }
 }

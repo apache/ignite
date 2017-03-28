@@ -23,14 +23,23 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin.Cache;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -264,6 +273,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
+            EnableStatistics = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -272,10 +282,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
+            AffinityFunction = AffinityFunctionSerializer.Read(reader);
+            ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
+
+            count = reader.ReadInt();
+            PluginConfigurations = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => reader.ReadObject<ICachePluginConfiguration>()).ToList();
         }
 
         /// <summary>
-        /// Writes this instane to the specified writer.
+        /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
@@ -318,6 +335,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) WriteSynchronizationMode);
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
+            writer.WriteBoolean(EnableStatistics);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -344,6 +362,57 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
+            AffinityFunctionSerializer.Write(writer, AffinityFunction);
+            ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            if (PluginConfigurations != null)
+            {
+                writer.WriteInt(PluginConfigurations.Count);
+
+                foreach (var cachePlugin in PluginConfigurations)
+                {
+                    if (cachePlugin == null)
+                        throw new InvalidOperationException("Invalid cache configuration: " +
+                                                            "ICachePluginConfiguration can't be null.");
+
+                    if (cachePlugin.CachePluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteBoolean(true);
+                        writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+                        cachePlugin.WriteBinary(writer);
+                    }
+                    else
+                    {
+                        if (!cachePlugin.GetType().IsSerializable)
+                        {
+                            throw new InvalidOperationException("Invalid cache configuration: " +
+                                                                "ICachePluginConfiguration should be Serializable.");
+                        }
+
+                        writer.WriteBoolean(false);
+                        writer.WriteObject(cachePlugin);
+                    }
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var entities = QueryEntities;
+            if (entities != null)
+            {
+                foreach (var entity in entities)
+                    entity.Validate(log, string.Format("Validating cache configuration '{0}'", Name ?? ""));
+            }
         }
 
         /// <summary>
@@ -484,6 +553,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
+        /// <para />
+        /// Enabling this requires configured <see cref="IgniteConfiguration.SwapSpaceSpi"/>.
         /// </summary>
         [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
@@ -531,7 +602,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Maximum batch size for write-behind cache store operations. 
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
-        /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
+        /// <see cref="ICacheStore{K, V}.WriteAll"/> or <see cref="ICacheStore{K, V}.DeleteAll"/> methods. 
         /// </summary>
         [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }
@@ -586,7 +657,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
-        /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
+        /// Gets or sets flag indicating whether copy of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
         [DefaultValue(DefaultCopyOnRead)]
@@ -659,5 +730,33 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Null value means disabled evictions.
         /// </summary>
         public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// <para />
+        /// Predefined implementations:
+        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+        /// </summary>
+        public IAffinityFunction AffinityFunction { get; set; }
+
+        /// <summary>
+        /// Gets or sets the factory for <see cref="IExpiryPolicy"/> to be used for all cache operations, 
+        /// unless <see cref="ICache{TK,TV}.WithExpiryPolicy"/> is called.
+        /// <para />
+        /// Default is null, which means no expiration.
+        /// </summary>
+        public IFactory<IExpiryPolicy> ExpiryPolicyFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether statistics gathering is enabled on a cache.
+        /// These statistics can be retrieved via <see cref="ICache{TK,TV}.GetMetrics()"/>.
+        /// </summary>
+        public bool EnableStatistics { get; set; }
+
+        /// <summary>
+        /// Gets or sets the plugin configurations.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ICachePluginConfiguration> PluginConfigurations { get; set; }
     }
 }

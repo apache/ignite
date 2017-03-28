@@ -75,6 +75,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.jsr166.LongAdder8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
@@ -146,7 +147,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             workersCnt.increment();
 
-            GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
+            GridWorker w = new GridWorker(ctx.igniteInstanceName(), "rest-proc-worker", log) {
                 @Override protected void body() {
                     try {
                         IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
@@ -413,8 +414,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         sesTtl = sesExpTime0;
 
-        sesTimeoutCheckerThread = new IgniteThread(ctx.gridName(), "session-timeout-worker",
-            new GridWorker(ctx.gridName(), "session-timeout-worker", log) {
+        sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
+            new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
                 @Override protected void body() throws InterruptedException {
                     while (!isCancelled()) {
                         Thread.sleep(SES_TIMEOUT_CHECK_DELAY);
@@ -436,6 +437,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (isRestEnabled()) {
+            if (notStartOnClient()) {
+                U.quietAndInfo(log, "REST protocols do not start on client node. " +
+                    "To start the protocols on client node set '-DIGNITE_REST_START_ON_CLIENT=true' system property.");
+
+                return;
+            }
+
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
@@ -469,6 +477,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 }
             }
         }
+    }
+
+    /**
+     * @return {@code True} if rest processor should not start on client node.
+     */
+    private boolean notStartOnClient() {
+        return ctx.clientNode() && !IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT);
     }
 
     /** {@inheritDoc} */
@@ -872,7 +887,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> REST processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> REST processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   protosSize: " + protos.size());
         X.println(">>>   handlersSize: " + handlers.size());
     }

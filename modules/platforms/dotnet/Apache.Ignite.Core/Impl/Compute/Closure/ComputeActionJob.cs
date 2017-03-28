@@ -72,11 +72,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// Initializes a new instance of the <see cref="ComputeActionJob"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ComputeActionJob(IBinaryReader reader)
+        public ComputeActionJob(IBinaryRawReader reader)
         {
-            var reader0 = (BinaryReader)reader.GetRawReader();
-
-            _action = reader0.ReadObject<IComputeAction>();
+            _action = reader.ReadObject<IComputeAction>();
         }
     }
 }

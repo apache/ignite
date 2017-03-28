@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashMap;
 import org.apache.ignite.internal.util.typedef.T2;
 
 import java.io.File;
@@ -77,12 +83,30 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(final String path) throws IOException {
-        throw new UnsupportedOperationException("properties");
+        Path p = path(path);
+        PosixFileAttributes attrs = Files.getFileAttributeView(p, PosixFileAttributeView.class).readAttributes();
+
+        Map<String, String> props = new HashMap<>();
+        props.put(IgfsUtils.PROP_USER_NAME, attrs.owner().getName());
+        props.put(IgfsUtils.PROP_GROUP_NAME, attrs.group().getName());
+        props.put(IgfsUtils.PROP_PERMISSION, permissions(path));
+
+        return props;
     }
 
     /** {@inheritDoc} */
     @Override public String permissions(String path) throws IOException {
-        throw new UnsupportedOperationException("permissions");
+        Path p = path(path);
+        PosixFileAttributeView attrView = Files.getFileAttributeView(p, PosixFileAttributeView.class);
+
+        if (attrView == null)
+            throw new UnsupportedOperationException("Posix file attributes not available");
+
+        int perm = 0;
+        for(PosixFilePermission pfp : attrView.readAttributes().permissions())
+            perm |= (1 << 8 - pfp.ordinal());
+
+        return '0' + Integer.toOctalString(perm);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +124,10 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public T2<Long, Long> times(String path) throws IOException {
-        throw new UnsupportedOperationException("times");
+        BasicFileAttributes attrs = Files.getFileAttributeView(path(path), BasicFileAttributeView.class)
+            .readAttributes();
+
+        return new T2<>(attrs.lastAccessTime().toMillis(), attrs.lastModifiedTime().toMillis());
     }
 
     /** {@inheritDoc} */
@@ -123,6 +150,7 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
      *
      * @param path Path.
      * @throws IOException If failed.
+     * @return {@code true} if the file is deleted successfully. {@code false} otherwise.
      */
     private boolean deleteRecursively(Path path) throws IOException {
         if (Files.isDirectory(path)) {

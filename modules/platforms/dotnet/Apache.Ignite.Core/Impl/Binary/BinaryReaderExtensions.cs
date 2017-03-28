@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (obj == null)
                 return default(T);
 
-            return obj is T ? (T)obj : ((ObjectInfoHolder)obj).CreateInstance<T>();
+            return obj is T ? (T) obj : ((ObjectInfoHolder) obj).CreateInstance<T>();
         }
     }
 }

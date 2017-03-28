@@ -30,6 +30,7 @@ import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Person;
+import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.PersonKey;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -50,31 +51,34 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** DB connection URL. */
-    protected static final String DFLT_CONN_URL = "jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1";
+    private static final String DFLT_CONN_URL = "jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1";
 
     /** Organization count. */
-    protected static final int ORGANIZATION_CNT = 1000;
+    private static final int ORGANIZATION_CNT = 1000;
 
     /** Person count. */
-    protected static final int PERSON_CNT = 100000;
+    private static final int PERSON_CNT = 100000;
 
     /** Test cache name. */
-    protected static final String CACHE_NAME = "test-cache";
+    private static final String CACHE_NAME = "test-cache";
 
     /** Flag indicating that tests should use transactional cache. */
-    protected static boolean transactional;
+    private static boolean transactional;
 
     /** Flag indicating that tests should use primitive classes like java.lang.Integer for keys. */
     protected static boolean builtinKeys;
 
     /** Flag indicating that classes for keys available on class path or not. */
-    protected static boolean noKeyClasses;
+    private static boolean noKeyClasses;
 
     /** Flag indicating that classes for values available on class path or not. */
-    protected static boolean noValClasses;
+    private static boolean noValClasses;
+
+    /** Batch size to load in parallel. */
+    private static int parallelLoadThreshold;
 
     /**
      * @return Flag indicating that all internal SQL queries should use escaped identifiers.
@@ -109,7 +113,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             " id INTEGER PRIMARY KEY," +
             " org_id INTEGER," +
             " birthday DATE," +
-            " name VARCHAR(50))");
+            " name VARCHAR(50)," +
+            " gender VARCHAR(50))");
 
         conn.commit();
 
@@ -126,8 +131,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -198,7 +203,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"),
             new JdbcTypeField(Types.INTEGER, "ORG_ID", Integer.class, "orgId"),
             new JdbcTypeField(Types.DATE, "BIRTHDAY", Date.class, "birthday"),
-            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"));
+            new JdbcTypeField(Types.VARCHAR, "NAME", String.class, "name"),
+            new JdbcTypeField(Types.VARCHAR, "GENDER", Gender.class, "gender"));
 
         return storeTypes;
     }
@@ -221,6 +227,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         storeFactory.setTypes(storeTypes());
         storeFactory.setDataSourceFactory(new H2DataSourceFactory()); // H2 DataSource factory.
         storeFactory.setSqlEscapeAll(sqlEscapeAll());
+        storeFactory.setParallelLoadCacheMinimumThreshold(parallelLoadThreshold);
 
         cc.setCacheStoreFactory(storeFactory);
         cc.setReadThrough(true);
@@ -256,7 +263,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         conn.commit();
 
         PreparedStatement prnStmt = conn.prepareStatement(
-            "INSERT INTO Person(id, org_id, birthday, name) VALUES (?, ?, ?, ?)");
+            "INSERT INTO Person(id, org_id, birthday, name, gender) VALUES (?, ?, ?, ?, ?)");
 
         Random rnd = new Random();
 
@@ -265,6 +272,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             prnStmt.setInt(2, i % 100);
             prnStmt.setDate(3, Date.valueOf(String.format("%d-%d-%d", 1970 + rnd.nextInt(50), 1 + rnd.nextInt(11), 1 + rnd.nextInt(27))));
             prnStmt.setString(4, "name" + i);
+            prnStmt.setString(5, Gender.random().toString());
 
             prnStmt.addBatch();
         }
@@ -285,13 +293,15 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @param noKeyCls {@code True} if keys classes are not on class path.
      * @param noValCls {@code True} if values classes are not on class path.
      * @param trn {@code True} if cache should be started in transactional mode.
+     * @param threshold Load batch size.
      * @throws Exception If failed to start grid.
      */
-    protected void startTestGrid(boolean builtin, boolean noKeyCls, boolean noValCls, boolean trn) throws Exception {
+    protected void startTestGrid(boolean builtin, boolean noKeyCls, boolean noValCls, boolean trn, int threshold) throws Exception {
         builtinKeys = builtin;
         noKeyClasses = noKeyCls;
         noValClasses = noValCls;
         transactional = trn;
+        parallelLoadThreshold = threshold;
 
         startGrid();
     }
@@ -313,7 +323,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected void checkCacheLoadWithSql() {
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
-        c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", "select id, org_id, name, birthday from Person");
+        c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", "select id, org_id, name, birthday, gender from Person");
 
         assertEquals(PERSON_CNT, c1.size());
     }
@@ -322,7 +332,16 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        startTestGrid(false, false, false, false);
+        startTestGrid(false, false, false, false, 512);
+
+        checkCacheLoad();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheAll() throws Exception {
+        startTestGrid(false, false, false, false, ORGANIZATION_CNT + PERSON_CNT + 1);
 
         checkCacheLoad();
     }
@@ -331,7 +350,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCacheWithSql() throws Exception {
-        startTestGrid(false, false, false, false);
+        startTestGrid(false, false, false, false, 512);
 
         checkCacheLoadWithSql();
     }
@@ -340,7 +359,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCacheTx() throws Exception {
-        startTestGrid(false, false, false, true);
+        startTestGrid(false, false, false, true, 512);
 
         checkCacheLoad();
     }
@@ -349,7 +368,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCacheWithSqlTx() throws Exception {
-        startTestGrid(false, false, false, true);
+        startTestGrid(false, false, false, true, 512);
 
         checkCacheLoadWithSql();
     }
@@ -358,7 +377,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCachePrimitiveKeys() throws Exception {
-        startTestGrid(true, false, false, false);
+        startTestGrid(true, false, false, false, 512);
 
         checkCacheLoad();
     }
@@ -367,7 +386,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadCachePrimitiveKeysTx() throws Exception {
-        startTestGrid(true, false, false, true);
+        startTestGrid(true, false, false, true, 512);
 
         checkCacheLoad();
     }
@@ -382,7 +401,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         Connection conn = getConnection();
         try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME FROM PERSON WHERE ID = ?");
+            PreparedStatement stmt = conn.prepareStatement("SELECT ID, ORG_ID, BIRTHDAY, NAME, GENDER FROM PERSON WHERE ID = ?");
 
             stmt.setInt(1, -1);
 
@@ -393,8 +412,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             U.closeQuiet(rs);
 
             Date testDate = Date.valueOf("2001-05-05");
+            Gender testGender = Gender.random();
 
-            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999);
+            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999, testGender);
 
             Object key = builtinKeys ? Integer.valueOf(-1) : new PersonKey(-1);
 
@@ -409,6 +429,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-2, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-insert", rs.getString(4));
+            assertEquals(testGender.toString(), rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -417,7 +438,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             // Test put-update.
             testDate = Date.valueOf("2016-04-04");
 
-            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999));
+            c1.put(key, new Person(-1, -3, testDate, "Person-to-test-put-update", 999, testGender));
 
             rs = stmt.executeQuery();
 
@@ -427,6 +448,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertEquals(-3, rs.getInt(2));
             assertEquals(testDate, rs.getDate(3));
             assertEquals("Person-to-test-put-update", rs.getString(4));
+            assertEquals(testGender.toString(), rs.getString(5));
 
             assertFalse("Unexpected more data in result set", rs.next());
 
@@ -448,7 +470,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutRemoveBuiltIn() throws Exception {
-        startTestGrid(true, false, false, false);
+        startTestGrid(true, false, false, false, 512);
 
         checkPutRemove();
     }
@@ -457,7 +479,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutRemove() throws Exception {
-        startTestGrid(false, false, false, false);
+        startTestGrid(false, false, false, false, 512);
 
         checkPutRemove();
     }
@@ -466,7 +488,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutRemoveTxBuiltIn() throws Exception {
-        startTestGrid(true, false, false, true);
+        startTestGrid(true, false, false, true, 512);
 
         checkPutRemove();
     }
@@ -475,7 +497,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutRemoveTx() throws Exception {
-        startTestGrid(false, false, false, true);
+        startTestGrid(false, false, false, true, 512);
 
         checkPutRemove();
     }
@@ -484,7 +506,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testLoadNotRegisteredType() throws Exception {
-        startTestGrid(false, false, false, false);
+        startTestGrid(false, false, false, false, 512);
 
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 

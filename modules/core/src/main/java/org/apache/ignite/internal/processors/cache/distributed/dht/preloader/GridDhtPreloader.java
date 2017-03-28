@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -35,9 +34,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -50,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -58,10 +57,10 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
@@ -79,13 +78,6 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
  * DHT cache preloader.
  */
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
-    /**
-     * Rebalancing was refactored at version 1.5.0, but backward compatibility to previous implementation was saved.
-     * Node automatically chose communication protocol depends on remote node's version.
-     * Backward compatibility may be removed at Ignite 2.x.
-     */
-    public static final IgniteProductVersion REBALANCING_VER_2_SINCE = IgniteProductVersion.fromString("1.5.0");
-
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
@@ -118,6 +110,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private volatile boolean stopping;
+
+    /** */
+    private boolean stopped;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -190,7 +185,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         cctx.shared().affinity().onCacheCreated(cctx);
 
         supplier = new GridDhtPartitionSupplier(cctx);
-        demander = new GridDhtPartitionDemander(cctx, demandLock);
+        demander = new GridDhtPartitionDemander(cctx);
 
         supplier.start();
         demander.start();
@@ -221,18 +216,25 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // Acquire write busy lock.
         busyLock.writeLock().lock();
 
-        if (supplier != null)
-            supplier.stop();
+        try {
+            if (supplier != null)
+                supplier.stop();
 
-        if (demander != null)
-            demander.stop();
+            if (demander != null)
+                demander.stop();
 
-        IgniteCheckedException err = stopError();
+            IgniteCheckedException err = stopError();
 
-        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-            fut.onDone(err);
+            for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+                fut.onDone(err);
 
-        top = null;
+            top = null;
+
+            stopped = true;
+        }
+        finally {
+            busyLock.writeLock().unlock();
+        }
     }
     /**
      * @return Node stop exception.
@@ -253,7 +255,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         supplier.onTopologyChanged(lastFut.topologyVersion());
 
-        demander.updateLastExchangeFuture(lastFut);
+        demander.onTopologyChanged(lastFut);
     }
 
     /** {@inheritDoc} */
@@ -288,7 +290,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
 
             // If partition belongs to local node.
-            if (cctx.affinity().localNode(p, topVer)) {
+            if (cctx.affinity().partitionLocalNode(p, topVer)) {
                 GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
                 assert part != null;
@@ -348,7 +350,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Picked owners.
      */
     private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+        Collection<ClusterNode> affNodes = cctx.affinity().nodesByPartition(p, topVer);
 
         int affCnt = affNodes.size();
 
@@ -411,9 +413,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
-        boolean forcePreload, Collection<String> caches, int cnt) {
-        return demander.addAssignments(assignments, forcePreload, caches, cnt);
+    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+        boolean forceRebalance,
+        int cnt,
+        Runnable next,
+        @Nullable GridFutureAdapter<Boolean> forcedRebFut) {
+        return demander.addAssignments(assignments, forceRebalance, cnt, next, forcedRebFut);
     }
 
     /**
@@ -437,13 +442,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
-        if (busyLock.readLock().tryLock())
-            return true;
+        if (!busyLock.readLock().tryLock())
+            return false;
 
-        if (log.isDebugEnabled())
-            log.debug("Failed to enter busy state on node (exchanger is stopping): " + cctx.nodeId());
+        if (stopped) {
+            busyLock.readLock().unlock();
 
-        return false;
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -600,16 +608,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
 
-                GridAffinityAssignment assignment = cctx.affinity().assignment(topVer);
-
-                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
+                AffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,
-                    assignment.assignment(),
-                    newAffMode);
+                    assignment.assignment());
 
-                if (newAffMode && cctx.affinity().affinityCache().centralizedAffinityFunction()) {
+                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
                     assert assignment.idealAssignment() != null;
 
                     res.idealAffinityAssignment(assignment.idealAssignment());
@@ -661,6 +666,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Object> request(GridNearAtomicAbstractUpdateRequest req,
+        AffinityTopologyVersion topVer) {
+        if (!needForceKeys())
+            return null;
+
+        return request0(req.keys(), topVer);
+    }
+
     /**
      * @param keys Keys to request.
      * @return Future for request.
@@ -670,6 +684,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!needForceKeys())
             return null;
 
+        return request0(keys, topVer);
+    }
+
+    /**
+     * @param keys Keys to request.
+     * @param topVer Topology version.
+     * @return Future for request.
+     */
+    @SuppressWarnings({"unchecked", "RedundantCast"})
+    private GridDhtFuture<Object> request0(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
@@ -708,8 +732,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void forcePreload() {
-        demander.forcePreload();
+    @Override public IgniteInternalFuture<Boolean> forceRebalance() {
+        return demander.forceRebalance();
     }
 
     /** {@inheritDoc} */
@@ -768,7 +792,22 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             GridDhtLocalPartition part = partsToEvict.poll();
 
                             if (part != null)
-                                part.tryEvict();
+                                try {
+                                    part.tryEvict();
+                                }
+                                catch (Throwable ex) {
+                                    if (cctx.kernalContext().isStopping()) {
+                                        LT.warn(log, ex, "Partition eviction failed (current node is stopping).",
+                                            false,
+                                            true);
+
+                                        partsToEvict.clear();
+
+                                        return true;
+                                    }
+                                    else
+                                        LT.error(log, ex, "Partition eviction failed, this can cause grid hang.");
+                                }
                         }
                         finally {
                             if (!partsToEvict.isEmptyx())

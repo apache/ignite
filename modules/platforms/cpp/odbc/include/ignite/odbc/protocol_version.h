@@ -40,6 +40,9 @@ namespace ignite
             /** First version of the protocol that was introduced in Ignite 1.6.0. */
             static const ProtocolVersion VERSION_1_6_0;
 
+            /** First version of the protocol that was introduced in Ignite 1.8.0. */
+            static const ProtocolVersion VERSION_1_8_0;
+
             /** Unknown version of the protocol. */
             static const ProtocolVersion VERSION_UNKNOWN;
 
@@ -88,6 +91,13 @@ namespace ignite
              * @return True if the version is unknown.
              */
             bool IsUnknown() const;
+
+            /**
+             * Check if the distributed joins supported.
+             *
+             * @retuen True if the distributed joins supported.
+             */
+            bool IsDistributedJoinsSupported() const;
 
             /**
              * Comparison operator.
@@ -150,6 +160,16 @@ namespace ignite
              * @param val Underlying value.
              */
             explicit ProtocolVersion(int64_t val);
+            
+            /**
+             * Make int value for the version.
+             *
+             * @param major Major version.
+             * @param minor Minor version.
+             * @param revision Revision.
+             * @return Int value for the version.
+             */
+            static int64_t MakeVersion(uint16_t major, uint16_t minor, uint16_t revision);
 
             ProtocolVersion();
 

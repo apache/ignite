@@ -334,7 +334,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 96;
     }
 

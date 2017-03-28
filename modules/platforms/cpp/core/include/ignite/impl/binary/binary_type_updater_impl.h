@@ -24,7 +24,7 @@
 #include "ignite/impl/binary/binary_type_updater.h"
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace binary
@@ -41,25 +41,25 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to Java object which is able to process type request.
                  */
-                BinaryTypeUpdaterImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                BinaryTypeUpdaterImpl(IgniteEnvironment& env, jobject javaRef);
 
                 /**
                  * Destructor.
                  */
                 ~BinaryTypeUpdaterImpl();
 
-                bool Update(Snap* snapshot, IgniteError* err);
+                bool Update(Snap* snapshot, IgniteError& err);
             private:
                 /** Environment. */
-                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-                
+                IgniteEnvironment& env;
+
                 /** Handle to Java object. */
-                jobject javaRef;                 
+                jobject javaRef;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeUpdaterImpl)
             };
         }
-    }    
+    }
 }
 
 #endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL

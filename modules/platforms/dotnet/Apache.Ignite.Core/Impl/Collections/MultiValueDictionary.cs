@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// Multiple-values-per-key dictionary.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public class MultiValueDictionary<TKey, TValue>
+    internal class MultiValueDictionary<TKey, TValue>
     {
         /** Inner dictionary */
         private readonly Dictionary<TKey, object> _dict = new Dictionary<TKey, object>();
@@ -49,32 +49,6 @@ namespace Apache.Ignite.Core.Impl.Collections
             }
             else
                 _dict[key] = val;
-        }
-
-        /// <summary>
-        /// Tries the get a value. In case of multiple values for a key, returns the last one.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="val">The value.</param>
-        /// <returns>True if value has been found for specified key; otherwise false.</returns>
-        public bool TryGetValue(TKey key, out TValue val)
-        {
-            object val0;
-            
-            if (!_dict.TryGetValue(key, out val0))
-            {
-                val = default(TValue);
-                return false;
-            }
-
-            var list = val0 as List<TValue>;
-
-            if (list != null)
-                val = list[list.Count - 1];
-            else
-                val = (TValue) val0;
-
-            return true;
         }
 
         /// <summary>

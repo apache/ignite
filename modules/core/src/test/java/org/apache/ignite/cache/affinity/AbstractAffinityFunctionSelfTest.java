@@ -104,6 +104,23 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param backups Number of backups.
+     * @throws Exception If failed.
+     */
+    public void testNullKeyForPartitionCalculation() throws Exception {
+        AffinityFunction aff = affinityFunction();
+
+        try {
+            aff.partition(null);
+
+            fail("Should throw IllegalArgumentException due to NULL affinity key.");
+        } catch (IllegalArgumentException e) {
+            e.getMessage().contains("Null key is passed for a partition calculation. " +
+                "Make sure that an affinity key that is used is initialized properly.");
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     protected void checkNodeRemoved(int backups) throws Exception {
@@ -246,7 +263,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             i++;
         }
     }
-
 
     /**
      * @param assignment Assignment to verify.

@@ -49,8 +49,8 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
     private ThreadLocal<Integer> discoPort = new ThreadLocal<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -58,7 +58,7 @@ public class TcpClientDiscoverySpiMulticastTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
-        ipFinder.setAddressRequestAttempts(10);
+        ipFinder.setAddressRequestAttempts(5);
 
         spi.setIpFinder(ipFinder);
 

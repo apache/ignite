@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -51,7 +50,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
-import org.h2.util.Utils;
+import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.KEY_FIELD_NAME;
@@ -60,7 +59,7 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.VA
 /**
  * Lucene fulltext index.
  */
-public class GridLuceneIndex implements Closeable {
+public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
     public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
 
@@ -119,7 +118,7 @@ public class GridLuceneIndex implements Closeable {
         GridQueryIndexDescriptor idx = null;
 
         for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
-            if (descriptor.type() == GridQueryIndexType.FULLTEXT) {
+            if (descriptor.type() == QueryIndexType.FULLTEXT) {
                 idx = descriptor;
 
                 break;
@@ -363,7 +362,7 @@ public class GridLuceneIndex implements Closeable {
         @SuppressWarnings("unchecked")
         private <Z> Z unmarshall(byte[] bytes, ClassLoader ldr) throws IgniteCheckedException {
             if (coctx == null) // For tests.
-                return (Z)Utils.deserialize(bytes, null);
+                return (Z)JdbcUtils.deserialize(bytes, null);
 
             return (Z)coctx.processor().unmarshal(coctx, bytes, ldr);
         }

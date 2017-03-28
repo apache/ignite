@@ -33,16 +33,17 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Plugin;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : IIgnite, IClusterGroupEx, ICluster
+    internal class Ignite : IIgnite, ICluster
     {
         /** */
         private readonly IgniteConfiguration _cfg;
@@ -70,6 +71,9 @@ namespace Apache.Ignite.Core.Impl
 
         /** Binary. */
         private readonly Binary.Binary _binary;
+
+        /** Binary processor. */
+        private readonly BinaryProcessor _binaryProc;
 
         /** Cached proxy. */
         private readonly IgniteProxy _proxy;
@@ -93,6 +97,9 @@ namespace Apache.Ignite.Core.Impl
         /** Client reconnect task completion source. */
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
+
+        /** Plugin processor. */
+        private readonly PluginProcessor _pluginProcessor;
 
         /// <summary>
         /// Constructor.
@@ -125,6 +132,8 @@ namespace Apache.Ignite.Core.Impl
 
             _binary = new Binary.Binary(marsh);
 
+            _binaryProc = new BinaryProcessor(UU.ProcessorBinaryProcessor(proc), marsh);
+
             _proxy = new IgniteProxy(this);
 
             cbs.Initialize(this);
@@ -137,6 +146,8 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
+
+            _pluginProcessor = new PluginProcessor(this);
         }
 
         /// <summary>
@@ -160,6 +171,8 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal void OnStart()
         {
+            PluginProcessor.OnIgniteStart();
+
             foreach (var lifecycleBean in _lifecycleBeans)
                 lifecycleBean.OnStart(this);
         }
@@ -201,7 +214,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute GetCompute()
         {
-            return _prj.GetCompute();
+            return _prj.ForServers().GetCompute();
         }
 
         /** <inheritdoc /> */
@@ -273,6 +286,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForDaemons()
+        {
+            return _prj.ForDaemons();
+        }
+
+        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
@@ -302,6 +321,12 @@ namespace Apache.Ignite.Core.Impl
         public IClusterGroup ForDotNet()
         {
             return _prj.ForDotNet();
+        }
+
+        /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _prj.ForServers();
         }
 
         /** <inheritdoc /> */
@@ -350,12 +375,26 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Called before node has stopped.
+        /// </summary>
+        internal void BeforeNodeStop()
+        {
+            var handler = Stopping;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
         /// Called after node has stopped.
         /// </summary>
         internal void AfterNodeStop()
         {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
+
+            var handler = Stopped;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /** <inheritdoc /> */
@@ -381,6 +420,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -419,6 +459,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -456,13 +497,15 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public ICache<TK, TV> Cache<TK, TV>(IUnmanagedTarget nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(this, nativeCache, _marsh, false, keepBinary, false);
         }
 
         /** <inheritdoc /> */
         public IClusterNode GetLocalNode()
         {
-            return _locNode ?? (_locNode = GetNodes().FirstOrDefault(x => x.IsLocal));
+            return _locNode ?? (_locNode =
+                       GetNodes().FirstOrDefault(x => x.IsLocal) ??
+                       ForDaemons().GetNodes().FirstOrDefault(x => x.IsLocal));
         }
 
         /** <inheritdoc /> */
@@ -486,7 +529,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void ResetMetrics()
         {
-            UU.ProjectionResetMetrics(_prj.Target);
+            _prj.ResetMetrics();
         }
 
         /** <inheritdoc /> */
@@ -536,7 +579,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IServices GetServices()
         {
-            return _prj.GetServices();
+            return _prj.ForServers().GetServices();
         }
 
         /** <inheritdoc /> */
@@ -611,7 +654,7 @@ namespace Apache.Ignite.Core.Impl
 
                 stream.SynchronizeInput();
 
-                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+                return new IgniteConfiguration(_marsh.StartUnmarshal(stream), _cfg);
             }
         }
 
@@ -643,6 +686,32 @@ namespace Apache.Ignite.Core.Impl
 
                 return res;
             }
+        }
+
+        /** <inheritdoc /> */
+        public ILogger Logger
+        {
+            get { return _cbs.Log; }
+        }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopping;
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopped;
+
+        /** <inheritdoc /> */
+        public event EventHandler ClientDisconnected;
+
+        /** <inheritdoc /> */
+        public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /** <inheritdoc /> */
+        public T GetPlugin<T>(string name) where T : class
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return PluginProcessor.GetProvider(name).GetPlugin<T>();
         }
 
         /// <summary>
@@ -683,26 +752,19 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Gets the binary processor.
+        /// </summary>
+        internal BinaryProcessor BinaryProcessor
+        {
+            get { return _binaryProc; }
+        }
+
+        /// <summary>
         /// Configuration.
         /// </summary>
         internal IgniteConfiguration Configuration
         {
             get { return _cfg; }
-        }
-
-        /// <summary>
-        /// Put metadata to Grid.
-        /// </summary>
-        /// <param name="metas">Metadata.</param>
-        internal void PutBinaryTypes(ICollection<BinaryType> metas)
-        {
-            _prj.PutBinaryTypes(metas);
-        }
-
-        /** <inheritDoc /> */
-        public IBinaryType GetBinaryType(int typeId)
-        {
-            return _prj.GetBinaryType(typeId);
         }
 
         /// <summary>
@@ -751,18 +813,34 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called when local client node has been disconnected from the cluster.
         /// </summary>
-        public void OnClientDisconnected()
+        internal void OnClientDisconnected()
         {
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
+
+            var handler = ClientDisconnected;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
         /// Called when local client node has been reconnected to the cluster.
         /// </summary>
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
-        public void OnClientReconnected(bool clusterRestarted)
+        internal void OnClientReconnected(bool clusterRestarted)
         {
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
+
+            var handler = ClientReconnected;
+            if (handler != null)
+                handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
+        }
+
+        /// <summary>
+        /// Gets the plugin processor.
+        /// </summary>
+        internal PluginProcessor PluginProcessor
+        {
+            get { return _pluginProcessor; }
         }
     }
 }

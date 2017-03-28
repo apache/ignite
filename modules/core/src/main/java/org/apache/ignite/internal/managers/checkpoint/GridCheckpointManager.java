@@ -173,7 +173,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         try {
             switch (scope) {
                 case GLOBAL_SCOPE: {
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     saved = getSpi(ses.getCheckpointSpi()).saveCheckpoint(key, data, timeout, override);
 
@@ -204,7 +204,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                         timeout = ses.getEndTime() - now;
 
                     // Save it first to avoid getting null value on another node.
-                    byte[] data = state == null ? null : marsh.marshal(state);
+                    byte[] data = state == null ? null : U.marshal(marsh, state);
 
                     Set<String> keys = keyMap.get(ses.getId());
 
@@ -239,7 +239,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                             ClusterNode node = ctx.discovery().node(ses.getTaskNodeId());
 
                             if (node != null)
-                                ctx.io().send(
+                                ctx.io().sendToGridTopic(
                                     node,
                                     TOPIC_CHECKPOINT,
                                     new GridCheckpointRequest(ses.getId(), key, ses.getCheckpointSpi()),
@@ -338,7 +338,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
             // Always deserialize with task/session class loader.
             if (data != null)
-                state = marsh.unmarshal(data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+                state = U.unmarshal(marsh, data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
 
             record(EVT_CHECKPOINT_LOADED, key);
 
@@ -405,7 +405,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Checkpoint manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Checkpoint manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  keyMap: " + (keyMap != null ? keyMap.size() : 0));
     }
 

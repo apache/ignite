@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -74,7 +75,7 @@ public class GridJobSiblingsResponse implements Message {
         assert marsh != null;
 
         if (siblingsBytes != null)
-            siblings = marsh.unmarshal(siblingsBytes, null);
+            siblings = U.unmarshal(marsh, siblingsBytes, null);
     }
 
     /** {@inheritDoc} */
@@ -127,7 +128,7 @@ public class GridJobSiblingsResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 4;
     }
 

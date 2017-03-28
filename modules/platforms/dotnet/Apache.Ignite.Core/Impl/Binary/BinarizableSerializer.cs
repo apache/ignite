@@ -17,13 +17,15 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Binary serializer which only supports <see cref="IBinarizable"/> types with a default ctor.
     /// Does not use reflection.
     /// </summary>
-    internal class BinarizableSerializer : IBinarySerializer
+    internal class BinarizableSerializer : IBinarySerializerInternal
     {
         /// <summary>
         /// Default instance.
@@ -31,15 +33,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static readonly BinarizableSerializer Instance = new BinarizableSerializer();
 
         /** <inheritdoc /> */
-        public void WriteBinary(object obj, IBinaryWriter writer)
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            ((IBinarizable)obj).WriteBinary(writer);
+            ((IBinarizable) obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */
-        public void ReadBinary(object obj, IBinaryReader reader)
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
         {
+            var obj = (T) FormatterServices.GetUninitializedObject(type);
+
+            reader.AddHandle(pos, obj);
+
             ((IBinarizable)obj).ReadBinary(reader);
+
+            return obj;
+        }
+
+        /** <inheritdoc /> */
+        public bool SupportsHandles
+        {
+            get { return true; }
         }
     }
 }

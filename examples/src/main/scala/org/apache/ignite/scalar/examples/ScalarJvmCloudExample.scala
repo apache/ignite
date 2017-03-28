@@ -50,7 +50,7 @@ object ScalarJvmCloudExample {
             val pool = Executors.newFixedThreadPool(NODES.size)
 
             // Concurrently startup all nodes.
-            NODES.foreach(name => pool.submit(new Runnable {
+            NODES.foreach(name => pool.execute(new Runnable {
                 @impl def run() {
                     // All defaults.
                     val cfg = new IgniteConfiguration

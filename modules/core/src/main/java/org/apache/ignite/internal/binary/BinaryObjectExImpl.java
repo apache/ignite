@@ -26,9 +26,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -50,7 +51,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     /**
      * @return {@code True} if object is array based.
      */
-    protected abstract boolean hasArray();
+    public abstract boolean hasArray();
 
     /**
      * @return Object array if object is array based, otherwise {@code null}.
@@ -77,12 +78,33 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /**
-     * Get field by offset.
+     * Get offset of data begin.
      *
-     * @param fieldOffset Field offset.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
+    public abstract int dataStartOffset();
+
+    /**
+     * Get offset of the footer begin.
+     *
+     * @return Field value.
+     */
+    public abstract int footerStartOffset();
+
+    /**
+     * Get field by offset.
+     *
+     * @param order Field offset.
+     * @return Field value.
+     */
+    @Nullable public abstract <F> F fieldByOrder(int order);
+
+    /**
+     * Create field comparer.
+     *
+     * @return Comparer.
+     */
+    public abstract BinarySerializedFieldComparator createFieldComparator();
 
     /**
      * @param ctx Reader context.
@@ -92,18 +114,30 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable protected abstract <F> F field(BinaryReaderHandles ctx, String fieldName);
 
     /**
+     * @return {@code True} if object has schema.
+     */
+    public abstract boolean hasSchema();
+
+    /**
      * Get schema ID.
      *
      * @return Schema ID.
      */
-    protected abstract int schemaId();
+    public abstract int schemaId();
 
     /**
      * Create schema for object.
      *
      * @return Schema.
      */
-    protected abstract BinarySchema createSchema();
+    public abstract BinarySchema createSchema();
+
+    /**
+     * Get binary context.
+     *
+     * @return Binary context.
+     */
+    public abstract BinaryContext context();
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder toBuilder() throws BinaryObjectException {
@@ -120,51 +154,12 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         if (other == this)
             return true;
 
-        if (other == null)
+        if (!(other instanceof BinaryObject))
             return false;
 
-        if (!(other instanceof BinaryObjectExImpl))
-            return false;
+        BinaryIdentityResolver identity = context().identity(typeId());
 
-        BinaryObjectExImpl otherPo = (BinaryObjectExImpl)other;
-
-        if (length() != otherPo.length() || typeId() != otherPo.typeId())
-            return false;
-
-        if (hasArray()) {
-            if (otherPo.hasArray()) {
-                int len = length();
-                int end = start() + len;
-
-                byte[] arr = array();
-                byte[] otherArr = otherPo.array();
-
-                for (int i = start(), j = otherPo.start(); i < end; i++, j++) {
-                    if (arr[i] != otherArr[j])
-                        return false;
-                }
-
-                return true;
-            }
-            else {
-                assert otherPo.offheapAddress() > 0;
-
-                return GridUnsafeMemory.compare(otherPo.offheapAddress() + otherPo.start(), array());
-            }
-        }
-        else {
-            assert offheapAddress() > 0;
-
-            if (otherPo.hasArray())
-                return GridUnsafeMemory.compare(offheapAddress() + start(), otherPo.array());
-            else {
-                assert otherPo.offheapAddress() > 0;
-
-                return GridUnsafeMemory.compare(offheapAddress() + start(),
-                    otherPo.offheapAddress() + otherPo.start(),
-                    length());
-            }
-        }
+        return identity.equals(this, (BinaryObject)other);
     }
 
     /** {@inheritDoc} */
@@ -199,8 +194,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             meta = null;
         }
 
-        if (meta == null)
-            return BinaryObject.class.getSimpleName() +  " [idHash=" + idHash + ", hash=" + hash + ", typeId=" + typeId() + ']';
+        if (meta == null || !S.INCLUDE_SENSITIVE)
+            return S.toString(S.INCLUDE_SENSITIVE ? BinaryObject.class.getSimpleName() : "BinaryObject",
+                "idHash", idHash, false,
+                "hash", hash, false,
+                "typeId", typeId(), true);
 
         handles.put(this, idHash);
 
@@ -229,6 +227,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @param ctx Reader context.
      * @param handles Handles for already traversed objects.
      */
+    @SuppressWarnings("unchecked")
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])

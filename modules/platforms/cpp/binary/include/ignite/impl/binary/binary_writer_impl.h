@@ -31,6 +31,7 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
+#include "ignite/impl/binary/binary_type_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
@@ -423,6 +424,38 @@ namespace ignite
                 void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
 
                 /**
+                 * Write Time. Maps to "Time" type in Java.
+                 *
+                 * @param val Value.
+                 */
+                void WriteTime(const Time& val);
+
+                /**
+                 * Write array of Time. Maps to "Time[]" type in Java.
+                 *
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimeArray(const Time* val, const int32_t len);
+
+                /**
+                 * Write Time. Maps to "Time" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Value.
+                 */
+                void WriteTime(const char* fieldName, const Time& val);
+
+                /**
+                 * Write array of Times. Maps to "Time[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimeArray(const char* fieldName, const Time* val, const int32_t len);
+
+                /**
                  * Write string.
                  *
                  * @param val String.
@@ -669,14 +702,20 @@ namespace ignite
                         stream->WriteInt8(IGNITE_PROTO_VER);
                         stream->WriteInt16(IGNITE_BINARY_FLAG_USER_TYPE);
                         stream->WriteInt32(idRslvr.GetTypeId());
-                        stream->WriteInt32(type.GetHashCode(obj));
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offsett.
+                        int32_t hashPos = stream->Reserve(4);
+
+                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
                         type.Write(writer, obj);
 
                         writerImpl.PostWrite();
+
+                        stream->Synchronize();
+
+                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos);
+                        stream->WriteInt32(hashPos, impl::binary::GetHashCode<T>(obj, binObj));
 
                         if (metaMgr)
                             metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
@@ -907,7 +946,7 @@ namespace ignite
                 /**
                  * Check whether session ID matches.
                  *
-                 * @param ses Expected session ID.
+                 * @param expSes Expected session ID.
                  */
                 void CheckSession(int32_t expSes) const;
 
@@ -968,16 +1007,10 @@ namespace ignite
             void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Timestamp& obj);
 
             template<>
-            inline void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj)
-            {
-                const char* obj0 = obj.c_str();
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Time& obj);
 
-                int32_t len = static_cast<int32_t>(obj.size());
-
-                stream->WriteInt8(IGNITE_TYPE_STRING);
-
-                BinaryUtils::WriteString(stream, obj0, len);
-            }
+            template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj);
         }
     }
 }

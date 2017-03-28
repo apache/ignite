@@ -62,6 +62,12 @@ namespace ignite
                     /** Connection attribute keyword for port attribute. */
                     static const std::string port;
 
+                    /** Connection attribute keyword for distributed joins attribute. */
+                    static const std::string distributedJoins;
+
+                    /** Connection attribute keyword for enforce join order attribute. */
+                    static const std::string enforceJoinOrder;
+
                     /** Connection attribute keyword for protocol version attribute. */
                     static const std::string protocolVersion;
 
@@ -95,6 +101,12 @@ namespace ignite
 
                     /** Default value for fetch results page size attribute. */
                     static const int32_t pageSize;
+
+                    /** Default value for distributed joins attribute. */
+                    static const bool distributedJoins;
+
+                    /** Default value for enforce join order attribute. */
+                    static const bool enforceJoinOrder;
                 };
 
                 /**
@@ -167,10 +179,7 @@ namespace ignite
                  *
                  * @param port Server port.
                  */
-                void SetTcpPort(uint16_t port)
-                {
-                    arguments[Key::port] = common::LexicalCast<std::string>(port);
-                }
+                void SetTcpPort(uint16_t port);
 
                 /**
                  * Get DSN.
@@ -217,10 +226,7 @@ namespace ignite
                  *
                  * @param server Server host.
                  */
-                void SetHost(const std::string& server)
-                {
-                    arguments[Key::server] = server;
-                }
+                void SetHost(const std::string& server);
 
                 /**
                  * Get cache.
@@ -257,9 +263,46 @@ namespace ignite
                  *
                  * @param address Address.
                  */
-                void SetAddress(const std::string& address)
+                void SetAddress(const std::string& address);
+
+                /**
+                 * Check distributed joins flag.
+                 *
+                 * @return True if distributed joins are enabled.
+                 */
+                bool IsDistributedJoins() const
                 {
-                    arguments[Key::address] = address;
+                    return GetBoolValue(Key::distributedJoins, DefaultValue::distributedJoins);
+                }
+
+                /**
+                 * Set distributed joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetDistributedJoins(bool val)
+                {
+                    SetBoolValue(Key::distributedJoins, val);
+                }
+
+                /**
+                 * Check enforce join order flag.
+                 *
+                 * @return True if enforcing of join order is enabled.
+                 */
+                bool IsEnforceJoinOrder() const
+                {
+                    return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
+                }
+
+                /**
+                 * Set enforce joins.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetEnforceJoinOrder(bool val)
+                {
+                    SetBoolValue(Key::enforceJoinOrder, val);
                 }
 
                 /**
@@ -280,6 +323,16 @@ namespace ignite
                 }
 
                 /**
+                 * Get argument map.
+                 *
+                 * @return Argument map.
+                 */
+                const ArgumentMap& GetMap() const
+                {
+                    return arguments;
+                }
+
+                /**
                  * Get fetch results page size.
                  *
                  * @return Fetch results page size.
@@ -288,7 +341,6 @@ namespace ignite
                 {
                     return static_cast<int32_t>(GetIntValue(Key::pageSize, DefaultValue::pageSize));
                 }
-
                 /**
                  * Set fetch results page size.
                  *
@@ -297,16 +349,6 @@ namespace ignite
                 void SetPageSize(int32_t size)
                 {
                     arguments[Key::pageSize] = common::LexicalCast<std::string>(size);
-                }
-
-                /**
-                 * Get argument map.
-                 *
-                 * @return Argument map.
-                 */
-                const ArgumentMap& GetMap() const
-                {
-                    return arguments;
                 }
 
                 /**
@@ -327,6 +369,22 @@ namespace ignite
                  */
                 int64_t GetIntValue(const std::string& key, int64_t dflt) const;
 
+                /**
+                 * Get bool value from the config.
+                 *
+                 * @param key Configuration key.
+                 * @param dflt Default value to be returned if there is no value stored.
+                 * @return Found or default value.
+                 */
+                bool GetBoolValue(const std::string& key, bool dflt) const;
+
+                /**
+                 * Set bool value to the config.
+                 *
+                 * @param key Configuration key.
+                 * @param val Value to set.
+                 */
+                void SetBoolValue(const std::string& key, bool val);
             private:
                 /**
                  * Parse connect string into key-value storage.

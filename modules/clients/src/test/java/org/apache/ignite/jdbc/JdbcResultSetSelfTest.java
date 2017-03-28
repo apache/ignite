@@ -66,8 +66,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -429,8 +429,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         while (rs.next()) {
             if (cnt == 0) {
-                assert "http://abc.com/".equals(rs.getURL("urlVal").toString());
-                assert "http://abc.com/".equals(rs.getURL(15).toString());
+                assertTrue("http://abc.com/".equals(rs.getURL("urlVal").toString()));
+                assertTrue("http://abc.com/".equals(rs.getURL(15).toString()));
             }
 
             cnt++;

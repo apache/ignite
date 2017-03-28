@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -117,7 +118,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
@@ -128,12 +129,12 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         Task LoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
+        /// Delegates to <see cref="ICacheStore{K, V}.LoadCache" /> method to load state
         /// from the underlying persistent storage. The loaded values will then be given
         /// to the optionally passed in predicate, and, if the predicate returns true,
         /// will be stored in cache. If predicate is null, then all loaded values will be stored in cache.
@@ -142,12 +143,12 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
-        /// Delegates to <see cref="ICacheStore.LoadCache" /> method to load state
+        /// Delegates to <see cref="ICacheStore{K, V}.LoadCache" /> method to load state
         /// from the underlying persistent storage. The loaded values will then be given
         /// to the optionally passed in predicate, and, if the predicate returns true,
         /// will be stored in cache. If predicate is null, then all loaded values will be stored in cache.
@@ -156,7 +157,7 @@ namespace Apache.Ignite.Core.Cache
         /// Optional predicate. If provided, will be used to filter values to be put into cache.
         /// </param>
         /// <param name="args">
-        /// Optional user arguments to be passed into <see cref="ICacheStore.LoadCache" />.
+        /// Optional user arguments to be passed into <see cref="ICacheStore{K, V}.LoadCache" />.
         /// </param>
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
@@ -655,14 +656,14 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Removes all mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        /// This method is not transactional.
         /// </summary>
         void RemoveAll();
 
         /// <summary>
         /// Removes all mappings from cache.
         /// If write-through is enabled, the value will be removed from store.
-        /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
+        /// This method is not transactional.
         /// </summary>
         Task RemoveAllAsync();
 
@@ -847,12 +848,28 @@ namespace Apache.Ignite.Core.Cache
         bool IsLocalLocked(TK key, bool byCurrentThread);
 
         /// <summary>
-        /// Gets snapshot metrics (statistics) for this cache.
+        /// Gets global (whole cluster) snapshot metrics (statistics) for this cache.
         /// </summary>
         /// <returns>Cache metrics.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
         ICacheMetrics GetMetrics();
+
+        /// <summary>
+        /// Gets global (whole cluster group) snapshot metrics (statistics) for this cache.
+        /// </summary>
+        /// <param name="clusterGroup">The cluster group to get metrics for.</param>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
+        ICacheMetrics GetMetrics(IClusterGroup clusterGroup);
+
+        /// <summary>
+        /// Gets local snapshot metrics (statistics) for this cache.
+        /// </summary>
+        /// <returns>Cache metrics.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
+        ICacheMetrics GetLocalMetrics();
 
         /// <summary>
         /// Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter

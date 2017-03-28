@@ -115,16 +115,21 @@ public class GridH2Array extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2Array.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -18;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(x);
     }
 }

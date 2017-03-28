@@ -101,16 +101,21 @@ public class GridH2String extends GridH2ValueMessage {
 
         }
 
-        return true;
+        return reader.afterMessageRead(GridH2String.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -17;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return x;
     }
 }

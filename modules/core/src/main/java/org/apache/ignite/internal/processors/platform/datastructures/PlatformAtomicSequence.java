@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.datastructures;
 
 import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -27,6 +28,33 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 public class PlatformAtomicSequence extends PlatformAbstractTarget {
     /** */
     private final IgniteAtomicSequence atomicSeq;
+
+    /** */
+    private static final int OP_ADD_AND_GET = 1;
+
+    /** */
+    private static final int OP_CLOSE = 2;
+
+    /** */
+    private static final int OP_GET = 3;
+
+    /** */
+    private static final int OP_GET_AND_ADD = 4;
+
+    /** */
+    private static final int OP_GET_AND_INCREMENT = 5;
+
+    /** */
+    private static final int OP_GET_BATCH_SIZE = 6;
+
+    /** */
+    private static final int OP_INCREMENT_AND_GET = 7;
+
+    /** */
+    private static final int OP_IS_CLOSED = 8;
+
+    /** */
+    private static final int OP_SET_BATCH_SIZE = 9;
 
     /**
      * Ctor.
@@ -41,82 +69,42 @@ public class PlatformAtomicSequence extends PlatformAbstractTarget {
         this.atomicSeq = atomicSeq;
     }
 
-    /**
-     * Reads the value.
-     *
-     * @return Current atomic sequence value.
-     */
-    public long get() {
-        return atomicSeq.get();
-    }
 
-    /**
-     * Increments and reads the value.
-     *
-     * @return Current atomic sequence value.
-     */
-    public long incrementAndGet() {
-        return atomicSeq.incrementAndGet();
-    }
+    /** {@inheritDoc} */
+    @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_ADD_AND_GET:
+                return atomicSeq.addAndGet(val);
 
-    /**
-     * Reads and increments the value.
-     *
-     * @return Original atomic sequence value.
-     */
-    public long getAndIncrement() {
-        return atomicSeq.getAndIncrement();
-    }
+            case OP_GET_AND_ADD:
+                return atomicSeq.getAndAdd(val);
 
-    /**
-     * Adds a value.
-     *
-     * @return Current atomic sequence value.
-     */
-    public long addAndGet(long l) {
-        return atomicSeq.addAndGet(l);
-    }
+            case OP_SET_BATCH_SIZE:
+                atomicSeq.batchSize((int)val);
 
-    /**
-     * Adds a value.
-     *
-     * @return Original atomic sequence value.
-     */
-    public long getAndAdd(long l) {
-        return atomicSeq.getAndAdd(l);
-    }
+                return TRUE;
 
-    /**
-     * Gets the batch size.
-     *
-     * @return Batch size.
-     */
-    public int getBatchSize() {
-        return atomicSeq.batchSize();
-    }
+            case OP_CLOSE:
+                atomicSeq.close();
 
-    /**
-     * Sets the batch size.
-     *
-     * @param size Batch size.
-     */
-    public void setBatchSize(int size) {
-        atomicSeq.batchSize(size);
-    }
+                return TRUE;
 
-    /**
-     * Gets status of atomic.
-     *
-     * @return {@code true} if atomic was removed from cache, {@code false} in other case.
-     */
-    public boolean isClosed() {
-        return atomicSeq.removed();
-    }
+            case OP_GET:
+                return atomicSeq.get();
 
-    /**
-     * Removes this atomic.
-     */
-    public void close() {
-        atomicSeq.close();
+            case OP_GET_AND_INCREMENT:
+                return atomicSeq.getAndIncrement();
+
+            case OP_INCREMENT_AND_GET:
+                return atomicSeq.incrementAndGet();
+
+            case OP_IS_CLOSED:
+                return atomicSeq.removed() ? TRUE : FALSE;
+
+            case OP_GET_BATCH_SIZE:
+                return atomicSeq.batchSize();
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 }

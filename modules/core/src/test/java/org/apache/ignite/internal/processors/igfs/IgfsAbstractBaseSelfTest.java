@@ -220,6 +220,13 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return FragmentizerEnabled IGFS config flag.
+     */
+    protected boolean fragmentizerEnabled() {
+        return true;
+    }
+
+    /**
      * @return Relaxed consistency flag.
      */
     protected boolean initializeDefaultPathModes() {
@@ -353,7 +360,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
@@ -363,13 +370,11 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String igniteInstanceName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg,
         TcpDiscoveryIpFinder ipFinder) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -378,12 +383,12 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
+        igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
 
         igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
@@ -396,27 +401,28 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
+
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         if (useOptimizedMarshaller())
             cfg.setMarshaller(new OptimizedMarshaller());
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 
-        prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
-
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -537,6 +543,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the file in the given IGFS and write provided data chunks to it.
      *
+     * @param uni FS tests adaptor.
      * @param file File.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
@@ -863,6 +870,25 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create map with properties.
      *
+     * @param grpName Group name.
+     * @param perm Permission.
+     * @return Map with properties.
+     */
+    protected Map<String, String> properties(@Nullable String grpName, @Nullable String perm) {
+        Map<String, String> props = new HashMap<>();
+
+        if (grpName != null)
+            props.put(IgfsUtils.PROP_GROUP_NAME, grpName);
+
+        if (perm != null)
+            props.put(IgfsUtils.PROP_PERMISSION, perm);
+
+        return props;
+    }
+
+    /**
+     * Create map with properties.
+     *
      * @param username User name.
      * @param grpName Group name.
      * @param perm Permission.
@@ -915,7 +941,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @return The data cache.
      */
     protected static GridCacheAdapter<IgfsBlockKey, byte[]> getDataCache(IgniteFileSystem igfs) {
-        String dataCacheName = igfs.configuration().getDataCacheName();
+        String dataCacheName = igfs.configuration().getDataCacheConfiguration().getName();
 
         IgniteEx igniteEx = ((IgfsEx)igfs).context().kernalContext().grid();
 
@@ -929,7 +955,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @return The data cache.
      */
     protected static GridCacheAdapter<IgniteUuid, IgfsEntryInfo> getMetaCache(IgniteFileSystem igfs) {
-        String dataCacheName = igfs.configuration().getMetaCacheName();
+        String dataCacheName = igfs.configuration().getMetaCacheConfiguration().getName();
 
         IgniteEx igniteEx = ((IgfsEx)igfs).context().kernalContext().grid();
 

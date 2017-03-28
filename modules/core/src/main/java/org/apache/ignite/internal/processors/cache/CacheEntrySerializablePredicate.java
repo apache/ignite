@@ -80,7 +80,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
         assert p != null || bytes != null;
 
         if (p == null) {
-            p = ctx.marshaller().unmarshal(bytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            p = U.unmarshal(ctx.marshaller(), bytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
             p.finishUnmarshal(ctx, ldr);
         }
@@ -93,7 +93,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
         p.prepareMarshal(ctx);
 
         if (bytes == null)
-            bytes = ctx.marshaller().marshal(p);
+            bytes = U.marshal(ctx.marshaller(), p);
     }
 
     /** {@inheritDoc} */
@@ -148,7 +148,7 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 99;
     }
 

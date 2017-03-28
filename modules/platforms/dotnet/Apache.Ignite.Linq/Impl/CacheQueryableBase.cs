@@ -66,7 +66,7 @@ namespace Apache.Ignite.Linq.Impl
             var data = GetQueryData();
             var executor = CacheQueryProvider.Executor;
 
-            return new SqlFieldsQuery(data.QueryText, executor.Local, data.Parameters.ToArray());
+            return executor.GetFieldsQuery(data.QueryText, data.Parameters.ToArray());
         }
 
         /** <inheritdoc /> */
@@ -138,7 +138,8 @@ namespace Apache.Ignite.Linq.Impl
         /// </returns>
         public override string ToString()
         {
-            return GetQueryData().ToString();
+            return string.Format("CacheQueryable [CacheName={0}, TableName={1}, Query={2}]", 
+                CacheName, TableName, GetFieldsQuery());
         }
     }
 }

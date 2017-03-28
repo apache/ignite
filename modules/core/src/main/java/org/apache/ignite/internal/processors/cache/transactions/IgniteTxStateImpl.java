@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -73,6 +72,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : (int)activeCacheIds.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int) activeCacheIds.get(i);
+
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -278,14 +289,14 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeUsed(GridCacheSharedContext cctx) {
+    @Override public boolean storeWriteThrough(GridCacheSharedContext cctx) {
         if (!activeCacheIds.isEmpty()) {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = (int)activeCacheIds.get(i);
 
                 CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
-                if (store.configured())
+                if (store.configured() && store.isWriteThrough())
                     return true;
             }
         }

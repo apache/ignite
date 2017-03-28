@@ -52,6 +52,9 @@
     <ClCompile Include="..\..\src\utility.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\log.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cursor.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -174,6 +177,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\utility.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\log.h">
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h">

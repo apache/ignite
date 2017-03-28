@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.entityframework.PlatformDotNetEntityFrameworkCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionCacheExtension;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -35,6 +41,9 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** Memory manager. */
     private final PlatformMemoryManagerImpl memMgr;
 
+    /** Logger. */
+    private final PlatformLogger logger;
+
     /** Warnings */
     private Collection<String> warnings;
 
@@ -46,11 +55,12 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
      * @param memMgr Memory manager.
      */
     public PlatformDotNetConfigurationEx(PlatformDotNetConfiguration cfg, PlatformCallbackGateway gate,
-        PlatformMemoryManagerImpl memMgr) {
+        PlatformMemoryManagerImpl memMgr, PlatformLogger logger) {
         super(cfg);
 
         this.gate = gate;
         this.memMgr = memMgr;
+        this.logger = logger;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +81,21 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** {@inheritDoc} */
     @Override public Collection<String> warnings() {
         return warnings;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<PlatformCacheExtension> cacheExtensions() {
+        Collection<PlatformCacheExtension> exts = new ArrayList<>(2);
+
+        exts.add(new PlatformDotNetSessionCacheExtension());
+        exts.add(new PlatformDotNetEntityFrameworkCacheExtension());
+
+        return exts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformLogger logger() {
+        return logger;
     }
 
     /**

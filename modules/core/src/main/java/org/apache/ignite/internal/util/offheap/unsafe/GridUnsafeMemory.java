@@ -153,7 +153,8 @@ public class GridUnsafeMemory {
      * @param reserved If {@code false}, means that memory counter was reserved and size will not
      *      be added to counter.
      * @param cnt Counter to account allocated memory.
-     * @throws GridOffHeapOutOfMemoryException
+     * @throws GridOffHeapOutOfMemoryException In case of out of the off-heap memory.
+     * @return Pointer to the allocated memory.
      */
     @SuppressWarnings("ErrorNotRethrown")
     private long allocate0(long size, boolean init, boolean reserved,
@@ -507,20 +508,32 @@ public class GridUnsafeMemory {
      * @return {@code True} if equals.
      */
     public static boolean compare(long ptr, byte[] bytes) {
+        return compare(ptr, bytes, 0, bytes.length);
+    }
+
+    /**
+     * Compares memory.
+     *
+     * @param ptr Pointer.
+     * @param bytes Bytes to compare.
+     * @param bytesOff Offset in the bytes array.
+     * @param len Count of compared bytes.
+     * @return {@code True} if equals.
+     */
+    public static boolean compare(long ptr, byte[] bytes, int bytesOff, int len) {
+        assert bytesOff + len <= bytes.length : "Check compare bounds: [offset=" + bytesOff + ", len=" + len +
+            ", bytes.length=" + bytes.length + ']';
+
         final int addrSize = GridUnsafe.ADDR_SIZE;
 
         // Align reads to address size.
         int off = (int)(ptr % addrSize);
         int align = addrSize - off;
 
-        int len = bytes.length;
-
         if (align != addrSize) {
-            for (int i = 0; i < align && i < len; i++) {
-                if (GridUnsafe.getByte(ptr) != bytes[i])
+            for (int i = 0, tmpOff = bytesOff; i < align && i < len; i++, tmpOff++, ptr++) {
+                if (GridUnsafe.getByte(ptr) != bytes[tmpOff])
                     return false;
-
-                ptr++;
             }
         }
         else
@@ -542,7 +555,7 @@ public class GridUnsafeMemory {
 
                     int word = GridUnsafe.getInt(ptr);
 
-                    int comp = GridUnsafe.getInt(bytes, GridUnsafe.BYTE_ARR_OFF + step);
+                    int comp = GridUnsafe.getInt(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
 
                     if (word != comp)
                         return false;
@@ -558,7 +571,7 @@ public class GridUnsafeMemory {
 
                     long word = GridUnsafe.getLong(ptr);
 
-                    long comp = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + step);
+                    long comp = GridUnsafe.getLong(bytes, GridUnsafe.BYTE_ARR_OFF + step + bytesOff);
 
                     if (word != comp)
                         return false;
@@ -572,7 +585,7 @@ public class GridUnsafeMemory {
         if (left != 0) {
             // Compare left overs byte by byte.
             for (int i = 0; i < left; i++)
-                if (GridUnsafe.getByte(ptr + i) != bytes[i + align + words * GridUnsafe.ADDR_SIZE])
+                if (GridUnsafe.getByte(ptr + i) != bytes[bytesOff + i + align + words * GridUnsafe.ADDR_SIZE])
                     return false;
         }
 
@@ -594,7 +607,7 @@ public class GridUnsafeMemory {
      * @return The same array as passed in one.
      */
     public byte[] readBytes(long ptr, byte[] arr) {
-        GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF, arr.length);
+        GridUnsafe.copyOffheapHeap(ptr, arr, GridUnsafe.BYTE_ARR_OFF, arr.length);
 
         return arr;
     }
@@ -607,7 +620,7 @@ public class GridUnsafeMemory {
      * @return The same array as passed in one.
      */
     public byte[] readBytes(long ptr, byte[] arr, int off, int len) {
-        GridUnsafe.copyMemory(null, ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
+        GridUnsafe.copyOffheapHeap(ptr, arr, GridUnsafe.BYTE_ARR_OFF + off, len);
 
         return arr;
     }
@@ -619,7 +632,7 @@ public class GridUnsafeMemory {
      * @param arr Array.
      */
     public void writeBytes(long ptr, byte[] arr) {
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
     }
 
     /**
@@ -631,7 +644,7 @@ public class GridUnsafeMemory {
      * @param len Length.
      */
     public void writeBytes(long ptr, byte[] arr, int off, int len) {
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, null, ptr, len);
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF + off, ptr, len);
     }
 
     /**
@@ -642,7 +655,7 @@ public class GridUnsafeMemory {
      * @param len Length in bytes.
      */
     public void copyMemory(long srcPtr, long destPtr, long len) {
-        GridUnsafe.copyMemory(srcPtr, destPtr, len);
+        GridUnsafe.copyOffheapOffheap(srcPtr, destPtr, len);
     }
 
     /**

@@ -39,7 +39,7 @@ class JavaIgniteContext[K, V](
     standalone: Boolean = true
     ) extends Serializable {
 
-    @transient val ic: IgniteContext[K, V] = new IgniteContext[K, V](sc.sc, () => cfgF.apply(), standalone)
+    @transient val ic: IgniteContext = new IgniteContext(sc.sc, () => cfgF.apply(), standalone)
 
     def this(sc: JavaSparkContext, cfgF: IgniteOutClosure[IgniteConfiguration]) {
         this(sc, cfgF, true)
@@ -49,6 +49,12 @@ class JavaIgniteContext[K, V](
         this(sc, new IgniteOutClosure[IgniteConfiguration] {
             override def apply() = IgnitionEx.loadConfiguration(springUrl).get1()
         })
+    }
+
+    def this(sc: JavaSparkContext, springUrl: String, standalone: Boolean) {
+        this(sc, new IgniteOutClosure[IgniteConfiguration] {
+            override def apply() = IgnitionEx.loadConfiguration(springUrl).get1()
+        }, standalone)
     }
 
     def fromCache(cacheName: String): JavaIgniteRDD[K, V] =

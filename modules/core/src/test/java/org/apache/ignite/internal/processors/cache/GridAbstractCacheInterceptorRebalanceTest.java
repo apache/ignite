@@ -74,8 +74,8 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     private static CacheInterceptor<Integer, Integer> interceptor;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         final CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -200,7 +200,9 @@ public abstract class GridAbstractCacheInterceptorRebalanceTest extends GridComm
     private void testRebalance(final Operation operation) throws Exception {
         interceptor = new RebalanceUpdateInterceptor();
 
-        for (int iter = 0; iter < TEST_ITERATIONS; iter++) {
+        long stopTime = System.currentTimeMillis() + 2 * 60_000;
+
+        for (int iter = 0; iter < TEST_ITERATIONS && System.currentTimeMillis() < stopTime; iter++) {
             log.info("Iteration: " + iter);
 
             failed = false;

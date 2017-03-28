@@ -264,6 +264,43 @@ public final class GridTestUtils {
     }
 
     /**
+     * Checks whether callable throws an exception with specified cause.
+     *
+     * @param log Logger (optional).
+     * @param call Callable.
+     * @param cls Exception class.
+     * @param msg Exception message (optional). If provided exception message
+     *      and this message should be equal.
+     * @return Thrown throwable.
+     */
+    public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
+        Class<? extends Throwable> cls, @Nullable String msg) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.call();
+        }
+        catch (Throwable e) {
+            Throwable t = e;
+
+            while (t != null) {
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
+                    log.info("Caught expected exception: " + t.getMessage());
+
+                    return t;
+                }
+
+                t = t.getCause();
+            }
+
+            fail("Unexpected exception", e);
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
      * Checks whether callable throws expected exception or its child or not.
      *
      * @param log Logger (optional).
@@ -929,16 +966,16 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, IgniteLogger log) {
+    public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
-            G.stop(gridName, false);
+            G.stop(igniteInstanceName, false);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to stop grid: " + gridName, e);
+            U.error(log, "Failed to stop grid: " + igniteInstanceName, e);
         }
     }
 
@@ -1024,7 +1061,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, null, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;

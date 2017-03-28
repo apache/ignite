@@ -98,6 +98,10 @@ namespace ignite
 
             std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
 
+            bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
+
+            bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
+
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
 
@@ -110,6 +114,8 @@ namespace ignite
             config.SetHost(server);
             config.SetTcpPort(port);
             config.SetCache(cache);
+            config.SetDistributedJoins(distributedJoins);
+            config.SetEnforceJoinOrder(enforceJoinOrder);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }

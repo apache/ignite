@@ -241,7 +241,7 @@ public class WebSessionFilter implements Filter {
     @Override public void init(FilterConfig cfg) throws ServletException {
         ctx = cfg.getServletContext();
 
-        String gridName = U.firstNotNull(
+        String igniteInstanceName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
@@ -277,11 +277,11 @@ public class WebSessionFilter implements Filter {
         if (!F.isEmpty(binParam))
             keepBinary = Boolean.parseBoolean(binParam);
 
-        webSesIgnite = G.ignite(gridName);
+        webSesIgnite = G.ignite(igniteInstanceName);
 
         if (webSesIgnite == null)
-            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
-                gridName);
+            throw new IgniteException("Ignite instance for web sessions caching is not started (is it configured?): " +
+                igniteInstanceName);
 
         txs = webSesIgnite.transactions();
 
@@ -320,8 +320,8 @@ public class WebSessionFilter implements Filter {
         }
 
         if (log.isInfoEnabled())
-            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
-                ", maxRetriesOnFail=" + retries + ']');
+            log.info("Started web sessions caching [igniteInstanceName=" + igniteInstanceName +
+                ", cacheName=" + cacheName + ", maxRetriesOnFail=" + retries + ']');
     }
 
     /**
@@ -694,8 +694,8 @@ public class WebSessionFilter implements Filter {
      * @return New session.
      */
     private WebSessionV2 createSessionV2(final HttpSession ses, final String sesId) throws IOException {
-        if (log.isDebugEnabled())
-            log.debug("Session created: " + sesId);
+        assert ses != null;
+        assert sesId != null;
 
         WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller);
 
@@ -731,6 +731,9 @@ public class WebSessionFilter implements Filter {
         final HttpSession ses = httpReq.getSession(true);
 
         final String sesId = transformSessionId(ses.getId());
+
+        if (log.isDebugEnabled())
+            log.debug("Session created: " + sesId);
 
         return createSessionV2(ses, sesId);
     }
@@ -853,8 +856,8 @@ public class WebSessionFilter implements Filter {
      */
     private void handleAttributeUpdateException(final String sesId, final int tryCnt, final RuntimeException e) {
         if (tryCnt == retries - 1) {
-            U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                sesId + ", retries=" + retries + ']');
+            U.error(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
+                sesId + ", retries=" + retries + ']', e);
         }
         else {
             U.warn(log, "Failed to apply updates for session (will retry): " + sesId);

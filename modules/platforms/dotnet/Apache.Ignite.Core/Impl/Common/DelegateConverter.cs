@@ -152,6 +152,50 @@ namespace Apache.Ignite.Core.Impl.Common
 
             return Expression.Lambda<T>(callExpr, argParams).Compile();
         }
+        /// <summary>
+        /// Compiles a function with a single object[] argument which maps array items to actual arguments.
+        /// </summary>
+        /// <param name="method">Method.</param>
+        /// <returns>
+        /// Compiled function that calls specified method.
+        /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object[], object> CompileFuncFromArray(MethodInfo method)
+        {
+            Debug.Assert(method != null);
+            Debug.Assert(method.DeclaringType != null);
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = Expression.Convert(targetParam, method.DeclaringType);
+
+            var arrParam = Expression.Parameter(typeof(object[]));
+
+            var methodParams = method.GetParameters();
+            var argParams = new Expression[methodParams.Length];
+
+            for (var i = 0; i < methodParams.Length; i++)
+            {
+                var arrElem = Expression.ArrayIndex(arrParam, Expression.Constant(i));
+                argParams[i] = Expression.Convert(arrElem, methodParams[i].ParameterType);
+            }
+            
+            Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
+
+            if (callExpr.Type == typeof(void))
+            {
+                // Convert action to function
+                var action = Expression.Lambda<Action<object, object[]>>(callExpr, targetParam, arrParam).Compile();
+                return (obj, args) =>
+                {
+                    action(obj, args);
+                    return null;
+                };
+            }
+
+            callExpr = Expression.Convert(callExpr, typeof(object));
+
+            return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
+        }
 
         /// <summary>
         /// Compiles a generic ctor with arbitrary number of arguments.

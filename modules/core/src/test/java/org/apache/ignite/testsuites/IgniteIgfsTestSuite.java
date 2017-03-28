@@ -20,6 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.igfs.IgfsFragmentizerSelfTest;
 import org.apache.ignite.igfs.IgfsFragmentizerTopologySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapTieredSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimaryOffheapValuesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsAtomicPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
@@ -55,6 +59,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProxySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalSecondaryFileSystemProxySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemInjectionSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsSizeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsStartCacheTest;
@@ -154,10 +159,16 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgfsMaxSizeSelfTest.class);
 
-
         suite.addTestSuite(IgfsProxySelfTest.class);
         suite.addTestSuite(IgfsLocalSecondaryFileSystemProxySelfTest.class);
         suite.addTestSuite(IgfsLocalSecondaryFileSystemProxyClientSelfTest.class);
+
+        suite.addTestSuite(IgfsAtomicPrimarySelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryMultiNodeSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapTieredSelfTest.class);
+        suite.addTestSuite(IgfsAtomicPrimaryOffheapValuesSelfTest.class);
+
+        suite.addTestSuite(IgfsSecondaryFileSystemInjectionSelfTest.class);
 
         return suite;
     }

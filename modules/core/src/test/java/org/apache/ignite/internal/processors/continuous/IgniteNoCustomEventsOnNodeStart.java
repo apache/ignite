@@ -40,8 +40,8 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
     private static volatile boolean failed;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -66,6 +66,13 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
         }
 
         assertFalse(failed);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**

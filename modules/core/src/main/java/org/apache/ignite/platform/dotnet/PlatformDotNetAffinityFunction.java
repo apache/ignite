@@ -18,6 +18,7 @@
 package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -157,13 +158,22 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     }
 
     /**
+     * Gets the inner func.
+     *
+     * @return The inner func.
+     */
+    public PlatformAffinityFunction getFunc() {
+        return func;
+    }
+
+    /**
      * Injects the Ignite.
      *
      * @param ignite Ignite.
      */
     @SuppressWarnings("unused")
     @IgniteInstanceResource
-    private void setIgnite(Ignite ignite) {
+    private void setIgnite(Ignite ignite) throws IgniteCheckedException {
         assert func != null;
 
         func.setIgnite(ignite);

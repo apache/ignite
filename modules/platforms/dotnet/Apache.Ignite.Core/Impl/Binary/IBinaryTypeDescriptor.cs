@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Serializer.
         /// </summary>
-        IBinarySerializer Serializer { get; }
+        IBinarySerializerInternal Serializer { get; }
 
         /// <summary>
         /// Affinity key field name.
@@ -76,6 +76,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets a value indicating whether this descriptor represents an enum type.
         /// </summary>
         bool IsEnum { get; }
+
+        /// <summary>
+        /// Gets the equality comparer.
+        /// </summary>
+        IBinaryEqualityComparer EqualityComparer { get; }
 
         /// <summary>
         /// Write type structure.

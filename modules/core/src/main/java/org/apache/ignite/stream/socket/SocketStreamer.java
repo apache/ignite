@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.stream.StreamAdapter;
@@ -183,6 +184,7 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
         try {
             srv = new GridNioServer.Builder<byte[]>()
                 .address(addr == null ? InetAddress.getLocalHost() : addr)
+                .serverName("sock-streamer")
                 .port(port)
                 .listener(lsnr)
                 .logger(log)
@@ -222,16 +224,16 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
         /**
          * Constructor.
          *
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          */
-        private DefaultConverter(@Nullable String gridName) {
-            marsh = MarshallerUtils.jdkMarshaller(gridName);
+        private DefaultConverter(@Nullable String igniteInstanceName) {
+            marsh = MarshallerUtils.jdkMarshaller(igniteInstanceName);
         }
 
         /** {@inheritDoc} */
         @Override public T convert(byte[] msg) {
             try {
-                return marsh.unmarshal(msg, null);
+                return U.unmarshal(marsh, msg, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

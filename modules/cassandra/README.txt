@@ -1,16 +1,12 @@
 Apache Ignite Cassandra Module
 ------------------------
 
-Apache Ignite Cassandra module provides CacheStore implementation backed by Cassandra database.
-
-To enable Cassandra module when starting a standalone node, move 'optional/ignite-cassandra' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+Apache Ignite Cassandra module, used just as a parent container for other Cassandra related modules.
 
 Importing Cassandra Module In Maven Project
 -------------------------------------
 
-If you are using Maven to manage dependencies of your project, you can add Cassandra module
+If you are using Maven to manage dependencies of your project, you can add Cassandra Store module
 dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 

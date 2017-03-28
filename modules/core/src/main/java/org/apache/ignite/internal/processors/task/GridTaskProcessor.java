@@ -621,6 +621,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             Collections.<ComputeJobSibling>emptyList(),
             Collections.emptyMap(),
             fullSup,
+            dep != null && dep.internalTask(task, taskCls),
             subjId);
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -913,7 +914,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
                         null,
-                        loc ? null : marsh.marshal(attrs),
+                        loc ? null : U.marshal(marsh, attrs),
                         attrs);
 
                     // Make sure to go through IO manager always, since order
@@ -1029,7 +1030,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(),
+                U.<Map<?, ?>>unmarshal(marsh, msg.getAttributesBytes(),
                     U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
@@ -1096,7 +1097,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  tasksSize: " + tasks.size());
     }
 
@@ -1305,15 +1306,15 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                        topic = U.unmarshal(marsh, req.topicBytes(), U.resolveClassLoader(ctx.config()));
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().send(nodeId, topic,
+                    ctx.io().sendToCustomTopic(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
-                            loc ? null : marsh.marshal(siblings)),
+                            loc ? null : U.marshal(marsh, siblings)),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {

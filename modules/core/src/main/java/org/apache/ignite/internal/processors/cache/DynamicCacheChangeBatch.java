@@ -62,6 +62,13 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /**
+     * @param id Message ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
      * @return Collection of change requests.
      */
     public Collection<DynamicCacheChangeRequest> requests() {
@@ -104,6 +111,20 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      */
     public boolean clientReconnect() {
         return clientReconnect;
+    }
+
+    /**
+     * @return {@code True} if request should trigger partition exchange.
+     */
+    public boolean exchangeNeeded() {
+        if (reqs != null) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.exchangeNeeded())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

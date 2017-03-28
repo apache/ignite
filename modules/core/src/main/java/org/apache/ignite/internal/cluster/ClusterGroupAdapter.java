@@ -83,8 +83,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Services. */
     private transient IgniteServices svcs;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -109,8 +109,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -127,8 +126,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -149,8 +147,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -191,7 +188,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ctx = ctx;
 
-        gridName = ctx.gridName();
+        igniteInstanceName = ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -215,7 +212,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, subjId, false);
+            compute = new IgniteComputeImpl(ctx, this, subjId);
         }
 
         return compute;
@@ -311,7 +308,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 }
             }
             else {
-                Collection<ClusterNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all;
+
+                if (p instanceof DaemonFilter)
+                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                else
+                    all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
@@ -697,7 +699,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
         U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
@@ -710,7 +712,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        igniteInstanceName = U.readString(in);
         subjId = U.readUuid(in);
 
         if (in.readBoolean())

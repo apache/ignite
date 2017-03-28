@@ -17,37 +17,26 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.UserNameMapper;
-import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Arrays;
 
 /**
  * Simple Hadoop file system factory which delegates to {@code FileSystem.get()} on each call.
  * <p>
  * If {@code "fs.[prefix].impl.disable.cache"} is set to {@code true}, file system instances will be cached by Hadoop.
  */
-public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File system URI. */
+        /** File system URI. */
     private String uri;
 
     /** File system config paths. */
@@ -55,12 +44,6 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** User name mapper. */
     private UserNameMapper usrNameMapper;
-
-    /** Configuration of the secondary filesystem, never null. */
-    protected transient Configuration cfg;
-
-    /** Resulting URI. */
-    protected transient URI fullUri;
 
     /**
      * Constructor.
@@ -70,64 +53,17 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public final FileSystem get(String name) throws IOException {
-        String name0 = IgfsUtils.fixUserName(name);
-
-        if (usrNameMapper != null)
-            name0 = IgfsUtils.fixUserName(usrNameMapper.map(name0));
-
-        return getWithMappedName(name0);
-    }
-
-    /**
-     * Internal file system create routine.
-     *
-     * @param usrName User name.
-     * @return File system.
-     * @throws IOException If failed.
-     */
-    protected FileSystem getWithMappedName(String usrName) throws IOException {
-        assert cfg != null;
-
-        try {
-            // FileSystem.get() might delegate to ServiceLoader to get the list of file system implementation.
-            // And ServiceLoader is known to be sensitive to context classloader. Therefore, we change context
-            // classloader to classloader of current class to avoid strange class-cast-exceptions.
-            ClassLoader oldLdr = HadoopUtils.setContextClassLoader(getClass().getClassLoader());
-
-            try {
-                return create(usrName);
-            }
-            finally {
-                HadoopUtils.restoreContextClassLoader(oldLdr);
-            }
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IOException("Failed to create file system due to interrupt.", e);
-        }
-    }
-
-    /**
-     * Internal file system creation routine, invoked in correct class loader context.
-     *
-     * @param usrName User name.
-     * @return File system.
-     * @throws IOException If failed.
-     * @throws InterruptedException if the current thread is interrupted.
-     */
-    protected FileSystem create(String usrName) throws IOException, InterruptedException {
-        return FileSystem.get(fullUri, cfg, usrName);
+    @Override public final Object get(String name) throws IOException {
+        throw new UnsupportedOperationException("Method should not be called directly.");
     }
 
     /**
      * Gets file system URI.
      * <p>
-     * This URI will be used as a first argument when calling {@link FileSystem#get(URI, Configuration, String)}.
+     * This URI will be used as a first argument when calling {@code FileSystem.get(URI, Configuration, String)}.
      * <p>
      * If not set, default URI will be picked from file system configuration using
-     * {@link FileSystem#getDefaultUri(Configuration)} method.
+     * {@code FileSystem.getDefaultUri(Configuration)} method.
      *
      * @return File system URI.
      */
@@ -149,11 +85,8 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      * <p>
      * Path could be either absolute or relative to {@code IGNITE_HOME} environment variable.
      * <p>
-     * All provided paths will be loaded in the order they provided and then applied to {@link Configuration}. It means
+     * All provided paths will be loaded in the order they provided and then applied to {@code Configuration}. It means
      * that path order might be important in some cases.
-     * <p>
-     * <b>NOTE!</b> Factory can be serialized and transferred to other machines where instance of
-     * {@link IgniteHadoopFileSystem} resides. Corresponding paths must exist on these machines as well.
      *
      * @return Paths to file system configuration files.
      */
@@ -195,50 +128,6 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      */
     public void setUserNameMapper(@Nullable UserNameMapper usrNameMapper) {
         this.usrNameMapper = usrNameMapper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteException {
-        cfg = HadoopUtils.safeCreateConfiguration();
-
-        if (cfgPaths != null) {
-            for (String cfgPath : cfgPaths) {
-                if (cfgPath == null)
-                    throw new NullPointerException("Configuration path cannot be null: " + Arrays.toString(cfgPaths));
-                else {
-                    URL url = U.resolveIgniteUrl(cfgPath);
-
-                    if (url == null) {
-                        // If secConfPath is given, it should be resolvable:
-                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
-                            "(ensure that it exists locally and you have read access to it): " + cfgPath);
-                    }
-
-                    cfg.addResource(url);
-                }
-            }
-        }
-
-        // If secondary fs URI is not given explicitly, try to get it from the configuration:
-        if (uri == null)
-            fullUri = FileSystem.getDefaultUri(cfg);
-        else {
-            try {
-                fullUri = new URI(uri);
-            }
-            catch (URISyntaxException use) {
-                throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
-            }
-        }
-
-        if (usrNameMapper != null && usrNameMapper instanceof LifecycleAware)
-            ((LifecycleAware)usrNameMapper).start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-        if (usrNameMapper != null && usrNameMapper instanceof LifecycleAware)
-            ((LifecycleAware)usrNameMapper).stop();
     }
 
     /** {@inheritDoc} */

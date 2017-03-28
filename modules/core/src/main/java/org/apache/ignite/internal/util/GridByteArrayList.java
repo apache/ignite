@@ -478,7 +478,7 @@ public class GridByteArrayList implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 84;
     }
 

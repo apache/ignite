@@ -79,7 +79,19 @@ public class OdbcMessageParser {
             {
                 long longVersion = reader.readLong();
 
-                return new OdbcHandshakeRequest(longVersion);
+                OdbcHandshakeRequest res = new OdbcHandshakeRequest(longVersion);
+
+                OdbcProtocolVersion version = res.version();
+
+                if (version.isUnknown())
+                    return res;
+
+                if (version.isDistributedJoinsSupported()) {
+                    res.distributedJoins(reader.readBoolean());
+                    res.enforceJoinOrder(reader.readBoolean());
+                }
+
+                return res;
             }
             else
                 throw new IgniteException("Unexpected ODBC command " +
@@ -138,6 +150,15 @@ public class OdbcMessageParser {
                 String tableType = reader.readString();
 
                 res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
+
+                break;
+            }
+
+            case OdbcRequest.GET_PARAMS_META: {
+                String cacheName = reader.readString();
+                String sqlQuery = reader.readString();
+
+                res = new OdbcQueryGetParamsMetaRequest(cacheName, sqlQuery);
 
                 break;
             }
@@ -233,9 +254,18 @@ public class OdbcMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row) {
-                        if (obj instanceof java.sql.Timestamp)
+                        if (obj == null) {
+                            writer.writeObjectDetached(null);
+                            continue;
+                        }
+
+                        Class<?> cls = obj.getClass();
+
+                        if (cls == java.sql.Time.class)
+                            writer.writeTime((java.sql.Time)obj);
+                        else if (cls == java.sql.Timestamp.class)
                             writer.writeTimestamp((java.sql.Timestamp)obj);
-                        else if (obj instanceof java.util.Date)
+                        else if (cls == java.sql.Date.class)
                             writer.writeDate((java.util.Date)obj);
                         else
                             writer.writeObjectDetached(obj);
@@ -274,6 +304,13 @@ public class OdbcMessageParser {
 
             for (OdbcTableMeta tableMeta : tablesMeta)
                 tableMeta.writeBinary(writer);
+        }
+        else if (res0 instanceof OdbcQueryGetParamsMetaResult) {
+            OdbcQueryGetParamsMetaResult res = (OdbcQueryGetParamsMetaResult) res0;
+
+            byte[] typeIds = res.typeIds();
+
+            writer.writeObjectDetached(typeIds);
         }
         else
             assert false : "Should not reach here.";

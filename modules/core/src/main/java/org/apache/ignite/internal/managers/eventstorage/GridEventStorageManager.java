@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.util.GridConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -79,6 +80,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
 
+    /** Internal discovery listeners. */
+    private final ConcurrentMap<Integer, Set<DiscoveryEventListener>> discoLsnrs = new ConcurrentHashMap8<>();
+
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
@@ -99,6 +103,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
     /** Events of these types should be recorded. */
     private volatile int[] inclEvtTypes;
+
+    /** */
+    private boolean stopped;
 
     /**
      * Maps event type to boolean ({@code true} for recordable events).
@@ -200,7 +207,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             lsnrsCnt += lsnrs0.size();
 
         X.println(">>>");
-        X.println(">>> Event storage manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Event storage manager memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  Total listeners: " + lsnrsCnt);
         X.println(">>>  Recordable events size: " + recordableEvts.length);
         X.println(">>>  User recordable events size: " + userRecordableEvts.length);
@@ -212,7 +219,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if entered to busy state.
      */
     private boolean enterBusy() {
-        return busyLock.readLock().tryLock();
+        if (!busyLock.readLock().tryLock())
+            return false;
+
+        if (stopped) {
+            busyLock.readLock().unlock();
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -225,15 +241,24 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** {@inheritDoc} */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop0(boolean cancel) {
-        // Acquire write lock so that any new thread could not be started.
         busyLock.writeLock().lock();
 
-        if (msgLsnr != null)
-            ctx.io().removeMessageListener(TOPIC_EVENT, msgLsnr);
+        try {
+            if (msgLsnr != null)
+                ctx.io().removeMessageListener(
+                    TOPIC_EVENT,
+                    msgLsnr);
 
-        msgLsnr = null;
+            msgLsnr = null;
 
-        lsnrs.clear();
+            lsnrs.clear();
+            discoLsnrs.clear();
+
+            stopped = true;
+        }
+        finally {
+            busyLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -278,7 +303,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             int type = evt.type();
 
             if (!isRecordable(type)) {
-                LT.warn(log, null, "Trying to record event without checking if it is recordable: " +
+                LT.warn(log, "Trying to record event without checking if it is recordable: " +
                     U.gridEventName(type));
             }
 
@@ -293,6 +318,30 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             if (isRecordable(type))
                 notifyListeners(evt);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Records discovery events.
+     *
+     * @param evt Event to record.
+     * @param discoCache Discovery cache.
+     */
+    public void record(DiscoveryEvent evt, DiscoCache discoCache) {
+        assert evt != null;
+
+        if (!enterBusy())
+            return;
+
+        try {
+            // Notify internal discovery listeners first.
+            notifyDiscoveryListeners(evt, discoCache);
+
+            // Notify all other registered listeners.
+            record(evt);
         }
         finally {
             leaveBusy();
@@ -570,7 +619,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
         try {
             for (int t : types) {
-                getOrCreate(t).add(lsnr);
+                getOrCreate(lsnrs, t).add(lsnr);
 
                 if (!isRecordable(t))
                     U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
@@ -595,14 +644,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             return;
 
         try {
-            getOrCreate(type).add(lsnr);
+            getOrCreate(lsnrs, type).add(lsnr);
 
             if (!isRecordable(type))
                 U.warn(log, "Added listener for disabled event type: " + U.gridEventName(type));
 
             if (types != null) {
                 for (int t : types) {
-                    getOrCreate(t).add(lsnr);
+                    getOrCreate(lsnrs, t).add(lsnr);
 
                     if (!isRecordable(t))
                         U.warn(log, "Added listener for disabled event type: " + U.gridEventName(t));
@@ -615,16 +664,70 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
+     * Adds discovery event listener. Note that this method specifically disallow an empty
+     * array of event type to prevent accidental subscription for all system event that
+     * may lead to a drastic performance decrease.
+     *
+     * @param lsnr Listener to add.
+     * @param types Event types to subscribe listener for.
+     */
+    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int[] types) {
+        assert lsnr != null;
+        assert types != null;
+        assert types.length > 0;
+
+        if (!enterBusy())
+            return;
+
+        try {
+            for (int t : types) {
+                getOrCreate(discoLsnrs, t).add(lsnr);
+            }
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Adds discovery event listener.
+     *
+     * @param lsnr Listener to add.
+     * @param type Event type to subscribe listener for.
+     * @param types Additional event types to subscribe listener for.
+     */
+    public void addDiscoveryEventListener(DiscoveryEventListener lsnr, int type, @Nullable int... types) {
+        assert lsnr != null;
+
+        if (!enterBusy())
+            return;
+
+        try {
+            getOrCreate(discoLsnrs, type).add(lsnr);
+
+            if (types != null) {
+                for (int t : types) {
+                    getOrCreate(discoLsnrs, t).add(lsnr);
+                }
+            }
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * @param lsnrs Listeners map.
      * @param type Event type.
      * @return Listeners for given event type.
      */
-    private Collection<GridLocalEventListener> getOrCreate(Integer type) {
-        Set<GridLocalEventListener> set = lsnrs.get(type);
+    private <T> Collection<T> getOrCreate(ConcurrentMap<Integer, Set<T>> lsnrs, Integer type) {
+        Set<T> set = lsnrs.get(type);
 
         if (set == null) {
             set = new GridConcurrentLinkedHashSet<>();
 
-            Set<GridLocalEventListener> prev = lsnrs.putIfAbsent(type, set);
+            Set<T> prev = lsnrs.putIfAbsent(type, set);
 
             if (prev != null)
                 set = prev;
@@ -682,6 +785,38 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             if (p instanceof PlatformEventFilterListener)
                 ((PlatformEventFilterListener)p).onClose();
+        }
+
+        return found;
+    }
+
+    /**
+     * Removes listener for specified events, if any. If no event types provided - it
+     * remove the listener for all its registered events.
+     *
+     * @param lsnr Listener.
+     * @param types Event types.
+     * @return Returns {@code true} if removed.
+     */
+    public boolean removeDiscoveryEventListener(DiscoveryEventListener lsnr, @Nullable int... types) {
+        assert lsnr != null;
+
+        boolean found = false;
+
+        if (F.isEmpty(types)) {
+            for (Set<DiscoveryEventListener> set : discoLsnrs.values())
+                if (set.remove(lsnr))
+                    found = true;
+        }
+        else {
+            assert types != null;
+
+            for (int type : types) {
+                Set<DiscoveryEventListener> set = discoLsnrs.get(type);
+
+                if (set != null && set.remove(lsnr))
+                    found = true;
+            }
         }
 
         return found;
@@ -768,6 +903,41 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             for (GridLocalEventListener lsnr : set) {
                 try {
                     lsnr.onEvent(evt);
+                }
+                catch (Throwable e) {
+                    U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param evt Discovery event
+     * @param cache Discovery cache.
+     */
+    private void notifyDiscoveryListeners(DiscoveryEvent evt, DiscoCache cache) {
+        assert evt != null;
+
+        notifyDiscoveryListeners(discoLsnrs.get(evt.type()), evt, cache);
+    }
+
+    /**
+     * @param set Set of listeners.
+     * @param evt Discovery event.
+     * @param cache Discovery cache.
+     */
+    private void notifyDiscoveryListeners(@Nullable Collection<DiscoveryEventListener> set, DiscoveryEvent evt, DiscoCache cache) {
+        assert evt != null;
+
+        if (!F.isEmpty(set)) {
+            assert set != null;
+
+            for (DiscoveryEventListener lsnr : set) {
+                try {
+                    lsnr.onEvent(evt, cache);
                 }
                 catch (Throwable e) {
                     U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
@@ -891,11 +1061,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 try {
                     if (res.eventsBytes() != null)
-                        res.events(marsh.<Collection<Event>>unmarshal(res.eventsBytes(),
+                        res.events(U.<Collection<Event>>unmarshal(marsh, res.eventsBytes(),
                             U.resolveClassLoader(ctx.config())));
 
                     if (res.exceptionBytes() != null)
-                        res.exception(marsh.<Throwable>unmarshal(res.exceptionBytes(),
+                        res.exception(U.<Throwable>unmarshal(marsh, res.exceptionBytes(),
                             U.resolveClassLoader(ctx.config())));
                 }
                 catch (IgniteCheckedException e) {
@@ -932,7 +1102,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
             ioMgr.addMessageListener(resTopic, resLsnr);
 
-            byte[] serFilter = marsh.marshal(p);
+            byte[] serFilter = U.marshal(marsh, p);
 
             GridDeployment dep = ctx.deploy().deploy(p.getClass(), U.detectClassLoader(p.getClass()));
 
@@ -1020,12 +1190,12 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(ctx.localNodeId()));
 
         if (locNode != null)
-            ctx.io().send(locNode, topic, msg, plc);
+            ctx.io().sendToGridTopic(locNode, topic, msg, plc);
 
         if (!rmtNodes.isEmpty()) {
-            msg.responseTopicBytes(marsh.marshal(msg.responseTopic()));
+            msg.responseTopicBytes(U.marshal(marsh, msg.responseTopic()));
 
-            ctx.io().send(rmtNodes, topic, msg, plc);
+            ctx.io().sendToGridTopic(rmtNodes, topic, msg, plc);
         }
     }
 
@@ -1089,7 +1259,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 try {
                     if (req.responseTopicBytes() != null)
-                        req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
+                        req.responseTopic(U.unmarshal(marsh, req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
 
                     GridDeployment dep = ctx.deploy().getGlobalDeployment(
                         req.deploymentMode(),
@@ -1105,7 +1275,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
-                    filter = marsh.unmarshal(req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                    filter = U.unmarshal(marsh, req.filter(), U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                     // Resource injection.
                     ctx.resource().inject(dep, dep.deployedClass(req.filterClassName()), filter);
@@ -1140,11 +1310,11 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         log.debug("Sending event query response to node [nodeId=" + nodeId + "res=" + res + ']');
 
                     if (!ctx.localNodeId().equals(nodeId)) {
-                        res.eventsBytes(marsh.marshal(res.events()));
-                        res.exceptionBytes(marsh.marshal(res.exception()));
+                        res.eventsBytes(U.marshal(marsh, res.events()));
+                        res.exceptionBytes(U.marshal(marsh, res.exception()));
                     }
 
-                    ctx.io().send(node, req.responseTopic(), res, PUBLIC_POOL);
+                    ctx.io().sendToCustomTopic(node, req.responseTopic(), res, PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send event query response to node [node=" + nodeId + ", res=" +
