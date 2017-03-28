@@ -50,7 +50,9 @@ import org.apache.ignite.internal.util.typedef.X;
  * Skip list tests.
  */
 public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
-    /** */
+    /**
+     * Smallest positive double, used as an epsilon-threshold.
+     */
     static final double epsilon = Double.MIN_NORMAL;
 
     /**
@@ -158,12 +160,27 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES);
     }
 
+    @Override protected long getTestTimeout() {
+        return 500 * super.getTestTimeout();
+    }
+
+    /**
+     * TODO: temporary test, remove it.
+     */
+    public void testLevelRepeated() {
+       for (int i = 0 ; i<500 ; i++) {
+           System.out.println("============================= REPETITION " + i);
+
+           testLevel();
+       }
+    }
+
     /**
      * Geometric distribution test implementation.
      *
      * @param levels Number of levels to assert.
      * @param valuesPerDistribution How many counts used to build one geometric distribution.
-     * @param sampleSize How many distributions used to build
+     * @param sampleSize How many distributions used to build one sample.
      * @param samples How many samples used for summary statistics.
      */
     private void doTestLevelStat(final int levels, final int valuesPerDistribution, final int sampleSize,
@@ -291,7 +308,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
     /**
      * Utility function giving probability
-     * to have exactly 'v' counts in bicket 'k'
+     * to have exactly 'v' counts in level 'k'
      * with total counts being 'n'.
      *
      * @param n Total counts used in distribution.
@@ -319,7 +336,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
     }
 
     /**
-     * Variance of the geometric distribution value of level k for n total counts (numerically calculated).
+     * Variance of the geometric distribution value of level 'k' for 'n' total counts (numerically calculated).
      *
      * @param n the total number of counts
      * @param k The level number.
