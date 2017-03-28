@@ -631,39 +631,6 @@ public class GridH2Table extends TableBase {
         return res;
     }
 
-    /**
-     * Rebuilds all indexes of this table.
-     */
-    public void rebuildIndexes() {
-        if (!snapshotEnabled)
-            return;
-
-        Lock l = lock(true, Long.MAX_VALUE);
-
-        ArrayList<Index> idxs0 = new ArrayList<>(idxs);
-
-        try {
-            snapshotIndexes(null); // Allow read access while we are rebuilding indexes.
-
-            for (int i = 1, len = idxs.size(); i < len; i++) {
-                GridH2IndexBase newIdx = index(i).rebuild();
-
-                idxs.set(i, newIdx);
-
-                if (i == 1) // ScanIndex at 0 and actualSnapshot can contain references to old indexes, reset them.
-                    idxs.set(0, new ScanIndex(newIdx));
-            }
-        }
-        catch (InterruptedException e) {
-            throw new IgniteInterruptedException(e);
-        }
-        finally {
-            releaseSnapshots0(idxs0);
-
-            unlock(l);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public Index addIndex(Session ses, String s, int i, IndexColumn[] idxCols, IndexType idxType,
         boolean b, String s1) {

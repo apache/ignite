@@ -306,7 +306,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(probe != null, "loadProbe != null");
@@ -314,7 +314,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         if (log.isDebugEnabled())
             log.debug(configInfo("loadProbe", probe));
 
-        registerMBean(gridName, new AdaptiveLoadBalancingSpiMBeanImpl(this), AdaptiveLoadBalancingSpiMBean.class);
+        registerMBean(igniteInstanceName, new AdaptiveLoadBalancingSpiMBeanImpl(this), AdaptiveLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

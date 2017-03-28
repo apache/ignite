@@ -230,6 +230,21 @@ namespace ignite
             void WriteTimestampArray(const Timestamp* val, int32_t len);
 
             /**
+             * Write Time. Maps to "Time" type in Java.
+             *
+             * @param val Value.
+             */
+            void WriteTime(const Time& val);
+
+            /**
+             * Write array of Time. Maps to "Time[]" type in Java.
+             *
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteTimeArray(const Time* val, const int32_t len);
+
+            /**
              * Write string.
              *
              * @param val Null-terminated character array.

@@ -72,7 +72,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void deployTask() throws Exception {
-        G.ignite(getTestGridName()).compute().localDeployTask(TestGridifyTask.class,
+        G.ignite(getTestIgniteInstanceName()).compute().localDeployTask(TestGridifyTask.class,
             TestGridifyTask.class.getClassLoader());
     }
 
@@ -534,9 +534,9 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Test grid name.
+     * @return Test Ignite instance name.
      */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "ExternalAopTarget";
     }
 }

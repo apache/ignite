@@ -264,7 +264,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         startStopwatch();
 
         assertParameter(nodeWeight > 0, "nodeWeight > 0");
@@ -274,7 +274,8 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
             log.debug(configInfo("nodeWeight", nodeWeight));
         }
 
-        registerMBean(gridName, new WeightedRandomLoadBalancingSpiMBeanImpl(this), WeightedRandomLoadBalancingSpiMBean.class);
+        registerMBean(igniteInstanceName, new WeightedRandomLoadBalancingSpiMBeanImpl(this),
+            WeightedRandomLoadBalancingSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

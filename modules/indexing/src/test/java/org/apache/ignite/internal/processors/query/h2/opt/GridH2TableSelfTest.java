@@ -46,7 +46,6 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 /**
  * Tests H2 Table.
@@ -274,18 +273,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Dumps all table rows for index.
-     *
-     * @param idx Index.
-     */
-    private void dumpRows(GridH2TreeIndex idx) {
-        Iterator<GridH2Row> iter = idx.rows();
-
-        while (iter.hasNext())
-            System.out.println(iter.next().toString());
-    }
-
-    /**
      * Multithreaded indexes consistency test.
      *
      * @throws Exception If failed.
@@ -509,47 +496,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertTrue(rs.next());
 
         assertEquals(ids.length - deleted.get(), rs.getInt(1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRebuildIndexes() throws Exception {
-        ArrayList<GridH2IndexBase> idxsBefore = tbl.indexes();
-
-        assertEquals(3, idxsBefore.size());
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < MAX_X; i++) {
-            UUID id = UUID.randomUUID();
-
-            GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
-                    UUID.randomUUID().toString(), rnd.nextInt(100));
-
-            tbl.doUpdate(row, false);
-        }
-
-        for (GridH2IndexBase idx : idxsBefore)
-            assertEquals(MAX_X, idx.getRowCountApproximation());
-
-        tbl.rebuildIndexes();
-
-        ArrayList<GridH2IndexBase> idxsAfter = tbl.indexes();
-
-        assertEquals(3, idxsAfter.size());
-
-        for (int i = 0; i < 3; i++) {
-            GridH2IndexBase idxBefore = idxsBefore.get(i);
-            GridH2IndexBase idxAfter = idxsAfter.get(i);
-
-            assertNotSame(idxBefore, idxAfter);
-            assertEquals(idxBefore.getName(), idxAfter.getName());
-            assertSame(idxBefore.getTable(), idxAfter.getTable());
-            assertEquals(idxBefore.getRowCountApproximation(), idxAfter.getRowCountApproximation());
-            assertEquals(idxBefore.getIndexType().isUnique(), idxAfter.getIndexType().isUnique());
-            Assert.assertArrayEquals(idxBefore.getColumns(), idxAfter.getColumns());
-        }
     }
 
     /**

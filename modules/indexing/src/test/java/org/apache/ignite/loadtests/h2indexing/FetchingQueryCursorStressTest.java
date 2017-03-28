@@ -151,7 +151,7 @@ public class FetchingQueryCursorStressTest {
     private static IgniteConfiguration config(int idx, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-" + idx);
+        cfg.setIgniteInstanceName("grid-" + idx);
         cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration();

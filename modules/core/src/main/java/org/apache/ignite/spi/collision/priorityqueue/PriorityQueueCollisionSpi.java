@@ -458,7 +458,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assertParameter(parallelJobsNum > 0, "parallelJobsNum > 0");
         assertParameter(waitJobsNum >= 0, "waitingJobsNum >= 0");
         assertParameter(starvationInc >= 0, "starvationInc >= 0");
@@ -478,7 +478,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
             log.debug(configInfo("preventStarvation", preventStarvation));
         }
 
-        registerMBean(gridName, new PriorityQueueCollisionSpiMBeanImpl(this), PriorityQueueCollisionSpiMBean.class);
+        registerMBean(igniteInstanceName, new PriorityQueueCollisionSpiMBeanImpl(this), PriorityQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())

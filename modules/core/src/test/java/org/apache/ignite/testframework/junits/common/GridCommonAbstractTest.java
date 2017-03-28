@@ -73,7 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -458,7 +458,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             IgniteKernal g0 = (IgniteKernal)g;
 
-            names.add(g0.configuration().getGridName());
+            names.add(g0.configuration().getIgniteInstanceName());
 
             if (startTime != -1) {
                 if (startTime != g0.context().discovery().gridStartTime())
@@ -510,7 +510,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (affNodes.size() != owners.size() || !affNodes.containsAll(owners) ||
                                     (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     LT.warn(log(), "Waiting for topology map update [" +
-                                        "grid=" + g.name() +
+                                        "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
@@ -527,7 +527,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             }
                             else {
                                 LT.warn(log(), "Waiting for topology map update [" +
-                                    "grid=" + g.name() +
+                                    "igniteInstanceName=" + g.name() +
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
                                     ", topVer=" + top.topologyVersion() +
@@ -545,7 +545,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     U.dumpThreads(log);
 
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
-                                        "grid=" + g.name() +
+                                        "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
@@ -560,8 +560,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             }
 
                             if (i > 0)
-                                log().warning("Finished waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) + "ms]");
+                                log().warning("Finished waiting for topology map update [igniteInstanceName=" +
+                                    g.name() + ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) +
+                                    "ms]");
 
                             break;
                         }
@@ -575,7 +576,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         while (failed) {
                             failed = false;
 
-                            for (GridDhtPartitionMap2 pMap : top.partitionMap(true).values()) {
+                            for (GridDhtPartitionMap pMap : top.partitionMap(true).values()) {
                                 if (failed)
                                     break;
 
@@ -584,7 +585,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         U.dumpThreads(log);
 
                                         throw new IgniteException("Timeout of waiting for partition state update [" +
-                                            "grid=" + g.name() +
+                                            "igniteInstanceName=" + g.name() +
                                             ", cache=" + cfg.getName() +
                                             ", cacheId=" + dht.context().cacheId() +
                                             ", topVer=" + top.topologyVersion() +
@@ -928,11 +929,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(task, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(task, arg);
 
         assertNotNull(fut);
 
@@ -948,11 +945,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(taskName, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(taskName, arg);
 
         assertNotNull(fut);
 
@@ -969,11 +962,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(taskCls, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(taskCls, arg);
 
         assertNotNull(fut);
 
@@ -989,13 +978,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <T extends Event> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
-        evts = evts.withAsync();
-
-        assertTrue(evts.isAsync());
-
-        assertNull(evts.waitForLocal(filter, types));
-
-        IgniteFuture<T> fut = evts.future();
+        IgniteFuture<T> fut = evts.waitForLocalAsync(filter, types);
 
         assertNotNull(fut);
 

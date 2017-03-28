@@ -53,7 +53,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  * <h2 class="header">Mandatory</h2>
  * <ul>
  *      <li>AWS credentials (see {@link #setAwsCredentials(AWSCredentials)} and
- *      {@link #setAwsCredentials(AWSCredentialsProvider)})</li>
+ *      {@link #setAwsCredentialsProvider(AWSCredentialsProvider)}</li>
  *      <li>Bucket name (see {@link #setBucketName(String)})</li>
  * </ul>
  * <h2 class="header">Optional</h2>
@@ -333,7 +333,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets AWS credentials. Either use {@link #setAwsCredentials(AWSCredentialsProvider)} or this one.
+     * Sets AWS credentials. Either use {@link #setAwsCredentialsProvider(AWSCredentialsProvider)} or this one.
      * <p>
      * For details refer to Amazon S3 API reference.
      *
@@ -356,7 +356,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public TcpDiscoveryS3IpFinder setAwsCredentials(AWSCredentialsProvider credProvider) {
+    public TcpDiscoveryS3IpFinder setAwsCredentialsProvider(AWSCredentialsProvider credProvider) {
         this.credProvider = credProvider;
 
         return this;

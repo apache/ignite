@@ -31,7 +31,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -65,8 +65,8 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -110,7 +110,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      */
     private long size(Class<?> cls) throws IgniteCheckedException {
         return (Long)grid().cache(null).query(
-            new SqlFieldsQuery("select count(*) from " + GridQueryProcessor.typeName(cls)).setLocal(true))
+            new SqlFieldsQuery("select count(*) from " + QueryUtils.typeName(cls)).setLocal(true))
             .getAll().get(0).get(0);
     }
 
@@ -138,11 +138,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheAsync() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(null, 0);
-
-        asyncCache.future().get();
+        cache.loadCacheAsync(null, 0).get();
 
         assert cache.size() == PUT_CNT;
 
@@ -183,16 +179,12 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testLoadCacheAsyncFiltered() throws Exception {
         IgniteCache<Integer, ValueObject> cache = grid().cache(null);
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.loadCache(new P2<Integer, ValueObject>() {
+        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
             @Override
             public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0);
-
-        asyncCache.future().get();
+        }, 0).get();
 
         assert cache.localSize() == PUT_CNT - 5;
 
@@ -212,11 +204,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, ValueObject> cache = jcache();
 
-        IgniteCache<Integer, ValueObject> asyncCache = cache.withAsync();
-
-        asyncCache.get(1);
-
-        assert ((ValueObject)asyncCache.future().get()).value() == 1;
+        assert cache.getAsync(1).get().value() == 1;
 
         assert cache.size() == 1;
 

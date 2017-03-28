@@ -206,6 +206,9 @@ public class QueryEntity implements Serializable {
                 if (idx.getName() == null)
                     idx.setName(defaultIndexName(idx));
 
+                if (idx.getIndexType() == null)
+                    throw new IllegalArgumentException("Index type is not set " + idx.getName());
+
                 if (!this.idxs.containsKey(idx.getName()))
                     this.idxs.put(idx.getName(), idx);
                 else
@@ -215,7 +218,6 @@ public class QueryEntity implements Serializable {
 
         return this;
     }
-
 
     /**
      * Gets table name for this query entity.

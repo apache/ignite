@@ -181,7 +181,7 @@ public class PartitionsExchangeOnDiscoveryHistoryOverflowTest extends IgniteCach
      * @throws Exception In case of error.
      */
     @NotNull private CacheConfiguration cacheConfiguration(int gridIdx, int cacheIdx) throws Exception {
-        CacheConfiguration cfg = cacheConfiguration(getTestGridName(gridIdx));
+        CacheConfiguration cfg = cacheConfiguration(getTestIgniteInstanceName(gridIdx));
 
         cfg.setName("dynamic-cache-" + cacheIdx);
 

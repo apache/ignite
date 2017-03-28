@@ -60,6 +60,15 @@ namespace ignite
         const char* GetName() const;
 
         /**
+         * Get node configuration.
+         *
+         * This method should only be used on the valid instance.
+         *
+         * @return Node configuration.
+         */
+        const IgniteConfiguration& GetConfiguration() const;
+
+        /**
          * Get cache.
          *
          * This method should only be used on the valid instance.
@@ -178,6 +187,15 @@ namespace ignite
          * @return Transaction class instance.
          */
         transactions::Transactions GetTransactions();
+
+        /**
+         * Get ignite binding.
+         *
+         * This method should only be used on the valid instance.
+         *
+         * @return IgniteBinding class instance.
+         */
+        IgniteBinding GetBinding();
 
         /**
          * Check if the instance is valid.

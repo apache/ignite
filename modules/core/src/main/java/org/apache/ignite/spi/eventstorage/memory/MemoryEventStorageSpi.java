@@ -141,7 +141,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -154,7 +154,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
             log.debug(configInfo("expireCnt", expireCnt));
         }
 
-        registerMBean(gridName, new MemoryEventStorageSpiMBeanImpl(this), MemoryEventStorageSpiMBean.class);
+        registerMBean(igniteInstanceName, new MemoryEventStorageSpiMBeanImpl(this), MemoryEventStorageSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

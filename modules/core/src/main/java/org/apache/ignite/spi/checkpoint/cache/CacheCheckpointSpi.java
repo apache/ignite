@@ -144,7 +144,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(cacheName), "!F.isEmpty(cacheName)");
 
         // Start SPI start stopwatch.
@@ -154,7 +154,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         if (log.isDebugEnabled())
             log.debug(configInfo("cacheName", cacheName));
 
-        registerMBean(gridName, new CacheCheckpointSpiMBeanImpl(this), CacheCheckpointSpiMBean.class);
+        registerMBean(igniteInstanceName, new CacheCheckpointSpiMBeanImpl(this), CacheCheckpointSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

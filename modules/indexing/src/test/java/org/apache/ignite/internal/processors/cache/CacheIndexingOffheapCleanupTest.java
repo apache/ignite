@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -88,26 +87,6 @@ public class CacheIndexingOffheapCleanupTest extends GridCommonAbstractTest {
         assertTrue(mem.allocatedSize() > 0);
 
         stopGrid(0);
-
-        assertEquals(0, mem.allocatedSize());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUndeploy() throws Exception {
-        Ignite ignite = ignite(0);
-
-        IgniteCache cache = ignite.createCache(cacheConfiguration());
-
-        for (int k = 0; k < 100; k++)
-            cache.put(k, new TestType());
-
-        GridUnsafeMemory mem = schemaMemory(ignite, cache.getName());
-
-        assertTrue(mem.allocatedSize() > 0);
-
-        ((IgniteKernal)ignite).context().query().onUndeploy("cache", U.detectClassLoader(TestType.class));
 
         assertEquals(0, mem.allocatedSize());
     }

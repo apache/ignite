@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
  * Data input stream.
@@ -52,6 +53,7 @@ public class HadoopDataInStream extends InputStream implements DataInput {
     /**
      * @param size Size.
      * @return Old pointer.
+     * @throws IOException On error.
      */
     protected long move(long size) throws IOException {
         long ptr = buf.move(size);
@@ -156,7 +158,37 @@ public class HadoopDataInStream extends InputStream implements DataInput {
 
     /** {@inheritDoc} */
     @Override public String readLine() throws IOException {
-        throw new UnsupportedOperationException();
+        if (buf.remaining() == 0)
+            return null;
+
+        SB sb = new SB();
+
+        while (buf.remaining() > 0) {
+            char c = (char)readByte();
+
+            switch (c) {
+                case '\n':
+                    return sb.toString();
+
+                case '\r':
+                    if (buf.remaining() == 0)
+                        return sb.toString();
+
+                    c = (char)readByte();
+
+                    if (c == '\n')
+                        return sb.toString();
+                    else
+                        buf.moveBackward(1);
+
+                    return sb.toString();
+
+                default:
+                    sb.a(c);
+            }
+        }
+
+        return sb.toString();
     }
 
     /** {@inheritDoc} */

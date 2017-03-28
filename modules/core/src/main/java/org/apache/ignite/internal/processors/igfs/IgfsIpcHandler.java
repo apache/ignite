@@ -101,7 +101,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
 
         String prefix = "igfs-" + igfsCtx.igfs().name() + (mgmt ? "mgmt-" : "") + "-ipc";
 
-        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().gridName(), threadCnt, threadCnt,
+        pool = new IgniteThreadPoolExecutor(prefix, igfsCtx.kernalContext().igniteInstanceName(), threadCnt, threadCnt,
             Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>());
 
         log = ctx.log(IgfsIpcHandler.class);
@@ -258,10 +258,6 @@ class IgfsIpcHandler implements IgfsServerHandler {
      * @throws IgniteCheckedException In case of handshake failure.
      */
     private IgfsMessage processHandshakeRequest(IgfsHandshakeRequest req) throws IgniteCheckedException {
-        if (req.gridName() != null && !F.eq(ctx.gridName(), req.gridName()))
-            throw new IgniteCheckedException("Failed to perform handshake because existing Grid name " +
-                "differs from requested [requested=" + req.gridName() + ", existing=" + ctx.gridName() + ']');
-
         if (req.igfsName() != null && !F.eq(igfs.name(), req.igfsName()))
             throw new IgniteCheckedException("Failed to perform handshake because existing IGFS name " +
                 "differs from requested [requested=" + req.igfsName() + ", existing=" + igfs.name() + ']');
