@@ -3,6 +3,9 @@ package org.apache.ignite.mesos;
 import junit.framework.TestCase;
 import org.apache.mesos.Protos;
 import org.hamcrest.core.Is;
+import org.junit.Rule;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.omg.CORBA.Environment;
 
 import static org.junit.Assert.assertThat;
 
@@ -21,26 +24,22 @@ public class IgniteFrameworkInfoTest extends TestCase {
      */
     private final String MESOS_USER_NAME = "MESOS_USER";
 
+    private final String testName = "mesosusername";
+
     /**
      * Mesos user name in system environment.
      */
     private final String MESOS_ROLE = "MESOS_ROLE";
 
-    private String userName;
+    private final String testRole = "mesosrole";
 
-    private String mesosRole;
-
-    private final int frameworkFailoverTimeout = 0;
-
+    @Rule
+    public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Override
     public void setUp() throws Exception {
-
-        userName = (System.getenv(MESOS_USER_NAME) != null
-            ? System.getenv(MESOS_USER_NAME) : "");
-
-        mesosRole = System.getenv(MESOS_ROLE) != null
-            ? System.getenv(MESOS_ROLE) : "*";
+        environmentVariables.set(MESOS_USER_NAME, testName);
+        environmentVariables.set(MESOS_ROLE, testRole);
     }
 
     /**
@@ -48,17 +47,20 @@ public class IgniteFrameworkInfoTest extends TestCase {
      */
     public void testFrameworkInfo() throws Exception {
 
+        String name = System.getenv(MESOS_USER_NAME);
+        String role = System.getenv(MESOS_ROLE);
+
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(userName != null ? userName : "")
-            .setRole(mesosRole != null ? mesosRole : "*")
-            .setFailoverTimeout(frameworkFailoverTimeout);
+            .setUser(name != null ? name : "")
+            .setRole(role != null ? role : "*");
 
-        assertThat(userName, Is.is(frameworkBuilder.getUser()));
-        assertThat(mesosRole, Is.is(frameworkBuilder.getRole()));
+
+        assertThat(testName, Is.is(name));
+        assertThat(testRole, Is.is(role));
+
+        assertThat(name, Is.is(frameworkBuilder.getUser()));
+        assertThat(role, Is.is(frameworkBuilder.getRole()));
         assertThat(IGNITE_FRAMEWORK_NAME, Is.is(frameworkBuilder.getName()));
-        assertThat((double) frameworkFailoverTimeout, Is.is(frameworkBuilder.getFailoverTimeout()));
-
     }
-
 }
