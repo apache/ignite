@@ -35,7 +35,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            ((IBinarizable) obj).WriteBinary(writer);
+            var sorter = new SortedBinaryWriter(writer);
+            
+            ((IBinarizable) obj).WriteBinary(sorter);
+
+            sorter.Flush();
         }
 
         /** <inheritdoc /> */

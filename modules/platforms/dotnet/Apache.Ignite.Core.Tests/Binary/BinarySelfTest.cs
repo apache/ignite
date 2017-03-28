@@ -2296,13 +2296,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
-
         public class HandleOuterExclusive : HandleOuter
         {
             /** <inheritdoc /> */
             override public void WriteBinary(IBinaryWriter writer)
             {
-                BinaryWriter writer0 = (BinaryWriter)writer;
+                var writer0 = (BinaryWriter) ((SortedBinaryWriter) writer).Writer;
 
                 writer.WriteString("before", Before);
 
@@ -2310,7 +2309,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 
                 writer.WriteString("after", After);
 
-                IBinaryRawWriter rawWriter = writer.GetRawWriter();
+                var rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
@@ -2353,21 +2352,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteCollection("col", Collection);
-                writer.WriteDictionary("dict", Dictionary);
-                writer.WriteObject("dictEntry", DictionaryEntry);
-                writer.WriteObject("obj", Object);
-                writer.WriteArray("arr", Array);
+                writer.WriteCollection("1col", Collection);
+                writer.WriteDictionary("2dict", Dictionary);
+                writer.WriteObject("3dictEntry", DictionaryEntry);
+                writer.WriteObject("4obj", Object);
+                writer.WriteArray("5arr", Array);
                 writer.GetRawWriter().WriteCollection(CollectionRaw);
             }
 
             public void ReadBinary(IBinaryReader reader)
             {
-                Collection = reader.ReadCollection("col");
-                Dictionary = reader.ReadDictionary("dict");
-                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
-                Object = reader.ReadObject<object>("obj");
-                Array = reader.ReadArray<object>("arr");
+                Collection = reader.ReadCollection("1col");
+                Dictionary = reader.ReadDictionary("2dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("3dictEntry");
+                Object = reader.ReadObject<object>("4obj");
+                Array = reader.ReadArray<object>("5arr");
                 CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }
