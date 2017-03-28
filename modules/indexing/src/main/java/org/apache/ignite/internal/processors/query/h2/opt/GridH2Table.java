@@ -438,14 +438,7 @@ public class GridH2Table extends TableBase {
         Lock l = lock(true, Long.MAX_VALUE);
 
         try {
-           /* assert sessions.isEmpty() : sessions;*/
-
-            //todo only for investigation
-            if (!sessions.isEmpty()){
-                U.dumpThreads(null);
-
-                assert sessions.isEmpty() : sessions;
-            }
+            assert sessions.isEmpty() : sessions;
 
             destroyed = true;
 
