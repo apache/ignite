@@ -36,8 +36,17 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrids(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -46,12 +55,11 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleCreate() throws Exception {
-        IgniteEx node1 = startGrid(0);
-        IgniteEx node2 = startGrid(1);
+        IgniteEx node = grid(0);
 
-        node1.getOrCreateCache(cacheConfiguration());
+        node.getOrCreateCache(cacheConfiguration());
 
-        GridCacheProcessor cacheProc = node1.context().cache();
+        GridCacheProcessor cacheProc = node.context().cache();
 
         LinkedHashMap<String, Boolean> idxFields = new LinkedHashMap<>();
 
@@ -61,7 +69,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
 
         cacheProc.dynamicIndexCreate(CACHE_NAME, ValueClass.class.getSimpleName(), idx, false).get();
 
-        Collection<GridQueryTypeDescriptor> descs = node1.context().query().types(CACHE_NAME);
+        Collection<GridQueryTypeDescriptor> descs = node.context().query().types(CACHE_NAME);
 
         System.out.println(descs);
     }
