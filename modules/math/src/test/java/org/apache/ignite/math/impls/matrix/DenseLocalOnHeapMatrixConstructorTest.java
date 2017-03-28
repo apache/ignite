@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 /** */
 public class DenseLocalOnHeapMatrixConstructorTest {
     /** */ @Test
-    public void mapInvalidArgsTest() {
+    public void invalidArgsTest() {
         verifyAssertionError(() -> new DenseLocalOnHeapMatrix(0, 1), "invalid row parameter");
 
         verifyAssertionError(() -> new DenseLocalOnHeapMatrix(1, 0), "invalid col parameter");

@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 /** */
 public class RandomMatrixConstructorTest {
     /** */ @Test
-    public void mapInvalidArgsTest() {
+    public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new RandomMatrix(0, 1), "invalid row parameter");
 
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new RandomMatrix(1, 0), "invalid col parameter");

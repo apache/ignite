@@ -24,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 /** */
 public class DenseLocalOffHeapMatrixConstructorTest {
     /** */ @Test
-    public void mapInvalidArgsTest() {
+    public void invalidArgsTest() {
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DenseLocalOffHeapMatrix(0, 1), "invalid row parameter");
 
         DenseLocalOnHeapMatrixConstructorTest.verifyAssertionError(() -> new DenseLocalOffHeapMatrix(1, 0), "invalid col parameter");
