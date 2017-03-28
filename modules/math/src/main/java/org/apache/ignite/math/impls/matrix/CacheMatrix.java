@@ -156,18 +156,7 @@ public class CacheMatrix<K, V> extends AbstractMatrix {
     private Matrix mapOverValues(IgniteFunction<Double, Double> mapper) {
         CacheMatrixStorage<K, V> sto = storage();
 
-        // Gets these values assigned to a local vars so that
-        // they will be available in the closure.
-        MatrixKeyMapper<K> keyMapper = sto.keyMapper();
-        ValueMapper<V> valMapper = sto.valueMapper();
-
-        CacheUtils.foreach(sto.cache().getName(), (CacheUtils.CacheEntry<K, V> ce) -> {
-            K k = ce.entry().getKey();
-
-            if (keyMapper.isValid(k))
-                // Actual assignment.
-                ce.cache().put(k, valMapper.fromDouble(mapper.apply(valMapper.toDouble(ce.entry().getValue()))));
-        });
+        CacheUtils.map(sto.cache().getName(), sto.keyMapper(), sto.valueMapper(), mapper);
 
         return this;
     }

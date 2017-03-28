@@ -26,11 +26,12 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.math.*;
+import org.apache.ignite.math.Vector;
 import java.io.*;
 import java.util.*;
-import org.apache.ignite.math.*;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -108,7 +109,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         return null; // TODO
     }
 
-    @Override public org.apache.ignite.math.Vector likeVector(int crd) {
+    @Override public Vector likeVector(int crd) {
         return null; // TODO
     }
 }
