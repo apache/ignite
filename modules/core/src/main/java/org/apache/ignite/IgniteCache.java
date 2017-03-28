@@ -1219,10 +1219,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
 
     /**
-     * Asynchronously invokes an {@link EntryProcessor} against the {@link Entry} specified by
-     * the provided key. If an {@link Entry} does not exist for the specified key,
+     * Asynchronously invokes an {@link EntryProcessor} against the entry specified by
+     * the provided key. If an entry does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
-     * {@link Entry}, consisting of the key with a null value is used instead.
+     * entry, consisting of the key with a null value is used instead.
      *
      * @param key The key to the entry.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1308,11 +1308,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         EntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Asynchronously invokes an {@link EntryProcessor} against the set of {@link Entry}s
+     * Asynchronously invokes an {@link EntryProcessor} against the set of entrys
      * specified by the set of keys.
      * <p>
-     * If an {@link Entry} does not exist for the specified key, an attempt is made
-     * to load it (if a loader is configured) or a surrogate {@link Entry},
+     * If an entry does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate entry,
      * consisting of the key and a value of null is provided.
      * <p>
      * The order that the entries for the keys are processed is undefined.
