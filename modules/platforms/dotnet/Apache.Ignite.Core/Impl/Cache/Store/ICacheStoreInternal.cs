@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,16 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Handle
+namespace Apache.Ignite.Core.Impl.Cache.Store
 {
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+
     /// <summary>
-    /// Wrapper over some resource ensuring it's release.
+    /// Provides a non-generic way to work with <see cref="CacheStoreInternal{TK, TV}"/>.
     /// </summary>
-    internal interface IHandle
+    internal interface ICacheStoreInternal
     {
         /// <summary>
-        /// Release the resource.
+        /// Invokes a store operation.
         /// </summary>
-        void Release();
+        /// <param name="stream">Input stream.</param>
+        /// <param name="grid">Grid.</param>
+        /// <returns>Invocation result.</returns>
+        /// <exception cref="IgniteException">Invalid operation type:  + opType</exception>
+        int Invoke(IBinaryStream stream, Ignite grid);
+
+        /// <summary>
+        /// Initializes this instance with a grid.
+        /// </summary>
+        /// <param name="grid">Grid.</param>
+        void Init(Ignite grid);
     }
 }

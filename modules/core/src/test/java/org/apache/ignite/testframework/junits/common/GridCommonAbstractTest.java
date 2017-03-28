@@ -73,7 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -576,7 +576,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         while (failed) {
                             failed = false;
 
-                            for (GridDhtPartitionMap2 pMap : top.partitionMap(true).values()) {
+                            for (GridDhtPartitionMap pMap : top.partitionMap(true).values()) {
                                 if (failed)
                                     break;
 

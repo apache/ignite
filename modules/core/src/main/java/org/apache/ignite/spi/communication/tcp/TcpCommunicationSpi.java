@@ -243,9 +243,6 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 @IgniteSpiConsistencyChecked(optional = false)
 public class TcpCommunicationSpi extends IgniteSpiAdapter
     implements CommunicationSpi<Message>, TcpCommunicationSpiMBean {
-    /** */
-    private static final IgniteProductVersion MULTIPLE_CONN_SINCE_VER = IgniteProductVersion.fromString("1.8.2");
-
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower).";
@@ -2340,7 +2337,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else {
             GridCommunicationClient client = null;
 
-            int connIdx = useMultipleConnections(node) ? connPlc.connectionIndex() : 0;
+            int connIdx = connPlc.connectionIndex();
 
             try {
                 boolean retry;
@@ -2430,7 +2427,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient[] newClients;
 
             if (curClients == null) {
-                newClients = new GridCommunicationClient[useMultipleConnections(node) ? connectionsPerNode : 1];
+                newClients = new GridCommunicationClient[connectionsPerNode];
                 newClients[connIdx] = addClient;
 
                 if (clients.putIfAbsent(node.id(), newClients) == null)
@@ -2865,7 +2862,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             sslMeta.sslEngine(sslEngine);
                         }
 
-                        Integer handshakeConnIdx = useMultipleConnections(node) ? connIdx : null;
+                        Integer handshakeConnIdx = connIdx;
 
                         rcvCnt = safeHandshake(ch,
                             recoveryDesc,
@@ -3353,14 +3350,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             return recoveryDescriptor(inRecDescs, true, node, key);
         else
             return recoveryDescriptor(recoveryDescs, false, node, key);
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if given node supports multiple connections per-node for communication.
-     */
-    private boolean useMultipleConnections(ClusterNode node) {
-        return node.version().compareToIgnoreTimestamp(MULTIPLE_CONN_SINCE_VER) >= 0;
     }
 
     /**

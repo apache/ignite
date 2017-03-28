@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
@@ -209,8 +207,6 @@ public class GridMapQueryExecutor {
                 onNextPageRequest(node, (GridQueryNextPageRequest)msg);
             else if (msg instanceof GridQueryCancelRequest)
                 onCancel(node, (GridQueryCancelRequest)msg);
-            else if (msg instanceof GridQueryRequest)
-                onQueryRequest(node, (GridQueryRequest)msg);
             else
                 processed = false;
 
@@ -402,41 +398,6 @@ public class GridMapQueryExecutor {
                 return ints.length;
             }
         };
-    }
-
-    /**
-     * Executing queries locally.
-     *
-     * @param node Node.
-     * @param req Query request.
-     */
-    private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
-        List<Integer> cacheIds;
-
-        if (req.extraSpaces() != null) {
-            cacheIds = new ArrayList<>(req.extraSpaces().size() + 1);
-
-            cacheIds.add(CU.cacheId(req.space()));
-
-            for (String extraSpace : req.extraSpaces())
-                cacheIds.add(CU.cacheId(extraSpace));
-        }
-        else
-            cacheIds = Collections.singletonList(CU.cacheId(req.space()));
-
-        onQueryRequest0(node,
-            req.requestId(),
-            0,
-            req.queries(),
-            cacheIds,
-            req.topologyVersion(),
-            null,
-            req.partitions(),
-            null,
-            req.pageSize(),
-            OFF,
-            true,
-            req.timeout());
     }
 
     /**

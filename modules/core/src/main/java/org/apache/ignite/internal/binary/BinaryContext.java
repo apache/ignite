@@ -189,12 +189,12 @@ public class BinaryContext {
         sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
-        sysClss.add(GridClosureProcessor.C1V2.class.getName());
-        sysClss.add(GridClosureProcessor.C1MLAV2.class.getName());
-        sysClss.add(GridClosureProcessor.C2V2.class.getName());
-        sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
-        sysClss.add(GridClosureProcessor.C4V2.class.getName());
-        sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C1.class.getName());
+        sysClss.add(GridClosureProcessor.C1MLA.class.getName());
+        sysClss.add(GridClosureProcessor.C2.class.getName());
+        sysClss.add(GridClosureProcessor.C2MLA.class.getName());
+        sysClss.add(GridClosureProcessor.C4.class.getName());
+        sysClss.add(GridClosureProcessor.C4MLA.class.getName());
 
         sysClss.add(IgniteUuid.class.getName());
 
