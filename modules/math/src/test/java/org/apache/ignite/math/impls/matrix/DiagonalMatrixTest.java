@@ -22,6 +22,7 @@ import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.impls.MathTestConstants;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,6 +78,30 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
             verifyDiagonal(new DiagonalMatrix(m));
         }
 
+        final double[] data = new double[size];
+
+        for (int i = 0; i < size; i++)
+            data[i] = 1 + i;
+
+        final Matrix m = new DiagonalMatrix(new DenseLocalOnHeapVector(data));
+
+        assertEquals("Rows in matrix constructed from vector", size, m.rowSize());
+        assertEquals("Cols in matrix constructed from vector", size, m.columnSize());
+
+        for (int i = 0; i < size; i++)
+            assertEquals(UNEXPECTED_VALUE + " at vector index " + i, data[i], m.get(i, i), 0d);
+
+        verifyDiagonal(m);
+
+        final Matrix m1 = new DiagonalMatrix(data);
+
+        assertEquals("Rows in matrix constructed from array", size, m1.rowSize());
+        assertEquals("Cols in matrix constructed from array", size, m1.columnSize());
+
+        for (int i = 0; i < size; i++)
+            assertEquals(UNEXPECTED_VALUE + " at array index " + i, data[i], m1.get(i, i), 0d);
+
+        verifyDiagonal(m1);
     }
 
     /** */
@@ -127,6 +152,9 @@ public class DiagonalMatrixTest extends ExternalizeTest<DiagonalMatrix> {
                 try {
                     m.set(i, j, exp);
                 } catch (UnsupportedOperationException uoe) {
+                    if (diagonal)
+                        throw uoe;
+
                     expECaught = true;
                 }
 
