@@ -505,6 +505,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getExecutorService();
 
     /**
+     * Executor service that is in charge of processing service proxy invocations.
+     *
+     * @return Thread pool implementation to be used in grid for service proxy invocations.
+     */
+    public ExecutorService getServiceExecutorService();
+
+    /**
      * Executor service that is in charge of processing internal system messages.
      *
      * @return Thread pool implementation to be used in grid for internal system messages.
