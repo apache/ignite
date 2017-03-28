@@ -162,7 +162,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test for https://issues.apache.org/jira/browse/IGNITE-4838.
+     * Test execution of non-existing task by name IGNITE-4838.
      *
      * @throws Exception If failed.
      */

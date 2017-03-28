@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * Task execution test.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridTaskExecutionWithOutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean peerClassLoadingEnabled() {
         return false;
