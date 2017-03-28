@@ -124,7 +124,8 @@ public class IgniteFramework {
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl(),
                 cred);
-        } else {
+        }
+        else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
 
             driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProps.masterUrl());
