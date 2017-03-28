@@ -148,6 +148,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Gets or sets the name of the SQL table.
+        /// When not set, value type name is used.
+        /// </summary>
+        public string TableName { get; set; }
+
+        /// <summary>
         /// Gets or sets query fields, a map from field name to Java type name. 
         /// The order of fields defines the order of columns returned by the 'select *' queries.
         /// </summary>
@@ -176,6 +182,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
+            TableName = reader.ReadString();
 
             var count = reader.ReadInt();
             Fields = count == 0
@@ -199,6 +206,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
+            writer.WriteString(TableName);
 
             if (Fields != null)
             {

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -324,7 +325,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     node,
                     topic,
                     res,
-                    cctx.ioPolicy(),
+                    GridIoPolicy.QUERY_POOL,
                     timeout > 0 ? timeout : Long.MAX_VALUE);
 
                 return true;
@@ -799,7 +800,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
         if (!F.isEmpty(rmtNodes)) {
-            cctx.io().safeSend(rmtNodes, req, cctx.ioPolicy(), new P1<ClusterNode>() {
+            cctx.io().safeSend(rmtNodes, req, GridIoPolicy.QUERY_POOL, new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     fut.onNodeLeft(node.id());
 
@@ -817,7 +818,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                     return null;
                 }
-            });
+            }, GridIoPolicy.QUERY_POOL);
         }
     }
 

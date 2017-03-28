@@ -254,18 +254,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("GetAsync 1.");
 
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
-        if (needVer) {
-            cacheAsync.getEntry(key);
-
-            assertEquals((Integer)101, cacheAsync.<CacheEntry<String, Integer>>future().get().getValue());
-        }
-        else {
-            cacheAsync.get(key);
-
-            assertEquals((Integer)101, cacheAsync.<Integer>future().get());
-        }
+        if (needVer)
+            assertEquals((Integer)101, cache.getEntryAsync(key).get().getValue());
+        else
+            assertEquals((Integer)101, cache.getAsync(key).get());
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -302,8 +295,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.retInterceptor = new NullGetInterceptor();
 
         IgniteCache<String, Integer> cache = jcache(0);
-
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
         Collection<CacheEntry<String, Integer>> c;
         Map<String, Integer> map;
@@ -368,11 +359,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             if (needVer) {
                 if (j == 0)
                     c = cache.getEntries(keys);
-                else {
-                    cacheAsync.getEntries(keys);
-
-                    c = cacheAsync.<Collection<CacheEntry<String, Integer>>>future().get();
-                }
+                else
+                    c = cache.getEntriesAsync(keys).get();
 
                 for (CacheEntry<String, Integer> e : c) {
                     int k = Integer.valueOf(e.getKey());
@@ -398,11 +386,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             else {
                 if (j == 0)
                     map = cache.getAll(keys);
-                else {
-                    cacheAsync.getAll(keys);
-
-                    map = cacheAsync.<Map<String, Integer>>future().get();
-                }
+                else
+                    map = cache.getAllAsync(keys).get();
 
                 int i = 0;
 

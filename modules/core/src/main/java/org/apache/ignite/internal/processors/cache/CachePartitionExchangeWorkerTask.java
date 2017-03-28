@@ -15,34 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
-
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Data transfer object for cache store configuration properties.
+ * Cache partition exchange worker task marker interface.
  */
-public class VisorCacheStoreConfigurationV2 extends VisorCacheStoreConfiguration {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
-
-    /** {@inheritDoc} */
-    @Override public VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
-        super.from(ignite, ccfg);
-
-        storeKeepBinary = ccfg.isStoreKeepBinary();
-
-        return this;
-    }
-
+public interface CachePartitionExchangeWorkerTask {
     /**
-     * @return Keep binary in store flag.
+     * @return {@code True} if task denotes standard exchange task, {@code false} if this is a custom task which
+     * must be executed from within exchange thread.
      */
-    public boolean storeKeepBinary() {
-        return storeKeepBinary;
-    }
+    boolean isExchange();
 }

@@ -15,16 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+import angular from 'angular';
 
-import org.apache.ignite.binary.BinaryObject;
+import inputDialog from './input-dialog.service';
 
-/**
- * Test PUTs with binary hashed key.
- */
-public class IgniteLegacyBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
-    }
-}
+angular
+    .module('ignite-console.input-dialog', [])
+    .service('IgniteInput', inputDialog);

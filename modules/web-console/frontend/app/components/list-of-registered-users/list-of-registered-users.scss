@@ -15,33 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+.list-of-registered-users {
+  & > a {
+    display: inline-block;
+    margin: 10px;
+    margin-left: 0;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-
-/**
- * Data transfer object for cache query configuration data.
- */
-public class VisorCacheQueryConfigurationV2 extends VisorCacheQueryConfiguration {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private String sqlSchema;
-
-    /**
-     * @return Schema name, which is used by SQL engine for SQL statements generation.
-     */
-    public String sqlSchema() {
-        return sqlSchema;
+    &.active {
+      font-weight: bold;
     }
-
-    /** {@inheritDoc} */
-    @Override public VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
-        super.from(ccfg);
-
-        sqlSchema = ccfg.getSqlSchema();
-
-        return this;
-    }
+  }
 }

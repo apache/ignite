@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
@@ -140,7 +141,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
@@ -159,7 +159,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
+    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
@@ -172,10 +172,15 @@ public class GridIoMessageFactory implements MessageFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Message create(byte type) {
+    @Override public Message create(short type) {
         Message msg = null;
 
         switch (type) {
+            case -48:
+                msg = new NearCacheUpdates();
+
+                break;
+
             case -47:
                 msg = new GridNearAtomicCheckUpdateRequest();
 
@@ -787,8 +792,8 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 110:
-                msg = new GridQueryRequest();
-
+                // EMPTY type
+                // GridQueryRequest was removed
                 break;
 
             case 111:
@@ -889,7 +894,7 @@ public class GridIoMessageFactory implements MessageFactory {
      * @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
+    public static void registerCustom(short type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);

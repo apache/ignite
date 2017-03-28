@@ -509,28 +509,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Undeploys given class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     */
-    public void onUndeploy(ClassLoader ldr) {
-        if (!enterBusy())
-            return; // Ignore index update when node is stopping.
-
-        try {
-            qryProc.onUndeploy(space, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            invalidateResultCache();
-
-            leaveBusy();
-        }
-    }
-
-    /**
      * Executes local query.
      *
      * @param qry Query.

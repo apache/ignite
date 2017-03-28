@@ -68,6 +68,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTest;
+import org.apache.ignite.internal.processors.cache.IncorrectCacheTypeMetadataTest;
+import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
@@ -97,7 +99,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlKeyValueFieldsTest;
-import org.apache.ignite.internal.processors.query.IgniteSqlQueryDedicatedPoolTest;
+import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
@@ -133,6 +135,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         // Config.
         suite.addTestSuite(IgniteCacheDuplicateEntityConfigurationSelfTest.class);
+        suite.addTestSuite(IncorrectCacheTypeMetadataTest.class);
+        suite.addTestSuite(IncorrectQueryEntityTest.class);
 
         // Queries tests.
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
@@ -246,7 +250,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(CacheOffheapBatchIndexingSingleTypeTest.class);
         suite.addTestSuite(CacheSqlQueryValueCopySelfTest.class);
         suite.addTestSuite(IgniteCacheQueryCacheDestroySelfTest.class);
-        suite.addTestSuite(IgniteSqlQueryDedicatedPoolTest.class);
+        suite.addTestSuite(IgniteQueryDedicatedPoolTest.class);
         suite.addTestSuite(IgniteSqlEntryCacheModeAgnosticTest.class);
         suite.addTestSuite(QueryEntityCaseMismatchTest.class);
         suite.addTestSuite(IgniteSqlKeyValueFieldsTest.class);

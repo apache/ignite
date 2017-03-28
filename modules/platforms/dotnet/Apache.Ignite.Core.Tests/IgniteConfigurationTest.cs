@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
-                Assert.AreEqual(cfg.GridName, resCfg.GridName);
+                Assert.AreEqual(cfg.IgniteInstanceName, resCfg.IgniteInstanceName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
                 Assert.AreEqual(cfg.MetricsExpireTime, resCfg.MetricsExpireTime);
                 Assert.AreEqual(cfg.MetricsHistorySize, resCfg.MetricsHistorySize);
@@ -244,7 +244,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 Localhost = "127.0.0.1",
                 DiscoverySpi = TestUtils.GetStaticDiscovery(),
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             }))
             {
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -383,7 +383,7 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(cfg))
             {
                 // Start with the same endpoint
-                cfg.GridName = "ignite2";
+                cfg.IgniteInstanceName = "ignite2";
                 using (var ignite2 = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(2, ignite.GetCluster().GetNodes().Count);
@@ -472,7 +472,7 @@ namespace Apache.Ignite.Core.Tests
                     ThreadPriority = 6,
                     TopologyHistorySize = 1234567
                 },
-                GridName = "gridName1",
+                IgniteInstanceName = "gridName1",
                 IncludedEventTypes = EventType.SwapspaceAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,

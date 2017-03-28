@@ -53,7 +53,8 @@ libignite_common_la_SOURCES = \
     src/date.cpp \
     src/ignite_error.cpp \
     src/guid.cpp \
-    src/timestamp.cpp
+    src/timestamp.cpp \
+    src/time.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda
