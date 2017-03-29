@@ -32,8 +32,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -160,6 +166,64 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES);
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10_000 * super.getTestTimeout();
+    }
+
+    /**
+     * Multithreaded version of {@link #testLevel}.
+     *
+     * @throws Exception On error.
+     */
+    public void testLevelMultithreaded() throws Exception {
+        ExecutorService svc = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+
+        final long total = 1000;
+
+        final AtomicLong runCnt = new AtomicLong();
+        final AtomicLong completedCnt = new AtomicLong();
+        final AtomicBoolean failure = new AtomicBoolean();
+
+        for (int i=0; i<total; i++) {
+            svc.submit(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    if (failure.get())
+                        return null;
+
+                    long started = runCnt.incrementAndGet();
+
+                    System.out.println(">>>>>>>>>>>>>>>>>>>>>> Started: " + started);
+
+                    try {
+                        testLevel();
+
+                        long succeeded = completedCnt.incrementAndGet();
+
+                        System.out.println("<<<<<<<<<<<<<<<<<<<<<< Succeeded: " + succeeded);
+
+                        return null;
+                    } catch (Throwable t) {
+                        failure.set(true);
+
+                        t.printStackTrace();
+
+                        throw new IgniteCheckedException(t);
+                    }
+                }
+            });
+        }
+
+        svc.shutdown();
+
+        boolean ok = svc.awaitTermination(getTestTimeout() / 2, TimeUnit.MILLISECONDS);
+
+        assertTrue(ok);
+        assertEquals(total, runCnt.get());
+        assertEquals(total, completedCnt.get());
+        assertFalse(failure.get());
+    }
+
     /**
      * Geometric distribution test implementation.
      *
@@ -180,9 +244,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             levelsCnts[level] = createLevelData(valuesPerDistribution, level);
 
         for (int sampleIdx=0; sampleIdx < samples; sampleIdx++) {
-            if (sampleIdx % 100 == 0)
-                X.println("======= Sample index: " + sampleIdx);
-
             for (LevelData data: levelsCnts)
                 data.resetSampleStatistics();
 
