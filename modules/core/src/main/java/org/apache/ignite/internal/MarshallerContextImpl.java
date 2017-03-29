@@ -29,7 +29,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,10 +71,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /** */
     private ContinuousQueryListener lsnr;
-
-    // Will be removed after merge with IGNITE-4157
-    /** Callbacks that will be called after latch release. */
-    private volatile List<Runnable> callBacks;
 
     /**
      * @param igniteWorkDir Ignite work directory.
@@ -143,46 +138,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
 
         latch.countDown();
-
-        invokeInitCallbacks();
-    }
-
-    /**
-     * Register callback that will be invoked after marshaller cache
-     * will be started, or immediately if already started.
-     *
-     * <p>
-     *     Called in discovery worker thread.
-     * </p>
-     * @param cb Callback.
-     */
-    public void registerInitCallback(Runnable cb) {
-        if (latch.getCount() == 0)
-            cb.run();
-
-        List<Runnable> cbs = this.callBacks;
-
-        if (cbs == null)
-            cbs = new ArrayList<>();
-
-        cbs.add(cb);
-    }
-
-    /**
-     * Invoke and remove init callbacks.
-     * <p>
-     *     Called in starting node thread.
-     * </p>
-     */
-    private void invokeInitCallbacks() {
-        List<Runnable> cbs = this.callBacks;
-
-        this.callBacks = null;
-
-        if (cbs != null) {
-            for (Runnable cb : cbs)
-                cb.run();
-        }
     }
 
     /**
