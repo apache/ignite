@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -375,62 +374,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertTrue(res.hasNext());
         assertEquals(ba(2, "Kolya", 25, true).value(null, false), value(res.next()));
         assertFalse(res.hasNext());
-
-        // Object.class key handling
-        UUID uid = UUID.randomUUID();
-
-        spi.store(typeCA.space(), typeCA, key(uid), aa(1, "Vasya", 10), "v1".getBytes(), 0);
-
-        assertEquals(1, spi.size(typeCA.space(), typeCA));
-
-        spi.store(typeCA.space(), typeCA, key(1), aa(2, "Petya", 20), "v2".getBytes(), 0);
-
-        assertEquals(2, spi.size(typeCA.space(), typeCA));
-
-        spi.store(typeCA.space(), typeCA, key(uid), aa(3, "Kolya", 30), "v3".getBytes(), 0);
-
-        // Key should have been replaced
-        assertEquals(2, spi.size(typeCA.space(), typeCA));
-
-        res = spi.queryLocalSql(typeCA.space(), "select ca.* from a ca order by ca.age desc", null,
-            Collections.emptySet(), typeAA, null);
-
-        IgniteBiTuple<Integer, Map<String, Object>> row;
-
-        assertTrue(res.hasNext());
-
-        row = res.next();
-
-        assertEquals(uid, key(row));
-        assertEquals(aa(3, "Kolya", 30).value(null, false), value(row));
-
-        assertTrue(res.hasNext());
-
-        row = res.next();
-
-        assertEquals(1, key(row));
-        assertEquals(aa(2, "Petya", 20).value(null, false), value(row));
-
-        assertFalse(res.hasNext());
-
-        spi.remove(typeCA.space(), key(1), aa(2, "Petya", 20));
-
-        assertEquals(1, spi.size(typeCA.space(), typeCA));
-
-        res = spi.queryLocalSql(typeCA.space(), "select ca.* from a ca", null,
-            Collections.emptySet(), typeAA, null);
-
-        assertTrue(res.hasNext());
-
-        row = res.next();
-
-        assertEquals(uid, key(row));
-        assertEquals(aa(3, "Kolya", 30).value(null, false), value(row));
-
-        spi.remove(typeCA.space(), key(uid), aa(3, "Kolya", 30));
-
-        // Removal has worked for both keys although the table was the same and keys were of different type
-        assertEquals(0, spi.size(typeCA.space(), typeCA));
 
         // Text queries
         Iterator<IgniteBiTuple<Integer, Map<String, Object>>> txtRes = spi.queryLocalText(typeAB.space(), "good",
