@@ -780,7 +780,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // Clear indexes.
+            Iterator<Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl>> idxIt = idxs.entrySet().iterator();
+
+            while (idxIt.hasNext()) {
+                Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> idxEntry = idxIt.next();
+
+                QueryIndexKey idxKey = idxEntry.getKey();
+
+                if (F.eq(space, idxKey.space()))
+                    idxIt.remove();
+            }
+
             // TODO Clear pending index operations.
+
+            // Complete relevant index futures.
+            Iterator<Map.Entry<UUID, QueryIndexClientFuture>> idxCliFutIt = idxCliFuts.entrySet().iterator();
+
+            while (idxCliFutIt.hasNext()) {
+                Map.Entry<UUID, QueryIndexClientFuture> idxCliFutEntry = idxCliFutIt.next();
+
+                QueryIndexClientFuture idxCliFut = idxCliFutEntry.getValue();
+
+                if (F.eq(space, idxCliFut.key().space())) {
+                    idxCliFut.onCacheStopped();
+
+                    idxCliFutIt.remove();
+                }
+            }
 
             // Notify indexing.
             try {
@@ -792,45 +818,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         finally {
             idxLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Remove indexes during complete space unregister.
-     *
-     * @param space Space.
-     */
-    private void removeIndexesOnSpaceUnregister(String space) {
-        Iterator<Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl>> idxIt = idxs.entrySet().iterator();
-
-        while (idxIt.hasNext()) {
-            Map.Entry<QueryIndexKey, QueryIndexDescriptorImpl> idxEntry = idxIt.next();
-
-            QueryIndexKey idxKey = idxEntry.getKey();
-
-            if (F.eq(space, idxKey.space()))
-                idxIt.remove();
-        }
-    }
-
-    /**
-     * Complete index client futures in case of cache stop or type unregistration.
-     *
-     * @param space Space.
-     */
-    private void completeIndexClientFuturesOnSpaceUnregister(String space) {
-        Iterator<Map.Entry<UUID, QueryIndexClientFuture>> idxCliFutIt = idxCliFuts.entrySet().iterator();
-
-        while (idxCliFutIt.hasNext()) {
-            Map.Entry<UUID, QueryIndexClientFuture> idxCliFutEntry = idxCliFutIt.next();
-
-            QueryIndexClientFuture idxCliFut = idxCliFutEntry.getValue();
-
-            if (F.eq(space, idxCliFut.key().space())) {
-                idxCliFut.onCacheStopped();
-
-                idxCliFutIt.remove();
-            }
         }
     }
 
