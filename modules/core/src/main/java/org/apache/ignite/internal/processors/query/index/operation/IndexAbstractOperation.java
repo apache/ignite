@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.index.operation;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -74,4 +76,9 @@ public abstract class IndexAbstractOperation implements Serializable {
      * @return Index name.
      */
     public abstract String indexName();
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IndexAbstractOperation.class, this);
+    }
 }

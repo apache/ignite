@@ -64,6 +64,6 @@ public class IndexDropOperation extends IndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexDropOperation.class, this);
+        return S.toString(IndexDropOperation.class, this, "parent", super.toString());
     }
 }

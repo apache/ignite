@@ -48,6 +48,21 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
     /** Cache. */
     private static final String CACHE_NAME = "cache";
 
+    /** Table name. */
+    private static final String TBL_NAME = tableName(ValueClass.class);
+
+    /** Index name 1. */
+    private static final String IDX_NAME = "idx_1";
+
+    /** Index name 2. */
+    private static final String IDX_NAME_2 = "idx_2";
+
+    /** Index name 3. */
+    private static final String IDX_NAME_3 = "idx_3";
+
+    /** Field 1. */
+    private static final String FIELD_NAME = "field1";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -55,6 +70,22 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
         startGrids(2);
 
         grid(0).getOrCreateCache(cacheConfiguration());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).getOrCreateCache(cacheConfiguration());
+
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).destroyCache(CACHE_NAME);
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -70,13 +101,25 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreate() throws Exception {
-        assertNoIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx");
+        QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
 
-        QueryIndex idx = createIndex("my_idx", field("str"));
+        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
 
-        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, tableName(ValueClass.class), idx, false).get();
+        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
+    }
 
-        assertIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx", field("str"));
+    /**
+     * Test simple index drop.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDrop() throws Exception {
+        QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
+
+        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
     }
 
     /**
@@ -95,7 +138,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @param cls Class.
      * @return Table name.
      */
-    private String tableName(Class cls) {
+    private static String tableName(Class cls) {
         return cls.getSimpleName();
     }
 
@@ -331,24 +374,24 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * Key class.
      */
     private static class ValueClass {
-        /** String value. */
+        /** Field 1. */
         @QuerySqlField
-        private String str;
+        private String field1;
 
         /**
          * Constructor.
          *
-         * @param str String value.
+         * @param field1 Field 1.
          */
-        public ValueClass(String str) {
-            this.str = str;
+        public ValueClass(String field1) {
+            this.field1 = field1;
         }
 
         /**
-         * @return String value.
+         * @return Field 1
          */
-        public String stringValue() {
-            return str;
+        public String field1() {
+            return field1;
         }
     }
 }

@@ -2598,6 +2598,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Dynamically drop index.
+     *
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
+     * @return Future completed when index is dropped.
+     */
+    public IgniteInternalFuture<?> dynamicIndexDrop(String cacheName, String tblName, String idxName,
+        boolean ifExists) {
+        IgniteInternalCache cache = cache(cacheName);
+
+        if (cache == null)
+            return new GridFinishedFuture<>(new IgniteException("Cache doesn't exist: " + cacheName));
+
+        return cache.context().queries().dynamicIndexDrop(tblName, idxName, ifExists);
+    }
+
+    /**
      * @param reqs Requests.
      * @param failIfExists Fail if exists flag.
      * @return Collection of futures.

@@ -87,6 +87,6 @@ public class IndexCreateOperation extends IndexAbstractOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexCreateOperation.class, this);
+        return S.toString(IndexCreateOperation.class, this, "parent", super.toString());
     }
 }

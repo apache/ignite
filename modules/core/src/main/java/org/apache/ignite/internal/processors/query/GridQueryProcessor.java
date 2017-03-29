@@ -1076,6 +1076,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Drop index.
+     *
+     * @param idxName Index name.
+     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dropIndex(String space, String idxName, boolean ifExists) {
+        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+        idxLock.readLock().lock();
+
+        try {
+            QueryIndexDescriptorImpl idxDesc = idxs.get(idxKey);
+
+            if (idxDesc == null) {
+                if (ifExists)
+                    return new GridFinishedFuture<>();
+
+                return new GridFinishedFuture<>(new IgniteException("Index doesn't exist [space=" + space +
+                    ", idxName=" + idxName + ']'));
+            }
+
+            IndexAbstractOperation op =
+                new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
+
+            return startIndexOperation(idxKey, op);
+        }
+        finally {
+            idxLock.readLock().unlock();
+        }
+    }
+
+    /**
      * Create index.
      *
      * @param space Space name.
@@ -1106,34 +1139,47 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (ifNotExists)
                     return new GridFinishedFuture<>();
-                else
-                    return new GridFinishedFuture<>(new IgniteException("Index already exists [space=" + space +
-                        ", idxName=" + idxName + ']'));
+
+                return new GridFinishedFuture<>(new IgniteException("Index already exists [space=" + space +
+                    ", idxName=" + idxName + ']'));
             }
 
-            UUID opId = UUID.randomUUID();
-            QueryIndexClientFuture fut = new QueryIndexClientFuture(opId, idxKey);
+            IndexAbstractOperation op =
+                new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
 
-            IndexCreateOperation op = new IndexCreateOperation(ctx.localNodeId(), opId, space, tblName, idx,
-                ifNotExists);
-
-            try {
-                ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(new IgniteException("Failed to start index create opeartion due to " +
-                    "unexpected exception [space=" + space + ", idxName=" + idxName + ']'));
-            }
-
-            QueryIndexClientFuture oldFut = idxCliFuts.put(opId, fut);
-
-            assert oldFut == null;
-
-            return fut;
+            return startIndexOperation(idxKey, op);
         }
         finally {
             idxLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Start index change operation.
+     *
+     * @param idxKey Index key.
+     * @param op Operation.
+     * @return Future.
+     */
+    private IgniteInternalFuture<?> startIndexOperation(QueryIndexKey idxKey, IndexAbstractOperation op) {
+        try {
+            ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
+
+            if (log.isDebugEnabled())
+                log.debug("Sent index propose discovery message [opId=" + op.operationId() + ", op=" + op + ']');
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(new IgniteException("Failed to start index change operation due to " +
+                "unexpected exception [space=" + idxKey.space() + ", idxName=" + idxKey.name() + ']'));
+        }
+
+        QueryIndexClientFuture fut = new QueryIndexClientFuture(op.operationId(), idxKey);
+
+        QueryIndexClientFuture oldFut = idxCliFuts.put(op.operationId(), fut);
+
+        assert oldFut == null;
+
+        return fut;
     }
 
     /**

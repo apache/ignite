@@ -520,8 +520,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public IgniteInternalFuture<?> dynamicIndexCreate(String tblName, QueryIndex idx, boolean ifNotExists) {
         if (!enterBusy())
-            return new GridFinishedFuture<>(new IgniteException("Failed to create index because " +
-                "local node is stopping."));
+            return new GridFinishedFuture<>(
+                new IgniteException("Failed to create index because local node is stopping."));
 
         try {
             return qryProc.createIndex(space, tblName, idx, ifNotExists);
@@ -529,6 +529,31 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         catch (Exception e) {
             return new GridFinishedFuture<>(
                 new IgniteException("Index creation failed due to unexpected exception.", e));
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
+     * Drop index dynamically.
+     *
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexDrop(String tblName, String idxName, boolean ifExists) {
+        if (!enterBusy())
+            return new GridFinishedFuture<>(
+                new IgniteException("Failed to drop index because local node is stopping."));
+
+        try {
+            return qryProc.dropIndex(space, idxName, ifExists);
+        }
+        catch (Exception e) {
+            return new GridFinishedFuture<>(
+                new IgniteException("Index drop failed due to unexpected exception.", e));
         }
         finally {
             leaveBusy();
