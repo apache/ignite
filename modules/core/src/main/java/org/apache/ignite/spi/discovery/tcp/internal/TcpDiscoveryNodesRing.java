@@ -510,11 +510,12 @@ public class TcpDiscoveryNodesRing {
 
         try {
             Iterator<TcpDiscoveryNode> filtered = serverNodes(excluded, locNode).iterator();
-            if (filtered.hasNext()) {
+
+            if (filtered.hasNext())
                 return filtered.next();
-            }
             else {
                 filtered = serverNodes(excluded).iterator();
+
                 if (filtered.hasNext()) {
                     TcpDiscoveryNode firstNode = filtered.next();
                     //When locNode is first and last.

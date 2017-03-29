@@ -547,7 +547,7 @@ public final class IgniteSystemProperties {
     /**
      * Cluster region ID used for sorting nodes in ring for discovery.
      * <p>
-     * Defaults to {@code} Long.MIN_VALUE,
+     * Defaults to {@code} Long.MIN_VALUE.
      */
     public static final String IGNITE_CLUSTER_REGION_ID = "IGNITE_CLUSTER_REGION_ID";
     /**

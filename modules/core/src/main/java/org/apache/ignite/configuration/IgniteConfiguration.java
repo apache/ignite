@@ -520,6 +520,7 @@ public class IgniteConfiguration {
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
+        clusterRegionId = cfg.getClusterRegionId();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
@@ -579,7 +580,6 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        clusterRegionId = cfg.getClusterRegionId();
     }
 
     /**
