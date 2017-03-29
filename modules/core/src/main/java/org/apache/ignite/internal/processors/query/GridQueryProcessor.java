@@ -1096,15 +1096,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             QueryIndexDescriptorImpl oldIdxDesc = idxs.get(idxKey);
 
             if (oldIdxDesc != null) {
-                // Make sure that index is bound to the same table.
-                String oldTblName = oldIdxDesc.typeDescriptor().tableName();
-
-                if (!F.eq(oldTblName, tblName)) {
-                    return new GridFinishedFuture<>(new IgniteException("Index already exists and is bound to " +
-                        "another table [space=" + space + ", idxName=" + idxName + ", expTblName=" + oldTblName +
-                        ", actualTblName=" + tblName + ']'));
-                }
-
                 if (ifNotExists)
                     return new GridFinishedFuture<>();
 

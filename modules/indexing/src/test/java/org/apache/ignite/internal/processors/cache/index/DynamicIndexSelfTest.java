@@ -101,7 +101,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreate() throws Exception {
-        QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
+        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
@@ -116,7 +116,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDrop() throws Exception {
-        QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
+        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
@@ -149,7 +149,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @param fields Fields.
      * @return Index.
      */
-    private QueryIndex createIndex(String name, IgniteBiTuple<String, Boolean>... fields) {
+    private QueryIndex index(String name, IgniteBiTuple<String, Boolean>... fields) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
