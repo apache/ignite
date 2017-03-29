@@ -2718,6 +2718,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof IndexAbstractDiscoveryMessage) {
             IndexAbstractDiscoveryMessage msg0 = (IndexAbstractDiscoveryMessage)msg;
 
+            if (log.isDebugEnabled())
+                log.debug("Received index discovery message [opId=" + msg0.operation().operationId() +
+                    ", msg=" + msg + ']');
+
             IgniteUuid id = msg0.id();
 
             if (!idxDiscoMsgIdHist.add(id)) {

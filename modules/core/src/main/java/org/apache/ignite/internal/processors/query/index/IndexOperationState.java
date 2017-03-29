@@ -23,13 +23,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexOperationStatusRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -53,9 +51,6 @@ public class IndexOperationState {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Type. */
-    private final QueryTypeDescriptorImpl type;
-
     /** Operation handler. */
     private final IndexOperationHandler hnd;
 
@@ -76,17 +71,14 @@ public class IndexOperationState {
      *
      * @param ctx Context.
      * @param qryProc Query processor.
-     * @param type Affected type.
      * @param hnd Operation handler.
      */
-    public IndexOperationState(GridKernalContext ctx, GridQueryProcessor qryProc, QueryTypeDescriptorImpl type,
-        IndexOperationHandler hnd) {
+    public IndexOperationState(GridKernalContext ctx, GridQueryProcessor qryProc, IndexOperationHandler hnd) {
         this.ctx = ctx;
 
         log = ctx.log(IndexOperationState.class);
 
         this.qryProc = qryProc;
-        this.type = type;
         this.hnd = hnd;
     }
 
@@ -94,7 +86,7 @@ public class IndexOperationState {
      * Map operation handling.
      */
     @SuppressWarnings("unchecked")
-    public void tryMap() {
+    public void mapIfCoordinator() {
         synchronized (mux) {
             if (isLocalCoordinator()) {
                 // Initialize local structure.
@@ -104,18 +96,23 @@ public class IndexOperationState {
 
                 // Send remote requests.
                 IndexOperationStatusRequest req =
-                    new IndexOperationStatusRequest(ctx.localNodeId(), hnd.operation().operationId());
+                    new IndexOperationStatusRequest(ctx.localNodeId(), operationId());
 
-                for (ClusterNode alive : ctx.discovery().aliveServerNodes()) {
+                for (ClusterNode alive : ctx.discovery().aliveServerNodes())
                     nodeIds.add(alive.id());
 
-                    if (!alive.isLocal()) {
+                if (log.isDebugEnabled())
+                    log.debug("Mapped participating nodes on coordinator [opId=" + operationId() +
+                        ", crdNodeId=" + ctx.localNodeId() + ", nodes=" + nodeIds + ']');
+
+                // Send requests to remote nodes.
+                for (UUID nodeId : nodeIds) {
+                    if (!F.eq(ctx.localNodeId(), nodeId)) {
                         try {
-                            ctx.io().sendToGridTopic(alive, TOPIC_DYNAMIC_SCHEMA, req, QUERY_POOL);
+                            ctx.io().sendToGridTopic(nodeId, TOPIC_DYNAMIC_SCHEMA, req, QUERY_POOL);
                         }
                         catch (IgniteCheckedException e) {
-                            // Node has left the grid.
-                            nodeIds.remove(alive.id());
+                            onNodeLeave(nodeId);
                         }
                     }
                 }
@@ -145,8 +142,15 @@ public class IndexOperationState {
      */
     public void onNodeFinished(UUID nodeId, String errMsg) {
         synchronized (mux) {
-            if (nodeRess.containsKey(nodeId))
+            if (nodeRess.containsKey(nodeId)) {
+                if (log.isDebugEnabled())
+                    log.debug("Received duplicate result [opId=" + operationId() + ", nodeId=" + nodeId +
+                        ", errMsg=" + errMsg + ']');
+
                 return;
+            }
+
+            log.debug("Received result [opId=" + operationId() + ", nodeId=" + nodeId + ", errMsg=" + errMsg + ']');
 
             nodeRess.put(nodeId, errMsg);
 
@@ -170,7 +174,7 @@ public class IndexOperationState {
             }
             else
                 // We can become coordinator, so try remap.
-                tryMap();
+                mapIfCoordinator();
         }
     }
 
@@ -192,29 +196,9 @@ public class IndexOperationState {
                     errMsg = e.getMessage();
                 }
 
-                qryProc.sendStatusResponse(nodeId, hnd.operation().operationId(), errMsg);
+                qryProc.sendStatusResponse(nodeId, operationId(), errMsg);
             }
         });
-    }
-
-    /**
-     * Get local error (if any).
-     *
-     * @return Local error.
-     */
-    @Nullable public Throwable localError() {
-        IgniteInternalFuture fut = hnd.future();
-
-        assert fut.isDone();
-
-        return fut.error();
-    }
-
-    /**
-     * @return Type.
-     */
-    public QueryTypeDescriptorImpl type() {
-        return type;
     }
 
     /**
@@ -256,6 +240,10 @@ public class IndexOperationState {
                 }
             }
 
+            if (log.isDebugEnabled())
+                log.debug("Collected all results, about to send finish message [opId=" + operationId() +
+                    ", errMsg=" + errNodeMsg + ']');
+
             IndexFinishDiscoveryMessage msg = new IndexFinishDiscoveryMessage(hnd.operation(), errNodeId, errNodeMsg);
 
             try {
@@ -263,8 +251,15 @@ public class IndexOperationState {
             }
             catch (Exception e) {
                 // Failed to send finish message over discovery. This is something unrecoverable.
-                U.warn(log, "Failed to send index finish discovery message [op=" + hnd.operation() + ']', e);
+                U.warn(log, "Failed to send index finish discovery message [opId=" + operationId() + ']', e);
             }
         }
+    }
+
+    /**
+     * @return Operation ID.
+     */
+    private UUID operationId() {
+        return hnd.operation().operationId();
     }
 }

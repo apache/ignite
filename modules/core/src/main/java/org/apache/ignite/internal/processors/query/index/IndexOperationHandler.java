@@ -23,9 +23,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,6 +43,9 @@ public class IndexOperationHandler {
     /** Query processor */
     private final GridQueryProcessor qryProc;
 
+    /** Type descriptor. */
+    private final QueryTypeDescriptorImpl typeDesc;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -48,7 +53,10 @@ public class IndexOperationHandler {
     private final IndexAbstractOperation op;
 
     /** Operation future. */
-    private final GridFutureAdapter opFut;
+    private final GridFutureAdapter fut;
+
+    /** Public operation future. */
+    private final GridFutureAdapter pubFut;
 
     /** Mutex for concurrent access. */
     private final Object mux = new Object();
@@ -67,29 +75,65 @@ public class IndexOperationHandler {
      *
      * @param ctx Context.
      * @param qryProc Query processor.
+     * @param typeDesc Type descriptor.
      * @param op Target operation.
      * @param completed Whether this is dummy request which should be considered completed right-away. This is the
      *     case for client nodes and for server node in-progress operations received through discovery data.
      * @param err Error for future to be completed with.
      */
-    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, IndexAbstractOperation op,
-        boolean completed, Exception err) {
+    public IndexOperationHandler(GridKernalContext ctx, GridQueryProcessor qryProc, QueryTypeDescriptorImpl typeDesc,
+        IndexAbstractOperation op, boolean completed, Exception err) {
         this.ctx = ctx;
         this.qryProc = qryProc;
+        this.typeDesc = typeDesc;
         this.op = op;
 
         log = ctx.log(IndexOperationHandler.class);
 
-        opFut = new GridFutureAdapter();
+        fut = new GridFutureAdapter();
 
         if (completed) {
             init = true;
 
             if (err != null)
-                opFut.onDone(err);
+                fut.onDone(err);
             else
-                opFut.onDone();
+                fut.onDone();
+
+            pubFut = fut;
         }
+        else
+            pubFut = createPublicFuture(fut);
+    }
+
+    /**
+     * Chain the future making sure that operation is completed after local schema is updated.
+     *
+     * @param fut Current future.
+     * @return Chained future.
+     */
+    @SuppressWarnings("unchecked")
+    private GridFutureAdapter<?> createPublicFuture(GridFutureAdapter fut) {
+        final GridFutureAdapter<?> chainedFut = new GridFutureAdapter<>();
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture fut) {
+                Exception err = null;
+
+                try {
+                    fut.get();
+                }
+                catch (Exception e) {
+                    err = e;
+                }
+
+                qryProc.onLocalOperationFinished(typeDesc, op, err);
+
+                chainedFut.onDone(null, err);
+            }
+        });
+
+        return chainedFut;
     }
 
     /**
@@ -134,14 +178,14 @@ public class IndexOperationHandler {
      * @return Future completed when operation is ready.
      */
     public IgniteInternalFuture future() {
-        return opFut;
+        return pubFut;
     }
 
     /**
      * @return Worker name.
      */
     private String workerName() {
-        return "index-op-worker" + op.space() + "-" + op.indexName();
+        return "index-op-worker-" + op.operationId();
     }
 
     /**
@@ -167,12 +211,12 @@ public class IndexOperationHandler {
             startLatch.countDown();
 
             try {
-                qryProc.processIndexOperation(op, cancelToken);
+                qryProc.processIndexOperationLocal(op, cancelToken);
 
-                opFut.onDone();
+                fut.onDone();
             }
             catch (Exception e) {
-                opFut.onDone(e);
+                fut.onDone(e);
             }
         }
 

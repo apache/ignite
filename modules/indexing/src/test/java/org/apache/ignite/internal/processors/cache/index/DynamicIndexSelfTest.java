@@ -69,7 +69,7 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        grid(0).getOrCreateCache(cacheConfiguration());
+        Thread.sleep(2000);
     }
 
     /** {@inheritDoc} */

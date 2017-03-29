@@ -615,18 +615,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public void onIndexFinishMessage(IndexFinishDiscoveryMessage msg) {
         UUID opId = msg.operation().operationId();
 
-        // Add index info to descriptor.
-        if (!msg.hasError()) {
-            IndexOperationState idxOpState = idxOpStates.remove(opId);
-
-            if (idxOpState != null) {
-                Throwable locErr = idxOpState.localError();
-
-                if (locErr == null)
-                    // At this point everything is clear, so we can proceed.
-                    onIndexFinishMessage0(idxOpState.type(), msg.operation());
-            }
-        }
+        // Clear local operation.
+        idxOpStates.remove(opId);
 
         // Complete client future.
         QueryIndexClientFuture cliFut = idxCliFuts.remove(opId);
@@ -647,33 +637,50 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param type Type.
      * @param op Operation.
+     * @param err Error.
      */
-    public void onIndexFinishMessage0(QueryTypeDescriptorImpl type, IndexAbstractOperation op) {
-        if (type == null || type.obsolete())
-            return;
-
-        QueryIndexKey idxKey = new QueryIndexKey(op.space(), op.indexName());
+    public void onLocalOperationFinished(QueryTypeDescriptorImpl type, IndexAbstractOperation op, Exception err) {
+        idxLock.writeLock().lock();
 
         try {
-            if (op instanceof IndexCreateOperation) {
-                IndexCreateOperation op0 = (IndexCreateOperation) op;
+            // No need to apply anything to obsolete type.
+            if (type == null || type.obsolete()) {
+                if (log.isDebugEnabled())
+                    log.debug("Local operation finished, but type decriptor is either missing or obsolete " +
+                        "(will ignore) [opId=" + op.operationId() + ']');
 
-                QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
-
-                QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
-
-                idxs.put(idxKey, idxDesc);
+                return;
             }
-            else {
-                assert op instanceof IndexDropOperation;
 
-                QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
+            if (log.isDebugEnabled())
+                log.debug("Local operation finished [opId=" + op.operationId() + ", err=" + err + ']');
 
-                idxs.remove(idxKey);
+            QueryIndexKey idxKey = new QueryIndexKey(op.space(), op.indexName());
+
+            try {
+                if (op instanceof IndexCreateOperation) {
+                    IndexCreateOperation op0 = (IndexCreateOperation) op;
+
+                    QueryUtils.processDynamicIndexChange(op0.indexName(), op0.index(), type);
+
+                    QueryIndexDescriptorImpl idxDesc = type.index(op0.indexName());
+
+                    idxs.put(idxKey, idxDesc);
+                }
+                else {
+                    assert op instanceof IndexDropOperation;
+
+                    QueryUtils.processDynamicIndexChange(op.indexName(), null, type);
+
+                    idxs.remove(idxKey);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
             }
         }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to finish index operation [opId=" + op.operationId() + " op=" + op + ']', e);
+        finally {
+            idxLock.writeLock().unlock();
         }
     }
 
@@ -693,7 +700,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param op Operation.
      * @param cancelToken Cancel token.
      */
-    public void processIndexOperation(IndexAbstractOperation op, IndexOperationCancellationToken cancelToken) {
+    public void processIndexOperationLocal(IndexAbstractOperation op, IndexOperationCancellationToken cancelToken) {
         // TODO.
     }
 
@@ -1530,15 +1537,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     private void startIndexOperationLocal(QueryTypeDescriptorImpl type, IndexAbstractOperation op, boolean completed,
         Exception err) {
-        IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, op, completed, err);
+        IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, type, op, completed, err);
 
         hnd.init();
 
-        IndexOperationState state = new IndexOperationState(ctx, this, type, hnd);
+        IndexOperationState state = new IndexOperationState(ctx, this, hnd);
 
         idxOpStates.put(op.operationId(), state);
 
-        state.tryMap();
+        state.mapIfCoordinator();
     }
 
     /**

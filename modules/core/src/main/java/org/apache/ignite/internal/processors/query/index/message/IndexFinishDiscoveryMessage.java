@@ -88,7 +88,7 @@ public class IndexFinishDiscoveryMessage extends IndexAbstractDiscoveryMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexFinishDiscoveryMessage.class, this);
+        return S.toString(IndexFinishDiscoveryMessage.class, this, "parent", super.toString());
     }
 
 }
