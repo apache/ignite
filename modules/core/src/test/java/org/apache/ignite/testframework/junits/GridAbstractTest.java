@@ -142,7 +142,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
-    private static final int DFLT_PART_WAIT_TIMEOUT = 2000;
+    private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
@@ -2035,7 +2035,7 @@ public abstract class GridAbstractTest extends TestCase {
                     @Override public boolean apply() {
                         return exchVer.equals(topVer);
                     }
-                }, DFLT_PART_WAIT_TIMEOUT);
+                }, DFLT_TOP_WAIT_TIMEOUT);
             }
         }
     }
