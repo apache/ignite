@@ -3608,7 +3608,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ComputeTaskInternalFuture fut = ctx.kernalContext().closure().callAsync(BROADCAST,
             Collections.singletonList(
-                new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
+                new LoadCacheJob<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
             nodes);
 
 
@@ -5523,9 +5523,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Internal callable for global size calculation.
+     * Load cache job that with keepBinary flag.
      */
-    @GridInternal
     private static class LoadCacheJob<K, V> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
@@ -5539,25 +5538,36 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private final ExpiryPolicy plc;
 
+        /** */
+        private final boolean keepBinary;
+
         /**
+         * Constructor.
+         *
          * @param cacheName Cache name.
          * @param topVer Affinity topology version.
          * @param p Predicate.
          * @param loadArgs Arguments.
-         * @param plc Policy.
+         * @param keepBinary Keep binary flag.
          */
-        private LoadCacheJob(String cacheName, AffinityTopologyVersion topVer, IgniteBiPredicate<K, V> p,
-            Object[] loadArgs,
-            ExpiryPolicy plc) {
+        public LoadCacheJob(final String cacheName, final AffinityTopologyVersion topVer,
+            final IgniteBiPredicate<K, V> p, final Object[] loadArgs, final ExpiryPolicy plc,
+            final boolean keepBinary) {
             super(cacheName, topVer);
 
             this.p = p;
             this.loadArgs = loadArgs;
             this.plc = plc;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
+            assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
+
+            if (keepBinary)
+                cache = cache.keepBinary();
+
             try {
                 assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
 
@@ -5576,49 +5586,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(LoadCacheJob.class, this);
-        }
-    }
-
-    /**
-     * Load cache job that with keepBinary flag.
-     */
-    private static class LoadCacheJobV2<K, V> extends LoadCacheJob<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final boolean keepBinary;
-
-        /**
-         * Constructor.
-         *
-         * @param cacheName Cache name.
-         * @param topVer Affinity topology version.
-         * @param p Predicate.
-         * @param loadArgs Arguments.
-         * @param keepBinary Keep binary flag.
-         */
-        public LoadCacheJobV2(final String cacheName, final AffinityTopologyVersion topVer,
-            final IgniteBiPredicate<K, V> p, final Object[] loadArgs, final ExpiryPolicy plc,
-            final boolean keepBinary) {
-            super(cacheName, topVer, p, loadArgs, plc);
-
-            this.keepBinary = keepBinary;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
-            assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
-
-            if (keepBinary)
-                cache = cache.keepBinary();
-
-            return super.localExecute(cache);
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(LoadCacheJobV2.class, this);
         }
     }
 
