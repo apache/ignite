@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -357,11 +356,6 @@ public class DirectMessageWriter implements MessageWriter {
          */
         public StateItem(byte protoVer) {
             switch (protoVer) {
-                case 1:
-                    stream = new DirectByteBufferStreamImplV1(null);
-
-                    break;
-
                 case 2:
                     stream = new DirectByteBufferStreamImplV2(null);
 

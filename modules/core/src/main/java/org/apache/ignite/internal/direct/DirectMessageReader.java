@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
-import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -399,11 +398,6 @@ public class DirectMessageReader implements MessageReader {
          */
         public StateItem(MessageFactory msgFactory, byte protoVer) {
             switch (protoVer) {
-                case 1:
-                    stream = new DirectByteBufferStreamImplV1(msgFactory);
-
-                    break;
-
                 case 2:
                     stream = new DirectByteBufferStreamImplV2(msgFactory);
 
