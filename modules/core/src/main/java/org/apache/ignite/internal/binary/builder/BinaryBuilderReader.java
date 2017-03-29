@@ -144,7 +144,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     }
 
     /**
-     * @param off Offset related to {@link #pos}.
+     * @param off Offset relative to the {@link #position()}.
      * @return Read int value.
      */
     public byte readByte(int off) {

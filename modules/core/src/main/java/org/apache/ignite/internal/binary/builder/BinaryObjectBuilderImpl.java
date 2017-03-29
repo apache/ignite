@@ -260,6 +260,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                                 writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                             else {
                                 writer.writeFieldId(fieldId, writer.currentOffset());
+
                                 serializer.writeValue(writer, assignedVal);
                             }
                         }
@@ -289,6 +290,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                                 writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                             else {
                                 writer.writeFieldId(fieldId, writer.currentOffset());
+
                                 serializer.writeValue(writer, val);
                             }
                         }
@@ -316,6 +318,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                         writer.writeFieldId(fieldId, BinaryUtils.NULL_4);
                     else {
                         writer.writeFieldId(fieldId, writer.currentOffset());
+
                         serializer.writeValue(writer, val);
                     }
 
@@ -473,6 +476,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                 if (!BinaryUtils.isNullOffset(nextFieldOff, fieldOffsetLen)) {
                     fieldLen = nextFieldOff - fieldOff;
+
                     break;
                 }
             }

@@ -192,8 +192,6 @@ class BinaryBuilderSerializer {
         }
 
         writer.doWriteObject(val);
-
-        return;
     }
 
     /**
