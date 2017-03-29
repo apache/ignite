@@ -166,23 +166,23 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
         doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10_000 * super.getTestTimeout();
-    }
-
     /**
      * Multithreaded version of {@link #testLevel}.
      *
      * @throws Exception On error.
      */
     public void testLevelMultithreaded() throws Exception {
-        ExecutorService svc = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+        final int parallelismFactor = Runtime.getRuntime().availableProcessors() * 2;
 
-        final long total = 1000;
+        X.println("Pool size = " + parallelismFactor);
+
+        ExecutorService svc = Executors.newFixedThreadPool(parallelismFactor);
+
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        final long total = parallelismFactor;
 
         final AtomicLong runCnt = new AtomicLong();
-        final AtomicLong completedCnt = new AtomicLong();
+        final AtomicLong succeededCnt = new AtomicLong();
         final AtomicBoolean failure = new AtomicBoolean();
 
         for (int i=0; i<total; i++) {
@@ -196,17 +196,17 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
                     System.out.println(">>>>>>>>>>>>>>>>>>>>>> Started: " + started);
 
                     try {
-                        testLevel();
+                        doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES / parallelismFactor);
 
-                        long succeeded = completedCnt.incrementAndGet();
+                        long succeeded = succeededCnt.incrementAndGet();
 
                         System.out.println("<<<<<<<<<<<<<<<<<<<<<< Succeeded: " + succeeded);
 
                         return null;
                     } catch (Throwable t) {
-                        failure.set(true);
-
                         t.printStackTrace();
+
+                        failure.set(true);
 
                         throw new IgniteCheckedException(t);
                     }
@@ -216,11 +216,11 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
 
         svc.shutdown();
 
-        boolean ok = svc.awaitTermination(getTestTimeout() / 2, TimeUnit.MILLISECONDS);
+        boolean ok = svc.awaitTermination(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        assertTrue(ok);
+        assertTrue("Timed out while waiting for test completion, " + getTestTimeout() + " ms.", ok);
         assertEquals(total, runCnt.get());
-        assertEquals(total, completedCnt.get());
+        assertEquals(total, succeededCnt.get());
         assertFalse(failure.get());
     }
 
@@ -289,7 +289,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
             // As the "Z-interval for a mean" states:
             double averageConfidenceErr999999 = Z_0_999999 * predictedSigma / Math.sqrt(samples);
 
-            System.out.println("Level = " + level
+            String msg = "Level = " + level
                 + ", mu (ideal average) = " + data.mu
                 + ", actual average = " + sampleAverageStat.getAverage()
                 + ", actual sigma = " + actualSigma
@@ -297,9 +297,11 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
                 + ", sigma relative diff = " + sigmaRelativeDiffPercent + "%"
                 + ", average abs diff = " + averageDelta
                 + ", averageConfidenceErr = " + averageConfidenceErr999999
-                + ", sigmaCorridor = " + 100d * Math.abs(averageDelta) / averageConfidenceErr999999 + "%");
+                + ", sigmaCorridor = " + 100d * Math.abs(averageDelta) / averageConfidenceErr999999 + "%";
 
-            assertTrue(Math.abs(averageDelta) < averageConfidenceErr999999);
+            System.out.println(msg);
+
+            assertTrue(msg, Math.abs(averageDelta) < averageConfidenceErr999999);
         }
     }
 
