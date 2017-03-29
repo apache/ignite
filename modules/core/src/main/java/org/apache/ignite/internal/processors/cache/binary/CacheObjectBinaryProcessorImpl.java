@@ -39,7 +39,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
@@ -114,9 +113,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  */
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
-    /** */
-    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.7");
-
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -351,37 +347,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         startLatch.countDown();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
-
-        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) && marsh instanceof BinaryMarshaller) {
-            BinaryConfiguration bcfg = ctx.config().getBinaryConfiguration();
-
-            for (ClusterNode rmtNode : ctx.discovery().remoteNodes()) {
-                if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0) {
-                    if (bcfg == null || bcfg.getNameMapper() == null) {
-                        throw new IgniteCheckedException("When BinaryMarshaller is used and topology contains old " +
-                            "nodes, then " + BinaryBasicNameMapper.class.getName() + " mapper have to be set " +
-                            "explicitely into binary configuration and 'simpleName' property of the mapper " +
-                            "have to be set to 'true'.");
-                    }
-
-                    if (!(bcfg.getNameMapper() instanceof BinaryBasicNameMapper)
-                        || !((BinaryBasicNameMapper)bcfg.getNameMapper()).isSimpleName()) {
-                        U.quietAndWarn(log, "When BinaryMarshaller is used and topology contains old" +
-                            " nodes, it's strongly recommended, to set " + BinaryBasicNameMapper.class.getName() +
-                            " mapper into binary configuration explicitely " +
-                            " and 'simpleName' property of the mapper set to 'true' (fix configuration or set " +
-                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property).");
-                    }
-
-                    break;
-                }
-            }
-        }
-    }
-
     /**
      * @param key Metadata key.
      * @param newMeta Metadata.
@@ -558,7 +523,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum) throws BinaryObjectException {
         BinaryMetadata meta = new BinaryMetadata(typeId, typeName, fieldTypeIds, affKeyFieldName, null, isEnum);
 
         binaryCtx.updateMetadata(typeId, meta);
@@ -925,9 +890,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return null;
 
         Object rmtBinaryCfg = rmtNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
-
-        if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0)
-            return null;
 
         ClusterNode locNode = ctx.discovery().localNode();
 

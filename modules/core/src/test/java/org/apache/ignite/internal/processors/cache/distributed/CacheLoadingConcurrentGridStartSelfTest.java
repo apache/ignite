@@ -48,7 +48,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -75,8 +75,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -88,7 +88,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestCacheStoreAdapter()));
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             if (client)
                 cfg.setClientMode(true);
 
@@ -101,9 +101,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         if (!configured) {
             ccfg.setNodeFilter(new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    String name = node.attribute(ATTR_GRID_NAME).toString();
+                    String name = node.attribute(ATTR_IGNITE_INSTANCE_NAME).toString();
 
-                    return !getTestGridName(0).equals(name);
+                    return !getTestIgniteInstanceName(0).equals(name);
                 }
             });
         }

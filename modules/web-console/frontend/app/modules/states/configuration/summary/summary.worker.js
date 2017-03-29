@@ -17,28 +17,24 @@
 
 import JSZip from 'jszip';
 
-import IgniteVersion from 'app/modules/configuration/Version.service';
+import IgniteMavenGenerator from 'app/modules/configuration/generator/Maven.service';
+import IgniteDockerGenerator from 'app/modules/configuration/generator/Docker.service';
+import IgniteReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
+import IgnitePropertiesGenerator from 'app/modules/configuration/generator/Properties.service';
+import IgniteConfigurationGenerator from 'app/modules/configuration/generator/ConfigurationGenerator';
 
-import MavenGenerator from 'app/modules/configuration/generator/Maven.service';
-import DockerGenerator from 'app/modules/configuration/generator/Docker.service';
-import ReadmeGenerator from 'app/modules/configuration/generator/Readme.service';
-import PropertiesGenerator from 'app/modules/configuration/generator/Properties.service';
-import ConfigurationGenerator from 'app/modules/configuration/generator/ConfigurationGenerator';
+import IgniteJavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
+import IgniteSpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
 
-import JavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
-import SpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
+const maven = new IgniteMavenGenerator();
+const docker = new IgniteDockerGenerator();
+const readme = new IgniteReadmeGenerator();
+const properties = new IgnitePropertiesGenerator();
 
-const Version = new IgniteVersion();
+const java = IgniteJavaTransformer;
+const spring = IgniteSpringTransformer;
 
-const maven = new MavenGenerator();
-const docker = new DockerGenerator();
-const readme = new ReadmeGenerator();
-const properties = new PropertiesGenerator();
-
-const java = new JavaTransformer[0]();
-const spring = new SpringTransformer[0]();
-
-const generator = new ConfigurationGenerator[0]();
+const generator = IgniteConfigurationGenerator;
 
 const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
 
@@ -100,7 +96,7 @@ onmessage = function(e) {
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
         'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
 
-    zip.file('pom.xml', maven.generate(cluster, Version.productVersion().ignite).asString());
+    zip.file('pom.xml', maven.generate(cluster));
 
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());

@@ -45,10 +45,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
-    /** Partition IDs. */
-    @GridDirectCollection(int.class)
-    protected List<Integer> partIds;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -80,18 +76,15 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @throws IgniteCheckedException If failed.
      */
     public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
-        if (keys == null) {
+        if (keys == null)
             keys = new ArrayList<>(keysCount());
-            partIds = new ArrayList<>(keysCount());
-        }
 
         keys.add(key);
-        partIds.add(key.partition());
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partIds != null && !partIds.isEmpty() ? partIds.get(0) : -1;
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
     }
 
     /** {@inheritDoc}
@@ -107,13 +100,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
-
-        if (partIds != null && !partIds.isEmpty()) {
-            assert partIds.size() == keys.size();
-
-            for (int i = 0; i < keys.size(); i++)
-                keys.get(i).partition(partIds.get(i));
-        }
     }
 
     /** {@inheritDoc} */
@@ -172,7 +158,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 27;
     }
 

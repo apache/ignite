@@ -120,10 +120,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private volatile CyclicBarrier updateBarrier;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
@@ -400,9 +400,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         List<Object> msgs = spi.recordedMessages();
 
         assertEquals(3, msgs.size());
-
-        for (Object msg : msgs)
-            assertTrue(((GridNearAtomicFullUpdateRequest)msg).clientRequest());
 
         map.put(primaryKey(ignite0.cache(null)), 3);
         map.put(primaryKey(ignite1.cache(null)), 4);
@@ -704,7 +701,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private IgniteBiTuple<Integer, Integer> findKeys(Ignite ignite, ClusterNode...nodes) {
         ClusterNode newNode = new TcpDiscoveryNode();
 
-        GridTestUtils.setFieldValue(newNode, "consistentId", getTestGridName(4));
+        GridTestUtils.setFieldValue(newNode, "consistentId", getTestIgniteInstanceName(4));
         GridTestUtils.setFieldValue(newNode, "id", UUID.randomUUID());
 
         List<ClusterNode> topNodes = new ArrayList<>();
@@ -1693,8 +1690,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
         multinode(PRIMARY, TestType.PUT_ALL);
     }
 
@@ -1702,8 +1697,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicClockPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
         multinode(CLOCK, TestType.PUT_ALL);
     }
 
@@ -2055,8 +2048,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -2118,7 +2111,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     ClusterNode node = msg.get1();
 
-                    log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                    log.info("Send blocked message: [node=" +
+                        node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                         ", msg=" + msg.get2().message() + ']');
 
                     super.sendMessage(msg.get1(), msg.get2());

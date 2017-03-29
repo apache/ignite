@@ -154,13 +154,13 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeUsed(GridCacheSharedContext cctx) {
+    @Override public boolean storeWriteThrough(GridCacheSharedContext cctx) {
         if (cacheCtx == null)
             return false;
 
         CacheStoreManager store = cacheCtx.store();
 
-        return store.configured();
+        return store.configured() && store.isWriteThrough();
     }
 
     /** {@inheritDoc} */

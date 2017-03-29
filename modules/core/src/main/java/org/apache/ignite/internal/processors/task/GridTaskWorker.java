@@ -194,9 +194,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final boolean noFailover;
 
     /** */
-    private final Object affKey;
-
-    /** */
     private final int affPartId;
 
     /** */
@@ -294,7 +291,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridTaskEventListener evtLsnr,
         @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
         UUID subjId) {
-        super(ctx.config().getGridName(), "grid-task-worker", ctx.log(GridTaskWorker.class));
+        super(ctx.config().getIgniteInstanceName(), "grid-task-worker", ctx.log(GridTaskWorker.class));
 
         assert ses != null;
         assert fut != null;
@@ -330,7 +327,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             affPartId = affTask.partition();
             affCacheName = F.first(affTask.affinityCacheNames());
-            affKey = affTask.affinityKey();
             mapTopVer = affTask.topologyVersion();
 
             affCacheIds = new int[affTask.affinityCacheNames().size()];
@@ -343,7 +339,6 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         else {
             affPartId = -1;
             affCacheName = null;
-            affKey = null;
             mapTopVer = null;
             affCacheIds = null;
         }
@@ -1175,7 +1170,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
 
             ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affPartId,
-                affKey, affCacheName, mapTopVer);
+                affCacheName, mapTopVer);
 
             return checkTargetNode(res, jobRes, node);
         }
@@ -1281,7 +1276,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node != null)
-                        ctx.io().send(node,
+                        ctx.io().sendToGridTopic(node,
                             TOPIC_JOB_CANCEL,
                             new GridJobCancelRequest(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true),
                             PUBLIC_POOL);
@@ -1382,7 +1377,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
                         // Send job execution request.
-                        ctx.io().send(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
+                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');

@@ -69,8 +69,8 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             return super.expectedClient(testGridName);
 
         // Use two client nodes if grid index 5 or greater.
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NODE_IDX_2).equals(testGridName);
+        return getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestIgniteInstanceName(CLIENT_NODE_IDX_2).equals(testGridName);
     }
 
     /**

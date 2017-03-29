@@ -329,7 +329,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     node,
                     topic,
                     res,
-                    cctx.ioPolicy(),
+                    GridIoPolicy.QUERY_POOL,
                     timeout > 0 ? timeout : Long.MAX_VALUE);
 
                 return true;
@@ -831,6 +831,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (!F.isEmpty(rmtNodes)) {
             for (ClusterNode rmtNode : rmtNodes)
                 cctx.io().send(rmtNode, alterQryClo == null ? req : alterQryClo.apply(rmtNode, req), GridIoPolicy.SYSTEM_POOL);
+            cctx.io().safeSend(rmtNodes, req, GridIoPolicy.QUERY_POOL, new P1<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+                    fut.onNodeLeft(node.id());
+
+                    return !fut.isDone();
+                }
+            });
         }
 
         if (locNode != null) {
@@ -844,7 +851,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                     return null;
                 }
-            });
+            }, GridIoPolicy.QUERY_POOL);
         }
     }
 

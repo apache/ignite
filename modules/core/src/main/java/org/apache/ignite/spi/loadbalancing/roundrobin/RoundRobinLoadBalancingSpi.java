@@ -230,13 +230,13 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         startStopwatch();
 
         if (log.isDebugEnabled())
             log.debug(configInfo("isPerTask", isPerTask));
 
-        registerMBean(gridName, this, RoundRobinLoadBalancingSpiMBean.class);
+        registerMBean(igniteInstanceName, this, RoundRobinLoadBalancingSpiMBean.class);
 
         balancer = new RoundRobinGlobalLoadBalancer(log);
 

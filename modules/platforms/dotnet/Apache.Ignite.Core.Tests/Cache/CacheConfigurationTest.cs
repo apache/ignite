@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Tests.Plugin.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     GetCustomCacheConfiguration(),
                     GetCustomCacheConfiguration2()
                 },
-                GridName = CacheName,
+                IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
             };
 
@@ -263,6 +264,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
             AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
             AssertConfigsAreEqual(x.AffinityFunction, y.AffinityFunction);
+
+            if (x.PluginConfigurations != null)
+            {
+                Assert.IsNotNull(y.PluginConfigurations);
+                Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
+                    y.PluginConfigurations.Select(p => p.GetType()));
+            }
         }
 
         /// <summary>
@@ -348,6 +356,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
+            Assert.AreEqual(x.TableName, y.TableName);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
             AssertConfigsAreEqual(x.Aliases, y.Aliases);
@@ -529,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)) {IsKeyField = true}, 
+                            new QueryField("name", typeof(string)) {IsKeyField = true},
                             new QueryField("location", typeof(string)),
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -566,7 +575,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     ExcludeNeighbors = true
                 },
                 ExpiryPolicyFactory = new ExpiryFactory(),
-                EnableStatistics = true
+                EnableStatistics = true,
+                PluginConfigurations = new[] { new CachePluginConfiguration() }
             };
         }
         /// <summary>
@@ -621,6 +631,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     {
                         KeyTypeName = "Integer",
                         ValueTypeName = "java.lang.String",
+                        TableName = "MyTable",
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
@@ -694,7 +705,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test store.
         /// </summary>
-        private class CacheStoreTest : CacheStoreAdapter
+        private class CacheStoreTest : CacheStoreAdapter<object, object>
         {
             /** <inheritdoc /> */
             public override object Load(object key)

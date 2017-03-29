@@ -887,8 +887,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
                 else
                 {
-                    // Unregistered enum, write as serializable
-                    Write(new SerializableObjectHolder(val));
+                    // Unregistered enum, write with object type id.
+                    _stream.WriteByte(BinaryUtils.TypeEnum);
+                    _stream.WriteInt(BinaryUtils.ObjTypeId);
+                    _stream.WriteInt(TypeCaster<int>.Cast(val));
                 }
             }
         }
@@ -1231,10 +1233,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     var len = _stream.Position - pos;
 
-                    var hashCode = desc.EqualityComparer != null
-                        ? desc.EqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
-                            dataEnd - pos - BinaryObjectHeader.Size, _schema, schemaIdx, _marsh, desc)
-                        : obj.GetHashCode();
+                    var comparer = BinaryUtils.GetEqualityComparer(desc);
+
+                    var hashCode = comparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
+                            dataEnd - pos - BinaryObjectHeader.Size, _schema, schemaIdx, _marsh, desc);
 
                     var header = new BinaryObjectHeader(desc.TypeId, hashCode, len, schemaId, schemaOffset, flags);
 
@@ -1466,7 +1468,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="desc">The descriptor.</param>
         /// <param name="fields">Fields metadata.</param>
-        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, int> fields)
+        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields)
         {
             Debug.Assert(desc != null);
 
