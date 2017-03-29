@@ -22,8 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Binary stream processor.
     /// </summary>
-    [CLSCompliant(false)]
-    public unsafe interface IBinaryStreamProcessor<in TArg, out T>
+    internal unsafe interface IBinaryStreamProcessor<in TArg, out T>
     {
         /// <summary>
         /// Invokes the processor.
