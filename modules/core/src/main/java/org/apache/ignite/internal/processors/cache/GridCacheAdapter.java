@@ -5548,6 +5548,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param topVer Affinity topology version.
          * @param p Predicate.
          * @param loadArgs Arguments.
+         * @param plc Expiry policy.
          * @param keepBinary Keep binary flag.
          */
         public LoadCacheJob(final String cacheName, final AffinityTopologyVersion topVer,
