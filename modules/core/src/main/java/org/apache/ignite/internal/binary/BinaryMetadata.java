@@ -125,9 +125,9 @@ public class BinaryMetadata implements Externalizable {
      * @return Field type name.
      */
     @Nullable public String fieldTypeName(String fieldName) {
-        Integer typeId = fields != null ? fields.get(fieldName).typeId() : null;
+        BinaryFieldMetadata meta = fields != null ? fields.get(fieldName) : null;
 
-        return typeId != null ? BinaryUtils.fieldTypeName(typeId) : null;
+        return meta != null ? BinaryUtils.fieldTypeName(meta.typeId()) : null;
     }
 
     /**
