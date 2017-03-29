@@ -86,7 +86,9 @@ public class IndexOperationState {
      * Map operation handling.
      */
     @SuppressWarnings("unchecked")
-    public void mapIfCoordinator() {
+    public void map() {
+        hnd.init();
+
         synchronized (mux) {
             if (isLocalCoordinator()) {
                 // Initialize local structure.
@@ -174,7 +176,7 @@ public class IndexOperationState {
             }
             else
                 // We can become coordinator, so try remap.
-                mapIfCoordinator();
+                map();
         }
     }
 

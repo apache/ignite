@@ -452,7 +452,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperationLocal(type, activeOp.getKey(), true, err);
+            prepareIndexOperationState(type, activeOp.getKey(), true, err).map();
         }
 
         // Warn about possible implicit deserialization.
@@ -518,11 +518,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Handle index accept message.
+     * Handle index propose message. At this point we must prepare index operation so that concurrent re
      *
      * @param msg Message.
      */
-    public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
+    public void onIndexProposeMessage(IndexProposeDiscoveryMessage msg) {
         idxLock.writeLock().lock();
 
         try {
@@ -599,10 +599,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Start async operation.
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperationLocal(type, op, completed, err);
+            prepareIndexOperationState(type, op, completed, err);
         }
         finally {
             idxLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Handle index accept message.
+     *
+     * @param msg Message.
+     */
+    public void onIndexAcceptMessage(IndexAcceptDiscoveryMessage msg) {
+        IndexOperationState state = idxOpStates.get(msg.operation().operationId());
+
+        if (state != null)
+            state.map();
+        else {
+            // TODO: LOG!
         }
     }
 
@@ -1528,24 +1543,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Start index operation.
+     * Prepare index operation state.
      *
-     * @param type Affected type.
+     * @param type Type descriptor.
      * @param op Operation.
      * @param completed Completed flag.
      * @param err Error.
+     * @return State.
      */
-    private void startIndexOperationLocal(QueryTypeDescriptorImpl type, IndexAbstractOperation op, boolean completed,
-        Exception err) {
+    private IndexOperationState prepareIndexOperationState(QueryTypeDescriptorImpl type, IndexAbstractOperation op,
+        boolean completed, Exception err) {
         IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, type, op, completed, err);
-
-        hnd.init();
 
         IndexOperationState state = new IndexOperationState(ctx, this, hnd);
 
         idxOpStates.put(op.operationId(), state);
 
-        state.mapIfCoordinator();
+        return state;
     }
 
     /**

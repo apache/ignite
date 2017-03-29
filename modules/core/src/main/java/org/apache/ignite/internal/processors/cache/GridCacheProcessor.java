@@ -2776,6 +2776,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         desc.tryPropose(locNodeId, msg);
+
+        if (!msg.hasError())
+            ctx.query().onIndexProposeMessage(msg);
     }
 
     /**
