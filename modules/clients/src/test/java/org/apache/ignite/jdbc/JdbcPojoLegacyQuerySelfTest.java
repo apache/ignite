@@ -19,34 +19,22 @@ package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
 
-import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
-
 /**
  * Test for Jdbc driver query without class on client
  */
-public class JdbcPojoQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
-
+public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /** URL. */
-    private static final String URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-bin-config.xml";
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /**
      * @throws Exception If failed.
      */
-    public void testJdbcQueryTask2() throws Exception {
+    public void testIn() throws Exception {
         stmt.execute("select * from JdbcTestObject");
+
         ResultSet rs = stmt.getResultSet();
 
         assertResultSet(rs);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testJdbcQueryTask1() throws Exception {
-        ResultSet rs = stmt.executeQuery("select * from JdbcTestObject");
-
-        assertResultSet(rs);
-
     }
 
     @Override protected String getURL() {
