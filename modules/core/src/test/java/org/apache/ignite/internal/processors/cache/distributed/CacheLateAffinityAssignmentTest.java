@@ -400,17 +400,21 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         stopGrid(0);
         stopGrid(1);
 
+        awaitPartitionMapExchange();
+
         calculateAffinity(5);
         calculateAffinity(6);
 
-        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(2, topVer(6, 0), false);
+
+        checkAffinity(2, topVer(6, 1), true);
 
         assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
         assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
 
         assertNotNull(ignite(2).cache(CACHE_NAME1));
 
-        checkAffinity(2, topVer(6, 0), true);
+        checkAffinity(2, topVer(6, 1), true);
 
         startServer(4, 7);
 
@@ -2187,7 +2191,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     continue;
 
                 List<List<ClusterNode>> aff1 = aff.get(cctx.name());
-                List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
+                List<List<ClusterNode>> aff2 = cctx.affinity().assignment(topVer).assignment();
 
                 if (aff1 == null)
                     aff.put(cctx.name(), aff2);
@@ -2195,7 +2199,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
-                    List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
+                    List<List<ClusterNode>> ideal = cctx.affinity().assignment(topVer).idealAssignment();
 
                     assertAffinity(ideal, aff2, node, cctx.name(), topVer);
 
@@ -2257,11 +2261,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
-                assertEquals("Wrong affinity [node=" + node.name() +
-                    ", topVer=" + topVer +
-                    ", cache=" + cacheName +
-                    ", part=" + i + ']',
-                    F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+                if (!aff1.get(i).equals(aff2.get(i))) {
+                    assertEquals("Wrong affinity [node=" + node.name() +
+                            ", topVer=" + topVer +
+                            ", cache=" + cacheName +
+                            ", part=" + i + ']',
+                        F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+                }
             }
 
             fail();
