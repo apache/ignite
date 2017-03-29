@@ -53,6 +53,8 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrids(2);
+
+        grid(0).getOrCreateCache(cacheConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -67,16 +69,12 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testSimpleCreate() throws Exception {
-        IgniteEx node = grid(0);
-
-        node.getOrCreateCache(cacheConfiguration());
-
+    public void testCreate() throws Exception {
         assertNoIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx");
 
         QueryIndex idx = createIndex("my_idx", field("str"));
 
-        cacheProcessor(node).dynamicIndexCreate(CACHE_NAME, tableName(ValueClass.class), idx, false).get();
+        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, tableName(ValueClass.class), idx, false).get();
 
         assertIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx", field("str"));
     }
