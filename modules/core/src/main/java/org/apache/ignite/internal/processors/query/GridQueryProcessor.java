@@ -452,7 +452,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperation(type, activeOp.getKey(), true, err);
+            startIndexOperationLocal(type, activeOp.getKey(), true, err);
         }
 
         // Warn about possible implicit deserialization.
@@ -599,7 +599,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Start async operation.
             Exception err = errMsg != null ? new IgniteException(errMsg) : null;
 
-            startIndexOperation(type, op, completed, err);
+            startIndexOperationLocal(type, op, completed, err);
         }
         finally {
             idxLock.writeLock().unlock();
@@ -1093,7 +1093,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IndexAbstractOperation op =
                 new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
 
-            return startIndexOperation(idxKey, op);
+            return startIndexOperationDistributed(idxKey, op);
         }
         finally {
             idxLock.readLock().unlock();
@@ -1126,7 +1126,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             IndexAbstractOperation op =
                 new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
 
-            return startIndexOperation(idxKey, op);
+            return startIndexOperationDistributed(idxKey, op);
         }
         finally {
             idxLock.readLock().unlock();
@@ -1134,13 +1134,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Start index change operation.
+     * Start distributed index change operation.
      *
      * @param idxKey Index key.
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperation(QueryIndexKey idxKey, IndexAbstractOperation op) {
+    private IgniteInternalFuture<?> startIndexOperationDistributed(QueryIndexKey idxKey, IndexAbstractOperation op) {
         try {
             ctx.discovery().sendCustomEvent(new IndexProposeDiscoveryMessage(op));
 
@@ -1528,7 +1528,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param completed Completed flag.
      * @param err Error.
      */
-    private void startIndexOperation(QueryTypeDescriptorImpl type, IndexAbstractOperation op, boolean completed,
+    private void startIndexOperationLocal(QueryTypeDescriptorImpl type, IndexAbstractOperation op, boolean completed,
         Exception err) {
         IndexOperationHandler hnd = new IndexOperationHandler(ctx, this, op, completed, err);
 
