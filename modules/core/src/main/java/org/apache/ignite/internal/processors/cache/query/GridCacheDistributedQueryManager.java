@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -546,7 +547,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
-                null,
+                null, // Intentionally left blank, will be set below.
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -758,7 +759,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
-                null,
+                null, // Intentionally left blank, will be set below.
                 cctx.deploymentEnabled());
 
             addQueryFuture(req.id(), fut);
@@ -768,8 +769,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.io().addOrderedHandler(topic, resHnd);
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override
-                public void apply(IgniteInternalFuture<?> fut) {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
             });
@@ -803,7 +803,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             final GridCacheDistributedQueryFuture<?, ?, ?> fut,
             final GridCacheQueryRequest req,
             Collection<ClusterNode> nodes,
-            final IgniteBiClosure<ClusterNode, GridCacheQueryRequest, GridCacheQueryRequest> alterQryClo) throws IgniteCheckedException {
+            final IgniteBiClosure<ClusterNode, GridCacheQueryRequest, GridCacheQueryRequest> alterQryClo)
+            throws IgniteCheckedException {
         assert fut != null;
         assert req != null;
         assert nodes != null;
@@ -830,14 +831,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         // the reducer changed by the local node.
         if (!F.isEmpty(rmtNodes)) {
             for (ClusterNode rmtNode : rmtNodes)
-                cctx.io().send(rmtNode, alterQryClo == null ? req : alterQryClo.apply(rmtNode, req), GridIoPolicy.SYSTEM_POOL);
-            cctx.io().safeSend(rmtNodes, req, GridIoPolicy.QUERY_POOL, new P1<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-                    fut.onNodeLeft(node.id());
+                try {
+                    cctx.io().send(rmtNode, alterQryClo == null ? req : alterQryClo.apply(rmtNode, req), GridIoPolicy.QUERY_POOL);
+                } catch (IgniteCheckedException e) {
+                    fut.onNodeLeft(rmtNode.id());
 
-                    return !fut.isDone();
+                    if (fut.isDone())
+                        break;
                 }
-            });
         }
 
         if (locNode != null) {

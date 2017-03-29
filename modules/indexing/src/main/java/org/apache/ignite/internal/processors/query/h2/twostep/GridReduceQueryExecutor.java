@@ -656,7 +656,8 @@ public class GridReduceQueryExecutor {
                     if (cctx.isReplicated())
                         nodes = replicatedUnstableDataNodes(cctx, extraSpaces);
                     else {
-                        partsMap = partitionedUnstableDataNodes(cctx, extraSpaces);
+                    partsMap = partitionedUnstableDataNodes(cctx, extraSpaces,
+                        parts == null ? null : new IntArrayWrapper(parts));
 
                         nodes = partsMap == null ? null : partsMap.keySet();
                     }
@@ -673,24 +674,23 @@ public class GridReduceQueryExecutor {
                             partsMap = map;
                     }
                 }
-
-                    if (nodes == null)
-                        continue; // Retry.
-
-                    assert !nodes.isEmpty();
-
-
-                    assert !nodes.isEmpty();
-
-                    if (cctx.isReplicated() || qry.explain()) {
-                        assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
-                                "We must be on a client node.";
-
-                        // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                        nodes = singletonList(F.rand(nodes));
-                    }
-                
             }
+
+            if (nodes == null)
+                continue; // Retry.
+
+            if (nodes.size() == 0)
+                return new GridEmptyIterator(); // No data nodes are found for query.
+
+                assert !nodes.isEmpty();
+
+                if (cctx.isReplicated() || qry.explain()) {
+                    assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                            "We must be on a client node.";
+
+                    // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+                    nodes = singletonList(F.rand(nodes));
+                }
 
             int tblIdx = 0;
 
@@ -1127,7 +1127,8 @@ public class GridReduceQueryExecutor {
      */
     @SuppressWarnings("unchecked")
     private Map<ClusterNode, IntArray> partitionedUnstableDataNodes(final GridCacheContext<?, ?> cctx,
-                                                                    List<Integer> extraSpaces, @Nullable IntArrayWrapper parts) {
+                                                                    List<Integer> extraSpaces,
+                                                                    @Nullable IntArrayWrapper parts) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
         if (parts == null)
@@ -1580,27 +1581,6 @@ public class GridReduceQueryExecutor {
          */
         void disconnected(CacheException e) {
             state(e, null);
-        }
-    }
-}
-
-    /**
-     *
-     */
-    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode,Message,Message> {
-        /** */
-        private final Map<ClusterNode,IntArray> partsMap;
-
-        /**
-         * @param partsMap Partitions map.
-         */
-        private ExplicitPartitionsSpecializer(Map<ClusterNode,IntArray> partsMap) {
-            this.partsMap = partsMap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Message apply(ClusterNode n, Message msg) {
-            return copy(msg, n, partsMap);
         }
     }
 

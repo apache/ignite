@@ -65,9 +65,6 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.FULLTEXT;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.GEO_SPATIAL;
-import static org.apache.ignite.internal.processors.query.GridQueryIndexType.SORTED;
 
 /**
  * Indexing processor.
@@ -512,13 +509,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         qry.setType(typeDesc.name());
 
-                        final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.queryLocalSql(
-                            space,
-                            sqlQry,
-                            F.asList(params),
-                            typeDesc,
-                            idx.backupFilter(requestTopVer.get(), qry.getPartitions()));
-
                         sendQueryExecutedEvent(
                             qry.getSql(),
                             qry.getArgs());
@@ -633,8 +623,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     final QueryCursor<List<?>> cursor = idx.queryLocalSqlFields(cctx, qry,
                         idx.backupFilter(requestTopVer.get(), null), cancel);
-                    final GridQueryFieldsResult res = idx.queryLocalSqlFields(space, sql, F.asList(args),
-                        idx.backupFilter(requestTopVer.get(), qry.getPartitions()), qry.isEnforceJoinOrder(), qry.getTimeout(), cancel);
 
                     return new QueryCursorImpl<List<?>>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {

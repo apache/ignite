@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapSwapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntryImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
@@ -1006,13 +1007,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         int[] parts = qry.partitions();
 
-        if (parts == null || cctx.isLocal()) {
-            // Performance optimization.
-            if (locNode && plc == null && !cctx.isLocal()) {
-                GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
         if (cctx.isLocal())
             entryIter = cctx.local().allEntries().iterator();
-        else if (part == null) {
+        else if (parts == null) {
             GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
             // Performance optimization.
@@ -1069,8 +1066,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             entryIter = cache.localEntriesIteratorEx(true, backups, topVer);
         }
         else if (!validParts(parts))
-            keyIter = new GridEmptyIterator<>();
-        else if (part < 0 || part >= cctx.affinity().partitions())
             return new GridEmptyIterator<>();
         else {
             final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
@@ -1096,18 +1091,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 throw t;
             }
 
-            List<GridIterator<K>> iters = new ArrayList<>(parts.length);
+            List<GridIterator<GridCacheEntryEx>> iters = new ArrayList<>(parts.length);
 
             for (final GridDhtLocalPartition part : reservedParts) {
-                iters.add(new GridIteratorAdapter<K>() {
-                    private Iterator<KeyCacheObject> iter0 = part.keySet().iterator();
+                iters.add(new GridIteratorAdapter<GridCacheEntryEx>() {
+                    private Iterator<? extends GridCacheEntryEx> iter0 = part.allEntries().iterator();
 
                     @Override public boolean hasNextX() throws IgniteCheckedException {
                         return iter0.hasNext();
                     }
 
-                    @Override public K nextX() throws IgniteCheckedException {
-                        return (K)iter0.next();
+                    @Override public GridCacheEntryEx nextX() throws IgniteCheckedException {
+                        return iter0.next();
                     }
 
                     @Override public void removeX() throws IgniteCheckedException {
@@ -1116,14 +1111,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 });
             }
 
-            keyIter = new CompoundIterator<K>(iters);
-            entryIter = locPart.allEntries().iterator();
+            entryIter = new CompoundIterator<>(iters);
         }
 
         final List<GridDhtLocalPartition> reservedParts0 = reservedParts;
 
-        return new PeekValueExpiryAwareIterator(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), locNode, true) {
-            @Override protected void onClose() throws IgniteCheckedException {
+        return new PeekValueExpiryAwareIterator(entryIter, plc, topVer, keyValFilter, qry.keepBinary(), locNode, true) {
+            @Override protected void onClose() {
                 super.onClose();
 
                 if (reservedParts0 != null)
