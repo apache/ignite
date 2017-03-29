@@ -421,6 +421,13 @@
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
+                                                            <xs:attribute name="tableName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        SQL table name. When not set, value type name is used.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>

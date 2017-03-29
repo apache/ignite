@@ -32,12 +32,12 @@
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
 #include "ignite/impl/binary/binary_type_impl.h"
+#include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
-#include "binary_type_manager.h"
 
 namespace ignite
 {
@@ -632,7 +632,7 @@ namespace ignite
                  *
                  * @param id Session ID.
                  */
-                void CommitContainer(int32_t id);                
+                void CommitContainer(int32_t id);
 
                 /**
                  * Write object.
@@ -691,7 +691,7 @@ namespace ignite
                         ignite::common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
 
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(type.GetTypeName(), idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
@@ -714,11 +714,14 @@ namespace ignite
 
                         stream->Synchronize();
 
-                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos);
-                        stream->WriteInt32(hashPos, impl::binary::GetHashCode<T>(obj, binObj));
-
                         if (metaMgr)
-                            metaMgr->SubmitHandler(type.GetTypeName(), idRslvr.GetTypeId(), metaHnd.Get());
+                            metaMgr->SubmitHandler(*metaHnd.Get());
+
+                        // We are using direct constructor here to avoid check-overhead, as we know
+                        // at this point that underlying memory contains valid binary object.
+                        ignite::binary::BinaryObject binObj(*stream->GetMemory(), pos, &idRslvr, metaMgr);
+
+                        stream->WriteInt32(hashPos, impl::binary::GetHashCode<T>(obj, binObj));
                     }
                 }
 

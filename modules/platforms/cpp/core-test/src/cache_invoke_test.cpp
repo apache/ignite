@@ -33,6 +33,8 @@
 #include "ignite/ignite_binding_context.h"
 #include "ignite/cache/cache_entry_processor.h"
 
+#include "ignite/test_utils.h"
+
 using namespace boost::unit_test;
 
 using namespace ignite;
