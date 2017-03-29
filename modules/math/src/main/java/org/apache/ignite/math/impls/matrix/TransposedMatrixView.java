@@ -17,8 +17,56 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.math.Matrix;
+import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.storage.matrix.MatrixDelegateStorage;
+
 /**
  * TODO: add description.
  */
-public class TransposedMatrixView {
+public class TransposedMatrixView extends AbstractMatrix {
+    /** */
+    public TransposedMatrixView(){
+        //No-op.
+    }
+
+    /**
+     *
+     */
+    public TransposedMatrixView(Matrix mtx){
+        assert mtx != null;
+
+        setStorage(new MatrixDelegateStorage(mtx.getStorage(), 0, 0, mtx.rowSize(), mtx.columnSize()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double get(int row, int col) {
+        return super.get(col, row);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getX(int row, int col) {
+        return super.getX(col, row);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int rowSize() {
+        return super.columnSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int columnSize() {
+        return super.rowSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix like(int rows, int cols) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector likeVector(int crd) {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -76,6 +76,7 @@ public class MatrixImplementationFixtures {
         }
     }
 
+    /** */
     private static class SparseLocalOnHeapMatrixFixture extends MatrixSizeIterator{
         /** */
         SparseLocalOnHeapMatrixFixture() {

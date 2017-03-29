@@ -61,6 +61,7 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
         return new SparseLocalVector(crd, StorageConstants.RANDOM_ACCESS_MODE);
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         Matrix cp = like(rowSize(), columnSize());
 

@@ -99,30 +99,37 @@ public class MatrixDelegateStorage implements MatrixStorage {
         return cols;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return sto.get(rowOff + x, colOff + y);
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
         sto.set(rowOff + x, colOff + y, v);
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return cols;
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased() && rowOff == 0 && colOff == 0;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return sto.isSequentialAccess();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
     }
@@ -137,10 +144,12 @@ public class MatrixDelegateStorage implements MatrixStorage {
         return sto.isDistributed();
     }
 
+    /** {@inheritDoc} */
     @Override public double[][] data() {
         return sto.data();
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(sto);
 
@@ -151,6 +160,7 @@ public class MatrixDelegateStorage implements MatrixStorage {
         out.writeInt(cols);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sto = (MatrixStorage)in.readObject();
 
@@ -159,5 +169,32 @@ public class MatrixDelegateStorage implements MatrixStorage {
 
         rows = in.readInt();
         cols = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + rows;
+        res = res * 37 + cols;
+        res = res * 37 + rowOff;
+        res = res * 37 + colOff;
+        res = res * 37 + sto.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        MatrixDelegateStorage that = (MatrixDelegateStorage) o;
+
+        return rows == that.rows && cols == that.cols && rowOff == that.rowOff && colOff == that.colOff &&
+            (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 }
