@@ -460,7 +460,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable obj) {
-        DiscoveryData data = (DiscoveryData)obj;
+        final DiscoveryData data = (DiscoveryData)obj;
 
         if (log.isDebugEnabled()) {
             log.info("onDiscoveryDataReceived [joining=" + joiningNodeId +
@@ -492,46 +492,60 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
             }
 
-            for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
-                UUID clientNodeId = entry.getKey();
+            // Callback introduced to allow peer filter factory deployment and avoid deadlock.
+            // Will be removed after merge with IGNITE-4157.
+            Runnable cb = new Runnable() {
+                @Override public void run() {
+                    for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
+                        UUID clientNodeId = entry.getKey();
 
-                if (!ctx.localNodeId().equals(clientNodeId)) {
-                    Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
+                        if (!ctx.localNodeId().equals(clientNodeId)) {
+                            Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
 
-                    for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
-                        UUID routineId = e.getKey();
-                        LocalRoutineInfo info = e.getValue();
+                            for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
+                                UUID routineId = e.getKey();
+                                LocalRoutineInfo info = e.getValue();
 
-                        try {
-                            if (info.prjPred != null)
-                                ctx.resource().injectGeneric(info.prjPred);
+                                try {
+                                    if (info.prjPred != null)
+                                        ctx.resource().injectGeneric(info.prjPred);
 
-                            if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
-                                registerHandler(clientNodeId,
-                                    routineId,
-                                    info.hnd,
-                                    info.bufSize,
-                                    info.interval,
-                                    info.autoUnsubscribe,
-                                    false);
+                                    if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
+                                        if (ctx.config().isPeerClassLoadingEnabled())
+                                            info.hnd.p2pUnmarshal(clientNodeId, ctx);
+
+                                        registerHandler(clientNodeId,
+                                            routineId,
+                                            info.hnd,
+                                            info.bufSize,
+                                            info.interval,
+                                            info.autoUnsubscribe,
+                                            false);
+                                    }
+                                }
+                                catch (IgniteCheckedException err) {
+                                    U.error(log, "Failed to register continuous handler.", err);
+                                }
                             }
                         }
-                        catch (IgniteCheckedException err) {
-                            U.error(log, "Failed to register continuous handler.", err);
+
+                        Map<UUID, LocalRoutineInfo> map = clientInfos.get(entry.getKey());
+
+                        if (map == null) {
+                            map = new HashMap<>();
+
+                            clientInfos.put(entry.getKey(), map);
                         }
+
+                        map.putAll(entry.getValue());
                     }
                 }
+            };
 
-                Map<UUID, LocalRoutineInfo> map = clientInfos.get(entry.getKey());
-
-                if (map == null) {
-                    map = new HashMap<>();
-
-                    clientInfos.put(entry.getKey(), map);
-                }
-
-                map.putAll(entry.getValue());
-            }
+            if (ctx.config().isPeerClassLoadingEnabled())
+                ctx.marshallerContext().registerInitCallback(cb);
+            else
+                cb.run();
         }
     }
 
@@ -583,6 +597,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Routine ID.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,
