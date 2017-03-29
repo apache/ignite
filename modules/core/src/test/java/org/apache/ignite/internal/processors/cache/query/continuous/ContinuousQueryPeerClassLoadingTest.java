@@ -41,7 +41,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPeerClassLoadingEnabled(false);
+        cfg.setPeerClassLoadingEnabled(true);
         cfg.setClientMode(gridName.contains("client"));
 
         return cfg;
