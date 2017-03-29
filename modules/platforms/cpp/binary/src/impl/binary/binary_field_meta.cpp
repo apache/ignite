@@ -15,17 +15,27 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
+ #include <ignite/binary/binary_raw_reader.h>
+ #include <ignite/binary/binary_raw_writer.h>
+
+#include <ignite/impl/binary/binary_field_meta.h>
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace binary
         {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
+            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
             {
-                // No-op.
+                writer.WriteInt32(typeId);
+                writer.WriteInt32(fieldId);
+            }
+
+            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            {
+                typeId = reader.ReadInt32();
+                fieldId = reader.ReadInt32();
             }
         }
     }
