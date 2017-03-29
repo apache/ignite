@@ -253,6 +253,50 @@ namespace ignite
         };
 
         /**
+         * Input iterator operation.
+         */
+        template<typename Iter>
+        class InIterOperation : public InputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param begin Iterator pointing to the beggining of the sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            InIterOperation(Iter begin, Iter end) :
+                begin(begin),
+                end(end)
+            {
+                // No-op.
+            }
+
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
+            {
+                interop::InteropOutputStream& stream = *writer.GetStream();
+                int32_t sizePos = stream.Reserve(4);
+
+                int32_t size = 0;
+                for (Iter it = begin; it != end; ++it)
+                {
+                    writer.WriteTopObject(*it);
+                    ++size;
+                }
+
+                stream.WriteInt32(sizePos, size);
+            }
+        private:
+            /** Sequence begining. */
+            Iter begin;
+
+            /** Sequence end. */
+            Iter end;
+
+            IGNITE_NO_COPY_ASSIGNMENT(InIterOperation)
+        };
+
+        /**
          * Output operation.
          */
         class OutputOperation

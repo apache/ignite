@@ -283,6 +283,24 @@ BOOST_AUTO_TEST_CASE(TestContainsKeys)
     BOOST_REQUIRE(false == cache.ContainsKeys(keySet));
 }
 
+BOOST_AUTO_TEST_CASE(TestContainsKeysIter)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    int keys[] = { 1, 2 };
+
+    BOOST_REQUIRE(false == cache.ContainsKeys(keys, keys + 2));
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+
+    BOOST_REQUIRE(true == cache.ContainsKeys(keys, keys + 2));
+
+    cache.Remove(1);
+
+    BOOST_REQUIRE(false == cache.ContainsKeys(keys, keys + 2));
+}
+
 BOOST_AUTO_TEST_CASE(TestIsEmpty)
 {
     cache::Cache<int, int> cache = Cache();

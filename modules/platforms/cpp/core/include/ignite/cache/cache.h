@@ -185,6 +185,29 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             * @return True if cache contains mapping for all these keys.
+             */
+            template<typename InputIter>
+            bool ContainsKeys(InputIter begin, InputIter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<InputIter> op(begin, end);
+
+                bool res = impl.Get()->ContainsKeys(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Check if cache contains mapping for these keys.
+             *
+             * This method should only be used on the valid instance.
+             *
              * @param keys Keys.
              * @param err Error.
              * @return True if cache contains mapping for all these keys.
