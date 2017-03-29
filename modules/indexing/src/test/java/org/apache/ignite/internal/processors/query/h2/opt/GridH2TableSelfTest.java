@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,8 +105,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
+                idxs.add(new H2PkHashIndex(null, tbl, HASH, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
-                idxs.add(new GridH2TreeIndex(HASH, tbl, true, F.asList(id)));
                 idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
                 idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
