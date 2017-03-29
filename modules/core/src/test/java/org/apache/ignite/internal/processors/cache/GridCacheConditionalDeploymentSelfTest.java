@@ -55,8 +55,8 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -173,9 +173,9 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      */
     public static class TestMessage  extends GridCacheMessage implements GridCacheDeployable {
         /** */
-        public static final byte DIRECT_TYPE = (byte)302;
+        public static final short DIRECT_TYPE = 302;
 
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 

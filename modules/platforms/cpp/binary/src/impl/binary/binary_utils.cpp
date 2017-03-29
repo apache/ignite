@@ -328,6 +328,18 @@ namespace ignite
                 stream->WriteInt32(val.GetSecondFraction() % 1000000);
             }
 
+            Time BinaryUtils::ReadTime(interop::InteropInputStream* stream)
+            {
+                int64_t ms = stream->ReadInt64();
+
+                return Time(ms);
+            }
+
+            void BinaryUtils::WriteTime(interop::InteropOutputStream* stream, const Time val)
+            {
+                stream->WriteInt64(val.GetMilliseconds());
+            }
+
             void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)
             {
                 stream->WriteInt32(len);

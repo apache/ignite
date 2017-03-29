@@ -70,11 +70,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
         PutJob putJob = new PutJob(queueName);
 
-        IgniteCompute comp = compute(grid(0).cluster().forLocal()).withAsync();
+        IgniteCompute comp = compute(grid(0).cluster().forLocal());
 
-        comp.run(putJob);
-
-        IgniteFuture<?> fut = comp.future();
+        IgniteFuture<?> fut = comp.runAsync(putJob);
 
         Collection<IgniteFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
@@ -89,11 +87,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
             jobs.add(job);
 
-            comp = compute(grid(i).cluster().forLocal()).withAsync();
+            comp = compute(grid(i).cluster().forLocal());
 
-            comp.call(job);
-
-            futs.add(comp.future());
+            futs.add(comp.callAsync(job));
 
             itemsLeft -= cnt;
         }

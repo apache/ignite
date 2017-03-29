@@ -123,7 +123,7 @@ namespace ignite
              *
              * @param cache Cache name.
              * @param sql SQL query.
-             * @param argsNum Number of arguments.
+             * @param params Query arguments.
              */
             QueryExecuteRequest(const std::string& cache, const std::string& sql,
                 const app::ParameterBindingMap& params) :

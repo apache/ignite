@@ -103,11 +103,10 @@ struct CacheTestSuiteFixture {
      */
     ~CacheTestSuiteFixture()
     {
-        Ignition::Stop(grid0.GetName(), true);
-        Ignition::Stop(grid1.GetName(), true);
-
         grid0 = Ignite();
         grid1 = Ignite();
+
+        Ignition::StopAll(true);
     }
 };
 
@@ -447,6 +446,18 @@ BOOST_AUTO_TEST_CASE(TestPutGetDate)
     cache::Cache<int, Date> cache = grid0.GetOrCreateCache<int, Date>("partitioned");
 
     Date now = Date(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetTime)
+{
+    // Get existing cache
+    cache::Cache<int, Time> cache = grid0.GetOrCreateCache<int, Time>("partitioned");
+
+    Time now = Time(time(NULL) * 1000);
 
     cache.Put(5, now);
 

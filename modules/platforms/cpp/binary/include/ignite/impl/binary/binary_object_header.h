@@ -43,7 +43,7 @@ namespace ignite
             /**
              * Binary object header layout.
              */
-            struct IGNITE_IMPORT_EXPORT BinaryObjectHeaderLayout
+            struct BinaryObjectHeaderLayout
             {
                 int8_t  headerType;
                 int8_t  version;
@@ -238,6 +238,13 @@ namespace ignite
                 {
                     return GetFooterOffset() - SIZE;
                 }
+
+                /**
+                 * Get underlying memory.
+                 *
+                 * @return Underlying memory.
+                 */
+                int8_t* GetMem();
 
             private:
                 /** Header layout */

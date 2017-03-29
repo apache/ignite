@@ -659,7 +659,7 @@ public class GridToStringBuilder {
      * @param arr Array object.
      * @return String representation of an array.
      */
-    private static String arrayToString(Class arrType, Object arr) {
+    public static String arrayToString(Class arrType, Object arr) {
         if (arrType.equals(byte[].class))
             return Arrays.toString((byte[])arr);
         if (arrType.equals(boolean[].class))

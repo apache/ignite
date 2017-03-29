@@ -76,7 +76,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        int idx = getTestGridIndex(gridName);
+        int idx = getTestIgniteInstanceIndex(gridName);
 
         cfg.setUserAttributes(F.asMap(DC_NODE_ATTR, idx % 2));
 

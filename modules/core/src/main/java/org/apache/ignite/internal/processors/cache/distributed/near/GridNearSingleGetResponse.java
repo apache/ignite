@@ -303,7 +303,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 117;
     }
 

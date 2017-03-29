@@ -60,12 +60,11 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     /** Test Object. */
     private BinaryObject testObject;
 
-    static {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-    }
+    String marshallerBackup = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
@@ -97,7 +96,7 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
 
-        Ignite ignite = startGrids(1);
+        Ignite ignite = startGrid(0);
 
         BinaryObjectBuilder builder = ignite.binary().builder(TEST_OBJECT);
         BinaryObjectBuilder builder2 = ignite.binary().builder(TEST_OBJECT_2);
@@ -121,6 +120,7 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, marshallerBackup);
     }
 
     /** {@inheritDoc} */
