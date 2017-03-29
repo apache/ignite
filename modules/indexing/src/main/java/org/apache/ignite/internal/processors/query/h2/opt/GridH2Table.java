@@ -396,11 +396,11 @@ public class GridH2Table extends TableBase {
         assert snapshotEnabled;
 
         if (snapshots == null) // Nothing to reuse, create new snapshots.
-            snapshots = new Object[idxs.size() - 1];
+            snapshots = new Object[idxs.size() - 2];
 
-        // Take snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++) {
-            Object s = snapshots[i - 1];
+        // Take snapshots on all except first which is scan and second which is hash.
+        for (int i = 2, len = idxs.size(); i < len; i++) {
+            Object s = snapshots[i - 2];
 
             boolean reuseExisting = s != null;
 
@@ -411,7 +411,7 @@ public class GridH2Table extends TableBase {
                 if (qctx != null)
                     qctx.clearSnapshots();
 
-                for (int j = 1; j < i; j++)
+                for (int j = 2; j < i; j++)
                     index(j).releaseSnapshot();
 
                 // Drop invalidated snapshot.
@@ -420,7 +420,7 @@ public class GridH2Table extends TableBase {
                 return null;
             }
 
-            snapshots[i - 1] = s;
+            snapshots[i - 2] = s;
         }
 
         return snapshots;
@@ -480,8 +480,8 @@ public class GridH2Table extends TableBase {
      * @param idxs Indexes.
      */
     private void releaseSnapshots0(ArrayList<Index> idxs) {
-        // Release snapshots on all except first which is scan.
-        for (int i = 1, len = idxs.size(); i < len; i++)
+        // Release snapshots on all except first which is scan and second which is hash.
+        for (int i = 2, len = idxs.size(); i < len; i++)
             ((GridH2IndexBase)idxs.get(i)).releaseSnapshot();
     }
 
