@@ -525,7 +525,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(true, cacheEvent.IsNear);
                 Assert.AreEqual(2, cacheEvent.Key);
                 Assert.AreEqual(expectedGridGuid, cacheEvent.Xid);
-                Assert.AreEqual(null, cacheEvent.LockId);
                 Assert.AreEqual(4, cacheEvent.NewValue);
                 Assert.AreEqual(true, cacheEvent.HasNewValue);
                 Assert.AreEqual(5, cacheEvent.OldValue);
