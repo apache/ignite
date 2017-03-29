@@ -32,14 +32,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -164,64 +158,6 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
      */
     public void testLevel() {
         doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES);
-    }
-
-    /**
-     * Multithreaded version of {@link #testLevel}.
-     *
-     * @throws Exception On error.
-     */
-    public void testLevelMultithreaded() throws Exception {
-        final int parallelismFactor = Runtime.getRuntime().availableProcessors() * 2;
-
-        X.println("Pool size = " + parallelismFactor);
-
-        ExecutorService svc = Executors.newFixedThreadPool(parallelismFactor);
-
-        @SuppressWarnings("UnnecessaryLocalVariable")
-        final long total = parallelismFactor;
-
-        final AtomicLong runCnt = new AtomicLong();
-        final AtomicLong succeededCnt = new AtomicLong();
-        final AtomicBoolean failure = new AtomicBoolean();
-
-        for (int i=0; i<total; i++) {
-            svc.submit(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    if (failure.get())
-                        return null;
-
-                    long started = runCnt.incrementAndGet();
-
-                    System.out.println(">>>>>>>>>>>>>>>>>>>>>> Started: " + started);
-
-                    try {
-                        doTestLevelStat(LEVELS, VALUES_PER_DISTRIBUTION, SAMPLE_SIZE, SAMPLES / parallelismFactor);
-
-                        long succeeded = succeededCnt.incrementAndGet();
-
-                        System.out.println("<<<<<<<<<<<<<<<<<<<<<< Succeeded: " + succeeded);
-
-                        return null;
-                    } catch (Throwable t) {
-                        t.printStackTrace();
-
-                        failure.set(true);
-
-                        throw new IgniteCheckedException(t);
-                    }
-                }
-            });
-        }
-
-        svc.shutdown();
-
-        boolean ok = svc.awaitTermination(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        assertTrue("Timed out while waiting for test completion, " + getTestTimeout() + " ms.", ok);
-        assertEquals(total, runCnt.get());
-        assertEquals(total, succeededCnt.get());
-        assertFalse(failure.get());
     }
 
     /**
