@@ -52,9 +52,6 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     /** */
     protected transient CacheEntryEventFilter filter;
 
-    /** Ignore deployment. */
-    private transient boolean ignoreDeployment;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -107,9 +104,6 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     /** {@inheritDoc} */
     @Override public CacheEntryEventFilter getEventFilter() {
         if (filter == null) {
-            if (ignoreDeployment && rmtFilterFactory == null)
-                return null;
-
             assert rmtFilterFactory != null;
 
             Factory<? extends CacheEntryEventFilter> factory = rmtFilterFactory;
@@ -142,20 +136,6 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     /** {@inheritDoc} */
     @Override public GridContinuousHandler clone() {
         return super.clone();
-    }
-
-    /**
-     * @return Ignore deployment.
-     */
-    public boolean ignoreDeployment() {
-        return ignoreDeployment;
-    }
-
-    /**
-     * @param ignoreDeployment Ignore deployment.
-     */
-    public void ignoreDeployment(boolean ignoreDeployment) {
-        this.ignoreDeployment = ignoreDeployment;
     }
 
     /** {@inheritDoc} */
