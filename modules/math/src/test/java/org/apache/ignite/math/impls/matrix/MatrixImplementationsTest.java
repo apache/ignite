@@ -270,11 +270,11 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
 
             fillMatrix(m);
 
-            m.map(x -> 0d);
+            m.map(x -> 10d);
 
             for(int i = 0; i < m.rowSize(); i++)
                 for(int j = 0; j < m.columnSize(); j++)
-                    assertTrue("Unexpected value.", Double.compare(m.get(i, j), 0d) == 0);
+                    assertTrue("Unexpected value for " + desc, Double.compare(m.get(i, j), 10d) == 0);
         });
     }
 

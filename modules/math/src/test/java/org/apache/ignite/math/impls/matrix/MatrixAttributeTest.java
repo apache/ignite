@@ -37,7 +37,7 @@ public class MatrixAttributeTest {
             DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, RandomMatrix.class, DiagonalMatrix.class),
         new AttrCfg("isArrayBased", Matrix::isArrayBased, DenseLocalOnHeapMatrix.class),
         new AttrCfg("isDistributed", Matrix::isDistributed),
-        new AttrCfg("isRandomAccess", Matrix::isRandomAccess, DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, RandomMatrix.class, DiagonalMatrix.class),
+        new AttrCfg("isRandomAccess", Matrix::isRandomAccess, DenseLocalOnHeapMatrix.class, DenseLocalOffHeapMatrix.class, RandomMatrix.class, DiagonalMatrix.class, SparseLocalOnHeapMatrix.class),
         new AttrCfg("isSequentialAccess", Matrix::isSequentialAccess, DiagonalMatrix.class)
     );
 
@@ -47,7 +47,8 @@ public class MatrixAttributeTest {
         new Specification(new DenseLocalOffHeapMatrix(1,1)),
         new Specification(new RandomMatrix(1,1)),
         new Specification(new DiagonalMatrix(new double[] {1.0})),
-        new Specification(new FunctionMatrix(1,1,(x, y) -> 1.0))
+        new Specification(new FunctionMatrix(1,1,(x, y) -> 1.0)),
+        new Specification(new SparseLocalOnHeapMatrix(1,1))
     );
 
     /** */ @Test

@@ -90,6 +90,7 @@ import org.junit.runners.Suite;
     // Matrix tests.
     MatrixImplementationsTest.class,
     DiagonalMatrixTest.class,
+    MatrixAttributeTest.class,
     // Decomposes
     LUDecompositionTest.class
 })

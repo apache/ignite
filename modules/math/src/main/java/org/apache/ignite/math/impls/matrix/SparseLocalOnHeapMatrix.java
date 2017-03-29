@@ -17,9 +17,11 @@
 
 package org.apache.ignite.math.impls.matrix;
 
+import org.apache.ignite.math.MatrixStorage;
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.storage.matrix.SparseLocalOnHeapMatrixStorage;
 import org.apache.ignite.math.impls.vector.SparseLocalVector;
 
 /**
@@ -33,11 +35,37 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
         // No-op.
     }
 
-    @Override public Matrix like(int rows, int cols) {
-        return null; // TODO
+    /**
+     * Construct new {@link SparseLocalOnHeapMatrix}.
+     *
+     * By default storage sets in row optimized mode and in random access mode.
+     */
+    public SparseLocalOnHeapMatrix(int rows, int cols){
+        setStorage(mkStorage(rows, cols));
     }
 
+    /**
+     * Create new {@link SparseLocalOnHeapMatrixStorage}.
+     */
+    private MatrixStorage mkStorage(int rows, int cols) {
+        return new SparseLocalOnHeapMatrixStorage(rows, cols, StorageConstants.RANDOM_ACCESS_MODE, StorageConstants.ROW_STORAGE_MODE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix like(int rows, int cols) {
+        return new SparseLocalOnHeapMatrix(rows, cols);
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        return null; // TODO
+        return new SparseLocalVector(crd, StorageConstants.RANDOM_ACCESS_MODE);
+    }
+
+    @Override public Matrix copy() {
+        Matrix cp = like(rowSize(), columnSize());
+
+        cp.assign(this);
+
+        return  cp;
     }
 }

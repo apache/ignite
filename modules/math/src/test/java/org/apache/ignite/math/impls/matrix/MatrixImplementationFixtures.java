@@ -32,7 +32,8 @@ public class MatrixImplementationFixtures {
     private static final List<Supplier<Iterable<Matrix>>> suppliers = Arrays.asList(
         (Supplier<Iterable<Matrix>>)DenseLocalOnHeapMatrixFixture::new,
         (Supplier<Iterable<Matrix>>)DenseLocalOffHeapMatrixFixture::new,
-        (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new
+        (Supplier<Iterable<Matrix>>)RandomMatrixFixture::new,
+        (Supplier<Iterable<Matrix>>)SparseLocalOnHeapMatrixFixture::new
     );
 
     /** */
@@ -74,6 +75,14 @@ public class MatrixImplementationFixtures {
             super(RandomMatrix::new, "RandomMatrix");
         }
     }
+
+    private static class SparseLocalOnHeapMatrixFixture extends MatrixSizeIterator{
+        /** */
+        SparseLocalOnHeapMatrixFixture() {
+            super(SparseLocalOnHeapMatrix::new, "SparseLocalOnHeapMatrix");
+        }
+    }
+
 
     /** */
     private static class MatrixSizeIterator implements Iterable<Matrix>{

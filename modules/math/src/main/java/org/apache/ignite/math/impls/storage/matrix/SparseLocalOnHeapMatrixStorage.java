@@ -27,6 +27,8 @@ import org.apache.ignite.math.MatrixStorage;
  * Storage for sparse, local, on-heap matrix.
  */
 public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageConstants {
+    /** Default zero value. */
+    private static final double DEFAULT_VALUE = 0.0;
     private int rows, cols;
     private int acsMode, stoMode;
 
@@ -95,6 +97,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         return acsMode;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         if (stoMode == ROW_STORAGE_MODE) {
             Map<Integer, Double> row = sto.get(x);
@@ -106,7 +109,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
                     return val;
             }
 
-            return 0.0;
+            return DEFAULT_VALUE;
         }
         else {
             Map<Integer, Double> col = sto.get(y);
@@ -118,33 +121,40 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
                     return val;
             }
 
-            return 0.0;
+            return DEFAULT_VALUE;
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int x, int y, double v) {
-        if (stoMode == ROW_STORAGE_MODE) {
-            Map<Integer, Double> row = sto.computeIfAbsent(x, k ->
-                acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
+        // Ignore default values (currently 0.0).
+        if (v != DEFAULT_VALUE) {
+            if (stoMode == ROW_STORAGE_MODE) {
+                Map<Integer, Double> row = sto.computeIfAbsent(x, k ->
+                    acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
 
-            row.put(y, v);
-        }
-        else {
-            Map<Integer, Double> col = sto.computeIfAbsent(y, k ->
-                acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
+                row.put(y, v);
+            }
+            else {
+                Map<Integer, Double> col = sto.computeIfAbsent(y, k ->
+                    acsMode == SEQUENTIAL_ACCESS_MODE ? new Int2DoubleRBTreeMap() : new Int2DoubleOpenHashMap());
 
-            col.put(x, v);
+                col.put(x, v);
+            }
         }
     }
 
+    /** {@inheritDoc} */
     @Override public int columnSize() {
         return cols;
     }
 
+    /** {@inheritDoc} */
     @Override public int rowSize() {
         return rows;
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
@@ -153,6 +163,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         out.writeObject(sto);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rows = in.readInt();
@@ -162,10 +173,12 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         sto = (Map<Integer, Map<Integer, Double>>)in.readObject();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return acsMode == SEQUENTIAL_ACCESS_MODE;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
     }
@@ -180,6 +193,7 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
