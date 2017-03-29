@@ -130,7 +130,7 @@ public class JdbcResultSet implements ResultSet {
      * @param finished Finished.
      * @return Result set.
      */
-    static JdbcResultSet resultSetForQueryTaskV2(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls,
+    static JdbcResultSet resultSetForQueryTask(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls,
             List<String> cols, List<String> types, Collection<List<?>> fields, boolean finished) {
         return new JdbcResultSet(uuid, stmt, tbls, cols, types, fields, finished);
     }
