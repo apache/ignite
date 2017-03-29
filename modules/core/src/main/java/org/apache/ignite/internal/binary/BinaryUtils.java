@@ -1003,25 +1003,25 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
-            Map<String, Integer> mergedFields;
+            Map<String, BinaryFieldMetadata> mergedFields;
 
             if (FIELDS_SORTED_ORDER)
                 mergedFields = new TreeMap<>(oldMeta.fieldsMap());
             else
                 mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
 
-            Map<String, Integer> newFields = newMeta.fieldsMap();
+            Map<String, BinaryFieldMetadata> newFields = newMeta.fieldsMap();
 
             boolean changed = false;
 
-            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
-                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+            for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
+                BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
 
-                if (oldFieldType == null)
+                if (oldFieldMeta == null)
                     changed = true;
                 else {
-                    String oldFieldTypeName = fieldTypeName(oldFieldType);
-                    String newFieldTypeName = fieldTypeName(newField.getValue());
+                    String oldFieldTypeName = fieldTypeName(oldFieldMeta.typeId());
+                    String newFieldTypeName = fieldTypeName(newField.getValue().typeId());
 
                     if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(

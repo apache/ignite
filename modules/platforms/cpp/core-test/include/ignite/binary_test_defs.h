@@ -122,6 +122,11 @@ namespace ignite_test
                 {
                     return 0;
                 }
+
+                virtual BinaryIdResolver* Clone() const
+                {
+                    return new DummyIdResolver();
+                }
             };
         }
     }
