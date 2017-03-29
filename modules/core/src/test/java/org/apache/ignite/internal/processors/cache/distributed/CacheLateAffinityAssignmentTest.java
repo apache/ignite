@@ -400,8 +400,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         stopGrid(0);
         stopGrid(1);
 
-        awaitPartitionMapExchange();
-
         calculateAffinity(5);
         calculateAffinity(6);
 
@@ -2191,7 +2189,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     continue;
 
                 List<List<ClusterNode>> aff1 = aff.get(cctx.name());
-                List<List<ClusterNode>> aff2 = cctx.affinity().assignment(topVer).assignment();
+                List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
 
                 if (aff1 == null)
                     aff.put(cctx.name(), aff2);
@@ -2199,7 +2197,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
-                    List<List<ClusterNode>> ideal = cctx.affinity().assignment(topVer).idealAssignment();
+                    List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
 
                     assertAffinity(ideal, aff2, node, cctx.name(), topVer);
 
