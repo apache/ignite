@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -47,33 +48,33 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static CacheConfiguration<Object, String> cacheCfg() {
-        return new CacheConfiguration<Object, String>()
-            .setIndexedTypes(Object.class, String.class);
+    protected static CacheConfiguration<Object, TestObject> cacheCfg() {
+        return new CacheConfiguration<Object, TestObject>()
+            .setIndexedTypes(Object.class, TestObject.class);
     }
 
     /** */
     public void testObjectKeyHandling() throws Exception {
         Ignite ignite = grid();
 
-        IgniteCache<Object, String> cache = ignite.getOrCreateCache(cacheCfg());
+        IgniteCache<Object, TestObject> cache = ignite.getOrCreateCache(cacheCfg());
 
         UUID uid = UUID.randomUUID();
 
-        cache.put(uid, "A");
+        cache.put(uid, new TestObject("A"));
 
         assertItemsNumber(1);
 
-        cache.put(1, "B");
+        cache.put(1, new TestObject("B"));
 
         assertItemsNumber(2);
 
-        cache.put(uid, "C");
+        cache.put(uid, new TestObject("C"));
 
         // Key should have been replaced
         assertItemsNumber(2);
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select * from String order by _val")).getAll();
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select _key, name from TestObject order by name")).getAll();
 
         assertEquals(res,
             Arrays.asList(
@@ -86,7 +87,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
         assertItemsNumber(1);
 
-        res = cache.query(new SqlFieldsQuery("select * from String")).getAll();
+        res = cache.query(new SqlFieldsQuery("select _key, name from TestObject")).getAll();
 
         assertEquals(res,
             Collections.singletonList(
@@ -105,7 +106,19 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     private void assertItemsNumber(long num) {
         assertEquals(num, grid().cachex().size());
 
-        assertEquals(num, grid().cache(null).query(new SqlFieldsQuery("select count(*) from String")).getAll()
+        assertEquals(num, grid().cache(null).query(new SqlFieldsQuery("select count(*) from TestObject")).getAll()
             .get(0).get(0));
+    }
+    
+    /** */
+    private static class TestObject {
+        /** */
+        @QuerySqlField
+        public final String name;
+
+        /** */
+        private TestObject(String name) {
+            this.name = name;
+        }
     }
 }
