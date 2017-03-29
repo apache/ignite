@@ -24,7 +24,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
@@ -103,10 +103,10 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
     public void testCreate() throws Exception {
         QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
 
-        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
 
-        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
     }
 
@@ -118,18 +118,18 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
     public void testDrop() throws Exception {
         QueryIndex idx = createIndex(IDX_NAME, field(FIELD_NAME));
 
-        cacheProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+        queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
     }
 
     /**
-     * Get cache processor.
+     * Get query processor.
      *
      * @param node Node.
-     * @return Cache processor.
+     * @return Query processor.
      */
-    private GridCacheProcessor cacheProcessor(Ignite node) {
-        return ((IgniteEx)node).context().cache();
+    private GridQueryProcessor queryProcessor(Ignite node) {
+        return ((IgniteEx)node).context().query();
     }
 
     /**

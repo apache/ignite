@@ -48,7 +48,6 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityNodeAddressHashResolver;
@@ -2576,44 +2575,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         t.close(true);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
-    }
-
-    /**
-     * Dynamically create index.
-     *
-     * @param cacheName Cache name.
-     * @param tblName Table name.
-     * @param idx Index.
-     * @param ifNotExists When set to {@code true} operation will fail if index already exists.
-     * @return Future completed when index is created.
-     */
-    public IgniteInternalFuture<?> dynamicIndexCreate(String cacheName, String tblName, QueryIndex idx,
-        boolean ifNotExists) {
-        IgniteInternalCache cache = cache(cacheName);
-
-        if (cache == null)
-            return new GridFinishedFuture<>(new IgniteException("Cache doesn't exist: " + cacheName));
-
-        return cache.context().queries().dynamicIndexCreate(tblName, idx, ifNotExists);
-    }
-
-    /**
-     * Dynamically drop index.
-     *
-     * @param cacheName Cache name.
-     * @param tblName Table name.
-     * @param idxName Index name.
-     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
-     * @return Future completed when index is dropped.
-     */
-    public IgniteInternalFuture<?> dynamicIndexDrop(String cacheName, String tblName, String idxName,
-        boolean ifExists) {
-        IgniteInternalCache cache = cache(cacheName);
-
-        if (cache == null)
-            return new GridFinishedFuture<>(new IgniteException("Cache doesn't exist: " + cacheName));
-
-        return cache.context().queries().dynamicIndexDrop(tblName, idxName, ifExists);
     }
 
     /**

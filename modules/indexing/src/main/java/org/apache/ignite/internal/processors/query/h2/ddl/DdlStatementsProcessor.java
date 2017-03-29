@@ -84,7 +84,7 @@ public class DdlStatementsProcessor {
                 GridSqlCreateIndex createIdx = (GridSqlCreateIndex) gridStmt;
 
                 // TODO: How to handle schema name properly?
-                fut = ctx.cache().dynamicIndexCreate(
+                fut = ctx.query().dynamicIndexCreate(
                     cacheName, createIdx.tableName(), createIdx.index(), createIdx.ifNotExists());
             }
             else if (gridStmt instanceof GridSqlDropIndex) {

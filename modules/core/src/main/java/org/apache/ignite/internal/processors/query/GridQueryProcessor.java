@@ -1076,39 +1076,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Drop index.
-     *
-     * @param idxName Index name.
-     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
-     * @return Future completed when index is created.
-     */
-    public IgniteInternalFuture<?> dropIndex(String space, String idxName, boolean ifExists) {
-        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
-
-        idxLock.readLock().lock();
-
-        try {
-            QueryIndexDescriptorImpl idxDesc = idxs.get(idxKey);
-
-            if (idxDesc == null) {
-                if (ifExists)
-                    return new GridFinishedFuture<>();
-
-                return new GridFinishedFuture<>(new IgniteException("Index doesn't exist [space=" + space +
-                    ", idxName=" + idxName + ']'));
-            }
-
-            IndexAbstractOperation op =
-                new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
-
-            return startIndexOperation(idxKey, op);
-        }
-        finally {
-            idxLock.readLock().unlock();
-        }
-    }
-
-    /**
      * Create index.
      *
      * @param space Space name.
@@ -1117,7 +1084,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param ifNotExists When set to {@code true} operation will fail if index already exists.
      * @return Future completed when index is created.
      */
-    public IgniteInternalFuture<?> createIndex(String space, String tblName, QueryIndex idx, boolean ifNotExists) {
+    public IgniteInternalFuture<?> dynamicIndexCreate(String space, String tblName, QueryIndex idx,
+        boolean ifNotExists) {
         String idxName = idx.getName() != null ? idx.getName() : QueryEntity.defaultIndexName(idx);
 
         QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
@@ -1146,6 +1114,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             IndexAbstractOperation op =
                 new IndexCreateOperation(ctx.localNodeId(), UUID.randomUUID(), space, tblName, idx, ifNotExists);
+
+            return startIndexOperation(idxKey, op);
+        }
+        finally {
+            idxLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Drop index.
+     *
+     * @param idxName Index name.
+     * @param ifExists When set to {@code true} operation fill fail if index doesn't exists.
+     * @return Future completed when index is created.
+     */
+    public IgniteInternalFuture<?> dynamicIndexDrop(String space, String idxName, boolean ifExists) {
+        QueryIndexKey idxKey = new QueryIndexKey(space, idxName);
+
+        idxLock.readLock().lock();
+
+        try {
+            QueryIndexDescriptorImpl idxDesc = idxs.get(idxKey);
+
+            if (idxDesc == null) {
+                if (ifExists)
+                    return new GridFinishedFuture<>();
+
+                return new GridFinishedFuture<>(new IgniteException("Index doesn't exist [space=" + space +
+                    ", idxName=" + idxName + ']'));
+            }
+
+            IndexAbstractOperation op =
+                new IndexDropOperation(ctx.localNodeId(), UUID.randomUUID(), space, idxName, ifExists);
 
             return startIndexOperation(idxKey, op);
         }
