@@ -2030,6 +2030,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             if (! topVer.equals(exchVer)) {
                 info("topology version mismatch: node "  + g.name() + " " + exchVer + ", " + topVer);
+
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
                         return exchVer.equals(topVer);
