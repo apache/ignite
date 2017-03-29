@@ -1109,8 +1109,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             try {
                 CacheDataRow oldRow = dataTree.remove(new SearchRow(key));
 
-                if (oldRow != null)
-                    finishRemove(key, oldRow);
+                finishRemove(key, oldRow);
             }
             finally {
                 busyLock.leaveBusy();
