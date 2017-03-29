@@ -110,7 +110,7 @@ public class QueryIndexDescriptorImpl implements GridQueryIndexDescriptor {
      * @return This instance for chaining.
      * @throws IgniteCheckedException If failed.
      */
-    public QueryIndexDescriptorImpl  addField(String field, int orderNum, boolean descending)
+    public QueryIndexDescriptorImpl addField(String field, int orderNum, boolean descending)
         throws IgniteCheckedException {
         if (!typDesc.hasField(field))
             throw new IgniteCheckedException("Field not found: " + field);
