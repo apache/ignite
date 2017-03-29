@@ -36,6 +36,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Callback invoked when object write is finished and it is time to collect missing metadata.
         /// </summary>
         /// <returns>Collected metadata.</returns>
-        IDictionary<string, int> OnObjectWriteFinished();
+        IDictionary<string, BinaryField> OnObjectWriteFinished();
     }
 }

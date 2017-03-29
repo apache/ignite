@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -63,6 +65,8 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+
         return cfg;
     }
 
@@ -77,7 +81,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
         return new CacheConfiguration<K, V>()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -101,6 +105,28 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         checkDistributedQueryWithSegmentedIndex();
 
         checkLocalQueryWithSegmentedIndex();
+    }
+
+    /**
+     * Run tests on single-node grid
+     * @throws Exception If failed.
+     */
+    public void testSingleNodeIndexSegmentationWithSwapEnabled() throws Exception {
+        startGridsMultiThreaded(1, true);
+
+        final IgniteCache<Object, Object> cache = ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class)
+            .setOffHeapMaxMemory(-1)
+            .setSwapEnabled(true)
+            .setEvictionPolicy(new FifoEvictionPolicy(10)));
+
+        for (int i = 0; i < 20; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select name from \"org\".Organization";
+
+        List<List<?>> result = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+        assertEquals(20, result.size());
     }
 
     /**
@@ -170,7 +196,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
 
         Set<Integer> localOrgIds = new HashSet<>();
 
-        for(Cache.Entry<Integer, Organization> e : c2.localEntries())
+        for (Cache.Entry<Integer, Organization> e : c2.localEntries())
             localOrgIds.add(e.getKey());
 
         int expectedPersons = 0;
