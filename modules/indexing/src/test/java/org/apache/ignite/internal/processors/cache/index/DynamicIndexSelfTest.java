@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -70,19 +72,85 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
 
         node.getOrCreateCache(cacheConfiguration());
 
-        GridCacheProcessor cacheProc = node.context().cache();
+        assertNoIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx");
 
-        LinkedHashMap<String, Boolean> idxFields = new LinkedHashMap<>();
+        QueryIndex idx = createIndex("my_idx", field("str"));
 
-        idxFields.put("str", true);
+        cacheProcessor(node).dynamicIndexCreate(CACHE_NAME, tableName(ValueClass.class), idx, false).get();
 
-        QueryIndex idx = new QueryIndex().setName("my_idx").setFields(idxFields);
+        assertIndex(CACHE_NAME, tableName(ValueClass.class), "my_idx", field("str"));
+    }
 
-        cacheProc.dynamicIndexCreate(CACHE_NAME, ValueClass.class.getSimpleName(), idx, false).get();
+    /**
+     * Get cache processor.
+     *
+     * @param node Node.
+     * @return Cache processor.
+     */
+    private GridCacheProcessor cacheProcessor(Ignite node) {
+        return ((IgniteEx)node).context().cache();
+    }
 
-        QueryTypeDescriptorImpl type = typeExisting(node, CACHE_NAME, ValueClass.class);
+    /**
+     * Get table name for class.
+     *
+     * @param cls Class.
+     * @return Table name.
+     */
+    private String tableName(Class cls) {
+        return cls.getSimpleName();
+    }
 
-        assertIndex(type, "my_idx", field("str"));
+    /**
+     * Convenient method for index creation.
+     *
+     * @param name Name.
+     * @param fields Fields.
+     * @return Index.
+     */
+    private QueryIndex createIndex(String name, IgniteBiTuple<String, Boolean>... fields) {
+        QueryIndex idx = new QueryIndex();
+
+        idx.setName(name);
+
+        LinkedHashMap<String, Boolean> fields0 = new LinkedHashMap<>();
+
+        for (IgniteBiTuple<String, Boolean> field : fields)
+            fields0.put(field.getKey(), field.getValue());
+
+        idx.setFields(fields0);
+
+        return idx;
+    }
+
+    /**
+     * Assert index state on all nodes.
+     *
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param fields Fields.
+     */
+    private void assertIndex(String cacheName, String tblName, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        for (Ignite node : Ignition.allGrids())
+            assertIndex((IgniteEx)node, cacheName, tblName, idxName, fields);
+    }
+
+    /**
+     * Assert index state on particular node.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param fields Fields.
+     */
+    private void assertIndex(IgniteEx node, String cacheName, String tblName, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+
+        assertIndex(typeDesc, idxName, fields);
     }
 
     /**
@@ -118,6 +186,32 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
             assertEquals("Index field sort mismatch [pos=" + i + ", field=" + expFieldName +
                 ", expAsc=" + expFieldAsc + ", actualAsc=" + fieldAsc + ']', expFieldAsc, fieldAsc);
         }
+    }
+
+    /**
+     * Assert index doesn't exist on all nodes.
+     *
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     */
+    private void assertNoIndex(String cacheName, String tblName, String idxName) {
+        for (Ignite node : Ignition.allGrids())
+            assertNoIndex((IgniteEx)node, cacheName, tblName, idxName);
+    }
+
+    /**
+     * Assert index doesn't exist on particular node.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     */
+    private void assertNoIndex(IgniteEx node, String cacheName, String tblName, String idxName) {
+        QueryTypeDescriptorImpl typeDesc = typeExisting(node, cacheName, tblName);
+
+        assertNoIndex(typeDesc, idxName);
     }
 
     /**
@@ -159,22 +253,6 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
         return new CacheConfiguration<KeyClass, ValueClass>()
             .setName(CACHE_NAME)
             .setIndexedTypes(KeyClass.class, ValueClass.class);
-    }
-
-    /**
-     * Get type on the given node for the given cache and value class. Type must exist.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @param valCls Value class.
-     * @return Type.
-     */
-    private static QueryTypeDescriptorImpl typeExisting(IgniteEx node, String cacheName, Class valCls) {
-        QueryTypeDescriptorImpl res = type(node, cacheName, valCls.getSimpleName());
-
-        assertNotNull(res);
-
-        return res;
     }
 
     /**
