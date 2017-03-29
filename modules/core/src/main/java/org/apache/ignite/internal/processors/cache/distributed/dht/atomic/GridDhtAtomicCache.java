@@ -3202,7 +3202,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             }
             catch (NodeStoppingException e){
-                U.error(log, "Failed to update key:" + key + " on backup, node stopping", e);
+                U.error(log, "Failed to update key on backup (local node is stopping):" + key, e);
 
                 return;
             }
