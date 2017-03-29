@@ -104,7 +104,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         boolean first = true;
 
         do {
-            PageMemory pageMem = cctx.shared().database().pageMemory();
+            PageMemory pageMem = cctx.memoryPolicy().pageMemory();
 
             try (Page page = page(pageId(nextLink), cctx)) {
                 long pageAddr = page.getForReadPointer(); // Non-empty data page must not be recycled.
@@ -460,7 +460,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     private Page page(final long pageId, final GridCacheContext cctx) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
+        return cctx.memoryPolicy().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /**
