@@ -327,13 +327,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     };
 
     /** Node ID message type. */
-    public static final byte NODE_ID_MSG_TYPE = -1;
+    public static final short NODE_ID_MSG_TYPE = -1;
 
-    /** */
-    public static final byte RECOVERY_LAST_ID_MSG_TYPE = -2;
+    /** Recovery last received ID message type. */
+    public static final short RECOVERY_LAST_ID_MSG_TYPE = -2;
 
-    /** */
-    public static final byte HANDSHAKE_MSG_TYPE = -3;
+    /** Handshake message type. */
+    public static final short HANDSHAKE_MSG_TYPE = -3;
 
     /** */
     private ConnectGateway connectGate;
@@ -1953,7 +1953,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 
@@ -3091,7 +3091,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         ByteBuffer handBuff = sslHnd.applicationBuffer();
 
-                        if (handBuff.remaining() < 17) {
+                        if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                             buf = ByteBuffer.allocate(1000);
 
                             int read = ch.read(buf);
@@ -3107,9 +3107,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             buf = handBuff;
                     }
                     else {
-                        buf = ByteBuffer.allocate(17);
+                        buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE);
 
-                        for (int i = 0; i < 17; ) {
+                        for (int i = 0; i < NodeIdMessage.MESSAGE_FULL_SIZE; ) {
                             int read = ch.read(buf);
 
                             if (read == -1)
@@ -3119,7 +3119,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         }
                     }
 
-                    UUID rmtNodeId0 = U.bytesToUuid(buf.array(), 1);
+                    UUID rmtNodeId0 = U.bytesToUuid(buf.array(), Message.DIRECT_TYPE_SIZE);
 
                     if (!rmtNodeId.equals(rmtNodeId0))
                         throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
@@ -3144,7 +3144,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (recovery != null) {
                         HandshakeMessage msg;
 
-                        int msgSize = 33;
+                        int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE;
 
                         if (handshakeConnIdx != null) {
                             msg = new HandshakeMessage2(locNode.id(),
@@ -3204,7 +3204,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                             buf.order(ByteOrder.nativeOrder());
 
-                            for (int i = 0; i < 9; ) {
+                            for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
 
                                 if (read == -1)
@@ -3220,10 +3220,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 buf.clear();
                             }
 
-                            rcvCnt = decode.getLong(1);
+                            rcvCnt = decode.getLong(Message.DIRECT_TYPE_SIZE);
 
-                            if (decode.limit() > 9) {
-                                decode.position(9);
+                            if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
+                                decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
                                 sslMeta.decodedBuffer(decode);
                             }
@@ -3234,11 +3234,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 sslMeta.encodedBuffer(inBuf);
                         }
                         else {
-                            buf = ByteBuffer.allocate(9);
+                            buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
                             buf.order(ByteOrder.nativeOrder());
 
-                            for (int i = 0; i < 9; ) {
+                            for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                                 int read = ch.read(buf);
 
                                 if (read == -1)
@@ -3248,7 +3248,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                 i += read;
                             }
 
-                            rcvCnt = buf.getLong(1);
+                            rcvCnt = buf.getLong(Message.DIRECT_TYPE_SIZE);
                         }
 
                         if (log.isDebugEnabled())
@@ -3487,6 +3487,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * Write message type to output stream.
+     *
+     * @param os Output stream.
+     * @param type Message type.
+     * @throws IOException On error.
+     */
+    private static void writeMessageType(OutputStream os, short type) throws IOException {
+        os.write((byte)(type & 0xFF));
+        os.write((byte)((type >> 8) & 0xFF));
+    }
+
+    /**
+     * Write message type to byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @param type Message type.
+     */
+    private static void writeMessageType(ByteBuffer buf, short type) {
+        buf.put((byte)(type & 0xFF));
+        buf.put((byte)((type >> 8) & 0xFF));
+    }
+
+    /**
      *
      */
     private class ShmemWorker extends GridWorker {
@@ -3508,7 +3531,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         if (impl == null)
                             impl = getSpiContext().messageFactory();
 
@@ -3922,12 +3945,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         @Override public void applyx(InputStream in, OutputStream out) throws IgniteCheckedException {
             try {
                 // Handshake.
-                byte[] b = new byte[17];
+                byte[] b = new byte[NodeIdMessage.MESSAGE_FULL_SIZE];
 
                 int n = 0;
 
-                while (n < 17) {
-                    int cnt = in.read(b, n, 17 - n);
+                while (n < NodeIdMessage.MESSAGE_FULL_SIZE) {
+                    int cnt = in.read(b, n, NodeIdMessage.MESSAGE_FULL_SIZE - n);
 
                     if (cnt < 0)
                         throw new IgniteCheckedException("Failed to get remote node ID (end of stream reached)");
@@ -3936,7 +3959,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
 
                 // First 4 bytes are for length.
-                UUID id = U.bytesToUuid(b, 1);
+                UUID id = U.bytesToUuid(b, Message.DIRECT_TYPE_SIZE);
 
                 if (!rmtNodeId.equals(id))
                     throw new IgniteCheckedException("Remote node ID is not as expected [expected=" + rmtNodeId +
@@ -3964,7 +3987,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 NodeIdMessage msg = new NodeIdMessage(id);
 
                 out.write(U.IGNITE_HEADER);
-                out.write(NODE_ID_MSG_TYPE);
+                writeMessageType(out, NODE_ID_MSG_TYPE);
                 out.write(msg.nodeIdBytes);
 
                 out.flush();
@@ -3985,6 +4008,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static class HandshakeMessage implements Message {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Message body size in bytes. */
+        private static final int MESSAGE_SIZE = 32;
+
+        /** Full message size (with message type) in bytes. */
+        public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
         /** */
         private UUID nodeId;
@@ -4051,10 +4080,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            if (buf.remaining() < 33)
+            if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.put(directType());
+            writeMessageType(buf, directType());
 
             byte[] bytes = U.uuidToBytes(nodeId);
 
@@ -4071,10 +4100,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            if (buf.remaining() < 32)
+            if (buf.remaining() < MESSAGE_SIZE)
                 return false;
 
-            byte[] nodeIdBytes = new byte[16];
+            byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
 
             buf.get(nodeIdBytes);
 
@@ -4088,7 +4117,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return HANDSHAKE_MSG_TYPE;
         }
 
@@ -4134,7 +4163,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return -44;
         }
 
@@ -4183,6 +4212,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Message body size in bytes. */
+        private static final int MESSAGE_SIZE = 8;
+
+        /** Full message size (with message type) in bytes. */
+        public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
+
         /** */
         private long rcvCnt;
 
@@ -4214,10 +4249,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            if (buf.remaining() < 9)
+            if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.put(RECOVERY_LAST_ID_MSG_TYPE);
+            writeMessageType(buf, directType());
 
             buf.putLong(rcvCnt);
 
@@ -4226,7 +4261,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            if (buf.remaining() < 8)
+            if (buf.remaining() < MESSAGE_SIZE)
                 return false;
 
             rcvCnt = buf.getLong();
@@ -4235,7 +4270,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return RECOVERY_LAST_ID_MSG_TYPE;
         }
 
@@ -4258,6 +4293,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Message body size (with message type) in bytes. */
+        private static final int MESSAGE_SIZE = 16;
+
+        /** Full message size (with message type) in bytes. */
+        public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
+
         /** */
         private byte[] nodeIdBytes;
 
@@ -4277,11 +4318,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             nodeIdBytes = U.uuidToBytes(nodeId);
 
-            nodeIdBytesWithType = new byte[nodeIdBytes.length + 1];
+            assert nodeIdBytes.length == MESSAGE_SIZE : "Node ID size must be " + MESSAGE_SIZE;
 
-            nodeIdBytesWithType[0] = NODE_ID_MSG_TYPE;
+            nodeIdBytesWithType = new byte[MESSAGE_FULL_SIZE];
 
-            System.arraycopy(nodeIdBytes, 0, nodeIdBytesWithType, 1, nodeIdBytes.length);
+            nodeIdBytesWithType[0] = (byte)(NODE_ID_MSG_TYPE & 0xFF);
+            nodeIdBytesWithType[1] = (byte)((NODE_ID_MSG_TYPE >> 8) & 0xFF);
+
+            System.arraycopy(nodeIdBytes, 0, nodeIdBytesWithType, 2, nodeIdBytes.length);
         }
 
         /** {@inheritDoc} */
@@ -4291,12 +4335,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            assert nodeIdBytes.length == 16;
+            assert nodeIdBytes.length == MESSAGE_SIZE;
 
-            if (buf.remaining() < 17)
+            if (buf.remaining() < MESSAGE_FULL_SIZE)
                 return false;
 
-            buf.put(NODE_ID_MSG_TYPE);
+            writeMessageType(buf, directType());
+
             buf.put(nodeIdBytes);
 
             return true;
@@ -4304,10 +4349,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            if (buf.remaining() < 16)
+            if (buf.remaining() < MESSAGE_SIZE)
                 return false;
 
-            nodeIdBytes = new byte[16];
+            nodeIdBytes = new byte[MESSAGE_SIZE];
 
             buf.get(nodeIdBytes);
 
@@ -4315,7 +4360,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return NODE_ID_MSG_TYPE;
         }
 

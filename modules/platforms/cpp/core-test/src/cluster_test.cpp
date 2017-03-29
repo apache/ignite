@@ -22,6 +22,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/ignition.h>
+#include <ignite/test_utils.h>
 
 using namespace ignite;
 using namespace ignite::common::concurrent;
@@ -31,31 +32,17 @@ using namespace boost::unit_test;
 /*
  * Test setup fixture.
  */
-struct ClusterTestSuiteFixture {
+struct ClusterTestSuiteFixture
+{
+    Ignite grid;
+
     /*
      * Constructor.
      */
-    ClusterTestSuiteFixture()
+    ClusterTestSuiteFixture() :
+        node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
     {
-        IgniteConfiguration cfg;
-
-        cfg.jvmOpts.push_back("-Xdebug");
-        cfg.jvmOpts.push_back("-Xnoagent");
-        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
-
-#ifdef IGNITE_TESTS_32
-        cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
-#else
-        cfg.jvmInitMem = 1024;
-        cfg.jvmMaxMem = 4096;
-#endif
-
-        cfg.springCfgPath.assign(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")).append("/cache-test.xml");
-
-        grid = Ignition::Start(cfg, "ClusterTest");
+        // No-op.
     }
 
     /*
@@ -64,17 +51,16 @@ struct ClusterTestSuiteFixture {
     ~ClusterTestSuiteFixture()
     {
         Ignition::StopAll(true);
-        grid = Ignite();
     }
 
-    Ignite grid;
+    Ignite node;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(IgniteImplProjection)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(grid);
+    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
 
     BOOST_REQUIRE(impl != 0);
     BOOST_REQUIRE(impl->GetProjection().IsValid());
@@ -82,7 +68,7 @@ BOOST_AUTO_TEST_CASE(IgniteImplProjection)
 
 BOOST_AUTO_TEST_CASE(IgniteImplForServers)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(grid);
+    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
 
     BOOST_REQUIRE(impl != 0);
 

@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -88,13 +87,11 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        IgniteCompute comp = g.compute().withAsync();
-
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
             final long key = i;
 
-            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
+            final IgniteFuture<?> f = g.compute().affinityRunAsync("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
                     Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
@@ -103,8 +100,6 @@ public class GridTestMain {
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
                 }
             });
-
-            final IgniteFuture<?> f = comp.future();
 
             q.put(f);
 

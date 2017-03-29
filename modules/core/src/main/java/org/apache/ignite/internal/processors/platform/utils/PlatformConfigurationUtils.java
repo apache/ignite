@@ -469,6 +469,7 @@ public class PlatformConfigurationUtils {
 
         res.setKeyType(in.readString());
         res.setValueType(in.readString());
+        res.setTableName(in.readString());
 
         // Fields
         int cnt = in.readInt();
@@ -899,6 +900,7 @@ public class PlatformConfigurationUtils {
 
         writer.writeString(queryEntity.getKeyType());
         writer.writeString(queryEntity.getValueType());
+        writer.writeString(queryEntity.getTableName());
 
         // Fields
         LinkedHashMap<String, String> fields = queryEntity.getFields();

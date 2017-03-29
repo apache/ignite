@@ -947,8 +947,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
-
             PrimitiveFieldType newObj = portObj.Deserialize<PrimitiveFieldType>();
 
             Assert.AreEqual(obj, newObj);
@@ -985,8 +983,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(obj);
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
             if (!raw)
             {
@@ -1069,8 +1065,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(obj);
 
             IBinaryObject portObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
             CollectionsType newObj = portObj.Deserialize<CollectionsType>();
 
@@ -1586,8 +1580,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             byte[] bytes = marsh.Marshal(outObj);
 
             IBinaryObject portOutObj = marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
-
-            Assert.AreEqual(outObj.GetHashCode(), portOutObj.GetHashCode());
 
             OuterObjectType newOutObj = portOutObj.Deserialize<OuterObjectType>();
 

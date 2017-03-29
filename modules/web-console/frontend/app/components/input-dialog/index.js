@@ -15,28 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+import angular from 'angular';
 
-import org.apache.ignite.mxbean.MXBeanDescription;
+import inputDialog from './input-dialog.service';
 
-/**
- * MBean for {@code random} eviction policy.
- */
-@MXBeanDescription("MBean for random cache eviction policy.")
-public interface RandomEvictionPolicyMBean {
-    /**
-     * Gets maximum allowed cache size.
-     *
-     * @return Maximum allowed cache size.
-     */
-    @MXBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
-
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @MXBeanDescription("Sets maximum allowed cache size.")
-    public void setMaxSize(int max);
-}
+angular
+    .module('ignite-console.input-dialog', [])
+    .service('IgniteInput', inputDialog);

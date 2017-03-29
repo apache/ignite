@@ -15,18 +15,5 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
-
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
-    }
-}
+import './badge/index.scss';
+import './tabs/index.scss';
