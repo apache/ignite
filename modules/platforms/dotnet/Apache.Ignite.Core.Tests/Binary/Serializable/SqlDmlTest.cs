@@ -75,6 +75,15 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("bar2", res.Value.Bar);
         }
 
+        /// <summary>
+        /// Tests the log warning.
+        /// </summary>
+        [Test]
+        public void TestLogWarning()
+        {
+            // TODO: Verify warnings in the log.
+        }
+
         private class SimpleSerializable : ISerializable
         {
             [QuerySqlField]

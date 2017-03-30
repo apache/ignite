@@ -62,13 +62,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private volatile Ignite _ignite;
 
+        /** */
+        private readonly ILogger _log;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        public Marshaller(BinaryConfiguration cfg)
+        /// <param name="log"></param>
+        public Marshaller(BinaryConfiguration cfg, ILogger log = null)
         {
             _cfg = cfg ?? new BinaryConfiguration();
+
+            _log = log;
 
             CompactFooter = _cfg.CompactFooter;
 
@@ -496,7 +502,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
             Debug.Assert(typeName != null);
 
-            var ser = GetSerializer(_cfg, null, type, typeId, null, null, GetLogger());
+            var ser = GetSerializer(_cfg, null, type, typeId, null, null, _log);
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
@@ -562,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var typeName = BinaryUtils.GetTypeName(type);
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
-                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, GetLogger());
+                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, _log);
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     affKeyFld, type.IsEnum, typeCfg.EqualityComparer);
@@ -718,17 +724,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
             AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
-        }
-
-        /// <summary>
-        /// Gets the logger.
-        /// </summary>
-        /// <returns></returns>
-        private ILogger GetLogger()
-        {
-            var ignite = _ignite;
-
-            return ignite != null ? ignite.Logger : null;
         }
 
         /// <summary>

@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core
             if (cfg.BinaryConfiguration == null)
                 cfg.BinaryConfiguration = binaryCfg;
 
-            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+            _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration, log);
 
             // 3. Send configuration details to Java
             cfg.Validate(log);
