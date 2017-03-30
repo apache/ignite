@@ -40,7 +40,6 @@ public class IgniteFrameworkInfoTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testFrameworkInfo() throws Exception {
-
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
             .setUser(MESOS_USER_NAME)
@@ -48,11 +47,12 @@ public class IgniteFrameworkInfoTest extends TestCase {
             .setRole(MESOS_ROLE)
             .setRoleBytes(ByteString.copyFromUtf8(MESOS_ROLE));
 
-        assertThat(IGNITE_FRAMEWORK_NAME, Is.is(frameworkBuilder.getName()));
-        assertThat(MESOS_USER_NAME, Is.is(frameworkBuilder.getUser()));
-        assertThat(MESOS_USER_NAME, Is.is(frameworkBuilder.getUserBytes().toStringUtf8()));
-        assertThat(MESOS_ROLE, Is.is(frameworkBuilder.getRole()));
-        assertThat(MESOS_ROLE, Is.is(frameworkBuilder.getRoleBytes().toStringUtf8()));
+        Protos.FrameworkInfo protos = frameworkBuilder.build();
 
+        assertThat(IGNITE_FRAMEWORK_NAME, Is.is(protos.getName()));
+        assertThat(MESOS_USER_NAME, Is.is(protos.getUser()));
+        assertThat(MESOS_USER_NAME, Is.is(protos.getUserBytes().toStringUtf8()));
+        assertThat(MESOS_ROLE, Is.is(protos.getRole()));
+        assertThat(MESOS_ROLE, Is.is(protos.getRoleBytes().toStringUtf8()));
     }
 }
