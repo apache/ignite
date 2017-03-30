@@ -578,7 +578,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 info.AddValue("guids", Guids, typeof(Guid[]));
                 info.AddValue("datetime", DateTime);
                 info.AddValue("datetimes", DateTimes, typeof(DateTime[]));
-                info.AddValue("string", String);
+                info.AddValue("string", String, typeof(string));
                 info.AddValue("strings", Strings, typeof(string[]));
             }
         }
