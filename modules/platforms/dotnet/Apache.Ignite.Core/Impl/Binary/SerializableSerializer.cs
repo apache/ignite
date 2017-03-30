@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             List<string> dotNetFields = null;
 
             // Write fields.
-            foreach (var entry in serInfo)
+            foreach (var entry in GetEntries(serInfo).OrderBy(x => x.Name))
             {
                 writer.WriteObject(entry.Name, entry.Value);
 
@@ -341,7 +341,19 @@ namespace Apache.Ignite.Core.Impl.Binary
                     dotNetFields.Add(entry.Name);
                 }
             }
+
             return dotNetFields;
+        }
+
+        /// <summary>
+        /// Gets the entries.
+        /// </summary>
+        private static IEnumerable<SerializationEntry> GetEntries(SerializationInfo serInfo)
+        {
+            foreach (var entry in serInfo)
+            {
+                yield return entry;
+            }
         }
 
         /// <summary>
