@@ -416,37 +416,73 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteChar(entry.Name, (char) entry.Value);
                 }
+                else if (type == typeof(char[]))
+                {
+                    writer.WriteCharArray(entry.Name, (char[]) entry.Value);
+                }
                 else if (type == typeof(short))
                 {
                     writer.WriteShort(entry.Name, (short) entry.Value);
+                }
+                else if (type == typeof(short[]))
+                {
+                    writer.WriteShortArray(entry.Name, (short[]) entry.Value);
                 }
                 else if (type == typeof(ushort))
                 {
                     writer.WriteShort(entry.Name, (short) (ushort) entry.Value);
                 }
+                else if (type == typeof(ushort))
+                {
+                    writer.WriteShortArray(entry.Name, (short[]) (Array) entry.Value);
+                }
                 else if (type == typeof(int))
                 {
                     writer.WriteInt(entry.Name, (int) entry.Value);
+                }
+                else if (type == typeof(int[]))
+                {
+                    writer.WriteIntArray(entry.Name, (int[]) entry.Value);
                 }
                 else if (type == typeof(uint))
                 {
                     writer.WriteInt(entry.Name, (int) (uint) entry.Value);
                 }
+                else if (type == typeof(uint[]))
+                {
+                    writer.WriteIntArray(entry.Name, (int[]) (Array) entry.Value);
+                }
                 else if (type == typeof(long))
                 {
                     writer.WriteLong(entry.Name, (long) entry.Value);
+                }
+                else if (type == typeof(long[]))
+                {
+                    writer.WriteLongArray(entry.Name, (long[]) entry.Value);
                 }
                 else if (type == typeof(ulong))
                 {
                     writer.WriteLong(entry.Name, (long) (ulong) entry.Value);
                 }
+                else if (type == typeof(ulong[]))
+                {
+                    writer.WriteLongArray(entry.Name, (long[]) (Array) entry.Value);
+                }
                 else if (type == typeof(float))
                 {
                     writer.WriteFloat(entry.Name, (float) entry.Value);
                 }
+                else if (type == typeof(float[]))
+                {
+                    writer.WriteFloatArray(entry.Name, (float[]) entry.Value);
+                }
                 else if (type == typeof(double))
                 {
                     writer.WriteDouble(entry.Name, (double) entry.Value);
+                }
+                else if (type == typeof(double[]))
+                {
+                    writer.WriteDoubleArray(entry.Name, (double[]) entry.Value);
                 }
                 else if (type == typeof(decimal))
                 {
@@ -456,9 +492,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteDecimal(entry.Name, (decimal?) entry.Value);
                 }
+                else if (type == typeof(decimal?[]))
+                {
+                    writer.WriteDecimalArray(entry.Name, (decimal?[]) entry.Value);
+                }
                 else if (type == typeof(string))
                 {
                     writer.WriteString(entry.Name, (string) entry.Value);
+                }
+                else if (type == typeof(string[]))
+                {
+                    writer.WriteStringArray(entry.Name, (string[]) entry.Value);
                 }
                 else if (type == typeof(Guid))
                 {
@@ -467,6 +511,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else if (type == typeof(Guid?))
                 {
                     writer.WriteGuid(entry.Name, (Guid?) entry.Value);
+                }
+                else if (type == typeof(Guid?[]))
+                {
+                    writer.WriteGuidArray(entry.Name, (Guid?[]) entry.Value);
                 }
                 else
                 {
