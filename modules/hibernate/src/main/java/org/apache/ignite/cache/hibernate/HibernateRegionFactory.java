@@ -110,7 +110,7 @@ public class HibernateRegionFactory implements RegionFactory {
     private final ThreadLocal threadLoc = new ThreadLocal();
 
     /** */
-    private Map<String, ThreadLocal> threadLocalMap = new HashMap<String, ThreadLocal>();
+    private Map<String, ThreadLocal> threadLocMap = new HashMap<String, ThreadLocal>();
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
