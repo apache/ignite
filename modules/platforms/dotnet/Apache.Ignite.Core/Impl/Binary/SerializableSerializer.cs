@@ -384,23 +384,94 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteEntry(IBinaryWriter writer, SerializationEntry entry)
         {
-            var type = entry.ObjectType;
+            unchecked
+            {
+                var type = entry.ObjectType;
 
-            if (type == typeof(byte))
-            {
-                writer.WriteByte(entry.Name, (byte) entry.Value);
-            }
-            else if (type == typeof(byte[]))
-            {
-                writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
-            }
-            else if (type == typeof(bool))
-            {
-                writer.WriteBoolean(entry.Name, (bool) entry.Value);
-            }
-            else
-            {
-                writer.WriteObject(entry.Name, entry.Value);
+                if (type == typeof(byte))
+                {
+                    writer.WriteByte(entry.Name, (byte) entry.Value);
+                }
+                else if (type == typeof(byte[]))
+                {
+                    writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
+                }
+                if (type == typeof(sbyte))
+                {
+                    writer.WriteByte(entry.Name, (byte) (sbyte) entry.Value);
+                }
+                else if (type == typeof(sbyte[]))
+                {
+                    writer.WriteByteArray(entry.Name, (byte[]) (Array) entry.Value);
+                }
+                else if (type == typeof(bool))
+                {
+                    writer.WriteBoolean(entry.Name, (bool) entry.Value);
+                }
+                else if (type == typeof(bool[]))
+                {
+                    writer.WriteBooleanArray(entry.Name, (bool[]) entry.Value);
+                }
+                else if (type == typeof(char))
+                {
+                    writer.WriteChar(entry.Name, (char) entry.Value);
+                }
+                else if (type == typeof(short))
+                {
+                    writer.WriteShort(entry.Name, (short) entry.Value);
+                }
+                else if (type == typeof(ushort))
+                {
+                    writer.WriteShort(entry.Name, (short) (ushort) entry.Value);
+                }
+                else if (type == typeof(int))
+                {
+                    writer.WriteInt(entry.Name, (int) entry.Value);
+                }
+                else if (type == typeof(uint))
+                {
+                    writer.WriteInt(entry.Name, (int) (uint) entry.Value);
+                }
+                else if (type == typeof(long))
+                {
+                    writer.WriteLong(entry.Name, (long) entry.Value);
+                }
+                else if (type == typeof(ulong))
+                {
+                    writer.WriteLong(entry.Name, (long) (ulong) entry.Value);
+                }
+                else if (type == typeof(float))
+                {
+                    writer.WriteFloat(entry.Name, (float) entry.Value);
+                }
+                else if (type == typeof(double))
+                {
+                    writer.WriteDouble(entry.Name, (double) entry.Value);
+                }
+                else if (type == typeof(decimal))
+                {
+                    writer.WriteDecimal(entry.Name, (decimal) entry.Value);
+                }
+                else if (type == typeof(decimal?))
+                {
+                    writer.WriteDecimal(entry.Name, (decimal?) entry.Value);
+                }
+                else if (type == typeof(string))
+                {
+                    writer.WriteString(entry.Name, (string) entry.Value);
+                }
+                else if (type == typeof(Guid))
+                {
+                    writer.WriteGuid(entry.Name, (Guid) entry.Value);
+                }
+                else if (type == typeof(Guid?))
+                {
+                    writer.WriteGuid(entry.Name, (Guid?) entry.Value);
+                }
+                else
+                {
+                    writer.WriteObject(entry.Name, entry.Value);
+                }
             }
         }
 
