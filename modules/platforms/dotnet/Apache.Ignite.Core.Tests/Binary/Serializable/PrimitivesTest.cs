@@ -422,8 +422,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Assert.AreEqual(val.DateTimes, dts == null
                     ? null
                     : dts.Select(x => x == null ? null : x.Deserialize<DateTime?>()));
-
-                VerifyFieldTypes(bin);
             }
         }
 
@@ -435,6 +433,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             var binType = bin.GetBinaryType();
             
             Assert.AreEqual("byte", binType.GetFieldTypeName("byte"));
+            Assert.AreEqual("byte[]", binType.GetFieldTypeName("bytes"));
             Assert.AreEqual("boolean", binType.GetFieldTypeName("bool"));
 
             // TODO: Other types
@@ -550,37 +549,37 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 GetObjectDataCalled = true;
 
                 info.AddValue("byte", Byte);
-                info.AddValue("bytes", Bytes);
+                info.AddValue("bytes", Bytes, typeof(byte[]));
                 info.AddValue("sbyte", Sbyte);
-                info.AddValue("sbytes", Sbytes);
+                info.AddValue("sbytes", Sbytes, typeof(sbyte[]));
                 info.AddValue("bool", Bool);
-                info.AddValue("bools", Bools);
+                info.AddValue("bools", Bools, typeof(bool[]));
                 info.AddValue("char", Char);
-                info.AddValue("chars", Chars);
+                info.AddValue("chars", Chars, typeof(char[]));
                 info.AddValue("short", Short);
-                info.AddValue("shorts", Shorts);
+                info.AddValue("shorts", Shorts, typeof(short[]));
                 info.AddValue("ushort", Ushort);
-                info.AddValue("ushorts", Ushorts);
+                info.AddValue("ushorts", Ushorts, typeof(ushort[]));
                 info.AddValue("int", Int);
-                info.AddValue("ints", Ints);
+                info.AddValue("ints", Ints, typeof(int[]));
                 info.AddValue("uint", Uint);
-                info.AddValue("uints", Uints);
+                info.AddValue("uints", Uints, typeof(uint[]));
                 info.AddValue("long", Long);
-                info.AddValue("longs", Longs);
+                info.AddValue("longs", Longs, typeof(long[]));
                 info.AddValue("ulong", Ulong);
-                info.AddValue("ulongs", Ulongs);
+                info.AddValue("ulongs", Ulongs, typeof(ulong[]));
                 info.AddValue("float", Float);
-                info.AddValue("floats", Floats);
+                info.AddValue("floats", Floats, typeof(float[]));
                 info.AddValue("double", Double);
-                info.AddValue("doubles", Doubles);
+                info.AddValue("doubles", Doubles, typeof(double[]));
                 info.AddValue("decimal", Decimal);
-                info.AddValue("decimals", Decimals);
+                info.AddValue("decimals", Decimals, typeof(decimal[]));
                 info.AddValue("guid", Guid);
-                info.AddValue("guids", Guids);
+                info.AddValue("guids", Guids, typeof(Guid[]));
                 info.AddValue("datetime", DateTime);
-                info.AddValue("datetimes", DateTimes);
+                info.AddValue("datetimes", DateTimes, typeof(DateTime[]));
                 info.AddValue("string", String);
-                info.AddValue("strings", Strings);
+                info.AddValue("strings", Strings, typeof(string[]));
             }
         }
 

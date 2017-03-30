@@ -393,6 +393,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 writer.WriteByte(entry.Name, (byte) entry.Value);
             }
+            else if (type == typeof(byte[]))
+            {
+                writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
+            }
             else if (type == typeof(bool))
             {
                 writer.WriteBoolean(entry.Name, (bool) entry.Value);
