@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Write fields.
             foreach (var entry in GetEntries(serInfo).OrderBy(x => x.Name))
             {
-                writer.WriteObject(entry.Name, entry.Value);
+                WriteEntry(writer, entry);
 
                 var type = entry.ObjectType;
 
@@ -377,6 +377,30 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return dotNetFields;
+        }
+
+        /// <summary>
+        /// Writes the serialization entry.
+        /// </summary>
+        private static void WriteEntry(IBinaryWriter writer, SerializationEntry entry)
+        {
+            var type = entry.ObjectType;
+
+            // Unwrap nullable.
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (type == typeof(byte))
+            {
+                writer.WriteByte(entry.Name, (byte) entry.Value);
+            }
+            else if (type == typeof(bool))
+            {
+                writer.WriteBoolean(entry.Name, (bool) entry.Value);
+            }
+            else
+            {
+                writer.WriteObject(entry.Name, entry.Value);
+            }
         }
 
         /// <summary>

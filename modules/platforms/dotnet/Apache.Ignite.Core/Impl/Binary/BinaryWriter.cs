@@ -135,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Byte value.</param>
         public void WriteByte(string fieldName, byte val)
         {
-            WriteFieldId(fieldName, BinaryUtils.TypeBool);
+            WriteFieldId(fieldName, BinaryUtils.TypeByte);
             WriteByteField(val);
         }
 

@@ -245,6 +245,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
                 Assert.AreEqual(val.Strings, res.Strings);
                 Assert.AreEqual(val.Strings, bin.GetField<string[]>("strings"));
+
+                VerifyFieldTypes(bin);
             }
         }
 
@@ -421,12 +423,21 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                     ? null
                     : dts.Select(x => x == null ? null : x.Deserialize<DateTime?>()));
 
-                // Verify types.
-                var binType = bin.GetBinaryType();
-                Assert.AreEqual("Byte", binType.GetFieldTypeName("byte"));
-
-                // TODO: Other types
+                VerifyFieldTypes(bin);
             }
+        }
+
+        /// <summary>
+        /// Verifies the field types.
+        /// </summary>
+        private static void VerifyFieldTypes(IBinaryObject bin)
+        {
+            var binType = bin.GetBinaryType();
+            
+            Assert.AreEqual("byte", binType.GetFieldTypeName("byte"));
+            Assert.AreEqual("boolean", binType.GetFieldTypeName("bool"));
+
+            // TODO: Other types
         }
 
         /// <summary>
