@@ -45,58 +45,60 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
-import org.apache.ignite.internal.util.lang.gridfunc.GridAbsClosureNoOperation;
-import org.apache.ignite.internal.util.lang.gridfunc.GridAbsClosurePrint;
-import org.apache.ignite.internal.util.lang.gridfunc.GridAbsClosureRunnableWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridAbsClosureWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridIteratorAdapterClosurePredicatesWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridIteratorOverInnerCollectionsAdapter;
-import org.apache.ignite.internal.util.lang.gridfunc.GridIteratorAdapterWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableCollectionPredicateWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableReadOnlyCollectionPredicateWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableCollectionWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableMapPredicatesTransformerWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableMapPredicatesWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableMapReadOnlyClosurePredicateWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableMapReadOnlyPredicateWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableReadOnlyCollectionWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.GridSerializableReadOnlyTwoCollectionsWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableArrayListFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableAtomicIntegerFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableConcurrentHashMapFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableConcurrentHashSetFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableDequeFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableHashMapFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableHashSetFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteCallableLinkedListFactory;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureCacheGet;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureCacheGetKey;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureClusterNodeGetId;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureClusterNodeGetId8;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureIdentity;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureToString;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteClosureUUIDToId8Transformer;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateIsAll;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateAlwaysFalse;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateAlwaysTrue;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateCacheHasPeek;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateContainNodeId;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateContainWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateEqualsClusterNodeId;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateEqualsUUID;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateHasEqualId;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateHasNotEqualId;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateIgniteFutureIsNotDone;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateIsNotAll;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateIsNull;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateNotContainWrapper;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateNotEqual;
-import org.apache.ignite.internal.util.lang.gridfunc.IgnitePredicateNotNull;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteReducerAlwaysTrue;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteReducerIntSum;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteReducerLongSum;
-import org.apache.ignite.internal.util.lang.gridfunc.IgniteReducerStringConcat;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysFalsePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTrueReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.ArrayListFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.AtomicBooleanFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.AtomicLongFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.AtomicReferenceFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetKeyClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetId8Closure;
+import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EntryByKeyEvaluationPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EntryByValueEvaluationPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EqualsClusterNodeIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.EqualsUuidPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.FlatCollectionWrapper;
+import org.apache.ignite.internal.util.lang.gridfunc.FlatIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.HasEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.HasNotEqualIdPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IdentityClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.IntSumReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAllPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsAssignableFromPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNotAllPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNotDonePredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNotNullPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.IsNullPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.LinkedListFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.LongSumReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.MapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.MultipleIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.NotEqualPredicate;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
+import org.apache.ignite.internal.util.lang.gridfunc.PredicateSetView;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
+import org.apache.ignite.internal.util.lang.gridfunc.SetFactoryCallable;
+import org.apache.ignite.internal.util.lang.gridfunc.StringConcatReducer;
+import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformCollectionView;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
+import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
+import org.apache.ignite.internal.util.lang.gridfunc.UuidToId8Closure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -132,64 +134,64 @@ import org.jsr166.ThreadLocalRandom8;
 @SuppressWarnings("unchecked")
 public class GridFunc {
     /** */
-    private static final GridAbsClosure NOOP = new GridAbsClosureNoOperation();
+    private static final GridAbsClosure NOOP = new NoOpClosure();
 
     /** */
-    private static final IgniteClosure IDENTITY = new IgniteClosureIdentity();
+    private static final IgniteClosure IDENTITY = new IdentityClosure();
 
     /** */
-    private static final IgnitePredicate<Object> ALWAYS_TRUE = new IgnitePredicateAlwaysTrue<>();
+    private static final IgnitePredicate<Object> ALWAYS_TRUE = new AlwaysTruePredicate<>();
 
     /** */
-    private static final IgnitePredicate<Object> ALWAYS_FALSE = new IgnitePredicateAlwaysFalse<>();
+    private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new IgniteCallableDequeFactory();
+    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
 
     /** */
-    private static final IgnitePredicate<Object> IS_NOT_NULL = new IgnitePredicateNotNull();
+    private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
-    private static final IgniteCallable<?> LIST_FACTORY = new IgniteCallableArrayListFactory();
+    private static final IgniteCallable<?> LIST_FACTORY = new ArrayListFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new IgniteCallableLinkedListFactory();
+    private static final IgniteCallable<?> LINKED_LIST_FACTORY = new LinkedListFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> SET_FACTORY = new IgniteCallableHashSetFactory();
+    private static final IgniteCallable<?> SET_FACTORY = new SetFactoryCallable();
 
     /** */
-    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new IgniteCallableAtomicIntegerFactory();
+    private static final IgniteCallable<AtomicInteger> ATOMIC_INT_FACTORY = new AtomicIntegerFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> MAP_FACTORY = new IgniteCallableHashMapFactory();
+    private static final IgniteCallable<?> MAP_FACTORY = new MapFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new IgniteCallableConcurrentHashMapFactory();
+    private static final IgniteCallable<?> CONCURRENT_MAP_FACTORY = new ConcurrentMapFactoryCallable();
 
     /** */
-    private static final IgniteCallable<?> CONCURRENT_SET_FACTORY = new IgniteCallableConcurrentHashSetFactory();
+    private static final IgniteCallable<?> CONCURRENT_SET_FACTORY = new ConcurrentHashSetFactoryCallable();
 
     /** */
-    private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosureCacheGetKey();
+    private static final IgniteClosure CACHE_ENTRY_KEY = new CacheEntryGetKeyClosure();
 
     /** */
-    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosureCacheGet();
+    private static final IgniteClosure CACHE_ENTRY_VAL_GET = new CacheEntryGetValueClosure();
 
     /** */
-    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicateCacheHasPeek();
+    private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new CacheEntryHasPeekPredicate();
 
     /** */
-    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new IgniteClosureClusterNodeGetId();
+    private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
 
     /** */
-    private static final IgniteClosure<ClusterNode, String> NODE2ID8 = new IgniteClosureClusterNodeGetId8();
+    private static final IgniteClosure<ClusterNode, String> NODE2ID8 = new ClusterNodeGetId8Closure();
 
     /** */
-    private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosureUUIDToId8Transformer();
+    private static final IgniteClosure<UUID, String> ID2ID8 = new UuidToId8Closure();
 
     /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicateIgniteFutureIsNotDone();
+    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IsNotDonePredicate();
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -199,7 +201,7 @@ public class GridFunc {
      * @return Return {@code true} only for the node with given local node ID.
      */
     public static <T extends ClusterNode> IgnitePredicate<T> localNode(final UUID locNodeId) {
-        return new IgnitePredicateHasEqualId<>(locNodeId);
+        return new HasEqualIdPredicate<>(locNodeId);
     }
 
     /**
@@ -210,7 +212,7 @@ public class GridFunc {
      * @return Return {@code false} for the given local node ID.
      */
     public static <T extends ClusterNode> IgnitePredicate<T> remoteNodes(final UUID locNodeId) {
-        return new IgnitePredicateHasNotEqualId<>(locNodeId);
+        return new HasNotEqualIdPredicate<>(locNodeId);
     }
 
     /**
@@ -259,7 +261,7 @@ public class GridFunc {
      * @return Passed in element.
      */
     public static <T> IgniteReducer<T, T> identityReducer(final T elem) {
-        return new IgniteReducerAlwaysTrue<>(elem);
+        return new AlwaysTrueReducer<>(elem);
     }
 
     /**
@@ -271,7 +273,7 @@ public class GridFunc {
      */
     @Deprecated
     public static IgniteReducer<Integer, Integer> sumIntReducer() {
-        return new IgniteReducerIntSum();
+        return new IntSumReducer();
     }
 
     /**
@@ -283,7 +285,7 @@ public class GridFunc {
      */
     @Deprecated
     public static IgniteReducer<Long, Long> sumLongReducer() {
-        return new IgniteReducerLongSum();
+        return new LongSumReducer();
     }
 
     /**
@@ -318,7 +320,7 @@ public class GridFunc {
      */
     @Deprecated
     public static IgniteReducer<String, String> concatReducer(@Nullable final String delim) {
-        return new IgniteReducerStringConcat(delim);
+        return new StringConcatReducer(delim);
     }
 
     /**
@@ -352,14 +354,40 @@ public class GridFunc {
     }
 
     /**
-     * Creates absolute closure that does <tt>System.out.println(msg)</tt>.
+     * Convenient utility method that returns collection of node ID8s for a given
+     * collection of grid nodes. ID8 is a shorter string representation of node ID,
+     * mainly the first 8 characters.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
      *
-     * @param msg Message to print.
-     * @return Absolute closure that print message.
+     * @param nodes Collection of grid nodes.
+     * @return Collection of node IDs for given collection of grid nodes.
+     */
+    public static Collection<String> nodeId8s(@Nullable Collection<? extends ClusterNode> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(nodes, NODE2ID8);
+    }
+
+    /**
+     * Convenient utility method that returns collection of node ID8s for a given
+     * collection of node IDs. ID8 is a shorter string representation of node ID,
+     * mainly the first 8 characters.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
+     *
+     * @param ids Collection of nodeIds.
+     * @return Collection of node IDs for given collection of grid nodes.
      */
     @Deprecated
-    public static GridAbsClosure println(final String msg) {
-        return new GridAbsClosurePrint(msg);
+    public static Collection<String> id8s(@Nullable Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(ids, ID2ID8);
     }
 
     /**
@@ -449,7 +477,7 @@ public class GridFunc {
             if (isEmpty(c))
                 return Collections.singletonList(t);
 
-            return new GridSerializableReadOnlyCollectionWrapper<>(c, t);
+            return new ReadOnlyCollectionView<>(c, t);
         }
     }
 
@@ -498,7 +526,7 @@ public class GridFunc {
                 return c;
             }
 
-            return new GridSerializableReadOnlyTwoCollectionsWrapper<>(c1, c2);
+            return new ReadOnlyCollectionView2X<>(c1, c2);
         }
     }
 
@@ -740,7 +768,7 @@ public class GridFunc {
     public static <T extends ClusterNode> IgnitePredicate<T> nodeForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        return new IgnitePredicateEqualsClusterNodeId<>(nodeId);
+        return new EqualsClusterNodeIdPredicate<>(nodeId);
     }
 
     /**
@@ -756,7 +784,7 @@ public class GridFunc {
         if (isEmpty(nodeIds))
             return alwaysFalse();
 
-        return new IgnitePredicateContainNodeId<>(nodeIds);
+        return new ContainsNodeIdsPredicate<>(nodeIds);
     }
 
     /**
@@ -770,7 +798,7 @@ public class GridFunc {
     public static IgnitePredicate<UUID> idForNodeId(final UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        return new IgnitePredicateEqualsUUID(nodeId);
+        return new EqualsUuidPredicate(nodeId);
     }
 
     /**
@@ -867,19 +895,6 @@ public class GridFunc {
     }
 
     /**
-     * Curries given closure.
-     *
-     * @param f Closure.
-     * @param e Parameter.
-     * @param <T> Input type.
-     * @return Curried closure.
-     */
-    @Deprecated
-    public static <T> GridAbsClosure curry(final IgniteInClosure<? super T> f, final T e) {
-        return new GridAbsClosureWrapper<>(f, e);
-    }
-
-    /**
      * Converts array to {@link List}. Note that resulting list cannot
      * be altered in size, as it it based on the passed in array -
      * only current elements can be changed.
@@ -926,7 +941,7 @@ public class GridFunc {
         if (F.isEmpty(c))
             return Collections.emptyList();
 
-        return new GridSerializableCollectionWrapper<>(c);
+        return new FlatCollectionWrapper<>(c);
     }
 
     /**
@@ -939,7 +954,7 @@ public class GridFunc {
      * @return Iterable over the elements of the inner collections.
      */
     public static <T> GridIterator<T> flat(@Nullable final Iterable<? extends Iterable<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new GridIteratorOverInnerCollectionsAdapter<>(c);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -951,18 +966,7 @@ public class GridFunc {
      * @return Iterator over the elements of given iterators.
      */
     public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
-        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new GridIteratorAdapterWrapper<>(c);
-    }
-
-    /**
-     * Converts given runnable to an absolute closure.
-     *
-     * @param r Runnable to convert to closure. If {@code null} - no-op closure is returned.
-     * @return Closure that wraps given runnable. Note that wrapping closure always returns {@code null}.
-     */
-    @Deprecated
-    public static GridAbsClosure as(@Nullable final Runnable r) {
-        return new GridAbsClosureRunnableWrapper(r);
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new FlatIterator<T>(c);
     }
 
     /**
@@ -1022,7 +1026,7 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        return isEmpty(p) || isAlwaysTrue(p) ? c : new GridSerializableCollectionPredicateWrapper<>(c, p);
+        return isEmpty(p) || isAlwaysTrue(p) ? c : new PredicateCollectionView<>(c, p);
     }
 
     /**
@@ -1048,7 +1052,31 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyList();
 
-        return new GridSerializableReadOnlyCollectionPredicateWrapper<T2, T1>(c, trans, p);
+        assert c != null;
+
+        return new TransformCollectionView<T2, T1>(c, trans, p);
+    }
+
+    /**
+     * Creates a view on given list with provided transformer and predicates.
+     * Resulting list will only "have" elements for which all provided predicates, if any,
+     * evaluate to {@code true}. Note that a new collection will be created and data will
+     * be copied.
+     *
+     * @param c Input list that serves as a base for the view.
+     * @param trans Transforming closure from T1 to T2.
+     * @param p Optional predicates. If predicates are not provided - all elements will be in the view.
+     * @return View on given list with provided predicate.
+     */
+    @Deprecated
+    public static <T1, T2> List<T2> transformList(Collection<? extends T1> c,
+        IgniteClosure<? super T1, T2> trans, @Nullable IgnitePredicate<? super T1>... p) {
+        A.notNull(c, "c", trans, "trans");
+
+        if (isAlwaysFalse(p))
+            return Collections.emptyList();
+
+        return new ArrayList<>(transform(retain(c, true, p), trans));
     }
 
     /**
@@ -1069,7 +1097,7 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        return isEmpty(p) || isAlwaysTrue(p) ? m : new GridSerializableMapPredicatesWrapper<K, V>(m, p);
+        return isEmpty(p) || isAlwaysTrue(p) ? m : new PredicateMapView<K, V>(m, p);
     }
 
     /**
@@ -1096,7 +1124,7 @@ public class GridFunc {
 
         assert m != null;
 
-        return new GridSerializableMapPredicatesTransformerWrapper<K, V1, V>(m, trans, p);
+        return new TransformMapView<K, V1, V>(m, trans, p);
     }
 
     /**
@@ -1122,7 +1150,7 @@ public class GridFunc {
         if (isEmpty(m) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        return new GridSerializableMapReadOnlyClosurePredicateWrapper<K, V, V1>(m, trans, p);
+        return new TransformMapView2<K, V, V1>(m, trans, p);
     }
 
     /**
@@ -1149,7 +1177,7 @@ public class GridFunc {
         if (isEmpty(c) || isAlwaysFalse(p))
             return Collections.emptyMap();
 
-        return new GridSerializableMapReadOnlyPredicateWrapper<K, V>(c, mapClo, p);
+        return new PredicateSetView<K, V>(c, mapClo, p);
     }
 
     /**
@@ -1373,7 +1401,7 @@ public class GridFunc {
         if (isAlwaysFalse(p))
             return F.emptyIterator();
 
-        return new GridIteratorAdapterClosurePredicatesWrapper<>(c.iterator(), trans, readOnly, p);
+        return new TransformFilteringIterator<>(c.iterator(), trans, readOnly, p);
     }
 
     /**
@@ -1394,7 +1422,7 @@ public class GridFunc {
         if (isAlwaysFalse(p))
             return F.emptyIterator();
 
-        return new GridIteratorAdapterClosurePredicatesWrapper<>(c, trans, readOnly, p);
+        return new TransformFilteringIterator<>(c, trans, readOnly, p);
     }
 
     /**
@@ -1491,7 +1519,7 @@ public class GridFunc {
      */
     @SafeVarargs
     public static <T> IgnitePredicate<T> not(@Nullable final IgnitePredicate<? super T>... p) {
-        return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new IgnitePredicateIsNotAll<>(p);
+        return isAlwaysFalse(p) ? F.<T>alwaysTrue() : isAlwaysTrue(p) ? F.<T>alwaysFalse() : new IsNotAllPredicate<>(p);
     }
 
     /**
@@ -1505,7 +1533,7 @@ public class GridFunc {
      */
     @Deprecated
     public static <T> IgnitePredicate<T> equalTo(@Nullable final T target) {
-        return new IgnitePredicateNotEqual<>(target);
+        return new NotEqualPredicate<>(target);
     }
 
     /**
@@ -1518,7 +1546,7 @@ public class GridFunc {
      *      to {@code target} or both are {@code null}.
      */
     public static <T> IgnitePredicate<T> notEqualTo(@Nullable final T target) {
-        return new IgnitePredicateNotEqual<>(target);
+        return new NotEqualPredicate<>(target);
     }
 
     /**
@@ -1667,7 +1695,7 @@ public class GridFunc {
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else
-            return new IgnitePredicateIsAll<>(ps);
+            return new IsAllPredicate<>(ps);
     }
 
     /**
@@ -1689,7 +1717,7 @@ public class GridFunc {
      */
     @Deprecated
     public static <T> IgniteClosure<T, String> string() {
-        return new IgniteClosureToString<>();
+        return new ToStringClosure<>();
     }
 
     /**
@@ -1703,7 +1731,7 @@ public class GridFunc {
      *      contained in given collection.
      */
     public static <T> IgnitePredicate<T> notIn(@Nullable final Collection<? extends T> c) {
-        return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new IgnitePredicateNotContainWrapper<>(c);
+        return isEmpty(c) ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate<>(c);
     }
 
     /**
@@ -2790,7 +2818,7 @@ public class GridFunc {
      *  that is contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> contains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new IgnitePredicateContainWrapper(c);
+        return c == null || c.isEmpty() ? GridFunc.<T>alwaysFalse() : new ContainsPredicate(c);
     }
 
     /**
@@ -2803,7 +2831,7 @@ public class GridFunc {
      *  that is not contained in the passed in collection.
      */
     public static <T> IgnitePredicate<T> notContains(@Nullable final Collection<T> c) {
-        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new IgnitePredicateNotContainWrapper(c);
+        return c == null || c.isEmpty() ? GridFunc.<T>alwaysTrue() : new NotContainsPredicate(c);
     }
 
     /**
