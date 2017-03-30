@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,6 +41,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * Tests for dynamic index creation.
@@ -101,10 +104,18 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreate() throws Exception {
-        QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
+        final QueryIndex idx = index(IDX_NAME, field(FIELD_NAME));
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
+
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
@@ -120,6 +131,9 @@ public class DynamicIndexSelfTest extends GridCommonAbstractTest {
 
         queryProcessor(grid(0)).dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, false).get();
         assertIndex(CACHE_NAME, TBL_NAME, IDX_NAME, field(FIELD_NAME));
+
+        queryProcessor(grid(0)).dynamicIndexDrop(CACHE_NAME, IDX_NAME, true).get();
+        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME);
     }
 
     /**
