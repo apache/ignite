@@ -74,26 +74,45 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             var cache = _ignite.CreateCache<int, SimpleSerializable>(
                 new CacheConfiguration("simple", new QueryEntity(typeof(int), typeof(SimpleSerializable))));
 
-            cache[1] = new SimpleSerializable(1, "bar1");
-            cache[2] = new SimpleSerializable(2, "bar2");
+            cache[1] = new SimpleSerializable
+            {
+                String = "abc"
+            };
+            cache[2] = new SimpleSerializable
+            {
+                Byte = 25,
+                Bool = true,
+                Char = 'c',
+                Short = 66,
+                Int = 2,
+                Long = 98,
+                Float = 2.25f,
+                Double = 1.123,
+                Decimal = 5.67m,
+                Guid = Guid.NewGuid(),
+                String = "bar2"
+            };
 
             // Test SQL.
-            var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where foo = 2")).GetAll().Single();
+            var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where Int = 2")).GetAll().Single();
 
             Assert.AreEqual(2, res.Key);
-            Assert.AreEqual(2, res.Value.Foo);
-            Assert.AreEqual("bar2", res.Value.Bar);
+            Assert.AreEqual(2, res.Value.Int);
+            Assert.AreEqual("bar2", res.Value.Double);
 
             // Test DML.
+            var guid = Guid.NewGuid();
             var insertRes = cache.QueryFields(new SqlFieldsQuery(
-                "insert into SimpleSerializable(_key, Foo, Bar) values (?, ?, ?)", 3, 33, "bar33")).GetAll();
+                "insert into SimpleSerializable(_key, Byte, Bool, Char, Short, Int, Long, Float, Double, " +
+                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                3, 45, true, 'z', 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
 
             Assert.AreEqual(1, insertRes.Count);
             Assert.AreEqual(1, insertRes[0][0]);
 
             var dmlRes = cache[3];
-            Assert.AreEqual(33, dmlRes.Foo);
-            Assert.AreEqual("bar33", dmlRes.Bar);
+            Assert.AreEqual(33, dmlRes.Int);
+            Assert.AreEqual("bar33", dmlRes.String);
         }
 
         /// <summary>
@@ -116,33 +135,74 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
         private class SimpleSerializable : ISerializable
         {
-            // TODO: All primitive types.
-            // TODO: Nested field of another type?
+            [QuerySqlField]
+            public byte Byte { get; set; }
 
             [QuerySqlField]
-            public int Foo { get; set; }
+            public char Char { get; set; }
+
+            [QuerySqlField]
+            public bool Bool { get; set; }
+
+            [QuerySqlField]
+            public short Short { get; set; }
             
             [QuerySqlField]
-            public string Bar { get; set; }
+            public int Int { get; set; }
+            
+            [QuerySqlField]
+            public long Long { get; set; }
+            
+            [QuerySqlField]
+            public float Float { get; set; }
+            
+            [QuerySqlField]
+            public double Double { get; set; }
+            
+            [QuerySqlField]
+            public decimal Decimal { get; set; }
+            
+            [QuerySqlField]
+            public Guid Guid { get; set; }
+            
+            [QuerySqlField]
+            public string String { get; set; }
 
-            public SimpleSerializable(int foo, string bar)
+            public SimpleSerializable()
             {
-                Foo = foo;
-                Bar = bar;
+                // No-op.
             }
 
             // ReSharper disable once UnusedMember.Local
             // ReSharper disable once UnusedParameter.Local
             public SimpleSerializable(SerializationInfo info, StreamingContext context)
             {
-                Foo = info.GetInt32("Foo");
-                Bar = info.GetString("Bar");
+                Byte = info.GetByte("Byte");
+                Char = info.GetChar("Char");
+                Bool = info.GetBoolean("Bool");
+                Short = info.GetInt16("Short");
+                Int = info.GetInt32("Int");
+                Long = info.GetInt64("Long");
+                Float = info.GetSingle("Float");
+                Double = info.GetDouble("Double");
+                Decimal = info.GetDecimal("Decimal");
+                Guid = (Guid) info.GetValue("Guid", typeof(Guid));
+                String = info.GetString("String");
             }
 
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                info.AddValue("Foo", Foo);
-                info.AddValue("Bar", Bar);
+                info.AddValue("Byte", Byte);
+                info.AddValue("Char", Char);
+                info.AddValue("Bool", Bool);
+                info.AddValue("Short", Short);
+                info.AddValue("Int", Int);
+                info.AddValue("Long", Long);
+                info.AddValue("Float", Float);
+                info.AddValue("Double", Double);
+                info.AddValue("Decimal", Decimal);
+                info.AddValue("Guid", Guid);
+                info.AddValue("String", String);
             }
         }
     }
