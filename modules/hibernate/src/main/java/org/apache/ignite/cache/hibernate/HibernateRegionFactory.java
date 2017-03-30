@@ -109,6 +109,9 @@ public class HibernateRegionFactory implements RegionFactory {
     /** Map needed to provide the same transaction context for different regions. */
     private final ThreadLocal threadLoc = new ThreadLocal();
 
+    /** */
+    private Map<String, ThreadLocal> threadLocalMap = new HashMap<String, ThreadLocal>();
+
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
         String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
