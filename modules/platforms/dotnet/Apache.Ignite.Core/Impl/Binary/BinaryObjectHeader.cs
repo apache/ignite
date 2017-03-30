@@ -58,7 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             OffsetTwoBytes  = 0x10,
 
             /** Flag: compact footer, no field IDs. */
-            CompactFooter   = 0x20
+            CompactFooter   = 0x20,
+
+            /** Flag: raw data contains .NET type information. */
+            CustomDotNetType   = 0x40
         }
 
         /** Actual header layout */
