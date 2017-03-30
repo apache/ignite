@@ -20,9 +20,11 @@ package org.apache.ignite.cache;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -60,6 +62,24 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity() {
         // No-op constructor.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other entity.
+     */
+    public QueryEntity(QueryEntity other) {
+        keyType = other.keyType;
+        valType = other.valType;
+
+        fields = new LinkedHashMap<>(other.fields);
+        keyFields = other.keyFields != null ? new HashSet<>(other.keyFields) : null;
+
+        aliases = new HashMap<>(other.aliases);
+        idxs = new HashMap<>(other.idxs);
+
+        tableName = other.tableName;
     }
 
     /**
@@ -199,6 +219,13 @@ public class QueryEntity implements Serializable {
                     throw new IllegalArgumentException("Duplicate index name: " + idx.getName());
             }
         }
+    }
+
+    /**
+     * Clear indexes.
+     */
+    public void clearIndexes() {
+        this.idxs.clear();
     }
 
     /**

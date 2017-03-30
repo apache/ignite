@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.index.operation.IndexAbstractOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexCreateOperation;
 import org.apache.ignite.internal.processors.query.index.operation.IndexDropOperation;
@@ -27,22 +29,26 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Dynamic index states.
+ * Dynamic cache schema.
  */
-public class QueryIndexStates implements Serializable {
+public class QuerySchema implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Currently running operations in either proposed or accepted states. */
     private final Map<String, QueryIndexActiveOperation> activeOps = new HashMap<>();
 
-    /** Finished operations. */
-    private final Map<String, QueryIndexState> readyOps = new HashMap<>();
+    /** Query entities. */
+    private final Collection<QueryEntity> entities = new LinkedList<>();
 
     /** Mutext for state synchronization. */
     private final Object mux = new Object();
@@ -50,8 +56,19 @@ public class QueryIndexStates implements Serializable {
     /**
      * Default constructor.
      */
-    public QueryIndexStates() {
+    public QuerySchema() {
         // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param entities Query entities.
+     */
+    public QuerySchema(Collection<QueryEntity> entities) {
+        assert entities != null;
+
+        this.entities.addAll(entities);
     }
 
     /**
@@ -59,15 +76,15 @@ public class QueryIndexStates implements Serializable {
      *
      * @return Copy.
      */
-    public QueryIndexStates copy() {
+    public QuerySchema copy() {
         synchronized (mux) {
-            QueryIndexStates res = new QueryIndexStates();
+            QuerySchema res = new QuerySchema();
 
             for (Map.Entry<String, QueryIndexActiveOperation> activeOpEntry : activeOps.entrySet())
                 res.activeOps.put(activeOpEntry.getKey(), activeOpEntry.getValue().copy());
 
-            for (Map.Entry<String, QueryIndexState> readyOpEntry : readyOps.entrySet())
-                res.readyOps.put(readyOpEntry.getKey(), readyOpEntry.getValue().copy());
+            for (QueryEntity qryEntity : entities)
+                res.entities.add(new QueryEntity(qryEntity));
 
             return res;
         }
@@ -134,20 +151,52 @@ public class QueryIndexStates implements Serializable {
             if (curOp != null) {
                 if (F.eq(curOp.operation().operationId(), op.operationId())) {
                     if (!msg.hasError()) {
-                        QueryIndexState state;
-
                         if (op instanceof IndexCreateOperation) {
                             IndexCreateOperation op0 = (IndexCreateOperation)op;
 
-                            state = new QueryIndexState(op0.tableName(), idxName, ((IndexCreateOperation)op).index());
+                            for (QueryEntity entity : entities) {
+                                String tblName = QueryUtils.tableName(entity);
+
+                                if (F.eq(tblName, op0.tableName())) {
+                                    List<QueryIndex> idxs = new ArrayList<>(entity.getIndexes());
+
+                                    idxs.add(op0.index());
+
+                                    entity.clearIndexes();
+                                    entity.setIndexes(idxs);
+
+                                    break;
+                                }
+                            }
                         }
                         else {
                             assert op instanceof IndexDropOperation;
 
-                            state = new QueryIndexState(null, idxName, null);
-                        }
+                            for (QueryEntity entity : entities) {
+                                Collection<QueryIndex> idxs = entity.getIndexes();
 
-                        readyOps.put(idxName, state);
+                                QueryIndex victim = null;
+
+                                for (QueryIndex idx : idxs) {
+                                    if (F.eq(idx.getName(), idxName)) {
+                                        victim = idx;
+
+                                        break;
+                                    }
+                                }
+
+                                if (victim != null) {
+                                    List<QueryIndex> newIdxs = new ArrayList<>(entity.getIndexes());
+
+                                    newIdxs.remove(victim);
+
+                                    entity.clearIndexes();
+                                    entity.setIndexes(idxs);
+
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -171,16 +220,16 @@ public class QueryIndexStates implements Serializable {
     }
 
     /**
-     * @return Ready operations.
+     * @return Query entities.
      */
-    public Map<String, QueryIndexState> readyOperations() {
+    public Collection<QueryEntity> entities() {
         synchronized (mux) {
-            return new HashMap<>(readyOps);
+            return new ArrayList<>(entities);
         }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryIndexStates.class, this);
+        return S.toString(QuerySchema.class, this);
     }
 }

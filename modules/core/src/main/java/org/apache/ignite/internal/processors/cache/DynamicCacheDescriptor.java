@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
-import org.apache.ignite.internal.processors.query.QueryIndexStates;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.index.message.IndexAcceptDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.index.message.IndexProposeDiscoveryMessage;
@@ -86,16 +87,13 @@ public class DynamicCacheDescriptor {
     private AffinityTopologyVersion rcvdFromVer;
 
     /** Mutex to control index states. */
-    private final Object idxStatesMux = new Object();
-
-    /** Initial index states which is used to start cache. */
-    private QueryIndexStates idxStatesForStart;
-
-    /** Whether index states for start is fixed. */
-    private boolean idxStatesForStartFixed;
+    private final Object schemaMux = new Object();
 
     /** Current index states. */
-    private QueryIndexStates idxStates;
+    private QuerySchema schema;
+
+    /** Initial index states which is used to start cache. */
+    private QuerySchema schemaForStart;
 
     /**
      * @param ctx Context.
@@ -104,12 +102,15 @@ public class DynamicCacheDescriptor {
      * @param template {@code True} if this is template configuration.
      * @param deploymentId Deployment ID.
      */
+    @SuppressWarnings("unchecked")
     public DynamicCacheDescriptor(GridKernalContext ctx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean template,
-        IgniteUuid deploymentId) {
+        IgniteUuid deploymentId,
+        QuerySchema schema) {
         assert cacheCfg != null;
+        assert schema != null;
 
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
@@ -119,6 +120,10 @@ public class DynamicCacheDescriptor {
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
 
         cacheId = CU.cacheId(cacheCfg.getName());
+
+        synchronized (schemaMux) {
+            this.schema = schema.copy();
+        }
     }
 
     /**
@@ -323,37 +328,34 @@ public class DynamicCacheDescriptor {
      *
      * @return Index states for cache start.
      */
-    public QueryIndexStates indexStatesForStart() {
-        synchronized (idxStatesMux) {
-            if (!idxStatesForStartFixed) {
-                idxStatesForStart = idxStates;
+    public QuerySchema schemaForStart() {
+        synchronized (schemaMux) {
+            if (schemaForStart == null)
+                schemaForStart = schema.copy();
 
-                idxStatesForStartFixed = true;
-            }
-
-            return idxStatesForStart != null ? idxStatesForStart.copy() : null;
+            return schemaForStart;
         }
     }
 
     /**
      * @return Index states.
      */
-    public QueryIndexStates indexStates() {
-        synchronized (idxStatesMux) {
-            return idxStates != null ? idxStates.copy() : null;
+    public QuerySchema schema() {
+        synchronized (schemaMux) {
+            return schema.copy();
         }
     }
 
     /**
-     * Try updating index state from discovery thread. If start state is not fixed yet, update will succeed and return
-     * {@code true}.
+     * Set index states.
      *
      * @param idxStates Index states.
      */
-    public void tryUpdateFromDiscovery(QueryIndexStates idxStates) {
-        synchronized (idxStatesMux) {
-            if (!idxStatesForStartFixed)
-                this.idxStates = idxStates != null ? idxStates.copy() : null;
+    public void schema(QuerySchema idxStates) {
+        assert idxStates != null;
+
+        synchronized (schemaMux) {
+            this.schema = idxStates.copy();
         }
     }
 
@@ -363,12 +365,9 @@ public class DynamicCacheDescriptor {
      * @param locNodeId Local node ID.
      * @param msg Message.
      */
-    public void tryPropose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
-        synchronized (idxStatesMux) {
-            if (idxStates == null)
-                idxStates = new QueryIndexStates();
-
-            idxStates.propose(locNodeId, msg);
+    public void schemaChangePropose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
+        synchronized (schemaMux) {
+            schema.propose(locNodeId, msg);
         }
     }
 
@@ -377,12 +376,11 @@ public class DynamicCacheDescriptor {
      *
      * @param msg Message.
      */
-    public void tryAccept(IndexAcceptDiscoveryMessage msg) {
-        synchronized (idxStatesMux) {
-            if (idxStates == null)
-                idxStates = new QueryIndexStates();
+    public void schemaChangeAccept(IndexAcceptDiscoveryMessage msg) {
+        // TODO: No exchange in case of initial state.
 
-            idxStates.accept(msg);
+        synchronized (schemaMux) {
+            schema.accept(msg);
         }
     }
 
@@ -391,12 +389,11 @@ public class DynamicCacheDescriptor {
      *
      * @param msg Message.
      */
-    public void tryFinish(IndexFinishDiscoveryMessage msg) {
-        synchronized (idxStatesMux) {
-            if (idxStates == null)
-                idxStates = new QueryIndexStates();
+    public void schemaChangeFinish(IndexFinishDiscoveryMessage msg) {
+        // TODO: No exchange in case of initial state.
 
-            idxStates.finish(msg);
+        synchronized (schemaMux) {
+            schema.finish(msg);
         }
     }
 

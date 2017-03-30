@@ -91,6 +91,24 @@ public class QueryUtils {
     ));
 
     /**
+     * Get table name for entity.
+     *
+     * @param entity Entity.
+     * @return Table name.
+     */
+    public static String tableName(QueryEntity entity) {
+        String res = entity.getTableName();
+
+        if (res == null) {
+            Class<?> valCls = U.classForName(entity.getValueType(), null);
+
+            res = ((valCls == null) ? typeName(entity.getValueType()) : typeName(valCls));
+        }
+
+        return res;
+    }
+
+    /**
      * Create type candidate for query entity.
      *
      * @param space Space.

@@ -22,14 +22,12 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -297,31 +295,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("deprecation")
-    private void initializeCache(GridCacheContext<?, ?> cctx, @Nullable QueryIndexStates initIdxStates)
-        throws IgniteCheckedException {
+    private void initializeCache(GridCacheContext<?, ?> cctx, QuerySchema initIdxStates) throws IgniteCheckedException {
         String space = cctx.name();
-
-        CacheConfiguration<?,?> ccfg = cctx.config();
 
         // Prepare candidates.
         List<Class<?>> mustDeserializeClss = new ArrayList<>();
 
         Collection<QueryTypeCandidate> cands = new ArrayList<>();
 
-        if (!F.isEmpty(ccfg.getQueryEntities())) {
-            for (QueryEntity qryEntity : ccfg.getQueryEntities()) {
+        Collection<QueryEntity> qryEntities = initIdxStates.entities();
+
+        if (!F.isEmpty(qryEntities)) {
+            for (QueryEntity qryEntity : qryEntities) {
                 QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(space, cctx, qryEntity, mustDeserializeClss);
 
                 cands.add(cand);
-            }
-        }
-
-        if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                QueryTypeCandidate cand = QueryUtils.typeForCacheMetadata(space, cctx, meta, mustDeserializeClss);
-
-                if (cand != null)
-                    cands.add(cand);
             }
         }
 
@@ -343,103 +331,62 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         IdentityHashMap<IndexAbstractOperation, T2<String, QueryTypeDescriptorImpl>> activeOps =
             new IdentityHashMap<>();
 
-        if (initIdxStates != null) {
-            // Apply ready operations.
-            for (Map.Entry<String, QueryIndexState> entry : initIdxStates.readyOperations().entrySet()) {
-                String idxName = entry.getKey();
-                QueryIndexState idxState = entry.getValue();
+        // Apply pending operations.
+        for (Map.Entry<String, QueryIndexActiveOperation> acceptedOpEntry :
+            initIdxStates.acceptedActiveOperations().entrySet()) {
+            String errMsg = null;
 
-                if (idxState.removed()) {
-                    // Handle remove. If relevant index is not found, this is not a problem as consistency between
-                    // nodes are not compromised
-                    QueryTypeDescriptorImpl desc = idxTypMap.remove(idxState.indexName());
+            String idxName = acceptedOpEntry.getKey();
+            IndexAbstractOperation op = acceptedOpEntry.getValue().operation();
 
-                    if (desc != null)
-                        QueryUtils.processDynamicIndexChange(idxName, null, desc);
+            QueryTypeDescriptorImpl desc = null;
+
+            if (op instanceof IndexCreateOperation) {
+                // Handle create.
+                IndexCreateOperation op0 = (IndexCreateOperation)op;
+
+                for (QueryTypeCandidate cand : cands) {
+                    if (F.eq(cand.descriptor().tableName(), op0.tableName())) {
+                        desc = cand.descriptor();
+
+                        break;
+                    }
+                }
+
+                if (desc == null)
+                    errMsg = "Table not found: " + op0.tableName();
+                else {
+                    QueryTypeDescriptorImpl oldDesc = idxTypMap.get(idxName);
+
+                    if (oldDesc != null) {
+                        if (!op0.ifNotExists())
+                            errMsg = "Index already exists: " + idxName;
+                    }
+                    else {
+                        idxTypMap.put(idxName, desc);
+
+                        QueryUtils.processDynamicIndexChange(idxName, op0.index(), desc);
+                    }
+                }
+            }
+            else {
+                // Handle drop.
+                IndexDropOperation op0 = (IndexDropOperation)op;
+
+                desc = idxTypMap.get(op0.indexName());
+
+                if (desc == null) {
+                    if (!op0.ifExists())
+                        errMsg = "Index doesn't exist: " + idxName;
                 }
                 else {
-                    // Handle create.
-                    QueryTypeDescriptorImpl desc = null;
+                    idxTypMap.remove(idxName);
 
-                    for (QueryTypeCandidate cand : cands) {
-                        if (F.eq(cand.descriptor().tableName(), idxState.tableName())) {
-                            desc = cand.descriptor();
-
-                            break;
-                        }
-                    }
-
-                    if (desc == null)
-                        throw new IgniteException("Table not found for index remove [idxName=" + idxName +
-                            ", tblName=" + idxState.tableName() + ']');
-
-                    QueryTypeDescriptorImpl oldDesc = idxTypMap.put(idxName, desc);
-
-                    if (oldDesc != null)
-                        throw new IgniteException("Duplicate index name [idxName=" + idxName +
-                            ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
-
-                    QueryUtils.processDynamicIndexChange(idxName, idxState.index(), desc);
+                    QueryUtils.processDynamicIndexChange(idxName, null, desc);
                 }
             }
 
-            // Apply pending operations.
-            for (Map.Entry<String, QueryIndexActiveOperation> acceptedOpEntry :
-                initIdxStates.acceptedActiveOperations().entrySet()) {
-                String errMsg = null;
-
-                String idxName = acceptedOpEntry.getKey();
-                IndexAbstractOperation op = acceptedOpEntry.getValue().operation();
-
-                QueryTypeDescriptorImpl desc = null;
-
-                if (op instanceof IndexCreateOperation) {
-                    // Handle create.
-                    IndexCreateOperation op0 = (IndexCreateOperation)op;
-
-                    for (QueryTypeCandidate cand : cands) {
-                        if (F.eq(cand.descriptor().tableName(), op0.tableName())) {
-                            desc = cand.descriptor();
-
-                            break;
-                        }
-                    }
-
-                    if (desc == null)
-                        errMsg = "Table not found: " + op0.tableName();
-                    else {
-                        QueryTypeDescriptorImpl oldDesc = idxTypMap.get(idxName);
-
-                        if (oldDesc != null) {
-                            if (!op0.ifNotExists())
-                                errMsg = "Index already exists: " + idxName;
-                        }
-                        else {
-                            idxTypMap.put(idxName, desc);
-
-                            QueryUtils.processDynamicIndexChange(idxName, op0.index(), desc);
-                        }
-                    }
-                }
-                else {
-                    // Handle drop.
-                    IndexDropOperation op0 = (IndexDropOperation)op;
-
-                    desc = idxTypMap.get(op0.indexName());
-
-                    if (desc == null) {
-                        if (!op0.ifExists())
-                            errMsg = "Index doesn't exist: " + idxName;
-                    }
-                    else {
-                        idxTypMap.remove(idxName);
-
-                        QueryUtils.processDynamicIndexChange(idxName, null, desc);
-                    }
-                }
-
-                activeOps.put(op, new T2<>(errMsg, desc));
-            }
+            activeOps.put(op, new T2<>(errMsg, desc));
         }
 
         // Ready to register at this point.
@@ -483,8 +430,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param idxStates Index states.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContext cctx, @Nullable QueryIndexStates idxStates)
-        throws IgniteCheckedException {
+    public void onCacheStart(GridCacheContext cctx, QuerySchema idxStates) throws IgniteCheckedException {
         if (idx == null)
             return;
 

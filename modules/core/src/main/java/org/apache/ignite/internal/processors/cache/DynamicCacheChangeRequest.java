@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.QueryIndexStates;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -73,8 +73,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** Dynamic index states. */
-    private QueryIndexStates idxStates;
+    /** Dynamic schema. */
+    private QuerySchema schema;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -290,17 +290,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Index states.
+     * @return Dynamic schema.
      */
-    public QueryIndexStates indexStates() {
-        return idxStates;
+    public QuerySchema schema() {
+        return schema;
     }
 
     /**
-     * @param idxStates Index states.
+     * @param schema Dynamic schema.
      */
-    public void indexStates(QueryIndexStates idxStates) {
-        this.idxStates = idxStates != null ? idxStates.copy() : null;
+    public void schema(QuerySchema schema) {
+        this.schema = schema != null ? schema.copy() : null;
     }
 
     /** {@inheritDoc} */
