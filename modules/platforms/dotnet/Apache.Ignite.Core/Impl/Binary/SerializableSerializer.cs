@@ -386,9 +386,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var type = entry.ObjectType;
 
-            // Unwrap nullable.
-            type = Nullable.GetUnderlyingType(type) ?? type;
-
             if (type == typeof(byte))
             {
                 writer.WriteByte(entry.Name, (byte) entry.Value);

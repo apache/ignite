@@ -679,36 +679,36 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             {
                 GetObjectDataCalled = true;
 
-                info.AddValue("byte", Byte);
-                info.AddValue("bytes", Bytes);
-                info.AddValue("sbyte", Sbyte);
-                info.AddValue("sbytes", Sbytes);
-                info.AddValue("bool", Bool);
-                info.AddValue("bools", Bools);
-                info.AddValue("char", Char);
-                info.AddValue("chars", Chars);
-                info.AddValue("short", Short);
-                info.AddValue("shorts", Shorts);
-                info.AddValue("ushort", Ushort);
-                info.AddValue("ushorts", Ushorts);
-                info.AddValue("int", Int);
-                info.AddValue("ints", Ints);
-                info.AddValue("uint", Uint);
-                info.AddValue("uints", Uints);
-                info.AddValue("long", Long);
-                info.AddValue("longs", Longs);
-                info.AddValue("ulong", Ulong);
-                info.AddValue("ulongs", Ulongs);
-                info.AddValue("float", Float);
-                info.AddValue("floats", Floats);
-                info.AddValue("double", Double);
-                info.AddValue("doubles", Doubles);
-                info.AddValue("decimal", Decimal);
-                info.AddValue("decimals", Decimals);
-                info.AddValue("guid", Guid);
-                info.AddValue("guids", Guids);
-                info.AddValue("datetime", DateTime);
-                info.AddValue("datetimes", DateTimes);
+                info.AddValue("byte", Byte, typeof(object));
+                info.AddValue("bytes", Bytes, typeof(object));
+                info.AddValue("sbyte", Sbyte, typeof(object));
+                info.AddValue("sbytes", Sbytes, typeof(object));
+                info.AddValue("bool", Bool, typeof(object));
+                info.AddValue("bools", Bools, typeof(object));
+                info.AddValue("char", Char, typeof(object));
+                info.AddValue("chars", Chars, typeof(object));
+                info.AddValue("short", Short, typeof(object));
+                info.AddValue("shorts", Shorts, typeof(object));
+                info.AddValue("ushort", Ushort, typeof(object));
+                info.AddValue("ushorts", Ushorts, typeof(object));
+                info.AddValue("int", Int, typeof(object));
+                info.AddValue("ints", Ints, typeof(object));
+                info.AddValue("uint", Uint, typeof(object));
+                info.AddValue("uints", Uints, typeof(object));
+                info.AddValue("long", Long, typeof(object));
+                info.AddValue("longs", Longs, typeof(object));
+                info.AddValue("ulong", Ulong, typeof(object));
+                info.AddValue("ulongs", Ulongs, typeof(object));
+                info.AddValue("float", Float, typeof(object));
+                info.AddValue("floats", Floats, typeof(object));
+                info.AddValue("double", Double, typeof(object));
+                info.AddValue("doubles", Doubles, typeof(object));
+                info.AddValue("decimal", Decimal, typeof(object));
+                info.AddValue("decimals", Decimals, typeof(object));
+                info.AddValue("guid", Guid, typeof(object));
+                info.AddValue("guids", Guids, typeof(object));
+                info.AddValue("datetime", DateTime, typeof(object));
+                info.AddValue("datetimes", DateTimes, typeof(object));
             }
         }
     }
