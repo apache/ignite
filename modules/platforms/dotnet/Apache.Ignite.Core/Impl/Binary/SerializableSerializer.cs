@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var callbackPushed = false;
 
             // Read additional information from raw part, if flag is set.
-            var fieldNames = Enumerable.Empty<string>();
+            IEnumerable<string> fieldNames;
             Type customType = null;
             ICollection<int> dotNetFields = null;
 
@@ -106,9 +106,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                 fieldNames = ReadFieldNames(reader, desc);
                 customType = ReadCustomTypeInfo(reader);
                 dotNetFields = ReadDotNetFields(reader);
-                
+
                 // Restore stream position.
                 reader.Stream.Seek(oldPos, SeekOrigin.Begin);
+            }
+            else
+            {
+                fieldNames = GetBinaryTypeFields(reader, desc);
             }
 
             try
@@ -239,6 +243,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Negative field count: online mode.
+            return GetBinaryTypeFields(reader, desc);
+        }
+
+        /// <summary>
+        /// Gets the binary type fields.
+        /// </summary>
+        private static IEnumerable<string> GetBinaryTypeFields(BinaryReader reader, IBinaryTypeDescriptor desc)
+        {
             var binaryType = reader.Marshaller.GetBinaryType(desc.TypeId);
 
             if (binaryType == BinaryType.Empty)
