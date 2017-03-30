@@ -123,7 +123,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     foreach (var field in fields)
                     {
                         w.WriteString(field.Key);
-                        w.WriteInt(field.Value);
+                        w.WriteInt(field.Value.TypeId);
+                        w.WriteInt(field.Value.FieldId);
                     }
 
                     w.WriteBoolean(meta.IsEnum);

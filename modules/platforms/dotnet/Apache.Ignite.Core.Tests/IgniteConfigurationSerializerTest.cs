@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests
                             <cacheConfiguration>
                                 <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' enableStatistics='true'>
                                     <queryEntities>    
-                                        <queryEntity keyType='System.Int32' valueType='System.String'>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String' tableName='myTable'>    
                                             <fields>
                                                 <queryField name='length' fieldType='System.Int32' isKeyField='true' />
                                             </fields>
@@ -175,6 +175,7 @@ namespace Apache.Ignite.Core.Tests
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
             Assert.AreEqual(typeof(string), queryEntity.ValueType);
+            Assert.AreEqual("myTable", queryEntity.TableName);
             Assert.AreEqual("length", queryEntity.Fields.Single().Name);
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
@@ -655,7 +656,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryAlias("field.field", "fld")
                                 },
                                 KeyType = typeof (string),
-                                ValueType = typeof (long)
+                                ValueType = typeof (long),
+                                TableName = "table-1"
                             },
                         },
                         ReadFromBackup = false,

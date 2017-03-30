@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
- * Test PUTs with binary hashed key.
+ * Task execution test.
  */
-public class IgniteLegacyBinaryIdentityPutBenchmark extends IgniteBinaryIdentityPutBenchmark {
+@GridCommonTest(group = "Kernal Self")
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
     /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
+    @Override protected boolean peerClassLoadingEnabled() {
+        return false;
     }
 }
