@@ -159,7 +159,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         final AtomicInteger pages = new AtomicInteger(0);
 
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         for (int i = 0; i < 50; i++)
             cache.put(i, i);

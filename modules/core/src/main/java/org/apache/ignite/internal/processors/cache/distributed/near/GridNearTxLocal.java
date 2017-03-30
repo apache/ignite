@@ -1567,7 +1567,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements AutoClosea
                 {
                     if (log.isDebugEnabled())
                         log.debug("Acquired transaction lock for remove on keys: " + enlisted);
-                    U.debug(log, "Acquired transaction lock for remove on keys: " + enlisted);
 
                     postLockWrite(cacheCtx,
                         enlisted,

@@ -97,7 +97,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert key == null : "key";
 
         final CacheObjectContext coctx = cctx.cacheObjectContext();
-        final PageMemory pageMem = cctx.shared().database().pageMemory();
+        final PageMemory pageMem = cctx.memoryPolicy().pageMemory();
 
         final int cacheId = cctx.cacheId();
 

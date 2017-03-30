@@ -223,6 +223,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache name. */
     private String name;
 
+    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    private String memPlcName;
+
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
     private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
 
@@ -467,6 +470,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
+        memPlcName = cc.getMemoryPolicyName();
         sqlIndexMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
@@ -523,6 +527,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
 
         this.name = name;
+
+        return this;
+    }
+
+    /**
+     * @return {@link MemoryPolicyConfiguration} name.
+     */
+    public String getMemoryPolicyName() {
+        return memPlcName;
+    }
+
+    /**
+     * Sets name of {@link MemoryPolicyConfiguration} for this cache.
+     *
+     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used) but should not be empty.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
+        A.ensure(name == null || !name.isEmpty(), "Name cannot be empty.");
+
+        this.memPlcName = memPlcName;
 
         return this;
     }

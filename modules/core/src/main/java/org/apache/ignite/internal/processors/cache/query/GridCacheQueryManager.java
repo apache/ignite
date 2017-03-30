@@ -506,7 +506,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 cctx.kernalContext().indexing().remove(space, key0);
             }
 
-            if(qryProcEnabled)
+            // val may be null if we have no previous value. We should not call processor in this case.
+            if(qryProcEnabled && val != null)
                 qryProc.remove(space, key, partId, val, ver);
         }
         finally {
