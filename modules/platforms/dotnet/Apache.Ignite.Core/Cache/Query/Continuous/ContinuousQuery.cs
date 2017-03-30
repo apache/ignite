@@ -22,6 +22,27 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
+    /// Continuous query base class, see <see cref="ContinuousQuery{K, V}"/>.
+    /// </summary>
+    public class ContinuousQuery
+    {
+        /// <summary>
+        /// Default buffer size.
+        /// </summary>
+        public const int DefaultBufferSize = 1;
+
+        /// <summary>
+        /// Default time interval.
+        /// </summary>
+        public static readonly TimeSpan DefaultTimeInterval = new TimeSpan(0);
+
+        /// <summary>
+        /// Default auto-unsubscribe flag value.
+        /// </summary>
+        public const bool DefaultAutoUnsubscribe = true;
+    }
+
+    /// <summary>
     /// API for configuring continuous cache queries.
     /// <para />
     /// Continuous queries allow to register a remote and a listener for cache update events. 
@@ -36,27 +57,8 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
     /// To execute the query use method 
     /// <see cref="ICache{K,V}.QueryContinuous(ContinuousQuery{K,V})"/>.
     /// </summary>
-    public class ContinuousQuery<TK, TV>
+    public class ContinuousQuery<TK, TV> : ContinuousQuery
     {
-        /// <summary>
-        /// Default buffer size.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const int DfltBufSize = 1;
-
-        /// <summary>
-        /// Default time interval.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
-        public static readonly TimeSpan DfltTimeInterval = new TimeSpan(0);
-
-        /// <summary>
-        /// Default auto-unsubscribe flag value.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public const bool DfltAutoUnsubscribe = true;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -99,9 +101,9 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
             Filter = filter;
             Local = loc;
 
-            BufferSize = DfltBufSize;
-            TimeInterval = DfltTimeInterval;
-            AutoUnsubscribe = DfltAutoUnsubscribe;
+            BufferSize = DefaultBufferSize;
+            TimeInterval = DefaultTimeInterval;
+            AutoUnsubscribe = DefaultAutoUnsubscribe;
         }
 
         /// <summary>
@@ -124,7 +126,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// Entries from buffer will be sent to the master node only if the buffer is 
         /// full or time provided via <see cref="TimeInterval"/> is exceeded.
         /// <para />
-        /// Defaults to <see cref="DfltBufSize"/>
+        /// Defaults to <see cref="ContinuousQuery.DefaultBufferSize"/>
         /// </summary>
         public int BufferSize { get; set; }
 
