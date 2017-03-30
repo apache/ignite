@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 WriteEntry(writer, entry);
 
-                var type = entry.ObjectType;
+                var type = entry.Value == null ? null : entry.Value.GetType();
 
                 if (type == typeof(sbyte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong)
                     || type == typeof(sbyte[]) || type == typeof(ushort[])
