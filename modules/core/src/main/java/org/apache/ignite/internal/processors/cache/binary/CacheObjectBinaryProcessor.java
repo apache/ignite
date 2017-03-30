@@ -71,6 +71,15 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      */
     @Nullable public BinaryType metadata(int typeId) throws IgniteException;
 
+
+    /**
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Meta data.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
+
     /**
      * @param typeIds Type ID.
      * @return Meta data.
