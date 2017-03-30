@@ -64,9 +64,13 @@ public class IncorrectCacheTypeMetadataTest extends GridCommonAbstractTest {
         catch (Exception exception) {
             if (!exception.getMessage().contains(
                 QueryUtils.propertyInitializationExceptionMessage(
-                    Object.class, Object.class, "exceptionOid", Object.class))) {
+                    Object.class, Object.class, "exceptionOid", Object.class)))
                 fail("property initialization exception must be thrown, but got " + exception.getMessage());
-            }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 }
