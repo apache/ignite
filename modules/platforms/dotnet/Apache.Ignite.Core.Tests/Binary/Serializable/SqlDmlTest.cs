@@ -72,16 +72,28 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestSimpleSerializable()
         {
             var cache = _ignite.CreateCache<int, SimpleSerializable>(
-                new CacheConfiguration("simple", typeof(SimpleSerializable)));
+                new CacheConfiguration("simple", new QueryEntity(typeof(int), typeof(SimpleSerializable))));
 
             cache[1] = new SimpleSerializable(1, "bar1");
             cache[2] = new SimpleSerializable(2, "bar2");
 
+            // Test SQL.
             var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where foo = 2")).GetAll().Single();
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Foo);
             Assert.AreEqual("bar2", res.Value.Bar);
+
+            // Test DML.
+            var insertRes = cache.QueryFields(new SqlFieldsQuery(
+                "insert into SimpleSerializable(_key, Foo, Bar) values (?, ?, ?)", 3, 33, "bar33")).GetAll();
+
+            Assert.AreEqual(1, insertRes.Count);
+            Assert.AreEqual(1, insertRes[0][0]);
+
+            var dmlRes = cache[3];
+            Assert.AreEqual(33, dmlRes.Foo);
+            Assert.AreEqual("bar33", dmlRes.Bar);
         }
 
         /// <summary>
@@ -116,6 +128,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Bar = bar;
             }
 
+            // ReSharper disable once UnusedMember.Local
+            // ReSharper disable once UnusedParameter.Local
             public SimpleSerializable(SerializationInfo info, StreamingContext context)
             {
                 Foo = info.GetInt32("Foo");
