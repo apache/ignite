@@ -139,10 +139,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private volatile boolean stopping;
 
     /** Global atomic id counter. */
-    protected final AtomicLong globalAtomicCnt = new AtomicLong(0);
+    protected final AtomicLong globalAtomicCnt = new AtomicLong();
 
     /** Per thread atomic id counter. */
-    private final ThreadLocal<LongWrapper> threadAtomicCnt = new ThreadLocal<>();
+    private final ThreadLocal<LongWrapper> threadAtomicCnt = new ThreadLocal<LongWrapper>() {
+        @Override protected LongWrapper initialValue() {
+            return new LongWrapper(globalAtomicCnt.getAndAdd(THREAD_RESERVE_SIZE));
+        }
+    };
 
     /** Lock callback. */
     @GridToStringExclude
@@ -264,7 +268,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 if (cacheFut.isCancelled() || cacheFut.isDone()) {
                     long futId = cacheFut.id();
 
-                    if (futId > -1)
+                    if (futId > 0)
                         atomicFuts.remove(futId, cacheFut);
                 }
             }
@@ -1177,11 +1181,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public long nextAtomicId() {
         LongWrapper cnt = threadAtomicCnt.get();
-        if (cnt == null) {
-            cnt = new LongWrapper(globalAtomicCnt.getAndAdd(THREAD_RESERVE_SIZE));
-            threadAtomicCnt.set(cnt);
-            return cnt.getAndIncrement();
-        }
+
         long res = cnt.getAndIncrement();
 
         if ((cnt.get() & (THREAD_RESERVE_SIZE - 1)) == 0)
@@ -1407,7 +1407,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         /** */
         public LongWrapper(long val) {
-            this.val = val;
+            this.val = val + 1;
         }
 
         /** */

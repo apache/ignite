@@ -35,7 +35,7 @@ public class GridCacheMvccManagerTest extends TestCase {
         GridCacheMvccManager mgr = new GridCacheMvccManager();
         int n = GridCacheMvccManager.THREAD_RESERVE_SIZE;
 
-        for (int i = 0; i < n * 3 + 5; i++) {
+        for (int i = 1; i < n * 3 + 5; i++) {
             long l = mgr.nextAtomicId();
             assertEquals(i, l);
         }

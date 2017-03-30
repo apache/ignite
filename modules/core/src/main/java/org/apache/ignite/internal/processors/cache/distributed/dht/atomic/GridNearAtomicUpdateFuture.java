@@ -167,7 +167,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         List<GridNearAtomicCheckUpdateRequest> checkReqs = null;
 
         synchronized (mux) {
-            if (futId == -1)
+            if (futId == 0)
                 return false;
 
             if (singleReq != null) {
@@ -300,7 +300,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         AffinityTopologyVersion remapTopVer0;
 
         synchronized (mux) {
-            if (futId == -1 || futId != res.futureId())
+            if (futId == 0 || futId != res.futureId())
                 return;
 
             PrimaryRequestState reqState;
@@ -373,7 +373,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean rcvAll;
 
         synchronized (mux) {
-            if (futId == -1 || futId != res.futureId())
+            if (futId == 0 || futId != res.futureId())
                 return;
 
             if (singleReq != null) {
@@ -534,7 +534,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Non null topology version if update should be remapped.
      */
     @Nullable private AffinityTopologyVersion onAllReceived() {
-        assert futId != -1;
+        assert futId > 0;
 
         AffinityTopologyVersion remapTopVer0 = null;
 
@@ -577,7 +577,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (remapTopVer0 != null) {
             cctx.mvcc().removeAtomicFuture(futId);
 
-            futId = -1;
+            futId = 0;
             topVer = AffinityTopologyVersion.ZERO;
 
             remapTopVer = null;
@@ -801,7 +801,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             }
 
             synchronized (mux) {
-                assert this.futId == -1 : this;
+                assert this.futId == 0 : this;
                 assert this.topVer == AffinityTopologyVersion.ZERO : this;
 
                 this.topVer = topVer;
@@ -866,7 +866,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         boolean rcvAll = false;
 
         synchronized (mux) {
-            if (this.futId == -1 || this.futId != futId)
+            if (this.futId == 0 || this.futId != futId)
                 return;
 
             if (singleReq != null) {
@@ -940,7 +940,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         synchronized (mux) {
             id0 = futId;
 
-            futId = -1;
+            futId = 0;
         }
 
         return id0;
