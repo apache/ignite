@@ -194,7 +194,7 @@ namespace ignite
             {
                 IgniteError err;
 
-                impl::InIterOperation<InputIter> op(begin, end);
+                impl::InIterOperation<K, V, InputIter> op(begin, end);
 
                 bool res = impl.Get()->ContainsKeys(op, err);
 
@@ -429,6 +429,28 @@ namespace ignite
                 impl::InMapOperation<K, V> op(vals);
 
                 impl.Get()->PutAll(op, err);
+            }
+
+            /**
+             * Stores given key-value pairs in cache.
+             * If write-through is enabled, the stored values will be persisted to store.
+             * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void PutAll(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->PutAll(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**

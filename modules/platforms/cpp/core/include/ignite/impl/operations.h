@@ -28,6 +28,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/binary/binary_utils.h"
+#include "ignite/impl/helpers.h"
 #include "ignite/binary/binary.h"
 
 namespace ignite
@@ -255,7 +256,7 @@ namespace ignite
         /**
          * Input iterator operation.
          */
-        template<typename Iter>
+        template<typename K, typename V, typename Iter>
         class InIterOperation : public InputOperation
         {
         public:
@@ -280,7 +281,7 @@ namespace ignite
                 int32_t size = 0;
                 for (Iter it = begin; it != end; ++it)
                 {
-                    writer.WriteTopObject(*it);
+                    ContainerEntryWriteHelper<K, V>::Write(writer, *it);
                     ++size;
                 }
 
@@ -552,7 +553,7 @@ namespace ignite
             /**
              * Get value.
              *
-             * @param Value.
+             * @return Value.
              */
             std::map<T1, T2> GetResult()
             {
@@ -610,14 +611,14 @@ namespace ignite
         /**
          * Output query GET ALL operation.
          */
-        template<typename K, typename V, typename I>
+        template<typename K, typename V, typename Iter, typename Pair = ignite::cache::CacheEntry<K,V> >
         class OutQueryGetAllOperationIter : public OutputOperation
         {
         public:
             /**
              * Constructor.
              */
-            OutQueryGetAllOperationIter(I iter) : iter(iter)
+            OutQueryGetAllOperationIter(Iter iter) : iter(iter)
             {
                 // No-op.
             }
@@ -631,7 +632,7 @@ namespace ignite
                     K key = reader.ReadTopObject<K>();
                     V val = reader.ReadTopObject<V>();
 
-                    *iter = ignite::cache::CacheEntry<K, V>(key, val);
+                    *iter = Pair(key, val);
                     ++iter;
                 }
             }
@@ -643,7 +644,7 @@ namespace ignite
 
         private:
             /** Out iter. */
-            I iter;
+            Iter iter;
             
             IGNITE_NO_COPY_ASSIGNMENT(OutQueryGetAllOperationIter)
         };
