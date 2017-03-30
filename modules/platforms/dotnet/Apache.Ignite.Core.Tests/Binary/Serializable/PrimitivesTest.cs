@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System.Linq;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -31,6 +32,27 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     /// </summary>
     public class PrimitivesTest
     {
+        /** */
+        private IIgnite _ignite;
+        
+        /// <summary>
+        /// Sets up the test fixture.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            _ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+        }
+
+        /// <summary>
+        /// Tears down the test fixture.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
         /// <summary>
         /// Tests the DateTime which is ISerializable struct.
         /// </summary>
@@ -398,15 +420,21 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 Assert.AreEqual(val.DateTimes, dts == null
                     ? null
                     : dts.Select(x => x == null ? null : x.Deserialize<DateTime?>()));
+
+                // Verify types.
+                var binType = bin.GetBinaryType();
+                Assert.AreEqual("Byte", binType.GetFieldTypeName("byte"));
+
+                // TODO: Other types
             }
         }
 
         /// <summary>
         /// Gets the marshaller.
         /// </summary>
-        private static Marshaller GetMarshaller()
+        private Marshaller GetMarshaller()
         {
-            return new Marshaller(null) {CompactFooter = false};
+            return ((Ignite) _ignite).Marshaller;
         }
 
         [Serializable]
