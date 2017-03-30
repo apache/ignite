@@ -135,10 +135,6 @@ public class HibernateRegionFactory implements RegionFactory {
 
         dfltAccessType = AccessType.valueOf(accessType);
 
-        String accessType2 = dfltAccessType.toString();
-
-        String accessType3 = AccessType.NONSTRICT_READ_WRITE.toString();
-
         for (Map.Entry<Object, Object> prop : props.entrySet()) {
             String key = prop.getKey().toString();
 
