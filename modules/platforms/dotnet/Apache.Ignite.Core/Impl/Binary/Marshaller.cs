@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.Messaging;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Marshaller implementation.
@@ -495,7 +496,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             Debug.Assert(type != null);
             Debug.Assert(typeName != null);
 
-            var ser = GetSerializer(_cfg, null, type, typeId, null, null);
+            var ser = GetSerializer(_cfg, null, type, typeId, null, null, GetLogger());
 
             desc = desc == null
                 ? new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
@@ -561,7 +562,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var typeName = BinaryUtils.GetTypeName(type);
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
-                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper);
+                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper, GetLogger());
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     affKeyFld, type.IsEnum, typeCfg.EqualityComparer);
@@ -581,8 +582,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the serializer.
         /// </summary>
-        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg,
-            Type type, int typeId, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
+        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, 
+            BinaryTypeConfiguration typeCfg, Type type, int typeId, IBinaryNameMapper nameMapper,
+            IBinaryIdMapper idMapper, ILogger log)
         {
             var serializer = (typeCfg != null ? typeCfg.Serializer : null) ??
                              (cfg != null ? cfg.DefaultSerializer : null);
@@ -593,7 +595,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return BinarizableSerializer.Instance;
 
                 if (type.GetInterfaces().Contains(typeof(ISerializable)))
+                {
+                    LogSerializableWarning(type, log);
+
                     return new SerializableSerializer(type);
+                }
 
                 serializer = new BinaryReflectiveSerializer();
             }
@@ -712,6 +718,32 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, r => new PlatformJavaObjectFactoryProxy());
             AddSystemType(0, r => new ObjectInfoHolder(r));
             AddSystemType(BinaryUtils.TypeIgniteUuid, r => new IgniteGuid(r));
+        }
+
+        /// <summary>
+        /// Gets the logger.
+        /// </summary>
+        /// <returns></returns>
+        private ILogger GetLogger()
+        {
+            var ignite = _ignite;
+
+            return ignite != null ? ignite.Logger : null;
+        }
+
+        /// <summary>
+        /// Logs the warning about ISerializable pitfalls.
+        /// </summary>
+        private static void LogSerializableWarning(Type type, ILogger log)
+        {
+            if (log == null)
+                return;
+
+            log.GetLogger(typeof(Marshaller).Name)
+                .Warn("Type '{0}' implements '{1}'. It will be written in Ignite binary format, however, " +
+                      "the following limitations apply: " +
+                      "DateTime fields would not work in SQL; " +
+                      "sbyte, ushort, uint, ulong fields would not work in DML.", type, typeof(ISerializable));
         }
     }
 }
