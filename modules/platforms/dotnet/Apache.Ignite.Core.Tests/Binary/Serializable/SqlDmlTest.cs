@@ -18,8 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
+    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Text;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
@@ -32,6 +35,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     {
         /** */
         private IIgnite _ignite;
+        
+        /** */
+        private StringBuilder _outSb;
 
         /// <summary>
         /// Sets up the test fixture.
@@ -39,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            _outSb = new StringBuilder();
+            Console.SetError(new StringWriter(_outSb));
+
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(SimpleSerializable))
@@ -81,7 +90,16 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test]
         public void TestLogWarning()
         {
-            // TODO: Verify warnings in the log.
+            Thread.Sleep(10);  // Wait for logger update.
+
+            var expected =
+                string.Format("[WARN ][main][Marshaller] Type '{0}' implements '{1}'. " +
+                              "It will be written in Ignite binary format, however, " +
+                              "the following limitations apply: DateTime fields would not work in SQL; " +
+                              "sbyte, ushort, uint, ulong fields would not work in DML.",
+                    typeof(SimpleSerializable), typeof(ISerializable));
+
+            Assert.IsTrue(_outSb.ToString().Contains(expected));
         }
 
         private class SimpleSerializable : ISerializable
