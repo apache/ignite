@@ -29,14 +29,16 @@ import static org.junit.Assert.assertEquals;
  * Tests for {@link LUDecomposition}.
  */
 public class LUDecompositionTest {
-    private Matrix testMatrix;
+    /** */
     private Matrix testL;
+    /** */
     private Matrix testU;
+    /** */
     private Matrix testP;
-
+    /** */
     private LUDecomposition luDecomposition;
-
-    int[] rawPivot;
+    /** */
+    private int[] rawPivot;
 
     /** */
     @Before
@@ -64,7 +66,8 @@ public class LUDecompositionTest {
 
         rawPivot = new int[] {3, 4, 2, 1};
 
-        testMatrix = new DenseLocalOnHeapMatrix(rawMatrix);
+        /* */
+        Matrix testMatrix = new DenseLocalOnHeapMatrix(rawMatrix);
         testL = new DenseLocalOnHeapMatrix(rawL);
         testU = new DenseLocalOnHeapMatrix(rawU);
         testP = new DenseLocalOnHeapMatrix(rawP);
@@ -120,5 +123,17 @@ public class LUDecompositionTest {
 
         for (int i = 0; i < testU.rowSize(); i++)
             assertEquals("Value should be equal.", (int)pivot.get(i) + 1, rawPivot[i]);
+    }
+
+    /** */
+    @Test
+    public void solveVec() throws Exception {
+        // TODO
+    }
+
+    /** */
+    @Test
+    public void solveMtx() throws Exception {
+        // TODO
     }
 }

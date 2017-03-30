@@ -20,6 +20,7 @@ package org.apache.ignite.math.decompositions;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
 import org.apache.ignite.math.exceptions.CardinalityException;
+import org.apache.ignite.math.exceptions.SingularMatrixException;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.impls.vector.DenseLocalOnHeapVector;
@@ -252,6 +253,96 @@ public class LUDecomposition {
                 determinant *= lu.getX(i, i);
 
         return determinant;
+    }
+
+    /** */
+    public Vector solve(Vector b){
+        final int m = pivot.size();
+
+        if (b.size() != m)
+            throw new CardinalityException(b.size(), m);
+
+        if (singular)
+            throw new SingularMatrixException();
+
+        final double[] bp = new double[m];
+
+        // Apply permutations to b
+        for (int row = 0; row < m; row++)
+            bp[row] = b.get((int)pivot.get(row));
+
+        // Solve LY = b
+        for (int col = 0; col < m; col++) {
+            final double bpCol = bp[col];
+
+            for (int i = col + 1; i < m; i++)
+                bp[i] -= bpCol * lu.get(i, col);
+        }
+
+        // Solve UX = Y
+        for (int col = m - 1; col >= 0; col--) {
+            bp[col] /= lu.get(col, col);
+            final double bpCol = bp[col];
+
+            for (int i = 0; i < col; i++)
+                bp[i] -= bpCol * lu.get(i, col);
+        }
+
+        return b.like(m).assign(bp);
+    }
+
+    /** */
+    public Matrix solve(Matrix b){
+        final int m = pivot.size();
+
+        if (b.rowSize() != m)
+            throw new CardinalityException(b.rowSize(), m);
+
+        if (singular)
+            throw new SingularMatrixException();
+
+        final int nColB = b.columnSize();
+
+        // Apply permutations to b
+        final double[][] bp = new double[m][nColB];
+        for (int row = 0; row < m; row++) {
+            final double[] bpRow = bp[row];
+            final int pRow = (int)pivot.get(row);
+
+            for (int col = 0; col < nColB; col++)
+                bpRow[col] = b.get(pRow, col);
+        }
+
+        // Solve LY = b
+        for (int col = 0; col < m; col++) {
+            final double[] bpCol = bp[col];
+            for (int i = col + 1; i < m; i++) {
+                final double[] bpI = bp[i];
+                final double luICol = lu.get(i, col);
+
+                for (int j = 0; j < nColB; j++)
+                    bpI[j] -= bpCol[j] * luICol;
+            }
+        }
+
+        // Solve UX = Y
+        for (int col = m - 1; col >= 0; col--) {
+            final double[] bpCol = bp[col];
+            final double luDiag = lu.getX(col, col);
+
+            for (int j = 0; j < nColB; j++)
+                bpCol[j] /= luDiag;
+
+            for (int i = 0; i < col; i++) {
+                final double[] bpI = bp[i];
+                final double luICol = lu.get(i,col);
+
+                for (int j = 0; j < nColB; j++)
+                    bpI[j] -= bpCol[j] * luICol;
+            }
+        }
+
+        return b.like(b.rowSize(), b.columnSize()).assign(bp);
     }
 
     /**
