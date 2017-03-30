@@ -60,7 +60,10 @@ import scala.util.control.Breaks._
  *         If not specified, PATH and JAVA_HOME will be searched.
  *     -id8=<node-id8>
  *         ID8 of node.
- *         Either '-id8' or '-id' can be specified.
+ *         Note that either '-id8' or '-id' should be specified.
+ *         You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.
+ *         To specify oldest node on the same host as visor use variable '@nl'.
+ *         To specify oldest node on other hosts that are not running visor use variable '@nr'.
  *     -id=<node-id>
  *         Full ID of node.
  *         Either '-id8' or '-id' can be specified.
@@ -260,8 +263,10 @@ object VisorVvmCommand {
             ),
             "-id8=<node-id8>" -> List(
                 "ID8 of node.",
-                "Note that either '-id8' or '-id' can be specified and " +
-                    "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>."
+                "Note that either '-id8' or '-id' should be specified.",
+                "You can also use '@n0' ... '@nn' variables as a shortcut for <node-id8>.",
+                "To specify oldest node on the same host as visor use variable '@nl'.",
+                "To specify oldest node on other hosts that are not running visor use variable '@nr'."
             ),
             "-id=<node-id>" -> List(
                 "Full ID of node.",

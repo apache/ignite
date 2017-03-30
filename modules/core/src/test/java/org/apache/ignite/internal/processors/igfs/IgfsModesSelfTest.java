@@ -98,10 +98,9 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(512 * 1024);
+        igfsCfg.setInitializeDefaultPathModes(true);
 
         if (setNullMode)
             igfsCfg.setDefaultMode(null);
@@ -113,33 +112,33 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         if (setSecondaryFs)
             igfsCfg.setSecondaryFileSystem(igfsSecondary.asSecondary());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setIgniteInstanceName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -158,8 +157,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     private void startUpSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs-secondary");
         igfsCfg.setBlockSize(512 * 1024);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -169,33 +166,33 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         endpointCfg.setType(IgfsIpcEndpointType.TCP);
         endpointCfg.setPort(11500);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid-secondary");
+        cfg.setIgniteInstanceName("igfs-grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -249,7 +246,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     public void testDefaultFoldersNonPrimary() throws Exception {
         setSecondaryFs = true;
 
-        mode = PRIMARY;
+        mode = DUAL_ASYNC;
 
         startUp();
 
@@ -257,43 +254,45 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
         checkMode("/ignite/proxy/", PROXY);
         checkMode("/ignite/proxy/subfolder", PROXY);
         checkMode("/ignite/proxy/folder/file.txt", PROXY);
-        checkMode("/ignite/proxyx", PRIMARY);
-        checkMode("/ignite/proxyx/", PRIMARY);
-        checkMode("/ignite/proxyx/subfolder", PRIMARY);
-        checkMode("/ignite/proxyx/folder/file.txt", PRIMARY);
+        checkMode("/ignite/proxyx", mode);
+        checkMode("/ignite/proxyx/", mode);
+        checkMode("/ignite/proxyx/subfolder", mode);
+        checkMode("/ignite/proxyx/folder/file.txt", mode);
 
-        checkMode("/userdir/ignite/proxy", PRIMARY);
-        checkMode("/userdir/ignite/proxy/", PRIMARY);
-        checkMode("/userdir/ignite/proxy/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/proxy/folder/file.txt", PRIMARY);
+        checkMode("/userdir/ignite/proxy", mode);
+        checkMode("/userdir/ignite/proxy/", mode);
+        checkMode("/userdir/ignite/proxy/subfolder", mode);
+        checkMode("/userdir/ignite/proxy/folder/file.txt", mode);
 
         checkMode("/ignite/sync", DUAL_SYNC);
         checkMode("/ignite/sync/", DUAL_SYNC);
         checkMode("/ignite/sync/subfolder", DUAL_SYNC);
         checkMode("/ignite/sync/folder/file.txt", DUAL_SYNC);
-        checkMode("/ignite/syncx", PRIMARY);
-        checkMode("/ignite/syncx/", PRIMARY);
-        checkMode("/ignite/syncx/subfolder", PRIMARY);
-        checkMode("/ignite/syncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/ignite/sync", PRIMARY);
-        checkMode("/userdir/ignite/sync/", PRIMARY);
-        checkMode("/userdir/ignite/sync/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/sync/folder/file.txt", PRIMARY);
+        checkMode("/ignite/syncx", mode);
+        checkMode("/ignite/syncx/", mode);
+        checkMode("/ignite/syncx/subfolder", mode);
+        checkMode("/ignite/syncx/folder/file.txt", mode);
+
+        checkMode("/userdir/ignite/sync", mode);
+        checkMode("/userdir/ignite/sync/", mode);
+        checkMode("/userdir/ignite/sync/subfolder", mode);
+        checkMode("/userdir/ignite/sync/folder/file.txt", mode);
 
         checkMode("/ignite/async", DUAL_ASYNC);
         checkMode("/ignite/async/", DUAL_ASYNC);
         checkMode("/ignite/async/subfolder", DUAL_ASYNC);
         checkMode("/ignite/async/folder/file.txt", DUAL_ASYNC);
-        checkMode("/ignite/asyncx", PRIMARY);
-        checkMode("/ignite/asyncx/", PRIMARY);
-        checkMode("/ignite/asyncx/subfolder", PRIMARY);
-        checkMode("/ignite/asyncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/ignite/async", PRIMARY);
-        checkMode("/userdir/ignite/async/", PRIMARY);
-        checkMode("/userdir/ignite/async/subfolder", PRIMARY);
-        checkMode("/userdir/ignite/async/folder/file.txt", PRIMARY);
+        checkMode("/ignite/asyncx", mode);
+        checkMode("/ignite/asyncx/", mode);
+        checkMode("/ignite/asyncx/subfolder", mode);
+        checkMode("/ignite/asyncx/folder/file.txt", mode);
+
+        checkMode("/userdir/ignite/async", mode);
+        checkMode("/userdir/ignite/async/", mode);
+        checkMode("/userdir/ignite/async/subfolder", mode);
+        checkMode("/userdir/ignite/async/folder/file.txt", mode);
     }
 
     /**
@@ -332,8 +331,11 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         mode = DUAL_ASYNC;
 
-        pathModes(F.t("/ignite/primary", PROXY), F.t("/ignite/proxy", DUAL_SYNC),
-            F.t("/ignite/sync", DUAL_ASYNC), F.t("/ignite/async", PRIMARY));
+        pathModes(
+            F.t("/ignite/primary", PROXY),
+            F.t("/ignite/proxy", DUAL_SYNC),
+            F.t("/ignite/sync", DUAL_ASYNC),
+            F.t("/ignite/async", PRIMARY));
 
         startUp();
 
@@ -385,7 +387,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getCause().getMessage();
+            errMsg = e.getCause().getMessage();
         }
 
         assertTrue(errMsg.startsWith(
@@ -451,7 +453,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getCause().getMessage();
+            errMsg = e.getCause().getMessage();
         }
 
         assertTrue(errMsg.startsWith(
@@ -486,8 +488,6 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPropagationDualAsync() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-822");
-
         mode = DUAL_ASYNC;
 
         checkPropagation();
@@ -598,7 +598,8 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
             assert !igfsSecondary.exists(file);
         }
 
-        int cacheSize = grid.cachex("partitioned").size();
+        int cacheSize = grid.cachex(grid.igfsx("igfs").configuration().getDataCacheConfiguration()
+            .getName()).size();
 
         if (primaryNotUsed)
             assert cacheSize == 0;

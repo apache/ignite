@@ -51,7 +51,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        resetStore();
+        storeStgy.resetStore();
     }
 
     /**
@@ -216,7 +216,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @return Variation test configuration.
      */
     private CacheConfiguration<Object, Object> variationConfig(String suffix) {
-        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestGridName(testedNodeIdx));
+        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
 
         ccfg.setName(cacheName() + "_" + suffix);
 

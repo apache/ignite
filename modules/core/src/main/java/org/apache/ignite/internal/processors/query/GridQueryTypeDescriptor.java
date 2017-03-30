@@ -32,6 +32,13 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
+     * Gets table name for type.
+     *
+     * @return Table name.
+     */
+    public String tableName();
+
+    /**
      * Gets mapping from field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.
@@ -48,6 +55,17 @@ public interface GridQueryTypeDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public <T> T value(String field, Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Sets field value for given key and value.
+     *
+     * @param field Field name.
+     * @param key Key.
+     * @param val Value.
+     * @param propVal Value for given field.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void setValue(String field, Object key, Object val, Object propVal) throws IgniteCheckedException;
 
     /**
      * @param name Property name.
@@ -77,9 +95,30 @@ public interface GridQueryTypeDescriptor {
     public Class<?> keyClass();
 
     /**
+     * Gets key type name.
+     *
+     * @return Key type name.
+     */
+    public String keyTypeName();
+
+    /**
+     * Gets value type name.
+     *
+     * @return Value type name.
+     */
+    public String valueTypeName();
+
+    /**
      * Returns {@code true} if string representation of value should be indexed as text.
      *
      * @return If string representation of value should be full-text indexed.
      */
     public boolean valueTextIndex();
+
+    /**
+     * Returns affinity key field name or {@code null} for default.
+     *
+     * @return Affinity key.
+     */
+    public String affinityKey();
 }

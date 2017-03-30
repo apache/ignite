@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -49,8 +50,8 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     private static int idx;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -149,6 +150,22 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
             else
                 assert false : meta.typeName();
         }
+
+        grid().cache(null).put(new AffinityKey<>(1, 1), 1);
+
+        metas = binaries().types();
+
+        assertEquals(3, metas.size());
+
+        for (BinaryType meta : metas) {
+            if (AffinityKey.class.getSimpleName().equals(meta.typeName())) {
+                assertEquals("affKey", meta.affinityKeyFieldName());
+
+                return;
+            }
+        }
+
+        fail("Failed to find metadata for AffinityKey");
     }
 
     /**

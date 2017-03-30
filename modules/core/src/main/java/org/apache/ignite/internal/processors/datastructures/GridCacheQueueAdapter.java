@@ -834,7 +834,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 return hdr.head();
             }
 
-            long next = hdr.head() + 1;
+            long next = hdr.head();
 
             rmvdIdxs = new HashSet<>(rmvdIdxs);
 

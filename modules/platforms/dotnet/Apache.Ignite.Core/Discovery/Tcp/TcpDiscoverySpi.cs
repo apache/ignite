@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal TcpDiscoverySpi(BinaryReader reader)
+        internal TcpDiscoverySpi(IBinaryRawReader reader)
         {
             IpFinder = reader.ReadBoolean() ? TcpDiscoveryIpFinderBase.ReadInstance(reader) : null;
 

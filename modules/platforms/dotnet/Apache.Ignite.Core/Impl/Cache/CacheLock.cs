@@ -21,8 +21,6 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Cache lock implementation.
@@ -32,8 +30,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Unique lock ID.*/
         private readonly long _id;
 
-        /** Cache. */
-        private readonly IUnmanagedTarget _cache;
+        /** Cache lock. */
+        private readonly ICacheLockInternal _lock;
 
         /** State (-1 for disposed, >=0 for number of currently executing methods). */
         private int _state;
@@ -45,13 +43,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Initializes a new instance of the <see cref="CacheLock"/> class.
         /// </summary>
         /// <param name="id">Lock id.</param>
-        /// <param name="cache">Cache.</param>
-        public CacheLock(long id, IUnmanagedTarget cache)
+        /// <param name="cacheLock">Cache lock.</param>
+        public CacheLock(long id, ICacheLockInternal cacheLock)
         {
-            Debug.Assert(cache != null);
+            Debug.Assert(cacheLock != null);
 
             _id = id;
-            _cache = cache;
+            _lock = cacheLock;
         }
 
         /** <inheritDoc /> */
@@ -68,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             try
             {
-                UU.CacheEnterLock(_cache, _id);
+                _lock.Enter(_id);
 
                 res = true;
             }
@@ -104,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             try
             {
-                return res = UU.CacheTryEnterLock(_cache, _id, (long)timeout.TotalMilliseconds);
+                return res = _lock.TryEnter(_id, timeout);
             }
             finally 
             {
@@ -125,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 ThrowIfDisposed();
 
-                UU.CacheExitLock(_cache, _id);
+                _lock.Exit(_id);
 
                 _counter--;
             }
@@ -143,7 +141,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                         "The lock is being disposed while still being used. " +
                         "It either is being held by a thread and/or has active waiters waiting to acquire the lock.");
 
-                UU.CacheCloseLock(_cache, _id);
+                _lock.Close(_id);
 
                 _state = -1;
 
@@ -156,7 +154,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         ~CacheLock()
         {
-            UU.CacheCloseLock(_cache, _id);
+            _lock.Close(_id);
         }
 
         /// <summary>

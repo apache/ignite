@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**
- * Abstract SQL element.
+ * Base class for all SQL AST nodes.
  */
-public abstract class GridSqlElement implements Iterable<GridSqlElement> {
+public abstract class GridSqlElement implements GridSqlAst {
     /** */
-    protected final List<GridSqlElement> children;
+    private final List<GridSqlAst> children;
 
     /** */
     private GridSqlType resultType;
@@ -33,7 +32,7 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     /**
      * @param children Initial child list.
      */
-    protected GridSqlElement(List<GridSqlElement> children) {
+    protected GridSqlElement(List<GridSqlAst> children) {
         assert children != null;
 
         this.children = children;
@@ -57,17 +56,10 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     }
 
     /**
-     * Get the SQL expression.
-     *
-     * @return the SQL expression.
-     */
-    public abstract String getSQL();
-
-    /**
      * @param expr Expr.
      * @return {@code this}.
      */
-    public GridSqlElement addChild(GridSqlElement expr) {
+    public GridSqlElement addChild(GridSqlAst expr) {
         if (expr == null)
             throw new NullPointerException();
 
@@ -76,27 +68,19 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
         return this;
     }
 
-    /**
-     * @return First child.
-     */
-    public <E extends GridSqlElement> E child() {
+    /** {@inheritDoc} */
+    @Override public <E extends GridSqlAst> E child() {
         return child(0);
     }
 
-    /**
-     * @param idx Index.
-     * @return Child.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public <E extends GridSqlElement> E child(int idx) {
+    @Override public <E extends GridSqlAst> E child(int idx) {
         return (E)children.get(idx);
     }
 
-    /**
-     * @param idx Index.
-     * @param child New child.
-     */
-    public void child(int idx, GridSqlElement child) {
+    /** {@inheritDoc} */
+    @Override public <E extends GridSqlAst> void child(int idx, E child) {
         if (child == null)
             throw new NullPointerException();
 
@@ -111,12 +95,18 @@ public abstract class GridSqlElement implements Iterable<GridSqlElement> {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<GridSqlElement> iterator() {
-        return children.iterator();
+    @Override public String toString() {
+        return getSQL();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return getSQL();
+    @Override public int hashCode() {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        return this == o || (!(o == null || getClass() != o.getClass()) &&
+            children.equals(((GridSqlElement)o).children));
     }
 }

@@ -54,9 +54,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** Index SPI throwing exception. */
-    private static TestIndexingSpi idxSpi = new TestIndexingSpi();
-
     /** */
     private static final int PRIMARY = 0;
 
@@ -75,10 +72,10 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setIndexingSpi(idxSpi);
+        cfg.setIndexingSpi(new TestIndexingSpi());
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -86,8 +83,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
@@ -108,7 +105,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        idxSpi.forceFail(false);
+        TestIndexingSpi.forceFail(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -321,7 +318,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Start transaction.");
 
@@ -344,7 +341,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         try {
             info("Start transaction.");
@@ -380,7 +377,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @SuppressWarnings("unchecked")
     private void checkUnlocked(final Integer key) throws Exception {
-        idxSpi.forceFail(false);
+        TestIndexingSpi.forceFail(false);
 
         awaitPartitionMapExchange();
 
@@ -448,7 +445,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -459,7 +456,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to put: " + key);
 
@@ -481,7 +478,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -492,7 +489,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to transform: " + key);
 
@@ -524,7 +521,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -542,7 +539,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -570,7 +567,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -581,7 +578,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to remove: " + key);
 
@@ -657,13 +654,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
-        private volatile boolean fail;
+        private static volatile boolean fail;
 
         /**
-         * @param fail Fail flag.
+         * @param failFlag Fail flag.
          */
-        public void forceFail(boolean fail) {
-            this.fail = fail;
+        public static void forceFail(boolean failFlag) {
+            fail = failFlag;
         }
 
         /** {@inheritDoc} */
@@ -703,7 +700,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

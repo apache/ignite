@@ -30,7 +30,7 @@ namespace ignite
     namespace cache
     {
         /**
-         * Cache entry class template.
+         * %Cache entry class template.
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.
@@ -45,7 +45,9 @@ namespace ignite
              * Creates instance with both key and value default-constructed.
              */
             CacheEntry() :
-                key(), val()
+                key(),
+                val(),
+                hasValue(false)
             {
                 // No-op.
             }
@@ -57,7 +59,9 @@ namespace ignite
              * @param val Value.
              */
             CacheEntry(const K& key, const V& val) :
-                key(key), val(val)
+                key(key),
+                val(val),
+                hasValue(true)
             {
                 // No-op.
             }
@@ -67,10 +71,20 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other)
+            CacheEntry(const CacheEntry& other) :
+                key(other.key),
+                val(other.val),
+                hasValue(other.hasValue)
             {
-                key = other.key;
-                val = other.val;
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            virtual ~CacheEntry()
+            {
+                // No-op.
             }
 
             /**
@@ -82,10 +96,9 @@ namespace ignite
             {
                 if (this != &other)
                 {
-                    CacheEntry tmp(other);
-
-                    std::swap(key, tmp.key);
-                    std::swap(val, tmp.val);
+                    key = other.key;
+                    val = other.val;
+                    hasValue = other.hasValue;
                 }
 
                 return *this;
@@ -96,7 +109,7 @@ namespace ignite
              *
              * @return Key.
              */
-            K GetKey() const
+            const K& GetKey() const
             {
                 return key;
             }
@@ -106,19 +119,32 @@ namespace ignite
              *
              * @return Value.
              */
-            V GetValue() const
+            const V& GetValue() const
             {
                 return val;
             }
 
-        private:
+            /**
+             * Check if the value exists.
+             *
+             * @return True, if the value exists.
+             */
+            bool HasValue() const
+            {
+                return hasValue;
+            }
+
+        protected:
             /** Key. */
             K key;
 
             /** Value. */
             V val;
+
+            /** Indicates whether value exists */
+            bool hasValue;
         };
     }
 }
 
-#endif _IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_CACHE_ENTRY

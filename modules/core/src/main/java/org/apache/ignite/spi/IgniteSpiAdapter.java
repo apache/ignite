@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -78,8 +79,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /** Ignite instance. */
     protected Ignite ignite;
 
-    /** Grid instance name. */
-    protected String gridName;
+    /** Ignite instance name. */
+    protected String igniteInstanceName;
 
     /** SPI name. */
     private String name;
@@ -97,10 +98,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private boolean failureDetectionTimeoutEnabled = true;
 
     /**
-     *  Failure detection timeout. Initialized with the value of
-     *  {@link IgniteConfiguration#getFailureDetectionTimeout()}.
+     * Failure detection timeout. Initialized with the value of
+     * {@link IgniteConfiguration#getFailureDetectionTimeout()}.
      */
     private long failureDetectionTimeout;
+
+    /** Start flag to deny repeating start attempts. */
+    private final AtomicBoolean startedFlag = new AtomicBoolean();
 
     /**
      * Creates new adapter and initializes it from the current (this) class.
@@ -116,6 +120,26 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected void startStopwatch() {
         startTstamp = U.currentTimeMillis();
+    }
+
+    /**
+     * This method is called by built-in managers implementation to avoid
+     * repeating SPI start attempts.
+     */
+    public final void onBeforeStart() {
+        if (!startedFlag.compareAndSet(false, true))
+            throw new IllegalStateException("SPI has already been started " +
+                "(always create new configuration instance for each starting Ignite instances) " +
+                "[spi=" + this + ']');
+    }
+
+    /**
+     * Checks if {@link #onBeforeStart()} has been called on this SPI instance.
+     *
+     * @return {@code True} if {@link #onBeforeStart()} has already been called.
+     */
+    public final boolean started() {
+        return startedFlag.get();
     }
 
     /** {@inheritDoc} */
@@ -255,7 +279,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         this.ignite = ignite;
 
         if (ignite != null)
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
     }
 
     /**
@@ -377,22 +401,23 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /**
      * Registers SPI MBean. Note that SPI can only register one MBean.
      *
-     * @param gridName Grid name. If null, then name will be empty.
+     * @param igniteInstanceName Ignite instance name. If null, then name will be empty.
      * @param impl MBean implementation.
      * @param mbeanItf MBean interface (if {@code null}, then standard JMX
      *    naming conventions are used.
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
-        throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(
+        String igniteInstanceName, T impl, Class<T> mbeanItf
+    ) throws IgniteSpiException {
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
         try {
-            spiMBean = U.registerMBean(jmx, gridName, "SPIs", getName(), impl, mbeanItf);
+            spiMBean = U.registerMBean(jmx, igniteInstanceName, "SPIs", getName(), impl, mbeanItf);
 
             if (log.isDebugEnabled())
                 log.debug("Registered SPI MBean: " + spiMBean);
@@ -703,7 +728,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -732,6 +757,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
+            /* No-op. */
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
             /* No-op. */
         }
 
@@ -826,6 +856,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
+        @Override public void removeLocalMessageListener(Object topic, IgniteBiPredicate<UUID, ?> p) {
+             /* No-op. */
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
             return false;
         }
@@ -893,6 +928,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
             ((IgniteKernal)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Object> nodeAttributes() {
+            return Collections.emptyMap();
         }
     }
 }

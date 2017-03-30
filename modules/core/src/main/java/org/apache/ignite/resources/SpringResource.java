@@ -112,5 +112,18 @@ public @interface SpringResource {
      *
      * @return Resource bean name.
      */
-    String resourceName();
+    String resourceName() default "";
+
+    /**
+     * Resource bean class in provided {@code ApplicationContext} to look up
+     * a Spring bean.
+     *
+     * @return Resource bean class.
+     */
+    Class<?> resourceClass() default DEFAULT.class;
+
+    /** Dummy class to compensate for impossibility of having default null value for annotation method. */
+    final class DEFAULT {
+        // No-op.
+    }
 }

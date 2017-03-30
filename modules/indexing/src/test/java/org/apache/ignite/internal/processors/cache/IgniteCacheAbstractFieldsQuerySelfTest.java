@@ -71,7 +71,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
-    private static final String CACHE = "cache";
+    protected static final String CACHE = "cache";
 
     /** Empty cache name. */
     private static final String EMPTY_CACHE = "emptyCache";
@@ -89,8 +89,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     protected boolean binaryMarshaller;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -326,7 +326,28 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
                     Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
 
+                    assertNotNull("Indexes should be defined", indexes);
                     assertEquals(2, indexes.size());
+
+                    Iterator<GridCacheSqlIndexMetadata> it = indexes.iterator();
+
+                    Collection<String> indFlds = it.next().fields();
+
+                    assertNotNull("Fields for first index should be defined", indFlds);
+                    assertEquals("First index should have one field", indFlds.size(), 1);
+
+                    Iterator<String> indFldIt = indFlds.iterator();
+
+                    assertEquals(indFldIt.next(), "AGE");
+
+                    indFlds = it.next().fields();
+
+                    assertNotNull("Fields for second index should be defined", indFlds);
+                    assertEquals("Second index should have one field", indFlds.size(), 1);
+
+                    indFldIt = indFlds.iterator();
+
+                    assertEquals(indFldIt.next(), "ORGID");
 
                     wasNull = true;
                 }
@@ -368,7 +389,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         if (cacheMode() == PARTITIONED) {
             assertEquals(2, res.size());
 
-            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.table(0).getSQL()));
+            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.mergeTableIdentifier(0)));
         }
         else
             assertEquals(1, res.size());

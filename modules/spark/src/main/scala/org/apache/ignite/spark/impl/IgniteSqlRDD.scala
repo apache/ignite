@@ -25,12 +25,13 @@ import org.apache.spark.{TaskContext, Partition}
 import scala.reflect.ClassTag
 
 class IgniteSqlRDD[R: ClassTag, T, K, V](
-    ic: IgniteContext[K, V],
+    ic: IgniteContext,
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V],
     qry: Query[T],
-    conv: (T) ⇒ R
-) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg) {
+    conv: (T) ⇒ R,
+    keepBinary: Boolean
+) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg, keepBinary) {
     override def compute(split: Partition, context: TaskContext): Iterator[R] = {
         new IgniteQueryIterator[T, R](ensureCache().query(qry).iterator(), conv)
     }

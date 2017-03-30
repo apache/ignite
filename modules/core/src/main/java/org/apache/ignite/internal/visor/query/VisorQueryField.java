@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for query field type description.
  */
-public class VisorQueryField implements Serializable {
+public class VisorQueryField implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

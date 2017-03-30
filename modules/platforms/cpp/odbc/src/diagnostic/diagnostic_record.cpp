@@ -34,11 +34,20 @@ namespace
     /** SQL state 01004 constant. */
     const std::string STATE_01004 = "01004";
 
+    /** SQL state 01S00 constant. */
+    const std::string STATE_01S00 = "01S00";
+
     /** SQL state 01S01 constant. */
     const std::string STATE_01S01 = "01S01";
 
+    /** SQL state 22026 constant. */
+    const std::string STATE_22026 = "22026";
+
     /** SQL state 24000 constant. */
     const std::string STATE_24000 = "24000";
+
+    /** SQL state 07009 constant. */
+    const std::string STATE_07009 = "07009";
 
     /** SQL state 08001 constant. */
     const std::string STATE_08001 = "08001";
@@ -55,14 +64,35 @@ namespace
     /** SQL state HY001 constant. */
     const std::string STATE_HY001 = "HY001";
 
+    /** SQL state HY003 constant. */
+    const std::string STATE_HY003 = "HY003";
+
+    /** SQL state HY009 constant. */
+    const std::string STATE_HY009 = "HY009";
+
     /** SQL state HY010 constant. */
     const std::string STATE_HY010 = "HY010";
+
+    /** SQL state HY092 constant. */
+    const std::string STATE_HY092 = "HY092";
+
+    /** SQL state HY105 constant. */
+    const std::string STATE_HY105 = "HY105";
+
+    /** SQL state HY106 constant. */
+    const std::string STATE_HY106 = "HY106";
 
     /** SQL state HYC00 constant. */
     const std::string STATE_HYC00 = "HYC00";
 
     /** SQL state HYT01 constant. */
     const std::string STATE_HYT01 = "HYT01";
+
+    /** SQL state HY090 constant. */
+    const std::string STATE_HY090 = "HY090";
+
+    /** SQL state IM001 constant. */
+    const std::string STATE_IM001 = "IM001";
 }
 
 namespace ignite
@@ -77,7 +107,8 @@ namespace ignite
                 connectionName(),
                 serverName(),
                 rowNum(0),
-                columnNum(0)
+                columnNum(0),
+                retrieved(false)
             {
                 // No-op.
             }
@@ -90,7 +121,8 @@ namespace ignite
                 connectionName(connectionName),
                 serverName(serverName),
                 rowNum(rowNum),
-                columnNum(columnNum)
+                columnNum(columnNum),
+                retrieved(false)
             {
                 // No-op.
             }
@@ -116,6 +148,8 @@ namespace ignite
 
                 if (odbcSubclasses.empty())
                 {
+                    // This is a fixed list taken from ODBC doc.
+                    // Please do not add/remove values here.
                     odbcSubclasses.insert("01S00");
                     odbcSubclasses.insert("01S01");
                     odbcSubclasses.insert("01S02");
@@ -168,7 +202,7 @@ namespace ignite
                 return ORIGIN_ISO_9075;
             }
 
-            const std::string& DiagnosticRecord::GetMessage() const
+            const std::string& DiagnosticRecord::GetMessageText() const
             {
                 return message;
             }
@@ -190,11 +224,20 @@ namespace ignite
                     case SQL_STATE_01004_DATA_TRUNCATED:
                         return STATE_01004;
 
+                    case SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
+                        return STATE_01S00;
+
                     case SQL_STATE_01S01_ERROR_IN_ROW:
                         return STATE_01S01;
 
+                    case SQL_STATE_22026_DATA_LENGTH_MISMATCH:
+                        return STATE_22026;
+
                     case SQL_STATE_24000_INVALID_CURSOR_STATE:
                         return STATE_24000;
+
+                    case SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX:
+                        return STATE_07009;
 
                     case SQL_STATE_08001_CANNOT_CONNECT:
                         return STATE_08001;
@@ -211,14 +254,35 @@ namespace ignite
                     case SQL_STATE_HY001_MEMORY_ALLOCATION:
                         return STATE_HY001;
 
+                    case SQL_STATE_HY003_INVALID_APPLICATION_BUFFER_TYPE:
+                        return STATE_HY003;
+
+                    case SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER:
+                        return STATE_HY009;
+
                     case SQL_STATE_HY010_SEQUENCE_ERROR:
                         return STATE_HY010;
+
+                    case SQL_STATE_HY090_INVALID_STRING_OR_BUFFER_LENGTH:
+                        return STATE_HY090;
+
+                    case SQL_STATE_HY092_OPTION_TYPE_OUT_OF_RANGE:
+                        return STATE_HY092;
+
+                    case SQL_STATE_HY105_INVALID_PARAMETER_TYPE:
+                        return STATE_HY105;
+
+                    case SQL_STATE_HY106_FETCH_TYPE_OUT_OF_RANGE:
+                        return STATE_HY106;
 
                     case SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
                         return STATE_HYC00;
 
                     case SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT:
                         return STATE_HYT01;
+
+                    case SQL_STATE_IM001_FUNCTION_NOT_SUPPORTED:
+                        return STATE_IM001;
 
                     default:
                         break;
@@ -235,6 +299,16 @@ namespace ignite
             int32_t DiagnosticRecord::GetColumnNumber() const
             {
                 return columnNum;
+            }
+
+            bool DiagnosticRecord::IsRetrieved() const
+            {
+                return retrieved;
+            }
+
+            void DiagnosticRecord::MarkRetrieved()
+            {
+                retrieved = true;
             }
         }
     }

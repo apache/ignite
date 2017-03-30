@@ -29,8 +29,19 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class MethodVisitor
     {
-        /// <summary> The string length method. </summary>
-        public static readonly MemberInfo StringLength = typeof (string).GetProperty("Length");
+        /// <summary> Property visitors. </summary>
+        private static readonly Dictionary<MemberInfo, string> Properties = new Dictionary<MemberInfo, string>
+        {
+            {typeof(string).GetProperty("Length"), "length"},
+            {typeof(DateTime).GetProperty("Year"), "year"},
+            {typeof(DateTime).GetProperty("Month"), "month"},
+            {typeof(DateTime).GetProperty("Day"), "day_of_month"},
+            {typeof(DateTime).GetProperty("DayOfYear"), "day_of_year"},
+            {typeof(DateTime).GetProperty("DayOfWeek"), "-1 + day_of_week"},
+            {typeof(DateTime).GetProperty("Hour"), "hour"},
+            {typeof(DateTime).GetProperty("Minute"), "minute"},
+            {typeof(DateTime).GetProperty("Second"), "second"}
+        };
 
         /// <summary> Method visit delegate. </summary>
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
@@ -101,6 +112,25 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Truncate", typeof (double)),
             GetMathMethod("Truncate", typeof (decimal)),
         }.ToDictionary(x => x.Key, x => x.Value);
+
+        /// <summary>
+        /// Visits the property call expression.
+        /// </summary>
+        public static bool VisitPropertyCall(MemberExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            string funcName;
+
+            if (!Properties.TryGetValue(expression.Member, out funcName))
+                return false;
+
+            visitor.ResultBuilder.Append(funcName).Append('(');
+
+            visitor.Visit(expression.Expression);
+
+            visitor.ResultBuilder.Append(')');
+
+            return true;
+        }
 
         /// <summary>
         /// Visits the method call expression.

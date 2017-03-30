@@ -52,8 +52,8 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     private String workDir;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -160,8 +160,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
             for (int i = 0; i < workDirs.length; i++) {
                 workDir = workDirs[i];
 
-                U.nullifyWorkDirectory();
-
                 startGrid(i);
             }
 
@@ -177,8 +175,6 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < workDirs.length; i++) {
                 workDir = workDirs[i];
-
-                U.nullifyWorkDirectory();
 
                 startGrid(i);
             }

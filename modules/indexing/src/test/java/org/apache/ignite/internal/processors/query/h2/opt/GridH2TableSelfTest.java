@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
 import org.h2.index.Index;
@@ -45,7 +46,6 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 /**
  * Tests H2 Table.
@@ -95,9 +95,9 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
                 IndexColumn str = tbl.indexColumn(2, SortOrder.DESCENDING);
                 IndexColumn x = tbl.indexColumn(3, SortOrder.DESCENDING);
 
-                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, 0, 1, id));
-                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, 0, 1, x, t));
-                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, 0, 1, str));
+                idxs.add(new GridH2TreeIndex(PK_NAME, tbl, true, F.asList(id)));
+                idxs.add(new GridH2TreeIndex(NON_UNIQUE_IDX_NAME, tbl, false, F.asList(x, t, id)));
+                idxs.add(new GridH2TreeIndex(STR_IDX_NAME, tbl, false, F.asList(str, id)));
 
                 return idxs;
             }
@@ -120,7 +120,8 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
      * @return New row.
      */
     private GridH2Row row(UUID id, long t, String str, long x) {
-        return new GridH2Row(ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
+        return GridH2RowFactory.create(
+            ValueUuid.get(id.getMostSignificantBits(), id.getLeastSignificantBits()),
             ValueTimestamp.get(new Timestamp(t)),
             ValueString.get(str),
             ValueLong.get(x));
@@ -269,18 +270,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(cnt, i);
-    }
-
-    /**
-     * Dumps all table rows for index.
-     *
-     * @param idx Index.
-     */
-    private void dumpRows(GridH2TreeIndex idx) {
-        Iterator<GridH2Row> iter = idx.rows();
-
-        while (iter.hasNext())
-            System.out.println(iter.next().toString());
     }
 
     /**
@@ -507,47 +496,6 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         assertTrue(rs.next());
 
         assertEquals(ids.length - deleted.get(), rs.getInt(1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRebuildIndexes() throws Exception {
-        ArrayList<GridH2IndexBase> idxsBefore = tbl.indexes();
-
-        assertEquals(3, idxsBefore.size());
-
-        Random rnd = new Random();
-
-        for (int i = 0; i < MAX_X; i++) {
-            UUID id = UUID.randomUUID();
-
-            GridH2Row row = row(id, System.currentTimeMillis(), rnd.nextBoolean() ? id.toString() :
-                    UUID.randomUUID().toString(), rnd.nextInt(100));
-
-            tbl.doUpdate(row, false);
-        }
-
-        for (GridH2IndexBase idx : idxsBefore)
-            assertEquals(MAX_X, idx.getRowCountApproximation());
-
-        tbl.rebuildIndexes();
-
-        ArrayList<GridH2IndexBase> idxsAfter = tbl.indexes();
-
-        assertEquals(3, idxsAfter.size());
-
-        for (int i = 0; i < 3; i++) {
-            GridH2IndexBase idxBefore = idxsBefore.get(i);
-            GridH2IndexBase idxAfter = idxsAfter.get(i);
-
-            assertNotSame(idxBefore, idxAfter);
-            assertEquals(idxBefore.getName(), idxAfter.getName());
-            assertSame(idxBefore.getTable(), idxAfter.getTable());
-            assertEquals(idxBefore.getRowCountApproximation(), idxAfter.getRowCountApproximation());
-            assertEquals(idxBefore.getIndexType().isUnique(), idxAfter.getIndexType().isUnique());
-            Assert.assertArrayEquals(idxBefore.getColumns(), idxAfter.getColumns());
-        }
     }
 
     /**

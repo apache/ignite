@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
@@ -33,7 +34,7 @@ import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 /**
  * Data collector task result.
  */
-public class VisorNodeDataCollectorTaskResult implements Serializable {
+public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +42,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private final Map<UUID, VisorExceptionWrapper> unhandledEx = new HashMap<>();
 
     /** Nodes grid names. */
-    private final Map<UUID, String> gridNames = new HashMap<>();
+    private final Map<UUID, String> igniteInstanceNames = new HashMap<>();
 
     /** Nodes topology versions. */
     private final Map<UUID, Long> topVersions = new HashMap<>();
@@ -78,7 +79,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
      */
     public boolean isEmpty() {
         return
-            gridNames.isEmpty() &&
+            igniteInstanceNames.isEmpty() &&
             topVersions.isEmpty() &&
             unhandledEx.isEmpty() &&
             taskMonitoringEnabled.isEmpty() &&
@@ -99,10 +100,10 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     }
 
     /**
-     * @return Nodes grid names.
+     * @return Nodes Ignite instance names.
      */
-    public Map<UUID, String> gridNames() {
-        return gridNames;
+    public Map<UUID, String> igniteInstanceNames() {
+        return igniteInstanceNames;
     }
 
     /**

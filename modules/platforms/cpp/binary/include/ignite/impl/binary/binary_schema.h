@@ -22,17 +22,19 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
-#include <ignite/impl/interop/interop_output_stream.h>
 
 namespace ignite
 {
     namespace impl
     {
+        namespace interop
+        {
+            /* Forward declaration */
+            class InteropOutputStream;
+        }
+
         namespace binary
         {
-            /** Binary writer implementation forward declaration. */
-            class BinaryWriterImpl;
-
             /**
              * Schema size variants.
              */
@@ -67,7 +69,7 @@ namespace ignite
                 /**
                  * Add another field to schema.
                  *
-                 * @param id Field id.
+                 * @param fieldId Field id.
                  * @param offset Field offset.
                  */
                 void AddField(int32_t fieldId, int32_t offset);

@@ -56,11 +56,12 @@ namespace Apache.Ignite.Core.Events
         /// Initializes a new instance of the <see cref="EventBase"/> class.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected EventBase(IBinaryRawReader r)
         {
-            var id = IgniteGuid.Read(r);
-            Debug.Assert(id.HasValue);
-            _id = id.Value;
+            Debug.Assert(r != null);
+
+            _id = r.ReadObject<IgniteGuid>();
 
             _localOrder = r.ReadLong();
 
@@ -195,7 +196,7 @@ namespace Apache.Ignite.Core.Events
         public override string ToString()
         {
             return string.Format(CultureInfo.InvariantCulture, 
-                "CacheEntry [Name={0}, Type={1}, Timestamp={2}, Message={3}]", Name, Type, Timestamp, Message);
+                "{0} [Name={1}, Type={2}, Timestamp={3}, Message={4}]", GetType().Name, Name, Type, Timestamp, Message);
         }
 
         /// <summary>

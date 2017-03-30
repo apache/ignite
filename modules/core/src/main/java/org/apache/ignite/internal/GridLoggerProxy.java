@@ -33,6 +33,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_INSTANCE_NAME;
 
 /**
  *
@@ -52,7 +53,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private IgniteLogger impl;
 
     /** */
-    private String gridName;
+    private String igniteInstanceName;
 
     /** */
     private String id8;
@@ -61,8 +62,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     @GridToStringExclude
     private Object ctgr;
 
-    /** Whether or not to log grid name. */
-    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
+    /** Whether or not to log Ignite instance name. */
+    private static final boolean logIgniteInstanceName = System.getProperty(IGNITE_LOG_INSTANCE_NAME) != null ||
+        System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /**
      * No-arg constructor is required by externalization.
@@ -75,16 +77,16 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      *
      * @param impl Logger implementation to proxy to.
      * @param ctgr Optional logger category.
-     * @param gridName Grid name (can be {@code null} for default grid).
+     * @param igniteInstanceName Ignite instance name (can be {@code null} for default grid).
      * @param id8 Node ID.
      */
     @SuppressWarnings({"IfMayBeConditional", "SimplifiableIfStatement"})
-    public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String gridName, String id8) {
+    public GridLoggerProxy(IgniteLogger impl, @Nullable Object ctgr, @Nullable String igniteInstanceName, String id8) {
         assert impl != null;
 
         this.impl = impl;
         this.ctgr = ctgr;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.id8 = id8;
     }
 
@@ -103,7 +105,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     @Override public IgniteLogger getLogger(Object ctgr) {
         assert ctgr != null;
 
-        return new GridLoggerProxy(impl.getLogger(ctgr), ctgr, gridName, id8);
+        return new GridLoggerProxy(impl.getLogger(ctgr), ctgr, igniteInstanceName, id8);
     }
 
     /** {@inheritDoc} */
@@ -167,19 +169,20 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
-     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
-     * system property is set.
+     * Enriches the log message with Ignite instance name if
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_INSTANCE_NAME} or
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME} system property is set.
      *
      * @param m Message to enrich.
      * @return Enriched message or the original one.
      */
     private String enrich(@Nullable String m) {
-        return logGridName && m != null ? "<" + gridName + '-' + id8 + "> " + m : m;
+        return logIgniteInstanceName && m != null ? "<" + igniteInstanceName + '-' + id8 + "> " + m : m;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
         out.writeObject(ctgr);
     }
 
@@ -202,10 +205,9 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
         try {
             IgniteBiTuple<String, Object> t = stash.get();
 
-            String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            IgniteLogger log = IgnitionEx.gridx(gridNameR).log();
+            IgniteLogger log = IgnitionEx.localIgnite().log();
 
             return ctgrR != null ? log.getLogger(ctgrR) : log;
         }

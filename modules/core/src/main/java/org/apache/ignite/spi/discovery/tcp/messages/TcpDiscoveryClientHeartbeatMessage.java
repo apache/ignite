@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Heartbeat message.
  * <p>
- * Client sends his hearbeats in this message.
+ * Client sends his heartbeats in this message.
  */
 public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     /** */
@@ -57,6 +57,11 @@ public class TcpDiscoveryClientHeartbeatMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public boolean highPriority() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean traceLogLevel() {
         return true;
     }
 

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -29,7 +32,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -58,15 +60,16 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
-     * Runs two step query.
+     * Parses SQL query into two step query and executes it.
      *
      * @param cctx Cache context.
      * @param qry Query.
-     * @param keepCacheObjects If {@code true}, cache objects representation will be preserved.
+     * @param cancel Query cancel.
      * @return Cursor.
+     * @throws IgniteCheckedException If failed.
      */
-    public Iterable<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry,
-        boolean keepCacheObjects);
+    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry, GridQueryCancel cancel)
+        throws IgniteCheckedException;
 
     /**
      * Parses SQL query into two step query and executes it.
@@ -74,44 +77,47 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
+     * @throws IgniteCheckedException If failed.
      */
-    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, SqlFieldsQuery qry);
-
-    /**
-     * Parses SQL query into two step query and executes it.
-     *
-     * @param cctx Cache context.
-     * @param qry Query.
-     * @return Cursor.
-     */
-    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry);
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(GridCacheContext<?,?> cctx, SqlQuery qry)
+        throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
      *
-     * @param spaceName Space name.
+     * @param cctx Cache context.
      * @param qry Query.
-     * @param params Query parameters.
-     * @param filters Space name and key filters.
-     * @return Query result.
-     * @throws IgniteCheckedException If failed.
+     * @param filter Space name and key filter.
+     * @param cancel Query cancel.
+     * @return Cursor.
      */
-    public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
+    public <K, V> QueryCursor<List<?>> queryLocalSqlFields(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry,
+        IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
-     * Executes regular query.
+     * Perform a MERGE statement using data streamer as receiver.
      *
      * @param spaceName Space name.
      * @param qry Query.
      * @param params Query parameters.
-     * @param type Query return type.
-     * @param filters Space name and key filters.
-     * @return Queried rows.
+     * @param streamer Data streamer to feed data to.
+     * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
+    public long streamUpdateQuery(@Nullable final String spaceName, final String qry,
+         @Nullable final Object[] params, IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+
+    /**
+     * Executes regular query.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param filter Space name and key filter.
+     * @param keepBinary Keep binary flag.
+     * @return Cursor.
+     */
+    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(GridCacheContext<?, ?> cctx, SqlQuery qry,
+        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -119,40 +125,31 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param qry Text query.
      * @param type Query return type.
-     * @param filters Space name and key filter.
+     * @param filter Space name and key filter.
      * @return Queried rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
-
-    /**
-     * Gets size of index for given type or -1 if it is a unknown type.
-     *
-     * @param spaceName Space name.
-     * @param desc Type descriptor.
-     * @param filters Filters.
-     * @return Objects number.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, IndexingQueryFilter filters)
-        throws IgniteCheckedException;
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(@Nullable String spaceName, String qry,
+        GridQueryTypeDescriptor type, IndexingQueryFilter filter) throws IgniteCheckedException;
 
     /**
      * Registers cache.
      *
+     * @param spaceName Space name.
+     * @param cctx Cache context.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException;
+    public void registerCache(String spaceName, GridCacheContext<?,?> cctx, CacheConfiguration<?,?> ccfg)
+        throws IgniteCheckedException;
 
     /**
-     * Deregisters cache.
+     * Unregisters cache.
      *
-     * @param ccfg Cache configuration.
+     * @param spaceName Space name.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
+    public void unregisterCache(String spaceName) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -218,22 +215,13 @@ public interface GridQueryIndexing {
     public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type.
-     *
-     * @param spaceName Space name.
-     * @param type Type descriptor.
-     */
-    public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
-
-    /**
      * Returns backup filter.
      *
-     * @param caches List of caches.
      * @param topVer Topology version.
      * @param parts Partitions.
      * @return Backup filter.
      */
-    public IndexingQueryFilter backupFilter(List<String> caches, AffinityTopologyVersion topVer, int[] parts);
+    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts);
 
     /**
      * Client disconnected callback.
@@ -241,4 +229,54 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * Prepare native statement to retrieve JDBC metadata from.
+     *
+     * @param schema Schema.
+     * @param sql Query.
+     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     */
+    public PreparedStatement prepareNativeStatement(String schema, String sql) throws SQLException;
+
+    /**
+     * Gets space name from database schema.
+     *
+     * @param schemaName Schema name. Could not be null. Could be empty.
+     * @return Space name. Could be null.
+     */
+    public String space(String schemaName);
+
+    /**
+     * Collect queries that already running more than specified duration.
+     *
+     * @param duration Duration to check.
+     * @return Collection of long running queries.
+     */
+    public Collection<GridRunningQueryInfo> runningQueries(long duration);
+
+    /**
+     * Cancel specified queries.
+     *
+     * @param queries Queries ID's to cancel.
+     */
+    public void cancelQueries(Collection<Long> queries);
+
+    /**
+     * Cancels all executing queries.
+     */
+    public void cancelAllQueries();
+
+    /**
+     * @param spaceName Space name.
+     * @param nativeStmt Native statement.
+     * @param autoFlushFreq Automatic data flushing frequency, disabled if {@code 0}.
+     * @param nodeBufSize Per node buffer size - see {@link IgniteDataStreamer#perNodeBufferSize(int)}
+     * @param nodeParOps Per node parallel ops count - see {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     * @param allowOverwrite Overwrite existing cache values on key duplication.
+     * @return {@link IgniteDataStreamer} tailored to specific needs of given native statement based on its metadata;
+     * {@code null} if given statement is a query.
+     */
+    public IgniteDataStreamer<?,?> createStreamer(String spaceName, PreparedStatement nativeStmt, long autoFlushFreq,
+        int nodeBufSize, int nodeParOps, boolean allowOverwrite);
 }

@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.ExamplesDll.Compute;
-using Apache.Ignite.ExamplesDll.Binary;
-
 namespace Apache.Ignite.Examples.Compute
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Compute;
+
     /// <summary>
     /// Example demonstrating task execution.
     /// <para />
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Examples.Compute
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class TaskExample
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Examples.Compute
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Task execution example started.");
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Examples.Compute
         /// <returns>Collection of employees.</returns>
         private static ICollection<Employee> Employees()
         {
-            return new []
+            return new[]
             {
                 new Employee(
                     "James Wilson",

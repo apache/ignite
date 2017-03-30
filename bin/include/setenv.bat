@@ -43,17 +43,7 @@ set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
 for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
-
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
-
-if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
-
-set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
-
-if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
-
-set IGNITE_LIBS=%IGNITE_LIBS%;%IGNITE_HADOOP_CLASSPATH%
 
 goto :eof
 

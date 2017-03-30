@@ -214,6 +214,17 @@ namespace Apache.Ignite.Core.Tests.Process
         }
 
         /// <summary>
+        /// Gets the process.
+        /// </summary>
+        public string GetInfo()
+        {
+            return Alive
+                ? string.Format("Id={0}, Alive={1}", _proc.Id, Alive)
+                : string.Format("Id={0}, Alive={1}, ExitCode={2}, ExitTime={3}",
+                    _proc.Id, Alive, _proc.ExitCode, _proc.ExitTime);
+        }
+
+        /// <summary>
         /// Kill process.
         /// </summary>
         public void Kill()
@@ -246,16 +257,6 @@ namespace Apache.Ignite.Core.Tests.Process
             _proc.WaitForExit();
 
             return _proc.ExitCode;
-        }
-
-        /// <summary>
-        /// Join process with timeout.
-        /// </summary>
-        /// <param name="timeout">Timeout in milliseconds.</param>
-        /// <returns><c>True</c> if process exit occurred before timeout.</returns>
-        public bool Join(int timeout)
-        {
-            return _proc.WaitForExit(timeout);
         }
 
         /// <summary>

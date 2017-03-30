@@ -19,13 +19,15 @@
 
 #include <sstream>
 
+#include <ignite/common/fixed_size_array.h>
+
+#include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
 
-// TODO: implement appropriate protocol with de-/serialisation.
 namespace
 {
 #pragma pack(push, 1)
@@ -40,9 +42,11 @@ namespace ignite
 {
     namespace odbc
     {
-        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.6.0";
-
-        Connection::Connection() : socket(), connected(false), cache(), parser()
+        Connection::Connection() :
+            socket(),
+            connected(false),
+            parser(),
+            config()
         {
             // No-op.
         }
@@ -51,17 +55,24 @@ namespace ignite
         {
             // No-op.
         }
-        
+
         const config::ConnectionInfo& Connection::GetInfo() const
         {
-            // Connection info is the same for all connections now.
-            static config::ConnectionInfo info;
+            // Connection info is constant and the same for all connections now.
+            const static config::ConnectionInfo info;
 
             return info;
         }
 
         void Connection::GetInfo(config::ConnectionInfo::InfoType type, void* buf, short buflen, short* reslen)
         {
+            LOG_MSG("SQLGetInfo called: "
+                << type << " ("
+                << config::ConnectionInfo::InfoTypeToString(type) << "), "
+                << std::hex << reinterpret_cast<size_t>(buf) << ", "
+                << buflen << ", "
+                << std::hex << reinterpret_cast<size_t>(reslen));
+
             IGNITE_ODBC_API_CALL(InternalGetInfo(type, buf, buflen, reslen));
         }
 
@@ -77,32 +88,38 @@ namespace ignite
             return res;
         }
 
-        void Connection::Establish(const std::string& server)
+        void Connection::Establish(const std::string& connectStr)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(server));
+            IGNITE_ODBC_API_CALL(InternalEstablish(connectStr));
         }
 
-        SqlResult Connection::InternalEstablish(const std::string& server)
+        SqlResult Connection::InternalEstablish(const std::string& connectStr)
         {
             config::Configuration config;
 
-            if (server != config.GetDsn())
+            try
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown server.");
+                config.FillFromConnectString(connectStr);
+            }
+            catch (IgniteError& e)
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, e.GetText());
 
                 return SQL_RESULT_ERROR;
             }
 
-            return InternalEstablish(config.GetHost(), config.GetPort(), config.GetCache());
+            return InternalEstablish(config);
         }
 
-        void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)
+        void Connection::Establish(const config::Configuration cfg)
         {
-            IGNITE_ODBC_API_CALL(InternalEstablish(host, port, cache));
+            IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
-        SqlResult Connection::InternalEstablish(const std::string & host, uint16_t port, const std::string & cache)
+        SqlResult Connection::InternalEstablish(const config::Configuration cfg)
         {
+            config = cfg;
+
             if (connected)
             {
                 AddStatusRecord(SQL_STATE_08002_ALREADY_CONNECTED, "Already connected.");
@@ -110,9 +127,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            this->cache = cache;
-
-            connected = socket.Connect(host.c_str(), port);
+            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort());
 
             if (!connected)
             {
@@ -173,30 +188,33 @@ namespace ignite
             if (!connected)
                 IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-            OdbcProtocolHeader hdr;
+            int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
 
-            hdr.len = static_cast<int32_t>(len);
+            common::FixedSizeArray<int8_t> msg(newLen);
 
-            size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            OdbcProtocolHeader *hdr = reinterpret_cast<OdbcProtocolHeader*>(msg.GetData());
 
-            if (sent != sizeof(hdr))
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message header");
+            hdr->len = static_cast<int32_t>(len);
 
-            sent = SendAll(data, len);
+            memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
 
-            if (sent != len)
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message body");
+            size_t sent = SendAll(msg.GetData(), msg.GetSize());
+
+            if (sent != len + sizeof(OdbcProtocolHeader))
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message");
+
+            LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
         }
 
         size_t Connection::SendAll(const int8_t* data, size_t len)
         {
             int sent = 0;
 
-            while (sent != len)
+            while (sent != static_cast<int64_t>(len))
             {
                 int res = socket.Send(data + sent, len - sent);
 
-                LOG_MSG("Sent: %d\n", res);
+                LOG_MSG("Sent: " << res);
 
                 if (res <= 0)
                     return sent;
@@ -249,8 +267,7 @@ namespace ignite
                 size_t received = len - remain;
 
                 int res = socket.Receive(buffer + received, remain);
-                LOG_MSG("Receive res: %d\n", res);
-                LOG_MSG("remain: %d\n", remain);
+                LOG_MSG("Receive res: " << res << " remain: " << remain);
 
                 if (res <= 0)
                     return received;
@@ -263,11 +280,16 @@ namespace ignite
 
         const std::string& Connection::GetCache() const
         {
-            return cache;
+            return config.GetCache();
+        }
+
+        const config::Configuration& Connection::GetConfiguration() const
+        {
+            return config;
         }
 
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState sqlState,
-            const std::string& message, int32_t rowNum, int32_t columnNum) const
+            const std::string& message, int32_t rowNum, int32_t columnNum)
         {
             return diagnostic::DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
         }
@@ -297,7 +319,24 @@ namespace ignite
 
         SqlResult Connection::MakeRequestHandshake()
         {
-            HandshakeRequest req(PROTOCOL_VERSION);
+            bool distributedJoins = false;
+            bool enforceJoinOrder = false;
+            int64_t protocolVersion = 0;
+
+            try
+            {
+                distributedJoins = config.IsDistributedJoins();
+                enforceJoinOrder = config.IsEnforceJoinOrder();
+                protocolVersion = config.GetProtocolVersion().GetIntValue();
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder);
             HandshakeResponse rsp;
 
             try
@@ -313,7 +352,7 @@ namespace ignite
 
             if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
             {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                LOG_MSG("Error: " << rsp.GetError().c_str());
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
 
@@ -324,14 +363,14 @@ namespace ignite
 
             if (!rsp.IsAccepted())
             {
-                LOG_MSG("Hanshake message has been rejected.\n");
+                LOG_MSG("Hanshake message has been rejected.");
 
                 std::stringstream constructor;
 
                 constructor << "Node rejected handshake message. "
                     << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
                     << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
-                    << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
+                    << "driver protocol version introduced in version: " << config.GetProtocolVersion().ToString() << ".";
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
 

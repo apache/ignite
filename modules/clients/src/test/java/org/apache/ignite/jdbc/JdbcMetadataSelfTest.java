@@ -55,8 +55,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -285,6 +285,24 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             assert names.isEmpty();
             assert cnt == 4;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataResultSetClose() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet tbls = conn.getMetaData().getTables(null, null, "%", null)) {
+            int colCnt = tbls.getMetaData().getColumnCount();
+
+            while (tbls.next()) {
+                for (int i = 0; i < colCnt; i++)
+                    tbls.getObject(i + 1);
+            }
+        }
+        catch (Exception ignored) {
+            fail();
         }
     }
 

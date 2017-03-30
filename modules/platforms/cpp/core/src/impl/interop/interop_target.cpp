@@ -42,7 +42,7 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError* err)
+            int64_t InteropTarget::WriteTo(InteropMemory* mem, InputOperation& inOp, IgniteError& err)
             {
                 BinaryTypeManager* metaMgr = env.Get()->GetTypeManager();
 
@@ -57,9 +57,7 @@ namespace ignite
 
                 if (metaMgr->IsUpdatedSince(metaVer))
                 {
-                    BinaryTypeUpdaterImpl metaUpdater(env, javaRef);
-
-                    if (!metaMgr->ProcessPendingUpdates(&metaUpdater, err))
+                    if (!metaMgr->ProcessPendingUpdates(err))
                         return 0;
                 }
 
@@ -69,13 +67,25 @@ namespace ignite
             void InteropTarget::ReadFrom(InteropMemory* mem, OutputOperation& outOp)
             {
                 InteropInputStream in(mem);
-
                 BinaryReaderImpl reader(&in);
 
                 outOp.ProcessOutput(reader);
             }
 
-            bool InteropTarget::OutOp(int32_t opType, InputOperation& inOp, IgniteError* err)
+            void InteropTarget::ReadError(InteropMemory* mem, IgniteError& err)
+            {
+                InteropInputStream in(mem);
+                BinaryReaderImpl reader(&in);
+
+                // Reading and skipping error class name.
+                reader.ReadObject<std::string>();
+
+                std::string msg = reader.ReadObject<std::string>();
+
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+            }
+
+            bool InteropTarget::OutOp(int32_t opType, InputOperation& inOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -96,7 +106,21 @@ namespace ignite
                 return false;
             }
 
-            bool InteropTarget::InOp(int32_t opType, OutputOperation& outOp, IgniteError* err)
+            bool InteropTarget::OutOp(int32_t opType, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                long long res = env.Get()->Context()->TargetInLongOutLong(javaRef, opType, 0, &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                    return res == 1;
+
+                return false;
+            }
+
+            bool InteropTarget::InOp(int32_t opType, OutputOperation& outOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -116,8 +140,18 @@ namespace ignite
                 return false;
             }
 
-            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp,
-                IgniteError* err)
+            jobject InteropTarget::InOpObject(int32_t opType, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                jobject res = env.Get()->Context()->TargetOutObject(javaRef, opType, &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                return res;
+            }
+
+            void InteropTarget::OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
             {
                 JniErrorInfo jniErr;
 
@@ -136,6 +170,61 @@ namespace ignite
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         ReadFrom(inMem.Get(), outOp);
                 }
+            }
+
+            void InteropTarget::OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> outInMem = env.Get()->AllocateMemory();
+
+                int64_t outInPtr = WriteTo(outInMem.Get(), inOp, err);
+
+                if (outInPtr)
+                {
+                    int64_t res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outInPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    if (jniErr.code == IGNITE_JNI_ERR_SUCCESS && res == ResultSuccess)
+                        ReadFrom(outInMem.Get(), outOp);
+                    else if (res == ResultNull)
+                        outOp.SetNull();
+                    else if (res == ResultError)
+                        ReadError(outInMem.Get(), err);
+                    else
+                        assert(false);
+                }
+            }
+
+            InteropTarget::OperationResult InteropTarget::InStreamOutLong(int32_t opType,
+                InteropMemory& outInMem, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int64_t outInPtr = outInMem.PointerLong();
+
+                if (outInPtr)
+                {
+                    int64_t res = env.Get()->Context()->TargetInStreamOutLong(javaRef, opType, outInPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    return static_cast<OperationResult>(res);
+                }
+
+                return ResultError;
+            }
+
+            int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                long long res = env.Get()->Context()->TargetInLongOutLong(javaRef, opType, val, &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                return res;
             }
         }
     }

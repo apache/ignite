@@ -72,7 +72,10 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
                         guard.begin();
 
                         try {
-                            GridOffHeapSmartPointer res = put ? m.put(fx, fx) : m.remove(fx);
+                            if (put)
+                                m.put(fx, fx);
+                            else
+                                m.remove(fx);
                         }
                         finally {
                             lock.readLock().unlock();
@@ -313,7 +316,7 @@ public class GridOffheapSnapTreeSelfTest extends GridCommonAbstractTest {
         }
 
         @Override public int hashCode() {
-            return ptr;
+            throw new IllegalStateException();
         }
 
         @Override public String toString() {

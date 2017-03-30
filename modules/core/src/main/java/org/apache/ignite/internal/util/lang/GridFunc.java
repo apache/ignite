@@ -2313,6 +2313,26 @@ public class GridFunc {
     }
 
     /**
+     * Converts collection of numbers to primitive {@code int[]} array.
+     *
+     * @param col Collection of numbers.
+     * @return Array of integers.
+     */
+    public static int[] toIntArray(Collection<? extends Number> col) {
+        if (col == null)
+            return null;
+
+        int[] res = new int[col.size()];
+
+        Iterator<? extends Number> iter = col.iterator();
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = iter.next().intValue();
+
+        return res;
+    }
+
+    /**
      * Utility map getter. This method analogous to {@link #addIfAbsent(Map, Object, Callable)}
      * method but this one doesn't put the default value into the map when key is not found.
      *

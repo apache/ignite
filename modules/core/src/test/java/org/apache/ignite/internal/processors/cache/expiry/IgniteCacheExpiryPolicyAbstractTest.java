@@ -36,12 +36,14 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -102,8 +105,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         if (nearCache)
             cfg.setNearConfiguration(new NearCacheConfiguration());
@@ -230,7 +233,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             zeroOnAccess(key);
         }
 
-        IgniteCache<Integer, Object> cache = jcache(0);
+        final IgniteCache<Integer, Object> cache = jcache(0);
 
         Integer key = primaryKey(cache);
 
@@ -240,11 +243,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         cache.get(key); // Access using get.
 
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache.iterator().hasNext();
+            }
+        }, 1000);
+
         assertFalse(cache.iterator().hasNext());
 
         cache0.put(key, 1);
 
         assertNotNull(cache.iterator().next()); // Access using iterator.
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache.iterator().hasNext();
+            }
+        }, 1000);
 
         assertFalse(cache.iterator().hasNext());
     }
@@ -1003,6 +1018,45 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * Put entry to server node and check how its expires in client NearCache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNearExpiresOnClient() throws Exception {
+        if(cacheMode() != PARTITIONED)
+            return;
+
+        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+
+        nearCache = true;
+
+        startGrids();
+
+        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+
+        ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
+
+        Ignite client = startGrid("client", clientCfg);
+
+        IgniteCache<Object, Object> cache = client.cache(null);
+
+        Integer key = 1;
+
+        // Put on server node.
+        jcache(0).put(key, 1);
+
+        // Make entry cached in client NearCache.
+        assertEquals(1, cache.get(key));
+
+        assertEquals(1, cache.localPeek(key, CachePeekMode.NEAR));
+
+        waitExpired(key);
+
+        // Check client NearCache.
+        assertNull(cache.localPeek(key, CachePeekMode.NEAR));
+    }
+
+    /**
      * @return Test keys.
      * @throws Exception If failed.
      */
@@ -1124,7 +1178,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     if (e != null && e.deleted()) {
                         assertEquals(0, e.ttl());
 
-                        assertFalse(cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                        assertFalse("Invalid entry [e=" + e + ", node=" + i + ']',
+                            cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
 
                         continue;
                     }
@@ -1177,7 +1232,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
-                GridCacheEntryEx entry = null;
+                GridCacheEntryEx entry;
 
                 while (true) {
                     try {

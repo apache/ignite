@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -83,7 +84,7 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
     /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
+    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
@@ -91,14 +92,11 @@ public class FileSystemConfiguration {
     /** Default value of relaxed consistency flag. */
     public static final boolean DFLT_RELAXED_CONSISTENCY = true;
 
+    /** Default value of update file length on flush flag. */
+    public static final boolean DFLT_UPDATE_FILE_LEN_ON_FLUSH = false;
+
     /** IGFS instance name. */
     private String name;
-
-    /** Cache name to store IGFS meta information. */
-    private String metaCacheName;
-
-    /** Cache name to store file's data blocks. */
-    private String dataCacheName;
 
     /** File's data block size (bytes). */
     private int blockSize = DFLT_BLOCK_SIZE;
@@ -178,6 +176,15 @@ public class FileSystemConfiguration {
     /** Relaxed consistency flag. */
     private boolean relaxedConsistency = DFLT_RELAXED_CONSISTENCY;
 
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
+
+    /** Meta cache config. */
+    private CacheConfiguration metaCacheCfg;
+
+    /** Data cache config. */
+    private CacheConfiguration dataCacheCfg;
+
     /**
      * Constructs default configuration.
      */
@@ -199,7 +206,7 @@ public class FileSystemConfiguration {
         blockSize = cfg.getBlockSize();
         bufSize = cfg.getStreamBufferSize();
         colocateMeta = cfg.isColocateMetadata();
-        dataCacheName = cfg.getDataCacheName();
+        dataCacheCfg = cfg.getDataCacheConfiguration();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
         dualModePutExec = cfg.getDualModePutExecutorService();
@@ -215,7 +222,7 @@ public class FileSystemConfiguration {
         ipcEndpointEnabled = cfg.isIpcEndpointEnabled();
         maxSpace = cfg.getMaxSpaceSize();
         maxTaskRangeLen = cfg.getMaximumTaskRangeLength();
-        metaCacheName = cfg.getMetaCacheName();
+        metaCacheCfg = cfg.getMetaCacheConfiguration();
         mgmtPort = cfg.getManagementPort();
         name = cfg.getName();
         pathModes = cfg.getPathModes();
@@ -225,6 +232,7 @@ public class FileSystemConfiguration {
         relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
+        updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -247,40 +255,55 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Cache name to store IGFS meta information. If {@code null}, then instance
-     * with default meta-cache name will be used.
+     * Cache config to store IGFS meta information.
      *
-     * @return Cache name to store IGFS meta information.
+     * @return Cache configuration object.
      */
-    @Nullable public String getMetaCacheName() {
-        return metaCacheName;
+    @Nullable public CacheConfiguration getMetaCacheConfiguration() {
+        return metaCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS meta information.
+     * Cache config to store IGFS meta information. If {@code null}, then default config for
+     * meta-cache will be used.
      *
-     * @param metaCacheName Cache name to store IGFS meta information.
+     * Default configuration for the meta cache is:
+     * <ul>
+     *     <li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 1</li>
+     * </ul>
+     *
+     * @param metaCacheCfg Cache configuration object.
      */
-    public void setMetaCacheName(String metaCacheName) {
-        this.metaCacheName = metaCacheName;
+    public void setMetaCacheConfiguration(CacheConfiguration metaCacheCfg) {
+        this.metaCacheCfg = metaCacheCfg;
     }
 
     /**
-     * Cache name to store IGFS data.
+     * Cache config to store IGFS data.
      *
-     * @return Cache name to store IGFS data.
+     * @return Cache configuration object.
      */
-    @Nullable public String getDataCacheName() {
-        return dataCacheName;
+    @Nullable public CacheConfiguration getDataCacheConfiguration() {
+        return dataCacheCfg;
     }
 
     /**
-     * Sets cache name to store IGFS data.
+     * Cache config to store IGFS data. If {@code null}, then default config for
+     * data cache will be used.
      *
-     * @param dataCacheName Cache name to store IGFS data.
+     * Default configuration for the data cache is:
+     * <ul>
+     *     <<li>atomicityMode = TRANSACTIONAL</li>
+     *     <li>cacheMode = PARTITIONED</li>
+     *     <li>backups = 0</li>
+     * </ul>
+     *
+     * @param dataCacheCfg Cache configuration object.
      */
-    public void setDataCacheName(String dataCacheName) {
-        this.dataCacheName = dataCacheName;
+    public void setDataCacheConfiguration(CacheConfiguration dataCacheCfg) {
+        this.dataCacheCfg = dataCacheCfg;
     }
 
     /**
@@ -696,7 +719,9 @@ public class FileSystemConfiguration {
      * Gets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
      * @return Maximum timeout awaiting for trash purging in case data cache oversize is detected.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getTrashPurgeTimeout() {
         return trashPurgeTimeout;
     }
@@ -705,7 +730,9 @@ public class FileSystemConfiguration {
      * Sets maximum timeout awaiting for trash purging in case data cache oversize is detected.
      *
      * @param trashPurgeTimeout Maximum timeout awaiting for trash purging in case data cache oversize is detected.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setTrashPurgeTimeout(long trashPurgeTimeout) {
         this.trashPurgeTimeout = trashPurgeTimeout;
     }
@@ -716,8 +743,10 @@ public class FileSystemConfiguration {
      * In case no executor service is provided, default one will be created with maximum amount of threads equals
      * to amount of processor cores.
      *
-     * @return Get DUAL mode put operation executor service
+     * @return Get DUAL mode put operation executor service.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     @Nullable public ExecutorService getDualModePutExecutorService() {
         return dualModePutExec;
     }
@@ -726,7 +755,9 @@ public class FileSystemConfiguration {
      * Set DUAL mode put operations executor service.
      *
      * @param dualModePutExec Dual mode put operations executor service.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModePutExecutorService(ExecutorService dualModePutExec) {
         this.dualModePutExec = dualModePutExec;
     }
@@ -735,7 +766,9 @@ public class FileSystemConfiguration {
      * Get DUAL mode put operation executor service shutdown flag.
      *
      * @return DUAL mode put operation executor service shutdown flag.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public boolean getDualModePutExecutorServiceShutdown() {
         return dualModePutExecShutdown;
     }
@@ -744,7 +777,9 @@ public class FileSystemConfiguration {
      * Set DUAL mode put operations executor service shutdown flag.
      *
      * @param dualModePutExecShutdown Dual mode put operations executor service shutdown flag.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModePutExecutorServiceShutdown(boolean dualModePutExecShutdown) {
         this.dualModePutExecShutdown = dualModePutExecShutdown;
     }
@@ -758,7 +793,9 @@ public class FileSystemConfiguration {
      * avoid issues with increasing GC pauses or out-of-memory error.
      *
      * @return Maximum amount of pending data read from the secondary file system
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public long getDualModeMaxPendingPutsSize() {
         return dualModeMaxPendingPutsSize;
     }
@@ -767,7 +804,9 @@ public class FileSystemConfiguration {
      * Set maximum amount of data in pending put operations.
      *
      * @param dualModeMaxPendingPutsSize Maximum amount of data in pending put operations.
+     * @deprecated Not used any more.
      */
+    @Deprecated
     public void setDualModeMaxPendingPutsSize(long dualModeMaxPendingPutsSize) {
         this.dualModeMaxPendingPutsSize = dualModeMaxPendingPutsSize;
     }
@@ -854,11 +893,11 @@ public class FileSystemConfiguration {
      * transaction with keys owned only by a single node.
      * <p>
      * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
-     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
-     * intearnal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
-     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
-     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
-     * metadata and hence could improve performance.
+     * {@link #getMetaCacheConfiguration()} property. Metadata updates caused by operations on IGFS usually require
+     * several internal keys to be updated. As IGFS metadata cache usually operates
+     * in {@link CacheMode#REPLICATED} mode, meaning that all nodes have all metadata locally, it makes sense to give
+     * a hint to Ignite to co-locate ownership of all metadata keys on a single node.
+     * This will decrease amount of network trips required to update metadata and hence could improve performance.
      * <p>
      * This property should be disabled if you see excessive CPU and network load on a single node, which
      * degrades performance and cannot be explained by business logic of your application.
@@ -920,6 +959,32 @@ public class FileSystemConfiguration {
      */
     public void setRelaxedConsistency(boolean relaxedConsistency) {
         this.relaxedConsistency = relaxedConsistency;
+    }
+
+    /**
+     * Get whether to update file length on flush.
+     * <p>
+     * Controls whether to update file length or not when {@link IgfsOutputStream#flush()} method is invoked. You
+     * may want to set this property to true in case you want to read from a file which is being written at the
+     * same time.
+     * <p>
+     * Defaults to {@link #DFLT_UPDATE_FILE_LEN_ON_FLUSH}.
+     *
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
+    }
+
+    /**
+     * Set whether to update file length on flush.
+     * <p>
+     * Set {@link #isUpdateFileLengthOnFlush()} for more information.
+     *
+     * @param updateFileLenOnFlush Whether to update file length on flush.
+     */
+    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+        this.updateFileLenOnFlush = updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */

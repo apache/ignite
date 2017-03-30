@@ -41,7 +41,7 @@
     </bean>
 
     <bean name="atomic" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="atomic"/>
+        <property name="name" value="atomic-fat-values"/>
 
         <property name="cacheMode" value="PARTITIONED"/>
 
@@ -76,7 +76,7 @@
     </bean>
 
     <bean name="tx" class="org.apache.ignite.configuration.CacheConfiguration">
-        <property name="name" value="tx"/>
+        <property name="name" value="tx-fat-values"/>
 
         <property name="cacheMode" value="PARTITIONED"/>
 

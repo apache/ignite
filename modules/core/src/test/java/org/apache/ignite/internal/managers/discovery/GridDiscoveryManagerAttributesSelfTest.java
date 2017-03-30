@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -53,10 +54,10 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private static boolean binaryMarshallerEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
             cfg.setClientMode(true);
 
         if (binaryMarshallerEnabled)
@@ -159,7 +160,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 if (fail)
                     fail("Node should not join");
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 if (!fail)
                     fail("Node should join");
             }
@@ -214,9 +215,71 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 if (fail)
                     fail("Node should not join");
             }
-            catch (Exception e) {
+            catch (Exception ignored) {
                 if (!fail)
                     fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceCompatibilityEnabled() throws Exception {
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+        try {
+            doTestServiceCompatibilityEnabled(true, null, true);
+            doTestServiceCompatibilityEnabled(false, null, true);
+            doTestServiceCompatibilityEnabled(null, false, true);
+            doTestServiceCompatibilityEnabled(true, false, true);
+            doTestServiceCompatibilityEnabled(null, true, true);
+            doTestServiceCompatibilityEnabled(false, true, true);
+
+            doTestServiceCompatibilityEnabled(true, true, false);
+            doTestServiceCompatibilityEnabled(false, false, false);
+            doTestServiceCompatibilityEnabled(null, null, false);
+        }
+        finally {
+            if (backup != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        try {
+            if (first != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(first));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+            startGrid(0);
+
+            if (second != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(second));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node must not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node must join: " + e.getMessage());
             }
         }
         finally {
@@ -283,8 +346,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

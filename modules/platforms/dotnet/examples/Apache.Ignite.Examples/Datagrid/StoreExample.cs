@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections.Generic;
-using Apache.Ignite.Core;
-using Apache.Ignite.Core.Cache.Configuration;
-using Apache.Ignite.ExamplesDll.Binary;
-using Apache.Ignite.ExamplesDll.Datagrid;
-
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.ExamplesDll.Datagrid;
+
     /// <summary>
     /// Example demonstrating cache store.
     /// <para />
@@ -35,10 +35,10 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    class StoreExample
+    public class StoreExample
     {
         /// <summary>Cache name.</summary>
         private const string CacheName = "dotnet_cache_with_store";
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache store example started.");
@@ -59,6 +59,7 @@ namespace Apache.Ignite.Examples.Datagrid
                     Name = CacheName,
                     ReadThrough = true,
                     WriteThrough = true,
+                    KeepBinaryInStore = false,  // Cache store works with deserialized data.
                     CacheStoreFactory = new EmployeeStoreFactory()
                 });
 
@@ -75,7 +76,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Loaded entry from store through ICache.LoadCache().");
                 Console.WriteLine(">>> Current cache size: " + cache.GetSize());
-                
+
                 // Load entry from store calling ICache.Get() method.
                 Employee emp = cache.Get(2);
 
@@ -97,7 +98,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 // Clear values again.
                 cache.Clear();
-                
+
                 Console.WriteLine();
                 Console.WriteLine(">>> Cleared values from cache again.");
                 Console.WriteLine(">>> Current cache size: " + cache.GetSize());

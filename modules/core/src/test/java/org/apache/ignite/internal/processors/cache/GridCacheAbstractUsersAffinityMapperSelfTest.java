@@ -65,8 +65,8 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
@@ -121,7 +121,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         startGrid(1);
 
         for (int i = 0; i < KEY_CNT; i++)
-            grid(i % 2).compute().affinityRun(null, new TestAffinityKey(1, "1"), new NoopClosure());
+            grid(i % 2).compute().affinityRun((String)null, new TestAffinityKey(1, "1"), new NoopClosure());
     }
 
     /**

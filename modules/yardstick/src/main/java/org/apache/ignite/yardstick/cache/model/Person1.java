@@ -49,6 +49,6 @@ public class Person1 implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "IndexedValue1 [val1=" + val1 + ']';
+        return "Person1 [val1=" + val1 + ']';
     }
 }

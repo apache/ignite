@@ -1,0 +1,163 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin lblRequired(txt)
+    label.col-xs-3.col-md-3.required #{txt}
+
+header#header.header
+    table.container
+        tr
+            td.col-xs-3.col-sm-3.col-md-2
+                ignite-header-logo
+            td
+                ignite-header-title
+
+.container.body-container
+    .main-content(ng-controller='auth')
+        .row.home
+            .signin-greedy
+                .col-xs-12.col-md-6
+                    form(name='form' novalidate)
+                        .modal-body.row(style='padding: 0 0 10px 0; margin: 0')
+                            .settings-row(ng-if='action == "signup"')
+                                h3.login-header Sign Up
+                            .settings-row(ng-if='action == "signin"')
+                                h3.login-header Sign In
+                            .settings-row(ng-if='action == "password/forgot"')
+                                h3.login-header Forgot password?
+                            .settings-row
+                                p.col-xs-12.col-md-11(ng-show='action == "password/forgot"')
+                                    | That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
+                            .settings-row(ng-show='action == "signin"')
+                                +lblRequired('Email:')
+                                .col-xs-9.col-md-8
+                                    input#signin_email.form-control(ignite-on-enter-focus-move='user_password' type='email' ng-model='ui.email' placeholder='Input email' required)
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('Email:')
+                                .col-xs-9.col-md-8
+                                    input#signup_email.form-control(ignite-on-enter-focus-move='user_password' type='email' ng-model='ui.email' placeholder='Input email' required)
+                            .settings-row(ng-show='action != "password/forgot"')
+                                +lblRequired('Password:')
+                                .col-xs-9.col-md-8
+                                    input#user_password.form-control(ignite-on-enter-focus-move='user_confirm' type='password' ng-model='ui.password' placeholder='Password' ng-required='action != "password/forgot"' ignite-on-enter='action == "signin" && form.$valid && auth(action, ui)')
+                            .settings-row(ng-if='action == "signup"')
+                                +lblRequired('Confirm:')
+                                .col-xs-9.col-md-8
+                                    input#user_confirm.form-control(ignite-on-enter-focus-move='first_name' type='password' ng-model='ui_exclude.confirm' ignite-match='ui.password' placeholder='Confirm password' ng-required='action == "signup"')
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('First Name:')
+                                .col-xs-9.col-md-8
+                                    input#first_name.form-control(ignite-on-enter-focus-move='last_name' type='text' ng-model='ui.firstName' placeholder='Input first name' ng-required='action=="signup"')
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('Last Name:')
+                                .col-xs-9.col-md-8
+                                    input#last_name.form-control(ignite-on-enter-focus-move='company' type='text' ng-model='ui.lastName' placeholder='Input last name' ng-required='action=="signup"')
+                            .settings-row(ng-show='action == "password/forgot"')
+                                +lblRequired('Email:')
+                                .col-xs-9.col-md-8
+                                    input#forgot_email.form-control(ignite-on-enter='form.$valid && forgotPassword(ui)' type='email' ng-model='ui.email' placeholder='Input email' required)
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('Company:')
+                                .col-xs-9.col-md-8
+                                    input#company.form-control(ignite-on-enter-focus-move='country' type='text' ng-model='ui.company' placeholder='Input company name' ng-required='action=="signup"')
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('Country:')
+                                .col-xs-9.col-md-8
+                                    button#country.select-toggle.form-control(ignite-on-enter-focus-move='signup' bs-select bs-options='item.name as item.name for item in countries' type='text' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
+                            .settings-row(ignite-terms)
+                                .col-md-offset-3(ng-if='action == "signup" && terms.termsState')
+                                    label
+                                        input(type='checkbox' ng-model='ui_exclude.agree', ng-required='true')
+                                        | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "signup"')
+                                a.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
+                                a.labelLogin(ng-click='action = "signin"' ignite-on-click-focus='signin_email') Sign In
+                                button#signup.btn.btn-primary(ng-click='auth(action, ui)' ng-disabled='form.$invalid') Sign Up
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "password/forgot"')
+                                a.labelField(ng-click='action = "signin"' ignite-on-click-focus='signin_email') Sign In
+                                button#forgot.btn.btn-primary(ng-click='forgotPassword(ui)' ng-disabled='form.$invalid') Send it to me
+                        .col-xs-12.col-md-11
+                            .login-footer(ng-show='action == "signin"')
+                                a.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
+                                a.labelLogin(ng-click='action = "signup"' ignite-on-click-focus='first_name') Sign Up
+                                button#login.btn.btn-primary(ng-click='auth(action, ui)' ng-disabled='form.$invalid') Sign In
+
+                    .col-xs-12.col-md-11.home-panel
+                        ignite-features
+                .col-xs-12.col-md-6
+                    #carousel.carousel.slide
+                        // Indicators
+                        ol.carousel-indicators
+                            li.active(data-target='#carousel', data-slide-to='0')
+                            li(data-target='#carousel', data-slide-to='1')
+                            li(data-target='#carousel', data-slide-to='2')
+                            li(data-target='#carousel', data-slide-to='3')
+                            li(data-target='#carousel', data-slide-to='4')
+                            li(data-target='#carousel', data-slide-to='5')
+                            li(data-target='#carousel', data-slide-to='6')
+                        // Wrapper for slides
+                        .carousel-inner(role='listbox')
+                            .item.active
+                                img(src='/images/cluster.png', alt='Clusters screen')
+                                .carousel-caption
+                                    h3 Clusters screen
+                                    p Configure clusters, link clusters to caches
+                            .item
+                                img(src='/images/cache.png', alt='Caches screen')
+                                .carousel-caption
+                                    h3 Caches screen
+                                    p Configure caches, link domain models to caches, link caches to clusters
+                            .item
+                                img(src='/images/domains.png', alt='Domain model screen')
+                                .carousel-caption
+                                    h3 Domain model screen
+                                    p Manually enter domain model or import from database
+                            .item
+                                img(src='/images/summary.png', alt='Summary screen')
+                                .carousel-caption
+                                    h3 Summary screen
+                                    p Preview XML config, JAVA code,Docker file and download project
+                            .item
+                                img(src='/images/query-table.png', alt='Query')
+                                .carousel-caption
+                                    h3 Query
+                                    p Explain SQL, execute, scan queries
+                            .item
+                                img(src='/images/query-metadata.png', alt='Cache metadata')
+                                .carousel-caption
+                                    h3 Cache metadata
+                                    p View cache type metadata
+                            .item
+                                img(src='/images/query-chart.png', alt='Query chart')
+                                .carousel-caption
+                                    h3 Query chart
+                                    p View data in tabular form and as charts
+                        // Controls
+                        a.left.carousel-control(href='#carousel', ng-click='$event.preventDefault()', role='button', data-slide='prev')
+                            span.fa.fa-chevron-left(aria-hidden='true')
+                            span.sr-only Previous
+                        a.right.carousel-control(href='#carousel', ng-click='$event.preventDefault()', role='button', data-slide='next')
+                            span.fa.fa-chevron-right(aria-hidden='true')
+                            span.sr-only Next
+
+include includes/footer
+
+script.
+    $('.carousel').carousel()
+
+

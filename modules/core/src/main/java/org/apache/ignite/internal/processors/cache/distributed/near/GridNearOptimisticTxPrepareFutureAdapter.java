@@ -40,8 +40,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx,
-        GridNearTxLocal tx) {
+    public GridNearOptimisticTxPrepareFutureAdapter(GridCacheSharedContext cctx, GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() : tx;
@@ -63,6 +62,19 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         if (topVer != null) {
+            try {
+                IgniteCheckedException err = tx.txState().validateTopology(cctx, topologyReadLock());
+
+                if (err != null) {
+                    onDone(err);
+
+                    return;
+                }
+            }
+            finally {
+                topologyReadUnlock();
+            }
+
             tx.topologyVersion(topVer);
 
             cctx.mvcc().addFuture(this);
@@ -172,7 +184,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         @GridToStringInclude
-        private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
+        protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
         /** */
         private volatile boolean allKeysAdded;

@@ -60,16 +60,6 @@ namespace Apache.Ignite.Core.Binary
         IBinaryObjectBuilder RemoveField(string fieldName);
 
         /// <summary>
-        /// Set explicit hash code. If builder creating object from scratch,
-        /// then hash code initially set to 0. If builder is created from
-        /// exising binary object, then hash code of that object is used
-        /// as initial value.
-        /// </summary>
-        /// <param name="hashCode">Hash code.</param>
-        /// <returns>Current builder instance.</returns>
-        IBinaryObjectBuilder SetHashCode(int hashCode);
-
-        /// <summary>
         /// Build the object.
         /// </summary>
         /// <returns>Resulting binary object.</returns>

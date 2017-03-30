@@ -43,8 +43,8 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
@@ -82,6 +82,6 @@ public class IgniteCacheTtlCleanupSelfTest extends GridCacheAbstractSelfTest {
         CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
 
         for (int i = 0; i < 100; i++)
-            assertNull(cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(cacheObjCtx, i, true)));
+            assertNull(cacheAdapter.map().getEntry(cacheObjects.toCacheKeyObject(cacheObjCtx, null, i, true)));
     }
 }

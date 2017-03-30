@@ -52,7 +52,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.random.RandomEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyMBean;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -154,8 +154,8 @@ public class VisorTaskUtils {
      * @param name Grid-style nullable name.
      * @return Name with {@code null} replaced to &lt;default&gt;.
      */
-    public static String escapeName(@Nullable String name) {
-        return name == null ? DFLT_EMPTY_NAME : name;
+    public static String escapeName(@Nullable Object name) {
+        return name == null ? DFLT_EMPTY_NAME : name.toString();
     }
 
     /**
@@ -166,15 +166,6 @@ public class VisorTaskUtils {
         assert name != null;
 
         return DFLT_EMPTY_NAME.equals(name) ? null : name;
-    }
-
-    /**
-     * @param a First name.
-     * @param b Second name.
-     * @return {@code true} if both names equals.
-     */
-    public static boolean safeEquals(@Nullable String a, @Nullable String b) {
-        return (a != null && b != null) ? a.equals(b) : (a == null && b == null);
     }
 
     /**
@@ -275,6 +266,19 @@ public class VisorTaskUtils {
     /**
      * Compact class names.
      *
+     * @param cls Class object for compact.
+     * @return Compacted string.
+     */
+    @Nullable public static String compactClass(Class cls) {
+        if (cls == null)
+            return null;
+
+        return U.compact(cls.getName());
+    }
+
+    /**
+     * Compact class names.
+     *
      * @param obj Object for compact.
      * @return Compacted string.
      */
@@ -282,7 +286,7 @@ public class VisorTaskUtils {
         if (obj == null)
             return null;
 
-        return U.compact(obj.getClass().getName());
+        return compactClass(obj.getClass());
     }
 
     /**
@@ -389,17 +393,18 @@ public class VisorTaskUtils {
      * @param evtOrderKey Unique key to take last order key from node local map.
      * @param evtThrottleCntrKey Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
+     * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
-        final boolean all) {
+        boolean all, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         int[] evtTypes = all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS;
 
         // Collect discovery events for Web Console.
         if (evtOrderKey.startsWith("CONSOLE_"))
             evtTypes = concat(evtTypes, EVTS_DISCOVERY);
 
-        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, evtTypes, EVT_MAPPER);
+        return collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, evtTypes, evtMapper);
     }
 
     /**
@@ -413,7 +418,7 @@ public class VisorTaskUtils {
      * @return Collections of node events
      */
     public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
-        final int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
+        int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
 
@@ -621,12 +626,10 @@ public class VisorTaskUtils {
             else {
                 int toRead = Math.min(blockSz, (int)(fSz - pos));
 
-                byte[] buf = new byte[toRead];
-
                 raf = new RandomAccessFile(file, "r");
-
                 raf.seek(pos);
 
+                byte[] buf = new byte[toRead];
                 int cntRead = raf.read(buf, 0, toRead);
 
                 if (cntRead != toRead)
@@ -675,11 +678,11 @@ public class VisorTaskUtils {
         if (plc instanceof LruEvictionPolicyMBean)
             return ((LruEvictionPolicyMBean)plc).getMaxSize();
 
-        if (plc instanceof RandomEvictionPolicyMBean)
-            return ((RandomEvictionPolicyMBean)plc).getMaxSize();
-
         if (plc instanceof FifoEvictionPolicyMBean)
             return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+
+        if (plc instanceof SortedEvictionPolicyMBean)
+            return ((SortedEvictionPolicyMBean)plc).getMaxSize();
 
         return null;
     }
@@ -871,8 +874,6 @@ public class VisorTaskUtils {
         try {
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
-                    StringBuilder envs = new StringBuilder();
-
                     Map<String, String> macEnv = new HashMap<>(System.getenv());
 
                     if (envVars != null) {
@@ -888,6 +889,8 @@ public class VisorTaskUtils {
                             else
                                 macEnv.put(ent.getKey(), ent.getValue());
                     }
+
+                    StringBuilder envs = new StringBuilder();
 
                     for (Map.Entry<String, String> entry : macEnv.entrySet()) {
                         String val = entry.getValue();
@@ -1008,13 +1011,12 @@ public class VisorTaskUtils {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
 
         try (ZipOutputStream zos = new ZipOutputStream(bos)) {
-            ZipEntry entry = new ZipEntry("");
-
             try {
+                ZipEntry entry = new ZipEntry("");
+
                 entry.setSize(input.length);
 
                 zos.putNextEntry(entry);
-
                 zos.write(input);
             }
             finally {
@@ -1023,5 +1025,13 @@ public class VisorTaskUtils {
         }
 
         return bos.toByteArray();
+    }
+
+    /**
+     * @param msg Exception message.
+     * @return {@code true} if node failed to join grid.
+     */
+    public static boolean joinTimedOut(String msg) {
+        return msg != null && msg.startsWith("Join process timed out.");
     }
 }

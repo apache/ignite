@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import junit.framework.AssertionFailedError;
@@ -103,8 +104,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -697,11 +698,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
+                    Ignition.start(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
 
-                    fail();
+                    // Commented due to IGNITE-4473, because
+                    // IgniteClientDisconnectedException won't
+                    // be thrown, but client will reconnect.
+//                    fail();
 
-                    return false;
+                    return true;
                 }
                 catch (IgniteClientDisconnectedException e) {
                     log.info("Expected start error: " + e);
@@ -1084,6 +1088,21 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     public void testReconnectMultinode() throws Exception {
+        reconnectMultinode(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectMultinodeLongHistory() throws Exception {
+        reconnectMultinode(true);
+    }
+
+    /**
+     * @param longHist If {@code true} generates many discovery events to overflow events history.
+     * @throws Exception If failed.
+     */
+    private void reconnectMultinode(boolean longHist) throws Exception {
         grid(0).createCache(new CacheConfiguration<>());
 
         clientMode = true;
@@ -1098,6 +1117,25 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             assertNotNull(client.getOrCreateCache(new CacheConfiguration<>()));
 
             clients.add(client);
+        }
+
+        if (longHist) {
+            // Generate many discovery events to overflow discovery events history.
+            final AtomicInteger nodeIdx = new AtomicInteger(SRV_CNT + CLIENTS);
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    int idx = nodeIdx.incrementAndGet();
+
+                    for (int i  = 0; i < 25; i++) {
+                        startGrid(idx);
+
+                        stopGrid(idx);
+                    }
+
+                    return null;
+                }
+            }, 4, "restart-thread");
         }
 
         int nodes = SRV_CNT + CLIENTS;
@@ -1414,8 +1452,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
 
@@ -1456,7 +1494,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                         ClusterNode node = msg.get1();
 
-                        log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                        log.info("Send blocked message: [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                             ", msg=" + msg.get2().message() + ']');
 
                         super.sendMessage(msg.get1(), msg.get2());

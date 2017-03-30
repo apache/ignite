@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
 {
     using System;
     using System.Threading;
-    using System.Threading.Tasks;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             var cacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config\cache-local-node.xml",
-                GridName = "cacheGrid"
+                IgniteInstanceName = "cacheGrid"
             };
 
             using (var gridNoCache = Ignition.Start(TestUtils.GetTestConfiguration()))
@@ -59,7 +58,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var task = streamer.AddData(2, 3);
                 streamer.Flush();
 
-                AssertThrowsCacheStopped(task);
+                var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
+
+                Assert.IsNotNull(ex);
+
+                Assert.AreEqual("Java exception occurred [class=org.apache.ignite.cache." +
+                                "CacheServerNotFoundException, message=Failed to find server node for cache " +
+                                "(all affinity nodes have left the grid or cache was stopped): cache]", ex.Message);
             }
         }
 
@@ -86,19 +91,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 task = streamer.AddData(2, 3);
                 streamer.Flush();
 
-                AssertThrowsCacheStopped(task);
-            }
-        }
+                var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
 
-        /// <summary>
-        /// Asserts that cache stopped error is thrown.
-        /// </summary>
-        private static void AssertThrowsCacheStopped(Task task)
-        {
-            var ex = Assert.Throws<AggregateException>(task.Wait);
-            Assert.IsTrue(ex.InnerException.Message.Contains(
-                "Failed to find server node for cache " +
-                "(all affinity nodes have left the grid or cache was stopped):"));
+                Assert.IsNotNull(ex);
+
+                Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.", 
+                    ex.Message);
+            }
         }
     }
 }

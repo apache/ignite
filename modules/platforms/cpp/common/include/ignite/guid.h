@@ -122,7 +122,7 @@ namespace ignite
      * @return Reference to the first param.
      */
     template<typename C>
-    std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Guid& guid)
+    ::std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Guid& guid)
     {
         uint32_t part1 = static_cast<uint32_t>(guid.GetMostSignificantBits() >> 32);
         uint16_t part2 = static_cast<uint16_t>(guid.GetMostSignificantBits() >> 16);
@@ -147,7 +147,7 @@ namespace ignite
      * @return Reference to the first param.
      */
     template<typename C>
-    std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
+    ::std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
     {
         uint64_t parts[5];
 

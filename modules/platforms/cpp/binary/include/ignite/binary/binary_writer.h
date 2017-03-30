@@ -36,12 +36,25 @@ namespace ignite
     {
         /**
          * Binary writer.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object.
+         *
+         * @note User should not store copy of this instance as it can be
+         *     invalidated as soon as the initially passed to user instance has
+         *     been destructed. For example this means that if user received an
+         *     instance of this class as a function argument then he should not
+         *     store and use copy of this class out of the scope of this
+         *     function.
          */
         class IGNITE_IMPORT_EXPORT BinaryWriter
         {
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
              *
              * @param impl Implementation.
              */
@@ -233,6 +246,23 @@ namespace ignite
              * @param len Array length.
              */
             void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
+
+            /**
+             * Write Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Value.
+             */
+            void WriteTime(const char* fieldName, const Time& val);
+
+            /**
+             * Write array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteTimeArray(const char* fieldName, const Time* val, const int32_t len);
 
             /**
              * Write string.

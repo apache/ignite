@@ -1,0 +1,97 @@
+[
+  {
+    "_id" : "000000000000000000000001",
+    "space": "000000000000000000000001",
+    "name": "CarCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "clusters": ["000000000000000000000001", "000000000000000000000002"]
+  },
+  {
+    "_id" : "000000000000000000000002",
+    "space": "000000000000000000000001",
+    "name": "ParkingCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "clusters": ["000000000000000000000001", "000000000000000000000002"]
+  },
+  {
+    "_id" : "000000000000000000000003",
+    "space": "000000000000000000000001",
+    "name": "CountryCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "clusters": ["000000000000000000000002"]
+  },
+  {
+    "_id" : "000000000000000000000004",
+    "space": "000000000000000000000001",
+    "name": "DepartmentCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "clusters": ["000000000000000000000002"]
+  },
+  {
+    "_id" : "000000000000000000000005",
+    "space": "000000000000000000000001",
+    "name": "EmployeeCache",
+    "cacheMode": "PARTITIONED",
+    "atomicityMode": "ATOMIC",
+    "readThrough": true,
+    "writeThrough": true,
+    "sqlFunctionClasses": [],
+    "cacheStoreFactory": {
+      "kind": "CacheJdbcPojoStoreFactory",
+      "CacheJdbcPojoStoreFactory": {
+        "dataSourceBean": "dsH2",
+        "dialect": "H2"
+      }
+    },
+    "domains": ["000000000000000000000001", "000000000000000000000002", "000000000000000000000003", "000000000000000000000004", "000000000000000000000005"],
+    "clusters": ["000000000000000000000002"]
+  }
+]

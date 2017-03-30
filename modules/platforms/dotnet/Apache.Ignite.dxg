@@ -2381,7 +2381,7 @@ GENERATE_LEGEND        = YES
 DOT_CLEANUP            = YES
 
 
-;INPUT=Apache.Ignite.Core
-;EXCLUDE=Apache.Ignite.Core/Impl
+;INPUT=Apache.Ignite.Core Apache.Ignite.Linq Apache.Ignite.AspNet
+;EXCLUDE=Apache.Ignite.Core/Impl Apache.Ignite.Linq/Impl
 ;OUTPUT_DIRECTORY=../../clients/target/dotnetdoc
 ;PROJECT_LOGO=../../../assembly/docfiles/ignite_logo.png

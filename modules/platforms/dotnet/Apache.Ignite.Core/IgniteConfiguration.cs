@@ -24,6 +24,8 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -37,9 +39,12 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.SwapSpace;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.SwapSpace;
     using Apache.Ignite.Core.Transactions;
-    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
@@ -87,6 +92,11 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /// <summary>
+        /// Default failure detection timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultFailureDetectionTimeout = TimeSpan.FromSeconds(10);
+
         /** */
         private TimeSpan? _metricsExpireTime;
 
@@ -117,6 +127,9 @@
         /** */
         private bool? _clientMode;
 
+        /** */
+        private TimeSpan? _failureDetectionTimeout;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -144,8 +157,6 @@
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            CopyLocalProperties(configuration);
-
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
@@ -158,14 +169,21 @@
 
                 ReadCore(marsh.StartUnmarshal(stream));
             }
+
+            CopyLocalProperties(configuration);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
+        /// Initializes a new instance of the <see cref="IgniteConfiguration" /> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader)
+        /// <param name="baseConfig">The base configuration.</param>
+        internal IgniteConfiguration(IBinaryRawReader binaryReader, IgniteConfiguration baseConfig)
         {
+            Debug.Assert(binaryReader != null);
+            Debug.Assert(baseConfig != null);
+
+            CopyLocalProperties(baseConfig);
             Read(binaryReader);
         }
 
@@ -192,6 +210,7 @@
             writer.WriteString(Localhost);
             writer.WriteBooleanNullable(_isDaemon);
             writer.WriteBooleanNullable(_isLateAffinityAssignment);
+            writer.WriteTimeSpanAsLongNullable(_failureDetectionTimeout);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -241,12 +260,37 @@
                 writer.WriteBoolean(false);
 
             // Binary config
-            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
+            if (BinaryConfiguration != null)
+            {
+                writer.WriteBoolean(true);
 
-            writer.WriteBoolean(isCompactFooterSet);
+                if (BinaryConfiguration.CompactFooterInternal != null)
+                {
+                    writer.WriteBoolean(true);
+                    writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                }
+                else
+                {
+                    writer.WriteBoolean(false);
+                }
 
-            if (isCompactFooterSet)
-                writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+                // Send only descriptors with non-null EqualityComparer to preserve old behavior where
+                // remote nodes can have no BinaryConfiguration.
+                var types = writer.Marshaller.GetUserTypeDescriptors().Where(x => x.EqualityComparer != null).ToList();
+
+                writer.WriteInt(types.Count);
+
+                foreach (var type in types)
+                {
+                    writer.WriteString(BinaryUtils.SimpleTypeName(type.TypeName));
+                    writer.WriteBoolean(type.IsEnum);
+                    BinaryEqualityComparerSerializer.Write(writer, type.EqualityComparer);
+                }
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             // User attributes
             var attrs = UserAttributes;
@@ -285,17 +329,63 @@
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
-                writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
+
+            // Swap space
+            SwapSpaceSerializer.Write(writer, SwapSpaceSpi);
+
+            // Plugins
+            if (PluginConfigurations != null)
+            {
+                var pos = writer.Stream.Position;
+
+                writer.WriteInt(0); // reserve count
+
+                var cnt = 0;
+
+                foreach (var cfg in PluginConfigurations)
+                {
+                    if (cfg.PluginConfigurationClosureFactoryId != null)
+                    {
+                        writer.WriteInt(cfg.PluginConfigurationClosureFactoryId.Value);
+
+                        cfg.WriteBinary(writer);
+
+                        cnt++;
+                    }
+                }
+
+                writer.Stream.WriteInt(pos, cnt);
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            Debug.Assert(log != null);
+
+            var ccfg = CacheConfiguration;
+            if (ccfg != null)
+            {
+                foreach (var cfg in ccfg)
+                    cfg.Validate(log);
+            }
         }
 
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        private void ReadCore(IBinaryRawReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -311,6 +401,7 @@
             Localhost = r.ReadString();
             _isDaemon = r.ReadBooleanNullable();
             _isLateAffinityAssignment = r.ReadBooleanNullable();
+            _failureDetectionTimeout = r.ReadTimeSpanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -328,7 +419,28 @@
             if (r.ReadBoolean())
             {
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
-                BinaryConfiguration.CompactFooter = r.ReadBoolean();
+
+                if (r.ReadBoolean())
+                    BinaryConfiguration.CompactFooter = r.ReadBoolean();
+
+                var typeCount = r.ReadInt();
+
+                if (typeCount > 0)
+                {
+                    var types = new List<BinaryTypeConfiguration>(typeCount);
+
+                    for (var i = 0; i < typeCount; i++)
+                    {
+                        types.Add(new BinaryTypeConfiguration
+                        {
+                            TypeName = r.ReadString(),
+                            IsEnum = r.ReadBoolean(),
+                            EqualityComparer = BinaryEqualityComparerSerializer.Read(r)
+                        });
+                    }
+
+                    BinaryConfiguration.TypeConfigurations = types;
+                }
             }
 
             // User attributes
@@ -358,25 +470,24 @@
                     PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
                 };
             }
+
+            // Swap
+            SwapSpaceSpi = SwapSpaceSerializer.Read(r);
         }
 
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        private void Read(IBinaryRawReader binaryReader)
         {
-            var r = binaryReader;
-
-            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
-
-            ReadCore(r);
+            ReadCore(binaryReader);
 
             // Misc
-            IgniteHome = r.ReadString();
+            IgniteHome = binaryReader.ReadString();
 
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
@@ -389,21 +500,50 @@
         /// </summary>
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
-            GridName = cfg.GridName;
-            BinaryConfiguration = cfg.BinaryConfiguration == null
-                ? null
-                : new BinaryConfiguration(cfg.BinaryConfiguration);
+            IgniteInstanceName = cfg.IgniteInstanceName;
+
+            if (BinaryConfiguration != null && cfg.BinaryConfiguration != null)
+            {
+                BinaryConfiguration.MergeTypes(cfg.BinaryConfiguration);
+            }
+            else if (cfg.BinaryConfiguration != null)
+            {
+                BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+            }
+
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            Logger = cfg.Logger;
+            JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
+            JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
+            PluginConfigurations = cfg.PluginConfigurations;
         }
 
         /// <summary>
-        /// Grid name which is used if not provided in configuration file.
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
-        public string GridName { get; set; }
+        public string IgniteInstanceName { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional local instance name.
+        /// <para />
+        /// This name only works locally and has no effect on topology.
+        /// <para />
+        /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
+        /// </summary>
+        [Obsolete("Use IgniteInstanceName instead.")]
+        public string GridName
+        {
+            get { return IgniteInstanceName; }
+            set { IgniteInstanceName = value; }
+        }
 
         /// <summary>
         /// Gets or sets the binary configuration.
@@ -676,5 +816,101 @@
             get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
             set { _isLateAffinityAssignment = value; }
         }
+
+        /// <summary>
+        /// Serializes this instance to the specified XML writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        public void ToXml(XmlWriter writer, string rootElementName)
+        {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
+
+            IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
+        }
+
+        /// <summary>
+        /// Serializes this instance to an XML string.
+        /// </summary>
+        public string ToXml()
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                ToXml(xmlWriter, "igniteConfiguration");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Deserialized instance.</returns>
+        public static IgniteConfiguration FromXml(XmlReader reader)
+        {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
+            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+        }
+
+        /// <summary>
+        /// Deserializes IgniteConfiguration from the XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Deserialized instance.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
+        public static IgniteConfiguration FromXml(string xml)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return FromXml(xmlReader);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// <para />
+        /// If no logger is set, logging is delegated to Java, which uses the logger defined in Spring XML (if present)
+        /// or logs to console otherwise.
+        /// </summary>
+        public ILogger Logger { get; set; }
+
+        /// <summary>
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// and <see cref="TcpCommunicationSpi"/>.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        public TimeSpan FailureDetectionTimeout
+        {
+            get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
+            set { _failureDetectionTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the swap space SPI.
+        /// </summary>
+        public ISwapSpaceSpi SwapSpaceSpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configurations for plugins to be started.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IPluginConfiguration> PluginConfigurations { get; set; }
     }
 }

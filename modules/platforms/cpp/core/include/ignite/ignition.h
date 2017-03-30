@@ -31,7 +31,7 @@
 namespace ignite
 {
     /**
-     * This class defines a factory for the main Ignite API.
+     * This class defines a factory for the main %Ignite API.
      */
     class IGNITE_IMPORT_EXPORT Ignition
     {
@@ -154,7 +154,7 @@ namespace ignite
          * @param err Error.
          */
         static void StopAll(bool cancel, IgniteError* err);
-    };    
+    };
 }
 
 #endif //_IGNITE_IGNITION

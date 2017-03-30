@@ -29,7 +29,10 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
+    using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
@@ -274,5 +277,45 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <returns>Collection of names of currently available caches.</returns>
         ICollection<string> GetCacheNames();
+
+        /// <summary>
+        /// Gets the logger.
+        /// <para />
+        /// See <see cref="IgniteConfiguration.Logger"/> for customization.
+        /// </summary>
+        ILogger Logger { get; }
+
+        /// <summary>
+        /// Occurs when node begins to stop. Node is fully functional at this point.
+        /// See also: <see cref="LifecycleEventType.BeforeNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopping;
+
+        /// <summary>
+        /// Occurs when node has stopped. Node can't be used at this point.
+        /// See also: <see cref="LifecycleEventType.AfterNodeStop"/>.
+        /// </summary>
+        event EventHandler Stopped;
+
+        /// <summary>
+        /// Occurs when client node disconnects from the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler ClientDisconnected;
+
+        /// <summary>
+        /// Occurs when client node reconnects to the cluster. This event can only occur when this instance
+        /// runs in client mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        event EventHandler<ClientReconnectEventArgs> ClientReconnected;
+
+        /// <summary>
+        /// Gets the plugin by name.
+        /// </summary>
+        /// <typeparam name="T">Plugin type</typeparam>
+        /// <param name="name">Plugin name.</param>
+        /// <exception cref="PluginNotFoundException">When plugin with specified name has not been found.</exception>
+        /// <returns>Plugin instance.</returns>
+        T GetPlugin<T>(string name) where T : class;
     }
 }

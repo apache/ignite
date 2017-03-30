@@ -20,16 +20,11 @@ namespace Apache.Ignite.Core.Impl.Handle
     /// <summary>
     /// Wrapper over some resource ensuring it's release.
     /// </summary>
-    public interface IHandle
+    internal interface IHandle
     {
         /// <summary>
         /// Release the resource.
         /// </summary>
         void Release();
-
-        /// <summary>
-        /// Resource released flag.
-        /// </summary>
-        bool Released { get; }
     }
 }

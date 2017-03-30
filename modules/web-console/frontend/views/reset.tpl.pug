@@ -1,0 +1,48 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+header#header.header
+    table.container
+        tr
+            td.col-xs-3.col-sm-3.col-md-2
+                ignite-header-logo
+            td
+                ignite-header-title
+
+.container.body-container
+    .main-content(ng-controller='resetPassword')
+        .row
+            .text-center(ng-if='!token')
+                p Further instructions for password reset have been sent to your e-mail address.
+            .text-center(ng-if='error')
+                p {{::error}}
+            div(ng-if='token && !error')
+                form.form-horizontal(name='resetForm' ng-init='reset_info.token = token')
+                    .settings-row
+                        label.col-sm-1 E-mail:
+                        label {{::email}}
+                    .settings-row
+                        label.col-sm-1.required Password:
+                        .col-sm-3
+                            input#user_password.form-control(ignite-on-enter-focus-move='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
+                    .settings-row
+                        label.col-sm-1.required Confirm:
+                        .col-sm-3
+                            input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' ignite-match='reset_info.password' placeholder='Confirm new password' required ignite-on-enter='resetForm.$valid && resetPassword(user_info)')
+                    .settings-row
+                        button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
+
+include includes/footer

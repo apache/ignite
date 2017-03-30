@@ -27,12 +27,10 @@
 #include <string>
 #include <list>
 
-#include <ignite/common/utils.h>
-
 namespace ignite
 {
     /**
-     * Ignite configuration.
+     * %Ignite configuration.
      */
     struct IgniteConfiguration
     {
@@ -58,7 +56,7 @@ namespace ignite
         std::list<std::string> jvmOpts;
 
         /**
-         * Constructor.
+         * Default constructor.
          */
         IgniteConfiguration() : igniteHome(), springCfgPath(), jvmLibPath(), jvmClassPath(),
             jvmInitMem(512), jvmMaxMem(1024), jvmOpts()

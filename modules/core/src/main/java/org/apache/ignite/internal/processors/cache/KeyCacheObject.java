@@ -38,7 +38,14 @@ public interface KeyCacheObject extends CacheObject {
 
     /**
      * Sets partition ID for this key.
+     *
      * @param part Partition ID.
      */
     public void partition(int part);
+
+    /**
+     * @param part Partition ID.
+     * @return Copy of this object with given partition set.
+     */
+    public KeyCacheObject copy(int part);
 }

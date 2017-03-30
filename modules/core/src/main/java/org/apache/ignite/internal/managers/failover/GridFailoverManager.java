@@ -24,6 +24,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.spi.failover.FailoverSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,16 +59,23 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
      * @param taskSes Task session.
      * @param jobRes Job result.
      * @param top Collection of all topology nodes.
-     * @param affKey Affinity key.
+     * @param affPartId Partition number.
      * @param affCacheName Affinity cache name.
+     * @param topVer Affinity topology version.
      * @return New node to route this job to.
      */
     public ClusterNode failover(GridTaskSessionImpl taskSes,
         ComputeJobResult jobRes,
         List<ClusterNode> top,
-        @Nullable Object affKey,
-        @Nullable String affCacheName) {
-        return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes, jobRes,
-            ctx.loadBalancing(), affKey, affCacheName), top);
+        int affPartId,
+        @Nullable String affCacheName,
+        @Nullable AffinityTopologyVersion topVer) {
+        return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes,
+            jobRes,
+            ctx.loadBalancing(),
+            affPartId,
+            affCacheName,
+            topVer),
+            top);
     }
 }

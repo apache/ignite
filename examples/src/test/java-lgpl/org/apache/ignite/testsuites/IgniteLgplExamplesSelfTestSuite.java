@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.HibernateL2CacheExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.HibernateL2CacheExampleSelfTest;
+import org.apache.ignite.examples.SpatialQueryExampleMultiNodeSelfTest;
+import org.apache.ignite.examples.SpatialQueryExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -39,9 +41,11 @@ public class IgniteLgplExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
+        suite.addTest(new TestSuite(SpatialQueryExampleSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(SpatialQueryExampleMultiNodeSelfTest.class));
 
         return suite;
     }

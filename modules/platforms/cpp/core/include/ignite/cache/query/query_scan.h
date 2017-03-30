@@ -29,11 +29,11 @@
 #include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
-{    
+{
     namespace cache
     {
         namespace query
-        {         
+        {
             /**
              * Scan query.
              */
@@ -47,7 +47,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-                
+
                 /**
                  * Constructor.
                  *
@@ -57,7 +57,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-                
+
                 /**
                  * Get partition to scan.
                  *
@@ -117,7 +117,7 @@ namespace ignite
                 {
                     this->loc = loc;
                 }
-                
+
                 /**
                  * Write query info to the stream.
                  *

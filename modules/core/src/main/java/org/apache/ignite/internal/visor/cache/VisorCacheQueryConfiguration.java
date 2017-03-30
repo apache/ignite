@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for cache query configuration data.
  */
-public class VisorCacheQueryConfiguration implements Serializable {
+public class VisorCacheQueryConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,6 +43,16 @@ public class VisorCacheQueryConfiguration implements Serializable {
 
     /** */
     private int sqlOnheapRowCacheSize;
+
+    /** */
+    private String sqlSchema;
+
+    /**
+     * @return Schema name, which is used by SQL engine for SQL statements generation.
+     */
+    public String sqlSchema() {
+        return sqlSchema;
+    }
 
     /**
      * @param clss Classes to compact.
@@ -70,6 +81,7 @@ public class VisorCacheQueryConfiguration implements Serializable {
         sqlEscapeAll = ccfg.isSqlEscapeAll();
         indexedTypes = compactClasses(ccfg.getIndexedTypes());
         sqlOnheapRowCacheSize = ccfg.getSqlOnheapRowCacheSize();
+        sqlSchema = ccfg.getSqlSchema();
 
         return this;
     }

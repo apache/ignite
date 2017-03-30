@@ -48,8 +48,8 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     private boolean dynamicCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -125,8 +125,6 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
                 ignite.getOrCreateCache(cacheConfiguration());
 
             try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(null)) {
-                dataLdr.maxRemapCount(0);
-
                 Random rnd = new Random();
 
                 long endTime = U.currentTimeMillis() + 15_000;

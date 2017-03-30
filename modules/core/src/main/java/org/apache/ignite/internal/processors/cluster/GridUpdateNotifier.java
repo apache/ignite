@@ -18,13 +18,11 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -32,9 +30,6 @@ import java.net.URLConnection;
 import java.util.Collection;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -47,12 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
 
 import static java.net.URLEncoder.encode;
 
@@ -73,13 +62,13 @@ class GridUpdateNotifier {
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
     /** Sleep milliseconds time for worker thread. */
-    public static final int WORKER_THREAD_SLEEP_TIME = 5000;
+    private static final int WORKER_THREAD_SLEEP_TIME = 5000;
+
+    /** Url for request version. */
+    private final static String UPDATE_NOTIFIER_URL = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /** Grid version. */
     private final String ver;
-
-    /** Site. */
-    private final String url;
 
     /** Latest version. */
     private volatile String latestVer;
@@ -87,11 +76,8 @@ class GridUpdateNotifier {
     /** Download url for latest version. */
     private volatile String downloadUrl;
 
-    /** HTML parsing helper. */
-    private final DocumentBuilder documentBuilder;
-
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
@@ -120,34 +106,18 @@ class GridUpdateNotifier {
     /**
      * Creates new notifier with default values.
      *
-     * @param gridName gridName
+     * @param igniteInstanceName igniteInstanceName
      * @param ver Compound Ignite version.
      * @param gw Kernal gateway.
      * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+    GridUpdateNotifier(String igniteInstanceName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
         boolean reportOnlyNew) throws IgniteCheckedException {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-            documentBuilder = factory.newDocumentBuilder();
-
-            documentBuilder.setEntityResolver(new EntityResolver() {
-                @Override public InputSource resolveEntity(String publicId, String sysId) {
-                    if (sysId.endsWith(".dtd"))
-                        return new InputSource(new StringReader(""));
-
-                    return null;
-                }
-            });
-
             this.ver = ver;
-
-            url = "http://ignite.run/update_status_ignite.php";
-
-            this.gridName = gridName == null ? "null" : gridName;
+            this.igniteInstanceName = igniteInstanceName == null ? "null" : igniteInstanceName;
             this.gw = gw;
 
             SB pluginsBuilder = new SB();
@@ -184,9 +154,6 @@ class GridUpdateNotifier {
 
             workerThread.start();
         }
-        catch (ParserConfigurationException e) {
-            throw new IgniteCheckedException("Failed to create xml parser.", e);
-        }
         catch (UnsupportedEncodingException e) {
             throw new IgniteCheckedException("Failed to encode.", e);
         }
@@ -202,7 +169,7 @@ class GridUpdateNotifier {
             StringWriter sw = new StringWriter();
 
             try {
-                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
+                IgniteSystemProperties.safeSnapshot().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;
@@ -328,7 +295,7 @@ class GridUpdateNotifier {
          * @param log Logger.
          */
         UpdateChecker(IgniteLogger log) {
-            super(gridName, "grid-version-checker", log);
+            super(igniteInstanceName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());
         }
@@ -339,14 +306,14 @@ class GridUpdateNotifier {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
                 String postParams =
-                    "gridName=" + encode(gridName, CHARSET) +
+                    "igniteInstanceName=" + encode(igniteInstanceName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
                         pluginsVers;
 
-                URLConnection conn = new URL(url).openConnection();
+                URLConnection conn = new URL(UPDATE_NOTIFIER_URL).openConnection();
 
                 if (!isCancelled()) {
                     conn.setDoOutput(true);
@@ -355,8 +322,6 @@ class GridUpdateNotifier {
 
                     conn.setConnectTimeout(3000);
                     conn.setReadTimeout(3000);
-
-                    Document dom = null;
 
                     try {
                         try (OutputStream os = conn.getOutputStream()) {
@@ -369,29 +334,18 @@ class GridUpdateNotifier {
 
                             BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
 
-                            StringBuilder xml = new StringBuilder();
-
-                            String line;
-
-                            while ((line = reader.readLine()) != null) {
-                                if (line.contains("<meta") && !line.contains("/>"))
-                                    line = line.replace(">", "/>");
-
-                                xml.append(line).append('\n');
+                            for (String line; (line = reader.readLine()) != null; ) {
+                                if (line.contains("version"))
+                                    latestVer = obtainVersionFrom(line);
+                                else if (line.contains("downloadUrl"))
+                                    downloadUrl = obtainDownloadUrlFrom(line);
                             }
 
-                            dom = documentBuilder.parse(new ByteArrayInputStream(xml.toString().getBytes(CHARSET)));
                         }
                     }
                     catch (IOException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
-                    }
-
-                    if (dom != null) {
-                        latestVer = obtainVersionFrom(dom);
-
-                        downloadUrl = obtainDownloadUrlFrom(dom);
                     }
                 }
             }
@@ -404,55 +358,35 @@ class GridUpdateNotifier {
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param  line Line which contains value for extract.
+         * @param  metaName Name for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainMeta(String metaName, Node node) {
-            assert node != null;
+        @Nullable private String obtainMeta(String metaName, String line) {
+            assert line.contains(metaName);
 
-            if (node instanceof Element && "meta".equals(node.getNodeName().toLowerCase())) {
-                Element meta = (Element)node;
+            return line.substring(line.indexOf(metaName) + metaName.length()).trim();
 
-                String name = meta.getAttribute("name");
-
-                if (metaName.equals(name)) {
-                    String content = meta.getAttribute("content");
-
-                    if (content != null && !content.isEmpty())
-                        return content;
-                }
-            }
-
-            NodeList childNodes = node.getChildNodes();
-
-            for (int i = 0; i < childNodes.getLength(); i++) {
-                String ver = obtainMeta(metaName, childNodes.item(i));
-
-                if (ver != null)
-                    return ver;
-            }
-
-            return null;
         }
 
         /**
          * Gets the version from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param  line Line which contains value for extract.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainVersionFrom(Node node) {
-            return obtainMeta("version", node);
+        @Nullable private String obtainVersionFrom(String line) {
+            return obtainMeta("version=", line);
         }
 
         /**
          * Gets the download url from the current {@code node}, if one exists.
          *
-         * @param node W3C DOM node.
+         * @param line Which contains value for extract.
          * @return download url or {@code null} if one's not found.
          */
-        @Nullable private String obtainDownloadUrlFrom(Node node) {
-            return obtainMeta("downloadUrl", node);
+        @Nullable private String obtainDownloadUrlFrom(String line) {
+            return obtainMeta("downloadUrl=", line);
         }
     }
 }

@@ -61,8 +61,8 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  */
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(new CacheConfiguration());
 
@@ -362,14 +362,10 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
                     @Override public Object call() throws Exception {
-                        IgniteCache<Object, Object> async = dfltCache.withAsync();
-
                         boolean failed = false;
 
                         try {
-                            async.put(10002, 10002);
-
-                            async.future().get();
+                            dfltCache.putAsync(10002, 10002).get();
                         }
                         catch (CacheException e) {
                             failed = true;
@@ -379,9 +375,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        async.put(10002, 10002);
-
-                        return async.future().get();
+                        return dfltCache.putAsync(10002, 10002).get();
                     }
                 },
                 new C1<Object, Boolean>() {
@@ -706,7 +700,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         try {
                             assertTrue(recvLatch.await(2, SECONDS));
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             fail("Message wasn't received.");
                         }
 
@@ -751,7 +745,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         try {
                             assertEquals(42, (int)fut.get());
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             fail("Failed submit task.");
                         }
 

@@ -64,9 +64,16 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
         try {
             assert ctx != null;
-            assert ctx.evicts() != null;
 
-            return ctx.evicts().evict(cached, null, false, null);
+            GridCacheEvictionManager mgr = ctx.evicts();
+
+            if (mgr == null) {
+                assert ctx.kernalContext().isStopping();
+
+                return false;
+            }
+
+            return mgr.evict(cached, null, false, null);
         }
         catch (IgniteCheckedException e) {
             U.error(ctx.grid().log(), "Failed to evict entry from cache: " + cached, e);
@@ -84,7 +91,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignored) {
             return null;
         }
         catch (IgniteCheckedException e) {
@@ -114,7 +121,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             return valBytes == null ? keyBytes.length : keyBytes.length + valBytes.length;
         }
-        catch (GridCacheEntryRemovedException e) {
+        catch (GridCacheEntryRemovedException ignored) {
             return 0;
         }
         catch (IgniteCheckedException e) {

@@ -45,6 +45,12 @@ public interface IgniteTxState {
     @Nullable public Integer firstCacheId();
 
     /**
+     * Unwind evicts for caches involved in this transaction.
+     * @param cctx Grid cache shared context.
+     */
+    public void unwindEvicts(GridCacheSharedContext cctx);
+
+    /**
      * @param cctx Context.
      * @return cctx Non-null cache context if tx has only one active cache.
      */
@@ -98,7 +104,7 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is allowed to use store and transactions spans one or more caches with
      *      store enabled.
      */
-    public boolean storeUsed(GridCacheSharedContext cctx);
+    public boolean storeWriteThrough(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

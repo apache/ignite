@@ -33,12 +33,16 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-@SuppressWarnings("TypeMayBeWeakened") public class CacheObjectContext {
+@SuppressWarnings("TypeMayBeWeakened")
+public class CacheObjectContext {
     /** */
     private GridKernalContext kernalCtx;
 
     /** */
     private IgniteCacheObjectProcessor proc;
+
+    /** */
+    private String cacheName;
 
     /** */
     private AffinityKeyMapper dfltAffMapper;
@@ -63,11 +67,13 @@ import org.apache.ignite.internal.util.typedef.F;
      * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
+        String cacheName,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
         boolean addDepInfo) {
         this.kernalCtx = kernalCtx;
+        this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
@@ -75,6 +81,13 @@ import org.apache.ignite.internal.util.typedef.F;
 
         p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         proc = kernalCtx.cacheObjects();
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
+        return cacheName;
     }
 
     /**
@@ -199,6 +212,9 @@ import org.apache.ignite.internal.util.typedef.F;
      * @return Result.
      */
     public Object[] unwrapBinariesInArrayIfNeeded(Object[] arr, boolean keepBinary, boolean cpy) {
+        if (BinaryUtils.knownArray(arr))
+            return arr;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)

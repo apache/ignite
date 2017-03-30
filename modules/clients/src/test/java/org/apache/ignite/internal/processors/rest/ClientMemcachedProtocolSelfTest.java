@@ -78,8 +78,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assert cfg.getConnectorConfiguration() != null;
 
@@ -110,6 +110,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
         jcache().put("getKey3", "getVal3");
 
         Map<String, Object> map = client.getBulk("getKey1", "getKey2");
+
+        info("Map: " + map);
 
         Assert.assertEquals(2, map.size());
 

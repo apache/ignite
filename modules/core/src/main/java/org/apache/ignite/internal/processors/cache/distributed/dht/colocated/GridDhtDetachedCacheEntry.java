@@ -57,7 +57,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject unswap(boolean needVal) throws IgniteCheckedException {
+    @Nullable @Override public CacheObject unswap(boolean needVal, boolean checkExpire) throws IgniteCheckedException {
         return null;
     }
 
@@ -96,5 +96,10 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean addRemoved(GridCacheVersion ver) {
         // No-op for detached cache entry.
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return cctx.affinity().partition(key);
     }
 }

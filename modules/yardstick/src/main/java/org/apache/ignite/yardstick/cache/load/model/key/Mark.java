@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.cache.load.model.key;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache value class
@@ -38,6 +39,7 @@ public class Mark implements Comparable<Mark>, Serializable {
      * Empty constructor
      */
     public Mark() {
+        // No-op.
     }
 
     /**
@@ -104,5 +106,10 @@ public class Mark implements Comparable<Mark>, Serializable {
     /** {@inheritDoc} */
     @Override public int compareTo(Mark o) {
         return id - o.id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Mark.class, this);
     }
 }

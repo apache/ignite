@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,12 +43,12 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactObject
 /**
  * Data transfer object for node basic configuration properties.
  */
-public class VisorBasicConfiguration implements Serializable {
+public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** IGNITE_HOME determined at startup. */
     private String ggHome;
@@ -117,7 +118,7 @@ public class VisorBasicConfiguration implements Serializable {
     public static VisorBasicConfiguration from(IgniteEx ignite, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
-        cfg.gridName = c.getGridName();
+        cfg.igniteInstanceName = c.getIgniteInstanceName();
         cfg.ggHome = getProperty(IGNITE_HOME, c.getIgniteHome());
         cfg.locHost = getProperty(IGNITE_LOCAL_HOST, c.getLocalHost());
         cfg.nodeId = ignite.localNode().id();
@@ -143,10 +144,10 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    @Nullable public String gridName() {
-        return gridName;
+    @Nullable public String igniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**

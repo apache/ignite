@@ -22,13 +22,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for {@link CacheMetrics}.
  */
-public class VisorCacheMetrics implements Serializable {
+public class VisorCacheMetrics implements Serializable, LessNamingBean {
     /** */
     private static final float MICROSECONDS_IN_SECOND = 1_000_000;
 
@@ -155,6 +157,12 @@ public class VisorCacheMetrics implements Serializable {
     /** Number of cached rolled back DHT transaction IDs. */
     private int txDhtRolledbackVersionsSize;
 
+    /** Memory size allocated in off-heap. */
+    private long offHeapAllocatedSize;
+
+    /** Number of cache entries stored in off-heap memory. */
+    private long offHeapEntriesCount;
+
     /**
      * Calculate rate of metric per second.
      *
@@ -226,6 +234,11 @@ public class VisorCacheMetrics implements Serializable {
         txDhtStartVerCountsSize = m.getTxDhtStartVersionCountsSize();
         txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
         txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
+
+        GridCacheAdapter<Object, Object> ca = cacheProcessor.internalCache(cacheName);
+
+        offHeapAllocatedSize = ca.offHeapAllocatedSize();
+        offHeapEntriesCount = ca.offHeapEntriesCount();
 
         return this;
     }
@@ -517,6 +530,20 @@ public class VisorCacheMetrics implements Serializable {
      */
     public int txDhtRolledbackVersionsSize() {
         return txDhtRolledbackVersionsSize;
+    }
+
+    /**
+     * @return Memory size allocated in off-heap.
+     */
+    public long offHeapAllocatedSize() {
+        return offHeapAllocatedSize;
+    }
+
+    /**
+     * @return Number of cache entries stored in off-heap memory.
+     */
+    public long offHeapEntriesCount() {
+        return offHeapEntriesCount;
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -71,14 +72,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        override protected void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
+        protected override ICollection<Type> GetBinaryTypes()
         {
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJobResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskArgument)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTaskResult)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableJob)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableWrapper)));
+            return new[]
+            {
+                typeof(BinarizableJobResult),
+                typeof(BinarizableTaskArgument),
+                typeof(BinarizableTaskResult),
+                typeof(BinarizableJobArgument),
+                typeof(BinarizableJob),
+                typeof(BinarizableWrapper)
+            };
         }
 
         /// <summary>
@@ -100,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /** <inheritDoc /> */
             override public IDictionary<IComputeJob<BinarizableWrapper>, IClusterNode> Map(IList<IClusterNode> subgrid, BinarizableWrapper arg)
             {
-                Assert.AreEqual(3, subgrid.Count);
+                Assert.AreEqual(2, subgrid.Count);
                 Assert.NotNull(_grid);
 
                 var taskArg = arg;
@@ -114,15 +118,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 foreach (IClusterNode node in subgrid)
                 {
-                    if (!Grid3Name.Equals(node.GetAttribute<string>("org.apache.ignite.ignite.name"))) // Grid3 does not have cache.
+                    var job = new BinarizableJob
                     {
-                        var job = new BinarizableJob
-                        {
-                            Arg = new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobArgument(200))}
-                        };
+                        Arg = new BinarizableWrapper {Item = ToBinary(_grid, new BinarizableJobArgument(200))}
+                    };
 
-                        jobs.Add(job, node);
-                    }
+                    jobs.Add(job, node);
                 }
 
                 Assert.AreEqual(2, jobs.Count);

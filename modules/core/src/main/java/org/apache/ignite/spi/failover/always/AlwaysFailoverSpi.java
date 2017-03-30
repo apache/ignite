@@ -23,9 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.failover.GridFailoverContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -148,7 +151,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -157,7 +160,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
         if (log.isDebugEnabled())
             log.debug(configInfo("maximumFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, AlwaysFailoverSpiMBean.class);
+        registerMBean(igniteInstanceName, this, AlwaysFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -189,7 +192,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             return null;
         }
 
-        if (ctx.affinityKey() != null) {
+        if (ctx.partition() >= 0) {
             Integer affCallAttempt = ctx.getJobResult().getJobContext().getAttribute(AFFINITY_CALL_ATTEMPT);
 
             if (affCallAttempt == null)
@@ -205,7 +208,15 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
             else {
                 ctx.getJobResult().getJobContext().setAttribute(AFFINITY_CALL_ATTEMPT, affCallAttempt + 1);
 
-                return ignite.affinity(ctx.affinityCacheName()).mapKeyToNode(ctx.affinityKey());
+                try {
+                    return ((IgniteEx)ignite).context().affinity().mapPartitionToNode(ctx.affinityCacheName(), ctx.partition(),
+                        ((GridFailoverContextImpl)ctx).affinityTopologyVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to get map job to node on failover: " + ctx, e);
+
+                    return null;
+                }
             }
         }
 

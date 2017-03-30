@@ -30,15 +30,20 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/ignite_error.h>
 
-#include "ignite/cache/cache_peek_mode.h"
-#include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
-#include "ignite/cache/query/query_scan.h"
-#include "ignite/cache/query/query_sql.h"
-#include "ignite/cache/query/query_text.h"
-#include "ignite/cache/query/query_sql_fields.h"
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/operations.h"
+#include <ignite/cache/cache_peek_mode.h>
+#include <ignite/cache/query/query_cursor.h>
+#include <ignite/cache/query/query_fields_cursor.h>
+#include <ignite/cache/query/query_scan.h>
+#include <ignite/cache/query/query_sql.h>
+#include <ignite/cache/query/query_text.h>
+#include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
+#include <ignite/impl/cache/cache_impl.h>
+#include <ignite/impl/cache/cache_entry_processor_holder.h>
+#include <ignite/impl/operations.h>
+#include <ignite/impl/module_manager.h>
+#include <ignite/ignite_error.h>
 
 namespace ignite
 {
@@ -46,6 +51,18 @@ namespace ignite
     {
         /**
          * Main entry point for all Data Grid APIs.
+         *
+         * Both key and value types should be default-constructable,
+         * copy-constructable and assignable. Also BinaryType class
+         * template should be specialized for both types.
+         *
+         * This class implemented as a reference to an implementation so copying
+         * of this class instance will only create another reference to the same
+         * underlying object. Underlying object released automatically once all
+         * the instances are destructed.
+         *
+         * @tparam K Cache key type.
+         * @tparam V Cache value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -53,14 +70,23 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * Internal method. Should not be used by user.
+             *
+             * @param impl Implementation.
              */
-            Cache(impl::cache::CacheImpl* impl) : impl(ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl>(impl))
+            Cache(impl::cache::CacheImpl* impl) :
+                impl(impl)
             {
                 // No-op.
             }
 
             /**
-             * Name of this cache (null for default cache).
+             * Get name of this cache (null for default cache).
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @return Name of this cache (null for default cache).
              */
             const char* GetName() const
             {
@@ -70,6 +96,8 @@ namespace ignite
             /**
              * Checks whether this cache contains no key-value mappings.
              * Semantically equals to Cache.Size(IGNITE_PEEK_MODE_PRIMARY) == 0.
+             *
+             * This method should only be used on the valid instance.
              *
              * @return True if cache is empty.
              */
@@ -88,16 +116,20 @@ namespace ignite
              * Checks whether this cache contains no key-value mappings.
              * Semantically equals to Cache.Size(IGNITE_PEEK_MODE_PRIMARY) == 0.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param err Error.
              * @return True if cache is empty.
              */
             bool IsEmpty(IgniteError& err)
             {
-                return impl.Get()->IsEmpty(&err);
+                return Size(err) == 0;
             }
 
             /**
              * Check if cache contains mapping for this key.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key.
              * @return True if cache contains mapping for this key.
@@ -116,19 +148,23 @@ namespace ignite
             /**
              * Check if cache contains mapping for this key.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key.
              * @param err Error.
              * @return True if cache contains mapping for this key.
              */
             bool ContainsKey(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                return impl.Get()->ContainsKey(op, &err);
+                return impl.Get()->ContainsKey(op, err);
             }
 
             /**
              * Check if cache contains mapping for these keys.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys.
              * @return True if cache contains mapping for all these keys.
@@ -147,15 +183,17 @@ namespace ignite
             /**
              * Check if cache contains mapping for these keys.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param keys Keys.
              * @param err Error.
              * @return True if cache contains mapping for all these keys.
              */
             bool ContainsKeys(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                return impl.Get()->ContainsKeys(op, &err);
+                return impl.Get()->ContainsKeys(op, err);
             }
 
             /**
@@ -164,6 +202,8 @@ namespace ignite
              * non-null value is found, it will be immediately returned.
              * This method does not participate in any transactions, however, it may peek at transactional
              * value depending on the peek modes used.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key.
              * @param peekModes Peek modes.
@@ -187,6 +227,8 @@ namespace ignite
              * This method does not participate in any transactions, however, it may peek at transactional
              * value depending on the peek modes used.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key.
              * @param peekModes Peek modes.
              * @param err Error.
@@ -194,10 +236,10 @@ namespace ignite
              */
             V LocalPeek(const K& key, int32_t peekModes, IgniteError& err)
             {
-                impl::InCacheLocalPeekOperation<K> inOp(&key, peekModes);
+                impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->LocalPeek(inOp, outOp, peekModes, &err);
+                impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
 
                 return outOp.GetResult();
             }
@@ -208,6 +250,8 @@ namespace ignite
              * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
              * will be loaded from persistent store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key.
              * @return Value.
@@ -230,16 +274,18 @@ namespace ignite
              * will be loaded from persistent store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key.
              * @param err Error.
              * @return Value.
              */
             V Get(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->Get(inOp, outOp, &err);
+                impl.Get()->Get(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -250,6 +296,8 @@ namespace ignite
              * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
              * will be loaded from persistent store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys.
              * @return Map of key-value pairs.
@@ -272,16 +320,18 @@ namespace ignite
              * will be loaded from persistent store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param keys Keys.
              * @param err Error.
              * @return Map of key-value pairs.
              */
             std::map<K, V> GetAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> inOp(&keys);
+                impl::InSetOperation<K> inOp(keys);
                 impl::OutMapOperation<K, V> outOp;
 
-                impl.Get()->GetAll(inOp, outOp, &err);
+                impl.Get()->GetAll(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -290,6 +340,8 @@ namespace ignite
              * Associates the specified value with the specified key in the cache.
              * If the cache previously contained a mapping for the key,
              * the old value is replaced by the specified value.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
@@ -308,21 +360,25 @@ namespace ignite
              * If the cache previously contained a mapping for the key,
              * the old value is replaced by the specified value.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
              */
             void Put(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                impl.Get()->Put(op, &err);
+                impl.Get()->Put(op, err);
             }
 
             /**
              * Stores given key-value pairs in cache.
              * If write-through is enabled, the stored values will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param vals Key-value pairs to store in cache.
              */
@@ -340,19 +396,23 @@ namespace ignite
              * If write-through is enabled, the stored values will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param vals Key-value pairs to store in cache.
              * @param err Error.
              */
             void PutAll(const std::map<K, V>& vals, IgniteError& err)
             {
-                impl::InMapOperation<K, V> op(&vals);
+                impl::InMapOperation<K, V> op(vals);
 
-                impl.Get()->PutAll(op, &err);
+                impl.Get()->PutAll(op, err);
             }
 
             /**
              * Associates the specified value with the specified key in this cache,
              * returning an existing value if one existed.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
@@ -374,6 +434,8 @@ namespace ignite
              * Associates the specified value with the specified key in this cache,
              * returning an existing value if one existed.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
@@ -382,10 +444,10 @@ namespace ignite
              */
             V GetAndPut(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndPut(inOp, outOp, &err);
+                impl.Get()->GetAndPut(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -393,6 +455,8 @@ namespace ignite
             /**
              * Atomically replaces the value for a given key if and only if there is
              * a value currently mapped by the key.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
@@ -414,6 +478,8 @@ namespace ignite
              * Atomically replaces the value for a given key if and only if there is
              * a value currently mapped by the key.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
@@ -422,16 +488,18 @@ namespace ignite
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndReplace(inOp, outOp, &err);
+                impl.Get()->GetAndReplace(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
 
             /**
              * Atomically removes the entry for a key only if currently mapped to some value.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is associated.
              * @return The value if one existed or null if no mapping existed for this key.
@@ -450,16 +518,18 @@ namespace ignite
             /**
              * Atomically removes the entry for a key only if currently mapped to some value.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key with which the specified value is associated.
              * @param err Error.
              * @return The value if one existed or null if no mapping existed for this key.
              */
             V GetAndRemove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndRemove(inOp, outOp, &err);
+                impl.Get()->GetAndRemove(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -467,6 +537,8 @@ namespace ignite
             /**
              * Atomically associates the specified key with the given value if it is not
              * already associated with a value.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
@@ -487,6 +559,8 @@ namespace ignite
              * Atomically associates the specified key with the given value if it is not
              * already associated with a value.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
@@ -494,9 +568,9 @@ namespace ignite
              */
             bool PutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->PutIfAbsent(op, &err);
+                return impl.Get()->PutIfAbsent(op, err);
             }
 
             /**
@@ -509,6 +583,8 @@ namespace ignite
              * avoid the overhead associated with returning of the previous value.
              * If write-through is enabled, the stored value will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to store in cache.
              * @param val Value to be associated with the given key.
@@ -537,6 +613,8 @@ namespace ignite
              * If write-through is enabled, the stored value will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key to store in cache.
              * @param val Value to be associated with the given key.
              * @param err Error.
@@ -545,10 +623,10 @@ namespace ignite
              */
             V GetAndPutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
-                impl.Get()->GetAndPutIfAbsent(inOp, outOp, &err);
+                impl.Get()->GetAndPutIfAbsent(inOp, outOp, err);
 
                 return outOp.GetResult();
             }
@@ -561,6 +639,8 @@ namespace ignite
              * in swap, rom the underlying persistent storage.
              * If write-through is enabled, the stored value will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to store in cache.
              * @param val Value to be associated with the given key.
@@ -586,6 +666,8 @@ namespace ignite
              * If write-through is enabled, the stored value will be persisted to store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key to store in cache.
              * @param val Value to be associated with the given key.
              * @param err Error.
@@ -593,15 +675,17 @@ namespace ignite
              */
             bool Replace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->Replace(op, &err);
+                return impl.Get()->Replace(op, err);
             }
 
             /**
              * Stores given key-value pair in cache only if only if the previous value is equal to the
              * old value passed as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to store in cache.
              * @param oldVal Old value to match.
@@ -624,6 +708,8 @@ namespace ignite
              * old value passed as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key to store in cache.
              * @param oldVal Old value to match.
              * @param newVal Value to be associated with the given key.
@@ -632,14 +718,18 @@ namespace ignite
              */
             bool Replace(const K& key, const V& oldVal, const V& newVal, IgniteError& err)
             {
-                impl::In3Operation<K, V, V> op(&key, &oldVal, &newVal);
+                impl::In3Operation<K, V, V> op(key, oldVal, newVal);
 
-                return impl.Get()->ReplaceIfEqual(op, &err);
+                return impl.Get()->ReplaceIfEqual(op, err);
             }
 
             /**
-             * Attempts to evict all entries associated with keys. Note, that entry will be evicted only
-             * if it's not used (not participating in any locks or transactions).
+             * Attempts to evict all entries associated with keys.
+             *
+             * @note Entry will be evicted only if it's not used (not
+             * participating in any locks or transactions).
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys to evict from cache.
              */
@@ -653,21 +743,27 @@ namespace ignite
             }
 
             /**
-             * Attempts to evict all entries associated with keys. Note, that entry will be evicted only
-             * if it's not used (not participating in any locks or transactions).
+             * Attempts to evict all entries associated with keys.
+             *
+             * @note Entry will be evicted only if it's not used (not
+             * participating in any locks or transactions).
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys to evict from cache.
              * @param err Error.
              */
             void LocalEvict(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->LocalEvict(op, &err);
+                impl.Get()->LocalEvict(op, err);
             }
 
             /**
              * Clear cache.
+             *
+             * This method should only be used on the valid instance.
              */
             void Clear()
             {
@@ -681,16 +777,20 @@ namespace ignite
             /**
              * Clear cache.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param err Error.
              */
             void Clear(IgniteError& err)
             {
-                impl.Get()->Clear(&err);
+                impl.Get()->Clear(err);
             }
 
             /**
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to clear.
              */
@@ -707,19 +807,23 @@ namespace ignite
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key to clear.
              * @param err Error.
              */
             void Clear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                impl.Get()->Clear(op, &err);
+                impl.Get()->Clear(op, err);
             }
 
             /**
              * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys to clear.
              */
@@ -736,21 +840,26 @@ namespace ignite
              * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param keys Keys to clear.
              * @param err Error.
              */
             void ClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->ClearAll(op, &err);
+                impl.Get()->ClearAll(op, err);
             }
 
             /**
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-             * Note that this operation is local as it merely clears an entry from local cache, it does not
+             *
+             * @note This operation is local as it merely clears an entry from local cache, it does not
              * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to clear.
              */
@@ -766,24 +875,30 @@ namespace ignite
             /**
              * Clear entry from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-             * Note that this operation is local as it merely clears an entry from local cache, it does not
+             *
+             * @note This operation is local as it merely clears an entry from local cache, it does not
              * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key to clear.
              * @param err Error.
              */
             void LocalClear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                impl.Get()->LocalClear(op, &err);
+                impl.Get()->LocalClear(op, err);
             }
 
             /**
              * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-             * Note that this operation is local as it merely clears entries from local cache, it does not
+             *
+             * @note This operation is local as it merely clears entries from local cache, it does not
              * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys to clear.
              */
@@ -799,17 +914,20 @@ namespace ignite
             /**
              * Clear entries from the cache and swap storage, without notifying listeners or CacheWriters.
              * Entry is cleared only if it is not currently locked, and is not participating in a transaction.
-             * Note that this operation is local as it merely clears entries from local cache, it does not
+             *
+             * @note This operation is local as it merely clears entries from local cache, it does not
              * remove entries from remote caches.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys to clear.
              * @param err Error.
              */
             void LocalClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->LocalClearAll(op, &err);
+                impl.Get()->LocalClearAll(op, err);
             }
 
             /**
@@ -821,6 +939,8 @@ namespace ignite
              * one to avoid the overhead associated with returning of the previous value.
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key whose mapping is to be removed from cache.
              * @return False if there was no matching key.
@@ -846,21 +966,25 @@ namespace ignite
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key whose mapping is to be removed from cache.
              * @param err Error.
              * @return False if there was no matching key.
              */
             bool Remove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
-                return impl.Get()->Remove(op, &err);
+                return impl.Get()->Remove(op, err);
             }
 
             /**
              * Removes given key mapping from cache if one exists and value is equal to the passed in value.
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param key Key whose mapping is to be removed from cache.
              * @param val Value to match against currently cached value.
@@ -882,6 +1006,8 @@ namespace ignite
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param key Key whose mapping is to be removed from cache.
              * @param val Value to match against currently cached value.
              * @param err Error.
@@ -889,15 +1015,17 @@ namespace ignite
              */
             bool Remove(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
-                return impl.Get()->RemoveIfEqual(op, &err);
+                return impl.Get()->RemoveIfEqual(op, err);
             }
 
             /**
              * Removes given key mappings from cache.
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param keys Keys whose mappings are to be removed from cache.
              */
@@ -915,14 +1043,16 @@ namespace ignite
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param keys Keys whose mappings are to be removed from cache.
              * @param err Error.
              */
             void RemoveAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
-                impl.Get()->RemoveAll(op, &err);
+                impl.Get()->RemoveAll(op, err);
             }
 
             /**
@@ -930,7 +1060,8 @@ namespace ignite
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
-             * @param err Error.
+             * This method should only be used on the valid instance.
+             *
              */
             void RemoveAll()
             {
@@ -946,15 +1077,19 @@ namespace ignite
              * If write-through is enabled, the value will be removed from store.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param err Error.
              */
             void RemoveAll(IgniteError& err)
             {
-                return impl.Get()->RemoveAll(&err);
+                return impl.Get()->RemoveAll(err);
             }
 
             /**
              * Gets the number of all entries cached on this node.
+             *
+             * This method should only be used on the valid instance.
              *
              * @return Cache size on this node.
              */
@@ -965,6 +1100,8 @@ namespace ignite
 
             /**
              * Gets the number of all entries cached on this node.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              * @return Cache size on this node.
@@ -977,7 +1114,9 @@ namespace ignite
             /**
              * Gets the number of all entries cached on this node.
              *
-             * @param Peek modes.
+             * This method should only be used on the valid instance.
+             *
+             * @param peekModes Peek modes.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes)
@@ -994,18 +1133,22 @@ namespace ignite
             /**
              * Gets the number of all entries cached on this node.
              *
-             * @param Peek modes.
+             * This method should only be used on the valid instance.
+             *
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size on this node.
              */
             int32_t LocalSize(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->LocalSize(peekModes, &err);
+                return impl.Get()->Size(peekModes, true, err);
             }
 
             /**
              * Gets the number of all entries cached across all nodes.
-             * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+             * @note this operation is distributed and will query all participating nodes for their cache sizes.
+             *
+             * This method should only be used on the valid instance.
              *
              * @return Cache size across all nodes.
              */
@@ -1016,7 +1159,9 @@ namespace ignite
 
             /**
              * Gets the number of all entries cached across all nodes.
-             * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+             * @note This operation is distributed and will query all participating nodes for their cache sizes.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param err Error.
              * @return Cache size across all nodes.
@@ -1028,9 +1173,11 @@ namespace ignite
 
             /**
              * Gets the number of all entries cached across all nodes.
-             * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+             * @note This operation is distributed and will query all participating nodes for their cache sizes.
              *
-             * @param Peek modes.
+             * This method should only be used on the valid instance.
+             *
+             * @param peekModes Peek modes.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes)
@@ -1046,19 +1193,23 @@ namespace ignite
 
             /**
              * Gets the number of all entries cached across all nodes.
-             * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+             * @note This operation is distributed and will query all participating nodes for their cache sizes.
              *
-             * @param Peek modes.
+             * This method should only be used on the valid instance.
+             *
+             * @param peekModes Peek modes.
              * @param err Error.
              * @return Cache size across all nodes.
              */
             int32_t Size(int32_t peekModes, IgniteError& err)
             {
-                return impl.Get()->Size(peekModes, &err);
+                return impl.Get()->Size(peekModes, false, err);
             }
 
             /**
              * Perform SQL query.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param qry Query.
              * @return Query cursor.
@@ -1077,19 +1228,23 @@ namespace ignite
             /**
              * Perform SQL query.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param qry Query.
              * @param err Error.
              * @return Query cursor.
              */
             query::QueryCursor<K, V> Query(const query::SqlQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySql(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySql(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
             /**
              * Perform text query.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param qry Query.
              * @return Query cursor.
@@ -1108,19 +1263,23 @@ namespace ignite
             /**
              * Perform text query.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param qry Query.
              * @param err Error.
              * @return Query cursor.
              */
             query::QueryCursor<K, V> Query(const query::TextQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryText(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryText(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
             /**
              * Perform scan query.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param qry Query.
              * @return Query cursor.
@@ -1139,19 +1298,23 @@ namespace ignite
             /**
              * Perform scan query.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param qry Query.
              * @param err Error.
              * @return Query cursor.
              */
             query::QueryCursor<K, V> Query(const query::ScanQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
             /**
              * Perform sql fields query.
+             *
+             * This method should only be used on the valid instance.
              *
              * @param qry Query.
              * @return Query cursor.
@@ -1170,15 +1333,227 @@ namespace ignite
             /**
              * Perform sql fields query.
              *
+             * This method should only be used on the valid instance.
+             *
              * @param qry Query.
              * @param err Error.
              * @return Query cursor.
              */
             query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry, IgniteError& err)
             {
-                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, &err);
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, err);
 
                 return query::QueryFieldsCursor(cursorImpl);
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * Processor class should be registered as a cache entry processor using
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
+             * @code{.cpp}
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
+             * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
+             * @endcode
+             *
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class.
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg)
+            {
+                IgniteError err;
+
+                R res = Invoke<R>(key, processor, arg, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * Processor class should be registered as a cache entry processor using
+             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
+             * #IgniteModuleInit() function to register your cache processors upon
+             * module loading. There should be at most one instance of such function
+             * per module.
+             *
+             * See the example below for details:
+             * @code{.cpp}
+             * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
+             * {
+             *     IgniteBinding binding = context.GetBingding();
+             *
+             *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
+             *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
+             *     // ...
+             *     binding.RegisterCacheEntryProcessor<MyProcessorN>();
+             * }
+             * @endcode
+             *
+             * Additionally, processor class should be derived from the
+             * ignite::CacheEntryProcessor class.
+             *
+             * Sets err param which should be checked for the operation result.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @param err Error.
+             * @return Result of the processing. Default-constructed value on error.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
+            {
+                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
+
+                ProcessorHolder procHolder(processor, arg);
+
+                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
+                impl::Out1Operation<R> outOp;
+
+                impl.Get()->Invoke(inOp, outOp, err);
+
+                return outOp.GetResult();
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, initialQry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry, IgniteError& err)
+            {
+                using namespace impl::cache::query::continuous;
+
+                if (!qry.impl.IsValid() || !qry.impl.Get()->HasListener())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Event listener is not set for ContinuousQuery instance");
+
+                    return query::continuous::ContinuousQueryHandle<K, V>();
+                }
+
+                ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry.impl, initialQry, err);
+
+                if (cqImpl)
+                    cqImpl->SetQuery(qry.impl);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
 
             /**
@@ -1197,9 +1572,38 @@ namespace ignite
                 return impl.IsValid();
             }
 
+            /**
+             * Executes LocalLoadCache on all cache nodes.
+             */
+            void LoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Loads state from the underlying persistent storage.
+             *
+             * This method is not transactional and may end up loading a stale value into
+             * cache if another thread has updated the value immediately after it has been
+             * loaded. It is mostly useful when pre-loading the cache from underlying
+             * data store before start, or for read-only caches.
+             */
+            void LocalLoadCache()
+            {
+                IgniteError err;
+
+                impl.Get()->LocalLoadCache(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
         private:
             /** Implementation delegate. */
-            ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
+            common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
         };
     }
 }

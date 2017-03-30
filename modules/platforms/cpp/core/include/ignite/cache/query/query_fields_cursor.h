@@ -41,6 +41,11 @@ namespace ignite
         {
             /**
              * Query fields cursor.
+             *
+             * This class implemented as a reference to an implementation so copying
+             * of this class instance will only create another reference to the same
+             * underlying object. Underlying object released automatically once all
+             * the instances are destructed.
              */
             class QueryFieldsCursor
             {
@@ -70,11 +75,12 @@ namespace ignite
                 
                 /**
                  * Check whether next entry exists.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -102,7 +108,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->HasNext(&err);
+                        return impl0->HasNext(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
@@ -114,11 +120,12 @@ namespace ignite
 
                 /**
                  * Get next entry.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 QueryFieldsRow GetNext()
                 {
@@ -146,7 +153,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->GetNextRow(&err);
+                        return impl0->GetNextRow(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,

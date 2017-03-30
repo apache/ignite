@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -27,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public abstract class ClosureTaskTest : AbstractTaskTest
     {
-        /** Amount of multiple clousres. */
+        /** Amount of multiple closures. */
         private const int MultiCloCnt = 5;
 
         /** */
@@ -45,9 +46,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteSingle()
         {
-            var res = Grid1.GetCompute().Call(OutFunc(false));
-
-            CheckResult(res);
+            CheckResult(Grid1.GetCompute().Call(OutFunc(false)));
+            CheckResult(Grid1.GetCompute().CallAsync(OutFunc(false)).Result);
         }
 
         /// <summary>
@@ -56,16 +56,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteSingleException()
         {
-            try
-            {
-                Grid1.GetCompute().Call(OutFunc(true));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Call(OutFunc(true))));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().CallAsync(OutFunc(true)).Wait()));
         }
 
         /// <summary>
@@ -74,15 +66,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultiple()
         {
-            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
+            var clos = Enumerable.Range(0, MultiCloCnt).Select(x => OutFunc(false)).ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                clos.Add(OutFunc(false));
-
-            ICollection<object> ress = Grid1.GetCompute().Call(clos);
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Call(clos).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().CallAsync(clos).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -91,15 +78,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleReduced()
         {
-            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
+            var clos = Enumerable.Range(0, MultiCloCnt).Select(x => OutFunc(false)).ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                clos.Add(OutFunc(false));
-
-            ICollection<object> ress = Grid1.GetCompute().Call(clos, new Reducer(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Call(clos, new Reducer(false)).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().CallAsync(clos, new Reducer(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -108,21 +90,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExecuteMultipleException()
         {
-            var clos = new List<IComputeFunc<object>>(MultiCloCnt);
+            // Some closures will be faulty.
+            var clos = Enumerable.Range(0, MultiCloCnt).Select(x => OutFunc(x % 2 == 0)).ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                clos.Add(OutFunc(i % 2 == 0)); // Some closures will be faulty.
-
-            try
-            {
-                Grid1.GetCompute().Call(clos);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Call(clos)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().CallAsync(clos).Wait()));
         }
 
         /// <summary>
@@ -131,10 +103,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOut()
         {
-            ICollection<object> ress = Grid1.GetCompute().Broadcast(OutFunc(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Broadcast(OutFunc(false)).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().BroadcastAsync(OutFunc(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -143,16 +113,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastOutException()
         {
-            try
-            {
-                Grid1.GetCompute().Broadcast(OutFunc(true));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Broadcast(OutFunc(true))));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().BroadcastAsync(OutFunc(true)).Wait()));
         }
 
         /// <summary>
@@ -161,10 +123,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOut()
         {
-            ICollection<object> ress = Grid1.GetCompute().Broadcast(Func(false), 1);
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Broadcast(Func(false), 1).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().BroadcastAsync(Func(false), 1).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -173,16 +133,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastInOutException()
         {
-            try
-            {
-                Grid1.GetCompute().Broadcast(Func(true), 1);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Broadcast(Func(true), 1)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().BroadcastAsync(Func(true), 1).Wait()));
         }
 
         /// <summary>
@@ -191,9 +143,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApply()
         {
-            object res = Grid1.GetCompute().Apply(Func(false), 1);
-
-            CheckResult(res);
+            CheckResult(Grid1.GetCompute().Apply(Func(false), 1));
+            CheckResult(Grid1.GetCompute().ApplyAsync(Func(false), 1).Result);
         }
 
         /// <summary>
@@ -202,16 +153,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyException()
         {
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), 1);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), 1)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), 1).Wait()));
         }
 
         /// <summary>
@@ -220,19 +163,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultiple()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            Console.WriteLine("START TASK");
-
-            var ress = Grid1.GetCompute().Apply(Func(false), args);
-
-            Console.WriteLine("END TASK.");
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Apply(Func(false), args).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().ApplyAsync(Func(false), args).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -241,21 +175,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleException()
         {
-            ICollection<int> args = new List<int>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), args);
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), args)));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), args).Wait()));
         }
 
         /// <summary>
@@ -264,16 +187,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestApplyMultipleReducer()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            ICollection<object> ress =
-                Grid1.GetCompute().Apply(Func(false), args, new Reducer(false));
-
-            foreach (object res in ress)
-                CheckResult(res);
+            Grid1.GetCompute().Apply(Func(false), args, new Reducer(false)).ToList().ForEach(CheckResult);
+            Grid1.GetCompute().ApplyAsync(Func(false), args, new Reducer(false)).Result.ToList().ForEach(CheckResult);
         }
 
         /// <summary>
@@ -282,21 +199,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerJobException()
         {
-            List<object> args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
-
-            try
-            {
-                Grid1.GetCompute().Apply(Func(true), args, new Reducer(false));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                CheckError(e);
-            }
+            CheckError(Assert.Catch(() => Grid1.GetCompute().Apply(Func(true), args, new Reducer(false))));
+            CheckError(Assert.Catch(() => Grid1.GetCompute().ApplyAsync(Func(true), args, new Reducer(false)).Wait()));
         }
 
         /// <summary>
@@ -305,23 +211,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestAppylMultipleReducerReduceException()
         {
-            var args = new List<object>(MultiCloCnt);
+            var args = Enumerable.Repeat(1, MultiCloCnt).Cast<object>().ToArray();
 
-            for (int i = 0; i < MultiCloCnt; i++)
-                args.Add(1);
+            var e = Assert.Throws<Exception>(() => Grid1.GetCompute().Apply(Func(false), args, new Reducer(true)));
 
-            try
-            {
-                Grid1.GetCompute().Apply(Func(false), args, new Reducer(true));
-
-                Assert.Fail();
-            }
-            catch (Exception e)
-            {
-                Assert.AreEqual(typeof(Exception), e.GetType());
-
-                Assert.AreEqual(ErrMsg, e.Message);
-            }
+            Assert.AreEqual(ErrMsg, e.Message);
         }
 
         /// <summary>

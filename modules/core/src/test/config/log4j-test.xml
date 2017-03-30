@@ -96,6 +96,18 @@
      </category>
     -->
 
+    <!--
+    <category name="org.apache.ignite.cache.msg">
+        <level value="DEBUG"/>
+    </category>
+    -->
+
+    <!--
+    <category name="org.apache.ignite.continuous.query">
+        <level value="DEBUG"/>
+    </category>
+    -->
+
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>

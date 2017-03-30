@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.node;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +29,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactArray;
 /**
  * Data transfer object for node segmentation configuration properties.
  */
-public class VisorSegmentationConfiguration implements Serializable {
+public class VisorSegmentationConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

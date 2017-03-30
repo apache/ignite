@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.websession.WebSessionEntity;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -82,24 +83,29 @@ class WebSessionV2 implements HttpSession {
     private boolean invalidated;
 
     /** Grid marshaller. */
-    private final Marshaller marshaller;
+    private final Marshaller marsh;
 
     /** Original session to delegate invalidation. */
     private final HttpSession genuineSes;
 
     /**
+     * Constructs new web session.
+     *
      * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
+     * @param ctx Servlet context.
+     * @param entity Entity.
+     * @param marsh Marshaller.
      */
     WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
-        @Nullable WebSessionEntity entity, final Marshaller marshaller) {
+        @Nullable WebSessionEntity entity, final Marshaller marsh) {
         assert id != null;
-        assert marshaller != null;
+        assert marsh != null;
         assert ctx != null;
         assert ses != null || entity != null;
 
-        this.marshaller = marshaller;
+        this.marsh = marsh;
         this.ctx = ctx;
         this.isNew = isNew;
         this.genuineSes = ses;
@@ -286,7 +292,7 @@ class WebSessionV2 implements HttpSession {
             try {
                 genuineSes.invalidate();
             }
-            catch (IllegalStateException e) {
+            catch (IllegalStateException ignored) {
                 // Already invalidated, keep going.
             }
         }
@@ -331,9 +337,9 @@ class WebSessionV2 implements HttpSession {
      * @throws IOException If unarshaling failed.
      */
     @Nullable private <T> T unmarshal(final byte[] bytes) throws IOException {
-        if (marshaller != null) {
+        if (marsh != null) {
             try {
-                return marshaller.unmarshal(bytes, getClass().getClassLoader());
+                return U.unmarshal(marsh, bytes, getClass().getClassLoader());
             }
             catch (IgniteCheckedException e) {
                 throw new IOException(e);
@@ -351,9 +357,9 @@ class WebSessionV2 implements HttpSession {
      * @throws IOException If marshaling failed.
      */
     @Nullable private byte[] marshal(final Object obj) throws IOException {
-        if (marshaller != null) {
+        if (marsh != null) {
             try {
-                return marshaller.marshal(obj);
+                return U.marshal(marsh, obj);
             }
             catch (IgniteCheckedException e) {
                 throw new IOException(e);

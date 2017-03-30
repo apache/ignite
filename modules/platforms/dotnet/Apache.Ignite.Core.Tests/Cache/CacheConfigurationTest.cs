@@ -21,10 +21,16 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Tests.Plugin.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -37,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         /** */
         private const string CacheName = "cacheName";
+
+        /** */
+        private const string CacheName2 = "cacheName2";
 
         /** */
         private static int _factoryProp;
@@ -53,9 +62,10 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(),
-                    GetCustomCacheConfiguration()
+                    GetCustomCacheConfiguration(),
+                    GetCustomCacheConfiguration2()
                 },
-                GridName = CacheName,
+                IgniteInstanceName = CacheName,
                 BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
             };
 
@@ -95,6 +105,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             AssertConfigsAreEqual(GetCustomCacheConfiguration(),
                 _ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == CacheName));
+
+            AssertConfigsAreEqual(GetCustomCacheConfiguration2(),
+                _ignite.GetCache<int, int>(CacheName2).GetConfiguration());
+
+            AssertConfigsAreEqual(GetCustomCacheConfiguration2(),
+                _ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == CacheName2));
         }
 
         /// <summary>
@@ -236,10 +252,44 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindEnabled, y.WriteBehindEnabled);
             Assert.AreEqual(x.WriteBehindFlushFrequency, y.WriteBehindFlushFrequency);
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
+            Assert.AreEqual(x.EnableStatistics, y.EnableStatistics);
+
+            if (x.ExpiryPolicyFactory != null)
+                Assert.AreEqual(x.ExpiryPolicyFactory.CreateInstance().GetType(),
+                    y.ExpiryPolicyFactory.CreateInstance().GetType());
+            else
+                Assert.IsNull(y.ExpiryPolicyFactory);
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
             AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
+            AssertConfigsAreEqual(x.AffinityFunction, y.AffinityFunction);
+
+            if (x.PluginConfigurations != null)
+            {
+                Assert.IsNotNull(y.PluginConfigurations);
+                Assert.AreEqual(x.PluginConfigurations.Select(p => p.GetType()),
+                    y.PluginConfigurations.Select(p => p.GetType()));
+            }
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IAffinityFunction x, IAffinityFunction y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            var px = (AffinityFunctionBase) x;
+            var py = (AffinityFunctionBase) y;
+
+            Assert.AreEqual(px.GetType(), py.GetType());
+            Assert.AreEqual(px.Partitions, py.Partitions);
+            Assert.AreEqual(px.ExcludeNeighbors, py.ExcludeNeighbors);
         }
 
         /// <summary>
@@ -306,6 +356,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.KeyTypeName, y.KeyTypeName);
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
+            Assert.AreEqual(x.TableName, y.TableName);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
             AssertConfigsAreEqual(x.Aliases, y.Aliases);
@@ -405,6 +456,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
+            Assert.AreEqual(x.IsKeyField, y.IsKeyField);
         }
 
         /// <summary>
@@ -486,7 +538,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)), 
+                            new QueryField("name", typeof(string)) {IsKeyField = true},
                             new QueryField("location", typeof(string)),
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -516,6 +568,108 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
+                },
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    Partitions = 513,
+                    ExcludeNeighbors = true
+                },
+                ExpiryPolicyFactory = new ExpiryFactory(),
+                EnableStatistics = true,
+                PluginConfigurations = new[] { new CachePluginConfiguration() }
+            };
+        }
+        /// <summary>
+        /// Gets the custom cache configuration with some variations.
+        /// </summary>
+        private static CacheConfiguration GetCustomCacheConfiguration2(string name = null)
+        {
+            return new CacheConfiguration
+            {
+                Name = name ?? CacheName2,
+                OffHeapMaxMemory = 1,
+                StartSize = 2,
+                MaxConcurrentAsyncOperations = 3,
+                WriteBehindFlushThreadCount = 4,
+                LongQueryWarningTimeout = TimeSpan.FromSeconds(5),
+                LoadPreviousValue = true,
+                EvictSynchronizedKeyBufferSize = 6,
+                CopyOnRead = true,
+                WriteBehindFlushFrequency = TimeSpan.FromSeconds(6),
+                WriteBehindFlushSize = 7,
+                EvictSynchronized = true,
+                AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Clock,
+                AtomicityMode = CacheAtomicityMode.Transactional,
+                Backups = 8,
+                CacheMode = CacheMode.Partitioned,
+                EagerTtl = true,
+                EnableSwap = true,
+                EvictSynchronizedConcurrencyLevel = 9,
+                EvictSynchronizedTimeout = TimeSpan.FromSeconds(10),
+                Invalidate = true,
+                KeepBinaryInStore = true,
+                LockTimeout = TimeSpan.FromSeconds(11),
+                MaxEvictionOverflowRatio = 0.5f,
+                MemoryMode = CacheMemoryMode.OnheapTiered,
+                ReadFromBackup = true,
+                RebalanceBatchSize = 12,
+                RebalanceDelay = TimeSpan.FromSeconds(13),
+                RebalanceMode = CacheRebalanceMode.Sync,
+                RebalanceThrottle = TimeSpan.FromSeconds(15),
+                RebalanceTimeout = TimeSpan.FromSeconds(16),
+                SqlEscapeAll = true,
+                SqlOnheapRowCacheSize = 17,
+                WriteBehindBatchSize = 18,
+                WriteBehindEnabled = false,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
+                CacheStoreFactory = new CacheStoreFactoryTest(),
+                ReadThrough = true,
+                WriteThrough = true,
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        KeyTypeName = "Integer",
+                        ValueTypeName = "java.lang.String",
+                        TableName = "MyTable",
+                        Fields = new[]
+                        {
+                            new QueryField("length", typeof(int)), 
+                            new QueryField("name", typeof(string)), 
+                            new QueryField("location", typeof(string)) {IsKeyField = true}
+                        },
+                        Aliases = new [] {new QueryAlias("length", "len") },
+                        Indexes = new[]
+                        {
+                            new QueryIndex("name") {Name = "index1" },
+                            new QueryIndex(new QueryIndexField("location", true))
+                            {
+                                Name= "index2",
+                                IndexType = QueryIndexType.Sorted
+                            }
+                        }
+                    }
+                },
+                NearConfiguration = new NearCacheConfiguration
+                {
+                    NearStartSize = 456,
+                    EvictionPolicy = new FifoEvictionPolicy
+                    {
+                        MaxSize = 25,
+                        MaxMemorySize = 2500,
+                        BatchSize = 3
+                    }
+                },
+                EvictionPolicy = new LruEvictionPolicy
+                {
+                    MaxSize = 26,
+                    MaxMemorySize = 2501,
+                    BatchSize = 33
+                },
+                AffinityFunction = new FairAffinityFunction
+                {
+                    Partitions = 113,
+                    ExcludeNeighbors = false
                 }
             };
         }
@@ -551,7 +705,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Test store.
         /// </summary>
-        private class CacheStoreTest : CacheStoreAdapter
+        private class CacheStoreTest : CacheStoreAdapter<object, object>
         {
             /** <inheritdoc /> */
             public override object Load(object key)
@@ -581,6 +735,19 @@ namespace Apache.Ignite.Core.Tests.Cache
             /// Gets or sets the foo.
             /// </summary>
             public int Foo { get; set; }
+        }
+
+
+        /// <summary>
+        /// Expiry policy factory.
+        /// </summary>
+        private class ExpiryFactory : IFactory<IExpiryPolicy>
+        {
+            /** <inheritdoc /> */
+            public IExpiryPolicy CreateInstance()
+            {
+                return new ExpiryPolicy(null, null, null);
+            }
         }
     }
 }
