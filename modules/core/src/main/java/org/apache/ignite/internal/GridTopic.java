@@ -106,6 +106,9 @@ public enum GridTopic {
     TOPIC_HADOOP_MSG,
 
     /** */
+    TOPIC_METADATA_REQ,
+
+    /** */
     TOPIC_DYNAMIC_SCHEMA;
 
     /** Enum values. */
