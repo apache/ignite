@@ -1,3 +1,12 @@
+// @java.file.header
+
+/*  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +24,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.math.impls.storage.matrix;
+package org.apache.ignite.math.impls.matrix;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.math.StorageConstants;
@@ -25,23 +39,27 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
- * Tests for {@link SparseDistributedMatrixStorage}.
+ * Tests for {@ling SparseDistributedMatrix}.
  */
 @GridCommonTest(group = "Distributed Models")
-public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
+public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
-    /** */
-    public static final String UNEXPECTED_ATTRIBUTE_VALUE = "Unexpected attribute value.";
     /** Grid instance. */
     private Ignite ignite;
+    /** Matrix rows */
+    private final int rows = MathTestConstants.STORAGE_SIZE;
+    /** Matrix cols */
+    private final int cols = MathTestConstants.STORAGE_SIZE;
+    /** Matrix for tests */
+    private SparseDistributedMatrix cacheMatrix;
 
     /**
      * Default constructor.
      */
-    public SparseDistributedMatrixStorageTest(){
+    public SparseDistributedMatrixTest(){
         super(false);
     }
 
@@ -68,58 +86,49 @@ public class SparseDistributedMatrixStorageTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite.destroyCache(CACHE_NAME);
+
+        if (cacheMatrix != null){
+            cacheMatrix.destroy();
+            cacheMatrix = null;
+        }
     }
 
     /** */
-    public void testCacheCreation() throws Exception {
+    public void testGetSet() throws Exception {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
-        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
-
-        assertNotNull("SparseDistributedMatrixStorage cache is null.", storage.cache());
-    }
-
-    /** */
-    public void testSetGet() throws Exception {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
-
-        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+        cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 double v = Math.random();
-                storage.set(i, j, v);
+                cacheMatrix.set(i, j, v);
 
-                assert Double.compare(v, storage.get(i, j)) == 0;
-                assert Double.compare(v, storage.get(i,j)) == 0;
+                assert Double.compare(v, cacheMatrix.get(i, j)) == 0;
             }
         }
     }
 
     /** */
-    public void testAttibutes(){
+    public void testExternalize() throws IOException, ClassNotFoundException {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        final int rows = MathTestConstants.STORAGE_SIZE;
-        final int cols = MathTestConstants.STORAGE_SIZE;
+        cacheMatrix = new SparseDistributedMatrix(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
 
-        SparseDistributedMatrixStorage storage = new SparseDistributedMatrixStorage(rows, cols, StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+        cacheMatrix.set(1, 1, 1.0);
 
-        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.rowSize(), rows);
-        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.columnSize(), cols);
+        ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objOutputStream = new ObjectOutputStream(byteArrOutputStream);
 
-        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, storage.isArrayBased());
-        assertFalse(UNEXPECTED_ATTRIBUTE_VALUE, storage.isDense());
-        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, storage.isDistributed());
+        objOutputStream.writeObject(cacheMatrix);
 
-        assertEquals(UNEXPECTED_ATTRIBUTE_VALUE, storage.isRandomAccess(), !storage.isSequentialAccess());
-        assertTrue(UNEXPECTED_ATTRIBUTE_VALUE, storage.isRandomAccess());
+        ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
+        ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
+
+        SparseDistributedMatrix objRestored = (SparseDistributedMatrix) objInputStream.readObject();
+
+        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheMatrix.equals(objRestored));
+        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1, 1), 1.0, 0.0);
 
     }
 

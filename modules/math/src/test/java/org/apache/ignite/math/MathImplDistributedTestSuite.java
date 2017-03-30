@@ -18,6 +18,7 @@
 package org.apache.ignite.math;
 
 import org.apache.ignite.math.impls.matrix.CacheMatrixTest;
+import org.apache.ignite.math.impls.matrix.SparseDistributedMatrixTest;
 import org.apache.ignite.math.impls.storage.matrix.SparseDistributedMatrixStorageTest;
 import org.apache.ignite.math.impls.vector.CacheVectorTest;
 import org.junit.runner.RunWith;
@@ -28,9 +29,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    CacheVectorTest.class,
     CacheMatrixTest.class,
     SparseDistributedMatrixStorageTest.class,
-    CacheVectorTest.class
+    SparseDistributedMatrixTest.class,
 })
 public class MathImplDistributedTestSuite{
     // No-op.

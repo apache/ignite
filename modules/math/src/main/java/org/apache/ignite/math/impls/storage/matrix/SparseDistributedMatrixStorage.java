@@ -28,7 +28,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     private int rows, cols;
     private int stoMode, acsMode;
 
-    // Actual distributed storage.
+    /** Actual distributed storage. */
     private IgniteCache<
             Integer /* Row or column index. */,
             Map<Integer, Double> /* Map-based row or column. */
@@ -231,5 +231,37 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false; 
+    }
+
+    /** Destroy underlying cache. */
+    @Override public void destroy() {
+        cache.destroy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + cols;
+        res = res * 37 + rows;
+        res = res * 37 + acsMode;
+        res = res * 37 + stoMode;
+        res = res * 37 + cache.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        SparseDistributedMatrixStorage that = (SparseDistributedMatrixStorage) obj;
+
+        return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 }

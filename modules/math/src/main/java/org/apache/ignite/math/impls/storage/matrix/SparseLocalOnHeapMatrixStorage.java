@@ -35,13 +35,12 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     // Actual map storage.
     private Map<Integer, Map<Integer, Double>> sto;
 
-    /**
-     *
-     */
+    /** */
     public SparseLocalOnHeapMatrixStorage() {
         // No-op.
     }
 
+    /** */
     public SparseLocalOnHeapMatrixStorage(int rows, int cols, int acsMode, int stoMode) {
         assert rows > 0;
         assert cols > 0;
@@ -54,31 +53,6 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
         this.stoMode = stoMode;
 
         sto = new HashMap<Integer, Map<Integer, Double>>();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage) o;
-
-        return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
-            && (sto != null ? sto.equals(that.sto) : that.sto == null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + rows;
-        res = res * 37 + cols;
-        res = res * 37 + sto.hashCode();
-
-        return res;
     }
 
     /**
@@ -196,5 +170,30 @@ public class SparseLocalOnHeapMatrixStorage implements MatrixStorage, StorageCon
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + rows;
+        res = res * 37 + cols;
+        res = res * 37 + sto.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SparseLocalOnHeapMatrixStorage that = (SparseLocalOnHeapMatrixStorage) o;
+
+        return rows == that.rows && cols == that.cols && acsMode == that.acsMode && stoMode == that.stoMode
+            && (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 }

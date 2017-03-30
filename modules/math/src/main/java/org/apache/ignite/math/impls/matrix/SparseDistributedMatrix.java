@@ -26,12 +26,10 @@
 
 package org.apache.ignite.math.impls.matrix;
 
-import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.math.*;
 import org.apache.ignite.math.Vector;
-import java.io.*;
-import java.util.*;
+import org.apache.ignite.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 
 /**
  * Sparse distributed matrix implementation based on data grid.
@@ -46,14 +44,6 @@ import java.util.*;
  * matrix.
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {
-    private int rows, cols;
-    private int stoMode, acsMode;
-
-    private IgniteCache<
-            Integer /* Row or column index. */,
-            Map<Integer, Double> /* Map-based row or column. */
-        > cache = null;
-
     /**
      *
      */
@@ -74,10 +64,7 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         assertAccessMode(acsMode);
         assertStorageMode(stoMode);
 
-        this.rows = rows;
-        this.cols = cols;
-        this.stoMode = stoMode;
-        this.acsMode = acsMode;
+        setStorage(new SparseDistributedMatrixStorage(rows, cols, stoMode, acsMode));
     }
 
     /**
@@ -89,27 +76,18 @@ public class SparseDistributedMatrix extends AbstractMatrix implements StorageCo
         return null; // TODO
     }
 
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        // TODO
-    }
-
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        // TODO
-    }
-
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix like(int rows, int cols) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 }
