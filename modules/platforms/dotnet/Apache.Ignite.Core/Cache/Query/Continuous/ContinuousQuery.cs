@@ -18,14 +18,21 @@
 namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
     /// Continuous query base class, see <see cref="ContinuousQuery{K, V}"/>.
     /// </summary>
-    public class ContinuousQuery
+    public abstract class ContinuousQuery
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContinuousQuery"/> class.
+        /// </summary>
+        protected internal ContinuousQuery()
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Default buffer size.
         /// </summary>
