@@ -35,6 +35,7 @@ nobase_include_HEADERS = \
     ignite/impl/binary/binary_type_updater.h \
     ignite/impl/binary/binary_common.h \
     ignite/impl/binary/binary_writer_impl.h \
+    ignite/impl/binary/binary_field_meta.h \
     ignite/impl/binary/binary_type_snapshot.h \
     ignite/impl/binary/binary_reader_impl.h \
     ignite/impl/binary/binary_schema.h \

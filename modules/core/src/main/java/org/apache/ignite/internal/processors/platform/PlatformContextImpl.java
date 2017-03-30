@@ -35,6 +35,7 @@ import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -354,17 +355,22 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
-        Collection<Metadata> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<Metadata>() {
-                @Override public Metadata read(BinaryRawReaderEx reader) {
+        Collection<BinaryMetadata> metas = PlatformUtils.readCollection(reader,
+            new PlatformReaderClosure<BinaryMetadata>() {
+                @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
-                    Map<String, Integer> fields = PlatformUtils.readLinkedMap(reader,
-                        new PlatformReaderBiClosure<String, Integer>() {
-                            @Override public IgniteBiTuple<String, Integer> read(BinaryRawReaderEx reader) {
-                                return F.t(reader.readString(), reader.readInt());
+                    Map<String, BinaryFieldMetadata> fields = PlatformUtils.readLinkedMap(reader,
+                        new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                            @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                                String name = reader.readString();
+                                int typeId = reader.readInt();
+                                int fieldId = reader.readInt();
+
+                                return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                        new BinaryFieldMetadata(typeId, fieldId));
                             }
                         });
 
@@ -390,16 +396,15 @@ public class PlatformContextImpl implements PlatformContext {
                         }
                     }
 
-                    return new Metadata(typeId, typeName, affKey, fields, isEnum, schemas);
+                    return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum);
                 }
             }
         );
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
-        for (Metadata meta : metas)
-            binCtx.updateMetadata(meta.typeId, new BinaryMetadata(meta.typeId,
-                meta.typeName, meta.fields, meta.affKey, meta.schemas, meta.isEnum));
+        for (BinaryMetadata meta : metas)
+            binCtx.updateMetadata(meta.typeId(), meta);
     }
 
     /** {@inheritDoc} */
@@ -455,12 +460,21 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeBoolean(true);
 
             BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
-            Map<String, Integer> fields = meta0.fieldsMap();
+            Map<String, BinaryFieldMetadata> fields = meta0.fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
-            writer.writeMap(fields);
+
+            writer.writeInt(fields.size());
+
+            for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+                writer.writeString(e.getKey());
+
+                writer.writeInt(e.getValue().typeId());
+                writer.writeInt(e.getValue().fieldId());
+            }
+
             writer.writeBoolean(meta.isEnum());
         }
     }
@@ -682,47 +696,5 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @Override public String platform() {
         return platform;
-    }
-
-    /**
-     * Metadata holder.
-     */
-    private static class Metadata {
-        /** Type ID. */
-        private final int typeId;
-
-        /** Type name. */
-        private final String typeName;
-
-        /** Affinity key. */
-        private final String affKey;
-
-        /** Fields map. */
-        private final Map<String, Integer> fields;
-
-        /** Enum flag. */
-        private final boolean isEnum;
-
-        /** Schemas. */
-        private final List<BinarySchema> schemas;
-
-        /**
-         * Constructor.
-         *  @param typeId Type ID.
-         * @param typeName Type name.
-         * @param affKey Affinity key.
-         * @param fields Fields.
-         * @param isEnum Enum flag.
-         * @param schemas Schemas.
-         */
-        private Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum,
-            List<BinarySchema> schemas) {
-            this.typeId = typeId;
-            this.typeName = typeName;
-            this.affKey = affKey;
-            this.fields = fields;
-            this.isEnum = isEnum;
-            this.schemas = schemas;
-        }
     }
 }

@@ -32,7 +32,10 @@ using namespace boost::unit_test;
 /*
  * Test setup fixture.
  */
-struct ClusterTestSuiteFixture {
+struct ClusterTestSuiteFixture
+{
+    Ignite grid;
+
     /*
      * Constructor.
      */

@@ -49,7 +49,10 @@ public interface GridComponent {
         CLUSTER_PROC,
 
         /** */
-        MARSHALLER_PROC
+        MARSHALLER_PROC,
+
+        /** */
+        BINARY_PROC
     }
 
     /**
