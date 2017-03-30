@@ -14,20 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.binary;
 
-namespace Apache.Ignite.Core.Impl.Binary.IO
-{
-    /// <summary>
-    /// Binary stream processor.
-    /// </summary>
-    internal unsafe interface IBinaryStreamProcessor<in TArg, out T>
-    {
-        /// <summary>
-        /// Invokes the processor.
-        /// </summary>
-        /// <param name="data">Data.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        T Invoke(byte* data, TArg arg);
-    }
+import org.apache.ignite.internal.binary.BinaryMetadata;
+
+/**
+ *  Interface allows any component to register for events of binary metadata updates.
+ */
+public interface BinaryMetadataUpdatedListener {
+    /**
+     * @param metadata Updated metadata.
+     */
+    public void binaryMetadataUpdated(BinaryMetadata metadata);
 }

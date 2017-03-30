@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.IO
-{
-    /// <summary>
-    /// Binary stream processor.
-    /// </summary>
-    internal unsafe interface IBinaryStreamProcessor<in TArg, out T>
-    {
-        /// <summary>
-        /// Invokes the processor.
-        /// </summary>
-        /// <param name="data">Data.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        T Invoke(byte* data, TArg arg);
+package org.apache.ignite.internal;
+
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
+/**
+ * Task execution test.
+ */
+@GridCommonTest(group = "Kernal Self")
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean peerClassLoadingEnabled() {
+        return false;
     }
 }

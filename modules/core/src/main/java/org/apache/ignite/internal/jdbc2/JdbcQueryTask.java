@@ -50,7 +50,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * This parameter can be configured via {@link IgniteSystemProperties#IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY}
  * system property.
  */
-class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
+class JdbcQueryTaskV2 implements IgniteCallable<JdbcQueryTaskV2.QueryResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -111,7 +111,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
-    public JdbcQueryTask(Ignite ignite, String cacheName, String sql,
+    public JdbcQueryTaskV2(Ignite ignite, String cacheName, String sql,
                            Boolean isQry, boolean loc, Object[] args, int fetchSize, UUID uuid,
                            boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
@@ -128,7 +128,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
     }
 
     /** {@inheritDoc} */
-    @Override public JdbcQueryTask.QueryResult call() throws Exception {
+    @Override public JdbcQueryTaskV2.QueryResult call() throws Exception {
         Cursor cursor = CURSORS.get(uuid);
 
         List<String> tbls = null;
@@ -161,7 +161,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
             qry.setCollocated(collocatedQry);
             qry.setDistributedJoins(distributedJoins);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.query(qry);
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();

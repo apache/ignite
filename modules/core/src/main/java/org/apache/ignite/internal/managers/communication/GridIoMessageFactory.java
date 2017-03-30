@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -647,6 +649,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 79:
                 msg = new MissingMappingResponseMessage();
+
+                break;
+
+            case 80:
+                msg = new MetadataRequestMessage();
+
+                break;
+
+            case 81:
+                msg = new MetadataResponseMessage();
 
                 break;
 

@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary.IO
-{
-    /// <summary>
-    /// Binary stream processor.
-    /// </summary>
-    internal unsafe interface IBinaryStreamProcessor<in TArg, out T>
-    {
-        /// <summary>
-        /// Invokes the processor.
-        /// </summary>
-        /// <param name="data">Data.</param>
-        /// <param name="arg">Argument.</param>
-        /// <returns>Result.</returns>
-        T Invoke(byte* data, TArg arg);
+package org.apache.ignite.jdbc;
+
+import java.sql.ResultSet;
+
+/**
+ * Test for Jdbc driver query without class on client
+ */
+public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
+    /** URL. */
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJdbcQuery() throws Exception {
+        stmt.execute("select * from JdbcTestObject");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertResultSet(rs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getURL() {
+        return URL;
     }
 }
