@@ -69,8 +69,8 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 String typeName = reader.readString();
 
                 return platformContext().kernalContext().marshallerContext()
-                        .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName)
-                        ? TRUE : FALSE;
+                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName)
+                    ? TRUE : FALSE;
             }
         }
 
@@ -111,10 +111,11 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                 try {
                     String typeName = platformContext().kernalContext().marshallerContext()
-                            .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
+                        .getClassName(MarshallerPlatformIds.DOTNET_ID, typeId);
 
                     writer.writeString(typeName);
-                } catch (ClassNotFoundException e) {
+                }
+                catch (ClassNotFoundException e) {
                     throw new BinaryObjectException(e);
                 }
 

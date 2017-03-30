@@ -1284,9 +1284,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var typeId = ObjTypeId;
 
                 if (elemType != typeof(object))
-                {
                     typeId = ctx.Marshaller.GetDescriptor(elemType).TypeId;
-                }
 
                 stream.WriteInt(typeId);
 

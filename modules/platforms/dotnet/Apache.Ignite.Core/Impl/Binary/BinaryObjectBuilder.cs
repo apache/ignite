@@ -944,18 +944,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                         Mutate0(ctx, inStream, outStream, false, null);
 
                     break;
+
                 case BinaryUtils.TypeArrayEnum:
                 case BinaryUtils.TypeArray:
                     int type = inStream.ReadInt();
+
                     outStream.WriteInt(type);
 
                     if (type == BinaryUtils.TypeUnregistered)
                     {
                         outStream.WriteByte(inStream.ReadByte());  // String header.
+
                         BinaryUtils.WriteString(BinaryUtils.ReadString(inStream), outStream);  // String data.
                     }
 
                     arrLen = inStream.ReadInt();
+
                     outStream.WriteInt(arrLen);
 
                     for (int i = 0; i < arrLen; i++)
