@@ -97,6 +97,8 @@ public class QuerySchema implements Serializable {
      * @param msg Propose message.
      */
     public void propose(UUID locNodeId, IndexProposeDiscoveryMessage msg) {
+        // TODO: Validate state.
+
         synchronized (mux) {
             IndexAbstractOperation op = msg.operation();
 
