@@ -19,6 +19,7 @@ package org.apache.ignite.math.impls.storage.vector;
 
 import java.io.*;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.math.ValueMapper;
 import org.apache.ignite.math.VectorKeyMapper;
 import org.apache.ignite.math.VectorStorage;
@@ -27,9 +28,13 @@ import org.apache.ignite.math.VectorStorage;
  * Vector storage based on existing cache and index and value mapping functions.
  */
 public class CacheVectorStorage<K, V> implements VectorStorage {
+    /** Storage size. */
     private int size;
+    /** Key mapper. */
     private VectorKeyMapper<K> keyMapper;
+    /** Value mapper. */
     private ValueMapper<V> valMapper;
+    /** Underlying ignite cache. */
     private IgniteCache<K, V> cache;
 
     /**
@@ -82,45 +87,87 @@ public class CacheVectorStorage<K, V> implements VectorStorage {
         return valMapper;
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return valMapper.toDouble(cache.get(keyMapper.apply(i)));
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         cache.put(keyMapper.apply(i), valMapper.fromDouble(v));
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
+        out.writeInt(size);
+        out.writeObject(keyMapper);
+        out.writeObject(valMapper);
+        out.writeUTF(cache.getName());
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
+        size = in.readInt();
+        keyMapper = (VectorKeyMapper<K>) in.readObject();
+        valMapper = (ValueMapper<V>) in.readObject();
+        cache = Ignition.localIgnite().getOrCreateCache(in.readUTF());
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
     }
 
-    @Override
-    public boolean isRandomAccess() {
+    /** {@inheritDoc} */
+    @Override public boolean isRandomAccess() {
         return true;
     }
 
-    @Override
-    public boolean isDistributed() {
+    /** {@inheritDoc} */
+    @Override public boolean isDistributed() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + size();
+        res = res * 37 + keyMapper.hashCode();
+        res = res * 37 + valMapper.hashCode();
+        res = res * 37 + cache.hashCode();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        CacheVectorStorage that = (CacheVectorStorage) obj;
+
+        return size == that.size
+            && (keyMapper != null ? keyMapper.getClass().equals(that.keyMapper.getClass()) : that.keyMapper == null)
+            && (valMapper != null ? valMapper.getClass().equals(that.valMapper.getClass()) : that.valMapper == null)
+            && (cache != null ? cache.equals(that.cache) : that.cache == null);
     }
 }

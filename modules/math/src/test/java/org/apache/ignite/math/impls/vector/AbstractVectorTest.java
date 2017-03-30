@@ -233,14 +233,6 @@ public class AbstractVectorTest {
 
     /** */
     @Test
-    public void hashCodeTest() {
-        IgniteUuid guid = testVector.guid();
-
-        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, testVector.hashCode(), guid.hashCode());
-    }
-
-    /** */
-    @Test
     public void nonZeroElements() {
         VectorStorage storage = createStorage();
 

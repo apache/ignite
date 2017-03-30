@@ -17,6 +17,7 @@
 
 package org.apache.ignite.math.impls.vector;
 
+import org.apache.ignite.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.math.impls.storage.vector.ConstantVectorStorage;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
@@ -64,7 +65,7 @@ public class ConstantVector extends AbstractReadOnlyVector {
 
     /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

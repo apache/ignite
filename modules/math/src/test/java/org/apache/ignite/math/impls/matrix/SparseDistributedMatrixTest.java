@@ -129,7 +129,6 @@ public class SparseDistributedMatrixTest extends GridCommonAbstractTest {
 
         assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheMatrix.equals(objRestored));
         assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1, 1), 1.0, 0.0);
-
     }
 
 }

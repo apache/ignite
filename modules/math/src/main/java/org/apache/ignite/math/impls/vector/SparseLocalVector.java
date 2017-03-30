@@ -20,6 +20,7 @@ package org.apache.ignite.math.impls.vector;
 import org.apache.ignite.math.StorageConstants;
 import org.apache.ignite.math.Matrix;
 import org.apache.ignite.math.Vector;
+import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.storage.vector.SparseLocalOnHeapVectorStorage;
 
 /**
@@ -44,18 +45,21 @@ public class SparseLocalVector extends AbstractVector implements StorageConstant
         setStorage(new SparseLocalOnHeapVectorStorage(size, acsMode));
     }
 
+    /** */
     private SparseLocalOnHeapVectorStorage storage() {
         return (SparseLocalOnHeapVectorStorage)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         SparseLocalOnHeapVectorStorage sto = storage();
 
         return new SparseLocalVector(crd, sto.getAccessMode());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
-        return null; // TODO
+        return new SparseLocalOnHeapMatrix(rows, cols);
     }
 
     /** {@inheritDoc} */

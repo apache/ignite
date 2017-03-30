@@ -431,6 +431,14 @@ public class VectorImplementationsTest { // todo split this to smaller cohesive 
     }
 
     /** */
+    @Test
+    public void hashCodeTest(){
+        consumeSampleVectors((v, desc)->{
+            assertTrue("Zero hash code for " + desc, v.hashCode() != 0);
+        });
+    }
+
+    /** */
     private boolean getXOutOfBoundsOK(Vector v) {
         // todo find out if this is indeed OK
         return v instanceof RandomVector || v instanceof ConstantVector

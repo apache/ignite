@@ -330,16 +330,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return guid.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o || o != null && ((getClass() == o.getClass())) && ((sto.equals(((AbstractVector)o).sto)));
-    }
-
-    /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
         return new Iterable<Element>() {
             private int idx = 0;
@@ -870,5 +860,26 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public void destroy() {
         sto.destroy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+        res += res * 37 + guid.hashCode();
+        res += sto == null ? 0: res * 37 + sto.hashCode();
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        AbstractVector that = (AbstractVector)obj;
+
+        return (sto != null ? sto.equals(that.sto) : that.sto == null);
     }
 }

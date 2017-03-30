@@ -1,5 +1,6 @@
 package org.apache.ignite.math.impls.vector;
 
+import java.io.*;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -24,21 +25,11 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test-cache";
     /** Cache size. */
-    private final int size = MathTestConstants.STORAGE_SIZE;
+    private static final int size = MathTestConstants.STORAGE_SIZE;
     /** Grid instance. */
     private Ignite ignite;
-    // Default kep mapper.
-    private VectorKeyMapper<Integer> keyMapper = new VectorKeyMapper<Integer>() {
-        @Override
-        public Integer apply(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean isValid(Integer i) {
-            return i < size;
-        }
-    };
+    /** Default key mapper. */
+    private VectorKeyMapper<Integer> keyMapper = new TestKeyMapper();
 
     /**
      * Default constructor.
@@ -361,6 +352,29 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testExternalize() throws IOException, ClassNotFoundException {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        IdentityValueMapper valMapper = new IdentityValueMapper();
+        CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
+
+        cacheVector.set(1, 1.0);
+
+        ByteArrayOutputStream byteArrOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objOutputStream = new ObjectOutputStream(byteArrOutputStream);
+
+        objOutputStream.writeObject(cacheVector);
+
+        ByteArrayInputStream byteArrInputStream = new ByteArrayInputStream(byteArrOutputStream.toByteArray());
+        ObjectInputStream objInputStream = new ObjectInputStream(byteArrInputStream);
+
+        CacheVector objRestored = (CacheVector) objInputStream.readObject();
+
+        assertTrue(MathTestConstants.VALUE_NOT_EQUALS, cacheVector.equals(objRestored));
+        assertEquals(MathTestConstants.VALUE_NOT_EQUALS, objRestored.get(1), 1.0, 0.0);
+    }
+
+    /** */
     private void initVector(CacheVector cacheVector){
         for (int i = 0; i < cacheVector.size(); i++)
             cacheVector.set(i, 0d);
@@ -377,5 +391,15 @@ public class CacheVectorTest extends GridCommonAbstractTest {
 
         assert cache != null;
         return cache;
+    }
+
+    private static class TestKeyMapper implements VectorKeyMapper<Integer>{
+        @Override public Integer apply(int i) {
+            return i;
+        }
+
+        @Override public boolean isValid(Integer i) {
+            return i < size;
+        }
     }
 }

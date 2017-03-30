@@ -28,21 +28,6 @@ public class ArrayVectorStorage implements VectorStorage {
     /** */
     private double[] data;
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o || !(o == null || getClass() != o.getClass())
-            && Arrays.equals(data, ((ArrayVectorStorage)o).data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = 1;
-
-        res = res * 37 + Arrays.hashCode(data);
-
-        return res;
-    }
-
     /**
      * IMPL NOTE required by Externalizable
      */
@@ -123,5 +108,27 @@ public class ArrayVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         data = (double[])in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + Arrays.hashCode(data);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (obj == null || getClass() != obj.getClass())
+            return false;
+
+        ArrayVectorStorage that = (ArrayVectorStorage)obj;
+
+        return Arrays.equals(data, (that.data));
     }
 }

@@ -6,6 +6,7 @@ import org.apache.ignite.math.impls.matrix.DenseLocalOffHeapMatrix;
 import org.apache.ignite.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.math.impls.matrix.RandomMatrix;
 import org.apache.ignite.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.math.impls.matrix.SparseLocalOnHeapMatrix;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public class VectorToMatrixTest {
     /** */ private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
 
     /** */ private static final List<Class<? extends Vector>> likeMatrixUnsupported = Arrays.asList(FunctionVector.class,
-        SingleElementVector.class, SingleElementVectorView.class);
+        SingleElementVector.class, SingleElementVectorView.class, ConstantVector.class);
 
     /** */ @Test
     public void testHaveLikeMatrix() throws InstantiationException, IllegalAccessException {
@@ -240,7 +241,7 @@ public class VectorToMatrixTest {
             put(DenseLocalOnHeapVector.class, DenseLocalOnHeapMatrix.class);
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
-            put(SparseLocalVector.class, null);
+            put(SparseLocalVector.class, SparseLocalOnHeapMatrix.class);
             put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
             put(ConstantVector.class, null);
             put(FunctionVector.class, null);
