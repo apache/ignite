@@ -80,14 +80,17 @@ public class FunctionVectorStorage implements VectorStorage {
         this(size, getFunc, null);
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public double get(int i) {
         return getFunc.apply(i);
     }
 
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         if (setFunc != null)
             setFunc.accept(i, v);
@@ -95,22 +98,26 @@ public class FunctionVectorStorage implements VectorStorage {
             throw new UnsupportedOperationException("Cannot set into read-only vector.");
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(setFunc);
         out.writeObject(getFunc);
         out.writeInt(size);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setFunc = (IntDoubleToVoidFunction)in.readObject();
         getFunc = (IgniteFunction<Integer, Double>)in.readObject();
         size = in.readInt();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isSequentialAccess() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return false;
     }
@@ -125,6 +132,7 @@ public class FunctionVectorStorage implements VectorStorage {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }

@@ -88,12 +88,14 @@ public class FunctionVector extends AbstractVector {
         return (FunctionVectorStorage)getStorage();
     }
 
+    /** {@inheritDoc} */
     @Override public org.apache.ignite.math.Vector like(int crd) {
         FunctionVectorStorage sto = storage();
 
         return new FunctionVector(crd, sto.getFunction(), sto.setFunction());
     }
 
+    /** {@inheritDoc} */
     @Override public Matrix likeMatrix(int rows, int cols) {
         throw new UnsupportedOperationException();
     }

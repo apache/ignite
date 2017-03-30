@@ -66,23 +66,6 @@ public class ArrayMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o || !(o == null || getClass() != o.getClass())
-            && Arrays.deepEquals(data, ((ArrayMatrixStorage)o).data);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = 1;
-
-        result = result * 37 + rows;
-        result = result * 37 + cols;
-        result = result * 37 + Arrays.deepHashCode(data);
-
-        return result;
-    }
-
-    /** {@inheritDoc} */
     @Override public double get(int x, int y) {
         return data[x][y];
     }
@@ -134,11 +117,41 @@ public class ArrayMatrixStorage implements MatrixStorage {
 
     /** {@inheritDoc */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(rows);
+        out.writeInt(cols);
+
         out.writeObject(data);
     }
 
     /** {@inheritDoc */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        rows = in.readInt();
+        cols = in.readInt();
+
         data = (double[][])in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res += res * 37 + rows;
+        res += res * 37 + cols;
+        res += res * 37 + Arrays.deepHashCode(data);
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ArrayMatrixStorage that = (ArrayMatrixStorage)o;
+
+        return Arrays.deepEquals(data, that.data);
     }
 }

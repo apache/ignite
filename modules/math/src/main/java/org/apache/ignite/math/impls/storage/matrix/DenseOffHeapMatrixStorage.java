@@ -26,7 +26,9 @@ import org.apache.ignite.math.MatrixStorage;
  */
 public class DenseOffHeapMatrixStorage implements MatrixStorage {
     private int rows, cols;
-    private long ptr;
+    private transient long ptr;
+    //TODO: temp solution.
+    private int ptrInitialHash;
 
     /** */
     public DenseOffHeapMatrixStorage(){
@@ -115,12 +117,11 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(rows);
         out.writeInt(cols);
+        out.writeInt(ptrInitialHash);
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
                 out.writeDouble(get(i, j));
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -130,11 +131,11 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
         allocateMemory(rows, cols);
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
+        ptrInitialHash = in.readInt();
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
                 set(i, j, in.readDouble());
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -162,7 +163,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
         result = result * 37 + rows;
         result = result * 37 + cols;
-        result = result * 37 + Long.hashCode(ptr);
+        result = result * 37 + ptrInitialHash;
 
         return result;
     }
@@ -184,5 +185,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     /** */
     private void allocateMemory(int rows, int cols) {
         ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
+
+        ptrInitialHash = Long.hashCode(ptr);
     }
 }

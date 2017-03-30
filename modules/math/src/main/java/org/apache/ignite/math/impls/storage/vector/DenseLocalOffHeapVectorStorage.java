@@ -27,7 +27,9 @@ import org.apache.ignite.math.VectorStorage;
  */
 public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     private int size;
-    private long ptr;
+    private transient long ptr;
+    //TODO: temp solution.
+    private int ptrInitialHash;
 
     /**
      *
@@ -96,6 +98,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(size);
+        out.writeInt(ptrInitialHash);
 
         for (int i = 0; i < size; i++)
             out.writeDouble(get(i));
@@ -107,6 +110,8 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
         allocateMemory(size);
 
+        ptrInitialHash = in.readInt();
+
         for (int i = 0; i < size; i++)
             set(i, in.readDouble());
     }
@@ -114,6 +119,16 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void destroy() {
         GridUnsafe.freeMemory(ptr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = 1;
+
+        res = res * 37 + size;
+        res = res * 37 + ptrInitialHash;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -127,16 +142,6 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
         DenseLocalOffHeapVectorStorage that = (DenseLocalOffHeapVectorStorage) o;
 
         return size == that.size && isMemoryEquals(that);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = 1;
-
-        result = result * 37 + size;
-        result = result * 37 + Long.hashCode(ptr);
-        
-        return result;
     }
 
     /** */
@@ -156,5 +161,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
     /** */
     private void allocateMemory(int size) {
         ptr = GridUnsafe.allocateMemory(size * Double.BYTES);
+
+        ptrInitialHash = Long.hashCode(ptr);
     }
 }

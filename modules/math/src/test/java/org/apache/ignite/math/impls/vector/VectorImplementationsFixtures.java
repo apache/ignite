@@ -581,8 +581,8 @@ class VectorImplementationsFixtures {
         @Override public int hashCode() {
             int res = 1;
 
-            res = res * 37 + new Double(scale).hashCode();
-            res = res * 37 + getStorage().hashCode();
+            res = res * 37 + Double.hashCode(scale);
+            res = res * 37 + Integer.hashCode(getStorage().size());
 
             return res;
         }
