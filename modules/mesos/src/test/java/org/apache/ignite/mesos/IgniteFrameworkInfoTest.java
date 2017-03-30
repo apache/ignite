@@ -17,59 +17,42 @@
 
 package org.apache.ignite.mesos;
 
+import com.google.protobuf.ByteString;
 import junit.framework.TestCase;
 import org.apache.mesos.Protos;
 import org.hamcrest.core.Is;
-import org.junit.Rule;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import static org.junit.Assert.assertThat;
 
 /**
- * FrameworkInfoTest
+ * FrameworkInfoTest.
  */
 public class IgniteFrameworkInfoTest extends TestCase {
-
-    /** Framework name.*/
+    /** Framework name. */
     private static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
-    /** Mesos user name in system environment.*/
+    /** User name. */
     private static final String MESOS_USER_NAME = "MESOS_USER";
 
-    /** */
-    private final String testName = "mesosusername";
-
-    /** Mesos user name in system environment.*/
+    /** Mesos role name. */
     private static final String MESOS_ROLE = "MESOS_ROLE";
-
-    /** */
-    private final String testRole = "mesosrole";
-
-    /** */
-    @Rule public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
-
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        environmentVariables.set(MESOS_USER_NAME, testName);
-        environmentVariables.set(MESOS_ROLE, testRole);
-    }
 
     /**
      * @throws Exception If failed.
      */
     public void testFrameworkInfo() throws Exception {
 
-        String name = System.getenv(MESOS_USER_NAME);
-        String role = System.getenv(MESOS_ROLE);
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
             .setName(IGNITE_FRAMEWORK_NAME)
-            .setUser(name != null ? name : "")
-            .setRole(role != null ? role : "*");
+            .setUser(MESOS_USER_NAME)
+            .setUserBytes(ByteString.copyFromUtf8(MESOS_USER_NAME))
+            .setRole(MESOS_ROLE)
+            .setRoleBytes(ByteString.copyFromUtf8(MESOS_ROLE));
 
-        assertThat(testName, Is.is(name));
-        assertThat(testRole, Is.is(role));
-
-        assertThat(name, Is.is(frameworkBuilder.getUser()));
-        assertThat(role, Is.is(frameworkBuilder.getRole()));
         assertThat(IGNITE_FRAMEWORK_NAME, Is.is(frameworkBuilder.getName()));
+        assertThat(MESOS_USER_NAME, Is.is(frameworkBuilder.getUser()));
+        assertThat(MESOS_USER_NAME, Is.is(frameworkBuilder.getUserBytes().toStringUtf8()));
+        assertThat(MESOS_ROLE, Is.is(frameworkBuilder.getRole()));
+        assertThat(MESOS_ROLE, Is.is(frameworkBuilder.getRoleBytes().toStringUtf8()));
+
     }
 }
