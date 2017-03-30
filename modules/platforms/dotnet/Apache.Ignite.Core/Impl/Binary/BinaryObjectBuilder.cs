@@ -676,6 +676,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 ? BinaryObjectHeader.Flag.UserType
                                 : BinaryObjectHeader.Flag.None;
 
+                            if (inHeader.IsCustomDotNetType)
+                                flags |= BinaryObjectHeader.Flag.CustomDotNetType;
+
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
 
