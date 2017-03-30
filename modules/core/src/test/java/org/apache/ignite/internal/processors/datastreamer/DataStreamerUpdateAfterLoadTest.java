@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,8 +30,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -118,9 +115,6 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
 
                 IgniteCache<Integer, Integer> cache = updateIgnite.cache(cacheName);
 
-                if (allowOverwrite)
-                    atomicClockModeDelay(cache);
-
                 updateIgnite.cache(cacheName).put(key, key + 1);
 
                 checkValue(key, key + 1, cacheName);
@@ -151,24 +145,21 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
     private List<CacheConfiguration<Integer, Integer>> cacheConfigurations() {
         List<CacheConfiguration<Integer, Integer>> ccfgs = new ArrayList<>();
 
-        ccfgs.add(cacheConfiguration(CacheAtomicityMode.ATOMIC, PRIMARY, 1, "cache-" + ccfgs.size()));
-        ccfgs.add(cacheConfiguration(CacheAtomicityMode.ATOMIC, PRIMARY, 0, "cache-" + ccfgs.size()));
-        ccfgs.add(cacheConfiguration(CacheAtomicityMode.ATOMIC, CLOCK, 1, "cache-" + ccfgs.size()));
-        ccfgs.add(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, null, 1, "cache-" + ccfgs.size()));
-        ccfgs.add(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, null, 0, "cache-" + ccfgs.size()));
+        ccfgs.add(cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache-" + ccfgs.size()));
+        ccfgs.add(cacheConfiguration(CacheAtomicityMode.ATOMIC, 0, "cache-" + ccfgs.size()));
+        ccfgs.add(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache-" + ccfgs.size()));
+        ccfgs.add(cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 0, "cache-" + ccfgs.size()));
 
         return ccfgs;
     }
 
     /**
      * @param atomicityMode Cache atomicity mode.
-     * @param writeOrderMode Cache write order mode.
      * @param backups Number of backups.
      * @param name Cache name.
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        CacheAtomicWriteOrderMode writeOrderMode,
         int backups,
         String name) {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
@@ -176,7 +167,6 @@ public class DataStreamerUpdateAfterLoadTest extends GridCommonAbstractTest {
         ccfg.setName(name);
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setBackups(backups);
-        ccfg.setAtomicWriteOrderMode(writeOrderMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;

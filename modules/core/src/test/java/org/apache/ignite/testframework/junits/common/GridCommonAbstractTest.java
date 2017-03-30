@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -92,7 +91,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -1168,23 +1166,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             backups.add(grid(it.next()));
 
         return backups;
-    }
-
-    /**
-     * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
-     * only one update wins others are ignored (can happen in test even when updates are executed from
-     * different nodes sequentially), this delay is used to avoid lost updates.
-     *
-     * @param cache Cache.
-     * @throws Exception If failed.
-     */
-    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
-        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
-
-        if (ccfg.getCacheMode() != LOCAL &&
-            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
-            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(50);
     }
 
     /**

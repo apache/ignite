@@ -39,13 +39,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="cacheAtomicWriteOrderMode" final="restriction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Clock" />
-            <xs:enumeration value="Primary" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="cacheMemoryMode" final="restriction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="OnheapTiered" />
@@ -620,11 +613,6 @@
                                     <xs:attribute name="atomicityMode" type="cacheAtomicityMode">
                                         <xs:annotation>
                                             <xs:documentation>Cache atomicity mode.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="atomicWriteOrderMode" type="cacheAtomicWriteOrderMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Cache write ordering mode.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="backups" type="xs:int">

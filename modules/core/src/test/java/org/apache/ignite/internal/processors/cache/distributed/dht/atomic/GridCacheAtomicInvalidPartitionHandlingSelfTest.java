@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -59,8 +58,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -78,9 +75,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
     /** Delay flag. */
     private static volatile boolean delay;
-
-    /** Write order. */
-    private CacheAtomicWriteOrderMode writeOrder;
 
     /** Write sync. */
     private CacheWriteSynchronizationMode writeSync;
@@ -119,7 +113,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
 
         ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setWriteSynchronizationMode(writeSync);
 
         ccfg.setRebalanceMode(SYNC);
@@ -149,98 +142,53 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testClockFullSync() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapTiered() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullSyncOffheapSwap() throws Exception {
-        checkRestarts(CLOCK, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockPrimarySync() throws Exception {
-        checkRestarts(CLOCK, PRIMARY_SYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testClockFullAsync() throws Exception {
-        checkRestarts(CLOCK, FULL_ASYNC, TestMemoryMode.HEAP);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPrimaryFullSync() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.HEAP);
+        checkRestarts(FULL_SYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullSyncSwap() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.SWAP);
+        checkRestarts(FULL_SYNC, TestMemoryMode.SWAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullSyncOffheapTiered() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
+        checkRestarts(FULL_SYNC, TestMemoryMode.OFFHEAP_TIERED);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullSyncOffheapSwap() throws Exception {
-        checkRestarts(PRIMARY, FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
+        checkRestarts(FULL_SYNC, TestMemoryMode.OFFHEAP_EVICT_SWAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryPrimarySync() throws Exception {
-        checkRestarts(PRIMARY, PRIMARY_SYNC, TestMemoryMode.HEAP);
+        checkRestarts(PRIMARY_SYNC, TestMemoryMode.HEAP);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPrimaryFullAsync() throws Exception {
-        checkRestarts(PRIMARY, FULL_ASYNC, TestMemoryMode.HEAP);
+        checkRestarts(FULL_ASYNC, TestMemoryMode.HEAP);
     }
 
     /**
-     * @param writeOrder Write order to check.
      * @param writeSync Write synchronization mode to check.
      * @param memMode Memory mode.
      * @throws Exception If failed.
      */
-    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder,
-        CacheWriteSynchronizationMode writeSync,
+    private void checkRestarts(CacheWriteSynchronizationMode writeSync,
         TestMemoryMode memMode)
         throws Exception {
-        this.writeOrder = writeOrder;
         this.writeSync = writeSync;
         this.memMode = memMode;
 

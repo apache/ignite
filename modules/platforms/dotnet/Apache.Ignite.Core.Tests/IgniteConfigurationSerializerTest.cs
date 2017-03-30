@@ -618,7 +618,6 @@ namespace Apache.Ignite.Core.Tests
                 {
                     new CacheConfiguration("cacheName")
                     {
-                        AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                         AtomicityMode = CacheAtomicityMode.Transactional,
                         Backups = 15,
                         CacheMode = CacheMode.Replicated,

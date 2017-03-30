@@ -33,10 +33,6 @@ const DFLT_CACHE = {
         value: 'ONHEAP_TIERED',
         mapper: enumValueMapper
     },
-    atomicWriteOrderMode: {
-        clsName: 'org.apache.ignite.cache.CacheAtomicWriteOrderMode',
-        mapper: enumValueMapper
-    },
     writeSynchronizationMode: {
         clsName: 'org.apache.ignite.cache.CacheWriteSynchronizationMode',
         value: 'PRIMARY_SYNC',
