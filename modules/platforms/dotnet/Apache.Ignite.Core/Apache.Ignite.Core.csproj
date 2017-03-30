@@ -192,7 +192,6 @@
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Binary\DeserializationCallbackProcessor.cs" />
     <Compile Include="Impl\Binary\ReflectionUtils.cs" />
-    <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Impl\Cache\Store\CacheStore.cs" />
     <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
