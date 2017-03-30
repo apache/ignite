@@ -177,6 +177,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         if (!isBinaryMarshaller())
             return;
 
+        fail("https://issues.apache.org/jira/browse/IGNITE-4889");
+
         IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
 
         p.query(new SqlFieldsQuery(
@@ -194,6 +196,8 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     public void testCustomIdentity() {
         if (!isBinaryMarshaller())
             return;
+
+        fail("https://issues.apache.org/jira/browse/IGNITE-4889");
 
         IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
 
