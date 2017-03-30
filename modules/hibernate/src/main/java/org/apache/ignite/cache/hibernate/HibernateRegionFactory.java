@@ -135,6 +135,10 @@ public class HibernateRegionFactory implements RegionFactory {
 
         dfltAccessType = AccessType.valueOf(accessType);
 
+        String accessType2 = dfltAccessType.toString();
+
+        String accessType3 = AccessType.NONSTRICT_READ_WRITE.toString();
+
         for (Map.Entry<Object, Object> prop : props.entrySet()) {
             String key = prop.getKey().toString();
 
@@ -221,7 +225,14 @@ public class HibernateRegionFactory implements RegionFactory {
      * @return Thread local instance used to track updates done during one Hibernate transaction.
      */
     ThreadLocal threadLocalForCache(String cacheName) {
-        return threadLoc;
+        if (dfltAccessType.toString() == AccessType.NONSTRICT_READ_WRITE.toString()) {
+            if (threadLocMap.get(cacheName) == null) {
+                threadLocMap.put(cacheName, new ThreadLocal());
+            }
+            return threadLocMap.get(cacheName);
+        } else {
+            return threadLoc;
+        }
     }
 
     /**
