@@ -1171,6 +1171,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _frame.RawPos = 0;
             _frame.Pos = pos;
             _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
+            _frame.HasCustomTypeData = false;
 
             var schemaIdx = _schema.PushSchema();
 
@@ -1188,6 +1189,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var flags = desc.UserType
                     ? BinaryObjectHeader.Flag.UserType
                     : BinaryObjectHeader.Flag.None;
+
+                if (_frame.HasCustomTypeData)
+                    flags |= BinaryObjectHeader.Flag.CustomDotNetType;
 
                 if (Marshaller.CompactFooter && desc.UserType)
                     flags |= BinaryObjectHeader.Flag.CompactFooter;
@@ -1236,6 +1240,14 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Restore old frame.
             _frame = oldFrame;
+        }
+
+        /// <summary>
+        /// Marks current object with a custom type data flag.
+        /// </summary>
+        public void SetCustomTypeDataFlag(bool hasCustomTypeData)
+        {
+            _frame.HasCustomTypeData = hasCustomTypeData;
         }
 
         /// <summary>
@@ -1463,8 +1475,11 @@ namespace Apache.Ignite.Core.Impl.Binary
             /** Current raw position. */
             public int RawPos;
 
-            /** Current type structure tracker, */
+            /** Current type structure tracker. */
             public BinaryStructureTracker Struct;
+
+            /** Custom type data. */
+            public bool HasCustomTypeData;
         }
     }
 }

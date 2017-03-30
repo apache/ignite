@@ -65,14 +65,23 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var dotNetFields = WriteSerializationInfo(writer, serInfo);
 
-            // Write additional information in raw mode.
-            writer.GetRawWriter();
+            // Check if there is any additional information to be written.
+            var customType = GetCustomType(serInfo, serializable);
 
-            WriteFieldNames(writer, serInfo);
+            if (dotNetFields != null || writer.Marshaller.Ignite == null || customType != null)
+            {
+                // Set custom type flag in object header.
+                writer.SetCustomTypeDataFlag(true);
 
-            WriteCustomTypeInfo(writer, serInfo, serializable);
+                // Write additional information in raw mode.
+                writer.GetRawWriter();
 
-            WriteDotNetFields(writer, dotNetFields);
+                WriteFieldNames(writer, serInfo);
+
+                WriteCustomTypeInfo(writer, customType);
+
+                WriteDotNetFields(writer, dotNetFields);
+            }
 
             _serializableTypeDesc.OnSerialized(obj, ctx);
         }
@@ -237,23 +246,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the custom type information.
         /// </summary>
-        private static void WriteCustomTypeInfo(BinaryWriter writer, SerializationInfo serInfo, 
-            ISerializable serializable)
+        private static void WriteCustomTypeInfo(BinaryWriter writer, Type customType)
         {
-            // ISerializable implementor may call SerializationInfo.SetType() or FullTypeName setter.
-            // In that case there is no serialization ctor on objType. 
-            // Instead, we should instantiate specified custom type and then call IObjectReference.GetRealObject().
-            Type customType = null;
-
-            if (serInfo.IsFullTypeNameSetExplicit)
-            {
-                customType = new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
-            }
-            else if (serInfo.ObjectType != serializable.GetType())
-            {
-                customType = serInfo.ObjectType;
-            }
-
             var raw = writer.GetRawWriter();
 
             if (customType != null)
@@ -277,6 +271,27 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 raw.WriteBoolean(false);
             }
+        }
+
+        /// <summary>
+        /// Gets the custom serialization type.
+        /// </summary>
+        private static Type GetCustomType(SerializationInfo serInfo, ISerializable serializable)
+        {
+            // ISerializable implementor may call SerializationInfo.SetType() or FullTypeName setter.
+            // In that case there is no serialization ctor on objType. 
+            // Instead, we should instantiate specified custom type and then call IObjectReference.GetRealObject().
+            if (serInfo.IsFullTypeNameSetExplicit)
+            {
+                return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
+            }
+            
+            if (serInfo.ObjectType != serializable.GetType())
+            {
+                return serInfo.ObjectType;
+            }
+
+            return null;
         }
 
         /// <summary>
