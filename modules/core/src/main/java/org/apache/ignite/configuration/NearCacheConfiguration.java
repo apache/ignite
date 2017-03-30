@@ -17,12 +17,13 @@
 
 package org.apache.ignite.configuration;
 
-import javax.cache.configuration.MutableConfiguration;
+import java.io.Serializable;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
+import static org.apache.ignite.configuration.CacheConfiguration.DFLT_COPY_ON_READ;
 
 /**
  * Client (near) cache configuration.
@@ -32,7 +33,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START
  * or most frequently accessed data. Just like with a partitioned cache,
  * the user can control the size of the near cache and its eviction policies.
  */
-public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
+public class NearCacheConfiguration<K, V> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,6 +42,9 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
+
+    /** Default near cache value for 'copyOnRead' flag. */
+    private boolean cpOnRead = DFLT_COPY_ON_READ;
 
     /**
      * Empty constructor.
@@ -55,8 +59,7 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param ccfg Configuration to copy.
      */
     public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
-        super(ccfg);
-
+        cpOnRead = ccfg.isCopyOnRead();
         nearEvictPlc = ccfg.getNearEvictionPolicy();
         nearStartSize = ccfg.getNearStartSize();
     }
@@ -103,6 +106,29 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public NearCacheConfiguration<K, V> setNearStartSize(int nearStartSize) {
         this.nearStartSize = nearStartSize;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether copy of the value stored in cache should be created
+     * for cache operation implying return value.
+     *
+     * @return Copy on read flag.
+     */
+    public boolean isCopyOnRead() {
+        return cpOnRead;
+    }
+
+    /**
+     * Sets copy on read flag.
+     *
+     * @param cpOnRead Copy on get flag.
+     * @see #isCopyOnRead
+     * @return {@code this} for chaining.
+     */
+    public NearCacheConfiguration<K, V> setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
 
         return this;
     }
