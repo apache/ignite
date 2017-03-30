@@ -503,27 +503,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         UUID routineId = e.getKey();
                         LocalRoutineInfo info = e.getValue();
 
-                        GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(info.hnd.cacheName()));
+                        try {
+                            if (info.prjPred != null)
+                                ctx.resource().injectGeneric(info.prjPred);
 
-                        // Do not register handler if it's not affinity node.
-                        if (cctx == null || cctx.affinityNode()) {
-                            try {
-                                if (info.prjPred != null)
-                                    ctx.resource().injectGeneric(info.prjPred);
-
-                                if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
-                                    registerHandler(clientNodeId,
-                                        routineId,
-                                        info.hnd,
-                                        info.bufSize,
-                                        info.interval,
-                                        info.autoUnsubscribe,
-                                        false);
-                                }
+                            if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
+                                registerHandler(clientNodeId,
+                                    routineId,
+                                    info.hnd,
+                                    info.bufSize,
+                                    info.interval,
+                                    info.autoUnsubscribe,
+                                    false);
                             }
-                            catch (IgniteCheckedException err) {
-                                U.error(log, "Failed to register continuous handler.", err);
-                            }
+                        }
+                        catch (IgniteCheckedException err) {
+                            U.error(log, "Failed to register continuous handler.", err);
                         }
                     }
                 }
