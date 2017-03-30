@@ -222,15 +222,6 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, TcpDiscoverySpiMBean {
-    /** Failure detection timeout feature major version. */
-    final static byte FAILURE_DETECTION_MAJOR_VER = 1;
-
-    /** Failure detection timeout feature minor version. */
-    final static byte FAILURE_DETECTION_MINOR_VER = 4;
-
-    /** Failure detection timeout feature maintainance version. */
-    final static byte FAILURE_DETECTION_MAINT_VER = 1;
-
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 

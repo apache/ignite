@@ -75,7 +75,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -645,16 +644,16 @@ public class GridReduceQueryExecutor {
                     flags |= GridH2QueryRequest.FLAG_EXPLAIN;
 
                 if (send(nodes,
-                    new GridH2QueryRequest()
-                        .requestId(qryReqId)
-                        .topologyVersion(topVer)
-                        .pageSize(r.pageSize)
-                        .caches(qry.caches())
-                        .tables(distributedJoins ? qry.tables() : null)
-                        .partitions(convert(partsMap))
-                        .queries(mapQrys)
-                        .flags(flags)
-                        .timeout(timeoutMillis),
+                        new GridH2QueryRequest()
+                            .requestId(qryReqId)
+                            .topologyVersion(topVer)
+                            .pageSize(r.pageSize)
+                            .caches(qry.caches())
+                            .tables(distributedJoins ? qry.tables() : null)
+                            .partitions(convert(partsMap))
+                            .queries(mapQrys)
+                            .flags(flags)
+                            .timeout(timeoutMillis),
                     null,
                     false)) {
 
@@ -1197,26 +1196,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param msg Message to copy.
-     * @param node Node.
-     * @param partsMap Partitions map.
-     * @return Copy of message with partitions set.
-     */
-    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> partsMap) {
-        assert partsMap != null;
-
-        GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
-
-        IntArray parts = partsMap.get(node);
-
-        assert parts != null : node;
-
-        res.partitions(toArray(parts));
-
-        return res;
-    }
-
-    /**
      * @param ints Ints.
      * @return Array.
      */
@@ -1463,25 +1442,6 @@ public class GridReduceQueryExecutor {
             Collections.addAll(res, row);
 
             return res;
-        }
-    }
-    /**
-     *
-     */
-    private class ExplicitPartitionsSpecializer implements IgniteBiClosure<ClusterNode,Message,Message> {
-        /** */
-        private final Map<ClusterNode,IntArray> partsMap;
-
-        /**
-         * @param partsMap Partitions map.
-         */
-        private ExplicitPartitionsSpecializer(Map<ClusterNode,IntArray> partsMap) {
-            this.partsMap = partsMap;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Message apply(ClusterNode n, Message msg) {
-            return copy(msg, n, partsMap);
         }
     }
 }

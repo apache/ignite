@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
- * Async target.
+ * Task execution test.
  */
-public interface PlatformAsyncTarget {
-    /**
-     * Gets future for the current operation.
-     *
-     * @return current future.
-     * @throws IgniteCheckedException If failed.
-     */
-    IgniteInternalFuture currentFuture() throws IgniteCheckedException;
-
-    /**
-     * Gets a custom future writer.
-     *
-     * @param opId Operation id.
-     * @return A custom writer for given op id.
-     */
-    @Nullable PlatformFutureUtils.Writer futureWriter(int opId);
+@GridCommonTest(group = "Kernal Self")
+public class GridTaskExecutionWithoutPeerClassLoadingSelfTest extends GridTaskExecutionSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean peerClassLoadingEnabled() {
+        return false;
+    }
 }

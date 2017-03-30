@@ -237,7 +237,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 33;
     }
 

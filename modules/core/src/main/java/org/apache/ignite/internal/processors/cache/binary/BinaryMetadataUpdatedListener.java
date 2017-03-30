@@ -14,17 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.binary;
 
-package org.apache.ignite.yardstick.cache;
-
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 
 /**
- * Test GETs with binary hashed key.
+ *  Interface allows any component to register for events of binary metadata updates.
  */
-public class IgniteLegacyBinaryIdentityGetBenchmark extends IgniteBinaryIdentityGetBenchmark {
-    /** {@inheritDoc} */
-    @Override BinaryObject createKey(int key) {
-        return createLegacyIdentityBinaryKey(key);
-    }
+public interface BinaryMetadataUpdatedListener {
+    /**
+     * @param metadata Updated metadata.
+     */
+    public void binaryMetadataUpdated(BinaryMetadata metadata);
 }

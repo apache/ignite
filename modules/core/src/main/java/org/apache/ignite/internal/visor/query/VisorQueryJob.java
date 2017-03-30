@@ -108,7 +108,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         try {
             UUID nid = ignite.localNode().id();
 
-            String qryTxt = arg.queryTxt();
+            String qryTxt = arg.queryText();
 
             boolean scan = qryTxt == null;
 
@@ -158,11 +158,11 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                     duration));
             }
             else {
-                SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
+                SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryText());
                 qry.setPageSize(arg.pageSize());
-                qry.setLocal(arg.local());
                 qry.setDistributedJoins(arg.distributedJoins());
                 qry.setEnforceJoinOrder(arg.enforceJoinOrder());
+                qry.setLocal(arg.local());
 
                 long start = U.currentTimeMillis();
 

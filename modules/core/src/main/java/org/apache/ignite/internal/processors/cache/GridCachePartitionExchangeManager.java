@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -973,7 +973,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     map.nodeOrder(),
                     map.updateSequence());
 
-                for (Map.Entry<UUID, GridDhtPartitionMap2> e : map.entrySet())
+                for (Map.Entry<UUID, GridDhtPartitionMap> e : map.entrySet())
                     map0.put(e.getKey(), e.getValue().emptyCopy());
 
                 map = map0;
@@ -1034,7 +1034,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
-                GridDhtPartitionMap2 locMap = cacheCtx.topology().localPartitionMap();
+                GridDhtPartitionMap locMap = cacheCtx.topology().localPartitionMap();
 
                 addPartitionMap(m,
                     dupData,
@@ -1052,7 +1052,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (m.partitions() != null && m.partitions().containsKey(top.cacheId()))
                 continue;
 
-            GridDhtPartitionMap2 locMap = top.localPartitionMap();
+            GridDhtPartitionMap locMap = top.localPartitionMap();
 
             addPartitionMap(m,
                 dupData,
@@ -1080,7 +1080,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Map<Object, T2<Integer, Map<Integer, GridDhtPartitionState>>> dupData,
         boolean compress,
         Integer cacheId,
-        GridDhtPartitionMap2 map,
+        GridDhtPartitionMap map,
         Object affKey) {
         Integer dupDataCache = null;
 
@@ -1305,7 +1305,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
+                for (Map.Entry<Integer, GridDhtPartitionMap> entry : msg.partitions().entrySet()) {
                     Integer cacheId = entry.getKey();
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);

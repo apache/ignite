@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/binary/binary_type_updater.h"
+package org.apache.ignite.jdbc;
 
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
+import java.sql.ResultSet;
+
+/**
+ * Test for Jdbc driver query without class on client
+ */
+public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
+    /** URL. */
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJdbcQuery() throws Exception {
+        stmt.execute("select * from JdbcTestObject");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertResultSet(rs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected String getURL() {
+        return URL;
     }
 }

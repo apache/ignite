@@ -188,9 +188,12 @@
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Impl\Binary\DateTimeSerializer.cs" />
     <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
+    <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
-    <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\ICacheStoreInternal.cs" />
     <Compile Include="Impl\Transactions\CacheTransactionManager.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicyFactory.cs" />
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
@@ -297,7 +300,7 @@
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryUtils.cs" />
     <Compile Include="Impl\Cache\Query\FieldsQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursor.cs" />
-    <Compile Include="Impl\Cache\Store\CacheStore.cs" />
+    <Compile Include="Impl\Cache\Store\CacheStoreInternal.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSession.cs" />
     <Compile Include="Impl\Cache\Store\CacheStoreSessionProxy.cs" />
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />
@@ -376,7 +379,6 @@
     <Compile Include="Impl\Memory\PlatformMemoryStream.cs" />
     <Compile Include="Impl\Memory\PlatformMemoryUtils.cs" />
     <Compile Include="Impl\Memory\PlatformPooledMemory.cs" />
-    <Compile Include="Impl\Memory\PlatformRawMemory.cs" />
     <Compile Include="Impl\Memory\PlatformUnpooledMemory.cs" />
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
