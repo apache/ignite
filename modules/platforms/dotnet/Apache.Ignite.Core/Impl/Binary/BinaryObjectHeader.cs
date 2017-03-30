@@ -167,6 +167,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the custom .NET type flag.
+        /// </summary>
+        public bool IsCustomDotNetType
+        {
+            get { return (Flags & Flag.CustomDotNetType) == Flag.CustomDotNetType; }
+        }
+
+        /// <summary>
         /// Gets the size of the schema field offset (1, 2 or 4 bytes).
         /// </summary>
         public int SchemaFieldOffsetSize

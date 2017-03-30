@@ -93,16 +93,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             var ctx = GetStreamingContext(reader);
             var callbackPushed = false;
 
-            // Read additional information from raw part.
-            var oldPos = reader.Stream.Position;
-            reader.SeekToRaw();
+            // Read additional information from raw part, if flag is set.
+            var fieldNames = Enumerable.Empty<string>();
+            Type customType = null;
+            ICollection<int> dotNetFields = null;
 
-            var fieldNames = ReadFieldNames(reader, desc);
-            var customType = ReadCustomTypeInfo(reader);
-            var dotNetFields = ReadDotNetFields(reader);
+            if (reader.GetCustomTypeDataFlag())
+            {
+                var oldPos = reader.Stream.Position;
+                reader.SeekToRaw();
 
-            // Restore stream position.
-            reader.Stream.Seek(oldPos, SeekOrigin.Begin);
+                fieldNames = ReadFieldNames(reader, desc);
+                customType = ReadCustomTypeInfo(reader);
+                dotNetFields = ReadDotNetFields(reader);
+                
+                // Restore stream position.
+                reader.Stream.Seek(oldPos, SeekOrigin.Begin);
+            }
 
             try
             {

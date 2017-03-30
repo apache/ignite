@@ -581,6 +581,14 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
+                
+        /// <summary>
+        /// Gets the flag indicating that there is custom type information in raw region.
+        /// </summary>
+        public bool GetCustomTypeDataFlag()
+        {
+            return _frame.Hdr.IsCustomDotNetType;
+        }
 
         /// <summary>
         /// Reads the binary object.
