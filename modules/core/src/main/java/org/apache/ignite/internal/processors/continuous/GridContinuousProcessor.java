@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -495,29 +496,34 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> entry : data.clientInfos.entrySet()) {
                 UUID clientNodeId = entry.getKey();
 
-                if (!ctx.localNodeId().equals(clientNodeId)) {
+                if (!ctx.clientNode()) {
                     Map<UUID, LocalRoutineInfo> clientRoutineMap = entry.getValue();
 
                     for (Map.Entry<UUID, LocalRoutineInfo> e : clientRoutineMap.entrySet()) {
                         UUID routineId = e.getKey();
                         LocalRoutineInfo info = e.getValue();
 
-                        try {
-                            if (info.prjPred != null)
-                                ctx.resource().injectGeneric(info.prjPred);
+                        GridCacheContext cctx = ctx.cache().context().cacheContext(CU.cacheId(info.hnd.cacheName()));
 
-                            if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
-                                registerHandler(clientNodeId,
-                                    routineId,
-                                    info.hnd,
-                                    info.bufSize,
-                                    info.interval,
-                                    info.autoUnsubscribe,
-                                    false);
+                        // Do not register handler if it's not affinity node.
+                        if (cctx == null || cctx.affinityNode()) {
+                            try {
+                                if (info.prjPred != null)
+                                    ctx.resource().injectGeneric(info.prjPred);
+
+                                if (info.prjPred == null || info.prjPred.apply(ctx.discovery().localNode())) {
+                                    registerHandler(clientNodeId,
+                                        routineId,
+                                        info.hnd,
+                                        info.bufSize,
+                                        info.interval,
+                                        info.autoUnsubscribe,
+                                        false);
+                                }
                             }
-                        }
-                        catch (IgniteCheckedException err) {
-                            U.error(log, "Failed to register continuous handler.", err);
+                            catch (IgniteCheckedException err) {
+                                U.error(log, "Failed to register continuous handler.", err);
+                            }
                         }
                     }
                 }
@@ -583,6 +589,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Routine ID.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     public UUID registerStaticRoutine(
         String cacheName,
         CacheEntryUpdatedListener<?, ?> locLsnr,
