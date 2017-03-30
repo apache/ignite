@@ -14,19 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.binary;
 
-#include "ignite/impl/binary/binary_type_updater.h"
+import org.apache.ignite.internal.binary.BinaryMetadata;
 
-namespace ignite
-{    
-    namespace impl
-    {
-        namespace binary
-        {
-            BinaryTypeUpdater::~BinaryTypeUpdater()
-            {
-                // No-op.
-            }
-        }
-    }
+/**
+ *  Interface allows any component to register for events of binary metadata updates.
+ */
+public interface BinaryMetadataUpdatedListener {
+    /**
+     * @param metadata Updated metadata.
+     */
+    public void binaryMetadataUpdated(BinaryMetadata metadata);
 }

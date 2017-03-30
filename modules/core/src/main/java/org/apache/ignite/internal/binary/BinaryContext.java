@@ -1140,7 +1140,7 @@ public class BinaryContext {
 
         cls2Mappers.put(clsName, mapper);
 
-        Map<String, Integer> fieldsMeta = null;
+        Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
         if (cls != null) {
             if (serializer == null) {
@@ -1220,6 +1220,16 @@ public class BinaryContext {
      */
     @Nullable public BinaryType metadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
+    }
+
+    /**
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Meta data.
+     * @throws BinaryObjectException In case of error.
+     */
+    public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.metadata(typeId, schemaId): null;
     }
 
     /**
