@@ -116,6 +116,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
         private class SimpleSerializable : ISerializable
         {
+            // TODO: All primitive types.
+            // TODO: Nested field of another type?
+
             [QuerySqlField]
             public int Foo { get; set; }
             

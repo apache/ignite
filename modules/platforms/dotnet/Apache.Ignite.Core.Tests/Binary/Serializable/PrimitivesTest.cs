@@ -433,10 +433,49 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             var binType = bin.GetBinaryType();
             
             Assert.AreEqual("byte", binType.GetFieldTypeName("byte"));
+            Assert.AreEqual("byte", binType.GetFieldTypeName("sbyte"));
+            
             Assert.AreEqual("byte[]", binType.GetFieldTypeName("bytes"));
+            Assert.AreEqual("byte[]", binType.GetFieldTypeName("sbytes"));
+            
             Assert.AreEqual("boolean", binType.GetFieldTypeName("bool"));
+            Assert.AreEqual("boolean[]", binType.GetFieldTypeName("bools"));
+            
+            Assert.AreEqual("char", binType.GetFieldTypeName("char"));
+            Assert.AreEqual("char[]", binType.GetFieldTypeName("chars"));
 
-            // TODO: Other types
+            Assert.AreEqual("short", binType.GetFieldTypeName("short"));
+            Assert.AreEqual("short[]", binType.GetFieldTypeName("shorts"));
+
+            Assert.AreEqual("short", binType.GetFieldTypeName("ushort"));
+            Assert.AreEqual("short[]", binType.GetFieldTypeName("ushorts"));
+
+            Assert.AreEqual("int", binType.GetFieldTypeName("int"));
+            Assert.AreEqual("int[]", binType.GetFieldTypeName("ints"));
+
+            Assert.AreEqual("int", binType.GetFieldTypeName("uint"));
+            Assert.AreEqual("int[]", binType.GetFieldTypeName("uints"));
+
+            Assert.AreEqual("long", binType.GetFieldTypeName("long"));
+            Assert.AreEqual("long[]", binType.GetFieldTypeName("longs"));
+
+            Assert.AreEqual("long", binType.GetFieldTypeName("ulong"));
+            Assert.AreEqual("long[]", binType.GetFieldTypeName("ulongs"));
+
+            Assert.AreEqual("float", binType.GetFieldTypeName("float"));
+            Assert.AreEqual("float[]", binType.GetFieldTypeName("floats"));
+
+            Assert.AreEqual("double", binType.GetFieldTypeName("double"));
+            Assert.AreEqual("double[]", binType.GetFieldTypeName("doubles"));
+
+            Assert.AreEqual("decimal", binType.GetFieldTypeName("decimal"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("decimals"));
+
+            Assert.AreEqual("UUID", binType.GetFieldTypeName("guid"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("guids"));
+
+            Assert.AreEqual("Object", binType.GetFieldTypeName("datetime"));
+            Assert.AreEqual("Object", binType.GetFieldTypeName("datetimes"));
         }
 
         /// <summary>

@@ -432,7 +432,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteShort(entry.Name, (short) (ushort) entry.Value);
                 }
-                else if (type == typeof(ushort))
+                else if (type == typeof(ushort[]))
                 {
                     writer.WriteShortArray(entry.Name, (short[]) (Array) entry.Value);
                 }
