@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.IO
 {
-    using System;
-
     /// <summary>
     /// Binary stream processor.
     /// </summary>
