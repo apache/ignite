@@ -2014,9 +2014,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                         CacheObject cacheVal = ctx.toCacheObject(val);
 
                                         while (true) {
-                                            GridCacheEntryEx entry = entryEx(key);
+                                            GridCacheEntryEx entry = null;
 
                                             try {
+                                                entry = entryEx(key);
+
+                                                entry.unswap();
+
                                                 EntryGetResult verVal = entry.versionedValue(
                                                     cacheVal,
                                                     res.version(),
