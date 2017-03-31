@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -672,7 +672,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         while (failed) {
                             failed = false;
 
-                            for (GridDhtPartitionMap2 pMap : top.partitionMap(true).values()) {
+                            for (GridDhtPartitionMap pMap : top.partitionMap(true).values()) {
                                 if (failed)
                                     break;
 
@@ -1159,11 +1159,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(task, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(task, arg);
 
         assertNotNull(fut);
 
@@ -1179,11 +1175,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(taskName, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(taskName, arg);
 
         assertNotNull(fut);
 
@@ -1200,11 +1192,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.withAsync();
-
-        assertNull(comp.execute(taskCls, arg));
-
-        ComputeTaskFuture<R> fut = comp.future();
+        ComputeTaskFuture<R> fut = comp.executeAsync(taskCls, arg);
 
         assertNotNull(fut);
 
@@ -1220,13 +1208,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <T extends Event> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
-        evts = evts.withAsync();
-
-        assertTrue(evts.isAsync());
-
-        assertNull(evts.waitForLocal(filter, types));
-
-        IgniteFuture<T> fut = evts.future();
+        IgniteFuture<T> fut = evts.waitForLocalAsync(filter, types);
 
         assertNotNull(fut);
 

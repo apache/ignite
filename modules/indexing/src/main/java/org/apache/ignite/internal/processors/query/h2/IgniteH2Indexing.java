@@ -1645,8 +1645,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
-        if (!validateTypeDescriptor(type))
-            return false;
+        validateTypeDescriptor(type);
 
         String schemaName = schema(spaceName);
 
@@ -1674,10 +1673,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Validates properties described by query types.
      *
      * @param type Type descriptor.
-     * @return True if type is valid.
      * @throws IgniteCheckedException If validation failed.
      */
-    private boolean validateTypeDescriptor(GridQueryTypeDescriptor type)
+    private void validateTypeDescriptor(GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
         assert type != null;
 
@@ -1695,8 +1693,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
                 throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
         }
-
-        return true;
     }
 
     /**
@@ -2040,11 +2036,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
-        if (JdbcUtils.serializer != null)
-            U.warn(log, "Custom H2 serialization is already configured, will override.");
-
-        JdbcUtils.serializer = h2Serializer();
-
         String dbName = (ctx != null ? ctx.localNodeId() : UUID.randomUUID()).toString();
 
         dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
@@ -2099,6 +2090,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
         }
+
+        if (JdbcUtils.serializer != null)
+            U.warn(log, "Custom H2 serialization is already configured, will override.");
+
+        JdbcUtils.serializer = h2Serializer();
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(igniteInstanceName, this, GridH2IndexingSpiMBean.class);

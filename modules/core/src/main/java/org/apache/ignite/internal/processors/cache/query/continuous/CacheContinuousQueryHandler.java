@@ -139,7 +139,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private boolean locCache;
 
     /** */
-    private transient boolean keepBinary;
+    private boolean keepBinary;
 
     /** */
     private transient ConcurrentMap<Integer, PartitionRecovery> rcvs;
@@ -1328,7 +1328,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     for (AffinityTopologyVersion topVer : t.get2()) {
                         for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
-                            if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
+                            if (!node.isLocal()) {
                                 try {
                                     cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                                 }
@@ -1393,6 +1393,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         out.writeBoolean(sync);
         out.writeBoolean(ignoreExpired);
         out.writeInt(taskHash);
+        out.writeBoolean(keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -1414,6 +1415,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         sync = in.readBoolean();
         ignoreExpired = in.readBoolean();
         taskHash = in.readInt();
+        keepBinary = in.readBoolean();
 
         cacheId = CU.cacheId(cacheName);
     }

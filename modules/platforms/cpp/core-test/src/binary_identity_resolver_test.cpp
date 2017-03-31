@@ -33,6 +33,7 @@
 #include "ignite/binary/binary_array_identity_resolver.h"
 
 #include "ignite/test_utils.h"
+#include "ignite/complex_type.h"
 
 
 using namespace boost::unit_test;
@@ -137,6 +138,8 @@ struct GetHashDefined : TestUserClassBase {};
 struct ResolverDefined : TestUserClassBase {};
 struct BothDefined : TestUserClassBase {};
 
+struct ComplexType2 : ComplexType { };
+
 struct CustomIdResolver : binary::BinaryIdentityResolver
 {
     int32_t GetHashCode(const BinaryObject& obj)
@@ -158,6 +161,29 @@ struct CustomIdResolver : binary::BinaryIdentityResolver
         return field * 42;
     }
 };
+
+struct CustomFieldIdResolver : binary::BinaryIdentityResolver
+{
+    static int32_t lastHash;
+
+    int32_t GetHashCode(const BinaryObject& obj)
+    {
+        int32_t hash = 0;
+
+        if (obj.HasField("objField"))
+        {
+            BinaryObject inner = obj.GetField<BinaryObject>("objField");
+
+            hash = inner.GetField<int32_t>("f1");
+        }
+
+        lastHash = hash;
+
+        return hash;
+    }
+};
+
+int32_t CustomFieldIdResolver::lastHash = 0;
 
 namespace ignite
 {
@@ -312,7 +338,7 @@ namespace ignite
         };
 
         /**
-         * Binary type definition for CompositeKey.
+         * Binary type definition for CompositeKeySimple.
          */
         template<>
         struct BinaryType<CompositeKeySimple>
@@ -339,6 +365,42 @@ namespace ignite
                 val.i64 = reader.ReadInt64("i64");
 
                 return val;
+            }
+        };
+
+        /**
+         * Binary type definition for ComplexType2.
+         */
+        template<>
+        struct BinaryType<ComplexType2>
+        {
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(ComplexType2)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(ComplexType2)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(ComplexType2)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(ComplexType2)
+
+            ignite::Reference<ignite::binary::BinaryIdentityResolver> GetIdentityResolver()
+            {
+                return ignite::MakeReferenceFromCopy(CustomFieldIdResolver());
+            }
+
+            void Write(BinaryWriter& writer, ComplexType2 obj)
+            {
+                writer.WriteInt32("i32Field", obj.i32Field);
+                writer.WriteObject("objField", obj.objField);
+                writer.WriteString("strField", obj.strField);
+            }
+
+            ComplexType2 Read(BinaryReader& reader)
+            {
+                ComplexType2 obj;
+
+                obj.i32Field = reader.ReadInt32("i32Field");
+                obj.objField = reader.ReadObject<InnerObject>("objField");
+                obj.strField = reader.ReadString("strField");
+
+                return obj;
             }
         };
     }
@@ -384,7 +446,7 @@ int32_t CalculateHashCode(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObject obj(mem, 0);
+    BinaryObject obj(mem, 0, 0, 0);
 
     R resolver;
 
@@ -398,7 +460,7 @@ int32_t RetrieveHashCode(const T& value)
 
     FillMem<T>(mem, value);
 
-    BinaryObjectImpl obj(mem, 0);
+    BinaryObjectImpl obj(mem, 0, 0, 0);
 
     return obj.GetHashCode();
 }
@@ -517,6 +579,29 @@ BOOST_AUTO_TEST_CASE(TestBothDefined)
     val.field = 1337;
 
     BOOST_CHECK_EQUAL(RetrieveHashCode(val), val.field * 42);
+}
+
+BOOST_AUTO_TEST_CASE(ComplexTypeWithFieldsIdentityResolver)
+{
+    BOOST_CHECKPOINT("Node startup");
+    Ignite node = ignite_test::StartNode("cache-identity.xml");
+
+    ComplexType2 key;
+
+    key.strField = "ComplexType2";
+    key.i32Field = 58943095;
+    key.objField.f1 = 812;
+    key.objField.f2 = "InnerType";
+
+    int32_t value = -12345890;
+
+    BOOST_CHECKPOINT("Cache creation");
+    Cache<ComplexType2, int32_t> cache = node.GetOrCreateCache<ComplexType2, int32_t>("cache3");
+
+    BOOST_CHECKPOINT("Value Put");
+    cache.Put(key, value);
+
+    BOOST_CHECK_EQUAL(key.objField.f1, CustomFieldIdResolver::lastHash);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

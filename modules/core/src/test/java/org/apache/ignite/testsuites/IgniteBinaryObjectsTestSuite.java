@@ -53,6 +53,8 @@ import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompac
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.BinaryObjectOffHeapUnswapTemporaryTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest;
@@ -145,6 +147,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
+        suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
+        suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
         suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
 

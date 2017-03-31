@@ -259,8 +259,6 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_OUT_STREAM = JniMethod("outStream", "(IJ)V", false);
             JniMethod M_PLATFORM_TARGET_OUT_OBJECT = JniMethod("outObject", "(I)Ljava/lang/Object;", false);
             JniMethod M_PLATFORM_TARGET_IN_STREAM_ASYNC = JniMethod("inStreamAsync", "(IJ)V", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)V", false);
-            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION = JniMethod("listenFutureForOperation", "(JII)V", false);
 
             const char* C_PLATFORM_CALLBACK_UTILS = "org/apache/ignite/internal/processors/platform/callback/PlatformCallbackUtils";
 
@@ -592,8 +590,6 @@ namespace ignite
                 m_PlatformTarget_inStreamOutStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_STREAM);
                 m_PlatformTarget_inObjectStreamOutObjectStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_OBJECT_STREAM);
                 m_PlatformTarget_inStreamAsync = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_ASYNC);
-                m_PlatformTarget_listenFuture = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE);
-                m_PlatformTarget_listenFutureForOperation = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION);
 
                 c_PlatformUtils = FindClass(env, C_PLATFORM_UTILS);
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
@@ -1394,22 +1390,6 @@ namespace ignite
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamAsync, opType, memPtr);
 
                 ExceptionCheck(env, err);
-            }
-
-            void JniContext::TargetListenFuture(jobject obj, long long futId, int typ) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFuture, futId, typ);
-
-                ExceptionCheck(env);
-            }
-
-            void JniContext::TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId) {
-                JNIEnv* env = Attach();
-
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
-
-                ExceptionCheck(env);
             }
 
             jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* err) {

@@ -1106,10 +1106,6 @@ public class GridCacheUtils {
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
                 key.getClass().getName());
-
-        if (U.isHashCodeEmpty(key))
-            throw new IllegalArgumentException("Cache key created with BinaryBuilder is missing hash code - " +
-                "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**
