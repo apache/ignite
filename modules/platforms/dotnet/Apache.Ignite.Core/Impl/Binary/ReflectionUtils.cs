@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.ExamplesDll.Datagrid
+namespace Apache.Ignite.Core.Impl.Binary
 {
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.ExamplesDll.Binary;
+    using System;
+    using System.Collections.Generic;
+    using System.Reflection;
 
     /// <summary>
-    /// Example cache entry predicate.
+    /// Reflection utils.
     /// </summary>
-    public class EmployeeStorePredicate : ICacheEntryFilter<int, Employee>
+    internal static class ReflectionUtils
     {
         /// <summary>
-        /// Returns a value indicating whether provided cache entry satisfies this predicate.
+        /// Gets all fields, including base classes.
         /// </summary>
-        /// <param name="entry">Cache entry.</param>
-        /// <returns>Value indicating whether provided cache entry satisfies this predicate.</returns>
-        public bool Invoke(ICacheEntry<int, Employee> entry)
+        public static IEnumerable<FieldInfo> GetAllFields(Type type)
         {
-            return entry.Key == 1;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public |
+                                       BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+            var curType = type;
+
+            while (curType != null)
+            {
+                foreach (var field in curType.GetFields(flags))
+                {
+                    yield return field;
+                }
+
+                curType = curType.BaseType;
+            }
         }
     }
 }
