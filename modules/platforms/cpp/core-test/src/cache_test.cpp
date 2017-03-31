@@ -474,6 +474,46 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
     BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
 }
 
+BOOST_AUTO_TEST_CASE(TestLocalEvictIterSet)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(1, 5);
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+
+    int keys[] = { 0, 1 };
+
+    std::set<int> keySet(keys, keys + 2);
+
+    cache.LocalEvict(keySet.begin(), keySet.end());
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+
+    BOOST_REQUIRE(5 == cache.Get(1));
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+}
+
+BOOST_AUTO_TEST_CASE(TestLocalEvictIterArray)
+{
+    cache::Cache<int, int> cache = Cache();
+
+    cache.Put(1, 5);
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+
+    int keys[] = { 0, 1 };
+
+    cache.LocalEvict(keys, keys + 2);
+
+    BOOST_REQUIRE(0 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+
+    BOOST_REQUIRE(5 == cache.Get(1));
+
+    BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
+}
+
 BOOST_AUTO_TEST_CASE(TestBinary)
 {
     cache::Cache<int, Person> cache = grid0.GetCache<int, Person>("partitioned");

@@ -370,7 +370,7 @@ namespace ignite
              *
              * @param begin Iterator pointing to the beggining of the key sequence.
              * @param end Iterator pointing to the end of the key sequence.
-             * @param dst Output iterator.
+             * @param dst Output iterator. Should dereference to std::pair or CacheEntry.
              */
             template<typename InIter, typename OutIter>
             void GetAll(InIter begin, InIter end, OutIter dst)
@@ -464,8 +464,8 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
-             * @param begin Iterator pointing to the beggining of the key sequence.
-             * @param end Iterator pointing to the end of the key sequence.
+             * @param begin Iterator pointing to the beggining of the key-value pair sequence.
+             * @param end Iterator pointing to the end of the key-value pair sequence.
              */
             template<typename Iter>
             void PutAll(Iter begin, Iter end)
@@ -829,6 +829,29 @@ namespace ignite
                 impl::InSetOperation<K> op(keys);
 
                 impl.Get()->LocalEvict(op, err);
+            }
+
+            /**
+             * Attempts to evict all entries associated with keys.
+             *
+             * @note Entry will be evicted only if it's not used (not
+             * participating in any locks or transactions).
+             *
+             * This method should only be used on the valid instance.
+             *
+             * @param begin Iterator pointing to the beggining of the key sequence.
+             * @param end Iterator pointing to the end of the key sequence.
+             */
+            template<typename Iter>
+            void LocalEvict(Iter begin, Iter end)
+            {
+                IgniteError err;
+
+                impl::InIterOperation<K, V, Iter> op(begin, end);
+
+                impl.Get()->LocalEvict(op, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             /**
