@@ -168,6 +168,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final AffinityTopologyVersion reqTopVer;
 
+    /** Request topology version. */
+    private final String execName;
+
     /**
      * @param ctx Kernal context.
      * @param dep Grid deployment.
@@ -196,7 +199,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr,
         GridReservable partsReservation,
-        AffinityTopologyVersion reqTopVer) {
+        AffinityTopologyVersion reqTopVer,
+        String execName) {
         super(ctx.igniteInstanceName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
@@ -219,6 +223,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.holdLsnr = holdLsnr;
         this.partsReservation = partsReservation;
         this.reqTopVer = reqTopVer;
+        this.execName = execName;
 
         if (job != null)
             this.job = job;
@@ -727,6 +732,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
+     * @return Custom executor name.
+     */
+    public String getExecName() {
+        return execName;
+    }
+
+    /**
      * @param evtType Event type.
      * @param msg Message.
      */
@@ -910,9 +922,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
                             else if (ctx.localNodeId().equals(sndNode.id()))
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
-                            else
+                            else {
                                 // Send response to common topic as unordered message.
-                                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
+                                if (execName == null)
+                                    ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
+                                else
+                                    ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, execName);
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.

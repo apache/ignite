@@ -954,6 +954,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
 
+        log.info("+++ Received job request message [req=" + req + ", nodeId=" + node.id() + ']');
+
         PartitionsReservation partsReservation = null;
 
         if (req.getCacheIds() != null) {
@@ -1058,7 +1060,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId());
+                            req.getSubjectId(),
+                            req.getExecName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1098,7 +1101,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         evtLsnr,
                         holdLsnr,
                         partsReservation,
-                        req.getTopVer());
+                        req.getTopVer(),
+                        req.getExecName());
 
                     jobCtx.job(job);
 
@@ -1274,7 +1278,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            ctx.getExecutorService().execute(jobWorker);
+            if (jobWorker.getExecName() != null)
+                try {
+                    ctx.pools().customPoolByName(jobWorker.getExecName()).execute(jobWorker);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new RejectedExecutionException("Cannot execute job by the custom executor: "
+                        + jobWorker.getExecName(), e);
+                }
+            else
+                ctx.getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();

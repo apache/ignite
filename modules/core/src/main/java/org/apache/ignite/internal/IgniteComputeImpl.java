@@ -73,6 +73,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     /** */
     private UUID subjId;
 
+    /** Custom executor name. */
     private String execName;
 
     /**
@@ -1089,6 +1090,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(String name) {
-        return new IgniteComputeImpl(ctx, prj, subjId, false, execName);
+        return new IgniteComputeImpl(ctx, prj, subjId, false, name);
     }
 }
