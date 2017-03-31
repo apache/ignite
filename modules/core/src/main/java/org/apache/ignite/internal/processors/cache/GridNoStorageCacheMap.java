@@ -45,11 +45,6 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry getOrCreateEntry(KeyCacheObject key, AffinityTopologyVersion topVer) {
-        return new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), null);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         if (create)
