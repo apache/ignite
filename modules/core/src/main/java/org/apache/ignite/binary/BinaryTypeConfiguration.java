@@ -91,9 +91,12 @@ public class BinaryTypeConfiguration {
      * Sets type name.
      *
      * @param typeName Type name.
+     * @return {@code this} for chaining.
      */
-    public void setTypeName(String typeName) {
+    public BinaryTypeConfiguration setTypeName(String typeName) {
         this.typeName = typeName;
+
+        return this;
     }
 
     /**
@@ -109,9 +112,12 @@ public class BinaryTypeConfiguration {
      * Sets ID mapper.
      *
      * @param idMapper ID mapper.
+     * @return {@code this} for chaining.
      */
-    public void setIdMapper(BinaryIdMapper idMapper) {
+    public BinaryTypeConfiguration setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+
+        return this;
     }
 
     /**
@@ -127,9 +133,12 @@ public class BinaryTypeConfiguration {
      * Sets name mapper.
      *
      * @param nameMapper Name mapper.
+     * @return {@code this} for chaining.
      */
-    public void setNameMapper(BinaryNameMapper nameMapper) {
+    public BinaryTypeConfiguration setNameMapper(BinaryNameMapper nameMapper) {
         this.nameMapper = nameMapper;
+
+        return this;
     }
 
     /**
@@ -145,9 +154,12 @@ public class BinaryTypeConfiguration {
      * Sets serializer.
      *
      * @param serializer Serializer.
+     * @return {@code this} for chaining.
      */
-    public void setSerializer(BinarySerializer serializer) {
+    public BinaryTypeConfiguration setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+
+        return this;
     }
 
     /**
@@ -163,9 +175,12 @@ public class BinaryTypeConfiguration {
      * Sets identity resolver.
      *
      * @param identityRslvr Identity resolver.
+     * @return {@code this} for chaining.
      */
-    public void setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
+    public BinaryTypeConfiguration setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
         this.identityRslvr = identityRslvr;
+
+        return this;
     }
 
     /**
@@ -181,9 +196,12 @@ public class BinaryTypeConfiguration {
      * Sets whether this is enum type.
      *
      * @param isEnum {@code True} if enum.
+     * @return {@code this} for chaining.
      */
-    public void setEnum(boolean isEnum) {
+    public BinaryTypeConfiguration setEnum(boolean isEnum) {
         this.isEnum = isEnum;
+
+        return this;
     }
 
     /** {@inheritDoc} */
