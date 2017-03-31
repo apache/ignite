@@ -150,11 +150,14 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             // Test DML.
             var dmlRes = cache.QueryFields(new SqlFieldsQuery(
-                "insert into DotNetSpecificSerializable(_key, uint) values (?, ?)", 2, uint.MaxValue)).GetAll();
+                "insert into DotNetSpecificSerializable(_key, uint) values (?, ?), (?, ?)",
+                2, uint.MaxValue, 3, 88)).GetAll();
             Assert.AreEqual(1, dmlRes.Count);
 
-            var dmlResObj = cache[2];
-            Assert.AreEqual(uint.MaxValue, dmlResObj.Uint);
+            var ex = Assert.Throws<OverflowException>(() => cache.Get(2));
+            Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
+
+            Assert.AreEqual(88, cache[3].Uint);
         }
 
         /// <summary>
